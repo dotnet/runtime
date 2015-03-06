@@ -54,7 +54,7 @@ namespace XPathTests.FunctionalTests.Location
         }
 
         /// <summary>
-        /// Invalid Location Step - Multiple axis. Location step can have only one axis. Test expresion uses nultiple axis. Expected error.
+        /// Invalid Location Step - Multiple axis. Location step can have only one axis. Test expression uses multiple axis. Expected error.
         /// /bookstore/child::ancestor::book
         /// </summary>
         [Fact]

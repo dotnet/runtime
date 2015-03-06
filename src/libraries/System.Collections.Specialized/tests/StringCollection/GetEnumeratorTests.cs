@@ -18,7 +18,7 @@ namespace System.Collections.Specialized.Tests
             StringCollection sc;
             StringEnumerator en;
 
-            string curr;        // Eumerator.Current value
+            string curr;        // Enumerator.Current value
 
             // simple string values
             string[] values =

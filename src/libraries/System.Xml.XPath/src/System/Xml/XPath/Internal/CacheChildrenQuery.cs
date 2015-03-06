@@ -10,7 +10,7 @@ namespace MS.Internal.Xml.XPath
 {
     // This class implements Children axis on Ancestor & Descendant inputs. (as well as id(), preceding, following)
     // The problem here is that is descendant::*/child::* and ancestor::*/child::* can produce duplicates nodes
-    // The algorithm heavily uses the fact that in our implementation of both AncestorQuery and DecsndantQuery return nodes in document order. 
+    // The algorithm heavily uses the fact that in our implementation of both AncestorQuery and DescendantQuery return nodes in document order. 
     // As result first child is always before or equal of next input. 
     // So we don't need to call DecideNextNode() when needInput == true && stack is empty.
     internal sealed class CacheChildrenQuery : ChildrenQuery

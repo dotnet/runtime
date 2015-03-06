@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -30,7 +30,7 @@ namespace System.Linq.Parallel
         internal ExceptQueryOperator(ParallelQuery<TInputOutput> left, ParallelQuery<TInputOutput> right, IEqualityComparer<TInputOutput> comparer)
             : base(left, right)
         {
-            Contract.Assert(left != null && right != null, "child data sources cannot be null");
+            Debug.Assert(left != null && right != null, "child data sources cannot be null");
             _comparer = comparer;
             _outputOrdered = LeftChild.OutputOrdered;
             SetOrdinalIndex(OrdinalIndexState.Shuffled);
@@ -41,7 +41,7 @@ namespace System.Linq.Parallel
         {
             // We just open our child operators, left and then right.  Do not propagate the preferStriping value, but 
             // instead explicitly set it to false. Regardless of whether the parent prefers striping or range
-            // partitioning, the output will be hash-partititioned.
+            // partitioning, the output will be hash-partitioned.
             QueryResults<TInputOutput> leftChildResults = LeftChild.Open(settings, false);
             QueryResults<TInputOutput> rightChildResults = RightChild.Open(settings, false);
 
@@ -52,7 +52,7 @@ namespace System.Linq.Parallel
             PartitionedStream<TInputOutput, TLeftKey> leftStream, PartitionedStream<TInputOutput, TRightKey> rightStream,
             IPartitionedStreamRecipient<TInputOutput> outputRecipient, bool preferStriping, QuerySettings settings)
         {
-            Contract.Assert(leftStream.PartitionCount == rightStream.PartitionCount);
+            Debug.Assert(leftStream.PartitionCount == rightStream.PartitionCount);
 
             if (OutputOrdered)
             {
@@ -152,8 +152,8 @@ namespace System.Linq.Parallel
                 IEqualityComparer<TInputOutput> comparer,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(leftSource != null);
-                Contract.Assert(rightSource != null);
+                Debug.Assert(leftSource != null);
+                Debug.Assert(rightSource != null);
 
                 _leftSource = leftSource;
                 _rightSource = rightSource;
@@ -167,8 +167,8 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TInputOutput currentElement, ref int currentKey)
             {
-                Contract.Assert(_leftSource != null);
-                Contract.Assert(_rightSource != null);
+                Debug.Assert(_leftSource != null);
+                Debug.Assert(_rightSource != null);
 
                 // Build the set out of the left data source, if we haven't already.
 
@@ -216,7 +216,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_leftSource != null && _rightSource != null);
+                Debug.Assert(_leftSource != null && _rightSource != null);
                 _leftSource.Dispose();
                 _rightSource.Dispose();
             }
@@ -241,8 +241,8 @@ namespace System.Linq.Parallel
                 IEqualityComparer<TInputOutput> comparer, IComparer<TLeftKey> leftKeyComparer,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(leftSource != null);
-                Contract.Assert(rightSource != null);
+                Debug.Assert(leftSource != null);
+                Debug.Assert(rightSource != null);
 
                 _leftSource = leftSource;
                 _rightSource = rightSource;
@@ -257,8 +257,8 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TInputOutput currentElement, ref TLeftKey currentKey)
             {
-                Contract.Assert(_leftSource != null);
-                Contract.Assert(_rightSource != null);
+                Debug.Assert(_leftSource != null);
+                Debug.Assert(_rightSource != null);
 
                 // Build the set out of the left data source, if we haven't already.
                 if (_outputEnumerator == null)
@@ -319,7 +319,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_leftSource != null && _rightSource != null);
+                Debug.Assert(_leftSource != null && _rightSource != null);
                 _leftSource.Dispose();
                 _rightSource.Dispose();
             }

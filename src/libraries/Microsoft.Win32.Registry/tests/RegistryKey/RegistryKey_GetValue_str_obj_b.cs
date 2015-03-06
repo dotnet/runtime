@@ -143,8 +143,8 @@ namespace Microsoft.Win32.RegistryTests
         public void Test06()
         {
             // [] Make sure NoExpand = false works with some valid values.
-            string[] strTestValues = new string[] { @"%Systemroot%\mydrive\mydriectory\myfile.xxx", @"%tmp%\gfdhghdfgk\fsdfds\dsd.yyy", @"%path%\rwerew.zzz", @"%Systemroot%\mydrive\%path%\myfile.xxx" };
-            string[] strExpectedTestValues = new string[] { Environment.ExpandEnvironmentVariables("%Systemroot%") + @"\mydrive\mydriectory\myfile.xxx", Environment.ExpandEnvironmentVariables("%tmp%") + @"\gfdhghdfgk\fsdfds\dsd.yyy", Environment.ExpandEnvironmentVariables("%path%") + @"\rwerew.zzz", Environment.ExpandEnvironmentVariables("%Systemroot%") + @"\mydrive\" + Environment.ExpandEnvironmentVariables("%path%") + @"\myfile.xxx" };
+            string[] strTestValues = new string[] { @"%Systemroot%\mydrive\mydirectory\myfile.xxx", @"%tmp%\gfdhghdfgk\fsdfds\dsd.yyy", @"%path%\rwerew.zzz", @"%Systemroot%\mydrive\%path%\myfile.xxx" };
+            string[] strExpectedTestValues = new string[] { Environment.ExpandEnvironmentVariables("%Systemroot%") + @"\mydrive\mydirectory\myfile.xxx", Environment.ExpandEnvironmentVariables("%tmp%") + @"\gfdhghdfgk\fsdfds\dsd.yyy", Environment.ExpandEnvironmentVariables("%path%") + @"\rwerew.zzz", Environment.ExpandEnvironmentVariables("%Systemroot%") + @"\mydrive\" + Environment.ExpandEnvironmentVariables("%path%") + @"\myfile.xxx" };
 
             _rk2 = _rk1.CreateSubKey(_testKeyName2);
             try
@@ -222,10 +222,10 @@ namespace Microsoft.Win32.RegistryTests
             al.Add((float)Int32.MaxValue * (float)rand.NextDouble());
             al.Add((float)Int32.MinValue * (float)rand.NextDouble());
             al.Add(((UInt64)(UInt64)rand.Next((int)UInt64.MinValue, Int32.MaxValue)));
-            al.Add(@"%Systemroot%\mydrive\mydriectory\myfile.xxx");
-            al.Add(@"%tmp%\mydrive\mydriectory\myfile.xxx");
-            al.Add(@"%path%\mydrive\mydriectory\myfile.xxx");
-            al.Add(@"%Systemroot\myblah\%useranme%%\mydrive\mydriectory\myfile.xxx");
+            al.Add(@"%Systemroot%\mydrive\mydirectory\myfile.xxx");
+            al.Add(@"%tmp%\mydrive\mydirectory\myfile.xxx");
+            al.Add(@"%path%\mydrive\mydirectory\myfile.xxx");
+            al.Add(@"%Systemroot%\myblah\%username%\mydrive\mydirectory\myfile.xxx");
             al.Add(@"%path%\mydrive\%tmp%\myfile.xxx");
 
             _rk2 = _rk1.CreateSubKey(_testKeyName2);

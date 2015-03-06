@@ -58,7 +58,7 @@ namespace System.IO
 
         internal static Exception GetEndWaitForConnectionCalledTwice()
         {
-            // Should ideally be InvalidOperationExc but we can't maitain parity with Stream and FileStream without some work
+            // Should ideally be InvalidOperationExc but we can't maintain parity with Stream and FileStream without some work
             return new ArgumentException(SR.InvalidOperation_EndWaitForConnectionCalledMultiple);
         }
 

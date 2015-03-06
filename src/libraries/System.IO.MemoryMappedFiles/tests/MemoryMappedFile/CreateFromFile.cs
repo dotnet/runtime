@@ -9,6 +9,12 @@ using Xunit;
 [Collection("CreateFromFile")]
 public class CreateFromFile : MMFTestBase
 {
+    private readonly static string s_uniquifier = Guid.NewGuid().ToString();
+    private readonly static string s_fileNameTest1 = "CreateFromFile_test1_" + s_uniquifier + ".txt";
+    private readonly static string s_fileNameTest2 = "CreateFromFile_test2_" + s_uniquifier + ".txt";
+    private readonly static string s_fileNameTest3 = "CreateFromFile_test3_" + s_uniquifier + ".txt";
+    private readonly static string s_fileNameNonexistent = "CreateFromFile_nonexistent_" + s_uniquifier + ".txt";
+
     [Fact]
     public static void CreateFromFileTestCases()
     {
@@ -32,13 +38,13 @@ public class CreateFromFile : MMFTestBase
     {
         try
         {
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
 
-            if (File.Exists("CreateFromFile_test2.txt"))
-                File.Delete("CreateFromFile_test2.txt");
+            if (File.Exists(s_fileNameTest2))
+                File.Delete(s_fileNameTest2);
             String fileText = "Non-empty file for MMF testing.";
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
+            File.WriteAllText(s_fileNameTest2, fileText);
 
             ////////////////////////////////////////////////////////////////////////
             // CreateFromFile(String)
@@ -50,34 +56,34 @@ public class CreateFromFile : MMFTestBase
             VerifyCreateFromFileException<ArgumentNullException>("Loc001", null);
 
             // existing file
-            VerifyCreateFromFile("Loc002", "CreateFromFile_test2.txt");
+            VerifyCreateFromFile("Loc002", s_fileNameTest2);
 
             // nonexistent file
-            if (File.Exists("nonexistent.txt"))
-                File.Delete("nonexistent.txt");
-            VerifyCreateFromFileException<FileNotFoundException>("Loc003", "nonexistent.txt");
+            if (File.Exists(s_fileNameNonexistent))
+                File.Delete(s_fileNameNonexistent);
+            VerifyCreateFromFileException<FileNotFoundException>("Loc003", s_fileNameNonexistent);
 
             // FS open
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
-                VerifyCreateFromFileException<IOException>("Loc004a", "CreateFromFile_test2.txt");
+                VerifyCreateFromFileException<IOException>("Loc004a", s_fileNameTest2);
             }
 
             // same file - not allowed
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("CreateFromFile_test2.txt"))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest2))
             {
-                VerifyCreateFromFileException<IOException>("Loc004b", "CreateFromFile_test2.txt");
+                VerifyCreateFromFileException<IOException>("Loc004b", s_fileNameTest2);
             }
 
             ////////////////////////////////////////////////////////////////////////
             // CreateFromFile(String, FileMode)
             ////////////////////////////////////////////////////////////////////////
 
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
-            if (File.Exists("CreateFromFile_test2.txt"))
-                File.Delete("CreateFromFile_test2.txt");
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
+            if (File.Exists(s_fileNameTest2))
+                File.Delete(s_fileNameTest2);
+            File.WriteAllText(s_fileNameTest2, fileText);
 
             // [] fileName
 
@@ -85,53 +91,53 @@ public class CreateFromFile : MMFTestBase
             VerifyCreateFromFileException<ArgumentNullException>("Loc101", null, FileMode.Open);
 
             // existing file - open
-            VerifyCreateFromFile("Loc102a", "CreateFromFile_test2.txt", FileMode.Open);
-            VerifyCreateFromFile("Loc102b", "CreateFromFile_test2.txt", FileMode.OpenOrCreate);
+            VerifyCreateFromFile("Loc102a", s_fileNameTest2, FileMode.Open);
+            VerifyCreateFromFile("Loc102b", s_fileNameTest2, FileMode.OpenOrCreate);
             // existing file - create
             // can't create new since it exists
-            VerifyCreateFromFileException<IOException>("Loc102d", "CreateFromFile_test2.txt", FileMode.CreateNew);
+            VerifyCreateFromFileException<IOException>("Loc102d", s_fileNameTest2, FileMode.CreateNew);
             // newly created file - exception with default capacity
-            VerifyCreateFromFileException<ArgumentException>("Loc102c", "CreateFromFile_test2.txt", FileMode.Create);
-            VerifyCreateFromFileException<ArgumentException>("Loc102f", "CreateFromFile_test2.txt", FileMode.Truncate);
+            VerifyCreateFromFileException<ArgumentException>("Loc102c", s_fileNameTest2, FileMode.Create);
+            VerifyCreateFromFileException<ArgumentException>("Loc102f", s_fileNameTest2, FileMode.Truncate);
             // append not allowed
-            VerifyCreateFromFileException<ArgumentException>("Loc102e", "CreateFromFile_test2.txt", FileMode.Append);
+            VerifyCreateFromFileException<ArgumentException>("Loc102e", s_fileNameTest2, FileMode.Append);
 
             // nonexistent file - error
-            if (File.Exists("nonexistent.txt"))
-                File.Delete("nonexistent.txt");
-            VerifyCreateFromFileException<FileNotFoundException>("Loc103a", "nonexistent.txt", FileMode.Open);
+            if (File.Exists(s_fileNameNonexistent))
+                File.Delete(s_fileNameNonexistent);
+            VerifyCreateFromFileException<FileNotFoundException>("Loc103a", s_fileNameNonexistent, FileMode.Open);
             // newly created file - exception with default capacity
-            VerifyCreateFromFileException<ArgumentException>("Loc103b", "CreateFromFile_test1.txt", FileMode.OpenOrCreate);
-            VerifyCreateFromFileException<ArgumentException>("Loc103c", "CreateFromFile_test1.txt", FileMode.CreateNew);
-            VerifyCreateFromFileException<ArgumentException>("Loc103d", "CreateFromFile_test1.txt", FileMode.Create);
-            VerifyCreateFromFileException<ArgumentException>("Loc103e", "CreateFromFile_test2.txt", FileMode.Truncate);
+            VerifyCreateFromFileException<ArgumentException>("Loc103b", s_fileNameTest1, FileMode.OpenOrCreate);
+            VerifyCreateFromFileException<ArgumentException>("Loc103c", s_fileNameTest1, FileMode.CreateNew);
+            VerifyCreateFromFileException<ArgumentException>("Loc103d", s_fileNameTest1, FileMode.Create);
+            VerifyCreateFromFileException<ArgumentException>("Loc103e", s_fileNameTest2, FileMode.Truncate);
             // append not allowed
-            VerifyCreateFromFileException<ArgumentException>("Loc103f", "CreateFromFile_test2.txt", FileMode.Append);
+            VerifyCreateFromFileException<ArgumentException>("Loc103f", s_fileNameTest2, FileMode.Append);
 
             // empty file - exception with default capacity
-            using (FileStream fs = new FileStream("CreateFromFile_test1.txt", FileMode.Create))
+            using (FileStream fs = new FileStream(s_fileNameTest1, FileMode.Create))
             {
             }
-            VerifyCreateFromFileException<ArgumentException>("Loc104a", "CreateFromFile_test1.txt", FileMode.Open);
-            VerifyCreateFromFileException<ArgumentException>("Loc104b", "CreateFromFile_test1.txt", FileMode.OpenOrCreate);
-            VerifyCreateFromFileException<ArgumentException>("Loc104c", "CreateFromFile_test1.txt", FileMode.Create);
-            VerifyCreateFromFileException<ArgumentException>("Loc104d", "CreateFromFile_test1.txt", FileMode.Truncate);
+            VerifyCreateFromFileException<ArgumentException>("Loc104a", s_fileNameTest1, FileMode.Open);
+            VerifyCreateFromFileException<ArgumentException>("Loc104b", s_fileNameTest1, FileMode.OpenOrCreate);
+            VerifyCreateFromFileException<ArgumentException>("Loc104c", s_fileNameTest1, FileMode.Create);
+            VerifyCreateFromFileException<ArgumentException>("Loc104d", s_fileNameTest1, FileMode.Truncate);
             // can't create new since it exists
-            VerifyCreateFromFileException<IOException>("Loc104e", "CreateFromFile_test1.txt", FileMode.CreateNew);
+            VerifyCreateFromFileException<IOException>("Loc104e", s_fileNameTest1, FileMode.CreateNew);
             // append not allowed
-            VerifyCreateFromFileException<ArgumentException>("Loc104f", "CreateFromFile_test1.txt", FileMode.Append);
+            VerifyCreateFromFileException<ArgumentException>("Loc104f", s_fileNameTest1, FileMode.Append);
 
             // FS open
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
-                VerifyCreateFromFileException<IOException>("Loc105a", "CreateFromFile_test2.txt", FileMode.Open);
+                VerifyCreateFromFileException<IOException>("Loc105a", s_fileNameTest2, FileMode.Open);
             }
 
             // same file - not allowed
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("CreateFromFile_test2.txt"))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest2))
             {
-                VerifyCreateFromFileException<IOException>("Loc105b", "CreateFromFile_test2.txt", FileMode.Open);
+                VerifyCreateFromFileException<IOException>("Loc105b", s_fileNameTest2, FileMode.Open);
             }
 
 
@@ -139,12 +145,12 @@ public class CreateFromFile : MMFTestBase
             // CreateFromFile(String, FileMode, String)
             ////////////////////////////////////////////////////////////////////////
 
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
-            if (File.Exists("CreateFromFile_test2.txt"))
-                File.Delete("CreateFromFile_test2.txt");
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            File.WriteAllText("test3.txt", fileText + fileText);
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
+            if (File.Exists(s_fileNameTest2))
+                File.Delete(s_fileNameTest2);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            File.WriteAllText(s_fileNameTest3, fileText + fileText);
 
             // [] fileName
 
@@ -152,83 +158,83 @@ public class CreateFromFile : MMFTestBase
             VerifyCreateFromFileException<ArgumentNullException>("Loc201", null, FileMode.Open);
 
             // existing file - open
-            VerifyCreateFromFile("Loc202a", "CreateFromFile_test2.txt", FileMode.Open);
-            VerifyCreateFromFile("Loc202b", "CreateFromFile_test2.txt", FileMode.OpenOrCreate);
+            VerifyCreateFromFile("Loc202a", s_fileNameTest2, FileMode.Open);
+            VerifyCreateFromFile("Loc202b", s_fileNameTest2, FileMode.OpenOrCreate);
             // existing file - create
             // can't create new since it exists
-            VerifyCreateFromFileException<IOException>("Loc202d", "CreateFromFile_test2.txt", FileMode.CreateNew);
+            VerifyCreateFromFileException<IOException>("Loc202d", s_fileNameTest2, FileMode.CreateNew);
             // newly created file - exception with default capacity
-            VerifyCreateFromFileException<ArgumentException>("Loc202c", "CreateFromFile_test2.txt", FileMode.Create);
-            VerifyCreateFromFileException<ArgumentException>("Loc202f", "CreateFromFile_test2.txt", FileMode.Truncate);
+            VerifyCreateFromFileException<ArgumentException>("Loc202c", s_fileNameTest2, FileMode.Create);
+            VerifyCreateFromFileException<ArgumentException>("Loc202f", s_fileNameTest2, FileMode.Truncate);
             // append not allowed
-            VerifyCreateFromFileException<ArgumentException>("Loc202e", "CreateFromFile_test2.txt", FileMode.Append);
+            VerifyCreateFromFileException<ArgumentException>("Loc202e", s_fileNameTest2, FileMode.Append);
 
             // nonexistent file - error
-            if (File.Exists("nonexistent.txt"))
-                File.Delete("nonexistent.txt");
-            VerifyCreateFromFileException<FileNotFoundException>("Loc203a", "nonexistent.txt", FileMode.Open);
+            if (File.Exists(s_fileNameNonexistent))
+                File.Delete(s_fileNameNonexistent);
+            VerifyCreateFromFileException<FileNotFoundException>("Loc203a", s_fileNameNonexistent, FileMode.Open);
             // newly created file - exception with default capacity
-            VerifyCreateFromFileException<ArgumentException>("Loc203b", "CreateFromFile_test1.txt", FileMode.OpenOrCreate);
-            VerifyCreateFromFileException<ArgumentException>("Loc203c", "CreateFromFile_test1.txt", FileMode.CreateNew);
-            VerifyCreateFromFileException<ArgumentException>("Loc203d", "CreateFromFile_test1.txt", FileMode.Create);
-            VerifyCreateFromFileException<ArgumentException>("Loc203e", "CreateFromFile_test2.txt", FileMode.Truncate);
+            VerifyCreateFromFileException<ArgumentException>("Loc203b", s_fileNameTest1, FileMode.OpenOrCreate);
+            VerifyCreateFromFileException<ArgumentException>("Loc203c", s_fileNameTest1, FileMode.CreateNew);
+            VerifyCreateFromFileException<ArgumentException>("Loc203d", s_fileNameTest1, FileMode.Create);
+            VerifyCreateFromFileException<ArgumentException>("Loc203e", s_fileNameTest2, FileMode.Truncate);
             // append not allowed
-            VerifyCreateFromFileException<ArgumentException>("Loc203f", "CreateFromFile_test2.txt", FileMode.Append);
+            VerifyCreateFromFileException<ArgumentException>("Loc203f", s_fileNameTest2, FileMode.Append);
 
             // empty file - exception with default capacity
-            using (FileStream fs = new FileStream("CreateFromFile_test1.txt", FileMode.Create))
+            using (FileStream fs = new FileStream(s_fileNameTest1, FileMode.Create))
             {
             }
-            VerifyCreateFromFileException<ArgumentException>("Loc204a", "CreateFromFile_test1.txt", FileMode.Open);
-            VerifyCreateFromFileException<ArgumentException>("Loc204b", "CreateFromFile_test1.txt", FileMode.OpenOrCreate);
-            VerifyCreateFromFileException<ArgumentException>("Loc204c", "CreateFromFile_test1.txt", FileMode.Create);
-            VerifyCreateFromFileException<ArgumentException>("Loc204d", "CreateFromFile_test1.txt", FileMode.Truncate);
+            VerifyCreateFromFileException<ArgumentException>("Loc204a", s_fileNameTest1, FileMode.Open);
+            VerifyCreateFromFileException<ArgumentException>("Loc204b", s_fileNameTest1, FileMode.OpenOrCreate);
+            VerifyCreateFromFileException<ArgumentException>("Loc204c", s_fileNameTest1, FileMode.Create);
+            VerifyCreateFromFileException<ArgumentException>("Loc204d", s_fileNameTest1, FileMode.Truncate);
             // can't create new since it exists
-            VerifyCreateFromFileException<IOException>("Loc204e", "CreateFromFile_test1.txt", FileMode.CreateNew);
+            VerifyCreateFromFileException<IOException>("Loc204e", s_fileNameTest1, FileMode.CreateNew);
             // append not allowed
-            VerifyCreateFromFileException<ArgumentException>("Loc204f", "CreateFromFile_test1.txt", FileMode.Append);
+            VerifyCreateFromFileException<ArgumentException>("Loc204f", s_fileNameTest1, FileMode.Append);
 
             // FS open
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
-                VerifyCreateFromFileException<IOException>("Loc205a", "CreateFromFile_test2.txt", FileMode.Open);
+                VerifyCreateFromFileException<IOException>("Loc205a", s_fileNameTest2, FileMode.Open);
             }
 
             // same file - not allowed
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("CreateFromFile_test2.txt"))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest2))
             {
-                VerifyCreateFromFileException<IOException>("Loc205b", "CreateFromFile_test2.txt", FileMode.Open);
+                VerifyCreateFromFileException<IOException>("Loc205b", s_fileNameTest2, FileMode.Open);
             }
 
             // [] mapName
 
             // mapname > 260 chars
-            VerifyCreateFromFile("Loc211", "CreateFromFile_test2.txt", FileMode.Open, "CreateFromFile2" + new String('a', 1000));
+            VerifyCreateFromFile("Loc211", s_fileNameTest2, FileMode.Open, "CreateFromFile2" + new String('a', 1000) + s_uniquifier);
 
             // null
-            VerifyCreateFromFile("Loc212", "CreateFromFile_test2.txt", FileMode.Open, null);
+            VerifyCreateFromFile("Loc212", s_fileNameTest2, FileMode.Open, null);
 
             // empty string disallowed
-            VerifyCreateFromFileException<ArgumentException>("Loc213", "CreateFromFile_test2.txt", FileMode.Open, String.Empty);
+            VerifyCreateFromFileException<ArgumentException>("Loc213", s_fileNameTest2, FileMode.Open, String.Empty);
 
             // all whitespace
-            VerifyCreateFromFile("Loc214", "CreateFromFile_test2.txt", FileMode.Open, "\t \n\u00A0");
+            VerifyCreateFromFile("Loc214", s_fileNameTest2, FileMode.Open, "\t \n\u00A0");
 
             // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("test3.txt", FileMode.Open, "map215"))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map215" + s_uniquifier))
             {
-                VerifyCreateFromFileException<IOException>("Loc215", "CreateFromFile_test2.txt", FileMode.Open, "map215");
+                VerifyCreateFromFileException<IOException>("Loc215", s_fileNameTest2, FileMode.Open, "map215" + s_uniquifier);
             }
 
             // MMF with this mapname existed, but was closed
-            VerifyCreateFromFile("Loc216", "CreateFromFile_test2.txt", FileMode.Open, "map215");
+            VerifyCreateFromFile("Loc216", s_fileNameTest2, FileMode.Open, "map215" + s_uniquifier);
 
             // "global/" prefix
-            VerifyCreateFromFile("Loc217", "CreateFromFile_test2.txt", FileMode.Open, "global/CFF_0");
+            VerifyCreateFromFile("Loc217", s_fileNameTest2, FileMode.Open, "global/CFF_0" + s_uniquifier);
 
             // "local/" prefix
-            VerifyCreateFromFile("Loc218", "CreateFromFile_test2.txt", FileMode.Open, "local/CFF_1");
+            VerifyCreateFromFile("Loc218", s_fileNameTest2, FileMode.Open, "local/CFF_1" + s_uniquifier);
 
 
             ////////////////////////////////////////////////////////////////////////
@@ -238,42 +244,42 @@ public class CreateFromFile : MMFTestBase
             // [] fileName
 
             // null fileName
-            VerifyCreateFromFileException<ArgumentNullException>("Loc301", null, FileMode.Open, "CFF_mapname", 0);
+            VerifyCreateFromFileException<ArgumentNullException>("Loc301", null, FileMode.Open, "CFF_mapname" + s_uniquifier, 0);
 
             // [] capacity
 
             // newly created file - exception with default capacity
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
-            VerifyCreateFromFileException<ArgumentException>("Loc311", "CreateFromFile_test1.txt", FileMode.CreateNew, "CFF_mapname211", 0);
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
+            VerifyCreateFromFileException<ArgumentException>("Loc311", s_fileNameTest1, FileMode.CreateNew, "CFF_mapname211" + s_uniquifier, 0);
 
             // newly created file - valid with >0 capacity
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
-            VerifyCreateFromFile("Loc312", "CreateFromFile_test1.txt", FileMode.CreateNew, "CFF_mapname312", 1);
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
+            VerifyCreateFromFile("Loc312", s_fileNameTest1, FileMode.CreateNew, "CFF_mapname312" + s_uniquifier, 1);
 
             // existing file, default capacity
-            VerifyCreateFromFile("Loc313", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname313", 0);
+            VerifyCreateFromFile("Loc313", s_fileNameTest2, FileMode.Open, "CFF_mapname313" + s_uniquifier, 0);
 
             // existing file, capacity less than file size
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc314", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname314", 6);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc314", s_fileNameTest2, FileMode.Open, "CFF_mapname314" + s_uniquifier, 6);
 
             // existing file, capacity equal to file size
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            VerifyCreateFromFile("Loc315", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname315", fileText.Length);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            VerifyCreateFromFile("Loc315", s_fileNameTest2, FileMode.Open, "CFF_mapname315" + s_uniquifier, fileText.Length);
 
             // existing file, capacity greater than file size
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            VerifyCreateFromFile("Loc316", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname316", 6000);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            VerifyCreateFromFile("Loc316", s_fileNameTest2, FileMode.Open, "CFF_mapname316" + s_uniquifier, 6000);
 
             // negative
-            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc317", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname317", -1);
+            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc317", s_fileNameTest2, FileMode.Open, "CFF_mapname317" + s_uniquifier, -1);
 
             // negative
-            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc318", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname318", -4096);
+            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc318", s_fileNameTest2, FileMode.Open, "CFF_mapname318" + s_uniquifier, -4096);
 
-            VerifyCreateFromFileException<IOException>("Loc319b", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname319", Int64.MaxValue);  // valid but too large
+            VerifyCreateFromFileException<IOException>("Loc319b", s_fileNameTest2, FileMode.Open, "CFF_mapname319" + s_uniquifier, Int64.MaxValue);  // valid but too large
 
 
             ////////////////////////////////////////////////////////////////////////
@@ -283,199 +289,199 @@ public class CreateFromFile : MMFTestBase
             // [] capacity
 
             // existing file, capacity less than file size, MemoryMappedFileAccess.Read
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc414", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname414", 6, MemoryMappedFileAccess.Read);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc414", s_fileNameTest2, FileMode.Open, "CFF_mapname414" + s_uniquifier, 6, MemoryMappedFileAccess.Read);
 
             // existing file, capacity equal to file size, MemoryMappedFileAccess.Read
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            VerifyCreateFromFile("Loc415", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname415", fileText.Length, MemoryMappedFileAccess.Read);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            VerifyCreateFromFile("Loc415", s_fileNameTest2, FileMode.Open, "CFF_mapname415" + s_uniquifier, fileText.Length, MemoryMappedFileAccess.Read);
 
             // existing file, capacity greater than file size, MemoryMappedFileAccess.Read
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            VerifyCreateFromFileException<ArgumentException>("Loc416", "CreateFromFile_test2.txt", FileMode.Open, "CFF_mapname416", 6000, MemoryMappedFileAccess.Read);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            VerifyCreateFromFileException<ArgumentException>("Loc416", s_fileNameTest2, FileMode.Open, "CFF_mapname416" + s_uniquifier, 6000, MemoryMappedFileAccess.Read);
 
             ////////////////////////////////////////////////////////////////////////
             // CreateFromFile(FileStream, String, long, MemoryMappedFileAccess,
             //    MemoryMappedFileSecurity, HandleInheritability, bool)
             ////////////////////////////////////////////////////////////////////////
 
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
 
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            File.WriteAllText("test3.txt", fileText + fileText);
+            File.WriteAllText(s_fileNameTest2, fileText);
+            File.WriteAllText(s_fileNameTest3, fileText + fileText);
 
             // [] fileStream
 
             // null filestream
-            VerifyCreateFromFileException<ArgumentNullException>("Loc401", null, "map401", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+            VerifyCreateFromFileException<ArgumentNullException>("Loc401", null, "map401" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
 
             // existing file
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc402", fs, "map402", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc402", fs, "map402" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // same FS
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "map403a", 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "map403a" + s_uniquifier, 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
                 {
-                    VerifyCreateFromFile("Loc403", fs, "map403", 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                    VerifyCreateFromFile("Loc403", fs, "map403" + s_uniquifier, 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
                 }
             }
 
             // closed FS
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
                 fs.Dispose();
-                VerifyCreateFromFileException<ObjectDisposedException>("Loc404", fs, "map404", 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ObjectDisposedException>("Loc404", fs, "map404" + s_uniquifier, 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
             }
 
             // newly created file - exception with default capacity
-            using (FileStream fs = new FileStream("CreateFromFile_test1.txt", FileMode.CreateNew))
+            using (FileStream fs = new FileStream(s_fileNameTest1, FileMode.CreateNew))
             {
-                VerifyCreateFromFileException<ArgumentException>("Loc405", fs, "map405", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentException>("Loc405", fs, "map405" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // empty file - exception with default capacity
-            using (FileStream fs = new FileStream("CreateFromFile_test1.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest1, FileMode.Open))
             {
-                VerifyCreateFromFileException<ArgumentException>("Loc406", fs, "map406", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentException>("Loc406", fs, "map406" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // [] mapName
 
             // mapname > 260 chars
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc411", fs, "CreateFromFile" + new String('a', 1000), 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc411", fs, "CreateFromFile" + new String('a', 1000) + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // null
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
                 VerifyCreateFromFile("Loc412", fs, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // empty string disallowed
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
                 VerifyCreateFromFileException<ArgumentException>("Loc413", fs, String.Empty, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // all whitespace
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
                 VerifyCreateFromFile("Loc414", fs, "\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("test3.txt", FileMode.Open, "map415"))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map415" + s_uniquifier))
             {
-                using (FileStream fs2 = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+                using (FileStream fs2 = new FileStream(s_fileNameTest2, FileMode.Open))
                 {
-                    VerifyCreateFromFileException<IOException>("Loc415", fs2, "map415", 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                    VerifyCreateFromFileException<IOException>("Loc415", fs2, "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
                 }
             }
 
             // MMF with this mapname existed, but was closed
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc416", fs, "map415", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc416", fs, "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // "global/" prefix
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc417", fs, "global/CFF_2", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc417", fs, "global/CFF_2" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // "local/" prefix
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc418", fs, "local/CFF_3", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc418", fs, "local/CFF_3" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // [] capacity
 
             // newly created file - exception with default capacity
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
-            using (FileStream fs = new FileStream("CreateFromFile_test1.txt", FileMode.CreateNew))
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
+            using (FileStream fs = new FileStream(s_fileNameTest1, FileMode.CreateNew))
             {
-                VerifyCreateFromFileException<ArgumentException>("Loc421", fs, "CFF_mapname421", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentException>("Loc421", fs, "CFF_mapname421" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // newly created file - valid with >0 capacity
-            if (File.Exists("CreateFromFile_test1.txt"))
-                File.Delete("CreateFromFile_test1.txt");
-            using (FileStream fs = new FileStream("CreateFromFile_test1.txt", FileMode.CreateNew))
+            if (File.Exists(s_fileNameTest1))
+                File.Delete(s_fileNameTest1);
+            using (FileStream fs = new FileStream(s_fileNameTest1, FileMode.CreateNew))
             {
-                VerifyCreateFromFile("Loc422", fs, "CFF_mapname422", 1, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc422", fs, "CFF_mapname422" + s_uniquifier, 1, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // existing file, default capacity
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc423", fs, "CFF_mapname423", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc423", fs, "CFF_mapname423" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // existing file, capacity less than file size
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc424", fs, "CFF_mapname424", 6, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc424", fs, "CFF_mapname424" + s_uniquifier, 6, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // existing file, capacity equal to file size
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc425", fs, "CFF_mapname425", fileText.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc425", fs, "CFF_mapname425" + s_uniquifier, fileText.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // existing file, capacity greater than file size
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc426", fs, "CFF_mapname426", 6000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc426", fs, "CFF_mapname426" + s_uniquifier, 6000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // existing file, capacity greater than file size & access = Read only
-            File.WriteAllText("CreateFromFile_test2.txt", fileText);
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            File.WriteAllText(s_fileNameTest2, fileText);
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFileException<ArgumentException>("Loc426a", fs, "CFF_mapname426a", 6000, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentException>("Loc426a", fs, "CFF_mapname426a" + s_uniquifier, 6000, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
             }
 
             // negative
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc427", fs, "CFF_mapname427", -1, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc427", fs, "CFF_mapname427" + s_uniquifier, -1, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // negative
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc428", fs, "CFF_mapname428", -4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc428", fs, "CFF_mapname428" + s_uniquifier, -4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // Int64.MaxValue - cannot exceed local address space
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFileException<IOException>("Loc429", fs, "CFF_mapname429", Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);  // valid but too large
+                VerifyCreateFromFileException<IOException>("Loc429", fs, "CFF_mapname429" + s_uniquifier, Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);  // valid but too large
             }
 
             // [] access
 
             // Write is disallowed
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.ReadWrite))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.ReadWrite))
             {
-                VerifyCreateFromFileException<ArgumentException>("Loc430", fs, "CFF_mapname430", 0, MemoryMappedFileAccess.Write, HandleInheritability.None, false);
+                VerifyCreateFromFileException<ArgumentException>("Loc430", fs, "CFF_mapname430" + s_uniquifier, 0, MemoryMappedFileAccess.Write, HandleInheritability.None, false);
             }
 
             // valid access (filestream is ReadWrite)
@@ -486,9 +492,9 @@ public class CreateFromFile : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.ReadWrite))
+                using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    VerifyCreateFromFile("Loc431_" + access, fs, "CFF_mapname431_" + access, 0, access, HandleInheritability.None, false);
+                    VerifyCreateFromFile("Loc431_" + access, fs, "CFF_mapname431_" + access + s_uniquifier, 0, access, HandleInheritability.None, false);
                 }
             }
 
@@ -499,9 +505,9 @@ public class CreateFromFile : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.ReadWrite))
+                using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    VerifyCreateFromFileException<UnauthorizedAccessException>("Loc432_" + access, fs, "CFF_mapname432_" + access, 0, access, HandleInheritability.None, false);
+                    VerifyCreateFromFileException<UnauthorizedAccessException>("Loc432_" + access, fs, "CFF_mapname432_" + access + s_uniquifier, 0, access, HandleInheritability.None, false);
                 }
             }
 
@@ -512,9 +518,9 @@ public class CreateFromFile : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.Read))
                 {
-                    VerifyCreateFromFile("Loc433_" + access, fs, "CFF_mapname433_" + access, 0, access, HandleInheritability.None, false);
+                    VerifyCreateFromFile("Loc433_" + access, fs, "CFF_mapname433_" + access + s_uniquifier, 0, access, HandleInheritability.None, false);
                 }
             }
 
@@ -526,9 +532,9 @@ public class CreateFromFile : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.Read))
                 {
-                    VerifyCreateFromFileException<UnauthorizedAccessException>("Loc434_" + access, fs, "CFF_mapname434_" + access, 0, access, HandleInheritability.None, false);
+                    VerifyCreateFromFileException<UnauthorizedAccessException>("Loc434_" + access, fs, "CFF_mapname434_" + access + s_uniquifier, 0, access, HandleInheritability.None, false);
                 }
             }
 
@@ -542,9 +548,9 @@ public class CreateFromFile : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.Write))
+                using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.Write))
                 {
-                    VerifyCreateFromFileException<UnauthorizedAccessException>("Loc435_" + access, fs, "CFF_mapname435_" + access, 0, access, HandleInheritability.None, false);
+                    VerifyCreateFromFileException<UnauthorizedAccessException>("Loc435_" + access, fs, "CFF_mapname435_" + access + s_uniquifier, 0, access, HandleInheritability.None, false);
                 }
             }
 
@@ -555,48 +561,48 @@ public class CreateFromFile : MMFTestBase
             };
             foreach (MemoryMappedFileAccess access in accessList)
             {
-                using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open, FileAccess.ReadWrite))
+                using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc436_" + ((int)access), fs, "CFF_mapname436_" + ((int)access), 0, access, HandleInheritability.None, false);
+                    VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc436_" + ((int)access), fs, "CFF_mapname436_" + ((int)access) + s_uniquifier, 0, access, HandleInheritability.None, false);
                 }
             }
 
             // [] inheritability
 
             // None
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc461", fs, "CFF_mapname461", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc461", fs, "CFF_mapname461" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // Inheritable
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc462", fs, "CFF_mapname462", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false);
+                VerifyCreateFromFile("Loc462", fs, "CFF_mapname462" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false);
             }
 
             // invalid
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc463", fs, "CFF_mapname463", 0, MemoryMappedFileAccess.ReadWrite, (HandleInheritability)(-1), false);
+                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc463", fs, "CFF_mapname463" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, (HandleInheritability)(-1), false);
             }
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc464", fs, "CFF_mapname464", 0, MemoryMappedFileAccess.ReadWrite, (HandleInheritability)(2), false);
+                VerifyCreateFromFileException<ArgumentOutOfRangeException>("Loc464", fs, "CFF_mapname464" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, (HandleInheritability)(2), false);
             }
 
             // [] leaveOpen
 
             // false
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc471", fs, "CFF_mapname471", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                VerifyCreateFromFile("Loc471", fs, "CFF_mapname471" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
             // true
-            using (FileStream fs = new FileStream("CreateFromFile_test2.txt", FileMode.Open))
+            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
             {
-                VerifyCreateFromFile("Loc472", fs, "CFF_mapname472", 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
+                VerifyCreateFromFile("Loc472", fs, "CFF_mapname472" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
             }
 
             /// END TEST CASES

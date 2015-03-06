@@ -15,7 +15,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="RegistryKey\RegistryKeyTypes.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str.cs" />
     <Compile Include="RegistryKey\RegistryKey_CreateSubKey_str_rkpc.cs" />
@@ -45,6 +44,7 @@
     <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

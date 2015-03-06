@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -65,9 +65,9 @@ namespace System.Linq.Parallel
             IEqualityComparer<THashKey> keyComparer,
             CancellationToken cancellationToken)
         {
-            Contract.Assert(leftSource != null);
-            Contract.Assert(rightSource != null);
-            Contract.Assert(singleResultSelector != null || groupResultSelector != null);
+            Debug.Assert(leftSource != null);
+            Debug.Assert(rightSource != null);
+            Debug.Assert(singleResultSelector != null || groupResultSelector != null);
 
             _leftSource = leftSource;
             _rightSource = rightSource;
@@ -91,9 +91,9 @@ namespace System.Linq.Parallel
 
         internal override bool MoveNext(ref TOutput currentElement, ref TLeftKey currentKey)
         {
-            Contract.Assert(_singleResultSelector != null || _groupResultSelector != null, "expected a compiled result selector");
-            Contract.Assert(_leftSource != null);
-            Contract.Assert(_rightSource != null);
+            Debug.Assert(_singleResultSelector != null || _groupResultSelector != null, "expected a compiled result selector");
+            Debug.Assert(_leftSource != null);
+            Debug.Assert(_rightSource != null);
 
             // BUILD phase: If we haven't built the hash-table yet, create that first.
             Mutables mutables = _mutables;
@@ -200,7 +200,7 @@ namespace System.Linq.Parallel
                             if (_singleResultSelector != null)
                             {
                                 mutables._currentRightMatches = (ListChunk<TRightInput>)matchValue.Second;
-                                Contract.Assert(mutables._currentRightMatches == null || mutables._currentRightMatches.Count > 0,
+                                Debug.Assert(mutables._currentRightMatches == null || mutables._currentRightMatches.Count > 0,
                                                 "we were expecting that the list would be either null or empty");
                                 mutables._currentRightMatchesIndex = 0;
 
@@ -242,9 +242,9 @@ namespace System.Linq.Parallel
             }
 
             // Produce the next element and increment our index within the matches.
-            Contract.Assert(_singleResultSelector != null);
-            Contract.Assert(mutables._currentRightMatches != null);
-            Contract.Assert(0 <= mutables._currentRightMatchesIndex && mutables._currentRightMatchesIndex < mutables._currentRightMatches.Count);
+            Debug.Assert(_singleResultSelector != null);
+            Debug.Assert(mutables._currentRightMatches != null);
+            Debug.Assert(0 <= mutables._currentRightMatchesIndex && mutables._currentRightMatchesIndex < mutables._currentRightMatches.Count);
 
             currentElement = _singleResultSelector(
                 mutables._currentLeft, mutables._currentRightMatches._chunk[mutables._currentRightMatchesIndex]);
@@ -257,7 +257,7 @@ namespace System.Linq.Parallel
 
         protected override void Dispose(bool disposing)
         {
-            Contract.Assert(_leftSource != null && _rightSource != null);
+            Debug.Assert(_leftSource != null && _rightSource != null);
             _leftSource.Dispose();
             _rightSource.Dispose();
         }

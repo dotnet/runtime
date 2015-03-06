@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -25,7 +26,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     [EventSource(
         Name = "System.Threading.Tasks.Dataflow.DataflowEventSource",
         Guid = "16F53577-E41D-43D4-B47E-C17025BF4025",
-        LocalizationResources = "System.Threading.Tasks.Dataflow.Resources")]
+        LocalizationResources = "System.SR")]
     internal sealed class DataflowEtwProvider : EventSource
     {
         /// <summary>
@@ -150,7 +151,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 Task completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
                 bool blockIsCompleted = completionTask != null && completionTask.IsCompleted;
-                Contract.Assert(blockIsCompleted, "Block must be completed for this event to be valid.");
+                Debug.Assert(blockIsCompleted, "Block must be completed for this event to be valid.");
                 if (blockIsCompleted)
                 {
                     var reason = (BlockCompletionReason)completionTask.Status;
@@ -174,7 +175,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             RanToCompletion = (int)TaskStatus.RanToCompletion,
             /// <summary>The block completed due to an error.</summary>
             Faulted = (int)TaskStatus.Faulted,
-            /// <summary>The block completed due to cancelation.</summary>
+            /// <summary>The block completed due to cancellation.</summary>
             Canceled = (int)TaskStatus.Canceled
         }
 

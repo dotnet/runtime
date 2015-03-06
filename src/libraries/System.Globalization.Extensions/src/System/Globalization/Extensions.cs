@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
@@ -44,7 +46,7 @@ namespace System.Globalization
 
         internal CultureAwareComparer(CompareInfo compareInfo, CompareOptions options)
         {
-            Contract.Assert((options & ValidCompareMaskOffFlags) == 0);
+            Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
             _compareInfo = compareInfo;
             _options = options;
         }

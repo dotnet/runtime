@@ -1,5 +1,10 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
+  <PropertyGroup>
+    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
+  </PropertyGroup>
+  
+  <Import Project="..\dir.targets" />
+  
   <PropertyGroup Condition=" '$(TargetFrameworkIdentifier)' == '' 
                          and '$(TargetFrameworkVersion)'    == '' 
                          and '$(TargetFrameworkProfile)'    == '' ">
@@ -8,6 +13,22 @@
 
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == ''">
      <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
+  </PropertyGroup>
+
+  <!--
+    Limit the assembly resolution to just explicit locations.
+    Don't search anything machine-wide or build-order dependent.
+   -->
+  <PropertyGroup>
+    <AssemblySearchPaths>{HintPathFromItem};{RawFileName}</AssemblySearchPaths>
+  </PropertyGroup>
+
+  <!--
+    When targeting an explicit platform other than the default,
+    also allow the target framework directory.
+  -->
+  <PropertyGroup Condition="'$(TargetingDefaultPlatform)' != 'true'">
+    <AssemblySearchPaths>$(AssemblySearchPaths);{TargetFrameworkDirectory}</AssemblySearchPaths>
   </PropertyGroup>
 
   <!-- Setup the default target for projects not already explicitly targeting another platform -->
@@ -19,19 +40,8 @@
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
     <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
-
-    <AssemblySearchPaths>
-      {HintPathFromItem};
-      $(OutDir);
-      {RawFileName};
-    </AssemblySearchPaths>
-    <!-- For our projects we don't want to resolve from the usual paths for now only hint paths and output directory 
-      {CandidateAssemblyFiles};
-      $(ReferencePath);
-      {TargetFrameworkDirectory};
-      {Registry:$(FrameworkRegistryBase),$(TargetFrameworkVersion),$(AssemblyFoldersSuffix)$(AssemblyFoldersExConditions)};
-    -->
   </PropertyGroup>
+
 
   <!-- Need to add references to the mscorlib design-time facade for some old-style portable dependencies like xunit -->
   <Target Name="AddDesignTimeFacadeReferences"
@@ -41,7 +51,8 @@
   >
     <ItemGroup>
       <PossibleTargetFrameworks Include="$(_TargetFrameworkDirectories)" />
-      <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" />
+      <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" 
+                     Condition="'%(PossibleTargetFrameworks.Identity)' != '' and Exists('%(PossibleTargetFrameworks.Identity)mscorlib.dll')" />
     </ItemGroup>
   </Target>
 
@@ -51,20 +62,77 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"
           Condition="'$(TargetFrameworkIdentifier)' != '.NETPortable'" />
 
+  <!-- Restore packages -->
+  <PropertyGroup>
+    <PackagesConfig Condition="Exists('$(MSBuildProjectDirectory)\packages.config')">$(MSBuildProjectDirectory)\packages.config</PackagesConfig>
+    <RestorePackages Condition="'$(RestorePackages)' == '' and Exists('$(PackagesConfig)')">true</RestorePackages>
+    <RestorePackagesSemaphore>$(PackagesDir)$(MSBuildProjectFile)-packages.config</RestorePackagesSemaphore>
+  </PropertyGroup>
+
+  <Target Name="RestorePackages" 
+          BeforeTargets="ResolveNuGetPackages"
+          Inputs="$(PackagesConfig)"
+          Outputs="$(RestorePackagesSemaphore)"
+          Condition="'$(RestorePackages)' == 'true'">
+    <Exec Command="$(NugetRestoreCommand) &quot;$(PackagesConfig)&quot;" StandardOutputImportance="Low" />
+    <Copy SourceFiles="$(PackagesConfig)" DestinationFiles="$(RestorePackagesSemaphore)" ContinueOnError="True" SkipUnchangedFiles="True" />
+  </Target>
+
   <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
 
-  <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
-  
-  <Import Project="$(ToolsDir)publishtest.targets" Condition="Exists('$(ToolsDir)publishtest.targets')" />
-  
+  <!-- Version assemblies -->
   <PropertyGroup>
-    <IsTestProject Condition="'$(IsTestProject)'=='' And $([System.String]::new('$(MSBuildProjectName)').EndsWith('.Tests'))">True</IsTestProject>
+    <!--
+      For now to avoid conflicts with files coming from packages default assembly version to 999.999.999.999
+      until we correctly add the AssemblyVersion property to each of the projects.
+    -->
+    <AssemblyVersion Condition="'$(AssemblyVersion)'==''">999.999.999.999</AssemblyVersion>
+    <GenerateAssemblyInfo Condition="'$(GenerateAssemblyInfo)'==''">true</GenerateAssemblyInfo>
+    <CLSCompliant Condition="'$(CLSCompliant)'==''">true</CLSCompliant>
+  </PropertyGroup>
+
+  <Import Project="$(ToolsDir)versioning.targets" Condition="Exists('$(ToolsDir)versioning.targets')" />
+
+  <Import Project="$(ToolsDir)publishtest.targets" Condition="Exists('$(ToolsDir)publishtest.targets')" />
+
+  <PropertyGroup>
+    <IsTestProject Condition="'$(IsTestProject)'=='' And $(MSBuildProjectName.EndsWith('.Tests'))">True</IsTestProject>
     <RunTestsForProject Condition="'$(RunTestsForProject)'=='' and '$(IsTestProject)'=='True'">True</RunTestsForProject>
     <RunTestsForProject Condition="'$(SkipTests)'=='True'">False</RunTestsForProject>
-    
-    <!-- Don't run unit tests as post-build in VS, use F5 on test project instead (see below). -->
-    <RunTestsForProject Condition="'$(BuildingInsideVisualStudio)' == 'True'">False</RunTestsForProject>
+
+    <CLSCompliant Condition="'$(IsTestProject)'=='true'">false</CLSCompliant>
   </PropertyGroup>
+
+  <!-- VS does not evaluate the conditions when loading the projects and so we add this via a target file and import it with a condition -->
+  <!--
+    Disable temporarily until we can get this working in both TFS and Github
+  <Import Project="$(ToolsDir)resources.targets" />
+  -->
+
+  <PropertyGroup>
+    <ResourcesSourceOutputDirectory Condition="'$(ResourcesSourceOutputDirectory)' == ''">$(MSBuildProjectDirectory)\Resources</ResourcesSourceOutputDirectory>
+    <StringResourcesPath Condition="'$(StringResourcesPath)'=='' And Exists('$(ResourcesSourceOutputDirectory)\Strings.resx')">$(ResourcesSourceOutputDirectory)\Strings.resx</StringResourcesPath>
+    <ResourceSRPath Condition="'$(ResourceSRPath)'=='' And '$(MSBuildProjectExtension)' == '.csproj'">$(ResourcesSourceOutputDirectory)\SR.cs</ResourceSRPath>
+  </PropertyGroup>
+
+  <Import Project="$(ToolsDir)ResourcesIncludes.targets" Condition="Exists('$(ToolsDir)ResourcesIncludes.targets') and Exists('$(StringResourcesPath)') And Exists('$(ResourceSRPath)') And '$(SkipResourcesIncludesTarget)'==''"/>
+
+  <!-- sign.targets relies on the value of IsTestProject so be sure to import it after it's defined -->
+  <Import Project="$(ToolsDir)sign.targets" Condition="Exists('$(ToolsDir)sign.targets')" />
+
+  <PropertyGroup>
+    <TestRuntimePackageConfig>$(ToolsDir)test-runtime\packages.config</TestRuntimePackageConfig>
+    <TestRuntimePackageSemaphore>$(PackagesDir)Test-Runtime-packages.config</TestRuntimePackageSemaphore>
+  </PropertyGroup>
+
+  <Target Name="RestoreTestRuntimePackage" 
+          BeforeTargets="ResolveNuGetPackages"
+          Inputs="$(TestRuntimePackageConfig)"
+          Outputs="$(TestRuntimePackageSemaphore)"
+          Condition="'$(IsTestProject)' == 'true'">
+    <Exec Command="$(NugetRestoreCommand) &quot;$(TestRuntimePackageConfig)&quot;" StandardOutputImportance="Low" />
+    <Copy SourceFiles="$(TestRuntimePackageConfig)" DestinationFiles="$(TestRuntimePackageSemaphore)" ContinueOnError="true" />
+  </Target>
 
   <!-- General xunit options -->
   <PropertyGroup>
@@ -77,25 +145,25 @@
   
   <!-- Directory specific coverage options -->
   <PropertyGroup>
-    <CoverageEnabledForDir>$(_CoverageEnabled)</CoverageEnabledForDir>
-    <CoverageEnabledForDir Condition="'$(CoverageEnabledForProject)' == 'false'">false</CoverageEnabledForDir>
+    <CoverageEnabledForProject Condition="'$(CoverageEnabledForProject)'=='' and '$(IsTestProject)'=='true'">$(_CoverageEnabled)</CoverageEnabledForProject>
   </PropertyGroup>
 
   <!-- xUnit command line without coverage enabled -->
-  <PropertyGroup Condition="!$(CoverageEnabledForDir)">
+  <PropertyGroup>
     <XunitHost>corerun.exe</XunitHost>
     <TestHost>$(XunitHost)</TestHost>
     <TestCommandLine>$(XunitCommandLine) $(XunitOptions)</TestCommandLine>
   </PropertyGroup>
   
   <!-- xUnit command line with coverage enabled -->
-  <PropertyGroup Condition="$(CoverageEnabledForDir)">
+  <PropertyGroup Condition="'$(CoverageEnabledForProject)'=='true'">
     <CoverageHost>$(CoverageToolPath)</CoverageHost>
-    <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters</CoverageOptions>
-    <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user  -target:corerun.exe -output:$(CoverageReportDir)$(TargetFileName).coverage.xml</CoverageCommandLine>
+    <CoverageOutputFilePath>$(CoverageReportDir)$(MSBuildProjectName).coverage.xml</CoverageOutputFilePath>
+    <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1</CoverageOptions>
+    <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user -target:$(XunitHost) -output:$(CoverageOutputFilePath)</CoverageCommandLine>
     <TestHost>$(CoverageHost)</TestHost>
     <XunitOptions>$(XunitOptions) -parallel none</XunitOptions>
-    <TestCommandLine>$(CoverageCommandLine) -targetargs:"$(XunitCommandLine) $(XunitOptions)"</TestCommandLine>
+    <TestCommandLine>$(CoverageCommandLine) -targetargs:"$(TestCommandLine)"</TestCommandLine>
   </PropertyGroup>
   
   <!-- In VS (2015 Preview or later currently required): Debug to run unit tests on CoreCLR. -->
@@ -108,13 +176,13 @@
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
 
-  <!-- On command line: run unit tests on CoreCLR as post-build step. -->
+  <!-- On command line run unit tests on CoreCLR after the Test target -->
   <Target Name="RunTestsForProject"
-          AfterTargets="PrepareForRun"
-          Condition="'$(RunTestsForProject)'=='True'">
+          AfterTargets="Test"
+          Condition="'$(RunTestsForProject)'=='true'">
 
-    <MakeDir Condition="$(CoverageEnabledForDir)" Directories="$(CoverageReportDir)" />
-          
+    <MakeDir Condition="'$(CoverageEnabledForProject)'=='true'" Directories="$(CoverageReportDir)" />
+
     <Exec Command="$(TestHost) $(TestCommandLine)"
           WorkingDirectory="$(TestPath)%(TestTargetFramework.Folder)"
           ContinueOnError="True">
@@ -123,4 +191,16 @@
 
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="One or more tests failed while running tests from '$(MSBuildProjectName)' please check log for details!" />
   </Target>
+
+  <!-- Generate coverage reports for individual projects. -->
+  <Target Name="GenerateIndividualCoverageReport"
+          AfterTargets="RunTestsForProject"
+          Inputs="$(CoverageOutputFilePath)"
+          Outputs="$(CoverageReportDir)index.htm"
+          Condition="'$(BuildAllProjects)'!='true' and '$(CoverageEnabledForProject)'=='true'">
+
+    <Exec Command="$(CoverageReportGeneratorCommandLine) -reports:$(CoverageOutputFilePath)" 
+          ContinueOnError="ErrorAndContinue" />
+  </Target>
+
 </Project>

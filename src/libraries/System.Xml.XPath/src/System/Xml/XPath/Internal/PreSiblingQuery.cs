@@ -14,7 +14,7 @@ namespace MS.Internal.Xml.XPath
     // -- Add first node of its parent for each input node.
     // -- Sort these pares by first nodes.
     // - Advance algorithm will look like:
-    // -- For each row in InputArays we will output first node + all its following nodes which are < sentinel
+    // -- For each row in InputArrays we will output first node + all its following nodes which are < sentinel
     // -- Before outputting each node in row #I we will check that it is < first node in row #I+1
     // --- if true we actually output it
     // --- if false, we hold with row #I and apply this algorithm starting for row #I+1
@@ -73,7 +73,7 @@ namespace MS.Internal.Xml.XPath
                             }
                             if (!prev.MoveToNext())
                             {
-                                Debug.Assert(false, "We managed to miss sentinel node (input)");
+                                Debug.Fail("We managed to miss sentinel node (input)");
                                 break;
                             }
                         }

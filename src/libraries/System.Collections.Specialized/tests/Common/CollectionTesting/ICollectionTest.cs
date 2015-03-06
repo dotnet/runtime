@@ -104,7 +104,7 @@ namespace TestSupport.Collections
 
         /// <summary>
         /// Specifies the types that are valid with CopyTo(Array).
-        /// By defaut this is a Type array containing only typeof(Object).
+        /// By default this is a Type array containing only typeof(Object).
         /// </summary>
         /// <value>Specifies the types that are valid with CopyTo(Array)</value>
         public Type[] ValidArrayTypes
@@ -124,7 +124,7 @@ namespace TestSupport.Collections
 
         /// <summary>
         /// Specifies the types that are not valid with CopyTo(Array).
-        /// By defaut this is a Type array containing only
+        /// By default this is a Type array containing only
         /// typeof(MyInvalidReferenceType) and typeof(MyInvalidValueType).
         /// </summary>
         /// <value>Specifies the types that are invalid with CopyTo(Array)</value>
@@ -337,7 +337,7 @@ namespace TestSupport.Collections
                     tempItemObjectArray = (Object[])itemObjectArray.Clone();
 
                     retValue &= Test.Eval(Test.VerifyException<ArgumentException>(delegate () { _collection.CopyTo(itemObjectArray, _collection.Count); }),
-                        "Err Exception not thow with index=array.Length");
+                        "Err Exception not throw with index=array.Length");
 
                     retValue &= Test.Eval(VerifyItems(itemObjectArray, tempItemObjectArray, VerificationLevel.Extensive),
                         "Err_" + testDescription + " verifying item array FAILED");
@@ -357,10 +357,10 @@ namespace TestSupport.Collections
                         "Err_" + testDescription + " verifying item array FAILED");
                 }
 
-                // [] Verify CopyTo with array is multidimetional
-                testDescription = "Verify CopyTo with array is multidimetional";
+                // [] Verify CopyTo with array is multidimensional
+                testDescription = "Verify CopyTo with array is multidimensional";
                 retValue &= Test.Eval(Test.VerifyException<ArgumentException>(delegate () { _collection.CopyTo(new Object[1, _collection.Count], 0); }),
-                    "Err Exception not thrown with multidimentional array");
+                    "Err Exception not thrown with multidimensional array");
 
                 if (0 != _items.Length)
                 {
@@ -582,7 +582,7 @@ namespace TestSupport.Collections
                     int itemsIndex = i + index;
 
                     retValue &= Test.Eval(_comparer.Equals(items[itemsIndex], actualItems[i]),
-                        "Expected item and actualy item from copied array differ");
+                        "Expected item and actual item from copied array differ");
                 }
             }
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Text;
 using System.Threading;
@@ -55,7 +56,7 @@ namespace System.Text
             {
                 CodePageHeader* pCodePage = (CodePageHeader*)pBytes;
                 // Should be loading OUR code page
-                Contract.Assert(pCodePage->CodePage == dataTableCodePage,
+                Debug.Assert(pCodePage->CodePage == dataTableCodePage,
                     "[SBCSCodePageEncoding.LoadManagedCodePage]Expected to load data table code page");
 
                 // Make sure we're really a 1 byte code page
@@ -160,7 +161,7 @@ namespace System.Text
                         ushort byteTemp;
                         while ((byteTemp = *((ushort*)pData)) != 0)
                         {
-                            Contract.Assert(arrayTemp[byteTemp] == UNKNOWN_CHAR, String.Format(CultureInfo.InvariantCulture,
+                            Debug.Assert(arrayTemp[byteTemp] == UNKNOWN_CHAR, String.Format(CultureInfo.InvariantCulture,
                                 "[SBCSCodePageEncoding::ReadBestFitTable] Expected unallocated byte (not 0x{2:X2}) for best fit byte at 0x{0:X2} for code page {1}",
                                 byteTemp, CodePage, (int)arrayTemp[byteTemp]));
                             pData += 2;
@@ -261,7 +262,7 @@ namespace System.Text
                                     arrayTemp[iBestFitCount++] = _mapBytesToUnicode[input];
 
                                     // This won't work if it won't round trip.
-                                    Contract.Assert(arrayTemp[iBestFitCount - 1] != (char)0,
+                                    Debug.Assert(arrayTemp[iBestFitCount - 1] != (char)0,
                                         String.Format(CultureInfo.InvariantCulture,
                                         "[SBCSCodePageEncoding.ReadBestFitTable] No valid Unicode value {0:X4} for round trip bytes {1:X4}, encoding {2}",
                                         (int)_mapBytesToUnicode[input], (int)input, CodePage));
@@ -284,11 +285,11 @@ namespace System.Text
         public override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(count >= 0, "[SBCSCodePageEncoding.GetByteCount]count is negative");
-            Contract.Assert(chars != null, "[SBCSCodePageEncoding.GetByteCount]chars is null");
+            Debug.Assert(count >= 0, "[SBCSCodePageEncoding.GetByteCount]count is negative");
+            Debug.Assert(chars != null, "[SBCSCodePageEncoding.GetByteCount]chars is null");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(EncoderFallback != null, "[SBCSCodePageEncoding.GetByteCount]Attempting to use null fallback");
+            Debug.Assert(EncoderFallback != null, "[SBCSCodePageEncoding.GetByteCount]Attempting to use null fallback");
 
             CheckMemorySection();
 
@@ -300,12 +301,12 @@ namespace System.Text
             if (encoder != null)
             {
                 charLeftOver = encoder.charLeftOver;
-                Contract.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[SBCSCodePageEncoding.GetByteCount]leftover character should be high surrogate");
                 fallback = encoder.Fallback as EncoderReplacementFallback;
 
                 // Verify that we have no fallbackbuffer, actually for SBCS this is always empty, so just assert
-                Contract.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[SBCSCodePageEncoding.GetByteCount]Expected empty fallback buffer at start");
             }
@@ -319,7 +320,7 @@ namespace System.Text
             {
                 // Replacement fallback encodes surrogate pairs as two ?? (or two whatever), so return size is always
                 // same as input size.
-                // Note that no existing SBCS code pages map code points to supplimentary characters, so this is easy.
+                // Note that no existing SBCS code pages map code points to supplementary characters, so this is easy.
 
                 // We could however have 1 extra byte if the last call had an encoder and a funky fallback and
                 // if we don't use the funky fallback this time.
@@ -346,7 +347,7 @@ namespace System.Text
             {
                 // Since leftover char was a surrogate, it'll have to be fallen back.
                 // Get fallback
-                Contract.Assert(encoder != null, "[SBCSCodePageEncoding.GetByteCount]Expect to have encoder if we have a charLeftOver");
+                Debug.Assert(encoder != null, "[SBCSCodePageEncoding.GetByteCount]Expect to have encoder if we have a charLeftOver");
                 fallbackBuffer = encoder.FallbackBuffer;
                 fallbackHelper = new EncoderFallbackBufferHelper(fallbackBuffer);
                 fallbackHelper.InternalInitialize(chars, charEnd, encoder, false);
@@ -399,7 +400,7 @@ namespace System.Text
                 byteCount++;
             }
 
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[SBCSEncoding.GetByteCount]Expected Empty fallback buffer at end");
 
             return (int)byteCount;
@@ -410,13 +411,13 @@ namespace System.Text
                                                 byte* bytes, int byteCount, EncoderNLS encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(bytes != null, "[SBCSCodePageEncoding.GetBytes]bytes is null");
-            Contract.Assert(byteCount >= 0, "[SBCSCodePageEncoding.GetBytes]byteCount is negative");
-            Contract.Assert(chars != null, "[SBCSCodePageEncoding.GetBytes]chars is null");
-            Contract.Assert(charCount >= 0, "[SBCSCodePageEncoding.GetBytes]charCount is negative");
+            Debug.Assert(bytes != null, "[SBCSCodePageEncoding.GetBytes]bytes is null");
+            Debug.Assert(byteCount >= 0, "[SBCSCodePageEncoding.GetBytes]byteCount is negative");
+            Debug.Assert(chars != null, "[SBCSCodePageEncoding.GetBytes]chars is null");
+            Debug.Assert(charCount >= 0, "[SBCSCodePageEncoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Contract.Assert(EncoderFallback != null, "[SBCSCodePageEncoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(EncoderFallback != null, "[SBCSCodePageEncoding.GetBytes]Attempting to use null encoder fallback");
 
             CheckMemorySection();
 
@@ -428,12 +429,12 @@ namespace System.Text
             if (encoder != null)
             {
                 charLeftOver = encoder.charLeftOver;
-                Contract.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
+                Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[SBCSCodePageEncoding.GetBytes]leftover character should be high surrogate");
                 fallback = encoder.Fallback as EncoderReplacementFallback;
 
                 // Verify that we have no fallbackbuffer, for SBCS its always empty, so just assert
-                Contract.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[SBCSCodePageEncoding.GetBytes]Expected empty fallback buffer at start");
                 //                if (encoder.m_throwOnOverflow && encoder.InternalHasFallbackBuffer &&
@@ -466,7 +467,7 @@ namespace System.Text
 
                     // If we had a leftover character we will have to add a ?  (This happens if they had a funky
                     // fallback last time, but not this time. We can't spit any out though,
-                    // because with fallback encoder each surrogate is treated as a seperate code point)
+                    // because with fallback encoder each surrogate is treated as a separate code point)
                     if (charLeftOver > 0)
                     {
                         // Have to have room
@@ -532,7 +533,7 @@ namespace System.Text
             {
                 // Since left over char was a surrogate, it'll have to be fallen back.
                 // Get Fallback
-                Contract.Assert(encoder != null, "[SBCSCodePageEncoding.GetBytes]Expect to have encoder if we have a charLeftOver");
+                Debug.Assert(encoder != null, "[SBCSCodePageEncoding.GetBytes]Expect to have encoder if we have a charLeftOver");
                 fallbackBuffer = encoder.FallbackBuffer;
                 fallbackHelper = new EncoderFallbackBufferHelper(fallbackBuffer);
 
@@ -591,7 +592,7 @@ namespace System.Text
                     if (fallbackBuffer.Remaining > byteEnd - bytes)
                     {
                         // Didn't use this char, reset it
-                        Contract.Assert(chars > charStart, "[SBCSCodePageEncoding.GetBytes]Expected chars to have advanced (fallback)");
+                        Debug.Assert(chars > charStart, "[SBCSCodePageEncoding.GetBytes]Expected chars to have advanced (fallback)");
                         chars--;
                         fallbackHelper.InternalReset();
 
@@ -607,10 +608,10 @@ namespace System.Text
                 if (bytes >= byteEnd)
                 {
                     // didn't use this char, we'll throw or use buffer
-                    Contract.Assert(fallbackBuffer == null || fallbackHelper.bFallingBack == false, "[SBCSCodePageEncoding.GetBytes]Expected to NOT be falling back");
+                    Debug.Assert(fallbackBuffer == null || fallbackHelper.bFallingBack == false, "[SBCSCodePageEncoding.GetBytes]Expected to NOT be falling back");
                     if (fallbackBuffer == null || fallbackHelper.bFallingBack == false)
                     {
-                        Contract.Assert(chars > charStart, "[SBCSCodePageEncoding.GetBytes]Expected chars to have advanced (normal)");
+                        Debug.Assert(chars > charStart, "[SBCSCodePageEncoding.GetBytes]Expected chars to have advanced (normal)");
                         chars--;                                        // don't use last char
                     }
                     ThrowBytesOverflow(encoder, chars == charStart);    // throw ?
@@ -635,7 +636,7 @@ namespace System.Text
             }
 
             // Expect Empty fallback buffer for SBCS
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0, "[SBCSEncoding.GetBytes]Expected Empty fallback buffer at end");
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0, "[SBCSEncoding.GetBytes]Expected Empty fallback buffer at end");
 
             return (int)(bytes - byteStart);
         }
@@ -645,8 +646,8 @@ namespace System.Text
         public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS decoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
-            Contract.Assert(bytes != null, "[SBCSCodePageEncoding.GetCharCount]bytes is null");
-            Contract.Assert(count >= 0, "[SBCSCodePageEncoding.GetCharCount]byteCount is negative");
+            Debug.Assert(bytes != null, "[SBCSCodePageEncoding.GetCharCount]bytes is null");
+            Debug.Assert(count >= 0, "[SBCSCodePageEncoding.GetCharCount]byteCount is negative");
 
             CheckMemorySection();
 
@@ -665,7 +666,7 @@ namespace System.Text
             {
                 fallback = decoder.Fallback as DecoderReplacementFallback;
                 bUseBestFit = decoder.Fallback is InternalDecoderBestFitFallback;
-                Contract.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
                     decoder.FallbackBuffer.Remaining == 0,
                     "[SBCSCodePageEncoding.GetChars]Expected empty fallback buffer at start");
             }
@@ -722,7 +723,7 @@ namespace System.Text
             }
 
             // Fallback buffer must be empty
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[SBCSEncoding.GetCharCount]Expected Empty fallback buffer at end");
 
             // Converted sequence is same length as input
@@ -734,10 +735,10 @@ namespace System.Text
                                                 char* chars, int charCount, DecoderNLS decoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Contract.Assert(bytes != null, "[SBCSCodePageEncoding.GetChars]bytes is null");
-            Contract.Assert(byteCount >= 0, "[SBCSCodePageEncoding.GetChars]byteCount is negative");
-            Contract.Assert(chars != null, "[SBCSCodePageEncoding.GetChars]chars is null");
-            Contract.Assert(charCount >= 0, "[SBCSCodePageEncoding.GetChars]charCount is negative");
+            Debug.Assert(bytes != null, "[SBCSCodePageEncoding.GetChars]bytes is null");
+            Debug.Assert(byteCount >= 0, "[SBCSCodePageEncoding.GetChars]byteCount is negative");
+            Debug.Assert(chars != null, "[SBCSCodePageEncoding.GetChars]chars is null");
+            Debug.Assert(charCount >= 0, "[SBCSCodePageEncoding.GetChars]charCount is negative");
 
             CheckMemorySection();
 
@@ -761,7 +762,7 @@ namespace System.Text
             {
                 fallback = decoder.Fallback as DecoderReplacementFallback;
                 bUseBestFit = decoder.Fallback is InternalDecoderBestFitFallback;
-                Contract.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!decoder.m_throwOnOverflow || !decoder.InternalHasFallbackBuffer ||
                     decoder.FallbackBuffer.Remaining == 0,
                     "[SBCSCodePageEncoding.GetChars]Expected empty fallback buffer at start");
             }
@@ -771,7 +772,7 @@ namespace System.Text
                 // Try it the fast way
                 char replacementChar;
                 if (fallback == null)
-                    replacementChar = '?';  // Best fit alwasy has ? for fallback for SBCS
+                    replacementChar = '?';  // Best fit always has ? for fallback for SBCS
                 else
                     replacementChar = fallback.DefaultString[0];
 
@@ -846,7 +847,7 @@ namespace System.Text
                     }
 
                     // Use fallback buffer
-                    Contract.Assert(bytes > byteStart,
+                    Debug.Assert(bytes > byteStart,
                         "[SBCSCodePageEncoding.GetChars]Expected bytes to have advanced already (unknown byte)");
                     byteBuffer[0] = *(bytes - 1);
                     // Fallback adds fallback to chars, but doesn't increment chars unless the whole thing fits.
@@ -864,7 +865,7 @@ namespace System.Text
                     // Make sure we have buffer space
                     if (chars >= charEnd)
                     {
-                        Contract.Assert(bytes > byteStart,
+                        Debug.Assert(bytes > byteStart,
                             "[SBCSCodePageEncoding.GetChars]Expected bytes to have advanced already (known byte)");
                         bytes--;                                            // unused byte
                         ThrowCharsOverflow(decoder, bytes == byteStart);    // throw?
@@ -881,7 +882,7 @@ namespace System.Text
                 decoder.m_bytesUsed = (int)(bytes - byteStart);
 
             // Expect Empty fallback buffer for GetChars
-            Contract.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
+            Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
                 "[SBCSEncoding.GetChars]Expected Empty fallback buffer at end");
 
             return (int)(chars - charStart);

@@ -9,6 +9,7 @@
     <AssemblyName>Assembly1</AssemblyName>
     <NuGetPackageImportStamp>62805582</NuGetPackageImportStamp>
     <ProjectGuid>{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}</ProjectGuid>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -26,11 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.Assembly1.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Runtime">
-      <HintPath>$(PackagesDir)\System.Runtime.4.0.20-beta-22512\lib\portable-wpa80+win80+net45+aspnetcore50\System.Runtime.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -214,7 +214,7 @@ namespace Test
             {
                 if (x != last - 1)
                 {
-                    Assert.True(false, string.Format(method + "  > FAILED. Elems not in decreasing order: this={0}, last={1}", x, last));
+                    Assert.True(false, string.Format(method + "  > FAILED. Elements not in decreasing order: this={0}, last={1}", x, last));
                 }
                 last = x;
                 cnt++;
@@ -238,7 +238,7 @@ namespace Test
             {
                 if (x != last - 1)
                 {
-                    Assert.True(false, string.Format(method + "  > FAILED.  Elems not in decreasing order: this={0}, last={1}", x, last));
+                    Assert.True(false, string.Format(method + "  > FAILED.  Elements not in decreasing order: this={0}, last={1}", x, last));
                 }
                 last = x;
                 seen++;

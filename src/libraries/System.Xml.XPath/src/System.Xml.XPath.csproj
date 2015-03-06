@@ -10,10 +10,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "></PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Xml\Base64Decoder.cs" />
@@ -37,14 +35,6 @@
     <Compile Include="$(CommonPath)\System\Xml\XPathNavigatorEx.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\SR.cs">
-      <Link>Resources\SR.cs</Link>
-    </Compile>
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Xml\Cache\XPathDocumentBuilder.cs" />
     <Compile Include="System\Xml\Cache\XPathDocumentNavigator.cs" />
     <Compile Include="System\Xml\Cache\XPathNode.cs" />
@@ -130,17 +120,9 @@
     <Compile Include="System\Xml\XPath\XPathNodeIterator.cs" />
     <Compile Include="System\Xml\XPath\XPathNodeType.cs" />
     <Compile Include="System\Xml\Xsl\XsltContext.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

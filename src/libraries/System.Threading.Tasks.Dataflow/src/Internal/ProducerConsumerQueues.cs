@@ -15,7 +15,7 @@
 //  src\ndp\clr\src\bcl\system\threading\tasks\producerConsumerQueue.cs
 //  src\ndp\fx\src\dataflow\system\threading\tasks\dataflow\internal\producerConsumerQueue.cs
 // Keep both of them consistent by changing the other file when you change this one, also avoid:
-//  1- To reference interneal types in mscorlib
+//  1- To reference internal types in mscorlib
 //  2- To reference any dataflow specific types
 // This should be fixed post Dev11 when this class becomes public.
 //
@@ -145,10 +145,10 @@ namespace System.Threading.Tasks
         internal SingleProducerSingleConsumerQueue()
         {
             // Validate constants in ctor rather than in an explicit cctor that would cause perf degradation
-            Contract.Assert(INIT_SEGMENT_SIZE > 0, "Initial segment size must be > 0.");
-            Contract.Assert((INIT_SEGMENT_SIZE & (INIT_SEGMENT_SIZE - 1)) == 0, "Initial segment size must be a power of 2");
-            Contract.Assert(INIT_SEGMENT_SIZE <= MAX_SEGMENT_SIZE, "Initial segment size should be <= maximum.");
-            Contract.Assert(MAX_SEGMENT_SIZE < Int32.MaxValue / 2, "Max segment size * 2 must be < Int32.MaxValue, or else overflow could occur.");
+            Debug.Assert(INIT_SEGMENT_SIZE > 0, "Initial segment size must be > 0.");
+            Debug.Assert((INIT_SEGMENT_SIZE & (INIT_SEGMENT_SIZE - 1)) == 0, "Initial segment size must be a power of 2");
+            Debug.Assert(INIT_SEGMENT_SIZE <= MAX_SEGMENT_SIZE, "Initial segment size should be <= maximum.");
+            Debug.Assert(MAX_SEGMENT_SIZE < Int32.MaxValue / 2, "Max segment size * 2 must be < Int32.MaxValue, or else overflow could occur.");
 
             // Initialize the queue
             _head = _tail = new Segment(INIT_SEGMENT_SIZE);
@@ -188,7 +188,7 @@ namespace System.Threading.Tasks
             }
 
             int newSegmentSize = _tail._array.Length << 1; // double size
-            Contract.Assert(newSegmentSize > 0, "The max size should always be small enough that we don't overflow.");
+            Debug.Assert(newSegmentSize > 0, "The max size should always be small enough that we don't overflow.");
             if (newSegmentSize > MAX_SEGMENT_SIZE) newSegmentSize = MAX_SEGMENT_SIZE;
 
             var newSegment = new Segment(newSegmentSize);
@@ -462,7 +462,7 @@ namespace System.Threading.Tasks
         /// <remarks>The Count is not thread safe, so we need to acquire the lock.</remarks>
         int IProducerConsumerQueue<T>.GetCountSafe(object syncObj)
         {
-            Contract.Assert(syncObj != null, "The syncObj parameter is null.");
+            Debug.Assert(syncObj != null, "The syncObj parameter is null.");
             lock (syncObj)
             {
                 return Count;
@@ -505,7 +505,7 @@ namespace System.Threading.Tasks
             internal PaddingFor32 _pad1;
 
             /// <summary>A copy of the current head index.</summary>
-            internal int _firstCopy; // not voliatle as only read and written by the consumer thread
+            internal int _firstCopy; // not volatile as only read and written by the consumer thread
             /// <summary>The index of the current tail in the segment.</summary>
             internal volatile int _last;
 

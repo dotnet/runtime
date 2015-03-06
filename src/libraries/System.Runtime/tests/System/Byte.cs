@@ -123,7 +123,7 @@ public static class ByteTests
         Assert.Equal("82", i2.ToString("g"));
 
         Byte i3 = 246;
-        Assert.Equal("246.00", i3.ToString("N"));
+        Assert.Equal(string.Format("{0:N}", 246.00), i3.ToString("N"));
 
         Byte i4 = 0x24;
         Assert.Equal("24", i4.ToString("x"));
@@ -143,6 +143,7 @@ public static class ByteTests
         numberFormat.NegativeSign = "xx"; // setting it to trash to make sure it doesn't show up
         numberFormat.NumberGroupSeparator = "*";
         numberFormat.NumberNegativePattern = 0;
+        numberFormat.NumberDecimalSeparator = ".";
         Byte i3 = 24;
         Assert.Equal("24.00", i3.ToString("N", numberFormat));
     }
@@ -195,10 +196,10 @@ public static class ByteTests
         Assert.True(Byte.TryParse(" 67 ", out i));   // Leading/Trailing whitespace
         Assert.Equal<Byte>(67, i);
 
-        Assert.False(Byte.TryParse("$100", out i));  // Currency
-        Assert.False(Byte.TryParse("1,000", out i));  // Thousands
+        Assert.False(Byte.TryParse((100).ToString("C0"), out i));  // Currency
+        Assert.False(Byte.TryParse((1000).ToString("N0"), out i));  // Thousands
         Assert.False(Byte.TryParse("ab", out i));    // Hex digits
-        Assert.False(Byte.TryParse("67.90", out i)); // Decimal
+        Assert.False(Byte.TryParse((67.90).ToString("F2"), out i)); // Decimal
         Assert.False(Byte.TryParse("(135)", out i));  // Parentheses
         Assert.False(Byte.TryParse("1E23", out i));   // Exponent
     }
@@ -222,6 +223,7 @@ public static class ByteTests
         Assert.True(Byte.TryParse("ab", NumberStyles.HexNumber, nfi, out i));   // Hex Number positive
         Assert.Equal<Byte>(0xab, i);
 
+        nfi.NumberDecimalSeparator = ".";
         Assert.False(Byte.TryParse("67.90", NumberStyles.Integer, nfi, out i));  // Decimal
         Assert.False(Byte.TryParse(" 67 ", NumberStyles.None, nfi, out i));      // Trailing/Leading whitespace negative
 

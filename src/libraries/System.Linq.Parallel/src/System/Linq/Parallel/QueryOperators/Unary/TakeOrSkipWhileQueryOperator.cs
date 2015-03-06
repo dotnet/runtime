@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -67,8 +67,8 @@ namespace System.Linq.Parallel
                                               Func<TResult, int, bool> indexedPredicate, bool take)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
-            Contract.Assert(predicate != null || indexedPredicate != null, "need a predicate function");
+            Debug.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(predicate != null || indexedPredicate != null, "need a predicate function");
 
             _predicate = predicate;
             _indexedPredicate = indexedPredicate;
@@ -131,7 +131,7 @@ namespace System.Linq.Parallel
             OperatorState<TKey> operatorState = new OperatorState<TKey>();
             CountdownEvent sharedBarrier = new CountdownEvent(partitionCount);
 
-            Contract.Assert(_indexedPredicate == null || typeof(TKey) == typeof(int));
+            Debug.Assert(_indexedPredicate == null || typeof(TKey) == typeof(int));
             Func<TResult, TKey, bool> convertedIndexedPredicate = (Func<TResult, TKey, bool>)(object)_indexedPredicate;
 
             PartitionedStream<TResult, TKey> partitionedStream =
@@ -224,11 +224,11 @@ namespace System.Linq.Parallel
                 QueryOperatorEnumerator<TResult, TKey> source, Func<TResult, bool> predicate, Func<TResult, TKey, bool> indexedPredicate, bool take,
                 OperatorState<TKey> operatorState, CountdownEvent sharedBarrier, CancellationToken cancelToken, IComparer<TKey> keyComparer)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(predicate != null || indexedPredicate != null);
-                Contract.Assert(operatorState != null);
-                Contract.Assert(sharedBarrier != null);
-                Contract.Assert(keyComparer != null);
+                Debug.Assert(source != null);
+                Debug.Assert(predicate != null || indexedPredicate != null);
+                Debug.Assert(operatorState != null);
+                Debug.Assert(sharedBarrier != null);
+                Debug.Assert(keyComparer != null);
 
                 _source = source;
                 _predicate = predicate;
@@ -295,7 +295,7 @@ namespace System.Linq.Parallel
                             }
                             else
                             {
-                                Contract.Assert(_indexedPredicate != null);
+                                Debug.Assert(_indexedPredicate != null);
                                 predicateResult = _indexedPredicate(current, key);
                             }
 
@@ -378,7 +378,7 @@ namespace System.Linq.Parallel
                     // Lastly, so long as our input still has elements, they will be yieldable.
                     if (_source.MoveNext(ref currentElement, ref currentKey))
                     {
-                        Contract.Assert(_keyComparer.Compare(currentKey, _operatorState._currentLowKey) > 0,
+                        Debug.Assert(_keyComparer.Compare(currentKey, _operatorState._currentLowKey) > 0,
                                         "expected remaining element indices to be greater than smallest");
                         return true;
                     }

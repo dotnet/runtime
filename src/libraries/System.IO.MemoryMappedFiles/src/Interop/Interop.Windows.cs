@@ -8,11 +8,8 @@ using System.Security;
 
 internal static partial class Interop
 {
-    private const String HANDLEDLL = "api-ms-win-core-handle-l1-1-0.dll";
-    private const String MEMORYDLL = "api-ms-win-core-memory-l1-1-0.dll";
-    private const String SYSINFODLL = "api-ms-win-core-sysinfo-l1-1-0.dll";
-    private const String LOCALIZATIONDLL = "api-ms-win-core-localization-l1-2-0.dll";
-
+    private const string MEMORYDLL = "api-ms-win-core-memory-l1-1-0.dll";
+    private const string SYSINFODLL = "api-ms-win-core-sysinfo-l1-1-0.dll";
     //
     // Win32 IO
     //
@@ -182,16 +179,6 @@ internal static partial class Interop
 
     internal static partial class mincore
     {
-        [DllImport(LOCALIZATIONDLL, EntryPoint = "FormatMessageW", CharSet = CharSet.Unicode)]
-        internal extern static uint FormatMessage(
-                    uint dwFlags,
-                    IntPtr lpSource,
-                    uint dwMessageId,
-                    uint dwLanguageId,
-                    char[] lpBuffer,
-                    uint nSize,
-                    IntPtr Arguments);
-
         [DllImport(MEMORYDLL)]
         internal extern static int FlushViewOfFile(IntPtr lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
 
@@ -246,10 +233,5 @@ internal static partial class Interop
                         UIntPtr dwSize,
                         int flAllocationType,
                         int flProtect);
-
-        [DllImport(HANDLEDLL, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        [SecurityCritical]
-        internal static extern bool CloseHandle(IntPtr handle);
     }
 }

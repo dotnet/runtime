@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -69,7 +69,7 @@ namespace System.Linq.Parallel
                 returnValue = new PartitionedDataSource<T>(source, partitionCount, useStriping);
             }
 
-            Contract.Assert(returnValue.PartitionCount == partitionCount);
+            Debug.Assert(returnValue.PartitionCount == partitionCount);
 
             return returnValue;
         }

@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -36,7 +36,7 @@ namespace System.Linq.Parallel
         internal DefaultIfEmptyQueryOperator(IEnumerable<TSource> child, TSource defaultValue)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(child != null, "child data source cannot be null");
             _defaultValue = defaultValue;
             SetOrdinalIndexState(ExchangeUtilities.Worse(Child.OrdinalIndexState, OrdinalIndexState.Correct));
         }
@@ -119,11 +119,11 @@ namespace System.Linq.Parallel
                 QueryOperatorEnumerator<TSource, TKey> source, TSource defaultValue, int partitionIndex, int partitionCount,
                 Shared<int> sharedEmptyCount, CountdownEvent sharedLatch, CancellationToken cancelToken)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(0 <= partitionIndex && partitionIndex < partitionCount);
-                Contract.Assert(partitionCount > 0);
-                Contract.Assert(sharedEmptyCount != null);
-                Contract.Assert(sharedLatch != null);
+                Debug.Assert(source != null);
+                Debug.Assert(0 <= partitionIndex && partitionIndex < partitionCount);
+                Debug.Assert(partitionCount > 0);
+                Debug.Assert(sharedEmptyCount != null);
+                Debug.Assert(sharedLatch != null);
 
                 _source = source;
                 _defaultValue = defaultValue;
@@ -140,7 +140,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TSource currentElement, ref TKey currentKey)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
 
                 bool moveNextResult = _source.MoveNext(ref currentElement, ref currentKey);
 

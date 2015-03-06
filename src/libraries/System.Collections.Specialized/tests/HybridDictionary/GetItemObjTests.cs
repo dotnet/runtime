@@ -390,7 +390,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<ArgumentNullException>(() => { itm = hd[null]; });
 
             //
-            //   [] get Item(cpecial_object) on filled HD - list
+            //   [] get Item(special_object) on filled HD - list
             //
             hd = new HybridDictionary();
 
@@ -419,7 +419,7 @@ namespace System.Collections.Specialized.Tests
                 }
             }
 
-            //   [] get Item(cpecial_object) on filled HD - hashtable
+            //   [] get Item(special_object) on filled HD - hashtable
             //
             hd = new HybridDictionary();
 

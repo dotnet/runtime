@@ -16,7 +16,7 @@ public static class Stack_Contains_obj
             stk.Push(i);
         }
 
-        Assert.Equal(stk.Count, 100);
+        Assert.Equal(100, stk.Count);
 
         for (int i = 0; i < 100; i++)
         {
@@ -42,7 +42,7 @@ public static class Stack_Contains_obj
             stk.Push(i);
         }
 
-        Assert.Equal(stk.Count, 100);
+        Assert.Equal(100, stk.Count);
 
         for (int i = 0; i < 100; i++)
         {

@@ -10,7 +10,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -43,7 +43,7 @@ namespace System.Collections.Concurrent
     // 1. dynamic load balance partitioning for indexable data source (IList and arrays)
     // 2. static partitioning for indexable data source (IList and arrays)
     // 3. dynamic load balance partitioning for enumerables. Enumerables have indexes, which are the natural order
-    //    of elements, but enuemrators are not indexable 
+    //    of elements, but enumerators are not indexable 
     // - data source of type IList/arrays have both dynamic and static partitioning, as 1 and 3.
     //   We assume that the source data of IList/Array is not changing concurrently.
     // - data source of type IEnumerable can only be partitioned dynamically (load-balance)
@@ -300,7 +300,7 @@ namespace System.Collections.Concurrent
         ///   The implementation for GrabNextChunk() method has two versions: one for data source of IndexRange 
         ///   types (IList and the array), one for data source of IEnumerable.
         /// - The method "Reset" is not supported for any partitioning algorithm.
-        /// - The implementation for MoveNext() method is same for all dynanmic partitioners, so we provide it
+        /// - The implementation for MoveNext() method is same for all dynamic partitioners, so we provide it
         ///   in this abstract class.
         /// </summary>
         /// <typeparam name="TSource">Type of the elements in the data source</typeparam>
@@ -313,7 +313,7 @@ namespace System.Collections.Concurrent
         private abstract class DynamicPartitionEnumerator_Abstract<TSource, TSourceReader> : IEnumerator<KeyValuePair<long, TSource>>
         {
             //----------------- common fields and constructor for all dynamic partitioners -----------------
-            //--- shared by all dervied class with souce data type: IList, Array, and IEnumerator
+            //--- shared by all derived class with source data type: IList, Array, and IEnumerator
             protected readonly TSourceReader _sharedReader;
 
             protected static int s_defaultMaxChunkSize = GetDefaultChunkSize<TSource>();
@@ -329,8 +329,8 @@ namespace System.Collections.Concurrent
             private int _doublingCountdown; // Number of grabs remaining until chunk size doubles
             protected readonly int _maxChunkSize; // s_defaultMaxChunkSize unless single-chunking is requested by the caller
 
-            // _sharedIndex shared by this set of partitions, and particularly when _sharedReader is IEnuerable
-            // it serves as tracking of the natual order of elements in _sharedReader
+            // _sharedIndex shared by this set of partitions, and particularly when _sharedReader is IEnumerable
+            // it serves as tracking of the natural order of elements in _sharedReader
             // the value of this field is passed in from outside (already initialized) by the constructor, 
             protected readonly SharedLong _sharedIndex;
 
@@ -359,7 +359,7 @@ namespace System.Collections.Concurrent
             //GrabNextChunk does the following: 
             //  - grab # of requestedChunkSize elements from source data through shared reader, 
             //  - at the time of function returns, _currentChunkSize is updated with the number of 
-            //    elements actually got assgined (<=requestedChunkSize). 
+            //    elements actually got assigned (<=requestedChunkSize). 
             //  - GrabNextChunk returns true if at least one element is assigned to this partition; 
             //    false if the shared reader already hits the last element of the source data before 
             //    we call GrabNextChunk
@@ -423,7 +423,7 @@ namespace System.Collections.Concurrent
                 //perform deferred allocating of the local variables. 
                 if (_localOffset == null)
                 {
-                    Contract.Assert(_currentChunkSize == null);
+                    Debug.Assert(_currentChunkSize == null);
                     _localOffset = new SharedInt(-1);
                     _currentChunkSize = new SharedInt(0);
                     _doublingCountdown = CHUNK_DOUBLING_RATE;
@@ -441,7 +441,7 @@ namespace System.Collections.Concurrent
                 {
                     // The second part of the || condition is necessary to handle the case when MoveNext() is called
                     // after a previous MoveNext call returned false.
-                    Contract.Assert(_localOffset.Value == _currentChunkSize.Value - 1 || _currentChunkSize.Value == 0);
+                    Debug.Assert(_localOffset.Value == _currentChunkSize.Value - 1 || _currentChunkSize.Value == 0);
 
                     //set the requested chunk size to a proper value
                     int requestedChunkSize;
@@ -462,11 +462,11 @@ namespace System.Collections.Concurrent
                     // Decrement your doubling countdown
                     _doublingCountdown--;
 
-                    Contract.Assert(requestedChunkSize > 0 && requestedChunkSize <= _maxChunkSize);
+                    Debug.Assert(requestedChunkSize > 0 && requestedChunkSize <= _maxChunkSize);
                     //GrabNextChunk will update the value of _currentChunkSize
                     if (GrabNextChunk(requestedChunkSize))
                     {
-                        Contract.Assert(_currentChunkSize.Value <= requestedChunkSize && _currentChunkSize.Value > 0);
+                        Debug.Assert(_currentChunkSize.Value <= requestedChunkSize && _currentChunkSize.Value > 0);
                         _localOffset.Value = 0;
                         return true;
                     }
@@ -523,7 +523,7 @@ namespace System.Collections.Concurrent
             }
 
             /// <summary>
-            /// Overrides OrderablePartitioner.GetOrderableDyanmicPartitions
+            /// Overrides OrderablePartitioner.GetOrderableDynamicPartitions
             /// </summary>
             /// <returns>a enumerable collection of orderable partitions</returns>
             override public IEnumerable<KeyValuePair<long, TSource>> GetOrderableDynamicPartitions()
@@ -645,7 +645,7 @@ namespace System.Collections.Concurrent
                     if (fillBufferLocalRef == null) return;
 
                     // first do a quick check, and give up if the current position is at the end
-                    // so that we don't do an unncessary pair of Interlocked.Increment / Decrement calls
+                    // so that we don't do an unnecessary pair of Interlocked.Increment / Decrement calls
                     if (_fillBufferCurrentPosition >= _fillBufferSize)
                     {
                         return; // no elements in the buffer to copy from
@@ -707,10 +707,10 @@ namespace System.Collections.Concurrent
                 /// </returns>
                 internal bool GrabChunk_Single(KeyValuePair<long, TSource>[] destArray, int requestedChunkSize, ref int actualNumElementsGrabbed)
                 {
-                    Contract.Assert(_useSingleChunking, "Expected _useSingleChecking to be true");
-                    Contract.Assert(requestedChunkSize == 1, "Got requested chunk size of " + requestedChunkSize + " when single-chunking was on");
-                    Contract.Assert(actualNumElementsGrabbed == 0, "Expected actualNumElementsGrabbed == 0, instead it is " + actualNumElementsGrabbed);
-                    Contract.Assert(destArray.Length == 1, "Expected destArray to be of length 1, instead its length is " + destArray.Length);
+                    Debug.Assert(_useSingleChunking, "Expected _useSingleChecking to be true");
+                    Debug.Assert(requestedChunkSize == 1, "Got requested chunk size of " + requestedChunkSize + " when single-chunking was on");
+                    Debug.Assert(actualNumElementsGrabbed == 0, "Expected actualNumElementsGrabbed == 0, instead it is " + actualNumElementsGrabbed);
+                    Debug.Assert(destArray.Length == 1, "Expected destArray to be of length 1, instead its length is " + destArray.Length);
 
                     lock (_sharedLock)
                     {
@@ -756,8 +756,8 @@ namespace System.Collections.Concurrent
                 /// </returns>
                 internal bool GrabChunk_Buffered(KeyValuePair<long, TSource>[] destArray, int requestedChunkSize, ref int actualNumElementsGrabbed)
                 {
-                    Contract.Assert(requestedChunkSize > 0);
-                    Contract.Assert(!_useSingleChunking, "Did not expect to be in single-chunking mode");
+                    Debug.Assert(requestedChunkSize > 0);
+                    Debug.Assert(!_useSingleChunking, "Did not expect to be in single-chunking mode");
 
                     TryCopyFromFillBuffer(destArray, requestedChunkSize, ref actualNumElementsGrabbed);
 
@@ -795,7 +795,7 @@ namespace System.Collections.Concurrent
                                 while (_activeCopiers > 0) sw.SpinOnce();
                             }
 
-                            Contract.Assert(_sharedIndex != null); //already been allocated in MoveNext() before calling GrabNextChunk
+                            Debug.Assert(_sharedIndex != null); //already been allocated in MoveNext() before calling GrabNextChunk
 
                             // Now's the time to actually enumerate the source
 
@@ -926,7 +926,7 @@ namespace System.Collections.Concurrent
                 /// </returns>
                 override protected bool GrabNextChunk(int requestedChunkSize)
                 {
-                    Contract.Assert(requestedChunkSize > 0);
+                    Debug.Assert(requestedChunkSize > 0);
 
                     if (HasNoElementsLeft)
                     {
@@ -958,8 +958,8 @@ namespace System.Collections.Concurrent
                     {
                         //we only set it from false to true once
                         //we should never set it back in any circumstances
-                        Contract.Assert(value);
-                        Contract.Assert(!_hasNoElementsLeft.Value);
+                        Debug.Assert(value);
+                        Debug.Assert(!_hasNoElementsLeft.Value);
                         _hasNoElementsLeft.Value = true;
                     }
                 }
@@ -973,8 +973,8 @@ namespace System.Collections.Concurrent
                         {
                             throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                         }
-                        Contract.Assert(_localList != null);
-                        Contract.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
+                        Debug.Assert(_localList != null);
+                        Debug.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
                         return (_localList[_localOffset.Value]);
                     }
                 }
@@ -1051,7 +1051,7 @@ namespace System.Collections.Concurrent
             }
 
             /// <summary>
-            /// Overrides OrderablePartitioner.GetOrderableDyanmicPartitions
+            /// Overrides OrderablePartitioner.GetOrderableDynamicPartitions
             /// </summary>
             /// <returns>a enumerable collection of orderable partitions</returns>
             override public IEnumerable<KeyValuePair<long, TSource>> GetOrderableDynamicPartitions()
@@ -1111,11 +1111,11 @@ namespace System.Collections.Concurrent
             /// </returns>
             override protected bool GrabNextChunk(int requestedChunkSize)
             {
-                Contract.Assert(requestedChunkSize > 0);
+                Debug.Assert(requestedChunkSize > 0);
 
                 while (!HasNoElementsLeft)
                 {
-                    Contract.Assert(_sharedIndex != null);
+                    Debug.Assert(_sharedIndex != null);
                     // use the new Volatile.Read method because it is cheaper than Interlocked.Read on AMD64 architecture
                     long oldSharedIndex = Volatile.Read(ref _sharedIndex.Value);
 
@@ -1157,13 +1157,13 @@ namespace System.Collections.Concurrent
             {
                 get
                 {
-                    Contract.Assert(_sharedIndex != null);
+                    Debug.Assert(_sharedIndex != null);
                     // use the new Volatile.Read method because it is cheaper than Interlocked.Read on AMD64 architecture
                     return Volatile.Read(ref _sharedIndex.Value) >= SourceCount - 1;
                 }
                 set
                 {
-                    Contract.Assert(false);
+                    Debug.Fail("HasNoElementsLeft_Set should not be called");
                 }
             }
 
@@ -1252,7 +1252,7 @@ namespace System.Collections.Concurrent
                             throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                         }
 
-                        Contract.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
+                        Debug.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
                         return new KeyValuePair<long, TSource>(_startIndex + _localOffset.Value,
                             _sharedReader[_startIndex + _localOffset.Value]);
                     }
@@ -1336,7 +1336,7 @@ namespace System.Collections.Concurrent
                             throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                         }
 
-                        Contract.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
+                        Debug.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
                         return new KeyValuePair<long, TSource>(_startIndex + _localOffset.Value,
                             _sharedReader[_startIndex + _localOffset.Value]);
                     }
@@ -1524,7 +1524,7 @@ namespace System.Collections.Concurrent
             internal StaticIndexRangePartitionerForIList(IList<TSource> list)
                 : base()
             {
-                Contract.Assert(list != null);
+                Debug.Assert(list != null);
                 _list = list;
             }
             override protected int SourceCount
@@ -1550,7 +1550,7 @@ namespace System.Collections.Concurrent
             internal StaticIndexRangePartitionForIList(IList<TSource> list, int startIndex, int endIndex)
                 : base(startIndex, endIndex)
             {
-                Contract.Assert(startIndex >= 0 && endIndex <= list.Count - 1);
+                Debug.Assert(startIndex >= 0 && endIndex <= list.Count - 1);
                 _list = list;
             }
 
@@ -1564,7 +1564,7 @@ namespace System.Collections.Concurrent
                         throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                     }
 
-                    Contract.Assert(_offset >= _startIndex && _offset <= _endIndex);
+                    Debug.Assert(_offset >= _startIndex && _offset <= _endIndex);
                     return (new KeyValuePair<long, TSource>(_offset, _list[_offset]));
                 }
             }
@@ -1582,7 +1582,7 @@ namespace System.Collections.Concurrent
             internal StaticIndexRangePartitionerForArray(TSource[] array)
                 : base()
             {
-                Contract.Assert(array != null);
+                Debug.Assert(array != null);
                 _array = array;
             }
             override protected int SourceCount
@@ -1607,7 +1607,7 @@ namespace System.Collections.Concurrent
             internal StaticIndexRangePartitionForArray(TSource[] array, int startIndex, int endIndex)
                 : base(startIndex, endIndex)
             {
-                Contract.Assert(startIndex >= 0 && endIndex <= array.Length - 1);
+                Debug.Assert(startIndex >= 0 && endIndex <= array.Length - 1);
                 _array = array;
             }
 
@@ -1621,7 +1621,7 @@ namespace System.Collections.Concurrent
                         throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                     }
 
-                    Contract.Assert(_offset >= _startIndex && _offset <= _endIndex);
+                    Debug.Assert(_offset >= _startIndex && _offset <= _endIndex);
                     return (new KeyValuePair<long, TSource>(_offset, _array[_offset]));
                 }
             }
@@ -1699,7 +1699,7 @@ namespace System.Collections.Concurrent
             }
             else
             {
-                Contract.Assert((DEFAULT_BYTES_PER_CHUNK % IntPtr.Size) == 0, "bytes per chunk should be a multiple of pointer size");
+                Debug.Assert((DEFAULT_BYTES_PER_CHUNK % IntPtr.Size) == 0, "bytes per chunk should be a multiple of pointer size");
                 chunkSize = (DEFAULT_BYTES_PER_CHUNK / IntPtr.Size);
             }
             return chunkSize;

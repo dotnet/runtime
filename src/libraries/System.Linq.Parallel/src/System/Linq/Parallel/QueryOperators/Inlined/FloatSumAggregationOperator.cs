@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -84,7 +84,7 @@ namespace System.Linq.Parallel
                 CancellationToken cancellationToken) :
                 base(partitionIndex, cancellationToken)
             {
-                Contract.Assert(source != null);
+                Debug.Assert(source != null);
                 _source = source;
             }
 
@@ -127,7 +127,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }

@@ -15,12 +15,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
     <Compile Include="BlockingCollectionCancellationTests.cs" />
     <Compile Include="BlockingCollectionTests.cs" />
     <Compile Include="ConcurrentBagTests.cs" />
     <Compile Include="ConcurrentDictionaryTests.cs" />
     <Compile Include="ConcurrentQueueTests.cs" />
     <Compile Include="ConcurrentStackTests.cs" />
+    <Compile Include="EtwTests.cs" />
     <Compile Include="IntRangePartitionerTests.cs" />
     <Compile Include="LongRangePartitionerTests.cs" />
     <Compile Include="PartitionerStaticTests.cs" />

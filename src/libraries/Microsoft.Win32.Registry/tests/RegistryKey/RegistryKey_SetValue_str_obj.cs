@@ -39,7 +39,7 @@ namespace Microsoft.Win32.RegistryTests
         public void Test01()
         {
             // [] Passing in null should throw ArgumentNullException
-            //UPDATE: This sets the defaul value. We should move this test to a newly defined reg key so as not to screw up the system
+            //UPDATE: This sets the default value. We should move this test to a newly defined reg key so as not to screw up the system
             _rk1 = Microsoft.Win32.Registry.CurrentUser;
             _rk2 = _rk1.CreateSubKey(_testKeyName);
 
@@ -253,7 +253,7 @@ namespace Microsoft.Win32.RegistryTests
             for (int i = 0; i < keys.Length; i++)
                 _rk2.SetValue("ExpandedTest_" + i, "%" + keys[i] + "%");
 
-            //we dont expand for the user, REG_SZ_EXPAND not supported
+            //we don't expand for the user, REG_SZ_EXPAND not supported
             for (int i = 0; i < keys.Length; i++)
             {
                 var result = (String)_rk2.GetValue("ExpandedTest_" + i);
@@ -268,7 +268,7 @@ namespace Microsoft.Win32.RegistryTests
         public void Test12()
         {
             _rk2 = _rk1.CreateSubKey(_testKeyName);
-            // passing emtpy string.
+            // passing empty string.
             try
             {
                 _rk2.SetValue("test_122018", string.Empty);

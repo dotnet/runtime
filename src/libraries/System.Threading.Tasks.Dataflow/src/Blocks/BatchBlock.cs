@@ -48,15 +48,15 @@ namespace System.Threading.Tasks.Dataflow
         public BatchBlock(Int32 batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", Strings.ArgumentOutOfRange_GenericPositive);
+            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", SR.ArgumentOutOfRange_GenericPositive);
             if (dataflowBlockOptions == null) throw new ArgumentNullException("dataflowBlockOptions");
-            if (dataflowBlockOptions.BoundedCapacity > 0 && dataflowBlockOptions.BoundedCapacity < batchSize) throw new ArgumentOutOfRangeException("batchSize", Strings.ArgumentOutOfRange_BatchSizeMustBeNoGreaterThanBoundedCapacity);
+            if (dataflowBlockOptions.BoundedCapacity > 0 && dataflowBlockOptions.BoundedCapacity < batchSize) throw new ArgumentOutOfRangeException("batchSize", SR.ArgumentOutOfRange_BatchSizeMustBeNoGreaterThanBoundedCapacity);
             Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
-            // Initalize bounding actions
+            // Initialize bounding actions
             Action<ISourceBlock<T[]>, int> onItemsRemoved = null;
             Func<ISourceBlock<T[]>, T[], IList<T[]>, int> itemCountingFunc = null;
             if (dataflowBlockOptions.BoundedCapacity > 0)
@@ -84,7 +84,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BatchBlock<T>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -299,7 +299,7 @@ namespace System.Threading.Tasks.Dataflow
                 /// <param name="batchSize">The batch size used by the BatchBlock.</param>
                 internal NonGreedyState(int batchSize)
                 {
-                    // A non-greedy batch requires at least batchSize sources to be succesful.
+                    // A non-greedy batch requires at least batchSize sources to be successful.
                     // Thus, we initialize our collections to be able to store at least that many elements
                     // in order to avoid unnecessary allocations below that point.
                     Contract.Requires(batchSize > 0, "A positive batch size is required");
@@ -364,8 +364,8 @@ namespace System.Threading.Tasks.Dataflow
             internal DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
             {
                 // Validate arguments
-                if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
-                if (source == null && consumeToAccept) throw new ArgumentException(Strings.Argument_CantConsumeFromANullSource, "consumeToAccept");
+                if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
+                if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
                 Contract.EndContractBlock();
 
                 lock (IncomingLock)
@@ -391,7 +391,7 @@ namespace System.Threading.Tasks.Dataflow
                         // Consume the message from the source if necessary
                         if (consumeToAccept)
                         {
-                            Contract.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
+                            Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                             bool consumed;
                             messageValue = source.ConsumeMessage(messageHeader, _owningBatch, out consumed);
@@ -419,7 +419,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Otherwise, we try to postpone if a source was provided
                     else if (source != null)
                     {
-                        Contract.Assert(_nonGreedyState != null, "_nonGreedyState must have been initialized during construction in non-greedy mopde.");
+                        Debug.Assert(_nonGreedyState != null, "_nonGreedyState must have been initialized during construction in non-greedy mode.");
 
                         // We always postpone using _nonGreedyState even if we are being greedy with bounding
                         _nonGreedyState.PostponedMessages.Push(source, messageHeader);
@@ -459,7 +459,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
 
                 // Release reserved messages if requested.
-                // This must be donoe from outside the lock.
+                // This must be done from outside the lock.
                 if (releaseReservedMessages)
                 {
                     try { ReleaseReservedMessages(throwOnFirstException: false); }
@@ -472,7 +472,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Revert the dirty processing state if requested
                     if (revertProcessingState)
                     {
-                        Contract.Assert(_nonGreedyState != null && _nonGreedyState.TaskForInputProcessing != null,
+                        Debug.Assert(_nonGreedyState != null && _nonGreedyState.TaskForInputProcessing != null,
                                         "The processing state must be dirty when revertProcessingState==true.");
                         _nonGreedyState.TaskForInputProcessing = null;
                     }
@@ -699,7 +699,7 @@ namespace System.Threading.Tasks.Dataflow
                             madeProgress = MakeBatchIfPossible(evenIfFewerThanBatchSize: triggered);
 
                             // Reset the trigger flag if:
-                            // - We made a batch, regardless of whehther it came due to a trigger or not.
+                            // - We made a batch, regardless of whether it came due to a trigger or not.
                             // - We tried to make a batch due to a trigger, but were unable to, which
                             //   could happen if we're unable to consume any of the postponed messages.
                             if (madeProgress || triggered) _nonGreedyState.AcceptFewerThanBatchSize = false;
@@ -779,7 +779,7 @@ namespace System.Threading.Tasks.Dataflow
                 lock (IncomingLock)
                 {
                     // The queue must be empty between batches in non-greedy mode
-                    Contract.Assert(_messages.Count == 0, "The queue must be empty between batches in non-greedy mode");
+                    Debug.Assert(_messages.Count == 0, "The queue must be empty between batches in non-greedy mode");
 
                     // If there are not enough postponed items (or if we're not allowing consumption), there's nothing more to be done
                     boundedCapacityAvailable = BoundedCapacityAvailable;
@@ -791,7 +791,7 @@ namespace System.Threading.Tasks.Dataflow
 
                     // Grab an initial batch of postponed messages.
                     poppedInitially = postponed.PopRange(postponedTemp, 0, _batchSize);
-                    Contract.Assert(allowFewerThanBatchSize ? poppedInitially > 0 : poppedInitially == _batchSize,
+                    Debug.Assert(allowFewerThanBatchSize ? poppedInitially > 0 : poppedInitially == _batchSize,
                                     "We received fewer than we expected based on the previous check.");
                 } // Release the lock.  We must not hold it while calling Reserve/Consume/Release.
 
@@ -825,7 +825,7 @@ namespace System.Threading.Tasks.Dataflow
                     }
                 }
 
-                Contract.Assert(reserved.Count <= _batchSize, "Expected the number of reserved sources to be <= the number needed for a batch.");
+                Debug.Assert(reserved.Count <= _batchSize, "Expected the number of reserved sources to be <= the number needed for a batch.");
 
                 // We've now reserved what we can.  Either consume them all or release them all.
                 if (reserved.Count > 0)
@@ -908,7 +908,7 @@ namespace System.Threading.Tasks.Dataflow
                     // Grab an initial batch of postponed messages.
                     if (boundedCapacityAvailable < itemCountNeededToCompleteBatch) itemCountNeededToCompleteBatch = boundedCapacityAvailable;
                     poppedInitially = postponed.PopRange(postponedTemp, 0, itemCountNeededToCompleteBatch);
-                    Contract.Assert(poppedInitially > 0, "We received fewer than we expected based on the previous check.");
+                    Debug.Assert(poppedInitially > 0, "We received fewer than we expected based on the previous check.");
                 } // Release the lock.  We must not hold it while calling Reserve/Consume/Release.
 
                 // Treat popped messages as reserved. 
@@ -937,7 +937,7 @@ namespace System.Threading.Tasks.Dataflow
                     reserved.Add(reservedSourceAndMessage);
                 }
 
-                Contract.Assert(reserved.Count <= itemCountNeededToCompleteBatch, "Expected the number of reserved sources to be <= the number needed for a batch.");
+                Debug.Assert(reserved.Count <= itemCountNeededToCompleteBatch, "Expected the number of reserved sources to be <= the number needed for a batch.");
 
                 // We've gotten as many postponed messages as we can. Try to consume them.
                 if (reserved.Count > 0)
@@ -1012,7 +1012,7 @@ namespace System.Threading.Tasks.Dataflow
                         // null out all of the messages we've already consumed, as a higher-level event handler
                         // should try to release everything in the reserved list.
                         for (int prev = 0; prev < i; prev++) reserved[prev] = default(KeyValuePair<ISourceBlock<T>, KeyValuePair<DataflowMessageHeader, T>>);
-                        throw new InvalidOperationException(Strings.InvalidOperation_FailedToConsumeReservedMessage);
+                        throw new InvalidOperationException(SR.InvalidOperation_FailedToConsumeReservedMessage);
                     }
 
                     var consumedMessage = new KeyValuePair<DataflowMessageHeader, T>(sourceAndMessage.Value.Key, consumedValue);
@@ -1093,8 +1093,8 @@ namespace System.Threading.Tasks.Dataflow
             internal void ReleaseReservedMessages(bool throwOnFirstException)
             {
                 Common.ContractAssertMonitorStatus(IncomingLock, held: false);
-                Contract.Assert(_nonGreedyState != null, "Non-greedy state is required for non-greedy mode.");
-                Contract.Assert(_nonGreedyState.ReservedSourcesTemp != null, "Should have been initialized");
+                Debug.Assert(_nonGreedyState != null, "Non-greedy state is required for non-greedy mode.");
+                Debug.Assert(_nonGreedyState.ReservedSourcesTemp != null, "Should have been initialized");
 
                 List<Exception> exceptions = null;
 
@@ -1135,7 +1135,7 @@ namespace System.Threading.Tasks.Dataflow
                     lock (IncomingLock)
                     {
                         // Decrement the count, which mirrors the count in the source half
-                        Contract.Assert(_boundingState.CurrentCount - numItemsRemoved >= 0,
+                        Debug.Assert(_boundingState.CurrentCount - numItemsRemoved >= 0,
                             "It should be impossible to have a negative number of items.");
                         _boundingState.CurrentCount -= numItemsRemoved;
 
@@ -1146,11 +1146,11 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>Counts the input items in a single output item or in a list of output items.</summary>
-            /// <param name="singleOutputItem">A single outptut item. Only considered if multipleOutputItems == null.</param>
-            /// <param name="multipleOutputItems">A list of outptut items. May be null.</param>
+            /// <param name="singleOutputItem">A single output item. Only considered if multipleOutputItems == null.</param>
+            /// <param name="multipleOutputItems">A list of output items. May be null.</param>
             internal static int CountItems(T[] singleOutputItem, IList<T[]> multipleOutputItems)
             {
-                // If multipltOutputItems == null, then singleOutputItem is the subject of couonting
+                // If multipleOutputItems == null, then singleOutputItem is the subject of counting
                 if (multipleOutputItems == null) return singleOutputItem.Length;
 
                 // multipleOutputItems != null. Count the elements in each item.

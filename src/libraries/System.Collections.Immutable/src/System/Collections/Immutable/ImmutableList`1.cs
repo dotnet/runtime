@@ -474,7 +474,7 @@ namespace System.Collections.Immutable
             int index = this.IndexOf(oldValue, equalityComparer);
             if (index < 0)
             {
-                throw new ArgumentException(Strings.CannotFindOldValue, "oldValue");
+                throw new ArgumentException(SR.CannotFindOldValue, "oldValue");
             }
 
             return this.SetItem(index, newValue);
@@ -1741,7 +1741,7 @@ namespace System.Collections.Immutable
             {
                 if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
                 {
-                    throw new InvalidOperationException(Strings.CollectionModifiedDuringEnumeration);
+                    throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                 }
             }
 
@@ -2651,16 +2651,9 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-                if (_count == 0)
-                {
-                    return;
-                }
-
-                int[] indices = new int[1]; // SetValue takes a params array; lifting out the implicit allocation from the loop
                 foreach (var element in this)
                 {
-                    indices[0] = arrayIndex++;
-                    array.SetValue(element, indices);
+                    array.SetValue(element, arrayIndex++);
                 }
             }
 

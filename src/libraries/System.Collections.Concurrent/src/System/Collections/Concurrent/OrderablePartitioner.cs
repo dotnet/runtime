@@ -76,7 +76,7 @@ namespace System.Collections.Concurrent
         /// </param>
         /// <param name="keysNormalized">
         /// Indicates whether keys are normalized. If true, all order keys are distinct
-        /// integers in the range [0 .. numberOfElements-1]. If false, order keys must still be dictinct, but
+        /// integers in the range [0 .. numberOfElements-1]. If false, order keys must still be distinct, but
         /// only their relative order is considered, not their absolute values.
         /// </param>
         protected OrderablePartitioner(bool keysOrderedInEachPartition, bool keysOrderedAcrossPartitions, bool keysNormalized)
@@ -148,7 +148,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <remarks>
         /// If <see cref="KeysNormalized"/> returns true, all order keys are distinct integers in the range
-        /// [0 .. numberOfElements-1]. If the property returns false, order keys must still be dictinct, but
+        /// [0 .. numberOfElements-1]. If the property returns false, order keys must still be distinct, but
         /// only their relative order is considered, not their absolute values.
         /// </remarks>
         public bool KeysNormalized { get; private set; }

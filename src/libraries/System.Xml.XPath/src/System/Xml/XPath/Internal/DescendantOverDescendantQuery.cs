@@ -53,7 +53,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 else
                 {
-                    if (!MoveUpUntillNext())
+                    if (!MoveUpUntilNext())
                     {
                         continue;
                     }
@@ -79,7 +79,7 @@ namespace MS.Internal.Xml.XPath
             return false;
         }
 
-        private bool MoveUpUntillNext()
+        private bool MoveUpUntilNext()
         { // move up until we can move next
             while (!currentNode.MoveToNext())
             {

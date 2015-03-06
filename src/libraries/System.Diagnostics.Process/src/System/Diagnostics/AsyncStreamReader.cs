@@ -6,7 +6,7 @@
 ** Class:  AsyncStreamReader
 **
 ** Purpose: For reading text from streams using a particular 
-** encoding in an asychronous manner used by the process class
+** encoding in an asynchronous manner used by the process class
 **
 **
 ===========================================================*/
@@ -37,7 +37,7 @@ namespace System.Diagnostics
         private int _maxCharsPerBuffer;
 
         // Store a backpointer to the process class, to check for user callbacks
-        private Process _process;
+        private readonly Process _process;
 
         // Delegate to call user function.
         private Action<string> _userCallBack;
@@ -68,25 +68,19 @@ namespace System.Diagnostics
             Debug.Assert(stream.CanRead, "Stream must be readable!");
             Debug.Assert(bufferSize > 0, "Invalid buffer size!");
 
-            Init(process, stream, callback, encoding, bufferSize);
-            _messageQueue = new Queue<string>();
-        }
-
-        private void Init(Process process, Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
-        {
             _process = process;
             _stream = stream;
-            _encoding = encoding;
             _userCallBack = callback;
+            _encoding = encoding;
             _decoder = encoding.GetDecoder();
+
             if (bufferSize < MinBufferSize) bufferSize = MinBufferSize;
             _byteBuffer = new byte[bufferSize];
             _maxCharsPerBuffer = encoding.GetMaxCharCount(bufferSize);
             _charBuffer = new char[_maxCharsPerBuffer];
-            _cancelOperation = false;
+
             _eofEvent = new ManualResetEvent(false);
-            _sb = null;
-            _bLastCarriageReturn = false;
+            _messageQueue = new Queue<string>();
         }
 
         public void Close()
@@ -265,7 +259,7 @@ namespace System.Diagnostics
             {
                 _bLastCarriageReturn = true;
             }
-            // Keep the rest characaters which can't form a new line in string builder.
+            // Keep the rest characters which can't form a new line in string builder.
             if (lineStart < len)
             {
                 if (lineStart == 0)

@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 internal static partial class Interop
 {
     // This contains the subset of PInvokes that are needed to support pre-Win8 machines.
-    // Those machines will require API-set dlls deployed seperately since they aren't inbox.
+    // Those machines will require API-set dlls deployed separately since they aren't inbox.
     internal static partial class mincore
     {
         [DllImport("api-ms-win-core-file-l1-1-0.dll", EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]

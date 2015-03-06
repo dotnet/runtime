@@ -173,7 +173,7 @@ namespace System.Text
                     result = new ISO2022Encoding(codepage);
                     break;
                 // Duplicate EUC-CN (51936) just calls a base code page 936,
-                // so does ISOSimplifiedCN (50227), which's gotta be broken
+                // so does ISOSimplifiedCN (50227), which has gotta be broken
                 case DuplicateEUCCN:
                 case ISOSimplifiedCN:
                     result = new DBCSCodePageEncoding(codepage, EUCCN);    // Just maps to 936

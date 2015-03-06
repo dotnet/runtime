@@ -177,7 +177,7 @@ namespace System.Collections.Specialized.Tests
                 }
             }
 
-            // [] Get(int) on filled collection with multiple items swith the same key
+            // [] Get(int) on filled collection with multiple items with the same key
             //
 
             nvc.Clear();

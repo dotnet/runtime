@@ -18,10 +18,10 @@ namespace System.Collections.Specialized.Tests
             HybridDictionary hd;
             IDictionaryEnumerator en;
 
-            DictionaryEntry curr;        // Eumerator.Current value
-            DictionaryEntry de;        // Eumerator.Entry value
-            Object k;        // Eumerator.Key value
-            Object v;        // Eumerator.Value
+            DictionaryEntry curr;        // Enumerator.Current value
+            DictionaryEntry de;        // Enumerator.Entry value
+            Object k;        // Enumerator.Key value
+            Object v;        // Enumerator.Value
 
             const int BIG_LENGTH = 100;
 
@@ -348,21 +348,21 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry curr2 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr2))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
             // will return just removed item
             DictionaryEntry de2 = en.Entry;
             if (!de.Equals(de2))
             {
-                Assert.False(true, string.Format("Error, Entry returned different value after midification"));
+                Assert.False(true, string.Format("Error, Entry returned different value after modification"));
             }
 
             // will return just removed item
             Object k2 = en.Key;
             if (!k.Equals(k2))
             {
-                Assert.False(true, string.Format("Error, Key returned different value after midification"));
+                Assert.False(true, string.Format("Error, Key returned different value after modification"));
             }
 
 
@@ -370,7 +370,7 @@ namespace System.Collections.Specialized.Tests
             Object v2 = en.Value;
             if (!v.Equals(v2))
             {
-                Assert.False(true, string.Format("Error, Value returned different value after midification"));
+                Assert.False(true, string.Format("Error, Value returned different value after modification"));
             }
 
             // exception expected
@@ -411,7 +411,7 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry curr3 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr3))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
             // will return just removed item
@@ -419,7 +419,7 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry de3 = en.Entry;
             if (!de.Equals(de3))
             {
-                Assert.False(true, string.Format("Error, Entry returned different value after midification"));
+                Assert.False(true, string.Format("Error, Entry returned different value after modification"));
             }
 
 
@@ -427,14 +427,14 @@ namespace System.Collections.Specialized.Tests
             Object k3 = en.Key;
             if (!k.Equals(k3))
             {
-                Assert.False(true, string.Format("Error, Key returned different value after midification"));
+                Assert.False(true, string.Format("Error, Key returned different value after modification"));
             }
 
             // will return just removed item
             Object v3 = en.Value;
             if (!v.Equals(v3))
             {
-                Assert.False(true, string.Format("Error, Value returned different value after midification"));
+                Assert.False(true, string.Format("Error, Value returned different value after modification"));
             }
 
             // exception expected
@@ -472,28 +472,28 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry curr4 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr4))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
             // will return just removed item
             DictionaryEntry de4 = en.Entry;
             if (!de.Equals(de4))
             {
-                Assert.False(true, string.Format("Error, Entry returned different value after midification"));
+                Assert.False(true, string.Format("Error, Entry returned different value after modification"));
             }
 
             // will return just removed item
             Object k4 = en.Key;
             if (!k.Equals(k4))
             {
-                Assert.False(true, string.Format("Error, Key returned different value after midification"));
+                Assert.False(true, string.Format("Error, Key returned different value after modification"));
             }
 
             // will return just removed item
             Object v4 = en.Value;
             if (!v.Equals(v4))
             {
-                Assert.False(true, string.Format("Error, Value returned different value after midification"));
+                Assert.False(true, string.Format("Error, Value returned different value after modification"));
             }
 
             // exception expected
@@ -530,7 +530,7 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry curr5 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr5))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
 
@@ -539,7 +539,7 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry de5 = en.Entry;
             if (!de.Equals(de5))
             {
-                Assert.False(true, string.Format("Error, Entry returned different value after midification"));
+                Assert.False(true, string.Format("Error, Entry returned different value after modification"));
             }
 
 
@@ -547,7 +547,7 @@ namespace System.Collections.Specialized.Tests
             Object k5 = en.Key;
             if (!k.Equals(k5))
             {
-                Assert.False(true, string.Format("Error, Key returned different value after midification"));
+                Assert.False(true, string.Format("Error, Key returned different value after modification"));
             }
 
 
@@ -556,7 +556,7 @@ namespace System.Collections.Specialized.Tests
             Object v5 = en.Value;
             if (!v.Equals(v5))
             {
-                Assert.False(true, string.Format("Error, Value returned different value after midification"));
+                Assert.False(true, string.Format("Error, Value returned different value after modification"));
             }
 
 

@@ -2,17 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Globalization;
-using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using System.Text;
 
 namespace System.IO
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.
-    [ComVisible(true)]
     public sealed class FileInfo : FileSystemInfo
     {
         private String _name;
@@ -50,7 +50,7 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         internal FileInfo(String fullPath, IFileSystemObject fileSystemObject) : base(fileSystemObject)
         {
-            Contract.Assert(Path.IsPathRooted(fullPath), "fullPath must be fully qualified!");
+            Debug.Assert(Path.IsPathRooted(fullPath), "fullPath must be fully qualified!");
             _name = Path.GetFileName(fullPath);
             OriginalPath = _name;
             FullPath = fullPath;

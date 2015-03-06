@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
     /// <summary>
     /// Contains is quite similar to the any/all operator above. Each partition searches a
     /// subset of elements for a match, and the first one to find a match signals to the rest
-    /// of the partititons to stop searching.
+    /// of the partitions to stop searching.
     /// </summary>
     /// <typeparam name="TInput"></typeparam>
     internal sealed class ContainsSearchOperator<TInput> : UnaryQueryOperator<TInput, bool>
@@ -36,7 +36,7 @@ namespace System.Linq.Parallel
         internal ContainsSearchOperator(IEnumerable<TInput> child, TInput searchValue, IEqualityComparer<TInput> comparer)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(child != null, "child data source cannot be null");
 
             _searchValue = searchValue;
 
@@ -93,7 +93,7 @@ namespace System.Linq.Parallel
             int partitionCount = inputStream.PartitionCount;
             PartitionedStream<bool, int> outputStream = new PartitionedStream<bool, int>(partitionCount, Util.GetDefaultComparer<int>(), OrdinalIndexState.Correct);
 
-            // Create a shared cancelation variable
+            // Create a shared cancellation variable
             Shared<bool> resultFoundFlag = new Shared<bool>(false);
             for (int i = 0; i < partitionCount; i++)
             {
@@ -110,7 +110,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<bool> AsSequentialQuery(CancellationToken token)
         {
-            Contract.Assert(false, "This method should never be called as it is an ending operator with LimitsParallelism=false.");
+            Debug.Fail("This method should never be called as it is an ending operator with LimitsParallelism=false.");
             throw new NotSupportedException();
         }
 
@@ -126,7 +126,7 @@ namespace System.Linq.Parallel
 
         //---------------------------------------------------------------------------------------
         // This enumerator performs the search over its input data source. It also cancels peer
-        // enumerators when an answer was found, and polls this cancelation flag to stop when
+        // enumerators when an answer was found, and polls this cancellation flag to stop when
         // requested.
         //
 
@@ -147,9 +147,9 @@ namespace System.Linq.Parallel
                                                       IEqualityComparer<TInput> comparer, int partitionIndex, Shared<bool> resultFoundFlag,
                 CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(comparer != null);
-                Contract.Assert(resultFoundFlag != null);
+                Debug.Assert(source != null);
+                Debug.Assert(comparer != null);
+                Debug.Assert(resultFoundFlag != null);
 
                 _source = source;
                 _searchValue = searchValue;
@@ -167,7 +167,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref bool currentElement, ref int currentKey)
             {
-                Contract.Assert(_comparer != null);
+                Debug.Assert(_comparer != null);
 
                 // Avoid enumerating if we've already found an answer.
                 if (_resultFoundFlag.Value)
@@ -191,7 +191,7 @@ namespace System.Linq.Parallel
 
                         if (_resultFoundFlag.Value)
                         {
-                            // If cancelation occurred, it's because a successful answer was found.
+                            // If cancellation occurred, it's because a successful answer was found.
                             return false;
                         }
 
@@ -214,7 +214,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }

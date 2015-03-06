@@ -16,7 +16,6 @@ using System.Threading;
 
 namespace System.IO
 {
-    [ComVisible(true)]
     public static class Directory
     {
         public static DirectoryInfo GetParent(String path)
@@ -350,9 +349,9 @@ namespace System.IO
             Contract.Requires(searchPattern != null);
             Contract.Requires(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
-            IEnumerable<String> enble = FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
+            IEnumerable<String> enumerable = FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
-            List<String> fileList = new List<String>(enble);
+            List<String> fileList = new List<String>(enumerable);
             return fileList.ToArray();
         }
 

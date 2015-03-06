@@ -1,128 +1,146 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
-
 internal static partial class Interop
 {
     /// <summary>Common Unix errno error codes.</summary>
     internal static class Errors
     {
+        // These values were defined in:
+        // include/asm-generic/errno-base.h
+        // include/asm-generic/errno.h
+
+        internal const int EPERM = 1;
         internal const int ENOENT = 2;
+        internal const int ESRCH = 3;
         internal const int EINTR = 4;
+        internal const int EIO = 5;
+        internal const int ENXIO = 6;
+        internal const int E2BIG = 7;
+        internal const int ENOEXEC = 8;
+        internal const int EBADF = 9;
+        internal const int ECHILD = 10;
+        internal const int EAGAIN = 11;
         internal const int EWOULDBLOCK = 11;
+        internal const int ENOMEM = 12;
         internal const int EACCES = 13;
+        internal const int EFAULT = 14;
+        internal const int ENOTBLK = 15;
+        internal const int EBUSY = 16;
         internal const int EEXIST = 17;
         internal const int EXDEV = 18;
+        internal const int ENODEV = 19;
+        internal const int ENOTDIR = 20;
         internal const int EISDIR = 21;
         internal const int EINVAL = 22;
+        internal const int ENFILE = 23;
+        internal const int EMFILE = 24;
+        internal const int ENOTTY = 25;
+        internal const int ETXTBSY = 26;
         internal const int EFBIG = 27;
+        internal const int ENOSPC = 28;
+        internal const int ESPIPE = 29;
+        internal const int EROFS = 30;
+        internal const int EMLINK = 31;
+        internal const int EPIPE = 32;
+        internal const int EDOM = 33;
+        internal const int ERANGE = 34;
+        internal const int EDEADLK = 35;
+        internal const int EDEADLOCK = EDEADLK;
         internal const int ENAMETOOLONG = 36;
+        internal const int ENOLCK = 37;
+        internal const int ENOSYS = 38;
+        internal const int ENOTEMPTY = 39;
+        internal const int ELOOP = 40;
+        internal const int ENOMSG = 42;
+        internal const int EIDRM = 43;
+        internal const int ECHRNG = 44;
+        internal const int EL2NSYNC = 45;
+        internal const int EL3HLT = 46;
+        internal const int EL3RST = 47;
+        internal const int ELNRNG = 48;
+        internal const int EUNATCH = 49;
+        internal const int ENOCSI = 50;
+        internal const int EL2HLT = 51;
+        internal const int EBADE = 52;
+        internal const int EBADR = 53;
+        internal const int EXFULL = 54;
+        internal const int ENOANO = 55;
+        internal const int EBADRQC = 56;
+        internal const int EBADSLT = 57;
+        internal const int EBFONT = 59;
+        internal const int ENOSTR = 60;
+        internal const int ENODATA = 61;
+        internal const int ETIME = 62;
+        internal const int ENOSR = 63;
+        internal const int ENONET = 64;
+        internal const int ENOPKG = 65;
+        internal const int EREMOTE = 66;
+        internal const int ENOLINK = 67;
+        internal const int EADV = 68;
+        internal const int ESRMNT = 69;
+        internal const int ECOMM = 70;
+        internal const int EPROTO = 71;
+        internal const int EMULTIHOP = 72;
+        internal const int EDOTDOT = 73;
+        internal const int EBADMSG = 74;
+        internal const int EOVERFLOW = 75;
+        internal const int ENOTUNIQ = 76;
+        internal const int EBADFD = 77;
+        internal const int EREMCHG = 78;
+        internal const int ELIBACC = 79;
+        internal const int ELIBBAD = 80;
+        internal const int ELIBSCN = 81;
+        internal const int ELIBMAX = 82;
+        internal const int ELIBEXEC = 83;
+        internal const int EILSEQ = 84;
+        internal const int ERESTART = 85;
+        internal const int ESTRPIPE = 86;
+        internal const int EUSERS = 87;
+        internal const int ENOTSOCK = 88;
+        internal const int EDESTADDRREQ = 89;
+        internal const int EMSGSIZE = 90;
+        internal const int EPROTOTYPE = 91;
+        internal const int ENOPROTOOPT = 92;
+        internal const int EPROTONOSUPPORT = 93;
+        internal const int ESOCKTNOSUPPORT = 94;
+        internal const int EOPNOTSUPP = 95;
+        internal const int EPFNOSUPPORT = 96;
+        internal const int EAFNOSUPPORT = 97;
+        internal const int EADDRINUSE = 98;
+        internal const int EADDRNOTAVAIL = 99;
+        internal const int ENETDOWN = 100;
+        internal const int ENETUNREACH = 101;
+        internal const int ENETRESET = 102;
+        internal const int ECONNABORTED = 103;
+        internal const int ECONNRESET = 104;
+        internal const int ENOBUFS = 105;
+        internal const int EISCONN = 106;
+        internal const int ENOTCONN = 107;
+        internal const int ESHUTDOWN = 108;
+        internal const int ETOOMANYREFS = 109;
+        internal const int ETIMEDOUT = 110;
+        internal const int ECONNREFUSED = 111;
+        internal const int EHOSTDOWN = 112;
+        internal const int EHOSTUNREACH = 113;
+        internal const int EALREADY = 114;
+        internal const int EINPROGRESS = 115;
+        internal const int ESTALE = 116;
+        internal const int EUCLEAN = 117;
+        internal const int ENOTNAM = 118;
+        internal const int ENAVAIL = 119;
+        internal const int EISNAM = 120;
+        internal const int EREMOTEIO = 121;
+        internal const int EDQUOT = 122;
+        internal const int ENOMEDIUM = 123;
+        internal const int EMEDIUMTYPE = 124;
         internal const int ECANCELED = 125;
-    }
-
-    /// <summary>
-    /// Validates the result of system call that returns greater than or equal to 0 on success
-    /// and less than 0 on failure, with errno set to the error code.
-    /// If the system call failed due to interruption (EINTR), true is returned and 
-    /// the caller should (usually) retry. If the system call failed for any other reason, 
-    /// an exception is thrown. Otherwise, the system call succeeded, and false is returned.
-    /// </summary>
-    /// <param name="result">The result of the system call.</param>
-    /// <param name="path">The path with which this error is associated.  This may be null.</param>
-    /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
-    /// <returns>
-    /// true if the system call should be retried due to it being interrupted; otherwise, false.
-    /// An exception will be thrown if the system call failed for any reason other than interruption.
-    /// </returns>
-    internal static bool CheckIo(long result, string path = null, bool isDirectory = false)
-    {
-        if (result < 0)
-        {
-            int errno = Marshal.GetLastWin32Error();
-            if (errno != Interop.Errors.EINTR)
-            {
-                throw Interop.GetExceptionForIoErrno(errno, path, isDirectory);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Validates the result of system call that returns a non-zero pointer on success
-    /// and a zero pointer on failure.
-    /// If the system call failed due to interruption (EINTR), true is returned and 
-    /// the caller should (usually) retry. If the system call failed for any other reason, 
-    /// an exception is thrown. Otherwise, the system call succeeded, and false is returned.
-    /// </summary>
-    internal static bool CheckIoPtr(IntPtr ptr, string path = null, bool isDirectory = false)
-    {
-        return CheckIo(ptr == IntPtr.Zero ? -1 : 0, path, isDirectory);
-    }
-
-    /// <summary>
-    /// Gets an Exception to represent the supplied errno error code.
-    /// </summary>
-    /// <param name="errno">The error code</param>
-    /// <param name="path">The path with which this error is associated.  This may be null.</param>
-    /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
-    /// <returns></returns>
-    internal static Exception GetExceptionForIoErrno(int errno, string path = null, bool isDirectory = false)
-    {
-        switch (errno)
-        {
-            case Errors.EINVAL:
-                throw new ArgumentException();
-
-            case Errors.EISDIR:
-                isDirectory = true;
-                goto case Errors.ENOENT;
-
-            case Errors.ENOENT:
-                if (isDirectory)
-                {
-                    return !string.IsNullOrEmpty(path) ?
-                        new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, path)) :
-                        new DirectoryNotFoundException(SR.IO_PathNotFound_NoPathName);
-                }
-                else
-                {
-                    return !string.IsNullOrEmpty(path) ?
-                        new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, path), path) :
-                        new FileNotFoundException(SR.IO_FileNotFound);
-                }
-
-            case Errors.EACCES:
-                return !string.IsNullOrEmpty(path) ?
-                    new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path)) :
-                    new UnauthorizedAccessException(SR.UnauthorizedAccess_IODenied_NoPathName);
-
-            case Errors.ENAMETOOLONG:
-                return new PathTooLongException(SR.IO_PathTooLong);
-
-            case Errors.EWOULDBLOCK:
-                return !string.IsNullOrEmpty(path) ?
-                    new IOException(SR.Format(SR.IO_SharingViolation_File, path), errno) :
-                    new IOException(SR.IO_SharingViolation_NoFileName, errno);
-
-            case Errors.ECANCELED:
-                return new OperationCanceledException();
-
-            case Errors.EFBIG:
-                return new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_FileLengthTooBig);
-
-            case Errors.EEXIST:
-                if (!string.IsNullOrEmpty(path))
-                {
-                    return new IOException(SR.Format(SR.IO_FileExists_Name, path), errno);
-                }
-                goto default;
-
-            default:
-                return new IOException(libc.strerror(errno), errno);
-        }
+        internal const int ENOKEY = 126;
+        internal const int EKEYEXPIRED = 127;
+        internal const int EKEYREVOKED = 128;
+        internal const int EKEYREJECTED = 129;
+        internal const int EOWNERDEAD = 130;
+        internal const int ENOTRECOVERABLE = 131;
+        internal const int ERFKILL = 132;
     }
 }

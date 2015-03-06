@@ -8802,7 +8802,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
 
         /// <summary>
         /// Combines descendant axis with self axis
-        /// node()/descendant::node()/self::node [self::text() = false() and self::attribute=fasle()]
+        /// node()/descendant::node()/self::node [self::text() = false() and self::attribute=false()]
         /// </summary>
         [Fact]
         public static void AxesCombinationsTest242()
@@ -9902,7 +9902,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// I accidently put fasle() instead of false(), so I sould get an exception!
+        /// I accidentally put fasle() instead of false(), so I should get an exception!
         /// Copy of node()/descendant::node()/self::node [self::text() = false() and self::attribute=fasle()]
         /// </summary>
         [Fact]
@@ -16339,7 +16339,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
 
         /// <summary>
         /// Combines descendant-or-self axis with descendant-or-self axis
-        /// descendant-or-self::node()[position()!=5]/descendant-or-self::node()[@atttribute::*]
+        /// descendant-or-self::node()[position()!=5]/descendant-or-self::node()[@attribute::*]
         /// </summary>
         [Fact]
         [OuterLoop]
@@ -37817,7 +37817,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// descendant-or-self::*/descedant-or-self::text()
+        /// descendant-or-self::*/descendant-or-self::text()
         /// </summary>
         [Fact]
         public static void AxesCombinationsTest2118()
@@ -38313,7 +38313,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// descendant-or-self::*/descedant-or-self::*
+        /// descendant-or-self::*/descendant-or-self::*
         /// </summary>
         [Fact]
         public static void AxesCombinationsTest2125()
@@ -39424,7 +39424,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// descendant-or-self::node()/descedant-or-self::node()
+        /// descendant-or-self::node()/descendant-or-self::node()
         /// </summary>
         [Fact]
         public static void AxesCombinationsTest2126()

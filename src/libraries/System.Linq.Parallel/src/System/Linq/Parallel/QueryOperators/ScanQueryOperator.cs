@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -30,7 +30,7 @@ namespace System.Linq.Parallel
         internal ScanQueryOperator(IEnumerable<TElement> data)
             : base(Scheduling.DefaultPreserveOrder, QuerySettings.Empty)
         {
-            Contract.Assert(data != null);
+            Debug.Assert(data != null);
 
             ParallelEnumerableWrapper<TElement> wrapper = data as ParallelEnumerableWrapper<TElement>;
             if (wrapper != null)
@@ -57,7 +57,7 @@ namespace System.Linq.Parallel
 
         internal override QueryResults<TElement> Open(QuerySettings settings, bool preferStriping)
         {
-            Contract.Assert(settings.DegreeOfParallelism.HasValue);
+            Debug.Assert(settings.DegreeOfParallelism.HasValue);
 
             IList<TElement> dataAsList = _data as IList<TElement>;
             if (dataAsList != null)

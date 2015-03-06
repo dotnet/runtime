@@ -10,7 +10,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -70,8 +70,8 @@ namespace System.Linq.Parallel
 
         internal void QueryBegin(Task rootTask)
         {
-            Contract.Assert(rootTask != null, "Expected a non-null task");
-            Contract.Assert(_rootTask == null, "Cannot begin a query more than once");
+            Debug.Assert(rootTask != null, "Expected a non-null task");
+            Debug.Assert(_rootTask == null, "Cannot begin a query more than once");
             _rootTask = rootTask;
         }
 
@@ -83,8 +83,8 @@ namespace System.Linq.Parallel
 
         internal void QueryEnd(bool userInitiatedDispose)
         {
-            Contract.Assert(_rootTask != null);
-            //Contract.Assert(Task.Current == null || (Task.Current != _rootTask && Task.Current.Parent != _rootTask));
+            Debug.Assert(_rootTask != null);
+            //Debug.Assert(Task.Current == null || (Task.Current != _rootTask && Task.Current.Parent != _rootTask));
 
             if (Interlocked.Exchange(ref _alreadyEnded, 1) == 0)
             {
@@ -125,7 +125,7 @@ namespace System.Linq.Parallel
                         }
                     }
 
-                    // if all the exceptions were OCE(externalToken), then we will propogate only a single OCE(externalToken) below
+                    // if all the exceptions were OCE(externalToken), then we will propagate only a single OCE(externalToken) below
                     // otherwise, we flatten the aggregate (because the WaitAll above already aggregated) and rethrow.
                     if (!allOCEsOnTrackedExternalCancellationToken)
                         throw flattenedAE;  // Case #1
@@ -157,7 +157,7 @@ namespace System.Linq.Parallel
 
                     //otherwise, given that there were no user-delegate exceptions (they would have been rethrown above),
                     //the only remaining situation is user-initiated dispose.
-                    Contract.Assert(_cancellationState.TopLevelDisposedFlag.Value);
+                    Debug.Assert(_cancellationState.TopLevelDisposedFlag.Value);
 
                     // If we aren't actively disposing, that means somebody else previously disposed
                     // of the enumerator. We must throw an ObjectDisposedException.

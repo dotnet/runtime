@@ -12,7 +12,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
 
 namespace System.Threading.Tasks.Dataflow
@@ -48,7 +47,7 @@ namespace System.Threading.Tasks.Dataflow
     public class DataflowLinkOptions
     {
         /// <summary>
-        /// A constant used to specify an unlimited quanity for <see cref="DataflowLinkOptions"/> members 
+        /// A constant used to specify an unlimited quantity for <see cref="DataflowLinkOptions"/> members 
         /// that provide an upper bound. This field is a constant tied to <see cref="DataflowLinkOptions.Unbounded"/>.
         /// </summary>
         internal const Int32 Unbounded = DataflowBlockOptions.Unbounded;
@@ -83,7 +82,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _propagateCompletion; }
             set
             {
-                Contract.Assert(this != Default && this != UnlinkAfterOneAndPropagateCompletion, "Default and UnlinkAfterOneAndPropagateCompletion instances are supposed to be immutable.");
+                Debug.Assert(this != Default && this != UnlinkAfterOneAndPropagateCompletion, "Default and UnlinkAfterOneAndPropagateCompletion instances are supposed to be immutable.");
                 _propagateCompletion = value;
             }
         }
@@ -94,7 +93,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _maxNumberOfMessages; }
             set
             {
-                Contract.Assert(this != Default && this != UnlinkAfterOneAndPropagateCompletion, "Default and UnlinkAfterOneAndPropagateCompletion instances are supposed to be immutable.");
+                Debug.Assert(this != Default && this != UnlinkAfterOneAndPropagateCompletion, "Default and UnlinkAfterOneAndPropagateCompletion instances are supposed to be immutable.");
                 if (value < 1 && value != Unbounded) throw new ArgumentOutOfRangeException("value");
                 _maxNumberOfMessages = value;
             }
@@ -106,7 +105,7 @@ namespace System.Threading.Tasks.Dataflow
             get { return _append; }
             set
             {
-                Contract.Assert(this != Default && this != UnlinkAfterOneAndPropagateCompletion, "Default and UnlinkAfterOneAndPropagateCompletion instances are supposed to be immutable.");
+                Debug.Assert(this != Default && this != UnlinkAfterOneAndPropagateCompletion, "Default and UnlinkAfterOneAndPropagateCompletion instances are supposed to be immutable.");
                 _append = value;
             }
         }

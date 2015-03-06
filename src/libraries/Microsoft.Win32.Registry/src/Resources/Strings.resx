@@ -1,5 +1,110 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -12,20 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Arg_DllInitFailure" xml:space="preserve">
-    <value>One machine may not have remote administration enabled, or both machines may not be running the remote registry service.</value>
-  </data>
-  <data name="Arg_EnumIllegalVal" xml:space="preserve">
-    <value>Illegal enum value: {0}.</value>
-  </data>
-  <data name="Arg_RegBadKeyKind" xml:space="preserve">
-    <value>The specified RegistryValueKind is an invalid value.</value>
-  </data>
-  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
-    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
-  </data>
-  <data name="Arg_RegInvalidKeyName" xml:space="preserve">
-    <value>Registry key name must start with a valid base key name.</value>
+  <data name="Arg_RegSubKeyAbsent" xml:space="preserve">
+    <value>Cannot delete a subkey tree because the subkey does not exist.</value>
   </data>
   <data name="Arg_RegKeyDelHive" xml:space="preserve">
     <value>Cannot delete a registry hive's subtree.</value>
@@ -33,41 +126,53 @@
   <data name="Arg_RegKeyNoRemoteConnect" xml:space="preserve">
     <value>No remote connection to '{0}' while trying to read the registry.</value>
   </data>
-  <data name="Arg_RegKeyNotFound" xml:space="preserve">
-    <value>The specified registry key does not exist.</value>
-  </data>
   <data name="Arg_RegKeyOutOfRange" xml:space="preserve">
     <value>Registry HKEY was out of the legal range.</value>
+  </data>
+  <data name="Arg_RegKeyNotFound" xml:space="preserve">
+    <value>The specified registry key does not exist.</value>
   </data>
   <data name="Arg_RegKeyStrLenBug" xml:space="preserve">
     <value>Registry key names should not be greater than 255 characters.</value>
   </data>
-  <data name="Arg_RegSetBadArrType" xml:space="preserve">
-    <value>RegistryKey.SetValue does not support arrays of type '{0}'. Only Byte[] and String[] are supported.</value>
+  <data name="Arg_RegValStrLenBug" xml:space="preserve">
+    <value>Registry value names should not be greater than 16,383 characters.</value>
+  </data>
+  <data name="Arg_RegBadKeyKind" xml:space="preserve">
+    <value>The specified RegistryValueKind is an invalid value.</value>
+  </data>
+  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
+    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
   </data>
   <data name="Arg_RegSetMismatchedKind" xml:space="preserve">
     <value>The type of the value object did not match the specified RegistryValueKind or the object could not be properly converted.</value>
   </data>
+  <data name="Arg_RegSetBadArrType" xml:space="preserve">
+    <value>RegistryKey.SetValue does not support arrays of type '{0}'. Only Byte[] and String[] are supported.</value>
+  </data>
   <data name="Arg_RegSetStrArrNull" xml:space="preserve">
     <value>RegistryKey.SetValue does not allow a String[] that contains a null String reference.</value>
   </data>
-  <data name="Arg_RegSubKeyAbsent" xml:space="preserve">
-    <value>Cannot delete a subkey tree because the subkey does not exist.</value>
+  <data name="Arg_RegInvalidKeyName" xml:space="preserve">
+    <value>Registry key name must start with a valid base key name.</value>
+  </data>
+  <data name="Arg_DllInitFailure" xml:space="preserve">
+    <value>One machine may not have remote administration enabled, or both machines may not be running the remote registry service.</value>
+  </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}.</value>
   </data>
   <data name="Arg_RegSubKeyValueAbsent" xml:space="preserve">
     <value>No value exists with that name.</value>
-  </data>
-  <data name="Arg_RegValStrLenBug" xml:space="preserve">
-    <value>Registry value names should not be greater than 16,383 characters.</value>
-  </data>
-  <data name="Argument_InvalidRegistryKeyPermissionCheck" xml:space="preserve">
-    <value>The specified RegistryKeyPermissionCheck value is invalid.</value>
   </data>
   <data name="Argument_InvalidRegistryOptionsCheck" xml:space="preserve">
     <value>The specified RegistryOptions value is invalid.</value>
   </data>
   <data name="Argument_InvalidRegistryViewCheck" xml:space="preserve">
     <value>The specified RegistryView value is invalid.</value>
+  </data>
+  <data name="Argument_InvalidRegistryKeyPermissionCheck" xml:space="preserve">
+    <value>The specified RegistryKeyPermissionCheck value is invalid.</value>
   </data>
   <data name="InvalidOperation_RegRemoveSubKey" xml:space="preserve">
     <value>Registry key has subkeys and recursive removes are not supported by this method.</value>

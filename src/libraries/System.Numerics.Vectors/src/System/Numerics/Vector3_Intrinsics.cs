@@ -80,9 +80,9 @@ namespace System.Numerics
             if (array == null)
                 throw new ArgumentNullException("values");
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(SR.GetString("Arg_ArgumentOutOfRangeException", index));
+                throw new ArgumentOutOfRangeException(SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
             if ((array.Length - index) < 3)
-                throw new ArgumentException(SR.GetString("Arg_ElementsInSourceIsGreaterThanDestination", index));
+                throw new ArgumentException(SR.Format(SR.Arg_ElementsInSourceIsGreaterThanDestination, index));
             array[index] = X;
             array[index + 1] = Y;
             array[index + 2] = Z;

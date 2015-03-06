@@ -521,7 +521,7 @@ namespace XPathTests.FunctionalTests.Expressions
         }
 
         /// <summary>
-        /// opreator precedence and,or. or has precedence over and
+        /// operator precedence and,or. or has precedence over and
         /// true() and false() or true()
         /// </summary>
         [Fact]

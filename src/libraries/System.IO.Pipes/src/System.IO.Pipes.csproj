@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == ''">Windows_Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -10,27 +10,18 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-  </PropertyGroup>
-
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <!-- References are resolved from packages.config -->
   <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\SR.cs">
-      <Link>Common\System\SR.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StreamAsyncHelper.cs">
       <Link>Common\System\IO\StreamAsyncHelper.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\IO\__Error.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeClientStream.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.cs" />
@@ -42,8 +33,16 @@
     <Compile Include="System\IO\Pipes\PipeState.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -57,9 +56,9 @@
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\PipeStreamAsyncResult.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <!-- TODO: Remove once implemented -->
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Unix.cs" />
@@ -67,17 +66,63 @@
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Unix.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Unix.cs" />
-  </ItemGroup>
 
-  <!-- Resource files -->
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <SubType>Designer</SubType>
-      <CustomToolNamespace>Resources</CustomToolNamespace>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.pipe2.cs">
+      <Link>Common\Interop\Unix\Interop.pipe2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
+      <Link>Common\Interop\Unix\Interop.close.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
+      <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
+      <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkdir.cs">
+      <Link>Common\Interop\Unix\Interop.mkdir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkfifo.cs">
+      <Link>Common\Interop\Unix\Interop.mkfifo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open.cs">
+      <Link>Common\Interop\Unix\Interop.open.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
+      <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pipe.cs">
+      <Link>Common\Interop\Unix\Interop.pipe.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
+      <Link>Common\Interop\Unix\Interop.read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.stat.cs">
+      <Link>Common\Interop\Unix\Interop.stat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
+      <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
+      <Link>Common\Interop\Unix\Interop.write.cs</Link>
+    </Compile>
   </ItemGroup>
+  <!-- Resource files -->
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>

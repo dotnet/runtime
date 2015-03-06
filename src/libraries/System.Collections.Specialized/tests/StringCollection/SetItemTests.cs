@@ -146,7 +146,7 @@ namespace System.Collections.Specialized.Tests
             }
             if (String.Compare(sc[0], intlStrLower) != 0)
             {
-                Assert.False(true, string.Format("Error, disn't set to lower"));
+                Assert.False(true, string.Format("Error, didn't set to lower"));
             }
 
             //
@@ -159,7 +159,7 @@ namespace System.Collections.Specialized.Tests
             }
             if (String.Compare(sc[sc.Count - 1], intlStrLower) != 0)
             {
-                Assert.False(true, string.Format("Error, disn't set to lower"));
+                Assert.False(true, string.Format("Error, didn't set to lower"));
             }
 
 
@@ -183,7 +183,7 @@ namespace System.Collections.Specialized.Tests
             }
             if (!sc.Contains(null))
             {
-                Assert.False(true, string.Format("Error, Contains() didn't return truw for null"));
+                Assert.False(true, string.Format("Error, Contains() didn't return true for null"));
             }
 
             if (sc.IndexOf(null) != ind)

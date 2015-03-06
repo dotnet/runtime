@@ -328,7 +328,7 @@ namespace System.Xml.Schema
             if (ns == null)
                 throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
 
-            // Create XmlQualfiedName
+            // Create XmlQualifiedName
             return new XmlQualifiedName(localName, ns);
         }
 

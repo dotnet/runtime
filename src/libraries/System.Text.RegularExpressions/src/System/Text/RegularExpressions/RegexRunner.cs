@@ -57,13 +57,13 @@ namespace System.Text.RegularExpressions
         protected Match _runmatch;         // result object
         protected Regex _runregex;         // regex object
 
-        private Int32 _timeout;            // timeout in millisecs (needed for actual)        
+        private Int32 _timeout;            // timeout in milliseconds (needed for actual)        
         private bool _ignoreTimeout;
         private Int32 _timeoutOccursAt;
 
 
         // We have determined this value in a series of experiments where x86 retail
-        // builds (ono-lab-optimised) were run on different pattern/input pairs. Larger values
+        // builds (ono-lab-optimized) were run on different pattern/input pairs. Larger values
         // of TimeoutCheckFrequency did not tend to increase performance; smaller values
         // of TimeoutCheckFrequency tended to slow down the execution.
         private const int TimeoutCheckFrequency = 1000;

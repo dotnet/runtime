@@ -18,7 +18,6 @@ namespace System.ComponentModel
     ///    <para>Provides
     ///       functionality for containers. Containers are objects that logically contain zero or more components.</para>
     /// </devdoc>
-    [ComVisible(true)]
     public interface IContainer : IDisposable
     {
         // Adds a component to the container.

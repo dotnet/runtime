@@ -128,7 +128,7 @@ namespace System.Collections.Immutable.Test
         }
 
         /// <summary>
-        /// Tests the EqualsStructurally public method and the IStructrualEquatable.Equals method.
+        /// Tests the EqualsStructurally public method and the IStructuralEquatable.Equals method.
         /// </summary>
         /// <typeparam name="TCollection">The type of tested collection.</typeparam>
         /// <typeparam name="TElement">The type of element stored in the collection.</typeparam>

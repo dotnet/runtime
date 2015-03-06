@@ -60,7 +60,6 @@ namespace System.Collections
     // 
     [DebuggerTypeProxy(typeof(System.Collections.SortedList.SortedListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(true)]
 #if FEATURE_CORECLR
     [Obsolete("Non-generic collections have been deprecated. Please use collections in System.Collections.Generic.")]
 #endif
@@ -231,7 +230,7 @@ namespace System.Collections
                     else
                     {
                         // size can only be zero here.
-                        Contract.Assert(_size == 0, "Size is not zero");
+                        Debug.Assert(_size == 0, "Size is not zero");
                         _keys = Array.Empty<Object>();
                         _values = Array.Empty<Object>();
                     }
@@ -389,7 +388,7 @@ namespace System.Collections
         }
 
         // Ensures that the capacity of this sorted list is at least the given
-        // minimum value. If the currect capacity of the list is less than
+        // minimum value. If the current capacity of the list is less than
         // min, the capacity is increased to twice the current capacity or
         // to min, whichever is larger.
         private void EnsureCapacity(int min)

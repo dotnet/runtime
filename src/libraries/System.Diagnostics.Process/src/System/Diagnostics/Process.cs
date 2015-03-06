@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Threading;
 
@@ -46,7 +47,6 @@ namespace System.Diagnostics
         private EventHandler _onExited;
         private bool _exited;
         private int _exitCode;
-        private bool _signaled;
 
         private DateTime _exitTime;
         private bool _haveExitTime;
@@ -67,7 +67,7 @@ namespace System.Diagnostics
         private StreamReadMode _outputStreamReadMode;
         private StreamReadMode _errorStreamReadMode;
 
-        // Support for asynchrously reading streams
+        // Support for asynchronously reading streams
         public event DataReceivedEventHandler OutputDataReceived;
         public event DataReceivedEventHandler ErrorDataReceived;
 
@@ -170,14 +170,7 @@ namespace System.Diagnostics
                 if (!_exited)
                 {
                     EnsureState(State.Associated);
-
-                    int? localExitCode;
-                    _exited = GetHasExited(out localExitCode);
-                    if (localExitCode.HasValue)
-                    {
-                        _exitCode = localExitCode.Value;
-                    }
-
+                    UpdateHasExited();
                     if (_exited)
                     {
                         RaiseOnExited();
@@ -309,7 +302,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long NonpagedSystemMemorySize64
         {
             get
@@ -319,7 +311,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PagedMemorySize64
         {
             get
@@ -329,7 +320,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PagedSystemMemorySize64
         {
             get
@@ -339,7 +329,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PeakPagedMemorySize64
         {
             get
@@ -349,7 +338,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PeakWorkingSet64
         {
             get
@@ -359,7 +347,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PeakVirtualMemorySize64
         {
             get
@@ -425,7 +412,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long PrivateMemorySize64
         {
             get
@@ -496,7 +482,7 @@ namespace System.Diagnostics
             {
                 if (_startInfo == null)
                 {
-                    _startInfo = new ProcessStartInfo(this);
+                    _startInfo = new ProcessStartInfo();
                 }
                 return _startInfo;
             }
@@ -527,7 +513,7 @@ namespace System.Diagnostics
                     ProcessThread[] newThreadsArray = new ProcessThread[count];
                     for (int i = 0; i < count; i++)
                     {
-                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, (ThreadInfo)_processInfo._threadInfoList[i]);
+                        newThreadsArray[i] = new ProcessThread(_isRemoteMachine, _processId, (ThreadInfo)_processInfo._threadInfoList[i]);
                     }
                     ProcessThreadCollection newThreads = new ProcessThreadCollection(newThreadsArray);
                     _threads = newThreads;
@@ -536,7 +522,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long VirtualMemorySize64
         {
             get
@@ -647,7 +632,6 @@ namespace System.Diagnostics
             }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public long WorkingSet64
         {
             get
@@ -674,7 +658,7 @@ namespace System.Diagnostics
         ///     If we used the process handle stored in the process object (we have all access to the handle,) don't release it.
         /// </devdoc>
         /// <internalonly/>
-        void ReleaseProcessHandle(SafeProcessHandle handle)
+        private void ReleaseProcessHandle(SafeProcessHandle handle)
         {
             if (handle == null)
             {
@@ -692,7 +676,7 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///     This is called from the threadpool when a proces exits.
+        ///     This is called from the threadpool when a process exits.
         /// </devdoc>
         /// <internalonly/>
         private void CompletionCallback(object context, bool wasSignaled)
@@ -754,6 +738,7 @@ namespace System.Diagnostics
                 _output = null;
                 _error = null;
 
+                CloseCore();
                 Refresh();
             }
         }
@@ -762,7 +747,7 @@ namespace System.Diagnostics
         ///     Helper method for checking preconditions when accessing properties.
         /// </devdoc>
         /// <internalonly/>
-        void EnsureState(State state)
+        private void EnsureState(State state)
         {
             if ((state & State.Associated) != (State)0)
                 if (!Associated)
@@ -794,15 +779,7 @@ namespace System.Diagnostics
                 if (_processInfo == null)
                 {
                     if ((state & State.HaveId) == (State)0) EnsureState(State.HaveId);
-                    ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(_machineName);
-                    for (int i = 0; i < processInfos.Length; i++)
-                    {
-                        if (processInfos[i]._processId == _processId)
-                        {
-                            _processInfo = processInfos[i];
-                            break;
-                        }
-                    }
+                    _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
                     if (_processInfo == null)
                     {
                         throw new InvalidOperationException(SR.NoProcessInfo);
@@ -828,7 +805,7 @@ namespace System.Diagnostics
         ///     Make sure we are watching for a process exit.
         /// </devdoc>
         /// <internalonly/>
-        void EnsureWatchingForExit()
+        private void EnsureWatchingForExit()
         {
             if (!_watchingForExit)
             {
@@ -859,7 +836,7 @@ namespace System.Diagnostics
         ///     Make sure we have obtained the min and max working set limits.
         /// </devdoc>
         /// <internalonly/>
-        void EnsureWorkingSetLimits()
+        private void EnsureWorkingSetLimits()
         {
             if (!_haveWorkingSetLimits)
             {
@@ -872,7 +849,7 @@ namespace System.Diagnostics
         ///     Helper to set minimum or maximum working set limits.
         /// </devdoc>
         /// <internalonly/>
-        void SetWorkingSetLimits(IntPtr? min, IntPtr? max)
+        private void SetWorkingSetLimits(IntPtr? min, IntPtr? max)
         {
             SetWorkingSetLimitsCore(min, max, out _minWorkingSet, out _maxWorkingSet);
             _haveWorkingSetLimits = true;
@@ -1019,7 +996,7 @@ namespace System.Diagnostics
         ///     Raise the Exited event, but make sure we don't do it more than once.
         /// </devdoc>
         /// <internalonly/>
-        void RaiseOnExited()
+        private void RaiseOnExited()
         {
             if (!_raisedOnExited)
             {
@@ -1048,19 +1025,38 @@ namespace System.Diagnostics
             _threads = null;
             _modules = null;
             _exited = false;
-            _signaled = false;
             _haveWorkingSetLimits = false;
             _haveProcessorAffinity = false;
             _havePriorityClass = false;
             _haveExitTime = false;
             _havePriorityBoostEnabled = false;
+            RefreshCore();
+        }
+
+        /// <summary>
+        /// Opens a long-term handle to the process, with all access.  If a handle exists,
+        /// then it is reused.  If the process has exited, it throws an exception.
+        /// </summary>
+        private SafeProcessHandle OpenProcessHandle()
+        {
+            if (!_haveProcessHandle)
+            {
+                //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.            
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
+                SetProcessHandle(GetProcessHandle());
+            }
+            return _processHandle;
         }
 
         /// <devdoc>
         ///     Helper to associate a process handle with this component.
         /// </devdoc>
         /// <internalonly/>
-        void SetProcessHandle(SafeProcessHandle processHandle)
+        private void SetProcessHandle(SafeProcessHandle processHandle)
         {
             _processHandle = processHandle;
             _haveProcessHandle = true;
@@ -1074,7 +1070,7 @@ namespace System.Diagnostics
         ///     Helper to associate a process id with this component.
         /// </devdoc>
         /// <internalonly/>
-        void SetProcessId(int processId)
+        private void SetProcessId(int processId)
         {
             _processId = processId;
             _haveProcessId = true;
@@ -1092,42 +1088,28 @@ namespace System.Diagnostics
         public bool Start()
         {
             Close();
+
             ProcessStartInfo startInfo = StartInfo;
             if (startInfo.FileName.Length == 0)
+            {
                 throw new InvalidOperationException(SR.FileNameMissing);
+            }
+            if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
+            {
+                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
+            }
+            if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
+            {
+                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
+            }
+
+            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.            
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
 
             return StartCore(startInfo);
-        }
-
-        private static StringBuilder BuildCommandLine(string executableFileName, string arguments)
-        {
-            // Construct a StringBuilder with the appropriate command line
-            // to pass to CreateProcess.  If the filename isn't already 
-            // in quotes, we quote it here.  This prevents some security
-            // problems (it specifies exactly which part of the string
-            // is the file to execute).
-            StringBuilder commandLine = new StringBuilder();
-            string fileName = executableFileName.Trim();
-            bool fileNameIsQuoted = (fileName.StartsWith("\"", StringComparison.Ordinal) && fileName.EndsWith("\"", StringComparison.Ordinal));
-            if (!fileNameIsQuoted)
-            {
-                commandLine.Append("\"");
-            }
-
-            commandLine.Append(fileName);
-
-            if (!fileNameIsQuoted)
-            {
-                commandLine.Append("\"");
-            }
-
-            if (!String.IsNullOrEmpty(arguments))
-            {
-                commandLine.Append(" ");
-                commandLine.Append(arguments);
-            }
-
-            return commandLine;
         }
 
         // In most scenario 437 is the codepage used for Console encoding. However this encoding is not available by default and so we use the try{} catch{} pattern and use UTF8 in case of failure.
@@ -1145,6 +1127,24 @@ namespace System.Diagnostics
                 enc = new UTF8Encoding(false);
             }
             return enc;
+        }
+
+        public static Process Start(string fileName, string userName, SecureString password, string domain)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(fileName);
+            startInfo.UserName = userName;
+            startInfo.Password = password;
+            startInfo.Domain = domain;
+            return Start(startInfo);
+        }
+
+        public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(fileName, arguments);
+            startInfo.UserName = userName;
+            startInfo.Password = password;
+            startInfo.Domain = domain;
+            return Start(startInfo);
         }
 
         /// <devdoc>
@@ -1183,20 +1183,20 @@ namespace System.Diagnostics
         public static Process Start(ProcessStartInfo startInfo)
         {
             Process process = new Process();
-            if (startInfo == null) throw new ArgumentNullException("startInfo");
+            if (startInfo == null)
+                throw new ArgumentNullException("startInfo");
+
             process.StartInfo = startInfo;
-            if (process.Start())
-            {
-                return process;
-            }
-            return null;
+            return process.Start() ? 
+                process : 
+                null;
         }
 
         /// <devdoc>
         ///     Make sure we are not watching for process exit.
         /// </devdoc>
         /// <internalonly/>
-        void StopWatchingForExit()
+        private void StopWatchingForExit()
         {
             if (_watchingForExit)
             {
@@ -1235,10 +1235,23 @@ namespace System.Diagnostics
         /// </devdoc>
         public void WaitForExit()
         {
-            WaitForExit(-1);
+            WaitForExit(Timeout.Infinite);
         }
 
-        // Support for working asynchronously with streams
+        /// <summary>
+        /// Instructs the Process component to wait the specified number of milliseconds for 
+        /// the associated process to exit.
+        /// </summary>
+        public bool WaitForExit(int milliseconds)
+        {
+            bool exited = WaitForExitCore(milliseconds);
+            if (exited && _watchForExit)
+            {
+                RaiseOnExited();
+            }
+            return exited;
+        }
+
         /// <devdoc>
         /// <para>
         /// Instructs the <see cref='System.Diagnostics.Process'/> component to start
@@ -1247,7 +1260,6 @@ namespace System.Diagnostics
         /// then the remaining information is returned. The user can add an event handler to OutputDataReceived.
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void BeginOutputReadLine()
         {
             if (_outputStreamReadMode == StreamReadMode.Undefined)
@@ -1263,7 +1275,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.PendingAsyncOperation);
 
             _pendingOutputRead = true;
-            // We can't detect if there's a pending sychronous read, stream also doesn't.
+            // We can't detect if there's a pending synchronous read, stream also doesn't.
             if (_output == null)
             {
                 if (_standardOutput == null)
@@ -1286,7 +1298,6 @@ namespace System.Diagnostics
         /// then the remaining information is returned. The user can add an event handler to ErrorDataReceived.
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void BeginErrorReadLine()
         {
             if (_errorStreamReadMode == StreamReadMode.Undefined)
@@ -1304,7 +1315,7 @@ namespace System.Diagnostics
             }
 
             _pendingErrorRead = true;
-            // We can't detect if there's a pending sychronous read, stream also doesn't.
+            // We can't detect if there's a pending synchronous read, stream also doesn't.
             if (_error == null)
             {
                 if (_standardError == null)
@@ -1324,7 +1335,6 @@ namespace System.Diagnostics
         /// specified by BeginOutputReadLine().
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void CancelOutputRead()
         {
             if (_output != null)
@@ -1345,7 +1355,6 @@ namespace System.Diagnostics
         /// specified by BeginErrorReadLine().
         /// </para>
         /// </devdoc>
-        [System.Runtime.InteropServices.ComVisible(false)]
         public void CancelErrorRead()
         {
             if (_error != null)

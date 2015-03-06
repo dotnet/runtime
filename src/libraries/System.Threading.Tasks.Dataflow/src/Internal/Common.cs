@@ -49,7 +49,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
             Contract.Requires(syncObj != null, "The monitor object to check must be provided.");
-            Contract.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
+            Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
         }
 
         /// <summary>Keeping alive processing tasks: maximum number of processed messages.</summary>
@@ -95,7 +95,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static T UnwrapWeakReference<T>(object state) where T : class
         {
             var wr = state as WeakReference<T>;
-            Contract.Assert(wr != null, "Expected a WeakReference<T> as the state argument");
+            Debug.Assert(wr != null, "Expected a WeakReference<T> as the state argument");
             T item;
             return wr.TryGetTarget(out item) ? item : null;
         }
@@ -149,16 +149,16 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>
-        /// Gets whether the exception represents a cooperative cancellation acknowledgement.
+        /// Gets whether the exception represents a cooperative cancellation acknowledgment.
         /// </summary>
         /// <param name="exception">The exception to check.</param>
-        /// <returns>true if this exception represents a cooperative cancellation acknowledgement; otherwise, false.</returns>
+        /// <returns>true if this exception represents a cooperative cancellation acknowledgment; otherwise, false.</returns>
         internal static bool IsCooperativeCancellation(Exception exception)
         {
             Contract.Requires(exception != null, "An exception to check for cancellation must be provided.");
             return exception is OperationCanceledException;
             // Note that the behavior of this method does not exactly match that of Parallel.*, PLINQ, and Task.Factory.StartNew,
-            // in that it's more liberal and treats any OCE as acknowledgement of cancellation; in contrast, the other
+            // in that it's more liberal and treats any OCE as acknowledgment of cancellation; in contrast, the other
             // libraries only treat OCEs as such if they contain the same token that was provided by the user
             // and if that token has cancellation requested.  Such logic could be achieved here with:
             //   var oce = exception as OperationCanceledException;
@@ -341,7 +341,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // is still valid.
             var atmb = System.Runtime.CompilerServices.AsyncTaskMethodBuilder<Boolean>.Create();
             atmb.SetResult(value);
-            return atmb.Task; // must be accesseed after SetResult to get the cached task
+            return atmb.Task; // must be accessed after SetResult to get the cached task
         }
 
         /// <summary>Creates a TaskCompletionSource{T} completed with a value of default(T) that we can cache.</summary>
@@ -373,7 +373,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(cancellationToken.IsCancellationRequested,
                 "The task will only be immediately canceled if the token has cancellation requested already.");
             var t = new Task<TResult>(CachedGenericDelegates<TResult>.DefaultTResultFunc, cancellationToken);
-            Contract.Assert(t.IsCanceled, "Task's constructor should cancel the task synchronously in the ctor.");
+            Debug.Assert(t.IsCanceled, "Task's constructor should cancel the task synchronously in the ctor.");
             return t;
         }
 
@@ -482,7 +482,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             catch (Exception caughtException)
             {
                 // Verify TPL has faulted the task
-                Contract.Assert(task.IsFaulted, "The task should have been faulted if it failed to start.");
+                Debug.Assert(task.IsFaulted, "The task should have been faulted if it failed to start.");
 
                 // Observe the task's exception
                 AggregateException ignoredTaskException = task.Exception;
@@ -518,7 +518,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // they get a response to a postponed message.
                 try
                 {
-                    Contract.Assert(sourceAndMessage.Key != null, "Postponed messages must have an associated source.");
+                    Debug.Assert(sourceAndMessage.Key != null, "Postponed messages must have an associated source.");
                     if (sourceAndMessage.Key.ReserveMessage(sourceAndMessage.Value, target))
                     {
                         sourceAndMessage.Key.ReleaseReservation(sourceAndMessage.Value, target);
@@ -532,7 +532,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 processedCount++;
             }
 
-            Contract.Assert(processedCount == initialCount,
+            Debug.Assert(processedCount == initialCount,
                 "We should have processed the exact number of elements that were initially there.");
         }
 
@@ -549,7 +549,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Contract.Requires(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
             Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
-            Contract.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
+            Debug.Assert(sourceCompletionTask.IsCompleted, "sourceCompletionTask must be completed in order to propagate its completion.");
 
             AggregateException exception = sourceCompletionTask.IsFaulted ? sourceCompletionTask.Exception : null;
 
@@ -584,8 +584,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Contract.Requires(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
             Contract.Requires(target != null, "The target where completion is to be propagated may not be null.");
 
-            // If sourceCompletionTask is completed, propagate completion synchrnously.
-            // Othewise hook up a continuation.
+            // If sourceCompletionTask is completed, propagate completion synchronously.
+            // Otherwise hook up a continuation.
             if (sourceCompletionTask.IsCompleted) PropagateCompletion(sourceCompletionTask, target, exceptionHandler: null);
             else PropagateCompletionAsContinuation(sourceCompletionTask, target);
         }

@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{82B54697-0251-47A1-8546-FC507D0F3B08}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.ObjectModel.Tests</AssemblyName>
+    <RootNamespace>System.ObjectModel.Tests</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
+    <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
+    <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
+    <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
+    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollection_EventsTests.cs" />
+    <Compile Include="ReadOnlyObservableCollection\ReadOnlyObservableCollectionTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.ObjectModel.csproj">
+      <Project>{F24D3391-2928-4E83-AADE-A4461E5CAE50}</Project>
+      <Name>System.ObjectModel</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

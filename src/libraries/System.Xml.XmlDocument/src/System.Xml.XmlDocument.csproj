@@ -12,13 +12,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "></PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs" />
@@ -37,14 +34,6 @@
     <Compile Include="$(CommonPath)\System\Xml\XmlNameHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\SR.cs">
-      <Link>Resources\SR.cs</Link>
-    </Compile>
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Xml\Dom\DomNameTable.cs" />
     <Compile Include="System\Xml\Dom\XmlAttribute.cs" />
     <Compile Include="System\Xml\Dom\XmlAttributeCollection.cs" />
@@ -80,18 +69,9 @@
     <Compile Include="System\Xml\Dom\XmlWhitespace.cs" />
     <Compile Include="System\Xml\EmptyEnumerator.cs" />
     <Compile Include="System\Xml\XmlTextEncoder.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-      <CustomToolNamespace>Resources</CustomToolNamespace>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -30,7 +29,6 @@ namespace System.Collections.Concurrent
     /// All public and protected members of <see cref="ConcurrentDictionary{TKey,TValue}"/> are thread-safe and may be used
     /// concurrently from multiple threads.
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     public class ConcurrentDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
@@ -382,7 +380,7 @@ namespace System.Collections.Concurrent
                 lock (tables._locks[lockNo])
                 {
                     // If the table just got resized, we may not be holding the right lock, and must retry.
-                    // This should be a rare occurence.
+                    // This should be a rare occurrence.
                     if (tables != _tables)
                     {
                         continue;
@@ -529,7 +527,7 @@ namespace System.Collections.Concurrent
                 lock (tables._locks[lockNo])
                 {
                     // If the table just got resized, we may not be holding the right lock, and must retry.
-                    // This should be a rare occurence.
+                    // This should be a rare occurrence.
                     if (tables != _tables)
                     {
                         continue;
@@ -787,7 +785,7 @@ namespace System.Collections.Concurrent
                         Monitor.Enter(tables._locks[lockNo], ref lockTaken);
 
                     // If the table just got resized, we may not be holding the right lock, and must retry.
-                    // This should be a rare occurence.
+                    // This should be a rare occurrence.
                     if (tables != _tables)
                     {
                         continue;
@@ -879,7 +877,7 @@ namespace System.Collections.Concurrent
         /// <param name="key">The key of the value to get or set.</param>
         /// <value>The value associated with the specified key. If the specified key is not found, a get
         /// operation throws a
-        /// <see cref="T:Sytem.Collections.Generic.KeyNotFoundException"/>, and a set operation creates a new
+        /// <see cref="T:System.Collections.Generic.KeyNotFoundException"/>, and a set operation creates a new
         /// element with the specified key.</value>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
@@ -1891,7 +1889,7 @@ namespace System.Collections.Concurrent
         [Conditional("DEBUG")]
         private static void Assert(bool condition)
         {
-            Contract.Assert(condition);
+            Debug.Assert(condition);
         }
 
         /// <summary>
