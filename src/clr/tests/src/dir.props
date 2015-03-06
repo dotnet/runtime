@@ -11,7 +11,7 @@
 
   <!-- Enable alternative JIT for testing if specified -->
   <PropertyGroup>
-    <_CLRTestPreCommands>IF NOT "%__EnableAltJit%"=="" set COMPLus_AltJit=*;IF NOT "%__EnableAltJit%"=="" set COMPLus_AltJitName=%Alt_Jit_Name%.dll</_CLRTestPreCommands>
+    <_CLRTestPreCommands>IF NOT "%__TestEnv%"=="" call %__TestEnv%</_CLRTestPreCommands>
   </PropertyGroup>
  
 </Project>
