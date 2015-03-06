@@ -65,7 +65,7 @@ IXCLRDataProcess *g_clrData = NULL;
 ISOSDacInterface *g_sos = NULL;
 
 #ifdef FEATURE_PAL
-BOOL g_palInitialized = FALSE;
+PFN_CLRDataCreateInstance g_pCLRDataCreateInstance = NULL;
 #else
 ICorDebugProcess * g_pCorDebugProcess = NULL;
 #endif // FEATURE_PAL
@@ -3334,7 +3334,7 @@ void DumpMDInfoFromMethodDescData(DacpMethodDescData * pMethodDescData, DacpReJi
 
     if (!fStackTraceFormat)
     {
-        ExtOut("Method Name:  %S\n", wszNameBuffer);
+        ExtOut("Method Name:  %ls\n", wszNameBuffer);
 
         DacpMethodTableData mtdata;
         if (SUCCEEDED(mtdata.Request(g_sos, pMethodDescData->MethodTablePtr)))
@@ -3360,7 +3360,7 @@ void DumpMDInfoFromMethodDescData(DacpMethodDescData * pMethodDescData, DacpReJi
     {
         if (!bFailed)
         {
-            ExtOut("%S", wszNameBuffer);
+            ExtOut("%ls", wszNameBuffer);
         }
         else
         {
@@ -4154,39 +4154,33 @@ void ResetGlobals(void)
 HRESULT LoadClrDebugDll(void)
 {
 #ifdef FEATURE_PAL
-    if (!g_palInitialized)
+    if (g_pCLRDataCreateInstance == NULL)
     {
         int err = PAL_Initialize(0, NULL);
         if(err != 0)
         {
             return E_FAIL;
         }
-        g_palInitialized = TRUE;
-    }
-    if (g_clrData == NULL)
-    {
         // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path
         HMODULE hdac = LoadLibraryA(MAKEDLLNAME_A("mscordaccore"));
         if (hdac == NULL)
         {
             return E_FAIL;
         }
-        PFN_CLRDataCreateInstance pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
-        if (pCLRDataCreateInstance == NULL)
+        g_pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
+        if (g_pCLRDataCreateInstance == NULL)
         {
             FreeLibrary(hdac);
             return E_FAIL;
         }
-        ICLRDataTarget *target = new DataTarget();
-        HRESULT hr = pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, reinterpret_cast<void**>(&g_clrData));
-        if (FAILED(hr))
-        {
-            FreeLibrary(hdac);
-            g_clrData = NULL;
-            return hr;
-        }
     }
-    g_clrData->AddRef();
+    ICLRDataTarget *target = new DataTarget();
+    HRESULT hr = g_pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, reinterpret_cast<void**>(&g_clrData));
+    if (FAILED(hr))
+    {
+        g_clrData = NULL;
+        return hr;
+    }
 #else
     WDBGEXTS_CLR_DATA_INTERFACE Query;
 
