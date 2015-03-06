@@ -66,6 +66,7 @@ set(UTILCODE_SOURCES
   stresslog.cpp
   debug.cpp
   pedecoder.cpp
+  winfix.cpp
 )
 
 # These source file do not yet compile on Linux.
@@ -82,7 +83,6 @@ if(WIN32)
     securitywrapper.cpp
     securityutil.cpp
     stacktrace.cpp
-    winfix.cpp
   )
 endif(WIN32)
 

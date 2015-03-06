@@ -11,32 +11,23 @@
 #include <utilcode.h>
 #include <crst.h>
 
-class InProcDac;
 #endif // !RIGHT_SIDE_COMPILE
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
-#include <dbgsecureconnection.h>
+#include <twowaypipe.h>
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ DbgTransportSession was originally designed around cross-machine debugging via sockets and it is supposed to 
+ handle network interruptions. Right now we use pipes (see TwoWaypipe) and don't expect to have connection issues.
+ But there seem to be no good reason to try hard to get rid of existing working protocol even if it's a bit 
+ cautious about connection quality. So please KEEP IN MIND THAT SOME COMMENTS REFERING TO NETWORK AND SOCKETS
+ CAN BE OUTDATED.
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 //
 // Provides a robust and secure transport session between a debugger and a debuggee that are potentially on
 // different machines.
-//
-// The current implementation utilizes a single SSL/TCP connection down which all traffic is multi-plexed
-// (session management, debugger events and event acknowledgements and miscellaneous debugger requests and
-// responses). Robustness to transitory network failures is dealt with by automatically reforming the
-// connection and resending unacknowledged messages.
-//
-// Each session adds one thread to the process. This transport thread is responsible for the setting up and
-// tearing down of the low level TCP thread and all receive operations on that connection while it is active.
-// This organization simplifies a lot of synchronization and allows us to avoid any async connection
-// operations (keeping the code a lot simpler in general). Sends, on the other hand, can be made from
-// aribtrary thread contexts (including the transport thread) and must use a lock to serialize access to the
-// connection (as well as synchronize themselves with session state changes). This is all handled internally
-// and is not visible to the session client (the debugger or the debugger code in the runtime).
-//
-// Access to the underlying SSL (Secure Socket Layer) connection is abstracted since the SSL API varies
-// significantly between Windows and Mac. The abstraction is described in clr/inc/DbgSecureConnection.h.
 //
 // The following terminology is used for the wire protocol. The smallest meaningful entity written to or read
 // from the connection is a "message". This consists of one or maybe two "blocks" where a block is a
@@ -94,6 +85,25 @@ enum DbgTransportLogClass
     LC_All          = 0xffffffff,
     LC_Always       = 0xffffffff,   // Always log, regardless of class setting
 };
+
+// Status codes that can be returned by various APIs that indicate some conditions of the error that a caller
+// might usefully pass on to a user (environmental factors that the user might have some control over).
+enum ConnStatus
+{
+    SCS_Success,                // The request succeeded
+    SCS_OutOfMemory,            // The request failed due to a low memory situation
+    SCS_InvalidConfiguration,   // Initialize() failed because the debugger settings were not configured or
+                                // have become corrupt
+    SCS_UnknownTarget,          // Connect() failed because the remote machine at the given address could not
+                                // be found
+    SCS_NoListener,             // Connect() failed because the remote machine was not listening for requests
+                                // on the given port (most likely the remote machine is not configured for
+                                // debugging)
+    SCS_NetworkFailure,         // Connect() failed due to miscellaneous network error
+    SCS_MismatchedCerts,        // Connect()/Accept() failed because the remote party was using a different
+                                // cert
+};
+
 
 // Multiple clients can use a single DbgTransportSession, but only one can act as the debugger.
 // A valid DebugTicket is given to the client who is acting as the debugger.
@@ -307,9 +317,9 @@ public:
     // requires the addresses of a couple of runtime data structures to service certain debugger requests that
     // may be delivered once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-    HRESULT Init(DWORD dwAddress, USHORT usPort, HANDLE hProcessExited);
+    HRESULT Init(DWORD pid, HANDLE hProcessExited);
 #else // RIGHT_SIDE_COMPILE
-    HRESULT Init(DebuggerIPCControlBlock * pDCB, AppDomainEnumerationIPCBlock * pADB, InProcDac * pInProcDac);
+    HRESULT Init(DebuggerIPCControlBlock * pDCB, AppDomainEnumerationIPCBlock * pADB);
 #endif // RIGHT_SIDE_COMPILE
 
     // Drive the session to the SS_Closed state, which will deallocate all remaining transport resources
@@ -342,10 +352,6 @@ public:
     // A valid ticket is required in order for this function to succeed.  After this function succeeds,
     // another client can request to be the debugger.
     bool StopUsingAsDebugger(DebugTicket * pTicket);
-#else // RIGHT_SIDE_COMPILE
-    // The LS needs to be able to tell the code that registers with the debugger proxy which port it will wait
-    // on for debugger connections. Returns the port number in host byte order.
-    USHORT GetPort();
 #endif // RIGHT_SIDE_COMPILE
 
     // Sends a pre-initialized event to the other side.
@@ -373,10 +379,6 @@ public:
     // Read the AppDomain control block on the LS from the RS.
     HRESULT GetAppDomainCB(AppDomainEnumerationIPCBlock *pADB);
 
-    // Send a DD message to the LS and wait for a reply before returning.  
-    // This is the low level function which DDMarshal and DDUnmarshal build on.
-    // This is for the remoted IDacDbiInterface.  See code:IEventChannel for more information.
-    HRESULT SendDDMessage(PBYTE pbSendBuffer, DWORD cbSendBuffer, PBYTE * ppbReceiveBuffer, DWORD * pcbReceiveBuffer);
 #endif // RIGHT_SIDE_COMPILE
 
 private:
@@ -418,7 +420,6 @@ private:
         MT_GetDCB,          // RS <-> LS : RS wants to read LS DCB (or LS is replying to such a request)
         MT_SetDCB,          // RS <-> LS : RS wants to write LS DCB (or LS is replying to such a request)
         MT_GetAppDomainCB,  // RS <-> LS : RS wants to read LS AppDomainCB (or LS is replying to such a request)
-        MT_DDMessage,       // RS <-> LS : RS wants to call into the in-proc DAC on the LS (or LS is replying to such a request)
     };
 
     // Reasons the LS can give for rejecting a session. These codes should *not* be changed other than by
@@ -480,12 +481,6 @@ private:
                 Portable<DWORD>         m_eType;            // Event type (useful for debugging)
             } Event;
 
-            // Used by MT_DDMessage.
-            struct
-            {
-                Portable<HRESULT>        m_hrResult;
-                Portable<DWORD>          m_eType;            // DDMessage type (useful for debugging)
-            } DDMessage;
         } TypeSpecificData;
 
         BYTE                    m_sMustBeZero[8];   // Set this to zero when initializing and never read the contents
@@ -682,30 +677,16 @@ private:
     // back into the Connect()/Accept() phase (along with the resulting session state change).
     HANDLE          m_hTransportThread;
 
-    // Low level connection manager. This object provides the transport with secure connections on request.
-    SecConnMgr     *m_pConnectionManager;
-
-    // Low level connection. This is updated only on the transport thread (while the connection is being
-    // formed no other thread can peform a SendMessage() since the session state will never be Open, when the
-    // connection is deallocated this must be done under m_sStateLock along with the associated state change
-    // to ensure that no other thread can successfully SendMessage() on the connection).
-    SecConn        *m_pConnection;
+    TwoWayPipe      m_pipe;
 
 #ifdef RIGHT_SIDE_COMPILE
     // On the RS the transport thread needs to know the IP address and port number to Connect() to.
-    DWORD           m_dwLeftSideAddress;    // IPv4 address in host byte order
-    USHORT          m_usLeftSidePort;       // TCP port number in host byte order
+    DWORD           m_pid;                  // Id of a process we're talking to.
 
     HANDLE          m_hProcessExited;       // event which will be signaled when the debuggee is terminated
 
     bool            m_fDebuggerAttached;
-#else // RIGHT_SIDE_COMPILE
-    // On the LS we always listen for low level transport connect requests. This is done on a special listen
-    // socket on which we call accept() followed by Accept(). If Accept() completes successfully it returns a
-    // SecConn instance; that's the m_pConnection above.
-    SOCKET          m_hListenSocket;
-    USHORT          m_usListenPort;         // TCP port number in host byte order
-#endif // RIGHT_SIDE_COMPILE
+#endif
 
     // Debugger event handling. To improve performance we allow the debugger to send as many events as it
     // likes without acknowledgement from its peer. While not strictly adhering to the semantic provided by
@@ -734,7 +715,6 @@ private:
     // These are provided by the runtime at intialization time.
     DebuggerIPCControlBlock *m_pDCB;
     AppDomainEnumerationIPCBlock *m_pADB;
-    InProcDac * m_pInProcDac;
 #endif // !RIGHT_SIDE_COMPILE
 
     HRESULT SendEventWorker(DebuggerIPCEvent * pEvent, IPCEventType type);
