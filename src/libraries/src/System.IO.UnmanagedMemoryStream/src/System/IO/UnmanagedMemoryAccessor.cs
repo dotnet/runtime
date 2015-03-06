@@ -2,10 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.IO
 {
@@ -70,15 +71,15 @@ namespace System.IO
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", Strings.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException("capacity", Strings.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.ByteLength < (UInt64)(offset + capacity))
             {
-                throw new ArgumentException(Strings.Argument_OffsetAndCapacityOutOfBounds);
+                throw new ArgumentException(SR.Argument_OffsetAndCapacityOutOfBounds);
             }
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
             {
@@ -88,7 +89,7 @@ namespace System.IO
 
             if (_isOpen)
             {
-                throw new InvalidOperationException(Strings.InvalidOperation_CalledTwice);
+                throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);
             }
 
             unsafe
@@ -100,7 +101,7 @@ namespace System.IO
                     buffer.AcquirePointer(ref pointer);
                     if (((byte*)((Int64)pointer + offset + capacity)) < pointer)
                     {
-                        throw new ArgumentException(Strings.Argument_UnmanagedMemAccessorWrapAround);
+                        throw new ArgumentException(SR.Argument_UnmanagedMemAccessorWrapAround);
                     }
                 }
                 finally
@@ -124,7 +125,7 @@ namespace System.IO
         #endregion
 
         /// <summary>
-        /// Number of bytes in the acessor.
+        /// Number of bytes in the accessor.
         /// </summary>
         public Int64 Capacity
         {
@@ -1214,9 +1215,9 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private byte InternalReadByte(Int64 position)
         {
-            Contract.Assert(CanRead, "UMA not readable");
-            Contract.Assert(position >= 0, "position less than 0");
-            Contract.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
+            Debug.Assert(CanRead, "UMA not readable");
+            Debug.Assert(position >= 0, "position less than 0");
+            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 
             byte result;
             unsafe
@@ -1242,9 +1243,9 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void InternalWrite(Int64 position, byte value)
         {
-            Contract.Assert(CanWrite, "UMA not writeable");
-            Contract.Assert(position >= 0, "position less than 0");
-            Contract.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
+            Debug.Assert(CanWrite, "UMA not writeable");
+            Debug.Assert(position >= 0, "position less than 0");
+            Debug.Assert(position <= _capacity - sizeof(byte), "position is greater than capacity - sizeof(byte)");
 
             unsafe
             {
@@ -1269,26 +1270,26 @@ namespace System.IO
         {
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", Strings.ObjectDisposed_ViewAccessorClosed);
+                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanRead)
             {
-                throw new NotSupportedException(Strings.NotSupported_Reading);
+                throw new NotSupportedException(SR.NotSupported_Reading);
             }
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException("position", Strings.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("position", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
                 {
-                    throw new ArgumentOutOfRangeException("position", Strings.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+                    throw new ArgumentOutOfRangeException("position", SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
                 else
                 {
-                    throw new ArgumentException(Strings.Argument_NotEnoughBytesToRead, "position");
+                    throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, "position");
                 }
             }
         }
@@ -1297,26 +1298,26 @@ namespace System.IO
         {
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", Strings.ObjectDisposed_ViewAccessorClosed);
+                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanWrite)
             {
-                throw new NotSupportedException(Strings.NotSupported_Writing);
+                throw new NotSupportedException(SR.NotSupported_Writing);
             }
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException("position", Strings.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException("position", SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
                 {
-                    throw new ArgumentOutOfRangeException("position", Strings.ArgumentOutOfRange_PositionLessThanCapacityRequired);
+                    throw new ArgumentOutOfRangeException("position", SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
                 else
                 {
-                    throw new ArgumentException(Strings.Argument_NotEnoughBytesToWrite, "position");
+                    throw new ArgumentException(SR.Argument_NotEnoughBytesToWrite, "position");
                 }
             }
         }

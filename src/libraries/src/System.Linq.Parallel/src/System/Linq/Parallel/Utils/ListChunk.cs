@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -28,7 +28,7 @@ namespace System.Linq.Parallel
         /// </summary>
         internal ListChunk(int size)
         {
-            Contract.Assert(size > 0);
+            Debug.Assert(size > 0);
             _chunk = new TInputOutput[size];
             _chunkCount = 0;
             _tailChunk = this;
@@ -78,7 +78,7 @@ namespace System.Linq.Parallel
                 {
                     yield return curr._chunk[i];
                 }
-                Contract.Assert(curr._chunkCount == curr._chunk.Length || curr._nextChunk == null);
+                Debug.Assert(curr._chunkCount == curr._chunk.Length || curr._nextChunk == null);
                 curr = curr._nextChunk;
             }
         }

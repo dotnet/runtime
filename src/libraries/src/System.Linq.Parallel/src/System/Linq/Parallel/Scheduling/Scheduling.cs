@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Security;
 
@@ -74,7 +74,7 @@ namespace System.Linq.Parallel
         {
             int chunkSize;
 
-            // Because of the lack of typeof(T).IsValueTaype we need two pieces of information
+            // Because of the lack of typeof(T).IsValueType we need two pieces of information
             // to determine this. default(T) will return a non null for Value Types, except those
             // using Nullable<>, that is why we need a second condition.
             if (default(T) != null || Nullable.GetUnderlyingType(typeof(T)) != null)
@@ -89,7 +89,7 @@ namespace System.Linq.Parallel
             }
             else
             {
-                Contract.Assert((DEFAULT_BYTES_PER_CHUNK % IntPtr.Size) == 0, "bytes per chunk should be a multiple of pointer size");
+                Debug.Assert((DEFAULT_BYTES_PER_CHUNK % IntPtr.Size) == 0, "bytes per chunk should be a multiple of pointer size");
                 chunkSize = (DEFAULT_BYTES_PER_CHUNK / IntPtr.Size);
             }
 

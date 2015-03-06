@@ -17,7 +17,7 @@ namespace System.Collections.Specialized.Tests
         {
             StringDictionary sd;
             IEnumerator en;
-            DictionaryEntry curr;        // Eumerator.Current value
+            DictionaryEntry curr;        // Enumerator.Current value
             // simple string values
             string[] values =
             {
@@ -181,7 +181,7 @@ namespace System.Collections.Specialized.Tests
             DictionaryEntry curr2 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr2))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
             // exception expected
@@ -215,7 +215,7 @@ namespace System.Collections.Specialized.Tests
             curr2 = (DictionaryEntry)en.Current;
             if (!curr.Equals(curr2))
             {
-                Assert.False(true, string.Format("Error, current returned different value after midification"));
+                Assert.False(true, string.Format("Error, current returned different value after modification"));
             }
 
             // exception expected

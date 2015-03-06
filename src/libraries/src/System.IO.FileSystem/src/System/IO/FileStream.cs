@@ -96,19 +96,7 @@ namespace System.IO
 
             string fullPath = PathHelpers.GetFullPathInternal(path);
 
-            // Prevent access to your disk drives as raw block devices.
-            if (fullPath.StartsWith("\\\\.\\", StringComparison.Ordinal))
-                throw new ArgumentException(SR.Arg_DevicesNotSupported);
-
-#if !PLATFORM_UNIX
-            // Check for additional invalid characters.  Most invalid characters were checked above
-            // in our call to Path.GetFullPath(path);
-            if (HasAdditionalInvalidCharacters(fullPath))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
-
-            if (fullPath.IndexOf(':', 2) != -1)
-                throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
-#endif
+            ValidatePath(fullPath);
 
             if ((access & FileAccess.Read) != 0 && mode == FileMode.Append)
                 throw new ArgumentException(SR.Argument_InvalidAppendMode);
@@ -116,20 +104,7 @@ namespace System.IO
             this._innerStream = FileSystem.Current.Open(fullPath, mode, access, share, bufferSize, options, this);
         }
 
-        private static bool HasAdditionalInvalidCharacters(string path)
-        {
-            for (int i = 0; i < path.Length; i++)
-            {
-                int c = path[i];
-
-                // Check for extra characters checked for by internal mscorlib function
-                // Path.CheckInvalidPathChars(path = path, checkAdditional = true)
-                if (c == '?' || c == '*')
-                    return true;
-            }
-
-            return false;
-        }
+        static partial void ValidatePath(string fullPath);
 
         // InternalOpen, InternalCreate, and InternalAppend:
         // Factory methods for FileStream used by File, FileInfo, and ReadLinesIterator
@@ -232,7 +207,7 @@ namespace System.IO
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overriden.  To be safe 
+            // since it does not call through to Flush() which a subclass might have overridden.  To be safe 
             // we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Flush) when we are not sure.
             if (this.GetType() != typeof(FileStream))
@@ -259,7 +234,7 @@ namespace System.IO
             Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Read() or BeginRead() which a subclass might have overriden.  
+            // since it does not call through to Read() or BeginRead() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Read/BeginRead) when we are not sure.
             if (this.GetType() != typeof(FileStream))
@@ -301,7 +276,7 @@ namespace System.IO
             Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Write() or BeginWrite() which a subclass might have overriden.  
+            // since it does not call through to Write() or BeginWrite() which a subclass might have overridden.  
             // To be safe we will only use this implementation in cases where we know it is safe to do so,
             // and delegate to our base class (which will call into Write/BeginWrite) when we are not sure.
             if (this.GetType() != typeof(FileStream))

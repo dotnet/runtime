@@ -167,7 +167,7 @@ namespace System.Xml
             "DTD",                      // Token.Dtd
             "StartElement",             // Token.StartElement
             "EndElement",               // Token.EndElement
-            "StartAttribute",           // Token.StartAttribut
+            "StartAttribute",           // Token.StartAttribute
             "EndAttribute",             // Token.EndAttribute
             "Text",                     // Token.Text
             "CDATA",                    // Token.CData
@@ -301,7 +301,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    Debug.Assert(false, "Expected currentState <= State.Error ");
+                    Debug.Fail("Expected currentState <= State.Error ");
                     return WriteState.Error;
                 }
             }
@@ -1607,7 +1607,7 @@ namespace System.Xml
             else if (State.RootLevelAttr == _currentState)
                 _currentState = State.RootLevelSpecAttr;
             else
-                Debug.Assert(false, "State.Attribute == currentState || State.RootLevelAttr == currentState");
+                Debug.Fail("State.Attribute == currentState || State.RootLevelAttr == currentState");
 
             if (_attrValueCache == null)
             {
@@ -1737,7 +1737,7 @@ namespace System.Xml
         }
 
         // PushNamespaceExplicit is called when a namespace declaration is written out;
-        // It returs true if the namespace declaration should we written out, false if it should be omited (if OmitDuplicateNamespaceDeclarations is true)
+        // It returns true if the namespace declaration should we written out, false if it should be omited (if OmitDuplicateNamespaceDeclarations is true)
         private bool PushNamespaceExplicit(string prefix, string ns)
         {
             bool writeItOut = true;
@@ -2032,7 +2032,7 @@ namespace System.Xml
                         break;
 
                     default:
-                        Debug.Assert(false, "We should not get to this point.");
+                        Debug.Fail("We should not get to this point.");
                         break;
                 }
             }
@@ -2062,7 +2062,7 @@ namespace System.Xml
         {
             if (state >= State.Error)
             {
-                Debug.Assert(false, "We should never get to this point. State = " + state);
+                Debug.Fail("We should never get to this point. State = " + state);
                 return "Error";
             }
             else
@@ -2169,7 +2169,7 @@ namespace System.Xml
             return new ArgumentException(SR.Format(SR.Xml_InvalidNameCharsDetail, args));
         }
 
-        // This method translates speficic state transition errors in more friendly error messages
+        // This method translates specific state transition errors in more friendly error messages
         private void ThrowInvalidStateTransition(Token token, State currentState)
         {
             string wrongTokenMessage = SR.Format(SR.Xml_WrongToken, tokenName[(int)token], GetStateName(currentState));

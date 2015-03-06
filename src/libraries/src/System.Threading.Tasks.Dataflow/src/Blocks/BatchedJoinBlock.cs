@@ -55,10 +55,10 @@ namespace System.Threading.Tasks.Dataflow
         public BatchedJoinBlock(Int32 batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", Strings.ArgumentOutOfRange_GenericPositive);
+            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", SR.ArgumentOutOfRange_GenericPositive);
             if (dataflowBlockOptions == null) throw new ArgumentNullException("dataflowBlockOptions");
-            if (!dataflowBlockOptions.Greedy) throw new ArgumentException(Strings.Argument_NonGreedyNotSupported, "dataflowBlockOptions");
-            if (dataflowBlockOptions.BoundedCapacity != DataflowBlockOptions.Unbounded) throw new ArgumentException(Strings.Argument_BoundedCapacityNotSupported, "dataflowBlockOptions");
+            if (!dataflowBlockOptions.Greedy) throw new ArgumentException(SR.Argument_NonGreedyNotSupported, "dataflowBlockOptions");
+            if (dataflowBlockOptions.BoundedCapacity != DataflowBlockOptions.Unbounded) throw new ArgumentException(SR.Argument_BoundedCapacityNotSupported, "dataflowBlockOptions");
             Contract.EndContractBlock();
 
             // Store arguments
@@ -101,7 +101,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BatchedJoinBlock<T1, T2>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -153,8 +153,8 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
         public void Complete()
         {
-            Contract.Assert(_target1 != null, "_target1 not initialized");
-            Contract.Assert(_target2 != null, "_target2 not initialized");
+            Debug.Assert(_target1 != null, "_target1 not initialized");
+            Debug.Assert(_target2 != null, "_target2 not initialized");
 
             _target1.Complete();
             _target2.Complete();
@@ -166,9 +166,9 @@ namespace System.Threading.Tasks.Dataflow
             if (exception == null) throw new ArgumentNullException("exception");
             Contract.EndContractBlock();
 
-            Contract.Assert(_sharedResources != null, "_sharedResources not initialized");
-            Contract.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
-            Contract.Assert(_source != null, "_source not initialized");
+            Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
+            Debug.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
+            Debug.Assert(_source != null, "_source not initialized");
 
             lock (_sharedResources._incomingLock)
             {
@@ -316,12 +316,12 @@ namespace System.Threading.Tasks.Dataflow
         public BatchedJoinBlock(Int32 batchSize, GroupingDataflowBlockOptions dataflowBlockOptions)
         {
             // Validate arguments
-            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", Strings.ArgumentOutOfRange_GenericPositive);
+            if (batchSize < 1) throw new ArgumentOutOfRangeException("batchSize", SR.ArgumentOutOfRange_GenericPositive);
             if (dataflowBlockOptions == null) throw new ArgumentNullException("dataflowBlockOptions");
             if (!dataflowBlockOptions.Greedy ||
                 dataflowBlockOptions.BoundedCapacity != DataflowBlockOptions.Unbounded)
             {
-                throw new ArgumentException(Strings.Argument_NonGreedyNotSupported, "dataflowBlockOptions");
+                throw new ArgumentException(SR.Argument_NonGreedyNotSupported, "dataflowBlockOptions");
             }
             Contract.EndContractBlock();
 
@@ -366,7 +366,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((BatchedJoinBlock<T1, T2, T3>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -420,9 +420,9 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
         public void Complete()
         {
-            Contract.Assert(_target1 != null, "_target1 not initialized");
-            Contract.Assert(_target2 != null, "_target2 not initialized");
-            Contract.Assert(_target3 != null, "_target3 not initialized");
+            Debug.Assert(_target1 != null, "_target1 not initialized");
+            Debug.Assert(_target2 != null, "_target2 not initialized");
+            Debug.Assert(_target3 != null, "_target3 not initialized");
 
             _target1.Complete();
             _target2.Complete();
@@ -435,9 +435,9 @@ namespace System.Threading.Tasks.Dataflow
             if (exception == null) throw new ArgumentNullException("exception");
             Contract.EndContractBlock();
 
-            Contract.Assert(_sharedResources != null, "_sharedResources not initialized");
-            Contract.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
-            Contract.Assert(_source != null, "_source not initialized");
+            Debug.Assert(_sharedResources != null, "_sharedResources not initialized");
+            Debug.Assert(_sharedResources._incomingLock != null, "_sharedResources._incomingLock not initialized");
+            Debug.Assert(_source != null, "_source not initialized");
 
             lock (_sharedResources._incomingLock)
             {
@@ -595,8 +595,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
         public DataflowMessageStatus OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
-            if (source == null && consumeToAccept) throw new ArgumentException(Strings.Argument_CantConsumeFromANullSource, "consumeToAccept");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
+            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
             Contract.EndContractBlock();
 
             lock (_sharedResources._incomingLock)
@@ -609,7 +609,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Consume the message from the source if necessary, and store the message
                 if (consumeToAccept)
                 {
-                    Contract.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
+                    Debug.Assert(source != null, "We must have thrown if source == null && consumeToAccept == true.");
 
                     bool consumed;
                     messageValue = source.ConsumeMessage(messageHeader, this, out consumed);
@@ -654,7 +654,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs\CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
-        Task IDataflowBlock.Completion { get { throw new NotSupportedException(Strings.NotSupported_MemberNotNeeded); } }
+        Task IDataflowBlock.Completion { get { throw new NotSupportedException(SR.NotSupported_MemberNotNeeded); } }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
         [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
@@ -703,7 +703,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     {
         /// <summary>Initializes the shared resources.</summary>
         /// <param name="batchSize">The size of a batch to create.</param>
-        /// <param name="dataflowBlockOptions">The options used to configur the shared resources.  Assumed to be immutable.</param>
+        /// <param name="dataflowBlockOptions">The options used to configure the shared resources.  Assumed to be immutable.</param>
         /// <param name="batchSizeReachedAction">The action to invoke when a batch is completed.</param>
         /// <param name="allTargetsDecliningAction">The action to invoke when no more targets are accepting input.</param>
         /// <param name="exceptionAction">The action to invoke when an exception needs to be logged.</param>
@@ -713,9 +713,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Action batchSizeReachedAction, Action allTargetsDecliningAction,
             Action<Exception> exceptionAction, Action completionAction)
         {
-            Contract.Assert(batchSize >= 1, "A positive batch size is required.");
-            Contract.Assert(batchSizeReachedAction != null, "Need an action to invoke for each batch.");
-            Contract.Assert(allTargetsDecliningAction != null, "Need an action to invoke when all targets have declined.");
+            Debug.Assert(batchSize >= 1, "A positive batch size is required.");
+            Debug.Assert(batchSizeReachedAction != null, "Need an action to invoke for each batch.");
+            Debug.Assert(allTargetsDecliningAction != null, "Need an action to invoke when all targets have declined.");
 
             _incomingLock = new object();
             _batchSize = batchSize;

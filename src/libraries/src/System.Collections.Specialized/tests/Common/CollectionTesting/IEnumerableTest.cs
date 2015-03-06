@@ -131,7 +131,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// The IComparer used to compare the items. If null Comparer<Object>.Defualt will be used.
+        /// The IComparer used to compare the items. If null Comparer<Object>.Default will be used.
         /// </summary>
         /// <value>The IComparer used to compare the items.</value>
         public System.Collections.Generic.IEqualityComparer<Object> Comparer
@@ -151,7 +151,7 @@ namespace TestSupport.Collections
 
         /// <summary>
         /// If true specifies that IEnumerator.Current has undefined behavior when
-        /// the enumerator is poitioned before the first item or after the last item.
+        /// the enumerator is positioned before the first item or after the last item.
         /// </summary>
         public bool IsGenericCompatibility
         {
@@ -182,7 +182,7 @@ namespace TestSupport.Collections
         }
 
         /// <summary>
-        /// The Verification level to use. If VerificationLevel is Extensize the collection
+        /// The Verification level to use. If VerificationLevel is Extensive the collection
         /// will be verified after argument checking (invalid) tests.
         /// </summary>
         /// <value>The Verification level to use.</value>
@@ -200,8 +200,8 @@ namespace TestSupport.Collections
 
         /// <summary>
         /// This specifies where Add places an item at the beginning of the collection,
-        /// the end of the collection, or unspecifed. Items is expected to be in the
-        /// smae order as the enumerator unless AddOrder.Unspecified is used.
+        /// the end of the collection, or unspecified. Items is expected to be in the
+        /// same order as the enumerator unless AddOrder.Unspecified is used.
         /// </summary>
         /// <value>This specifies where Add places an item.</value>
         public CollectionOrder CollectionOrder
@@ -233,8 +233,8 @@ namespace TestSupport.Collections
             {
                 try
                 {
-                    //[] Call MoveNext() untill the end of the collection has been reached
-                    testDescription = "14328edfae Call MoveNext() untill the end of the collection has been reached";
+                    //[] Call MoveNext() until the end of the collection has been reached
+                    testDescription = "14328edfae Call MoveNext() until the end of the collection has been reached";
 
                     while (enumerator.MoveNext())
                     {
@@ -300,8 +300,8 @@ namespace TestSupport.Collections
             {
                 try
                 {
-                    //[] Call MoveNext() untill the end of the collection has been reached
-                    testDescription = "Call MoveNext() untill the end of the collection has been reached";
+                    //[] Call MoveNext() until the end of the collection has been reached
+                    testDescription = "Call MoveNext() until the end of the collection has been reached";
 
                     retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
@@ -325,7 +325,7 @@ namespace TestSupport.Collections
 
                     retValue &= Test.Eval(VerifyEnumerator(enumerator, _items), "Err_" + testDescription + " FAILED\n");
 
-                    //[] Reset the enumerator for the nexe iteration
+                    //[] Reset the enumerator for the next iteration
                     if (_isResetNotSupported)
                         enumerator = _collection.GetEnumerator();
                     else
@@ -595,7 +595,7 @@ namespace TestSupport.Collections
                     for (i = 0, scenarioResult = true; i < 3 && scenarioResult; i++)
                     {
                         retValue &= scenarioResult = Test.Eval(_comparer.Equals(expectedCurrent, currentItem),
-                            "Current is returning inconsistant results Current returned={0} expected={1} Iteration({2})",
+                            "Current is returning inconsistent results Current returned={0} expected={1} Iteration({2})",
                             currentItem, expectCurrentThrow, i);
                         currentItem = enumerator.Current;
                     }
@@ -603,7 +603,7 @@ namespace TestSupport.Collections
             }
             catch (InvalidOperationException)
             {
-                retValue &= Test.Eval(expectCurrentThrow, "Did not expect Current to thow InvalidOperationException");
+                retValue &= Test.Eval(expectCurrentThrow, "Did not expect Current to throw InvalidOperationException");
             }
             catch (Exception e)
             {
@@ -752,7 +752,7 @@ namespace TestSupport.Collections
                         tempItem = enumerator.Current;
 
                         retValue &= Test.Eval(_comparer.Equals(currentItem, tempItem),
-                            "Current is returning inconsistant results Current returned={0} expected={1}", tempItem, currentItem);
+                            "Current is returning inconsistent results Current returned={0} expected={1}", tempItem, currentItem);
                     }
 
                     iterations++;
@@ -801,7 +801,7 @@ namespace TestSupport.Collections
                         tempItem = enumerator.Current;
 
                         retValue &= Test.Eval(_comparer.Equals(currentItem, tempItem),
-                            "Current is returning inconsistant results Current returned={0} expected={1}", tempItem, currentItem);
+                            "Current is returning inconsistent results Current returned={0} expected={1}", tempItem, currentItem);
                     }
 
                     iterations++;

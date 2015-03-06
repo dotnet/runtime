@@ -7,14 +7,13 @@ namespace System.IO
 {
     /// <devdoc>
     ///   Contains constants for controlling file sharing options while
-    ///   opening files.  You can specify what access othter processes trying
+    ///   opening files.  You can specify what access other processes trying
     ///   to open the same file concurrently can have.
     ///   
     ///   Note these values currently match the values for FILE_SHARE_READ,
     ///   FILE_SHARE_WRITE, and FILE_SHARE_DELETE in winnt.h
     /// </devdoc>
     [Flags]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum FileShare
     {
         /// <devdoc>

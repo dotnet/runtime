@@ -373,9 +373,6 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-file-l1-1-0.dll", EntryPoint = "RemoveDirectoryW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern bool RemoveDirectory(String path);
 
-        [DllImport("api-ms-win-core-handle-l1-1-0.dll", SetLastError = true)]
-        internal static extern bool CloseHandle(IntPtr handle);
-
         [DllImport("api-ms-win-core-file-l1-1-0.dll", EntryPoint = "FindFirstFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern SafeFindHandle FindFirstFileEx(String lpFileName, FINDEX_INFO_LEVELS fInfoLevelId, ref WIN32_FIND_DATA lpFindFileData, FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
 
@@ -392,10 +389,5 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
         internal extern static bool FindClose(IntPtr hFindFile);
-
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll", EntryPoint = "FormatMessageW", CharSet = CharSet.Unicode, BestFitMapping = true, SetLastError = true)]
-        internal static extern uint FormatMessage(int dwFlags, IntPtr lpSource,
-                    uint dwMessageId, uint dwLanguageId, [Out]char[] lpBuffer,
-                    uint nSize, IntPtr va_list_arguments);
     }
 }

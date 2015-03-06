@@ -53,7 +53,7 @@ namespace System.IO.FileSystem.DriveInfoTests
 
             if (drives.Length != driveLetters.Count)
             {
-                Assert.False(true, string.Format("Error, REturned Drives number wrong. Expected: {0}, Returned: {1}", driveLetters.Count, drives.Length));
+                Assert.False(true, string.Format("Error, Returned Drives number wrong. Expected: {0}, Returned: {1}", driveLetters.Count, drives.Length));
             }
 
             //Now we make sure of the returned values
@@ -61,7 +61,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             {
                 if (!driveLetters.Contains(drives[i].Name[0]))
                 {
-                    Assert.False(true, string.Format("Error, Drive letter does not match one in Win32. Retured: {0}", drives[i].Name));
+                    Assert.False(true, string.Format("Error, Drive letter does not match one in Win32. Returned: {0}", drives[i].Name));
                 }
                 else
                     driveLetters.Remove(drives[i].Name[0]);

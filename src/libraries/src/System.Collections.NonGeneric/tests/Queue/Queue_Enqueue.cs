@@ -38,7 +38,7 @@ public class Queue_Enqueue
             // Enqueue object on stack.
             myQueue.Enqueue(ii);
 
-            // Verify that item got Enqueueed.
+            // Verify that item got enqueued.
             if (myQueue.Count != ii)
             {
                 bPass = false;

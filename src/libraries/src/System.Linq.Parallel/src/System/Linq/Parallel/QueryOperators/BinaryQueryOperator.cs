@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -39,7 +39,7 @@ namespace System.Linq.Parallel
         internal BinaryQueryOperator(QueryOperator<TLeftInput> leftChild, QueryOperator<TRightInput> rightChild)
             : base(false, leftChild.SpecifiedQuerySettings.Merge(rightChild.SpecifiedQuerySettings))
         {
-            Contract.Assert(leftChild != null && rightChild != null);
+            Debug.Assert(leftChild != null && rightChild != null);
             _leftChild = leftChild;
             _rightChild = rightChild;
         }
@@ -102,7 +102,7 @@ namespace System.Linq.Parallel
 
             internal override void GivePartitionedStream(IPartitionedStreamRecipient<TOutput> recipient)
             {
-                Contract.Assert(IsIndexible == (_op.OrdinalIndexState == OrdinalIndexState.Indexible));
+                Debug.Assert(IsIndexible == (_op.OrdinalIndexState == OrdinalIndexState.Indexible));
 
                 if (_settings.ExecutionMode.Value == ParallelExecutionMode.Default && _op.LimitsParallelism)
                 {

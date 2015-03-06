@@ -4,21 +4,79 @@
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
+        private const string PipeDirectoryPath = "/tmp/corefxnamedpipes/";
+
+        internal static string GetPipePath(string serverName, string pipeName)
+        {
+            if (serverName != "." && serverName != Interop.libc.gethostname())
+            {
+                // Cross-machine pipes are not supported.
+                throw new PlatformNotSupportedException();
+            }
+
+            if (pipeName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                // Since pipes are stored as files in the file system, we don't support
+                // pipe names that are actually paths or that otherwise have invalid
+                // filename characters in them.
+                throw new PlatformNotSupportedException();
+            }
+
+            // Make sure we have the directory in which to put the pipe paths
+            while (true)
+            {
+                int result = Interop.libc.mkdir(PipeDirectoryPath, (int)Interop.libc.Permissions.S_IRWXU);
+                if (result >= 0)
+                {
+                    // directory created
+                    break;
+                }
+
+                int errno = Marshal.GetLastWin32Error();
+                if (errno == Interop.Errors.EINTR)
+                {
+                    // I/O was interrupted, try again
+                    continue;
+                }
+                else if (errno == Interop.Errors.EEXIST)
+                {
+                    // directory already exists
+                    break;
+                }
+                else
+                {
+                    throw Interop.GetExceptionForIoErrno(errno, PipeDirectoryPath, isDirectory: true);
+                }
+            }
+
+            // Return the pipe path
+            return PipeDirectoryPath + pipeName;
+        }
+
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal static void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            SysCall(safePipeHandle, (fd, _, __) =>
+            {
+                Interop.libc.structStat buf;
+                int result = Interop.libc.fstat(fd, out buf);
+                if (result == 0)
+                {
+                    if ((buf.st_mode & Interop.libc.FileTypes.S_IFMT) != Interop.libc.FileTypes.S_IFIFO)
+                    {
+                        throw new IOException(SR.IO_InvalidPipeHandle);
+                    }
+                }
+                return result;
+            });
         }
 
         /// <summary>Initializes the handle to be used asynchronously.</summary>
@@ -39,7 +97,15 @@ namespace System.IO.Pipes
             Debug.Assert(offset >= 0, "offset is negative");
             Debug.Assert(count >= 0, "count is negative");
 
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            fixed (byte* bufPtr = buffer)
+            {
+                return (int)SysCall(_handle, (fd, ptr, len) =>
+                {
+                    long result = (long)Interop.libc.read(fd, (byte*)ptr, (IntPtr)len);
+                    Debug.Assert(result <= len);
+                    return result;
+                }, (IntPtr)(bufPtr + offset), count);
+            }
         }
 
         [SecurityCritical]
@@ -52,7 +118,20 @@ namespace System.IO.Pipes
             Debug.Assert(offset >= 0, "offset is negative");
             Debug.Assert(count >= 0, "count is negative");
 
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            fixed (byte* bufPtr = buffer)
+            {
+                while (count > 0)
+                {
+                    int bytesWritten = (int)SysCall(_handle, (fd, ptr, len) =>
+                    {
+                        long result = (long)Interop.libc.write(fd, (byte*)ptr, (IntPtr)len);
+                        Debug.Assert(result <= len);
+                        return result;
+                    }, (IntPtr)(bufPtr + offset), count);
+                    count -= bytesWritten;
+                    offset += bytesWritten;
+                }
+            }
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -65,10 +144,8 @@ namespace System.IO.Pipes
                 throw __Error.GetWriteNotSupported();
             }
 
-            throw NotImplemented.ByDesign; // TODO: Implement this
+            throw new PlatformNotSupportedException(); // no mechanism for this on Unix
         }
-
-        // ********************** Public Properties *********************** //
 
         // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can 
         // override this in cases where only one mode is legal (such as anonymous pipes)
@@ -79,15 +156,7 @@ namespace System.IO.Pipes
             get
             {
                 CheckPipePropertyOperations();
-
-                if (_isFromExistingHandle)
-                {
-                    throw NotImplemented.ByDesign; // TODO: Implement this
-                }
-                else
-                {
-                    return _transmissionMode;
-                }
+                return PipeTransmissionMode.Byte; // Unix pipes are only byte-based, not message-based
             }
         }
 
@@ -105,7 +174,9 @@ namespace System.IO.Pipes
                     throw new NotSupportedException(SR.NotSupported_UnreadableStream);
                 }
 
-                throw NotImplemented.ByDesign; // TODO: Implement this
+                // On Linux this could be retrieved using F_GETPIPE_SZ with fcntl, but that's non-conforming
+                // and works only on recent versions of Linux.  For now, we'll leave this as unsupported.
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -125,19 +196,8 @@ namespace System.IO.Pipes
                     throw new NotSupportedException(SR.NotSupported_UnwritableStream);
                 }
 
-                int outBufferSize;
-
-                // Use cached value if direction is out; otherwise get fresh version
-                if (_pipeDirection == PipeDirection.Out)
-                {
-                    outBufferSize = _outBufferSize;
-                }
-                else
-                {
-                    throw NotImplemented.ByDesign; // TODO: Implement this
-                }
-
-                return outBufferSize;
+                // See comments in inBufferSize
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -147,13 +207,7 @@ namespace System.IO.Pipes
             get
             {
                 CheckPipePropertyOperations();
-
-                // get fresh value if it could be stale
-                if (_isFromExistingHandle || IsHandleExposed)
-                {
-                    throw NotImplemented.ByDesign;
-                }
-                return _readMode;
+                return PipeTransmissionMode.Byte; // Unix pipes are only byte-based, not message-based
             }
             [SecurityCritical]
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
@@ -165,11 +219,101 @@ namespace System.IO.Pipes
                     throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_TransmissionModeByteOrMsg);
                 }
 
-                throw NotImplemented.ByDesign; // TODO: Implement this
+                if (value != PipeTransmissionMode.Byte) // Unix pipes are only byte-based, not message-based
+                {
+                    throw new PlatformNotSupportedException();
+                }
+
+                // nop, since it's already the only valid value
+            }
+        }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        internal static Interop.libc.OpenFlags TranslateFlags(PipeDirection direction, PipeOptions options, HandleInheritability inheritability)
+        {
+            // Translate direction
+            Interop.libc.OpenFlags flags =
+                direction == PipeDirection.InOut ? Interop.libc.OpenFlags.O_RDWR :
+                direction == PipeDirection.Out ? Interop.libc.OpenFlags.O_WRONLY :
+                Interop.libc.OpenFlags.O_RDONLY;
+
+            // Translate options
+            if ((options & PipeOptions.WriteThrough) != 0)
+            {
+                flags |= Interop.libc.OpenFlags.O_SYNC;
+            }
+
+            // Translate inheritability.
+            if ((inheritability & HandleInheritability.Inheritable) == 0)
+            {
+                flags |= Interop.libc.OpenFlags.O_CLOEXEC;
+            }
+            
+            // PipeOptions.Asynchronous is ignored, at least for now.  Asynchronous processing
+            // is handling just by queueing a work item to do the work synchronously on a pool thread.
+
+            return flags;
+        }
+
+        /// <summary>
+        /// Helper for making system calls that involve the stream's file descriptor.
+        /// System calls are expected to return greather than or equal to zero on success,
+        /// and less than zero on failure.  In the case of failure, errno is expected to
+        /// be set to the relevant error code.
+        /// </summary>
+        /// <param name="sysCall">A delegate that invokes the system call.</param>
+        /// <param name="arg1">The first argument to be passed to the system call, after the file descriptor.</param>
+        /// <param name="arg2">The second argument to be passed to the system call.</param>
+        /// <returns>The return value of the system call.</returns>
+        /// <remarks>
+        /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
+        /// so as to avoid delegate and closure allocations at the call sites.
+        /// </remarks>
+        private static long SysCall(
+            SafePipeHandle handle,
+            Func<int, IntPtr, int, long> sysCall,
+            IntPtr arg1 = default(IntPtr), int arg2 = default(int))
+        {
+            bool gotRefOnHandle = false;
+            try
+            {
+                // Get the file descriptor from the handle.  We increment the ref count to help
+                // ensure it's not closed out from under us.
+                handle.DangerousAddRef(ref gotRefOnHandle);
+                Debug.Assert(gotRefOnHandle);
+                int fd = (int)handle.DangerousGetHandle();
+                Debug.Assert(fd >= 0);
+
+                // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
+                while (true)
+                {
+                    long result = sysCall(fd, arg1, arg2);
+                    if (result < 0)
+                    {
+                        int errno = Marshal.GetLastWin32Error();
+                        if (errno == Interop.Errors.EINTR)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            throw Interop.GetExceptionForIoErrno(errno);
+                        }
+                    }
+                    return result;
+                }
+            }
+            finally
+            {
+                if (gotRefOnHandle)
+                {
+                    handle.DangerousRelease();
+                }
             }
         }
 
     }
 }
-
-

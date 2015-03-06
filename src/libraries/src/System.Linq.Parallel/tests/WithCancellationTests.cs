@@ -280,7 +280,7 @@ namespace Test
             Assert.True(false, string.Format("PlinqCancellationTests.AggregatesShouldntWrapOCE:  > Failed: no exception occured, expected OperationCanceledException"));
         }
 
-        // Plinq supresses OCE(externalCT) occuring in worker threads and then throws a single OCE(ct)
+        // Plinq suppresses OCE(externalCT) occurring in worker threads and then throws a single OCE(ct)
         // if a manual OCE(ct) is thrown but ct is not canceled, Plinq should not suppress it, else things
         // get confusing...
         // ONLY an OCE(ct) for ct.IsCancellationRequested=true is co-operative cancellation
@@ -448,7 +448,7 @@ namespace Test
             task.Wait();
         }
 
-        // Regression test for an issue causing ODE if a queryEnumator is disposed before moveNext is called.
+        // Regression test for an issue causing ODE if a queryEnumerator is disposed before moveNext is called.
         [Fact]
         public static void ImmediateDispose()
         {
@@ -517,7 +517,7 @@ namespace Test
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_2.  failed.  AggregateExcption was expected, but some other exception occured." + e.ToString()));
+                Assert.True(false, string.Format("PlinqCancellationTests.SetOperationsThrowAggregateOnCancelOrDispose_2.  failed.  AggregateException was expected, but some other exception occured." + e.ToString()));
             }
         }
 
@@ -628,7 +628,7 @@ namespace Test
         // To help the user, we will check if a cancellation token passed to WithCancellation() is 
         // not backed by a disposed CTS.  This will help them identify incorrect cts.Dispose calls, but 
         // doesn't solve all their problems if they don't manage CTS lifetime correctly.
-        // We test via a few random queries that have shown inconsistent behaviour in the past.
+        // We test via a few random queries that have shown inconsistent behavior in the past.
         [Fact]
         public static void PreDisposedCTSPassedToPlinq()
         {
@@ -648,6 +648,8 @@ namespace Test
             }
             catch (Exception ex)
             {
+                // This is not going to be the case since we changed the behavior of WithCancellation
+                // to not throw when called on disposed cancellationtokens.
                 ae1 = (ArgumentException)ex;
             }
 
@@ -659,6 +661,8 @@ namespace Test
             }
             catch (Exception ex)
             {
+                // This is not going to be the case since we changed the behavior of WithCancellation
+                // to not throw when called on disposed cancellationtokens.
                 ae2 = (ArgumentException)ex;
             }
 
@@ -671,12 +675,14 @@ namespace Test
             }
             catch (Exception ex)
             {
+                // This is not going to be the case since we changed the behavior of WithCancellation
+                // to not throw when called on disposed cancellationtokens.
                 ae3 = (ArgumentException)ex;
             }
 
-            Assert.NotNull(ae1);
-            Assert.NotNull(ae2);
-            Assert.NotNull(ae3);
+            Assert.Null(ae1); 
+            Assert.Null(ae2);
+            Assert.Null(ae3);
         }
 
         public static void SimulateThreadSleep(int milliseconds)

@@ -14,6 +14,40 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+        /// <summary>Gets whether the process with the specified ID is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId)
+        {
+            return IsProcessRunning(processId, GetProcessIds());
+        }
+
+        /// <summary>Gets whether the process with the specified ID on the specified machine is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId, string machineName)
+        {
+            return IsProcessRunning(processId, GetProcessIds(machineName));
+        }
+
+        /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <param name="machineName">The machine name.</param>
+        /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
+        public static ProcessInfo GetProcessInfo(int processId, string machineName)
+        {
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(machineName);
+            foreach (ProcessInfo processInfo in processInfos)
+            {
+                if (processInfo._processId == processId)
+                {
+                    return processInfo;
+                }
+            }
+            return null;
+        }
+
         /// <summary>Gets process infos for each process on the specified machine.</summary>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
@@ -91,7 +125,7 @@ namespace System.Diagnostics
         {
             // In order to query information (OpenProcess) on some protected processes
             // like csrss, we need SeDebugPrivilege privilege.
-            // After removing the depenecy on Performance Counter, we don't have a chance
+            // After removing the dependency on Performance Counter, we don't have a chance
             // to run the code in CLR performance counter to ask for this privilege.
             // So we will try to get the privilege here.
             // We could fail if the user account doesn't have right to do this, but that's fair.
@@ -127,6 +161,11 @@ namespace System.Diagnostics
                     tokenHandle.Dispose();
                 }
             }
+        }
+
+        private static bool IsProcessRunning(int processId, int[] processIds)
+        {
+            return Array.IndexOf(processIds, processId) >= 0;
         }
 
         public static SafeProcessHandle OpenProcess(int processId, int access, bool throwIfExited)
@@ -310,7 +349,7 @@ namespace System.Diagnostics
                         // If OS loader is touching module information, this method might fail and copy part of the data.
                         // This is no easy solution to this problem. The only reliable way to fix this is to 
                         // suspend all the threads in target process. Of course we don't want to do this in Process class.
-                        // So we just to try avoid the race by calling the same method 50 (an arbitary number) times.
+                        // So we just to try avoid the race by calling the same method 50 (an arbitrary number) times.
                         //
                         if (!enumResult)
                         {
@@ -823,37 +862,45 @@ namespace System.Diagnostics
 
         public static ProcessInfo[] GetProcessInfos()
         {
-            // On a normal machine, 30k to 40K will be enough.
-            // We use 128K here to tolerate mutilple connections to a machine.
-            int bufferSize = 128 * 1024;
-#if DEBUG
-            // on debug build, use a smaller buffer size to make sure we hit the retrying code path  
-            bufferSize = 1024;
-#endif
             int requiredSize = 0;
             int status;
 
             ProcessInfo[] processInfos;
             GCHandle bufferHandle = new GCHandle();
 
+            // Start with the default buffer size.
+            int bufferSize = DefaultCachedBufferSize;
+
+            // Get the cached buffer.
+            long[] buffer = Interlocked.Exchange(ref CachedBuffer, null);
+
             try
             {
-                // Retry until we get all the data
                 do
                 {
-                    // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
-                    long[] buffer = new long[(bufferSize + 7) / 8];
+                    if (buffer == null)
+                    {
+                        // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
+                        buffer = new long[(bufferSize + 7) / 8];
+                    }
+                    else
+                    {
+                        // If we have cached buffer, set the size properly.
+                        bufferSize = buffer.Length * sizeof(long);
+                    }
+
                     bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
 
                     status = Interop.mincore.NtQuerySystemInformation(
                         Interop.NtQuerySystemProcessInformation,
-                            bufferHandle.AddrOfPinnedObject(),
+                        bufferHandle.AddrOfPinnedObject(),
                         bufferSize,
                         out requiredSize);
 
                     if ((uint)status == Interop.STATUS_INFO_LENGTH_MISMATCH)
                     {
                         if (bufferHandle.IsAllocated) bufferHandle.Free();
+                        buffer = null;
                         bufferSize = GetNewBufferSize(bufferSize, requiredSize);
                     }
                 } while ((uint)status == Interop.STATUS_INFO_LENGTH_MISMATCH);
@@ -868,11 +915,24 @@ namespace System.Diagnostics
             }
             finally
             {
+                // Cache the final buffer for use on the next call.
+                Interlocked.Exchange(ref CachedBuffer, buffer);
+
                 if (bufferHandle.IsAllocated) bufferHandle.Free();
             }
 
             return processInfos;
         }
+
+        // Use a smaller buffer size on debug to ensure we hit the retry path.
+#if DEBUG
+        private const int DefaultCachedBufferSize = 1024;
+#else
+        private const int DefaultCachedBufferSize = 128 * 1024;
+#endif
+
+        // Cache a single buffer for use in GetProcessInfos().
+        private static long[] CachedBuffer;
 
         static ProcessInfo[] GetProcessInfos(IntPtr dataPtr)
         {

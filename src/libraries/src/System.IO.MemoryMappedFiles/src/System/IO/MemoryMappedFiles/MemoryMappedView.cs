@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Security;
 
 namespace System.IO.MemoryMappedFiles
@@ -9,17 +10,13 @@ namespace System.IO.MemoryMappedFiles
     internal partial class MemoryMappedView : IDisposable
     {
         private readonly SafeMemoryMappedViewHandle _viewHandle;
-        private readonly Int64 _pointerOffset;
-        private readonly Int64 _size;
+        private readonly long _pointerOffset;
+        private readonly long _size;
         private readonly MemoryMappedFileAccess _access;
 
-        // These control the retry behaviour when lock violation errors occur during Flush:
-        private const Int32 MaxFlushWaits = 15;  // must be <=30
-        private const Int32 MaxFlushRetriesPerWait = 20;
-
         [SecurityCritical]
-        private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, Int64 pointerOffset,
-                                            Int64 size, MemoryMappedFileAccess access)
+        private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset,
+                                        long size, MemoryMappedFileAccess access)
         {
             _viewHandle = viewHandle;
             _pointerOffset = pointerOffset;
@@ -33,12 +30,12 @@ namespace System.IO.MemoryMappedFiles
             get { return _viewHandle; }
         }
 
-        public Int64 PointerOffset
+        public long PointerOffset
         {
             get { return _pointerOffset; }
         }
 
-        public Int64 Size
+        public long Size
         {
             get { return _size; }
         }
@@ -68,6 +65,37 @@ namespace System.IO.MemoryMappedFiles
         {
             [SecuritySafeCritical]
             get { return (_viewHandle == null || _viewHandle.IsClosed); }
+        }
+
+        /// <summary>
+        /// Validates a size and an offset.  They may need to be shifted based on the supplied
+        /// <paramref name="allocationGranularity"/>.
+        /// </summary>
+        /// <param name="size">The requested size.</param>
+        /// <param name="offset">The requested offset.</param>
+        /// <param name="allocationGranularity">The allowed granularity for size and offset.</param>
+        /// <param name="newSize">The shifted size based on the <paramref name="allocationGranularity"/>.</param>
+        /// <param name="extraMemNeeded">The amount <paramref name="newSize"/> and <paramref name="newOffset"/> were shifted.</param>
+        /// <param name="newOffset">The shifted offset based on the <paramref name="allocationGranularity"/>.</param>
+        private static void ValidateSizeAndOffset(
+            long size, long offset, int allocationGranularity,
+            out ulong newSize, out ulong extraMemNeeded, out ulong newOffset)
+        {
+            Debug.Assert(size >= 0);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(allocationGranularity > 0);
+
+            // Determine how much extra memory needs to be allocated to align on the size of allocationGranularity.
+            // The newOffset is then moved down by that amount, and the newSize is increased by that amount.
+
+            extraMemNeeded = (ulong)offset % (ulong)allocationGranularity;
+            newOffset = (ulong)offset - extraMemNeeded;
+            newSize = (size != MemoryMappedFile.DefaultSize) ? (ulong)size + extraMemNeeded : 0;
+
+            if (IntPtr.Size == 4 && newSize > uint.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("size", SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+            }
         }
     }
 }

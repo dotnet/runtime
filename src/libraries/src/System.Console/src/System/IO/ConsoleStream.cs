@@ -1,9 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Text;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.IO
 {
@@ -16,7 +17,7 @@ namespace System.IO
 
         internal ConsoleStream(FileAccess access)
         {
-            Contract.Assert(access == FileAccess.Read || access == FileAccess.Write);
+            Debug.Assert(access == FileAccess.Read || access == FileAccess.Write);
             _canRead = ((access & FileAccess.Read) == FileAccess.Read);
             _canWrite = ((access & FileAccess.Write) == FileAccess.Write);
         }

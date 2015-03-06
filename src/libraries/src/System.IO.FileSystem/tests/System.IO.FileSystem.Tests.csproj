@@ -7,16 +7,13 @@
     <ProjectGuid>{57E8F8D4-0766-4CC7-B3F9-B243B81DB6A5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Tests</AssemblyName>
-    <CoverageEnabledForProject>false</CoverageEnabledForProject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -28,10 +25,6 @@
     <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\src\System.IO.FileSystem.Primitives.csproj">
-      <Project>{6c05678e-394c-4cff-b453-a18e28c8f2c3}</Project>
-      <Name>System.IO.FileSystem.Primitives</Name>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.FileSystem.csproj">
       <Project>{879c23dc-d828-4dfb-8e92-abbc11b71035}</Project>

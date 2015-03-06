@@ -18,10 +18,6 @@ namespace System.IO.Pipes
     public sealed partial class NamedPipeServerStream : PipeStream
     {
         [SecurityCritical]
-        private unsafe static readonly IOCompletionCallback s_WaitForConnectionCallback =
-            new IOCompletionCallback(NamedPipeServerStream.AsyncWaitForConnectionCallback);
-
-        [SecurityCritical]
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)
@@ -76,7 +72,7 @@ namespace System.IO.Pipes
         [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
         public void WaitForConnection()
         {
-            CheckConnectOperationsServer();
+            CheckConnectOperationsServerWithHandle();
 
             if (IsAsync)
             {
@@ -126,153 +122,6 @@ namespace System.IO.Pipes
                 cancellationToken.CanBeCanceled ? new IOCancellationHelper(cancellationToken) : null);
         }
 
-        // Async version of WaitForConnection.  See the comments above for more info.
-        [SecurityCritical]
-        private unsafe IAsyncResult BeginWaitForConnection(AsyncCallback callback, Object state)
-        {
-            CheckConnectOperationsServer();
-
-            if (!IsAsync)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
-            }
-
-            // Create and store async stream class library specific data in the 
-            // async result
-            PipeAsyncResult asyncResult = new PipeAsyncResult();
-            asyncResult._handle = InternalHandle;
-            asyncResult._userCallback = callback;
-            asyncResult._userStateObject = state;
-
-            IOCancellationHelper cancellationHelper = state as IOCancellationHelper;
-
-            // Create wait handle and store in async result
-            ManualResetEvent waitHandle = new ManualResetEvent(false);
-            asyncResult._waitHandle = waitHandle;
-
-            // Create a managed overlapped class
-            // We will set the file offsets later
-            Overlapped overlapped = new Overlapped();
-            overlapped.OffsetLow = 0;
-            overlapped.OffsetHigh = 0;
-            overlapped.AsyncResult = asyncResult;
-
-            // Pack the Overlapped class, and store it in the async result
-            NativeOverlapped* intOverlapped = overlapped.Pack(s_WaitForConnectionCallback, null);
-            asyncResult._overlapped = intOverlapped;
-            if (!Interop.mincore.ConnectNamedPipe(InternalHandle, intOverlapped))
-            {
-                int errorCode = Marshal.GetLastWin32Error();
-
-                if (errorCode == Interop.ERROR_IO_PENDING)
-                {
-                    if (cancellationHelper != null)
-                    {
-                        cancellationHelper.AllowCancellation(InternalHandle, intOverlapped);
-                    }
-                    return asyncResult;
-                }
-
-                // WaitForConnectionCallback will not be called becasue we completed synchronously.
-                // Either the pipe is already connected, or there was an error. Unpin and free the overlapped again.
-                Overlapped.Free(intOverlapped);
-                asyncResult._overlapped = null;
-
-                // Did the client already connect to us?
-                if (errorCode == Interop.ERROR_PIPE_CONNECTED)
-                {
-                    if (State == PipeState.Connected)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
-                    }
-                    asyncResult.CallUserCallback();
-                    return asyncResult;
-                }
-
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-            }
-            // will set state to Connected when EndWait is called
-            if (cancellationHelper != null)
-            {
-                cancellationHelper.AllowCancellation(InternalHandle, intOverlapped);
-            }
-
-            return asyncResult;
-        }
-
-        // Async version of WaitForConnection.  See comments for WaitForConnection for more info.
-        [SecurityCritical]
-        private unsafe void EndWaitForConnection(IAsyncResult asyncResult)
-        {
-            CheckConnectOperationsServer();
-
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException("asyncResult");
-            }
-            if (!IsAsync)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
-            }
-
-            PipeAsyncResult afsar = asyncResult as PipeAsyncResult;
-            if (afsar == null)
-            {
-                throw __Error.GetWrongAsyncResult();
-            }
-
-            // Ensure we can't get into any races by doing an interlocked
-            // CompareExchange here.  Avoids corrupting memory via freeing the
-            // NativeOverlapped class or GCHandle twice.  -- 
-            if (1 == Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0))
-            {
-                throw __Error.GetEndWaitForConnectionCalledTwice();
-            }
-
-            IOCancellationHelper cancellationHelper = afsar.AsyncState as IOCancellationHelper;
-            if (cancellationHelper != null)
-            {
-                cancellationHelper.SetOperationCompleted();
-            }
-
-            // Obtain the WaitHandle, but don't use public property in case we
-            // delay initialize the manual reset event in the future.
-            WaitHandle wh = afsar._waitHandle;
-            if (wh != null)
-            {
-                // We must block to ensure that ConnectionIOCallback has completed,
-                // and we should close the WaitHandle in here.  AsyncFSCallback
-                // and the hand-ported imitation version in COMThreadPool.cpp 
-                // are the only places that set this event.
-                using (wh)
-                {
-                    wh.WaitOne();
-                    Debug.Assert(afsar._isComplete == true, "NamedPipeServerStream::EndWaitForConnection - AsyncFSCallback didn't set _isComplete to true!");
-                }
-            }
-
-            // We should have freed the overlapped and set it to null either in the Begin
-            // method (if ConnectNamedPipe completed synchronously) or in AsyncWaitForConnectionCallback.
-            // If it is not nulled out, we should not be past the above wait:
-            Debug.Assert(afsar._overlapped == null);
-
-            // Now check for any error during the read.
-            if (afsar._errorCode != 0)
-            {
-                if (afsar._errorCode == Interop.ERROR_OPERATION_ABORTED)
-                {
-                    if (cancellationHelper != null)
-                    {
-                        cancellationHelper.ThrowIOOperationAborted();
-                    }
-                }
-                throw Win32Marshal.GetExceptionForWin32Error(afsar._errorCode);
-            }
-
-            // Success
-            State = PipeState.Connected;
-        }
-
         [SecurityCritical]
         public void Disconnect()
         {
@@ -286,6 +135,33 @@ namespace System.IO.Pipes
 
             State = PipeState.Disconnected;
         }
+
+        // Gets the username of the connected client.  Not that we will not have access to the client's 
+        // username until it has written at least once to the pipe (and has set its impersonationLevel 
+        // argument appropriately). 
+        [SecurityCritical]
+        public String GetImpersonationUserName()
+        {
+            CheckWriteOperations();
+
+            StringBuilder userName = new StringBuilder(Interop.CREDUI_MAX_USERNAME_LENGTH + 1);
+
+            if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, Interop.NULL, Interop.NULL,
+                Interop.NULL, Interop.NULL, userName, userName.Capacity))
+            {
+                WinIOError(Marshal.GetLastWin32Error());
+            }
+
+            return userName.ToString();
+        }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        [SecurityCritical]
+        private unsafe static readonly IOCompletionCallback s_WaitForConnectionCallback =
+            new IOCompletionCallback(NamedPipeServerStream.AsyncWaitForConnectionCallback);
 
 #if RunAs
         // This method calls a delegate while impersonating the client. Note that we will not have
@@ -373,23 +249,151 @@ namespace System.IO.Pipes
         }
 #endif
 
-        // Gets the username of the connected client.  Not that we will not have access to the client's 
-        // username until it has written at least once to the pipe (and has set its impersonationLevel 
-        // argument appropriately). 
+        // Async version of WaitForConnection.  See the comments above for more info.
         [SecurityCritical]
-        public String GetImpersonationUserName()
+        private unsafe IAsyncResult BeginWaitForConnection(AsyncCallback callback, Object state)
         {
-            CheckWriteOperations();
+            CheckConnectOperationsServerWithHandle();
 
-            StringBuilder userName = new StringBuilder(Interop.CREDUI_MAX_USERNAME_LENGTH + 1);
-
-            if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, Interop.NULL, Interop.NULL,
-                Interop.NULL, Interop.NULL, userName, userName.Capacity))
+            if (!IsAsync)
             {
-                WinIOError(Marshal.GetLastWin32Error());
+                throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
             }
 
-            return userName.ToString();
+            // Create and store async stream class library specific data in the 
+            // async result
+            PipeAsyncResult asyncResult = new PipeAsyncResult();
+            asyncResult._handle = InternalHandle;
+            asyncResult._userCallback = callback;
+            asyncResult._userStateObject = state;
+
+            IOCancellationHelper cancellationHelper = state as IOCancellationHelper;
+
+            // Create wait handle and store in async result
+            ManualResetEvent waitHandle = new ManualResetEvent(false);
+            asyncResult._waitHandle = waitHandle;
+
+            // Create a managed overlapped class
+            // We will set the file offsets later
+            Overlapped overlapped = new Overlapped();
+            overlapped.OffsetLow = 0;
+            overlapped.OffsetHigh = 0;
+            overlapped.AsyncResult = asyncResult;
+
+            // Pack the Overlapped class, and store it in the async result
+            NativeOverlapped* intOverlapped = overlapped.Pack(s_WaitForConnectionCallback, null);
+            asyncResult._overlapped = intOverlapped;
+            if (!Interop.mincore.ConnectNamedPipe(InternalHandle, intOverlapped))
+            {
+                int errorCode = Marshal.GetLastWin32Error();
+
+                if (errorCode == Interop.ERROR_IO_PENDING)
+                {
+                    if (cancellationHelper != null)
+                    {
+                        cancellationHelper.AllowCancellation(InternalHandle, intOverlapped);
+                    }
+                    return asyncResult;
+                }
+
+                // WaitForConnectionCallback will not be called because we completed synchronously.
+                // Either the pipe is already connected, or there was an error. Unpin and free the overlapped again.
+                Overlapped.Free(intOverlapped);
+                asyncResult._overlapped = null;
+
+                // Did the client already connect to us?
+                if (errorCode == Interop.ERROR_PIPE_CONNECTED)
+                {
+                    if (State == PipeState.Connected)
+                    {
+                        throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
+                    }
+                    asyncResult.CallUserCallback();
+                    return asyncResult;
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+            // will set state to Connected when EndWait is called
+            if (cancellationHelper != null)
+            {
+                cancellationHelper.AllowCancellation(InternalHandle, intOverlapped);
+            }
+
+            return asyncResult;
+        }
+
+        // Async version of WaitForConnection.  See comments for WaitForConnection for more info.
+        [SecurityCritical]
+        private unsafe void EndWaitForConnection(IAsyncResult asyncResult)
+        {
+            CheckConnectOperationsServerWithHandle();
+
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException("asyncResult");
+            }
+            if (!IsAsync)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_PipeNotAsync);
+            }
+
+            PipeAsyncResult afsar = asyncResult as PipeAsyncResult;
+            if (afsar == null)
+            {
+                throw __Error.GetWrongAsyncResult();
+            }
+
+            // Ensure we can't get into any races by doing an interlocked
+            // CompareExchange here.  Avoids corrupting memory via freeing the
+            // NativeOverlapped class or GCHandle twice.  -- 
+            if (1 == Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0))
+            {
+                throw __Error.GetEndWaitForConnectionCalledTwice();
+            }
+
+            IOCancellationHelper cancellationHelper = afsar.AsyncState as IOCancellationHelper;
+            if (cancellationHelper != null)
+            {
+                cancellationHelper.SetOperationCompleted();
+            }
+
+            // Obtain the WaitHandle, but don't use public property in case we
+            // delay initialize the manual reset event in the future.
+            WaitHandle wh = afsar._waitHandle;
+            if (wh != null)
+            {
+                // We must block to ensure that ConnectionIOCallback has completed,
+                // and we should close the WaitHandle in here.  AsyncFSCallback
+                // and the hand-ported imitation version in COMThreadPool.cpp 
+                // are the only places that set this event.
+                using (wh)
+                {
+                    wh.WaitOne();
+                    Debug.Assert(afsar._isComplete == true, "NamedPipeServerStream::EndWaitForConnection - AsyncFSCallback didn't set _isComplete to true!");
+                }
+            }
+
+            // We should have freed the overlapped and set it to null either in the Begin
+            // method (if ConnectNamedPipe completed synchronously) or in AsyncWaitForConnectionCallback.
+            // If it is not nulled out, we should not be past the above wait:
+            Debug.Assert(afsar._overlapped == null);
+
+            // Now check for any error during the read.
+            if (afsar._errorCode != 0)
+            {
+                if (afsar._errorCode == Interop.ERROR_OPERATION_ABORTED)
+                {
+                    if (cancellationHelper != null)
+                    {
+                        cancellationHelper.ThrowIOOperationAborted();
+                    }
+                }
+                throw Win32Marshal.GetExceptionForWin32Error(afsar._errorCode);
+            }
+
+            // Success
+            State = PipeState.Connected;
         }
 
         // Callback to be called by the OS when completing the async WaitForConnection operation.
@@ -442,6 +446,15 @@ namespace System.IO.Pipes
             {
                 userCallback(asyncResult);
             }
+        }
+
+        private void CheckConnectOperationsServerWithHandle()
+        {
+            if (InternalHandle == null)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
+            }
+            CheckConnectOperationsServer();
         }
     }
 }

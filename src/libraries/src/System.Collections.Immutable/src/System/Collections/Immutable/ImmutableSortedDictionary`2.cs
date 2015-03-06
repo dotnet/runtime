@@ -909,7 +909,7 @@ namespace System.Collections.Immutable
                         {
                             if (!_valueComparer.Equals(value, item.Value))
                             {
-                                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, item.Key));
+                                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, item.Key));
                             }
                         }
                         else
@@ -1126,7 +1126,7 @@ namespace System.Collections.Immutable
             {
                 if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
                 {
-                    throw new InvalidOperationException(Strings.CollectionModifiedDuringEnumeration);
+                    throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                 }
             }
 
@@ -1400,16 +1400,9 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + dictionarySize, "arrayIndex");
 
-                if (this.IsEmpty)
-                {
-                    return;
-                }
-
-                int[] indices = new int[1]; // SetValue takes a params array; lifting out the implicit allocation from the loop
                 foreach (var item in this)
                 {
-                    indices[0] = arrayIndex++;
-                    array.SetValue(new DictionaryEntry(item.Key, item.Value), indices);
+                    array.SetValue(new DictionaryEntry(item.Key, item.Value), arrayIndex++);
                 }
             }
 
@@ -1874,7 +1867,7 @@ namespace System.Collections.Immutable
                         }
                         else
                         {
-                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, Strings.DuplicateKey, key));
+                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.DuplicateKey, key));
                         }
                     }
 

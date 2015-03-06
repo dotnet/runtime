@@ -35,7 +35,7 @@ namespace System.Threading.Tasks.Dataflow
         private TaskCompletionSource<VoidResult> _lazyCompletionTaskSource;
         /// <summary>Whether all future messages should be declined.</summary>
         private bool _decliningPermanently;
-        /// <summary>Whether block completion is disallawed.</summary>
+        /// <summary>Whether block completion is disallowed.</summary>
         private bool _completionReserved;
         /// <summary>The header of the singly-assigned value.</summary>
         private DataflowMessageHeader _header;
@@ -177,7 +177,7 @@ namespace System.Threading.Tasks.Dataflow
 
             Contract.Requires(_lazyCompletionTaskSource == null || !_lazyCompletionTaskSource.Task.IsCompleted, "The task completion source must not be completed. This must be the only thread that ever completes the block.");
 
-            // Save the linked list of targets so that it could be traveresed later to propagate completion
+            // Save the linked list of targets so that it could be traversed later to propagate completion
             TargetRegistry<T>.LinkedTargetInfo linkedTargets = _targetRegistry.ClearEntryPoints();
 
             // Complete the block's completion task
@@ -350,8 +350,8 @@ namespace System.Threading.Tasks.Dataflow
         DataflowMessageStatus ITargetBlock<T>.OfferMessage(DataflowMessageHeader messageHeader, T messageValue, ISourceBlock<T> source, Boolean consumeToAccept)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
-            if (source == null && consumeToAccept) throw new ArgumentException(Strings.Argument_CantConsumeFromANullSource, "consumeToAccept");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
+            if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, "consumeToAccept");
             Contract.EndContractBlock();
 
             bool thisThreadReservedCompletion = false;
@@ -391,7 +391,7 @@ namespace System.Threading.Tasks.Dataflow
         T ISourceBlock<T>.ConsumeMessage(DataflowMessageHeader messageHeader, ITargetBlock<T> target, out Boolean messageConsumed)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
             if (target == null) throw new ArgumentNullException("target");
             Contract.EndContractBlock();
 
@@ -413,7 +413,7 @@ namespace System.Threading.Tasks.Dataflow
         Boolean ISourceBlock<T>.ReserveMessage(DataflowMessageHeader messageHeader, ITargetBlock<T> target)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
             if (target == null) throw new ArgumentNullException("target");
             Contract.EndContractBlock();
 
@@ -427,12 +427,12 @@ namespace System.Threading.Tasks.Dataflow
         void ISourceBlock<T>.ReleaseReservation(DataflowMessageHeader messageHeader, ITargetBlock<T> target)
         {
             // Validate arguments
-            if (!messageHeader.IsValid) throw new ArgumentException(Strings.Argument_InvalidMessageHeader, "messageHeader");
+            if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, "messageHeader");
             if (target == null) throw new ArgumentNullException("target");
             Contract.EndContractBlock();
 
             // As long as the message is the one we have, everything's fine.
-            if (_header.Id != messageHeader.Id) throw new InvalidOperationException(Strings.InvalidOperation_MessageNotReservedByTarget);
+            if (_header.Id != messageHeader.Id) throw new InvalidOperationException(SR.InvalidOperation_MessageNotReservedByTarget);
 
             // In other blocks, upon release we typically re-offer the message to all linked targets.
             // We need to do the same thing for WriteOnceBlock, in order to account for cases where the block
@@ -441,7 +441,7 @@ namespace System.Threading.Tasks.Dataflow
             // and all targets can get a copy, we don't need to broadcast to all targets, only to
             // the target that released the message.  Note that we don't care whether it's accepted
             // or not, nor do we care about any exceptions which may emerge (they should just propagate).
-            Contract.Assert(_header.IsValid, "A valid header is required.");
+            Debug.Assert(_header.IsValid, "A valid header is required.");
             bool useCloning = _cloningFunction != null;
             target.OfferMessage(_header, _value, this, consumeToAccept: useCloning);
         }

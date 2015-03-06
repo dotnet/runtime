@@ -15,7 +15,6 @@ using System.Diagnostics.Contracts;
 namespace System.Collections
 {
     // Useful base class for typed read/write collections where items derive from object
-    [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class CollectionBase : IList
     {
         private ArrayList _list;
@@ -46,7 +45,6 @@ namespace System.Collections
             get { return (IList)this; }
         }
 
-        [System.Runtime.InteropServices.ComVisible(false)]
         public int Capacity
         {
             get

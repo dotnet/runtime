@@ -133,7 +133,7 @@ namespace System.Collections.Immutable
         {
             if (this.IsEmpty)
             {
-                throw new InvalidOperationException(Strings.InvalidEmptyOperation);
+                throw new InvalidOperationException(SR.InvalidEmptyOperation);
             }
 
             return _forwards.Peek();
@@ -184,7 +184,7 @@ namespace System.Collections.Immutable
         {
             if (this.IsEmpty)
             {
-                throw new InvalidOperationException(Strings.InvalidEmptyOperation);
+                throw new InvalidOperationException(SR.InvalidEmptyOperation);
             }
 
             ImmutableStack<T> f = _forwards.Pop();

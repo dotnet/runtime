@@ -1316,7 +1316,7 @@ namespace System.Collections.Immutable
             {
                 if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
                 {
-                    throw new InvalidOperationException(Strings.CollectionModifiedDuringEnumeration);
+                    throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                 }
             }
 
@@ -1716,16 +1716,9 @@ namespace System.Collections.Immutable
                 Requires.Range(arrayIndex >= 0, "arrayIndex");
                 Requires.Range(array.Length >= arrayIndex + this.Count, "arrayIndex");
 
-                if (this.IsEmpty)
-                {
-                    return;
-                }
-
-                int[] indices = new int[1]; // SetValue takes a params array; lifting out the implicit allocation from the loop
                 foreach (var item in this)
                 {
-                    indices[0] = arrayIndex++;
-                    array.SetValue(item, indices);
+                    array.SetValue(item, arrayIndex++);
                 }
             }
 

@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{D3F18ACC-D327-4ABB-BA6C-E9C34A041B2F}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -10,16 +10,17 @@
     <AssemblyName>Microsoft.Win32.Registry</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonPath)\System\SR.cs" />
-  </ItemGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
     <Compile Include="Interop\Interop.Manual.cs" />
     <Compile Include="Microsoft\Win32\Registry.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
@@ -28,20 +29,7 @@
     <Compile Include="Microsoft\Win32\RegistryView.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="Microsoft\Win32\ThrowHelper.cs" />
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>Resources</CustomToolNamespace>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

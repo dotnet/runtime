@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Runtime.Extensions.Tests</RootNamespace>
+    <AssemblyName>System.Runtime.Extensions.Tests</AssemblyName>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
+    <Compile Include="System\IO\Path.cs" />
+    <Compile Include="System\IO\Path.Combine.cs" />
+    <Compile Include="System\Net\WebUtility.cs" />
+    <Compile Include="System\BitConverter.cs" />
+    <Compile Include="System\Convert.BoxedObjectCheck.cs" />
+    <Compile Include="System\Convert.FromBase64.cs" />
+    <Compile Include="System\Convert.TestBase.cs" />
+    <Compile Include="System\Convert.ToBase64CharArray.cs" />
+    <Compile Include="System\Convert.ToBase64String.cs" />
+    <Compile Include="System\Convert.ToBoolean.cs" />
+    <Compile Include="System\Convert.ToByte.cs" />
+    <Compile Include="System\Convert.ToChar.cs" />
+    <Compile Include="System\Convert.ToDateTime.cs" />
+    <Compile Include="System\Convert.ToDecimal.cs" />
+    <Compile Include="System\Convert.ToDouble.cs" />
+    <Compile Include="System\Convert.ToInt16.cs" />
+    <Compile Include="System\Convert.ToInt32.cs" />
+    <Compile Include="System\Convert.ToInt64.cs" />
+    <Compile Include="System\Convert.ToSByte.cs" />
+    <Compile Include="System\Convert.ToSingle.cs" />
+    <Compile Include="System\Convert.ToString.cs" />
+    <Compile Include="System\Convert.ToUInt16.cs" />
+    <Compile Include="System\Convert.ToUInt32.cs" />
+    <Compile Include="System\Convert.ToUInt64.cs" />
+    <Compile Include="System\Environment.ExpandEnvironmentVariables.cs" />
+    <Compile Include="System\Environment.GetEnvironmentVariable.cs" />
+    <Compile Include="System\Environment.SetEnvironmentVariable.cs" />
+    <Compile Include="System\Math.cs" />
+    <Compile Include="System\Random.cs" />
+    <Compile Include="System\StringComparer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

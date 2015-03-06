@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -35,13 +35,13 @@ namespace System.Linq.Parallel
 
         public bool Equals(Wrapper<T> x, Wrapper<T> y)
         {
-            Contract.Assert(_comparer != null);
+            Debug.Assert(_comparer != null);
             return _comparer.Equals(x.Value, y.Value);
         }
 
         public int GetHashCode(Wrapper<T> x)
         {
-            Contract.Assert(_comparer != null);
+            Debug.Assert(_comparer != null);
             return _comparer.GetHashCode(x.Value);
         }
     }

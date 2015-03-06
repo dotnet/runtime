@@ -117,7 +117,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             else // async
             {
-                Contract.Assert(transformAsync != null, "Incorrect delegate type.");
+                Debug.Assert(transformAsync != null, "Incorrect delegate type.");
                 _target = new TargetCore<TInput>(this,
                     messageWithId => ProcessMessageWithTask(transformAsync, messageWithId),
                     _reorderingBuffer, dataflowBlockOptions, TargetCoreOptions.UsesAsyncCompletion);
@@ -142,7 +142,7 @@ namespace System.Threading.Tasks.Dataflow
             _source.Completion.ContinueWith((completed, state) =>
             {
                 var thisBlock = ((TransformBlock<TInput, TOutput>)state) as IDataflowBlock;
-                Contract.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
+                Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
                 thisBlock.Fault(completed.Exception);
             }, this, CancellationToken.None, Common.GetContinuationOptions() | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
@@ -404,7 +404,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets the messages waiting to be received.</summary>
             public IEnumerable<TOutput> OutputQueue { get { return _sourceDebuggingInformation.OutputQueue; } }
 
-            /// <summary>Gets the number of oustanding input operations.</summary>
+            /// <summary>Gets the number of outstanding input operations.</summary>
             public Int32 CurrentDegreeOfParallelism { get { return _targetDebuggingInformation.CurrentDegreeOfParallelism; } }
             /// <summary>Gets the task being used for output processing.</summary>
             public Task TaskForOutputProcessing { get { return _sourceDebuggingInformation.TaskForOutputProcessing; } }

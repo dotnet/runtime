@@ -12,11 +12,11 @@
 ===========================================================*/
 
 using System;
-using System.Runtime;
 using System.Diagnostics;
-using System.Threading;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Collections
 {
@@ -56,7 +56,6 @@ namespace System.Collections
     //
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(true)]
     public class Hashtable : IDictionary
     {
         /*
@@ -216,7 +215,7 @@ namespace System.Collections
             _loadsize = (int)(_loadFactor * hashsize);
             _isWriterInProgress = false;
             // Based on the current algorithm, loadsize must be less than hashsize.
-            Contract.Assert(_loadsize < hashsize, "Invalid hashtable loadsize!");
+            Debug.Assert(_loadsize < hashsize, "Invalid hashtable loadsize!");
         }
 
         public Hashtable(int capacity, float loadFactor, IEqualityComparer equalityComparer) : this(capacity, loadFactor)
@@ -311,7 +310,7 @@ namespace System.Collections
         // Removes all entries from this hashtable.
         public virtual void Clear()
         {
-            Contract.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
+            Debug.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
             if (_count == 0 && _occupancy == 0)
                 return;
@@ -555,7 +554,7 @@ namespace System.Collections
                     //        (3) compare the key, if equal, go to step 4. Otherwise end.
                     //        (4) return the value contained in the bucket.
                     //     After step 3 and before step 4. A writer can kick in a remove the old item and add a new one 
-                    //     in the same bukcet. So in the reader we need to check if the hash table is modified during above steps.
+                    //     in the same bucket. So in the reader we need to check if the hash table is modified during above steps.
                     //
                     // Writers (Insert, Remove, Clear) will set 'isWriterInProgress' flag before it starts modifying 
                     // the hashtable and will ckear the flag when it is done.  When the flag is cleared, the 'version'
@@ -609,7 +608,7 @@ namespace System.Collections
             rehash(rawsize, false);
         }
 
-        // We occationally need to rehash the table to clean up the collision bits.
+        // We occasionally need to rehash the table to clean up the collision bits.
         private void rehash()
         {
             rehash(_buckets.Length, false);
@@ -653,8 +652,8 @@ namespace System.Collections
             _loadsize = (int)(_loadFactor * newsize);
             UpdateVersion();
             _isWriterInProgress = false;
-            // minimun size of hashtable is 3 now and maximum loadFactor is 0.72 now.
-            Contract.Assert(_loadsize < newsize, "Our current implementaion means this is not possible.");
+            // minimum size of hashtable is 3 now and maximum loadFactor is 0.72 now.
+            Debug.Assert(_loadsize < newsize, "Our current implementation means this is not possible.");
             return;
         }
 
@@ -711,7 +710,7 @@ namespace System.Collections
         // 
         protected virtual bool KeyEquals(Object item, Object key)
         {
-            Contract.Assert(key != null, "key can't be null here!");
+            Debug.Assert(key != null, "key can't be null here!");
             if (Object.ReferenceEquals(_buckets, item))
             {
                 return false;
@@ -909,13 +908,13 @@ namespace System.Collections
             // If you see this assert, make sure load factor & count are reasonable.
             // Then verify that our double hash function (h2, described at top of file)
             // meets the requirements described above. You should never see this assert.
-            Contract.Assert(false, "hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
+            Debug.Fail("hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
             throw new InvalidOperationException(SR.InvalidOperation_HashInsertFailed);
         }
 
         private void putEntry(bucket[] newBuckets, Object key, Object nvalue, int hashcode)
         {
-            Contract.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
+            Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
 
             uint seed = (uint)hashcode;
             uint incr = (uint)(1 + ((seed * HashPrime) % ((uint)newBuckets.Length - 1)));
@@ -950,7 +949,7 @@ namespace System.Collections
                 throw new ArgumentNullException("key", SR.ArgumentNull_Key);
             }
             Contract.EndContractBlock();
-            Contract.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
+            Debug.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
             uint seed;
             uint incr;
@@ -1262,7 +1261,7 @@ namespace System.Collections
 
 
         // Implements an enumerator for a hashtable. The enumerator uses the
-        // internal version number of the hashtabke to ensure that no modifications
+        // internal version number of the hashtable to ensure that no modifications
         // are made to the hashtable while an enumeration is in progress.
         private class HashtableEnumerator : IDictionaryEnumerator
         {
@@ -1452,11 +1451,11 @@ namespace System.Collections
         {
             int newSize = 2 * oldSize;
 
-            // Allow the hashtables to grow to maximum possible size (~2G elements) before encoutering capacity overflow.
+            // Allow the hashtables to grow to maximum possible size (~2G elements) before encountering capacity overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
             {
-                Contract.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
+                Debug.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
                 return MaxPrimeArrayLength;
             }
 
@@ -1475,7 +1474,7 @@ namespace System.Collections
 
         public static IEqualityComparer GetRandomizedEqualityComparer(object comparer)
         {
-            Contract.Assert(comparer == null || comparer == System.Collections.Generic.EqualityComparer<string>.Default || comparer is IWellKnownStringEqualityComparer);
+            Debug.Assert(comparer == null || comparer == System.Collections.Generic.EqualityComparer<string>.Default || comparer is IWellKnownStringEqualityComparer);
 
             if (comparer == null)
             {
@@ -1494,7 +1493,7 @@ namespace System.Collections
                 return cmp.GetRandomizedEqualityComparer();
             }
 
-            Contract.Assert(false, "Missing case in GetRandomizedEqualityComparer!");
+            Debug.Fail("Missing case in GetRandomizedEqualityComparer!");
 
             return null;
         }
@@ -1534,7 +1533,7 @@ namespace System.Collections
                     {
                         rng = RandomNumberGenerator.Create();
                         data = new byte[bufferSize];
-                        Contract.Assert(bufferSize % 8 == 0, "We increment our current index by 8, so our buffer size must be a multiple of 8");
+                        Debug.Assert(bufferSize % 8 == 0, "We increment our current index by 8, so our buffer size must be a multiple of 8");
                     }
 
                     rng.GetBytes(data);

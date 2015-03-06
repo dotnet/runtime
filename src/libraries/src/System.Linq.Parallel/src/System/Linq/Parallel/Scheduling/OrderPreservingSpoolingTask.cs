@@ -9,6 +9,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Linq.Parallel
@@ -128,7 +129,7 @@ namespace System.Linq.Parallel
 
         protected override void SpoolingWork()
         {
-            Contract.Assert(_sortHelper != null);
+            Debug.Assert(_sortHelper != null);
 
             // This task must perform a sort just prior to handing data to the merge.
             // We just defer to a sort helper object for this task.
@@ -140,7 +141,7 @@ namespace System.Linq.Parallel
                 // By this point, the results have been sorted, so we just publish a reference to the array.
                 if (_taskIndex == 0)
                 {
-                    Contract.Assert(sortedOutput != null);
+                    Debug.Assert(sortedOutput != null);
                     _results.Value = sortedOutput;
                 }
             }

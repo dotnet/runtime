@@ -55,7 +55,6 @@
     <Compile Include="ImmutableStackTest.cs" />
     <Compile Include="ImmutableTestBase.cs" />
     <Compile Include="IndexOfTests.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequiresTests.cs" />
     <Compile Include="SimpleElementImmutablesTestBase.cs" />
     <Compile Include="TestExtensionsMethods.cs" />

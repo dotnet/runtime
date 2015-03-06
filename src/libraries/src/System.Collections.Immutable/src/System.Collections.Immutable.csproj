@@ -14,11 +14,8 @@
     <TargetFrameworkProfile>Profile259</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)System.Collections.Immutable.xml</DocumentationFile>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <GenerateAppxPackageOnBuild>False</GenerateAppxPackageOnBuild>
+    <AssemblyVersion>1.1.34</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -39,14 +36,13 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="System\Collections\Generic\IHashKeyCollection.cs" />
     <Compile Include="System\Collections\Generic\ISortKeyCollection.cs" />
     <Compile Include="System\Collections\Immutable\AllocFreeConcurrentStack.cs" />
     <Compile Include="System\Collections\Immutable\DictionaryEnumerator.cs" />
     <Compile Include="System\Collections\Immutable\DisposableEnumeratorAdapter`2.cs" />
-    <Compile Include="System\Collections\Immutable\EnumeratorAdapter`2.cs" />
     <Compile Include="System\Collections\Immutable\IBinaryTree.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableArray.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableDictionary.cs" />
@@ -102,19 +98,8 @@
     <Compile Include="System\Collections\Immutable\SecureObjectPool.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
     <Compile Include="System\Linq\ImmutableArrayExtensions.cs" />
-    <Compile Include="Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="Interfaces.cd" />

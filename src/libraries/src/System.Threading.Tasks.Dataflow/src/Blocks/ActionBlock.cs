@@ -107,7 +107,7 @@ namespace System.Threading.Tasks.Dataflow
                 else // async
                 {
                     var asyncAction = action as Func<TInput, Task>;
-                    Contract.Assert(asyncAction != null, "action is of incorrect delegate type");
+                    Debug.Assert(asyncAction != null, "action is of incorrect delegate type");
                     _defaultTarget = new TargetCore<TInput>(this,
                         messageWithId => ProcessMessageWithTask(asyncAction, messageWithId),
                         null, dataflowBlockOptions, TargetCoreOptions.RepresentsBlockCompletion | TargetCoreOptions.UsesAsyncCompletion);
@@ -355,7 +355,7 @@ namespace System.Threading.Tasks.Dataflow
                 get { return _defaultDebugInfo != null ? _defaultDebugInfo.PostponedMessages : null; }
             }
 
-            /// <summary>Gets the number of oustanding input operations.</summary>
+            /// <summary>Gets the number of outstanding input operations.</summary>
             public Int32 CurrentDegreeOfParallelism
             {
                 get { return _defaultDebugInfo != null ? _defaultDebugInfo.CurrentDegreeOfParallelism : _spscDebugInfo.CurrentDegreeOfParallelism; }

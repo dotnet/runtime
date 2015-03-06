@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 
 using dev_t = System.Int64;
@@ -11,7 +10,7 @@ using mode_t = System.Int32;
 using nlink_t = System.IntPtr;
 using uid_t = System.Int32;
 using gid_t = System.Int32;
-using off_t = System.IntPtr;
+using off_t = System.Int64; // Assuming either 64-bit machine or _FILE_OFFSET_BITS == 64
 using off64_t = System.Int64;
 using blksize_t = System.IntPtr;
 using blkcnt_t = System.IntPtr;
@@ -86,7 +85,8 @@ internal static partial class Interop
 
         internal static class FileTypes 
         { 
-            internal const int S_IFMT = 0xF000;
+            internal const int S_IFMT  = 0xF000;
+            internal const int S_IFIFO = 0x1000;
             internal const int S_IFDIR = 0x4000;
             internal const int S_IFREG = 0x8000;
         } 
@@ -134,7 +134,7 @@ internal static partial class Interop
             dst.st_uid = src.st_uid;
             dst.st_gid = src.st_gid;
             dst.st_rdev = src.st_rdev;
-            dst.st_size = (long)src.st_size;
+            dst.st_size = src.st_size;
             dst.st_blksize = src.st_blksize;
             dst.st_blocks = (long)src.st_blocks;
             dst.st_atime = src.st_atime;

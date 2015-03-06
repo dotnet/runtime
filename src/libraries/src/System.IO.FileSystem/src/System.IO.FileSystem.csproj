@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == ''">Windows_Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <ProjectGuid>{879C23DC-D828-4DFB-8E92-ABBC11B71035}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -16,24 +16,12 @@
     <!-- We don't yet have an Overlapped contract that works in UAP -->
     <DefineConstants>$(DefineConstants);USE_OVERLAPPED</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="Resources\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="System\IO\__Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
@@ -50,9 +38,6 @@
     <Compile Include="System\IO\ReadLinesIterator.cs" />
     <Compile Include="System\IO\SearchOption.cs" />
     <Compile Include="System\IO\SearchTarget.cs" />
-    <Compile Include="$(CommonPath)\System\SR.cs">
-      <Link>Common\System\SR.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -65,12 +50,21 @@
     <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
-    <Compile Include="System\IO\FileStream.Handle.Win32.cs" />
+    <Compile Include="System\IO\FileStream.Win32.cs" />
     <Compile Include="System\IO\Win32FileStream.cs" />
     <Compile Include="System\IO\Win32FileStreamAsyncResult.cs" />
     <Compile Include="System\IO\Win32FileSystem.cs" />
     <Compile Include="System\IO\Win32FileSystemEnumerable.cs" />
     <Compile Include="System\IO\Win32FileSystemObject.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\__HResults.cs">
       <Link>Common\System\__HResults.cs</Link>
     </Compile>
@@ -99,7 +93,7 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(OS)' == 'Unix'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
-    <Compile Include="System\IO\FileStream.Handle.Unix.cs" />
+    <Compile Include="System\IO\FileStream.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Current.Unix.cs" />
     <Compile Include="System\IO\UnixFileStream.cs" />
     <Compile Include="System\IO\UnixFileSystem.cs" />
@@ -110,112 +104,105 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Interop.Libraries.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
-      <Link>Common\Interop\Interop.Errors.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.access.cs">
-      <Link>Common\Interop\Interop.access.cs</Link>
+      <Link>Common\Interop\Unix\Interop.access.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chdir.cs">
-      <Link>Common\Interop\Interop.chdir.cs</Link>
+      <Link>Common\Interop\Unix\Interop.chdir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.chmod.cs">
-      <Link>Common\Interop\Interop.chmod.cs</Link>
+      <Link>Common\Interop\Unix\Interop.chmod.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
-      <Link>Common\Interop\Interop.close.cs</Link>
+      <Link>Common\Interop\Unix\Interop.close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.opendir.cs">
-      <Link>Common\Interop\Interop.opendir.cs</Link>
+      <Link>Common\Interop\Unix\Interop.opendir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.closedir.cs">
-      <Link>Common\Interop\Interop.closedir.cs</Link>
+      <Link>Common\Interop\Unix\Interop.closedir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.flock.cs">
-      <Link>Common\Interop\Interop.flock.cs</Link>
+      <Link>Common\Interop\Unix\Interop.flock.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fnmatch.cs">
-      <Link>Common\Interop\Interop.fnmatch.cs</Link>
+      <Link>Common\Interop\Unix\Interop.fnmatch.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fsync.cs">
-      <Link>Common\Interop\Interop.fsync.cs</Link>
+      <Link>Common\Interop\Unix\Interop.fsync.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate64.cs">
-      <Link>Common\Interop\Interop.ftruncate64.cs</Link>
+      <Link>Common\Interop\Unix\Interop.ftruncate64.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getegid.cs">
-      <Link>Common\Interop\Interop.getegid.cs</Link>
+      <Link>Common\Interop\Unix\Interop.getegid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.geteuid.cs">
-      <Link>Common\Interop\Interop.geteuid.cs</Link>
+      <Link>Common\Interop\Unix\Interop.geteuid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
+      <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getcwd.cs">
-      <Link>Common\Interop\Interop.getcwd.cs</Link>
+      <Link>Common\Interop\Unix\Interop.getcwd.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open.cs">
-      <Link>Common\Interop\Interop.open.cs</Link>
+      <Link>Common\Interop\Unix\Interop.open.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek64.cs">
-      <Link>Common\Interop\Interop.lseek64.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek.cs">
+      <Link>Common\Interop\Unix\Interop.lseek64.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mkdir.cs">
-      <Link>Common\Interop\Interop.mkdir.cs</Link>
+      <Link>Common\Interop\Unix\Interop.mkdir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.pathconf.cs">
-      <Link>Common\Interop\Interop.pathconf.cs</Link>
+      <Link>Common\Interop\Unix\Interop.pathconf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
-      <Link>Common\Interop\Interop.Permissions.cs</Link>
+      <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.posix_fadvise.cs">
-      <Link>Common\Interop\Interop.posix_fadvise.cs</Link>
+      <Link>Common\Interop\Unix\Interop.posix_fadvise.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
-      <Link>Common\Interop\Interop.read.cs</Link>
+      <Link>Common\Interop\Unix\Interop.read.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readdir.cs">
-      <Link>Common\Interop\Interop.readdir.cs</Link>
+      <Link>Common\Interop\Unix\Interop.readdir.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rename.cs">
-      <Link>Common\Interop\Interop.rename.cs</Link>
+      <Link>Common\Interop\Unix\Interop.rename.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.remove.cs">
-      <Link>Common\Interop\Interop.remove.cs</Link>
+      <Link>Common\Interop\Unix\Interop.remove.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.stat.cs">
-      <Link>Common\Interop\Interop.stat.cs</Link>
+      <Link>Common\Interop\Unix\Interop.stat.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
-      <Link>Common\Interop\Interop.strerror.cs</Link>
+      <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
-      <Link>Common\Interop\Interop.write.cs</Link>
+      <Link>Common\Interop\Unix\Interop.write.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.utime.cs">
-      <Link>Common\Interop\Interop.utime.cs</Link>
+      <Link>Common\Interop\Unix\Interop.utime.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
-      <Link>Common\Interop\Interop.unlink.cs</Link>
+      <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\src\System.IO.FileSystem.Primitives.csproj">
-      <Project>{6c05678e-394c-4cff-b453-a18e28c8f2c3}</Project>
-      <Name>System.IO.FileSystem.Primitives</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

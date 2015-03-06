@@ -11,7 +11,6 @@ using System.Threading;
 internal static partial class Interop
 {
     private const String KERNEL32DLL = "kernel32.dll";
-    private const String LOCALIZATIONDLL = "api-ms-win-core-localization-l1-2-0.dll";
     private const String HANDLEDLL = "api-ms-win-core-handle-l1-1-0.dll";
     private const String PROCESSTHREADSDLL = "api-ms-win-core-processthreads-l1-1-0.dll";
     private const String FILEDLL = "api-ms-win-core-file-l1-1-0.dll";
@@ -143,11 +142,6 @@ internal static partial class Interop
         // 
         // Pipe
         //
-
-        [DllImport(HANDLEDLL, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        [SecurityCritical]
-        internal static extern bool CloseHandle(IntPtr handle);
 
         [DllImport(PROCESSTHREADSDLL, SetLastError = true)]
         [SecurityCritical]
@@ -309,9 +303,6 @@ internal static partial class Interop
 
         [DllImport(IODLL, SetLastError = true)]
         internal static unsafe extern bool CancelIoEx(SafeHandle handle, NativeOverlapped* lpOverlapped);
-
-        [DllImport(LOCALIZATIONDLL, EntryPoint = "FormatMessageW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal unsafe static extern uint FormatMessage(uint dwFlags, IntPtr lpSource, uint dwMessageId, uint dwLanguageId, char[] lpBuffer, uint nSize, IntPtr Arguments);
     }
 
     [StructLayout(LayoutKind.Sequential)]

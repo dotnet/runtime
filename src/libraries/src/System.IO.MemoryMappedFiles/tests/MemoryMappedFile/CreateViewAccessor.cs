@@ -11,7 +11,8 @@ using System.Runtime.InteropServices;
 [Collection("CreateViewAccessor")]
 public class CreateViewAccessor : MMFTestBase
 {
-    private static readonly String s_fileNameForLargeCapacity = "CreateViewAccessor_MMF_ForLargeCapacity.txt";
+    private readonly static string s_uniquifier = Guid.NewGuid().ToString();
+    private readonly static string s_fileNameForLargeCapacity = "CreateViewAccessor_MMF_ForLargeCapacity_" + s_uniquifier + ".txt";
 
     [Fact]
     public static void CreateViewAccessorTestCases()
@@ -45,19 +46,19 @@ public class CreateViewAccessor : MMFTestBase
             String fileContents = String.Empty;
 
             // Verify default values
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname101", 100))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname101" + s_uniquifier, 100))
             {
                 VerifyCreateViewAccessor("Loc101", mmf, defaultCapacity, defaultAccess, fileContents);
             }
 
             // default length is full MMF
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname102", defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname102" + s_uniquifier, defaultCapacity * 2))
             {
                 VerifyCreateViewAccessor("Loc102", mmf, defaultCapacity * 2, defaultAccess, fileContents);
             }
 
             // if MMF is read-only, default access throws
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname103", 100, MemoryMappedFileAccess.Read))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname103" + s_uniquifier, 100, MemoryMappedFileAccess.Read))
             {
                 VerifyCreateViewAccessorException<UnauthorizedAccessException>("Loc103", mmf);
             }
@@ -66,7 +67,7 @@ public class CreateViewAccessor : MMFTestBase
             // CreateViewAccessor(long, long)
             ////////////////////////////////////////////////////////////////////////
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname200", defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname200" + s_uniquifier, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewAccessor("Loc201", mmf, 0, 0, defaultCapacity * 2, defaultAccess, fileContents);
@@ -89,7 +90,7 @@ public class CreateViewAccessor : MMFTestBase
 
             // size
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname410", defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname410" + s_uniquifier, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewAccessor("Loc211", mmf, 1000, 0, defaultCapacity * 2 - 1000, defaultAccess, fileContents);
@@ -132,7 +133,7 @@ public class CreateViewAccessor : MMFTestBase
 
             // [] offset
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname400", defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname400" + s_uniquifier, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewAccessor("Loc401", mmf, 0, 0, defaultAccess, defaultCapacity * 2, defaultAccess, fileContents);
@@ -155,7 +156,7 @@ public class CreateViewAccessor : MMFTestBase
 
             // size
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname410", defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname410" + s_uniquifier, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewAccessor("Loc411", mmf, 1000, 0, defaultAccess, defaultCapacity * 2 - 1000, defaultAccess, fileContents);
@@ -197,7 +198,7 @@ public class CreateViewAccessor : MMFTestBase
             MemoryMappedFileAccess[] accessList;
 
             // existing file is ReadWriteExecute
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname431", 1000, MemoryMappedFileAccess.ReadWriteExecute))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname431" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWriteExecute))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -214,7 +215,7 @@ public class CreateViewAccessor : MMFTestBase
             }
 
             // existing file is ReadExecute
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname432", 1000, MemoryMappedFileAccess.ReadExecute))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname432" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadExecute))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -237,7 +238,7 @@ public class CreateViewAccessor : MMFTestBase
             }
 
             // existing file is CopyOnWrite
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname433", 1000, MemoryMappedFileAccess.CopyOnWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname433" + s_uniquifier, 1000, MemoryMappedFileAccess.CopyOnWrite))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -260,7 +261,7 @@ public class CreateViewAccessor : MMFTestBase
             }
 
             // existing file is ReadWrite
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname434", 1000, MemoryMappedFileAccess.ReadWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname434" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -283,7 +284,7 @@ public class CreateViewAccessor : MMFTestBase
             }
 
             // existing file is Read
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname435", 1000, MemoryMappedFileAccess.Read))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname435" + s_uniquifier, 1000, MemoryMappedFileAccess.Read))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -306,7 +307,7 @@ public class CreateViewAccessor : MMFTestBase
             }
 
             // invalid enum value
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname436", 1000, MemoryMappedFileAccess.ReadWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVA_mapname436" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     (MemoryMappedFileAccess)(-1),
@@ -375,7 +376,7 @@ public class CreateViewAccessor : MMFTestBase
         iCountTestcases++;
         try
         {
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameForLargeCapacity, FileMode.Open, "CVA_RunTestLargeCapacity", capacity))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameForLargeCapacity, FileMode.Open, "CVA_RunTestLargeCapacity" + s_uniquifier, capacity))
             {
                 try
                 {

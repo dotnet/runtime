@@ -1938,7 +1938,7 @@ namespace System.Text.RegularExpressions
         }
 
         internal const byte Q = 5;    // quantifier
-        internal const byte S = 4;    // ordinary stoppper
+        internal const byte S = 4;    // ordinary stopper
         internal const byte Z = 3;    // ScanBlank stopper
         internal const byte X = 2;    // whitespace
         internal const byte E = 1;    // should be escaped

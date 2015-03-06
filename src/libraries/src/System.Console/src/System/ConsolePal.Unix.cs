@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -22,17 +22,17 @@ namespace System
     {
         public static Stream OpenStandardInput()
         {
-            return new UnixConsoleStream("/dev/stdin", FileAccess.Read);
+            return new UnixConsoleStream(Interop.Devices.stdin, FileAccess.Read);
         }
 
         public static Stream OpenStandardOutput()
         {
-            return new UnixConsoleStream("/dev/stdout", FileAccess.Write);
+            return new UnixConsoleStream(Interop.Devices.stdout, FileAccess.Write);
         }
 
         public static Stream OpenStandardError()
         {
-            return new UnixConsoleStream("/dev/stderr", FileAccess.Write);
+            return new UnixConsoleStream(Interop.Devices.stderr, FileAccess.Write);
         }
 
         public static Encoding InputEncoding
@@ -48,13 +48,13 @@ namespace System
         public static ConsoleColor ForegroundColor
         {
             get { throw new PlatformNotSupportedException(SR.PlatformNotSupported_GettingColor); } // no general mechanism for getting the current color
-            set { ChangeColor(TerminalColorInfo.Instance.ForegroundFormat, value); }
+            set { ChangeColor(foreground: true, color:  value); }
         }
 
         public static ConsoleColor BackgroundColor
         {
             get { throw new PlatformNotSupportedException(SR.PlatformNotSupported_GettingColor); } // no general mechanism for getting the current color
-            set { ChangeColor(TerminalColorInfo.Instance.BackgroundFormat, value); }
+            set { ChangeColor(foreground: false, color: value); }
         }
 
         public static void ResetColor()
@@ -117,7 +117,7 @@ namespace System
                     // return the charset from the locale, stripping off everything else
                     string charset = atPos < dotPos ?
                         locale.Substring(dotPos) :                // no modifier
-                        locale.Substring(dotPos, atPos - dotPos); // has modifer
+                        locale.Substring(dotPos, atPos - dotPos); // has modifier
                     return charset.ToLowerInvariant();
                 }
             }
@@ -127,22 +127,40 @@ namespace System
         }
 
         /// <summary>Outputs the format string evaluated and parameterized with the color.</summary>
-        /// <param name="formatString">The terminfo string to evaluate and output.</param>
+        /// <param name="foreground">true for foreground; false for background.</param>
         /// <param name="color">The color to store into the field and to use as an argument to the format string.</param>
-        private static void ChangeColor(string formatString, ConsoleColor color)
+        private static void ChangeColor(bool foreground, ConsoleColor color)
         {
+            // Get the numerical value of the color
             int ccValue = (int)color;
             if ((ccValue & ~0xF) != 0)
             {
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor);
             }
+
+            // See if we've already cached a format string for this foreground/background
+            // and specific color choice.  If we have, just output that format string again.
+            int fgbgIndex = foreground ? 0 : 1;
+            string evaluatedString = s_fgbgAndColorStrings[fgbgIndex][ccValue]; // benign race
+            if (evaluatedString != null)
+            {
+                Console.Write(evaluatedString);
+                return;
+            }
+
+            // We haven't yet computed a format string.  Compute it, use it, then cache it.
+            string formatString = foreground ? TerminalColorInfo.Instance.ForegroundFormat : TerminalColorInfo.Instance.BackgroundFormat;
             if (formatString != null)
             {
                 int maxColors = TerminalColorInfo.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
                     int ansiCode = _consoleColorToAnsiCode[ccValue] % maxColors;
-                    Console.Write(TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode));
+                    evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
+
+                    Console.Write(evaluatedString);
+
+                    s_fgbgAndColorStrings[fgbgIndex][ccValue] = evaluatedString; // benign race
                 }
             }
         }
@@ -174,6 +192,20 @@ namespace System
             11, // Yellow,
             15  // White
         };
+
+        /// <summary>Cache of the format strings for foreground/background and ConsoleColor.</summary>
+        private static readonly string[][] s_fgbgAndColorStrings = CreateTwoDimArray(2, 16); // 2 == fg vs bg, 16 == ConsoleColor values
+
+        /// <summary>Constructs a two-dimensional jagged array.</summary>
+        private static string[][] CreateTwoDimArray(int dim1, int dim2)
+        {
+            string[][] arr = new string[dim1][];
+            for (int i = 0; i < dim1; i++)
+            {
+                arr[i] = new string[dim2];
+            }
+            return arr;
+        }
 
         /// <summary>Provides a cache of color information sourced from terminfo.</summary>
         private struct TerminalColorInfo
@@ -225,7 +257,7 @@ namespace System
             {
                 long result;
                 while (Interop.CheckIo(result = (long)Interop.libc.read(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
-                Contract.Assert(result <= count);
+                Debug.Assert(result <= count);
                 return (int)result;
             }
         }
@@ -235,15 +267,17 @@ namespace System
         /// <param name="buffer">The buffer from which to write data.</param>
         /// <param name="offset">The offset at which the data to write starts in the buffer.</param>
         /// <param name="count">The number of bytes to write.</param>
-        /// <returns>The number of bytes written, or a negative value if there's an error.</returns>
-        private static unsafe int Write(int fd, byte[] buffer, int offset, int count)
+        private static unsafe void Write(int fd, byte[] buffer, int offset, int count)
         {
             fixed (byte* bufPtr = buffer)
             {
-                long result;
-                while (Interop.CheckIo(result = (long)Interop.libc.write(fd, (byte*)bufPtr + offset, (IntPtr)count))) ;
-                Contract.Assert(result == count);
-                return (int)result;
+                while (count > 0)
+                {
+                    int bytesWritten;
+                    while (Interop.CheckIo(bytesWritten = (int)Interop.libc.write(fd, bufPtr + offset, (IntPtr)count))) ;
+                    count -= bytesWritten;
+                    offset += bytesWritten;
+                }
             }
         }
 
@@ -285,8 +319,8 @@ namespace System
             internal UnixConsoleStream(string devPath, FileAccess access)
                 : base(access)
             {
-                Contract.Assert(devPath != null && devPath.StartsWith("/dev/std"));
-                Contract.Assert(access == FileAccess.Read || access == FileAccess.Write);
+                Debug.Assert(devPath != null && devPath.StartsWith("/dev/std"));
+                Debug.Assert(access == FileAccess.Read || access == FileAccess.Write);
 
                 Interop.libc.OpenFlags flags = 0;
                 switch (access)
@@ -391,7 +425,7 @@ namespace System
                 private static Database ReadDatabase()
                 {
                     string term = Interop.libc.getenv("TERM");
-                    return term != null ? ReadDatabase(term) : null;
+                    return !string.IsNullOrEmpty(term) ? ReadDatabase(term) : null;
                 }
 
                 /// <summary>
@@ -439,31 +473,51 @@ namespace System
                     return null;
                 }
 
+                /// <summary>Attempt to open as readonly the specified file path.</summary>
+                /// <param name="filePath">The path to the file to open.</param>
+                /// <param name="fd">If successful, the opened file descriptor; otherwise, -1.</param>
+                /// <returns>true if the file was successfully opened; otherwise, false.</returns>
+                private static bool TryOpen(string filePath, out int fd)
+                {
+                    int tmpFd;
+                    while ((tmpFd = Interop.libc.open(filePath, Interop.libc.OpenFlags.O_RDONLY, 0)) < 0)
+                    {
+                        // Don't throw in this case, as we'll be polling multiple locations looking for the file.
+                        // But we still want to retry if the open is interrupted by a signal.
+                        if (Marshal.GetLastWin32Error() != Interop.Errors.EINTR)
+                        {
+                            fd = -1;
+                            return false;
+                        }
+                    }
+                    fd = tmpFd;
+                    return true;
+                }
+
                 /// <summary>Read the database for the specified terminal from the specified directory.</summary>
                 /// <param name="term">The identifier for the terminal.</param>
                 /// <param name="directoryPath">The path to the directory containing terminfo database files.</param>
                 /// <returns>The database, or null if it could not be found.</returns>
                 private static Database ReadDatabase(string term, string directoryPath)
                 {
-                    string filePath = directoryPath + "/" + term[0] + "/" + term; // filePath == /directory/termFirstLetter/term
+                    if (string.IsNullOrEmpty(term) || string.IsNullOrEmpty(directoryPath))
+                    {
+                        return null;
+                    }
 
                     int fd;
-                    while ((fd = Interop.libc.open(filePath, Interop.libc.OpenFlags.O_RDONLY, 0)) < 0)
+                    if (!TryOpen(directoryPath + "/" + term[0].ToString() + "/" + term, out fd) &&          // /directory/termFirstLetter/term      (Linux)
+                        !TryOpen(directoryPath + "/" + ((int)term[0]).ToString("X") + "/" + term, out fd))  // /directory/termFirstLetterAsHex/term (Mac)
                     {
-                        // Don't throw in this case, as we'll be polling multiple locations looking for the file.
-                        // But we still want to retry if the open is interrupted by a signal.
-                        if (Marshal.GetLastWin32Error() != Interop.Errors.EINTR)
-                        {
-                            return null;
-                        }
+                        return null;
                     }
 
                     try
                     {
                         // Read in all of the terminfo data
                         long termInfoLength;
-                        while (Interop.CheckIo(termInfoLength = Interop.libc.lseek64(fd, 0, Interop.libc.SeekWhence.SEEK_END))) ; // jump to the end to get the file length
-                        while (Interop.CheckIo(Interop.libc.lseek64(fd, 0, Interop.libc.SeekWhence.SEEK_SET))) ; // reset back to beginning
+                        while (Interop.CheckIo(termInfoLength = Interop.libc.lseek(fd, 0, Interop.libc.SeekWhence.SEEK_END))) ; // jump to the end to get the file length
+                        while (Interop.CheckIo(Interop.libc.lseek(fd, 0, Interop.libc.SeekWhence.SEEK_SET))) ; // reset back to beginning
                         const int MaxTermInfoLength = 4096; // according to the term and tic man pages, 4096 is the terminfo file size max
                         const int HeaderLength = 12;
                         if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)
@@ -525,7 +579,7 @@ namespace System
                 /// <returns>The string if it's in the database; otherwise, null.</returns>
                 public string GetString(int stringTableIndex)
                 {
-                    Contract.Assert(stringTableIndex >= 0);
+                    Debug.Assert(stringTableIndex >= 0);
 
                     if (stringTableIndex >= _stringSectionNumOffsets)
                     {
@@ -550,7 +604,7 @@ namespace System
                 /// <returns>The number if it's in the database; otherwise, -1.</returns>
                 public int GetNumber(int numberIndex)
                 {
-                    Contract.Assert(numberIndex >= 0);
+                    Debug.Assert(numberIndex >= 0);
 
                     if (numberIndex >= _numberSectionNumShorts)
                     {
@@ -745,7 +799,7 @@ namespace System
                             // Stack pushing operations
                             case 'p': // Push the specified parameter (1-based) onto the stack
                                 pos++;
-                                Contract.Assert(format[pos] >= '0' && format[pos] <= '9');
+                                Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
                                 stack.Push(args[format[pos] - '1']);
                                 break;
                             case 'l': // Pop a string and push its length
@@ -756,7 +810,7 @@ namespace System
                                 int intLit = 0;
                                 while (format[pos] != '}')
                                 {
-                                    Contract.Assert(format[pos] >= '0' && format[pos] <= '9');
+                                    Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
                                     intLit = (intLit * 10) + (format[pos] - '0');
                                     pos++;
                                 }
@@ -764,7 +818,7 @@ namespace System
                                 break;
                             case '\'': // Push literal character, enclosed between single quotes
                                 stack.Push((int)format[pos + 1]);
-                                Contract.Assert(format[pos + 2] == '\'');
+                                Debug.Assert(format[pos + 2] == '\'');
                                 pos += 2;
                                 break;
 
@@ -849,7 +903,7 @@ namespace System
                                 {
                                     output.Append(thenResult);
                                 }
-                                Contract.Assert(format[pos] == 'e' || format[pos] == ';');
+                                Debug.Assert(format[pos] == 'e' || format[pos] == ';');
 
                                 // We're past the then; the top of the stack should now be a Boolean
                                 // indicating whether this conditional has more to be processed (an else clause).
@@ -863,7 +917,7 @@ namespace System
                                         output.Append(elseResult);
                                     }
 
-                                    // Now we should be done (any subsequent elseif logic will have bene handled in the recursive call).
+                                    // Now we should be done (any subsequent elseif logic will have been handled in the recursive call).
                                     if (!AsBool(stack.Pop().Int32))
                                     {
                                         throw new InvalidOperationException(SR.IO_TermInfoInvalid);
@@ -912,7 +966,7 @@ namespace System
                 /// <returns>The formatted string.</returns>
                 private static unsafe string FormatPrintF(string format, object arg)
                 {
-                    Contract.Assert(arg is string || arg is Int32);
+                    Debug.Assert(arg is string || arg is Int32);
 
                     // Determine how much space is needed to store the formatted string.
                     string stringArg = arg as string;

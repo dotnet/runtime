@@ -1,0 +1,120 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Diagnostics;
+using Tools;
+using Xunit;
+
+namespace System.Numerics.Tests
+{
+    public class absolutevalueTest
+    {
+        private static int s_samples = 10;
+        private static Random s_random = new Random(100);
+
+        [Fact]
+        public static void RunAbsoluteValueTests()
+        {
+            byte[] byteArray = new byte[0];
+
+            // AbsoluteValue Method - Large BigIntegers
+            for (int i = 0; i < s_samples; i++)
+            {
+                byteArray = GetRandomByteArray(s_random);
+                VerifyAbsoluteValueString(Print(byteArray) + "uAbs");
+            }
+
+            // AbsoluteValue Method - Small BigIntegers
+            for (int i = 0; i < s_samples; i++)
+            {
+                byteArray = GetRandomByteArray(s_random, 2);
+                VerifyAbsoluteValueString(Print(byteArray) + "uAbs");
+            }
+
+            // AbsoluteValue Method - zero
+            VerifyAbsoluteValueString("0 uAbs");
+
+            // AbsoluteValue Method - -1
+            VerifyAbsoluteValueString("-1 uAbs");
+
+            // AbsoluteValue Method - 1
+            VerifyAbsoluteValueString("1 uAbs");
+
+            // AbsoluteValue Method - Int32.MinValue
+            VerifyAbsoluteValueString(Int32.MinValue.ToString() + " uAbs");
+
+            // AbsoluteValue Method - Int32.MinValue-1
+            VerifyAbsoluteValueString(Int32.MinValue.ToString() + " -1 b+ uAbs");
+
+            // AbsoluteValue Method - Int32.MinValue+1
+            VerifyAbsoluteValueString(Int32.MinValue.ToString() + " 1 b+ uAbs");
+
+            // AbsoluteValue Method - Int32.MaxValue
+            VerifyAbsoluteValueString(Int32.MaxValue.ToString() + " uAbs");
+
+            // AbsoluteValue Method - Int32.MaxValue-1
+            VerifyAbsoluteValueString(Int32.MaxValue.ToString() + " -1 b+ uAbs");
+
+            // AbsoluteValue Method - Int32.MaxValue+1
+            VerifyAbsoluteValueString(Int32.MaxValue.ToString() + " 1 b+ uAbs");
+
+            // AbsoluteValue Method - Int64.MinValue
+            VerifyAbsoluteValueString(Int64.MinValue.ToString() + " uAbs");
+
+            // AbsoluteValue Method - Int64.MinValue-1
+            VerifyAbsoluteValueString(Int64.MinValue.ToString() + " -1 b+ uAbs");
+
+            // AbsoluteValue Method - Int64.MinValue+1
+            VerifyAbsoluteValueString(Int64.MinValue.ToString() + " 1 b+ uAbs");
+
+            // AbsoluteValue Method - Int64.MaxValue
+            VerifyAbsoluteValueString(Int64.MaxValue.ToString() + " uAbs");
+
+            // AbsoluteValue Method - Int64.MaxValue-1
+            VerifyAbsoluteValueString(Int64.MaxValue.ToString() + " -1 b+ uAbs");
+
+            // AbsoluteValue Method - Int64.MaxValue+1
+            VerifyAbsoluteValueString(Int64.MaxValue.ToString() + " 1 b+ uAbs");
+        }
+
+        private static void VerifyAbsoluteValueString(string opstring)
+        {
+            StackCalc sc = new StackCalc(opstring);
+            while (sc.DoNextOperation())
+            {
+                Assert.Equal(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString());
+            }
+        }
+
+        private static Byte[] GetRandomByteArray(Random random)
+        {
+            return GetRandomByteArray(random, random.Next(0, 1024));
+        }
+
+        private static Byte[] GetRandomByteArray(Random random, int size)
+        {
+            byte[] value = new byte[size];
+
+            for (int i = 0; i < value.Length; ++i)
+            {
+                value[i] = (byte)random.Next(0, 256);
+            }
+
+            return value;
+        }
+
+        private static String Print(byte[] bytes)
+        {
+            String ret = "make ";
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                ret += bytes[i] + " ";
+            }
+            ret += "endmake ";
+
+            return ret;
+        }
+    }
+}

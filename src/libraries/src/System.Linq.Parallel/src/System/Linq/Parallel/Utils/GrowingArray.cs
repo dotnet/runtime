@@ -7,7 +7,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -53,7 +53,7 @@ namespace System.Linq.Parallel
 
         private void GrowArray(int newSize)
         {
-            Contract.Assert(newSize > _array.Length);
+            Debug.Assert(newSize > _array.Length);
 
             T[] array2 = new T[newSize];
             _array.CopyTo(array2, 0);

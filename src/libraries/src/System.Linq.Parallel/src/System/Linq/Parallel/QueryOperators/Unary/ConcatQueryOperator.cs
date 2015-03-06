@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -38,8 +38,8 @@ namespace System.Linq.Parallel
         internal ConcatQueryOperator(ParallelQuery<TSource> firstChild, ParallelQuery<TSource> secondChild)
             : base(firstChild, secondChild)
         {
-            Contract.Assert(firstChild != null, "first child data source cannot be null");
-            Contract.Assert(secondChild != null, "second child data source cannot be null");
+            Debug.Assert(firstChild != null, "first child data source cannot be null");
+            Debug.Assert(secondChild != null, "second child data source cannot be null");
             _outputOrdered = LeftChild.OutputOrdered || RightChild.OutputOrdered;
 
             _prematureMergeLeft = LeftChild.OrdinalIndexState.IsWorseThan(OrdinalIndexState.Increasing);
@@ -86,7 +86,7 @@ namespace System.Linq.Parallel
             }
             else
             {
-                Contract.Assert(!ExchangeUtilities.IsWorseThan(leftStream.OrdinalIndexState, OrdinalIndexState.Increasing));
+                Debug.Assert(!ExchangeUtilities.IsWorseThan(leftStream.OrdinalIndexState, OrdinalIndexState.Increasing));
                 WrapHelper<TLeftKey, TRightKey>(leftStream, rightStream, outputRecipient, settings, preferStriping);
             }
         }
@@ -105,7 +105,7 @@ namespace System.Linq.Parallel
             }
             else
             {
-                Contract.Assert(!ExchangeUtilities.IsWorseThan(rightStream.OrdinalIndexState, OrdinalIndexState.Increasing));
+                Debug.Assert(!ExchangeUtilities.IsWorseThan(rightStream.OrdinalIndexState, OrdinalIndexState.Increasing));
                 WrapHelper2<TLeftKey, TRightKey>(leftStreamInc, rightStream, outputRecipient);
             }
         }
@@ -168,8 +168,8 @@ namespace System.Linq.Parallel
                 QueryOperatorEnumerator<TSource, TLeftKey> firstSource,
                 QueryOperatorEnumerator<TSource, TRightKey> secondSource)
             {
-                Contract.Assert(firstSource != null);
-                Contract.Assert(secondSource != null);
+                Debug.Assert(firstSource != null);
+                Debug.Assert(secondSource != null);
 
                 _firstSource = firstSource;
                 _secondSource = secondSource;
@@ -185,8 +185,8 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TSource currentElement, ref ConcatKey currentKey)
             {
-                Contract.Assert(_firstSource != null);
-                Contract.Assert(_secondSource != null);
+                Debug.Assert(_firstSource != null);
+                Debug.Assert(_secondSource != null);
 
                 // If we are still enumerating the first source, fetch the next item.
                 if (!_begunSecond)
@@ -255,7 +255,7 @@ namespace System.Linq.Parallel
                 : base(leftChildQueryResults, rightChildQueryResults, concatOp, settings, preferStriping)
             {
                 _concatOp = concatOp;
-                Contract.Assert(leftChildQueryResults.IsIndexible && rightChildQueryResults.IsIndexible);
+                Debug.Assert(leftChildQueryResults.IsIndexible && rightChildQueryResults.IsIndexible);
 
                 _leftChildCount = leftChildQueryResults.ElementsCount;
                 _rightChildCount = rightChildQueryResults.ElementsCount;
@@ -270,7 +270,7 @@ namespace System.Linq.Parallel
             {
                 get
                 {
-                    Contract.Assert(_leftChildCount >= 0 && _rightChildCount >= 0);
+                    Debug.Assert(_leftChildCount >= 0 && _rightChildCount >= 0);
                     return _leftChildCount + _rightChildCount;
                 }
             }

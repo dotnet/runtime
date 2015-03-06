@@ -63,7 +63,6 @@ namespace Microsoft.Win32
     /**
      * Registry hive values.  Useful only for GetRemoteBaseKey
      */
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum RegistryHive
     {
         ClassesRoot = unchecked((int)0x80000000),
@@ -82,7 +81,6 @@ namespace Microsoft.Win32
      * @security(checkDllCalls=off)
      * @security(checkClassLinking=on)
      */
-    [ComVisible(true)]
     public sealed class RegistryKey : IDisposable
     {
         // We could use const here, if C# supported ELEMENT_TYPE_I fully.
@@ -274,20 +272,17 @@ namespace Microsoft.Win32
             return CreateSubKey(subkey, IsWritable());
         }
 
-        [ComVisible(false)]
         public RegistryKey CreateSubKey(String subkey, bool writable)
         {
             return CreateSubKeyInternal(subkey, writable, RegistryOptions.None);
         }
 
-        [ComVisible(false)]
         public RegistryKey CreateSubKey(String subkey, bool writable, RegistryOptions options)
         {
             return CreateSubKeyInternal(subkey, writable, options);
         }
 
         [System.Security.SecuritySafeCritical]  
-        [ComVisible(false)]
         private unsafe RegistryKey CreateSubKeyInternal(String subkey, bool writable, RegistryOptions registryOptions)
         {
             ValidateKeyOptions(registryOptions);
@@ -333,7 +328,7 @@ namespace Microsoft.Win32
             else if (ret != 0) // syscall failed, ret is an error code.
                 Win32Error(ret, keyName + "\\" + subkey);  // Access denied?
 
-            Debug.Assert(false, "Unexpected code path in RegistryKey::CreateSubKey");
+            Debug.Fail("Unexpected code path in RegistryKey::CreateSubKey");
             return null;
         }
 
@@ -406,7 +401,6 @@ namespace Microsoft.Win32
         }
 
         [System.Security.SecuritySafeCritical]  
-        [ComVisible(false)]
         public void DeleteSubKeyTree(String subkey, Boolean throwOnMissingSubKey)
         {
             ValidateKeyName(subkey);
@@ -564,7 +558,6 @@ namespace Microsoft.Win32
 
 
         [System.Security.SecuritySafeCritical]  
-        [ComVisible(false)]
         public static RegistryKey OpenBaseKey(RegistryHive hKey, RegistryView view)
         {
             ValidateKeyView(view);
@@ -594,7 +587,6 @@ namespace Microsoft.Win32
         }
 
         [System.Security.SecuritySafeCritical]  
-        [ComVisible(false)]
         public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, String machineName, RegistryView view)
         {
             if (machineName == null)
@@ -666,7 +658,7 @@ namespace Microsoft.Win32
             // Return null if we didn't find the key.
             if (ret == Interop.ERROR_ACCESS_DENIED || ret == Interop.ERROR_BAD_IMPERSONATION_LEVEL)
             {
-                // We need to throw SecurityException here for compatiblity reason,
+                // We need to throw SecurityException here for compatibility reason,
                 // although UnauthorizedAccessException will make more sense.
                 ThrowHelper.ThrowSecurityException(SR.Security_RegistryPermission);
             }
@@ -725,7 +717,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [ComVisible(false)]
         public RegistryView View
         {
             [System.Security.SecuritySafeCritical]
@@ -736,7 +727,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [ComVisible(false)]
         public SafeRegistryHandle Handle
         {
             [System.Security.SecurityCritical]
@@ -797,14 +787,12 @@ namespace Microsoft.Win32
         }
 
         [System.Security.SecurityCritical]
-        [ComVisible(false)]
         public static RegistryKey FromHandle(SafeRegistryHandle handle)
         {
             return FromHandle(handle, RegistryView.Default);
         }
 
         [System.Security.SecurityCritical]
-        [ComVisible(false)]
         public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
             if (handle == null) throw new ArgumentNullException("handle");
@@ -866,7 +854,7 @@ namespace Microsoft.Win32
                 {
                     for (int i = 0; i < subkeys; i++)
                     {
-                        namelen = name.Length; // Don't remove this. The API's doesn't work if this is not properly initialised.
+                        namelen = name.Length; // Don't remove this. The API's doesn't work if this is not properly initialized.
                         int ret = Interop.mincore.RegEnumKeyEx(hkey,
                             i,
                             namePtr,
@@ -1009,7 +997,6 @@ namespace Microsoft.Win32
         }
 
         [System.Security.SecuritySafeCritical]
-        [ComVisible(false)]
         public Object GetValue(String name, Object defaultValue, RegistryValueOptions options)
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
@@ -1080,7 +1067,7 @@ namespace Microsoft.Win32
             if (datasize < 0)
             {
                 // unexpected code path
-                Debug.Assert(false, "[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
+                Debug.Fail("[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
                 datasize = 0;
             }
 
@@ -1276,7 +1263,6 @@ namespace Microsoft.Win32
         }
 
         [System.Security.SecuritySafeCritical]  
-        [ComVisible(false)]
         public RegistryValueKind GetValueKind(string name)
         {
             EnsureNotDisposed();
@@ -1349,7 +1335,6 @@ namespace Microsoft.Win32
         }
 
         [System.Security.SecuritySafeCritical] 
-        [ComVisible(false)]
         public unsafe void SetValue(String name, Object value, RegistryValueKind valueKind)
         {
             if (value == null)

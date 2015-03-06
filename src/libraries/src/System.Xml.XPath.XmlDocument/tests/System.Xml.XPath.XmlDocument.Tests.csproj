@@ -9,7 +9,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XPath.XmlDocument.Tests</AssemblyName>
     <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
-    <CoverageEnabledForProject>false</CoverageEnabledForProject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>
@@ -210,17 +209,9 @@
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XmlDocument\src\System.Xml.XmlDocument.csproj">
-      <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
-      <Name>System.Xml.XmlDocument</Name>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Xml.XPath.XmlDocument.csproj">
       <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
       <Name>System.Xml.XPath.XmlDocument</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Xml.XPath\src\System.Xml.XPath.csproj">
-      <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
-      <Name>System.Xml.XPath</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

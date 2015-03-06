@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Text
@@ -42,7 +42,7 @@ namespace System.Text
         // Don't touch ref chars unless we succeed
         internal bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
-            Contract.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (_fallbackBuffer.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
@@ -98,7 +98,7 @@ namespace System.Text
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*
         {
-            Contract.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (_fallbackBuffer.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))

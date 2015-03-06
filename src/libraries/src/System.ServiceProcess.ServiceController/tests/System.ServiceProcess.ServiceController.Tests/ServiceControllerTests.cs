@@ -69,6 +69,8 @@ namespace System.ServiceProcessServiceController.Tests
 
     public class ServiceControllerTests : IDisposable
     {
+        private const int ExpectedDependentServiceCount = 3;
+
         ServiceProvider _testService; 
 
         public ServiceControllerTests()
@@ -218,43 +220,77 @@ namespace System.ServiceProcessServiceController.Tests
         }
 
         [Fact]
-        public void DependentServices()
+        public void Dependencies()
         {
-            // The test service creates a number of dependent services, each of which has no dependent services
+            // The test service creates a number of dependent services, each of which is depended on
+            // by all the services created after it.
             var controller = new ServiceController(_testService.TestServiceName);
-            Assert.True(controller.DependentServices.Length > 0);
+            Assert.Equal(ExpectedDependentServiceCount, controller.DependentServices.Length);
 
             for (int i = 0; i < controller.DependentServices.Length; i++)
             {
-                var dependent = controller.DependentServices[i];
-                Assert.True(dependent.ServiceName.StartsWith(_testService.DependentTestServiceNamePrefix));
-                Assert.True(dependent.DisplayName.StartsWith(_testService.DependentTestServiceDisplayNamePrefix));
+                var dependent = AssertHasDependent(controller, _testService.DependentTestServiceNamePrefix + i, _testService.DependentTestServiceDisplayNamePrefix + i);
                 Assert.Equal(ServiceType.Win32OwnProcess, dependent.ServiceType);
-                Assert.Equal(0, dependent.DependentServices.Length);
-            }
-        }
 
-        [Fact]
-        public void ServicesDependedOn()
-        {
-            // The test service creates a number of dependent services, each of these should depend on the test service
-            var controller = new ServiceController(_testService.TestServiceName);
-            Assert.True(controller.DependentServices.Length > 0);
+                // Assert that this dependent service is depended on by all the test services created after it
+                Assert.Equal(ExpectedDependentServiceCount - i - 1, dependent.DependentServices.Length);
 
-            for (int i = 0; i < controller.DependentServices.Length; i++)
-            {
-                var dependent = controller.DependentServices[i];
-                Assert.True(dependent.ServicesDependedOn.Length == 1);
+                for (int j = i + 1; j < ExpectedDependentServiceCount; j++)
+                {
+                    AssertHasDependent(dependent, _testService.DependentTestServiceNamePrefix + j, _testService.DependentTestServiceDisplayNamePrefix + j);
+                }
 
-                var dependency = dependent.ServicesDependedOn[0];
-                Assert.Equal(_testService.TestServiceName, dependency.ServiceName);
-                Assert.Equal(_testService.TestServiceDisplayName, dependency.DisplayName);
+                // Assert that the dependent service depends on the main test service
+                AssertDependsOn(dependent, _testService.TestServiceName, _testService.TestServiceDisplayName);
+
+                // Assert that this dependent service depends on all the test services created before it
+                Assert.Equal(i + 1, dependent.ServicesDependedOn.Length);
+
+                for (int j = i - 1; j >= 0; j--)
+                {
+                    AssertDependsOn(dependent, _testService.DependentTestServiceNamePrefix + j, _testService.DependentTestServiceDisplayNamePrefix + j);
+                }
             }
         }
 
         public void Dispose()
         {
             _testService.DeleteTestServices();
+        }
+
+        private static ServiceController AssertHasDependent(ServiceController controller, string serviceName, string displayName)
+        {
+            var dependent = FindService(controller.DependentServices, serviceName, displayName);
+            if (dependent == null)
+            {
+                Assert.True(false, string.Format("Expected service {0} to have dependent service {1}", controller.ServiceName, serviceName));
+            }
+
+            return dependent;
+        }
+
+        private static ServiceController AssertDependsOn(ServiceController controller, string serviceName, string displayName)
+        {
+            var dependency = FindService(controller.ServicesDependedOn, serviceName, displayName);
+            if (dependency == null)
+            {
+                Assert.True(false, string.Format("Expected service {0} to depend on service {1}", controller.ServiceName, serviceName));
+            }
+
+            return dependency;
+        }
+
+        private static ServiceController FindService(ServiceController[] services, string serviceName, string displayName)
+        {
+            foreach (ServiceController service in services)
+            {
+                if (service.ServiceName == serviceName && service.DisplayName == displayName)
+                {
+                    return service;
+                }
+            }
+
+            return null;
         }
     }
 }

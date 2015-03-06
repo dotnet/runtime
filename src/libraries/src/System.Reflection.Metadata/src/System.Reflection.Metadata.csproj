@@ -13,11 +13,10 @@
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <DefaultLanguage>en-US</DefaultLanguage>
+    <NoWarn>1591</NoWarn>
+    <CLSCompliant>false</CLSCompliant>
+    <AssemblyVersion>1.0.19.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -27,7 +26,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <NoWarn>1591</NoWarn>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -37,10 +35,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="Resources\MetadataResources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -62,6 +59,7 @@
     <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
+    <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ObjectPool`1.cs" />
@@ -177,8 +175,8 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Collections.Immutable">
-      <HintPath>$(PackagesDir)\System.Collections.Immutable.1.1.32-beta\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    <Reference Include="System.Collections.Immutable, Version=1.1.34.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <HintPath>$(PackagesDir)\System.Collections.Immutable.1.1.34-rc-00001\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

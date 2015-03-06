@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ProcessTest_ConsoleApp
 {
@@ -7,45 +8,45 @@ namespace ProcessTest_ConsoleApp
     {
         static int Main(string[] args)
         {
-            try
+            if (args.Length > 0)
             {
-                if (args.Length > 0)
+                if (args[0].Equals("infinite"))
                 {
-                    if (args[0].Equals("infinite"))
-                    {
-                        // To avoid potential issues with orphaned processes (say, the test exits before
-                        // exiting the process), we'll say "infinite" is actually 30 seconds.
-                        
-                        Console.WriteLine("ProcessTest_ConsoleApp.exe started with an endless loop");
-                        Thread.Sleep(30 * 1000);
-                    }
-                    if (args[0].Equals("error"))
-                    {
-                        Exception ex = new Exception("Intentional Exception thrown");
-                        throw ex;
-                    }
-                    if (args[0].Equals("input"))
-                    {
-                        string str = Console.ReadLine();
-                    }
+                    // To avoid potential issues with orphaned processes (say, the test exits before
+                    // exiting the process), we'll say "infinite" is actually 100 seconds.
+                    Sleep(100 * 1000);
                 }
-                else
+                else if (args[0].Equals("error"))
+                {
+                    Console.Error.WriteLine("ProcessTest_ConsoleApp.exe error stream");
+                    Sleep();
+                }
+                else if (args[0].Equals("input"))
+                {
+                    string str = Console.ReadLine();
+                }
+                else if (args[0].Equals("stream"))
                 {
                     Console.WriteLine("ProcessTest_ConsoleApp.exe started");
                     Console.WriteLine("ProcessTest_ConsoleApp.exe closed");
+                    Sleep();
                 }
-
-                return 100;
+                else
+                {
+                    Console.WriteLine(string.Join(" ", args));
+                }
             }
-            catch (Exception toLog)
-            {
-                // We're testing STDERR streams, not the JIT debugger. 
-                // This makes the process behave just like a crashing .NET app, but without the WER invocation
-                // nor the blocking dialog that comes with it, or the need to suppress that.
-                Console.Error.WriteLine(string.Format("Unhandled Exception: {0}", toLog.ToString()));
-                return 1;
-            }
+            return 100;
+        }
 
+        private static void Sleep()
+        {
+            Sleep(100d);
+        }
+
+        private static void Sleep(double timeinMs)
+        {
+            Task.Delay(TimeSpan.FromMilliseconds(timeinMs)).Wait();
         }
     }
 }

@@ -55,7 +55,7 @@ namespace TestSupport
     public delegate bool ItemEquals(Object x, Object y);
 
     /// <summary>
-    /// An action to perform on a Multidimentional array
+    /// An action to perform on a Multidimensional array
     /// </summary>
     /// <param name="array">The array to perform the action on</param>
     /// <param name="indicies">The current indicies of the array</param>
@@ -83,14 +83,14 @@ namespace TestSupport
     /// <summary>
     /// This specifies how the collection is ordered.
     /// Sequential specifies that Add places items at  the end of the collection and Remove will remove the first item found.
-    /// Reverse specifies that Add places items at the begining of the collection and Remove will remove the first item found.
+    /// Reverse specifies that Add places items at the beginning of the collection and Remove will remove the first item found.
     /// Unspecified specifies that Add and Remove do not specify where items are added or removed.
     /// </summary>
     public enum CollectionOrder { Sequential, Unspecified };
 
 
     /// <summary>
-    /// Geneartes an exception
+    /// Generates an exception
     /// </summary>
     public delegate void ExceptionGenerator();
 
@@ -453,7 +453,7 @@ namespace TestSupport
         }
 
         /// <summary>
-        /// Determines if the stack is inlcluded with the output
+        /// Determines if the stack is included with the output
         /// </summary>
         /// <value>False to output the stack with every failure else true to suppress the stack output</value>
         public static bool SuppressStackOutput
@@ -835,7 +835,7 @@ namespace TestSupport
         /// </summary>
         /// <typeparam name="V"></typeparam>
         /// <param name="array1">The array to concatenate.</param>
-        /// <param name="array2">The items to concatonate to the end of array1.</param>
+        /// <param name="array2">The items to concatenate to the end of array1.</param>
         /// <returns>An array with all of the items from array1 followed by all of
         /// the items from array2.</returns>
         public static V[] Concat<V>(V[] array1, params V[] array2)
@@ -855,11 +855,11 @@ namespace TestSupport
         }
 
         /// <summary>
-        /// Concatenates of of the items to the begining of array1.
+        /// Concatenates of of the items to the beginning of array1.
         /// </summary>
         /// <typeparam name="V"></typeparam>
         /// <param name="array1">The array to concatenate.</param>
-        /// <param name="array2">The items to concatonate to the begining of array1.</param>
+        /// <param name="array2">The items to concatenate to the beginning of array1.</param>
         /// <returns>An array with all of the items from array2 followed by all of
         /// the items from array1.</returns>
         public static V[] Prepend<V>(V[] array1, params V[] array2)
@@ -879,10 +879,10 @@ namespace TestSupport
         }
 
         /// <summary>
-        /// Rverses array.
+        /// Reverses array.
         /// </summary>
         /// <typeparam name="V"></typeparam>
-        /// <param name="array">The array to revers.</param>
+        /// <param name="array">The array to reverse.</param>
         /// <returns>A copy of array with the items reversed.</returns>
         public static V[] Reverse<V>(V[] array)
         {
@@ -890,12 +890,12 @@ namespace TestSupport
         }
 
         /// <summary>
-        /// Rverses length items in array starting at index.
+        /// Reverses length items in array starting at index.
         /// </summary>
         /// <typeparam name="V"></typeparam>
         /// <param name="array">The array to reverse.</param>
         /// <param name="index">The index to start reversing items at.</param>
-        /// <param name="length">The number of items to revers</param>
+        /// <param name="length">The number of items to reverse.</param>
         /// <returns>A copy of array with length items reversed starting at index.</returns>
         public static V[] Reverse<V>(V[] array, int index, int length)
         {

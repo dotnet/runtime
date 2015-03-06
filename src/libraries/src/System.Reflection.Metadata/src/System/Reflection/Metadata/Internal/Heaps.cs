@@ -209,10 +209,8 @@ namespace System.Reflection.Metadata.Ecma335
                 return value.Length == 0;
             }
 
-            // TODO: MetadataStringComparer needs to use the user-supplied encoding.
-            // Need to pass the decoder down and use in Utf8NullTerminatedEquals.
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return this.Block.Utf8NullTerminatedEquals(handle.Index, value, otherTerminator);
+            return this.Block.Utf8NullTerminatedEquals(handle.Index, value, utf8Decoder, otherTerminator);
         }
 
         internal bool StartsWith(StringHandle handle, string value, MetadataStringDecoder utf8Decoder)
@@ -230,10 +228,8 @@ namespace System.Reflection.Metadata.Ecma335
                 return value.Length == 0;
             }
 
-            // TODO: MetadataStringComparer needs to use the user-supplied encoding.
-            // Need to pass the decoder down and use in Utf8NullTerminatedEquals.
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return this.Block.Utf8NullTerminatedStartsWith(handle.Index, value, otherTerminator);
+            return this.Block.Utf8NullTerminatedStartsWith(handle.Index, value, utf8Decoder, otherTerminator);
         }
 
         /// <summary>
@@ -351,7 +347,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 blobs[(int)BlobHandle.VirtualIndex.AttributeUsage_AllowSingle] = new byte[]
                 {
-                    // preable:
+                    // preamble:
                     0x01, 0x00,
                     // target (template parameter):
                     0x00, 0x00, 0x00, 0x00,
@@ -371,7 +367,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 blobs[(int)BlobHandle.VirtualIndex.AttributeUsage_AllowMultiple] = new byte[]
                 {
-                    // preable:
+                    // preamble:
                     0x01, 0x00,
                     // target (template parameter):
                     0x00, 0x00, 0x00, 0x00,

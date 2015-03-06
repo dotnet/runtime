@@ -60,7 +60,7 @@ namespace System.IO
 
             // Normal is a special case and happens to have different values in WinRT and Win32.
             // It's meant to indicate the absense of other flags.  On WinRT this logically is 0,
-            // however on Win32 it is represented with a descrete value of 128.
+            // however on Win32 it is represented with a discrete value of 128.
             return (fileAttributes == WinRTFileAttributes.Normal) ?
                 FileAttributes.Normal :
                 (FileAttributes)fileAttributes;
@@ -468,13 +468,13 @@ namespace System.IO
             }
         }
 
-        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        public override FileStreamBase Open(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
             EnsureBackgroundThread();
-            return SynchronousResultOf(OpenAsync(fullPath, mode, access, share, bufferSize, options));
+            return SynchronousResultOf(OpenAsync(fullPath, mode, access, share, bufferSize, options, parent));
         }
 
-        private async Task<FileStreamBase> OpenAsync(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
+        private async Task<FileStreamBase> OpenAsync(string fullPath, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent)
         {
             // Win32 CreateFile returns ERROR_PATH_NOT_FOUND when given a path that ends with '\'
             if (PathHelpers.EndsInDirectorySeparator(fullPath))
@@ -540,7 +540,7 @@ namespace System.IO
                 stream.SetLength(0);
             }
 
-            return new WinRTFileStream(stream, file, access, options);
+            return new WinRTFileStream(stream, file, access, options, parent);
         }
 
         public override void RemoveDirectory(string fullPath, bool recursive)
@@ -657,7 +657,7 @@ namespace System.IO
             return task.Result;
         }
 
-        // this needs to be seperate from SynchronousResultOf so that SynchronousResultOf<T> can call it.
+        // this needs to be separate from SynchronousResultOf so that SynchronousResultOf<T> can call it.
         private static void WaitForTask(Task task)
         {
             // This should never be called from the UI thread since it can deadlock

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Text
 {
@@ -47,7 +47,7 @@ namespace System.Text
 
         internal unsafe bool AddByte(byte b, int moreBytesExpected)
         {
-            Contract.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
+            Debug.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
             if (_bytes != null)
             {
                 if (_bytes >= _byteEnd - moreBytesExpected)
@@ -104,7 +104,7 @@ namespace System.Text
                 fallbackBuffer.MovePrevious();                      // don't use last fallback
             else
             {
-                Contract.Assert(_chars > _charStart ||
+                Debug.Assert(_chars > _charStart ||
                     ((bThrow == true) && (_bytes == _byteStart)),
                     "[EncodingByteBuffer.MovePrevious]expected previous data or throw");
                 if (_chars > _charStart)

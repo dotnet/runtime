@@ -104,22 +104,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        [ActiveIssue(264)]
-        public void FileStream450()
-        {
-            try
-            {
-                MemoryMapLightUp.Test450Compat = true;
-                FileStream();
-            }
-            finally
-            {
-                MemoryMapLightUp.Test450Compat = false;
-            }
-        }
-
-        [Fact]
-        [ActiveIssue(264)]
         public void FileStreamWin7()
         {
             try
@@ -134,7 +118,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        [ActiveIssue(264)]
         public void FileStreamUnix()
         {
             try
@@ -151,7 +134,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        [ActiveIssue(264)]
         public void FileStream()
         {
             string filePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
@@ -165,35 +147,38 @@ namespace System.Reflection.Metadata.Tests
 
                 File.WriteAllBytes(filePath, array);
 
-                using (var stream = new FileStream(filePath, FileMode.Open))
+                foreach (bool useAsync in new[] { true, false })
                 {
-                    Assert.True(FileStreamReadLightUp.IsFileStream(stream));
-
-                    using (var provider = new StreamMemoryBlockProvider(stream, imageStart: 0, imageSize: array.Length, isFileStream: true, leaveOpen: false))
+                    using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync))
                     {
-                        // large:
-                        using (var block = provider.GetMemoryBlock())
+                        Assert.True(FileStreamReadLightUp.IsFileStream(stream));
+
+                        using (var provider = new StreamMemoryBlockProvider(stream, imageStart: 0, imageSize: array.Length, isFileStream: true, leaveOpen: false))
                         {
-                            Assert.IsType<MemoryMappedFileBlock>(block);
-                            Assert.Equal(array.Length, block.Size);
-                            AssertEx.Equal(array, block.GetContent());
+                            // large:
+                            using (var block = provider.GetMemoryBlock())
+                            {
+                                Assert.IsType<MemoryMappedFileBlock>(block);
+                                Assert.Equal(array.Length, block.Size);
+                                AssertEx.Equal(array, block.GetContent());
+                            }
+
+                            // we didn't use the stream for reading
+                            Assert.Equal(0, stream.Position);
+
+                            // small:
+                            using (var block = provider.GetMemoryBlock(1, 2))
+                            {
+                                Assert.IsType<NativeHeapMemoryBlock>(block);
+                                Assert.Equal(2, block.Size);
+                                AssertEx.Equal(new byte[] { 0x12, 0x12 }, block.GetContent());
+                            }
+
+                            Assert.Equal(3, stream.Position);
                         }
 
-                        // we didn't use the stream for reading
-                        Assert.Equal(0, stream.Position);
-
-                        // small:
-                        using (var block = provider.GetMemoryBlock(1, 2))
-                        {
-                            Assert.IsType<NativeHeapMemoryBlock>(block);
-                            Assert.Equal(2, block.Size);
-                            AssertEx.Equal(new byte[] { 0x12, 0x12 }, block.GetContent());
-                        }
-
-                        Assert.Equal(3, stream.Position);
+                        Assert.Throws<ObjectDisposedException>(() => stream.Position);
                     }
-
-                    Assert.Throws<ObjectDisposedException>(() => stream.Position);
                 }
             }
             finally

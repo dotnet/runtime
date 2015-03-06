@@ -17,7 +17,7 @@ namespace System.Collections.Specialized.Tests
         {
             StringCollection sc;
             StringEnumerator en;
-            string curr;        // Eumerator.Current value
+            string curr;        // Enumerator.Current value
             bool res;           // boolean result of MoveNext()
 
             // simple string values

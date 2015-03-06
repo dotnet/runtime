@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -31,8 +31,8 @@ namespace System.Linq.Parallel
         internal ForAllOperator(IEnumerable<TInput> child, Action<TInput> elementAction)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
-            Contract.Assert(elementAction != null, "need a function");
+            Debug.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(elementAction != null, "need a function");
 
             _elementAction = elementAction;
         }
@@ -43,7 +43,7 @@ namespace System.Linq.Parallel
 
         internal void RunSynchronously()
         {
-            Contract.Assert(_elementAction != null);
+            Debug.Assert(_elementAction != null);
 
             // Get the enumerator w/out using pipelining. By the time this returns, the query
             // has been executed and we are done. We expect the return to be null.
@@ -61,7 +61,7 @@ namespace System.Linq.Parallel
             IEnumerator<TInput> enumerator = GetOpenedEnumerator(ParallelMergeOptions.FullyBuffered, true, true,
                 settingsWithDefaults);
             settingsWithDefaults.CleanStateAtQueryEnd();
-            Contract.Assert(enumerator == null);
+            Debug.Assert(enumerator == null);
 
             QueryLifecycle.LogicalQueryExecutionEnd(settingsWithDefaults.QueryId);
         }
@@ -100,7 +100,7 @@ namespace System.Linq.Parallel
 
         internal override IEnumerable<TInput> AsSequentialQuery(CancellationToken token)
         {
-            Contract.Assert(false, "AsSequentialQuery is not supported on ForAllOperator");
+            Debug.Fail("AsSequentialQuery is not supported on ForAllOperator");
             throw new InvalidOperationException();
         }
 
@@ -131,8 +131,8 @@ namespace System.Linq.Parallel
 
             internal ForAllEnumerator(QueryOperatorEnumerator<TInput, TKey> source, Action<TInput> elementAction, CancellationToken cancellationToken)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(elementAction != null);
+                Debug.Assert(source != null);
+                Debug.Assert(elementAction != null);
 
                 _source = source;
                 _elementAction = elementAction;
@@ -146,7 +146,7 @@ namespace System.Linq.Parallel
 
             internal override bool MoveNext(ref TInput currentElement, ref int currentKey)
             {
-                Contract.Assert(_elementAction != null, "expected a compiled operator");
+                Debug.Assert(_elementAction != null, "expected a compiled operator");
 
                 // We just scroll through the enumerator and execute the action. Because we execute
                 // "in place", we actually never even produce a single value.
@@ -169,7 +169,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }

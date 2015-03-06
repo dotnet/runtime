@@ -15,7 +15,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="SetError.cs" />
@@ -24,6 +23,7 @@
     <Compile Include="NegativeTesting.cs" />
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">

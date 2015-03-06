@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -11,7 +11,6 @@
     <AssemblyName>System.Threading.Tasks.Dataflow.Tests</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>bcca2a00</NuGetPackageImportStamp>
-    <CoverageEnabledForProject>false</CoverageEnabledForProject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -19,8 +18,10 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Dataflow\*.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
+      <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">

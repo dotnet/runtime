@@ -91,50 +91,42 @@ namespace System.Xml.XPath
                 case XmlNodeType.CDATA:
                 case XmlNodeType.SignificantWhitespace:
                     parent = node.ParentNode;
-                    if (parent != null)
+                    while (parent != null)
                     {
-                        do
+                        parentType = parent.NodeType;
+                        if (parentType == XmlNodeType.Attribute)
                         {
-                            parentType = parent.NodeType;
-                            if (parentType == XmlNodeType.Attribute)
-                            {
-                                return null;
-                            }
-                            else if (parentType == XmlNodeType.EntityReference)
-                            {
-                                parent = parent.ParentNode;
-                            }
-                            else
-                            {
-                                break;
-                            }
+                            return null;
                         }
-                        while (parent != null);
+                        else if (parentType == XmlNodeType.EntityReference)
+                        {
+                            parent = parent.ParentNode;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                     node = NormalizeText(node);
                     break;
                 case XmlNodeType.Whitespace:
                     parent = node.ParentNode;
-                    if (parent != null)
+                    while (parent != null)
                     {
-                        do
+                        parentType = parent.NodeType;
+                        if (parentType == XmlNodeType.Document
+                            || parentType == XmlNodeType.Attribute)
                         {
-                            parentType = parent.NodeType;
-                            if (parentType == XmlNodeType.Document
-                                || parentType == XmlNodeType.Attribute)
-                            {
-                                return null;
-                            }
-                            else if (parentType == XmlNodeType.EntityReference)
-                            {
-                                parent = parent.ParentNode;
-                            }
-                            else
-                            {
-                                break;
-                            }
+                            return null;
                         }
-                        while (parent != null);
+                        else if (parentType == XmlNodeType.EntityReference)
+                        {
+                            parent = parent.ParentNode;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                     node = NormalizeText(node);
                     break;

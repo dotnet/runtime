@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -32,7 +32,7 @@ namespace System.Linq.Parallel
 
         internal NullableFloatMinMaxAggregationOperator(IEnumerable<float?> child, int sign) : base(child)
         {
-            Contract.Assert(sign == -1 || sign == 1, "invalid sign");
+            Debug.Assert(sign == -1 || sign == 1, "invalid sign");
             _sign = sign;
         }
 
@@ -118,7 +118,7 @@ namespace System.Linq.Parallel
                 CancellationToken cancellationToken) :
                 base(partitionIndex, cancellationToken)
             {
-                Contract.Assert(source != null);
+                Debug.Assert(source != null);
                 _source = source;
                 _sign = sign;
             }
@@ -182,7 +182,7 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                Contract.Assert(_source != null);
+                Debug.Assert(_source != null);
                 _source.Dispose();
             }
         }

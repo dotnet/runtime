@@ -11,7 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -138,9 +138,9 @@ namespace System.Linq.Parallel
                 mergeOptions = querySettings.MergeOptions;
             }
 
-            Contract.Assert(mergeOptions != null);
+            Debug.Assert(mergeOptions != null);
 
-            // Top-level pre-emptive cancellation test.
+            // Top-level preemptive cancellation test.
             // This handles situations where cancellation has occured before execution commences
             // The handling for in-execution occurs in QueryTaskGroupState.QueryEnd()
 
@@ -178,9 +178,9 @@ namespace System.Linq.Parallel
             TraceHelpers.TraceInfo("[timing]: {0}: starting execution - QueryOperator<>::GetQueryResults", DateTime.Now.Ticks);
 
             // All mandatory query settings must be specified
-            Contract.Assert(querySettings.TaskScheduler != null);
-            Contract.Assert(querySettings.DegreeOfParallelism.HasValue);
-            Contract.Assert(querySettings.ExecutionMode.HasValue);
+            Debug.Assert(querySettings.TaskScheduler != null);
+            Debug.Assert(querySettings.DegreeOfParallelism.HasValue);
+            Debug.Assert(querySettings.ExecutionMode.HasValue);
 
             // Now just open the query tree's root operator, supplying a specific DOP
             return Open(querySettings, false);
@@ -297,7 +297,7 @@ namespace System.Linq.Parallel
 
         internal static QueryOperator<TOutput> AsQueryOperator(IEnumerable<TOutput> source)
         {
-            Contract.Assert(source != null);
+            Debug.Assert(source != null);
 
             // Just try casting the data source to a query operator, in the case that
             // our child is just another query operator.
@@ -323,7 +323,7 @@ namespace System.Linq.Parallel
                 }
             }
 
-            Contract.Assert(sourceAsOperator != null);
+            Debug.Assert(sourceAsOperator != null);
 
             return sourceAsOperator;
         }

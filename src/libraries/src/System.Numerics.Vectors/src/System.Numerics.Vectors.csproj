@@ -20,15 +20,6 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>System.Numerics</CustomToolNamespace>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="System\Numerics\ConstantHelper.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -45,11 +36,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Register.tt</DependentUpon>
     </Compile>
-    <Compile Include="Resources\Strings.Designer.cs">
-      <DependentUpon>Strings.resx</DependentUpon>
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-    </Compile>
     <Compile Include="System\Numerics\Vector.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -62,7 +48,6 @@
     <Compile Include="System\Numerics\Vector4.cs" />
     <Compile Include="System\Numerics\Vector4_Intrinsics.cs" />
     <Compile Include="System\Numerics\Vector_Operations.cs" />
-    <Compile Include="System\Numerics\SR.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="System\Numerics\ConstantHelper.tt">

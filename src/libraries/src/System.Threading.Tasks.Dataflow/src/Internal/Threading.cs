@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +16,7 @@ namespace System.Threading.Tasks.Dataflow.Internal.Threading
     {
         internal Timer(TimerCallback callback, object state, int dueTime, int period)
         {
-            Contract.Assert(period == -1, "This stub implementation only supports dueTime.");
+            Debug.Assert(period == -1, "This stub implementation only supports dueTime.");
             Task.Delay(dueTime, Token).ContinueWith((t, s) =>
             {
                 var tuple = (Tuple<TimerCallback, object>)s;

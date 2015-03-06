@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -29,7 +29,7 @@ namespace System.Linq.Parallel
         internal RepeatEnumerable(TResult element, int count)
             : base(QuerySettings.Empty)
         {
-            Contract.Assert(count >= 0, "count not within range (must be >= 0)");
+            Debug.Assert(count >= 0, "count not within range (must be >= 0)");
             _element = element;
             _count = count;
         }

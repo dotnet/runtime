@@ -248,16 +248,9 @@ namespace System.Xml
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (Count == 0)
-            {
-                return;
-            }
-
-            int[] indices = new int[1]; // SetValue takes a params array; lifting out the implicit allocation from the loop
             for (int i = 0, max = Count; i < max; i++, index++)
             {
-                indices[0] = index;
-                array.SetValue(nodes[i], indices);
+                array.SetValue(nodes[i], index);
             }
         }
 

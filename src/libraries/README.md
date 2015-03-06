@@ -24,6 +24,7 @@ Some of the best ways to contribute are to try things out, file bugs, and join i
 
 Want to get more familiar with what's going on in the code?
 * [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
+* [![Backlog](https://cloud.githubusercontent.com/assets/1302850/6260412/38987b1e-b793-11e4-9ade-d3fef4c6bf48.png)](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%220+-+Backlog%22), [![Up Next](https://cloud.githubusercontent.com/assets/1302850/6260418/4c2c7a54-b793-11e4-8ce1-a27ff5378d08.png)](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%221+-+Up+Next%22) and [![In Progress](https://cloud.githubusercontent.com/assets/1302850/6260414/41b0fc30-b793-11e4-9d50-d09563cd138a.png)](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%222+-+In+Progress%22) changes
 
 Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/labels/up%20for%20grabs) is a great place to start or for larger items see the list of [feature aproved](https://github.com/dotnet/corefx/labels/feature%20approved). See some of our guides for more details:
 
@@ -46,10 +47,6 @@ Want to chat with other members of the CoreFX community?
 
 The repo contains the following components. More libraries are coming soon. ['Watch'](https://github.com/dotnet/corefx/subscription) the repo to be notified.
 
-* **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
-
-* **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
-
 * **System.Collections.Concurrent**.  Provides a set of thread-safe collection types, instances of which may be used 
   concurrently from multiple threads.
 
@@ -71,11 +68,17 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Console**. Provides the Console class, which enables access to the standard input, 
   output, and error streams for console-based applications.
 
+* **System.Diagnostics.Debug**. Provides a class to interact with the debugger as well as methods for performing runtime assertions.
+
 * **System.Diagnostics.FileVersionInfo**. Provides useful functionality for querying
   and examining the version information of physical files on disk.
 
 * **System.Diagnostics.Process**. Provides access to local and remote processes, and enables the starting and
   stopping of local system processes.
+
+* **System.Diagnostics.TextWriterTraceListener**. Provides trace listeners for directing tracing output to a text writer, such as System.IO.StreamWriter.
+
+* **System.Diagnostics.TraceSource**. Provides classes that help you trace the execution of your code.
 
 * **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string comparisons and support the use of non-ASCII characters for Internet domain names.
 
@@ -102,13 +105,18 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
 
-* **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
-  across common cultural standards, as well as support to create custom Encoding Providers.
-
 * **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
+
+* **System.Runtime.Extensions**. Provides a set of unit tests for extensions to the basic runtime functionality
+  such as System.Convert and System.IO.Path.
+ 
+* **System.Runtime.Numerics**. Provides two useful numeric structures, BigInteger and Complex.
 
 * **System.ServiceProcess.ServiceController**. Provides the ServiceController class that represents a Windows service
   and allows you to connect to a running or stopped service, manipulate it, or get information about it.
+
+* **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
+  across common cultural standards, as well as support to create custom Encoding Providers.
 
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
@@ -117,14 +125,24 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   primitives for in-process message passing, dataflow, and pipelining. "TPL Dataflow" builds 
   upon the APIs and scheduling infrastructure provided by the Task Parallel Library
   (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
+  
+* **System.Threading.Tasks.Parallel**.  Provides library-based data parallel replacements for common
+  operations such as for loops, for each loops, and execution of a set of statements.
 
-* **System.Xml**. Provides DOM APIs such as the `XDocument` and `XmlDocument`
+* **System.Xml**. Provides low level XML types such as `XmlReader` and `XmlWriter` and also DOM APIs such as the `XDocument` and `XmlDocument`
   types, XLinq, and the corresponding XPath extension methods.
+
+* **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
+
+* **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
+
+* The overall list of items we currently plan to move onto GitHub is [here][typelist].
 
 [roslyn]: https://roslyn.codeplex.com/
 [immutable-msdn]: http://msdn.microsoft.com/en-us/library/dn385366(v=vs.110).aspx
 [simd-post-1]: http://blogs.msdn.com/b/dotnet/archive/2014/04/07/the-jit-finally-proposed-jit-and-simd-are-getting-married.aspx
 [simd-post-2]: http://blogs.msdn.com/b/dotnet/archive/2014/05/13/update-to-simd-support.aspx
+[typelist]: http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-components-postattachments/00-10-58-94-19/NetCore_5F00_OpenSourceUpdate.xlsx
 
 ## License
 

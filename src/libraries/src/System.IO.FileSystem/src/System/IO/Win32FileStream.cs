@@ -2,17 +2,18 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Globalization;
-using System.Runtime.Versioning;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
+
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 /*
  * Win32FileStream supports different modes of accessing the disk - async mode
@@ -44,7 +45,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    [ComVisible(true)]
     internal sealed partial class Win32FileStream : FileStreamBase
     {
         internal const int DefaultBufferSize = 4096;
@@ -134,7 +134,7 @@ namespace System.IO
             // named pipe server can't impersonate a high privileged client security context
             flagsAndAttributes |= (Interop.SECURITY_SQOS_PRESENT | Interop.SECURITY_ANONYMOUS);
 
-            // Don't pop up a dialog for reading from an emtpy floppy drive
+            // Don't pop up a dialog for reading from an empty floppy drive
             uint oldMode = Interop.mincore.SetErrorMode(Interop.SEM_FAILCRITICALERRORS);
             try
             {
@@ -195,7 +195,7 @@ namespace System.IO
                     if (!b)
                     {
                         // We should close the handle so that the handle is not open until SafeFileHandle GC
-                        Contract.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
+                        Debug.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
                         _handle.Dispose();
                     }
                 }
@@ -265,7 +265,7 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
 
             int handleType = Interop.mincore.GetFileType(_handle);
-            Contract.Assert(handleType == Interop.FILE_TYPE_DISK || handleType == Interop.FILE_TYPE_PIPE || handleType == Interop.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
+            Debug.Assert(handleType == Interop.FILE_TYPE_DISK || handleType == Interop.FILE_TYPE_PIPE || handleType == Interop.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
 
 #if USE_OVERLAPPED
             _isAsync = isAsync;
@@ -475,14 +475,14 @@ namespace System.IO
                 if (_handle.IsClosed) throw __Error.GetFileNotOpen();
                 if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
 
-                Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
+                Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
                 // Verify that internal position is in sync with the handle
                 if (_exposedHandle)
                     VerifyOSHandlePosition();
 
                 // Compensate for buffer that we read from the handle (_readLen) Vs what the user
-                // read so far from the internel buffer (_readPos). Of course add any unwrittern  
+                // read so far from the internal buffer (_readPos). Of course add any unwritten  
                 // buffered data
                 return _pos + (_readPos - _readLen + _writePos);
             }
@@ -584,10 +584,10 @@ namespace System.IO
         // functions should call this function to preserve the position in the file.
         private void FlushRead()
         {
-            Contract.Assert(_writePos == 0, "FileStream: Write buffer must be empty in FlushRead!");
+            Debug.Assert(_writePos == 0, "FileStream: Write buffer must be empty in FlushRead!");
             if (_readPos - _readLen != 0)
             {
-                Contract.Assert(_parent.CanSeek, "FileStream will lose buffered read data now.");
+                Debug.Assert(_parent.CanSeek, "FileStream will lose buffered read data now.");
                 SeekCore(_readPos - _readLen, SeekOrigin.Current);
             }
             _readPos = 0;
@@ -599,7 +599,7 @@ namespace System.IO
         // and there is left over data (_writePos > 0), this function must be called.
         private void FlushWrite(bool calledFromFinalizer)
         {
-            Contract.Assert(_readPos == 0 && _readLen == 0, "FileStream: Read buffer must be empty in FlushWrite!");
+            Debug.Assert(_readPos == 0 && _readLen == 0, "FileStream: Read buffer must be empty in FlushWrite!");
 
 #if USE_OVERLAPPED
             if (_isAsync)
@@ -610,7 +610,7 @@ namespace System.IO
                 // since that support takes care of the pinning & freeing the 
                 // overlapped struct.  We need to do this when called from
                 // Close so that the handle is closed when Close returns, but
-                // we do't need to call EndWrite from the finalizer.  
+                // we don't need to call EndWrite from the finalizer.  
                 // Additionally, if we do call EndWrite, we block forever 
                 // because AD unloads prevent us from running the managed 
                 // callback from the IO completion port.  Blocking here when 
@@ -679,7 +679,7 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private void SetLengthCore(long value)
         {
-            Contract.Assert(value >= 0, "value >= 0");
+            Debug.Assert(value >= 0, "value >= 0");
             long origPos = _pos;
 
             if (_exposedHandle)
@@ -718,7 +718,7 @@ namespace System.IO
 
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
 
-            Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
+            Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
             bool isBlocked = false;
             int n = _readLen - _readPos;
@@ -767,7 +767,7 @@ namespace System.IO
                 // probably blocked), don't ask for more bytes.
                 if (n < count && !isBlocked)
                 {
-                    Contract.Assert(_readPos == _readLen, "Read buffer should be empty!");
+                    Debug.Assert(_readPos == _readLen, "Read buffer should be empty!");
                     int moreBytesRead = ReadCore(array, offset + n, count - n);
                     n += moreBytesRead;
                     // We've just made our buffer inconsistent with our position 
@@ -783,13 +783,13 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe int ReadCore(byte[] buffer, int offset, int count)
         {
-            Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(_parent.CanRead, "_parent.CanRead");
+            Debug.Assert(!_handle.IsClosed, "!_handle.IsClosed");
+            Debug.Assert(_parent.CanRead, "_parent.CanRead");
 
-            Contract.Assert(buffer != null, "buffer != null");
-            Contract.Assert(_writePos == 0, "_writePos == 0");
-            Contract.Assert(offset >= 0, "offset is negative");
-            Contract.Assert(count >= 0, "count is negative");
+            Debug.Assert(buffer != null, "buffer != null");
+            Debug.Assert(_writePos == 0, "_writePos == 0");
+            Debug.Assert(offset >= 0, "offset is negative");
+            Debug.Assert(count >= 0, "count is negative");
 #if USE_OVERLAPPED
             if (_isAsync)
             {
@@ -823,7 +823,7 @@ namespace System.IO
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
             }
-            Contract.Assert(r >= 0, "FileStream's ReadCore is likely broken.");
+            Debug.Assert(r >= 0, "FileStream's ReadCore is likely broken.");
             _pos += r;
 
             return r;
@@ -838,7 +838,7 @@ namespace System.IO
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
             if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
 
-            Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
+            Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
             // If we've got bytes in our buffer to write, write them out.
             // If we've read in and consumed some bytes, we'll have to adjust
@@ -910,8 +910,8 @@ namespace System.IO
                     _readPos = 0;
                     _readLen = 0;
                 }
-                Contract.Assert(_readLen >= 0 && _readPos <= _readLen, "_readLen should be nonnegative, and _readPos should be less than or equal _readLen");
-                Contract.Assert(pos == _parent.Position, "Seek optimization: pos != Position!  Buffer math was mangled.");
+                Debug.Assert(_readLen >= 0 && _readPos <= _readLen, "_readLen should be nonnegative, and _readPos should be less than or equal _readLen");
+                Debug.Assert(pos == _parent.Position, "Seek optimization: pos != Position!  Buffer math was mangled.");
             }
             return pos;
         }
@@ -924,8 +924,8 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private long SeekCore(long offset, SeekOrigin origin)
         {
-            Contract.Assert(!_handle.IsClosed && _canSeek, "!_handle.IsClosed && _parent.CanSeek");
-            Contract.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin>=SeekOrigin.Begin && origin<=SeekOrigin.End");
+            Debug.Assert(!_handle.IsClosed && _canSeek, "!_handle.IsClosed && _parent.CanSeek");
+            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin>=SeekOrigin.Begin && origin<=SeekOrigin.End");
             int errorCode = 0;
             long ret = 0;
 
@@ -1050,7 +1050,7 @@ namespace System.IO
             // If the buffer would slow writes down, avoid buffer completely.
             if (count >= _bufferSize)
             {
-                Contract.Assert(_writePos == 0, "FileStream cannot have buffered data to write here!  Your stream will be corrupted.");
+                Debug.Assert(_writePos == 0, "FileStream cannot have buffered data to write here!  Your stream will be corrupted.");
                 WriteCore(array, offset, count);
                 return;
             }
@@ -1066,13 +1066,13 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
-            Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(_parent.CanWrite, "_parent.CanWrite");
+            Debug.Assert(!_handle.IsClosed, "!_handle.IsClosed");
+            Debug.Assert(_parent.CanWrite, "_parent.CanWrite");
 
-            Contract.Assert(buffer != null, "buffer != null");
-            Contract.Assert(_readPos == _readLen, "_readPos == _readLen");
-            Contract.Assert(offset >= 0, "offset is negative");
-            Contract.Assert(count >= 0, "count is negative");
+            Debug.Assert(buffer != null, "buffer != null");
+            Debug.Assert(_readPos == _readLen, "_readPos == _readLen");
+            Debug.Assert(offset >= 0, "offset is negative");
+            Debug.Assert(count >= 0, "count is negative");
 #if USE_OVERLAPPED
             if (_isAsync)
             {
@@ -1111,7 +1111,7 @@ namespace System.IO
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
             }
-            Contract.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
+            Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
             _pos += r;
             return;
         }
@@ -1141,11 +1141,11 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private FileStreamAsyncResult BeginReadAsync(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
         {
-            Contract.Assert(_isAsync);
+            Debug.Assert(_isAsync);
 
             if (!_parent.CanRead) throw __Error.GetReadNotSupported();
 
-            Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
+            Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
             if (_isPipe)
             {
@@ -1174,12 +1174,12 @@ namespace System.IO
                 }
                 else
                 {
-                    Contract.Assert(_writePos == 0, "Win32FileStream must not have buffered write data here!  Pipes should be unidirectional.");
+                    Debug.Assert(_writePos == 0, "Win32FileStream must not have buffered write data here!  Pipes should be unidirectional.");
                     return BeginReadCore(array, offset, numBytes, userCallback, stateObject, 0);
                 }
             }
 
-            Contract.Assert(!_isPipe, "Should not be a pipe.");
+            Debug.Assert(!_isPipe, "Should not be a pipe.");
 
             // Handle buffering.
             if (_writePos > 0) FlushWrite(false);
@@ -1250,13 +1250,13 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe private FileStreamAsyncResult BeginReadCore(byte[] bytes, int offset, int numBytes, AsyncCallback userCallback, Object stateObject, int numBufferedBytesRead)
         {
-            Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(_parent.CanRead, "_parent.CanRead");
-            Contract.Assert(bytes != null, "bytes != null");
-            Contract.Assert(_writePos == 0, "_writePos == 0");
-            Contract.Assert(_isAsync, "BeginReadCore doesn't work on synchronous file streams!");
-            Contract.Assert(offset >= 0, "offset is negative");
-            Contract.Assert(numBytes >= 0, "numBytes is negative");
+            Debug.Assert(!_handle.IsClosed, "!_handle.IsClosed");
+            Debug.Assert(_parent.CanRead, "_parent.CanRead");
+            Debug.Assert(bytes != null, "bytes != null");
+            Debug.Assert(_writePos == 0, "_writePos == 0");
+            Debug.Assert(_isAsync, "BeginReadCore doesn't work on synchronous file streams!");
+            Debug.Assert(offset >= 0, "offset is negative");
+            Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
 
@@ -1400,11 +1400,11 @@ namespace System.IO
         {
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
             if (_readLen == 0 && !_parent.CanRead) throw __Error.GetReadNotSupported();
-            Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
+            Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
             if (_readPos == _readLen)
             {
                 if (_writePos > 0) FlushWrite(false);
-                Contract.Assert(_bufferSize > 0, "_bufferSize > 0");
+                Debug.Assert(_bufferSize > 0, "_bufferSize > 0");
                 if (_buffer == null) _buffer = new byte[_bufferSize];
                 _readLen = ReadCore(_buffer, 0, _bufferSize);
                 _readPos = 0;
@@ -1442,11 +1442,11 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         private FileStreamAsyncResult BeginWriteAsync(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
         {
-            Contract.Assert(_isAsync);
+            Debug.Assert(_isAsync);
 
             if (!_parent.CanWrite) throw __Error.GetWriteNotSupported();
 
-            Contract.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
+            Debug.Assert((_readPos == 0 && _readLen == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLen), "We're either reading or writing, but not both.");
 
             if (_isPipe)
             {
@@ -1463,7 +1463,7 @@ namespace System.IO
                 // reading from both, you can easily get into a deadlock here.
                 // To avoid this deadlock, don't buffer when doing async IO on
                 // pipes.   
-                Contract.Assert(_readPos == 0 && _readLen == 0, "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
+                Debug.Assert(_readPos == 0 && _readLen == 0, "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
                 if (_writePos > 0)
                     FlushWrite(false);
@@ -1499,13 +1499,13 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]  // auto-generated
         unsafe private FileStreamAsyncResult BeginWriteCore(byte[] bytes, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
         {
-            Contract.Assert(!_handle.IsClosed, "!_handle.IsClosed");
-            Contract.Assert(_parent.CanWrite, "_parent.CanWrite");
-            Contract.Assert(bytes != null, "bytes != null");
-            Contract.Assert(_readPos == _readLen, "_readPos == _readLen");
-            Contract.Assert(_isAsync, "BeginWriteCore doesn't work on synchronous file streams!");
-            Contract.Assert(offset >= 0, "offset is negative");
-            Contract.Assert(numBytes >= 0, "numBytes is negative");
+            Debug.Assert(!_handle.IsClosed, "!_handle.IsClosed");
+            Debug.Assert(_parent.CanWrite, "_parent.CanWrite");
+            Debug.Assert(bytes != null, "bytes != null");
+            Debug.Assert(_readPos == _readLen, "_readPos == _readLen");
+            Debug.Assert(_isAsync, "BeginWriteCore doesn't work on synchronous file streams!");
+            Debug.Assert(offset >= 0, "offset is negative");
+            Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
             FileStreamAsyncResult asyncResult = new FileStreamAsyncResult(0, bytes, _handle, userCallback, stateObject, true);
@@ -1641,7 +1641,7 @@ namespace System.IO
                 if (_readPos < _readLen) FlushRead();
                 _readPos = 0;
                 _readLen = 0;
-                Contract.Assert(_bufferSize > 0, "_bufferSize > 0");
+                Debug.Assert(_bufferSize > 0, "_bufferSize > 0");
                 if (_buffer == null) _buffer = new byte[_bufferSize];
             }
             if (_writePos == _bufferSize)
@@ -1690,7 +1690,7 @@ namespace System.IO
             Contract.EndContractBlock();
 
 #if USE_OVERLAPPED
-            Contract.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
+            Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
 #endif
 
             // You can't use the fixed statement on an array of length 0.
@@ -1761,7 +1761,7 @@ namespace System.IO
             Contract.EndContractBlock();
 
 #if USE_OVERLAPPED
-            Contract.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
+            Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
 #endif
 
             // You can't use the fixed statement on an array of length 0.
@@ -1811,8 +1811,6 @@ namespace System.IO
             return numBytesWritten;
         }
 
-
-        [ComVisible(false)]
         [System.Security.SecuritySafeCritical]
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -1853,7 +1851,6 @@ namespace System.IO
 #endif
         }
 
-        [ComVisible(false)]
         [System.Security.SecuritySafeCritical]
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -1907,7 +1904,7 @@ namespace System.IO
         private static void CancelTask<T>(object state)
         {
             var fileStreamTaskAsyncState = state as FileStreamTaskAsyncState<T>;
-            Contract.Assert(fileStreamTaskAsyncState != null);
+            Debug.Assert(fileStreamTaskAsyncState != null);
             FileStreamAsyncResult asyncResult = fileStreamTaskAsyncState._asyncResult;
 
             // This method is used as both the completion callback and the cancellation callback.
@@ -1916,10 +1913,10 @@ namespace System.IO
             // 1. asyncResult is not a FileStreamAsyncResult
             // 2. asyncResult.IsAsync is false: asyncResult is a "synchronous" FileStreamAsyncResult.
             // 3. The asyncResult is completed: this should never happen.
-            Contract.Assert((!asyncResult.IsWrite && typeof(T) == typeof(int)) ||
+            Debug.Assert((!asyncResult.IsWrite && typeof(T) == typeof(int)) ||
                             (asyncResult.IsWrite && typeof(T) == typeof(VoidTaskResult)));
-            Contract.Assert(asyncResult != null);
-            Contract.Assert(asyncResult.IsAsync);
+            Debug.Assert(asyncResult != null);
+            Debug.Assert(asyncResult.IsAsync);
 
             try
             {
@@ -1938,11 +1935,11 @@ namespace System.IO
         private static void EndReadTask(IAsyncResult iar)
         {
             FileStreamAsyncResult asyncResult = iar as FileStreamAsyncResult;
-            Contract.Assert(asyncResult != null);
-            Contract.Assert(asyncResult.IsCompleted, "How can we end up in the completion callback if the IAsyncResult is not completed?");
+            Debug.Assert(asyncResult != null);
+            Debug.Assert(asyncResult.IsCompleted, "How can we end up in the completion callback if the IAsyncResult is not completed?");
 
             var asyncState = asyncResult.AsyncState as FileStreamTaskAsyncState<int>;
-            Contract.Assert(asyncState != null);
+            Debug.Assert(asyncState != null);
 
             try
             {
@@ -1957,7 +1954,7 @@ namespace System.IO
                 if (asyncResult.ErrorCode == Interop.ERROR_OPERATION_ABORTED)
                 {
                     var cancellationToken = asyncState._cancellationToken;
-                    Contract.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");
+                    Debug.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");
                     TrySetCanceled(asyncState._taskCompletionSource, cancellationToken);
                 }
                 else
@@ -1974,11 +1971,11 @@ namespace System.IO
         private static void EndWriteTask(IAsyncResult iar)
         {
             var asyncResult = iar as FileStreamAsyncResult;
-            Contract.Assert(asyncResult != null);
-            Contract.Assert(asyncResult.IsCompleted, "How can we end up in the completion callback if the IAsyncResult is not completed?");
+            Debug.Assert(asyncResult != null);
+            Debug.Assert(asyncResult.IsCompleted, "How can we end up in the completion callback if the IAsyncResult is not completed?");
 
             var asyncState = iar.AsyncState as FileStreamTaskAsyncState<VoidTaskResult>;
-            Contract.Assert(asyncState != null);
+            Debug.Assert(asyncState != null);
 
             try
             {
@@ -1993,7 +1990,7 @@ namespace System.IO
                 if (asyncResult.ErrorCode == Interop.ERROR_OPERATION_ABORTED)
                 {
                     var cancellationToken = asyncState._cancellationToken;
-                    Contract.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");
+                    Debug.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");
                     TrySetCanceled(asyncState._taskCompletionSource, cancellationToken);
                 }
                 else
@@ -2015,7 +2012,6 @@ namespace System.IO
         // Legend is that we chose not to flush the OS file buffers in Flush() in fear of 
         // perf problems with frequent, long running FlushFileBuffers() calls. But we don't 
         // have that problem with FlushAsync() because we will call FlushFileBuffers() in the background.
-        [ComVisible(false)]
         [System.Security.SecuritySafeCritical]
         public override Task FlushAsync(CancellationToken cancellationToken)
         {

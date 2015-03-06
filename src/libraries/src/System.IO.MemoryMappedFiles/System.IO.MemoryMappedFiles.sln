@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30723.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedFiles", "src\System.IO.MemoryMappedFiles.csproj", "{16EE5522-F387-4C9E-9EF2-B5134B043F37}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{10E9121A-7350-4AB7-BB05-A543BE1EB19B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryMappedFile.Tests", "tests\MemoryMappedFile.Tests.csproj", "{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryMappedViewAccessor.Tests", "tests\MemoryMappedViewAccessor.Tests.csproj", "{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemoryMappedViewStream.Tests", "tests\MemoryMappedViewStream.Tests.csproj", "{688496E1-A7B3-41AE-9E32-C6F1A1127F91}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Unix_Debug|Any CPU = Unix_Debug|Any CPU
+		Unix_Release|Any CPU = Unix_Release|Any CPU
+		Windows_Debug|Any CPU = Windows_Debug|Any CPU
+		Windows_Release|Any CPU = Windows_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Unix_Debug|Any CPU.ActiveCfg = Unix_Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Unix_Debug|Any CPU.Build.0 = Unix_Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Unix_Release|Any CPU.ActiveCfg = Unix_Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Unix_Release|Any CPU.Build.0 = Unix_Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{16EE5522-F387-4C9E-9EF2-B5134B043F37}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Unix_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Unix_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+		{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}.Unix_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}.Unix_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+		{688496E1-A7B3-41AE-9E32-C6F1A1127F91}.Unix_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{688496E1-A7B3-41AE-9E32-C6F1A1127F91}.Unix_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{688496E1-A7B3-41AE-9E32-C6F1A1127F91}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{688496E1-A7B3-41AE-9E32-C6F1A1127F91}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{688496E1-A7B3-41AE-9E32-C6F1A1127F91}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{688496E1-A7B3-41AE-9E32-C6F1A1127F91}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9D6F6254-B5A3-40FF-8925-68AA8D1CE933} = {10E9121A-7350-4AB7-BB05-A543BE1EB19B}
+		{F26FBD53-C04A-4FFC-90C9-AA804285A7AD} = {10E9121A-7350-4AB7-BB05-A543BE1EB19B}
+		{688496E1-A7B3-41AE-9E32-C6F1A1127F91} = {10E9121A-7350-4AB7-BB05-A543BE1EB19B}
+	EndGlobalSection
+EndGlobal

@@ -48,7 +48,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             for (int i = 0; i < drives.Length; i++)
             {
                 fbUser = -1;
-                //We dont want the disk not ready blocking dialog box
+                //We don't want the disk not ready blocking dialog box
                 if (drives[i].IsReady)
                 {
                     win32Result = GetDiskFreeSpaceEx(drives[i].Name, out fbUser, out tbUser, out fbTotal);
@@ -84,13 +84,13 @@ namespace System.IO.FileSystem.DriveInfoTests
                 }
             }
 
-            //Senario 2: Modify size (by adding and removing files externally) and check
+            //Scenario 2: Modify size (by adding and removing files externally) and check
             for (int i = 0; i < drives.Length; i++)
             {
-                //We will add a random file to these drives and see if that changes anythig - should not at all!
+                //We will add a random file to these drives and see if that changes anything - should not at all!
                 if ((long)win32Values[drives[i].Name] != -1)
                 {
-                    //We are not using Path.GetTempFileName bacause that will limit us to only one drive
+                    //We are not using Path.GetTempFileName because that will limit us to only one drive
                     String tempFileName = "AvailableFreeSpaceTests_";
                     int fileCount = -1;
                     while (fileCount++ < 1000 && File.Exists(drives[i].Name + tempFileName + fileCount)) ;

@@ -2,11 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Collections.Immutable
 {
-    [DebuggerDisplay("Count = {stack != null ? stack.Count : 0}")]
     internal static class AllocFreeConcurrentStack<T>
     {
         private const int MaxSize = 35;

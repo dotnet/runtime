@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -59,18 +59,18 @@ namespace System.Linq.Parallel
             OrdinalIndexState indexState, IComparer<TKey> keyComparer,
             GrowingArray<TKey>[] sharedkeys, TInputOutput[][] sharedValues, Barrier[][] sharedBarriers)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(groupState != null);
-            Contract.Assert(sharedIndices != null);
-            Contract.Assert(sharedkeys != null);
-            Contract.Assert(sharedValues != null);
-            Contract.Assert(sharedBarriers != null);
-            Contract.Assert(sharedIndices.Length <= sharedkeys.Length);
-            Contract.Assert(sharedIndices.Length == sharedValues.Length);
+            Debug.Assert(source != null);
+            Debug.Assert(groupState != null);
+            Debug.Assert(sharedIndices != null);
+            Debug.Assert(sharedkeys != null);
+            Debug.Assert(sharedValues != null);
+            Debug.Assert(sharedBarriers != null);
+            Debug.Assert(sharedIndices.Length <= sharedkeys.Length);
+            Debug.Assert(sharedIndices.Length == sharedValues.Length);
             // Multi-dim arrays are simulated using jagged arrays.
             // Because of that, when phaseCount == 0, we end up with an empty sharedBarrier array.
             // Since there are no cases when phaseCount == 0 where we actually access the sharedBarriers, I am removing this check.
-            // Contract.Assert(sharedIndices.Length == sharedBarriers[0].Length);
+            // Debug.Assert(sharedIndices.Length == sharedBarriers[0].Length);
 
             _source = source;
             _partitionCount = partitionCount;
@@ -83,7 +83,7 @@ namespace System.Linq.Parallel
             _sharedValues = sharedValues;
             _sharedBarriers = sharedBarriers;
 
-            Contract.Assert(_sharedKeys.Length >= _sharedValues.Length);
+            Debug.Assert(_sharedKeys.Length >= _sharedValues.Length);
         }
 
         //---------------------------------------------------------------------------------------
@@ -195,8 +195,8 @@ namespace System.Linq.Parallel
 
             BuildKeysFromSource(ref sourceKeys, ref sourceValues);
 
-            Contract.Assert(sourceValues != null, "values weren't populated");
-            Contract.Assert(sourceKeys != null, "keys weren't populated");
+            Debug.Assert(sourceValues != null, "values weren't populated");
+            Debug.Assert(sourceKeys != null, "keys weren't populated");
 
             // Step 2.  Locally sort this partition's key indices in-place.
             QuickSortIndicesInPlace(sourceKeys, sourceValues, _indexState);
@@ -270,9 +270,9 @@ namespace System.Linq.Parallel
 
         private void QuickSortIndicesInPlace(GrowingArray<TKey> keys, List<TInputOutput> values, OrdinalIndexState ordinalIndexState)
         {
-            Contract.Assert(keys != null);
-            Contract.Assert(values != null);
-            Contract.Assert(keys.Count == values.Count);
+            Debug.Assert(keys != null);
+            Debug.Assert(values != null);
+            Debug.Assert(keys.Count == values.Count);
 
             // Generate a list of keys in forward order.  We will sort them in a moment.
             int[] indices = new int[values.Count];
@@ -425,7 +425,7 @@ namespace System.Linq.Parallel
                         _sharedKeys[_partitionIndex] = myKeys;
                         _sharedValues[_partitionIndex] = mergedValues;
 
-                        Contract.Assert(myKeysArr != null);
+                        Debug.Assert(myKeysArr != null);
 
                         _sharedBarriers[phase][_partitionIndex].SignalAndWait(cancelToken);
 
@@ -495,8 +495,8 @@ namespace System.Linq.Parallel
                         GrowingArray<TKey> mergedKeys = _sharedKeys[partnerIndex];
                         TInputOutput[] mergedValues = _sharedValues[partnerIndex];
 
-                        Contract.Assert(leftValues != null);
-                        Contract.Assert(leftKeys != null);
+                        Debug.Assert(leftValues != null);
+                        Debug.Assert(leftKeys != null);
 
                         int leftCount = leftValues.Length;
                         int rightCount = myValues.Length;
@@ -576,11 +576,11 @@ namespace System.Linq.Parallel
 
         private void QuickSort(int left, int right, TKey[] keys, int[] indices, CancellationToken cancelToken)
         {
-            Contract.Assert(keys != null, "need a non-null keyset");
-            Contract.Assert(keys.Length >= indices.Length);
-            Contract.Assert(left <= right);
-            Contract.Assert(0 <= left && left < keys.Length);
-            Contract.Assert(0 <= right && right < keys.Length);
+            Debug.Assert(keys != null, "need a non-null keyset");
+            Debug.Assert(keys.Length >= indices.Length);
+            Debug.Assert(left <= right);
+            Debug.Assert(0 <= left && left < keys.Length);
+            Debug.Assert(0 <= right && right < keys.Length);
 
             // cancellation check.
             // only test for intervals that are wider than so many items, else this test is 
@@ -600,7 +600,7 @@ namespace System.Linq.Parallel
                     while (_keyComparer.Compare(keys[indices[i]], pivotKey) < 0) i++;
                     while (_keyComparer.Compare(keys[indices[j]], pivotKey) > 0) j--;
 
-                    Contract.Assert(i >= left && j <= right, "(i>=left && j<=right) sort failed - bogus IComparer?");
+                    Debug.Assert(i >= left && j <= right, "(i>=left && j<=right) sort failed - bogus IComparer?");
 
                     if (i > j)
                     {

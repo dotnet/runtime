@@ -11,7 +11,7 @@ namespace System.IO.Tests
         [Fact]
         public static void Write()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.Write, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
@@ -23,7 +23,7 @@ namespace System.IO.Tests
 
                 var memory = manager.ToArray();
 
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(bytes, memory));
+                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
 
                 stream.Write(new byte[0], 0, 0);
             }
@@ -32,7 +32,7 @@ namespace System.IO.Tests
         [Fact]
         public static void WriteByte()
         {
-            var length = 1000;
+            const int length = 1000;
             using (var manager = new UmsManager(FileAccess.Write, length))
             {
                 UnmanagedMemoryStream stream = manager.Stream;
@@ -47,7 +47,7 @@ namespace System.IO.Tests
 
                 var memory = manager.ToArray();
 
-                Assert.True(ArrayHelpers.Comparer<byte>().Equals(bytes, memory));
+                Assert.Equal(bytes, memory, ArrayHelpers.Comparer<byte>());
             }
         }
 
@@ -58,7 +58,33 @@ namespace System.IO.Tests
             {
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.ReadUmsInvariants(stream);
+
+                var bytes = new byte[3];
+                Assert.Throws<NotSupportedException>(() => stream.Write(bytes, 0, bytes.Length));
                 Assert.Throws<NotSupportedException>(() => stream.WriteByte(1));
+            }
+        }
+
+        [Fact]
+        public static void CannotWriteWithOverflow()
+        {
+            using (var manager = new UmsManager(FileAccess.Write, 1000))
+            {
+                UnmanagedMemoryStream stream = manager.Stream;
+                UmsTests.WriteUmsInvariants(stream);
+                
+                if (IntPtr.Size == 4)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+                    stream.Position = int.MaxValue;
+                }
+                else
+                {
+                    stream.Position = long.MaxValue;
+                    var bytes = new byte[3];
+                    Assert.Throws<IOException>(() => stream.Write(bytes, 0, bytes.Length));
+                    Assert.Throws<IOException>(() => stream.WriteByte(1));
+                }
             }
         }
     }

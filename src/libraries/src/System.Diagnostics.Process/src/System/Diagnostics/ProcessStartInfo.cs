@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Security;
 using System.Text;
 
 namespace System.Diagnostics
@@ -12,7 +13,7 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
-    public sealed class ProcessStartInfo
+    public sealed partial class ProcessStartInfo
     {
         private string _fileName;
         private string _arguments;
@@ -24,7 +25,6 @@ namespace System.Diagnostics
         private Encoding _standardErrorEncoding;
 
         private bool _createNoWindow = false;
-        private WeakReference _weakParentProcess;
         internal Dictionary<string, string> _environmentVariables;
 
         /// <devdoc>
@@ -33,11 +33,6 @@ namespace System.Diagnostics
         /// </devdoc>
         public ProcessStartInfo()
         {
-        }
-
-        internal ProcessStartInfo(Process parent)
-        {
-            _weakParentProcess = new WeakReference(parent);
         }
 
         /// <devdoc>
@@ -89,14 +84,11 @@ namespace System.Diagnostics
             {
                 if (_environmentVariables == null)
                 {
-                    _environmentVariables = new Dictionary<string, string>();
-
-                    // if not in design mode, initialize the child environment block with all the parent variables
-                    if (!(_weakParentProcess != null &&
-                          _weakParentProcess.IsAlive))
+                    IDictionary envVars = System.Environment.GetEnvironmentVariables();
+                    _environmentVariables = new Dictionary<string, string>(envVars.Count);
+                    foreach (DictionaryEntry entry in envVars)
                     {
-                        foreach (DictionaryEntry entry in System.Environment.GetEnvironmentVariables())
-                            _environmentVariables.Add((string)entry.Key, (string)entry.Value);
+                        _environmentVariables.Add((string)entry.Key, (string)entry.Value);
                     }
                 }
                 return _environmentVariables;
@@ -147,7 +139,7 @@ namespace System.Diagnostics
         // 1. ShellExecuteEx is not supported on onecore.
         // 2. ShellExecuteEx needs to run as STA but managed code runs as MTA by default and Thread.SetApartmentState() is not supported on all platforms.
         //
-        // Irrespective of the limited funtionality of the property we still support it in the contract for the below reason.
+        // Irrespective of the limited functionality of the property we still support it in the contract for the below reason.
         // The default value of UseShellExecute is true on desktop and scenarios like redirection mandates the value to be false.
         // So in order to provide maximum code portability we expose UseShellExecute in the contract 
         // and throw PlatformNotSupportedException in portable library in case it is set to true.
@@ -164,11 +156,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public string FileName
         {
-            get
-            {
-                if (_fileName == null) return string.Empty;
-                return _fileName;
-            }
+            get { return _fileName ?? string.Empty; }
             set { _fileName = value; }
         }
 
@@ -178,15 +166,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public string WorkingDirectory
         {
-            get
-            {
-                if (_directory == null) return string.Empty;
-                return _directory;
-            }
-            set
-            {
-                _directory = value;
-            }
+            get { return _directory ?? string.Empty; }
+            set { _directory = value; }
         }
     }
 }

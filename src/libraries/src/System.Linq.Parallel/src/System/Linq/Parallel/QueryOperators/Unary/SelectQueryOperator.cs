@@ -8,7 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Linq.Parallel
@@ -38,8 +38,8 @@ namespace System.Linq.Parallel
         internal SelectQueryOperator(IEnumerable<TInput> child, Func<TInput, TOutput> selector)
             : base(child)
         {
-            Contract.Assert(child != null, "child data source cannot be null");
-            Contract.Assert(selector != null, "need a selector function");
+            Debug.Assert(child != null, "child data source cannot be null");
+            Debug.Assert(selector != null, "need a selector function");
 
             _selector = selector;
             SetOrdinalIndexState(Child.OrdinalIndexState);
@@ -100,8 +100,8 @@ namespace System.Linq.Parallel
 
             internal SelectQueryOperatorEnumerator(QueryOperatorEnumerator<TInput, TKey> source, Func<TInput, TOutput> selector)
             {
-                Contract.Assert(source != null);
-                Contract.Assert(selector != null);
+                Debug.Assert(source != null);
+                Debug.Assert(selector != null);
                 _source = source;
                 _selector = selector;
             }
@@ -116,7 +116,7 @@ namespace System.Linq.Parallel
                 TInput element = default(TInput);
                 if (_source.MoveNext(ref element, ref currentKey))
                 {
-                    Contract.Assert(_selector != null, "expected a compiled operator");
+                    Debug.Assert(_selector != null, "expected a compiled operator");
                     currentElement = _selector(element);
                     return true;
                 }
@@ -159,9 +159,9 @@ namespace System.Linq.Parallel
                 QuerySettings settings, bool preferStriping)
                 : base(childQueryResults, op, settings, preferStriping)
             {
-                Contract.Assert(op._selector != null);
+                Debug.Assert(op._selector != null);
                 _selector = op._selector;
-                Contract.Assert(_childQueryResults.IsIndexible);
+                Debug.Assert(_childQueryResults.IsIndexible);
                 _childCount = _childQueryResults.ElementsCount;
             }
 
@@ -177,8 +177,8 @@ namespace System.Linq.Parallel
 
             internal override TOutput GetElement(int index)
             {
-                Contract.Assert(index >= 0);
-                Contract.Assert(index < ElementsCount);
+                Debug.Assert(index >= 0);
+                Debug.Assert(index < ElementsCount);
 
                 return _selector(_childQueryResults.GetElement(index));
             }

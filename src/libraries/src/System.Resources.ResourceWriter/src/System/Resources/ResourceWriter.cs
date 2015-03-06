@@ -20,6 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.Versioning;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Resources
@@ -35,7 +36,6 @@ namespace System.Resources
     // See the RuntimeResourceSet overview for details on the system 
     // default file format.
     // 
-    [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class ResourceWriter : System.IDisposable
     {
         // An initial size for our internal sorted list, to avoid extra resizes.
@@ -131,7 +131,7 @@ namespace System.Resources
             // Write out class name of the ResourceSet class best suited to
             // handling this file.
             // This needs to be the same even with multi-targeting. It's the 
-            // full name -- not the asssembly qualified name.
+            // full name -- not the assembly qualified name.
             resMgrHeaderPart.Write(ResSetTypeName);
             resMgrHeaderPart.Flush();
 
@@ -219,16 +219,16 @@ namespace System.Resources
 
                 //  Write out sorted name hashes.
                 //   Align to 8 bytes.
-                Contract.Assert((bw.BaseStream.Position & 7) == 0, "ResourceWriter: Name hashes array won't be 8 byte aligned!  Ack!");
+                Debug.Assert((bw.BaseStream.Position & 7) == 0, "ResourceWriter: Name hashes array won't be 8 byte aligned!  Ack!");
 
                 foreach (int hash in nameHashes)
                     bw.Write(hash);
 
                 //  Write relative positions of all the names in the file.
-                //   Note: this data is 4 byte aligned, occuring immediately 
+                //   Note: this data is 4 byte aligned, occurring immediately 
                 //   after the 8 byte aligned name hashes (whose length may 
                 //   potentially be odd).
-                Contract.Assert((bw.BaseStream.Position & 3) == 0, "ResourceWriter: Name positions array won't be 4 byte aligned!  Ack!");
+                Debug.Assert((bw.BaseStream.Position & 3) == 0, "ResourceWriter: Name positions array won't be 4 byte aligned!  Ack!");
 
                 foreach (int pos in namePositions)
                     bw.Write(pos);
@@ -249,7 +249,7 @@ namespace System.Resources
                 names.Dispose();
 
                 // Write data section.
-                Contract.Assert(startOfDataSection == bw.Seek(0, SeekOrigin.Current), "ResourceWriter::Generate - start of data section is wrong!");
+                Debug.Assert(startOfDataSection == bw.Seek(0, SeekOrigin.Current), "ResourceWriter::Generate - start of data section is wrong!");
                 dataSection.Position = 0;
                 dataSection.CopyTo(bw.BaseStream);
                 data.Dispose();

@@ -9,7 +9,7 @@
 
 using System.Collections.Generic;
 using System.Linq.Parallel;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -21,8 +21,8 @@ namespace System.Linq
 
         private static T Reduce(IEnumerable<T> source, int sign)
         {
-            Contract.Assert(source != null);
-            Contract.Assert(sign == -1 || sign == 1);
+            Debug.Assert(source != null);
+            Debug.Assert(sign == -1 || sign == 1);
 
             Func<Pair<bool, T>, T, Pair<bool, T>> intermediateReduce = MakeIntermediateReduceFunction(sign);
             Func<Pair<bool, T>, Pair<bool, T>, Pair<bool, T>> finalReduce = MakeFinalReduceFunction(sign);
@@ -97,7 +97,7 @@ namespace System.Linq
                            if (element.First &&
                                (!accumulator.First || Util.Sign(comparer.Compare(element.Second, accumulator.Second)) == sign))
                            {
-                               Contract.Assert(default(T) != null || element.Second != null, "nulls unexpected in final reduce");
+                               Debug.Assert(default(T) != null || element.Second != null, "nulls unexpected in final reduce");
                                return new Pair<bool, T>(true, element.Second);
                            }
 
@@ -114,7 +114,7 @@ namespace System.Linq
             // empty sequences.  Else, we will just return the element, which may be null for other types.
             return delegate (Pair<bool, T> accumulator)
                        {
-                           Contract.Assert(accumulator.First || default(T) == null,
+                           Debug.Assert(accumulator.First || default(T) == null,
                                            "for non-null types we expect an exception to be thrown before getting here");
                            return accumulator.Second;
                        };

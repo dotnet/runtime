@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
                 _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
                 _mapEnumerator.Reset();
 
-                // Reseting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
+                // Resetting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
                 _bucketEnumerator.Dispose();
                 _bucketEnumerator = default(HashBucket.Enumerator);
             }
@@ -124,7 +124,7 @@ namespace System.Collections.Immutable
             {
                 if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
                 {
-                    throw new InvalidOperationException(Strings.CollectionModifiedDuringEnumeration);
+                    throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                 }
             }
         }

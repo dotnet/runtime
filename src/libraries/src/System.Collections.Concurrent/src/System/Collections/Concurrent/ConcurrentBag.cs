@@ -10,7 +10,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -35,7 +34,6 @@ namespace System.Collections.Concurrent
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
-    [ComVisible(false)]
     [DebuggerTypeProxy(typeof(IProducerConsumerCollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class ConcurrentBag<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
@@ -78,7 +76,7 @@ namespace System.Collections.Concurrent
 
 
         /// <summary>
-        /// Local helper function to initalize a new bag object
+        /// Local helper function to initialize a new bag object
         /// </summary>
         /// <param name="collection">An enumeration containing items with which to initialize this bag.</param>
         private void Initialize(IEnumerable<T> collection)
@@ -307,7 +305,7 @@ namespace System.Collections.Concurrent
         private ThreadLocalList GetUnownedList()
         {
             //the global lock must be held at this point
-            Contract.Assert(Monitor.IsEntered(GlobalListsLock));
+            Debug.Assert(Monitor.IsEntered(GlobalListsLock));
 
             int currentThreadId = Environment.CurrentManagedThreadId;
             ThreadLocalList currentList = _headList;
@@ -674,7 +672,7 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                Contract.Assert(_locals != null);
+                Debug.Assert(_locals != null);
                 return _locals;
             }
         }
@@ -691,7 +689,7 @@ namespace System.Collections.Concurrent
         /// <param name="lockTaken">Retrieve the lock taken result for the global lock, to be passed to Unfreeze method</param>
         private void FreezeBag(ref bool lockTaken)
         {
-            Contract.Assert(!Monitor.IsEntered(GlobalListsLock));
+            Debug.Assert(!Monitor.IsEntered(GlobalListsLock));
 
             // global lock to be safe against multi threads calls count and corrupt _needSync
             Monitor.Enter(GlobalListsLock, ref lockTaken);
@@ -725,13 +723,13 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void AcquireAllLocks()
         {
-            Contract.Assert(Monitor.IsEntered(GlobalListsLock));
+            Debug.Assert(Monitor.IsEntered(GlobalListsLock));
 
             bool lockTaken = false;
             ThreadLocalList currentList = _headList;
             while (currentList != null)
             {
-                // Try/Finally bllock to avoid thread aport between acquiring the lock and setting the taken flag
+                // Try/Finally block to avoid thread abort between acquiring the lock and setting the taken flag
                 try
                 {
                     Monitor.Enter(currentList, ref lockTaken);
@@ -770,7 +768,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void WaitAllOperations()
         {
-            Contract.Assert(Monitor.IsEntered(GlobalListsLock));
+            Debug.Assert(Monitor.IsEntered(GlobalListsLock));
 
             ThreadLocalList currentList = _headList;
             while (currentList != null)
@@ -793,7 +791,7 @@ namespace System.Collections.Concurrent
         /// <returns>The current bag count</returns>
         private int GetCountInternal()
         {
-            Contract.Assert(Monitor.IsEntered(GlobalListsLock));
+            Debug.Assert(Monitor.IsEntered(GlobalListsLock));
 
             int count = 0;
             ThreadLocalList currentList = _headList;
@@ -815,7 +813,7 @@ namespace System.Collections.Concurrent
         /// <returns>List the contains the bag items</returns>
         private List<T> ToList()
         {
-            Contract.Assert(Monitor.IsEntered(GlobalListsLock));
+            Debug.Assert(Monitor.IsEntered(GlobalListsLock));
 
             List<T> list = new List<T>();
             ThreadLocalList currentList = _headList;
@@ -866,7 +864,7 @@ namespace System.Collections.Concurrent
             // The current list operation
             internal volatile int _currentOp;
 
-            // The list count from the Add/Take prespective
+            // The list count from the Add/Take perspective
             private int _count;
 
             // The stealing count

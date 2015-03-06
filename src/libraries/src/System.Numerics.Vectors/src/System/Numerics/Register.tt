@@ -5,7 +5,7 @@
 <#@ import namespace="System" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Runtime.InteropServices" #>
-<#@ import namespace="System.Diagnostics.Contracts" #>
+<#@ import namespace="System.Diagnostics" #>
 <#@ include file="GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
 
 using System.Runtime.InteropServices;
@@ -24,7 +24,7 @@ namespace System.Numerics
 <#
     foreach (var type in supportedTypes)
     {
-        Contract.Assert(
+        Debug.Assert(
             totalSize % Marshal.SizeOf(type) == 0,
             "The size of supported structs must be a factor of the supported register size.");    
 #>

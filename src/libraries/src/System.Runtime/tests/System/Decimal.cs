@@ -489,8 +489,8 @@ public static class DecimalTests
         // Boolean Decimal.TryParse(String, NumberStyles, IFormatProvider, Decimal)
         Assert.Equal(123, Decimal.Parse("123"));
         Assert.Equal(-123, Decimal.Parse("-123"));
-        Assert.Equal(123.123m, Decimal.Parse("123.123"));
-        Assert.Equal(-123.123m, Decimal.Parse("-123.123"));
+        Assert.Equal(123.123m, Decimal.Parse((123.123).ToString()));
+        Assert.Equal(-123.123m, Decimal.Parse((-123.123).ToString()));
 
         Decimal d;
         Assert.True(Decimal.TryParse("79228162514264337593543950335", out d));
@@ -499,7 +499,8 @@ public static class DecimalTests
         Assert.True(Decimal.TryParse("-79228162514264337593543950335", out d));
         Assert.Equal(Decimal.MinValue, d);
 
-        Assert.True(Decimal.TryParse("79,228,162,514,264,337,593,543,950,335", NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out d));
+        var nfi = new NumberFormatInfo() { NumberGroupSeparator = "," };
+        Assert.True(Decimal.TryParse("79,228,162,514,264,337,593,543,950,335", NumberStyles.AllowThousands, nfi, out d));
         Assert.Equal(Decimal.MaxValue, d);
 
         Assert.False(Decimal.TryParse("ysaidufljasdf", out d));
@@ -801,10 +802,10 @@ public static class DecimalTests
     {
         // String Decimal.ToString()
         Decimal d1 = 6310.23m;
-        Assert.Equal("6310.23", d1.ToString());
+        Assert.Equal(string.Format("{0}", 6310.23), d1.ToString());
 
         Decimal d2 = -8249.000003m;
-        Assert.Equal("-8249.000003", d2.ToString());
+        Assert.Equal(string.Format("{0}", -8249.000003), d2.ToString());
 
         Assert.Equal("79228162514264337593543950335", Decimal.MaxValue.ToString());
         Assert.Equal("-79228162514264337593543950335", Decimal.MinValue.ToString());
@@ -855,7 +856,8 @@ public static class DecimalTests
     {
         Decimal dE = 1234567890123456789012345.6785m;
         string s1 = "1234567890123456789012345.678456";
-        Decimal d1 = Decimal.Parse(s1);
+        var nfi = new NumberFormatInfo() { NumberDecimalSeparator = "." };
+        Decimal d1 = Decimal.Parse(s1, nfi);
         Assert.Equal(d1, dE);
         return;
     }

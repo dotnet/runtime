@@ -9,7 +9,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Linq.Parallel
 {
@@ -28,7 +28,7 @@ namespace System.Linq.Parallel
 
         internal EnumerableWrapperWeakToStrong(IEnumerable wrappedEnumerable)
         {
-            Contract.Assert(wrappedEnumerable != null);
+            Debug.Assert(wrappedEnumerable != null);
             _wrappedEnumerable = wrappedEnumerable;
         }
 
@@ -56,7 +56,7 @@ namespace System.Linq.Parallel
 
             internal WrapperEnumeratorWeakToStrong(IEnumerator wrappedEnumerator)
             {
-                Contract.Assert(wrappedEnumerator != null);
+                Debug.Assert(wrappedEnumerator != null);
                 _wrappedEnumerator = wrappedEnumerator;
             }
 

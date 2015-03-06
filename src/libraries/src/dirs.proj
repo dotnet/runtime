@@ -1,42 +1,20 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="RestoreAllPackages;VerifyBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
-
-  <Target Name="VerifyBuildTools" 
-    Inputs="$(BuildToolsTargetInputs)"
-    Outputs="$(BuildToolsTargetOutputs)"
-    >
-    <Error Condition="!Exists('$(BuildToolsInstallSemaphore)')" 
-      Text="The build tools have not been installed. Please run build.cmd from the root of the repo at least once to get the tools installed." />
-
-    <!-- If we enter this target at all then the inputs are newer then the outputs so give a warning. -->
-    <Warning Text="Looks like there may be an update to the build tools. Please run build.cmd from the root of the repo to refresh the build tools." /> 
-  </Target>
+  <Import Project="BuildValues.props" />
 
   <ItemGroup>
-    <!-- Include test runtime when restoring packages in EnsureDependencies -->
-    <PackageConfigs Include="$(ToolsDir)test-runtime\packages.config" />
+    <Project Include="*\src\*.csproj" Exclude="$(ExcludeProjects)" />
+    <Project Include="*\tests\**\*.csproj" Exclude="$(ExcludeProjects)" />
   </ItemGroup>
-  
-  <Import Project="$(ToolsDir)depending.targets" Condition="Exists('$(ToolsDir)depending.targets')" />
-  <Target Name="RestoreAllPackages">
-    <Message Importance="High" Text="Restoring all package dependencies..." />
-    <CallTarget Targets="EnsureDependencies" />
-  </Target>
 
-  <ItemGroup>
-    <Project Include="*\src\*.csproj" />
-    <Project Include="*\tests\**\*.csproj" />
-  </ItemGroup>
+  <Import Project="..\dir.targets" />
 
   <Import Project="..\dir.traversal.targets" />
-  
-  <PropertyGroup>
-    <!-- Explicity set the OutDir as it is used by the packaging targets -->
-    <OutDir>$(BaseOutputPathWithConfig)</OutDir>
-  </PropertyGroup>
-  
-  <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets')" />
-  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets')">
+
+  <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
+  <Import Project="$(ToolsDir)UpdateBuildValues.targets" Condition="Exists('$(ToolsDir)UpdateBuildValues.targets')" />
+
+  <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'">
     <TraversalBuildDependsOn>
       $(TraversalBuildDependsOn);
       BuildPackages;

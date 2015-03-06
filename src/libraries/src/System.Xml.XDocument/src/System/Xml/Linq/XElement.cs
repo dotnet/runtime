@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Xml.Serialization;
+using System.Xml.Schema;
 
 using CultureInfo = System.Globalization.CultureInfo;
 using IEnumerable = System.Collections.IEnumerable;
@@ -25,7 +27,7 @@ namespace System.Xml.Linq
     ///     <item><see cref="XProcessingInstruction"/></item>
     ///   </list>
     /// </remarks>
-    public class XElement : XContainer
+    public class XElement : XContainer, IXmlSerializable
     {
         private static IEnumerable<XElement> s_emptySequence;
 
@@ -1587,6 +1589,41 @@ namespace System.Xml.Linq
         {
             if (element == null) return null;
             return XmlConvert.ToGuid(element.Value);
+        }
+
+        /// <summary>
+        /// This method is obsolete for the IXmlSerializable contract.
+        /// </summary>
+        XmlSchema IXmlSerializable.GetSchema()
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Generates a <see cref="XElement"/> from its XML respresentation.
+        /// </summary>
+        /// <param name="reader">
+        /// The <see cref="XmlReader"/> stream from which the <see cref="XElement"/>
+        /// is deserialized.
+        /// </param>
+        void IXmlSerializable.ReadXml(XmlReader reader)
+        {
+            if (reader == null) throw new ArgumentNullException("reader");
+            if (parent != null || annotations != null || content != null || lastAttr != null) throw new InvalidOperationException(SR.InvalidOperation_DeserializeInstance);
+            if (reader.MoveToContent() != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
+            ReadElementFrom(reader, LoadOptions.None);
+        }
+
+        /// <summary>
+        /// Converts a <see cref="XElement"/> into its XML representation.
+        /// </summary>
+        /// <param name="writer">
+        /// The <see cref="XmlWriter"/> stream to which the <see cref="XElement"/>
+        /// is serialized.
+        /// </param>
+        void IXmlSerializable.WriteXml(XmlWriter writer)
+        {
+            WriteTo(writer);
         }
 
         internal override void AddAttribute(XAttribute a)

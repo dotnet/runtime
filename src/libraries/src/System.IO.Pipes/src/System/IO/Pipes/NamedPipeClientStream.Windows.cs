@@ -16,22 +16,12 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class NamedPipeClientStream : PipeStream
     {
-        private static string GetPipePath(string serverName, string pipeName)
-        {
-            string normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);
-            if (String.Equals(normalizedPipePath, @"\\.\pipe\anonymous", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentOutOfRangeException("pipeName", SR.ArgumentOutOfRange_AnonymousReserved);
-            }
-            return normalizedPipePath;
-        }
-
         // Waits for a pipe instance to become available. This method may return before WaitForConnection is called
         // on the server end, but WaitForConnection will not return until we have returned.  Any data writen to the
         // pipe by us after we have connected but before the server has called WaitForConnection will be available
         // to the server after it calls WaitForConnection. 
         [SecurityCritical]
-        private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
+        private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
             Interop.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
 
@@ -42,100 +32,67 @@ namespace System.IO.Pipes
                 _pipeFlags |= (((int)_impersonationLevel - 1) << 16);
             }
 
-            // This is the main connection loop. It will loop until the timeout expires.  Most of the 
-            // time, we will be waiting in the WaitNamedPipe win32 blocking function; however, there are
-            // cases when we will need to loop: 1) The server is not created (WaitNamedPipe returns 
-            // straight away in such cases), and 2) when another client connects to our server in between 
-            // our WaitNamedPipe and CreateFile calls.
-            int elapsed = 0;
-            do
+            if (!Interop.mincore.WaitNamedPipe(_normalizedPipePath, timeout))
             {
-                // We want any other exception and and success to have priority over cancellation.
-                cancellationToken.ThrowIfCancellationRequested();
+                int errorCode = Marshal.GetLastWin32Error();
 
-                // Wait for pipe to become free (this will block unless the pipe does not exist).
-                int timeLeft = timeout - elapsed;
-                int waitTime;
-                if (cancellationToken.CanBeCanceled)
+                // Server is not yet created
+                if (errorCode == Interop.ERROR_FILE_NOT_FOUND)
                 {
-                    waitTime = Math.Min(CancellationCheckInterval, timeLeft);
-                }
-                else
-                {
-                    waitTime = timeLeft;
+                    return false;
                 }
 
-                if (!Interop.mincore.WaitNamedPipe(_normalizedPipePath, waitTime))
+                // The timeout has expired.
+                if (errorCode == Interop.ERROR_SUCCESS)
                 {
-                    int errorCode = Marshal.GetLastWin32Error();
-
-                    // Server is not yet created so let's keep looping.
-                    if (errorCode == Interop.ERROR_FILE_NOT_FOUND)
+                    if (cancellationToken.CanBeCanceled)
                     {
-                        continue;
+                        // It may not be real timeout.
+                        return false;
                     }
-
-                    // The timeout has expired.
-                    if (errorCode == Interop.ERROR_SUCCESS)
-                    {
-                        if (cancellationToken.CanBeCanceled)
-                        {
-                            // It may not be real timeout and only checking for cancellation
-                            // let the while condition check it and decide
-                            continue;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    throw new TimeoutException();
                 }
 
-                // Pipe server should be free.  Let's try to connect to it.
-                int access = 0;
-                if ((PipeDirection.In & _direction) != 0)
-                {
-                    access |= Interop.GENERIC_READ;
-                }
-                if ((PipeDirection.Out & _direction) != 0)
-                {
-                    access |= Interop.GENERIC_WRITE;
-                }
-                SafePipeHandle handle = Interop.mincore.CreateNamedPipeClient(_normalizedPipePath,
-                                            access,           // read and write access
-                                            0,                  // sharing: none
-                                            ref secAttrs,           // security attributes
-                                            FileMode.Open,      // open existing 
-                                            _pipeFlags,         // impersonation flags
-                                            Interop.NULL);  // template file: null
-
-                if (handle.IsInvalid)
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-
-                    // Handle the possible race condition of someone else connecting to the server 
-                    // between our calls to WaitNamedPipe & CreateFile.
-                    if (errorCode == Interop.ERROR_PIPE_BUSY)
-                    {
-                        continue;
-                    }
-
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                }
-
-                // Success! 
-                InitializeHandle(handle, false, (_pipeOptions & PipeOptions.Asynchronous) != 0);
-                State = PipeState.Connected;
-
-                return;
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
-            while (timeout == Timeout.Infinite || (elapsed = unchecked(Environment.TickCount - startTime)) < timeout);
-            // BUGBUG: SerialPort does not use unchecked arithmetic when calculating elapsed times.  This is needed
-            //         because Environment.TickCount can overflow (though only every 49.7 days).
 
-            throw new TimeoutException();
+            // Pipe server should be free.  Let's try to connect to it.
+            int access = 0;
+            if ((PipeDirection.In & _direction) != 0)
+            {
+                access |= Interop.GENERIC_READ;
+            }
+            if ((PipeDirection.Out & _direction) != 0)
+            {
+                access |= Interop.GENERIC_WRITE;
+            }
+            SafePipeHandle handle = Interop.mincore.CreateNamedPipeClient(_normalizedPipePath,
+                                        access,           // read and write access
+                                        0,                  // sharing: none
+                                        ref secAttrs,           // security attributes
+                                        FileMode.Open,      // open existing 
+                                        _pipeFlags,         // impersonation flags
+                                        Interop.NULL);  // template file: null
+
+            if (handle.IsInvalid)
+            {
+                int errorCode = Marshal.GetLastWin32Error();
+
+                // Handle the possible race condition of someone else connecting to the server 
+                // between our calls to WaitNamedPipe & CreateFile.
+                if (errorCode == Interop.ERROR_PIPE_BUSY)
+                {
+                    return false;
+                }
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
+
+            // Success! 
+            InitializeHandle(handle, false, (_pipeOptions & PipeOptions.Asynchronous) != 0);
+            State = PipeState.Connected;
+
+            return true;
         }
 
         public int NumberOfServerInstances
@@ -161,6 +118,10 @@ namespace System.IO.Pipes
                 return numInstances;
             }
         }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
 
     }
 }

@@ -26,5 +26,24 @@ namespace Test
             Assert.Null(iServiceProvider);
 #pragma warning restore 0219
         }
+
+        [Fact]
+        public static void TestCancelEventArgs()
+        {
+            // Verify the ctor parameter is passed through to Cancel
+            Assert.False(new CancelEventArgs().Cancel);
+            Assert.False(new CancelEventArgs(false).Cancel);
+            Assert.True(new CancelEventArgs(true).Cancel);
+
+            // Verify updates to Cancel stick
+            var ce = new CancelEventArgs();
+            for (int i = 0; i < 2; i++)
+            {
+                ce.Cancel = false;
+                Assert.False(ce.Cancel);
+                ce.Cancel = true;
+                Assert.True(ce.Cancel);
+            }
+        }
     }
 }

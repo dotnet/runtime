@@ -1,5 +1,110 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -12,23 +117,98 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BadMaxWorkset" xml:space="preserve">
-    <value>Maximum working set size is invalid. It must be greater than or equal to the minimum working set size.</value>
+  <data name="PriorityClassNotSupported" xml:space="preserve">
+    <value>The AboveNormal and BelowNormal priority classes are not available on this platform.</value>
+  </data>
+  <data name="NoAssociatedProcess" xml:space="preserve">
+    <value>No process is associated with this object.</value>
+  </data>
+  <data name="ProcessIdRequired" xml:space="preserve">
+    <value>Feature requires a process identifier.</value>
+  </data>
+  <data name="NotSupportedRemote" xml:space="preserve">
+    <value>Feature is not supported for remote machines.</value>
+  </data>
+  <data name="NoProcessInfo" xml:space="preserve">
+    <value>Process has exited, so the requested information is not available.</value>
+  </data>
+  <data name="WaitTillExit" xml:space="preserve">
+    <value>Process must exit before requested information can be determined.</value>
+  </data>
+  <data name="NoProcessHandle" xml:space="preserve">
+    <value>Process was not started by this object, so requested information cannot be determined.</value>
+  </data>
+  <data name="MissingProccess" xml:space="preserve">
+    <value>Process with an Id of {0} is not running.</value>
   </data>
   <data name="BadMinWorkset" xml:space="preserve">
     <value>Minimum working set size is invalid. It must be less than or equal to the maximum working set size.</value>
   </data>
+  <data name="BadMaxWorkset" xml:space="preserve">
+    <value>Maximum working set size is invalid. It must be greater than or equal to the minimum working set size.</value>
+  </data>
+  <data name="ProcessHasExited" xml:space="preserve">
+    <value>Cannot process request because the process ({0}) has exited.</value>
+  </data>
+  <data name="ProcessHasExitedNoId" xml:space="preserve">
+    <value>Cannot process request because the process has exited.</value>
+  </data>
+  <data name="ThreadExited" xml:space="preserve">
+    <value>The request cannot be processed because the thread ({0}) has exited.</value>
+  </data>
+  <data name="ProcessNotFound" xml:space="preserve">
+    <value>Thread {0} found, but no process {1} found.</value>
+  </data>
   <data name="CantGetProcessId" xml:space="preserve">
     <value>Cannot retrieve process identifier from the process handle.</value>
   </data>
-  <data name="CantGetStandardError" xml:space="preserve">
-    <value>StandardError has not been redirected.</value>
+  <data name="ProcessDisabled" xml:space="preserve">
+    <value>Process performance counter is disabled, so the requested operation cannot be performed.</value>
+  </data>
+  <data name="WaitReasonUnavailable" xml:space="preserve">
+    <value>WaitReason is only available if the ThreadState is Wait.</value>
+  </data>
+  <data name="NotSupportedRemoteThread" xml:space="preserve">
+    <value>Feature is not supported for threads on remote computers.</value>
+  </data>
+  <data name="CouldntConnectToRemoteMachine" xml:space="preserve">
+    <value>Couldn't connect to remote machine.</value>
+  </data>
+  <data name="CouldntGetProcessInfos" xml:space="preserve">
+    <value>Couldn't get process information from performance counter.</value>
+  </data>
+  <data name="InputIdleUnkownError" xml:space="preserve">
+    <value>WaitForInputIdle failed.  This could be because the process does not have a graphical interface.</value>
+  </data>
+  <data name="FileNameMissing" xml:space="preserve">
+    <value>Cannot start process because a file name has not been provided.</value>
+  </data>
+  <data name="EnumProcessModuleFailed" xml:space="preserve">
+    <value>Unable to enumerate the process modules.</value>
+  </data>
+  <data name="EnumProcessModuleFailedDueToWow" xml:space="preserve">
+    <value>A 32 bit processes cannot access modules of a 64 bit process.</value>
+  </data>
+  <data name="NoAsyncOperation" xml:space="preserve">
+    <value>No async read operation is in progress on the stream.</value>
+  </data>
+  <data name="InvalidApplication" xml:space="preserve">
+    <value>The specified executable is not a valid application for this OS platform.</value>
+  </data>
+  <data name="StandardOutputEncodingNotAllowed" xml:space="preserve">
+    <value>StandardOutputEncoding is only supported when standard output is redirected.</value>
+  </data>
+  <data name="StandardErrorEncodingNotAllowed" xml:space="preserve">
+    <value>StandardErrorEncoding is only supported when standard error is redirected.</value>
+  </data>
+  <data name="CantGetStandardOut" xml:space="preserve">
+    <value>StandardOut has not been redirected or the process hasn't started yet.</value>
   </data>
   <data name="CantGetStandardIn" xml:space="preserve">
     <value>StandardIn has not been redirected.</value>
   </data>
-  <data name="CantGetStandardOut" xml:space="preserve">
-    <value>StandardOut has not been redirected or the process hasn't started yet.</value>
+  <data name="CantGetStandardError" xml:space="preserve">
+    <value>StandardError has not been redirected.</value>
   </data>
   <data name="CantMixSyncAsyncOperation" xml:space="preserve">
     <value> Cannot mix synchronous and asynchronous operation on process stream.</value>
@@ -39,103 +219,28 @@
   <data name="CantUseEnvVars" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to use environment variables.</value>
   </data>
-  <data name="CategoryHelpCorrupt" xml:space="preserve">
-    <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry.</value>
-  </data>
-  <data name="CouldntConnectToRemoteMachine" xml:space="preserve">
-    <value>Couldn't connect to remote machine.</value>
-  </data>
-  <data name="CouldntGetProcessInfos" xml:space="preserve">
-    <value>Couldn't get process information from performance counter.</value>
-  </data>
-  <data name="CounterDataCorrupt" xml:space="preserve">
-    <value>Cannot load Performance Counter data because an unexpected registry key value type was read from '{0}'.</value>
-  </data>
-  <data name="CounterNameCorrupt" xml:space="preserve">
-    <value>Cannot load Counter Name data because an invalid index '{0}' was read from the registry.</value>
-  </data>
-  <data name="EnumProcessModuleFailed" xml:space="preserve">
-    <value>Unable to enumerate the process modules.</value>
-  </data>
-  <data name="EnumProcessModuleFailedDueToWow" xml:space="preserve">
-    <value>A 32 bit processes cannot access modules of a 64 bit process.</value>
-  </data>
   <data name="EnvironmentBlockTooLong" xml:space="preserve">
     <value>The environment block used to start a process cannot be longer than 65535 bytes.  Your environment block is {0} bytes long.  Remove some environment variables and try again.</value>
-  </data>
-  <data name="FileNameMissing" xml:space="preserve">
-    <value>Cannot start process because a file name has not been provided.</value>
-  </data>
-  <data name="InputIdleUnkownError" xml:space="preserve">
-    <value>WaitForInputIdle failed.  This could be because the process does not have a graphical interface.</value>
-  </data>
-  <data name="InvalidApplication" xml:space="preserve">
-    <value>The specified executable is not a valid application for this OS platform.</value>
-  </data>
-  <data name="InvalidEnumArgument" xml:space="preserve">
-    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
-  </data>
-  <data name="InvalidParameter" xml:space="preserve">
-    <value>Invalid value '{1}' for parameter '{0}'.</value>
-  </data>
-  <data name="MissingProccess" xml:space="preserve">
-    <value>Process with an Id of {0} is not running.</value>
-  </data>
-  <data name="NoAssociatedProcess" xml:space="preserve">
-    <value>No process is associated with this object.</value>
-  </data>
-  <data name="NoAsyncOperation" xml:space="preserve">
-    <value>No async read operation is in progress on the stream.</value>
-  </data>
-  <data name="NoProcessHandle" xml:space="preserve">
-    <value>Process was not started by this object, so requested information cannot be determined.</value>
-  </data>
-  <data name="NoProcessInfo" xml:space="preserve">
-    <value>Process has exited, so the requested information is not available.</value>
-  </data>
-  <data name="NotSupportedRemote" xml:space="preserve">
-    <value>Feature is not supported for remote machines.</value>
-  </data>
-  <data name="NotSupportedRemoteThread" xml:space="preserve">
-    <value>Feature is not supported for threads on remote computers.</value>
   </data>
   <data name="PendingAsyncOperation" xml:space="preserve">
     <value>An async read operation has already been started on the stream.</value>
   </data>
-  <data name="PriorityClassNotSupported" xml:space="preserve">
-    <value>The AboveNormal and BelowNormal priority classes are not available on this platform.</value>
-  </data>
-  <data name="ProcessDisabled" xml:space="preserve">
-    <value>Process performance counter is disabled, so the requested operation cannot be performed.</value>
-  </data>
-  <data name="ProcessHasExited" xml:space="preserve">
-    <value>Cannot process request because the process ({0}) has exited.</value>
-  </data>
-  <data name="ProcessHasExitedNoId" xml:space="preserve">
-    <value>Cannot process request because the process has exited.</value>
-  </data>
-  <data name="ProcessIdRequired" xml:space="preserve">
-    <value>Feature requires a process identifier.</value>
-  </data>
-  <data name="ProcessNotFound" xml:space="preserve">
-    <value>Thread {0} found, but no process {1} found.</value>
-  </data>
-  <data name="StandardErrorEncodingNotAllowed" xml:space="preserve">
-    <value>StandardErrorEncoding is only supported when standard error is redirected.</value>
-  </data>
-  <data name="StandardOutputEncodingNotAllowed" xml:space="preserve">
-    <value>StandardOutputEncoding is only supported when standard output is redirected.</value>
-  </data>
-  <data name="ThreadExited" xml:space="preserve">
-    <value>The request cannot be processed because the thread ({0}) has exited.</value>
-  </data>
   <data name="UseShellExecute" xml:space="preserve">
     <value> UseShellExecute must always be set to false.</value>
   </data>
-  <data name="WaitReasonUnavailable" xml:space="preserve">
-    <value>WaitReason is only available if the ThreadState is Wait.</value>
+  <data name="InvalidParameter" xml:space="preserve">
+    <value>Invalid value '{1}' for parameter '{0}'.</value>
   </data>
-  <data name="WaitTillExit" xml:space="preserve">
-    <value>Process must exit before requested information can be determined.</value>
+  <data name="InvalidEnumArgument" xml:space="preserve">
+    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
+  </data>
+  <data name="CategoryHelpCorrupt" xml:space="preserve">
+    <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry.</value>
+  </data>
+  <data name="CounterNameCorrupt" xml:space="preserve">
+    <value>Cannot load Counter Name data because an invalid index '{0}' was read from the registry.</value>
+  </data>
+  <data name="CounterDataCorrupt" xml:space="preserve">
+    <value>Cannot load Performance Counter data because an unexpected registry key value type was read from '{0}'.</value>
   </data>
 </root>
