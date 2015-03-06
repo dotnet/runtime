@@ -38,8 +38,6 @@
 #include "../../vm/excep.h"
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
 #include "dbgtransportsession.h"
-#include "dbgtransportproxy.h"
-#include "dbgsecureconnection.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
 
@@ -1729,11 +1727,7 @@ void Debugger::RaiseStartupNotification()
     // listening, and we will fail.  However, we still want to initialize the variable above.
     BOOL fRaiseStartupNotification = TRUE;
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-    if(useTransport)
-    {
-        fRaiseStartupNotification = (CORDebuggerAttached() ? TRUE : FALSE);
-    }
+    fRaiseStartupNotification = (CORDebuggerAttached() ? TRUE : FALSE);
 #endif
     if (fRaiseStartupNotification)
     {
@@ -1766,67 +1760,58 @@ void Debugger::RaiseStartupNotification()
 void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
 {
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-    if(useTransport)
+    HRESULT hr = g_pDbgTransport->SendDebugEvent(const_cast<DebuggerIPCEvent *>(pManagedEvent));
+
+    if (FAILED(hr))
     {
-        HRESULT hr = g_pDbgTransport->SendDebugEvent(const_cast<DebuggerIPCEvent *>(pManagedEvent));
+        _ASSERTE(!"Failed to send debugger event");
 
-        if (FAILED(hr))
-        {
-            _ASSERTE(!"Failed to send debugger event");
+        STRESS_LOG1(LF_CORDB, LL_INFO1000, "D::SendIPCEvent Error on Send with 0x%x\n", hr);
+        UnrecoverableError(hr,
+            0,
+            FILE_DEBUG,
+            LINE_DEBUG,
+            false);
 
-            STRESS_LOG1(LF_CORDB, LL_INFO1000, "D::SendIPCEvent Error on Send with 0x%x\n", hr);
-            UnrecoverableError(hr,
-                0,
-                FILE_DEBUG,
-                LINE_DEBUG,
-                false);
-
-            // @dbgtodo  Mac - what can we do here?
-        }
+        // @dbgtodo  Mac - what can we do here?
     }
-    else
+#else
+    // We get to send an array of ULONG_PTRs as data with the notification.
+    // The debugger can then use ReadProcessMemory to read through this array.
+    ULONG_PTR rgData [] = {
+        CLRDBG_EXCEPTION_DATA_CHECKSUM, 
+        (ULONG_PTR) g_pMSCorEE, 
+        (ULONG_PTR) pManagedEvent
+    };
+
+    // If no debugger attached, then don't bother raising a 1st-chance exception because nobody will sniff it.
+    // @dbgtodo iDNA: in iDNA case, the recorder may sniff it. 
+    if (!IsDebuggerPresent())
     {
-#endif
-        // We get to send an array of ULONG_PTRs as data with the notification.
-        // The debugger can then use ReadProcessMemory to read through this array.
-        ULONG_PTR rgData [] = {
-            CLRDBG_EXCEPTION_DATA_CHECKSUM, 
-            (ULONG_PTR) g_pMSCorEE, 
-            (ULONG_PTR) pManagedEvent
-        };
-
-        // If no debugger attached, then don't bother raising a 1st-chance exception because nobody will sniff it.
-        // @dbgtodo iDNA: in iDNA case, the recorder may sniff it. 
-        if (!IsDebuggerPresent())
-        {
-            return;
-        }
-    
-        //
-        // Physically send the event via an OS Exception. We're using exceptions as a notification
-        // mechanism on top of the OS native debugging pipeline.
-        // @dbgtodo  cross-plat - this needs to be cross-plat.
-        //
-        EX_TRY
-        {
-            const DWORD dwFlags = 0; // continuable (eg, Debugger can continue GH)
-            RaiseException(CLRDBG_NOTIFICATION_EXCEPTION_CODE, dwFlags, NumItems(rgData), rgData);
-
-            // If debugger continues "GH" (DBG_CONTINUE), then we land here. 
-            // This is the expected path for a well-behaved ICorDebug debugger.
-        }
-        EX_CATCH
-        {
-            // If no debugger is attached, or if the debugger continues "GN" (DBG_EXCEPTION_NOT_HANDLED), then we land here.
-            // A naive (not-ICorDebug aware) native-debugger won't handle the exception and so land us here.
-            // We may also get here if a debugger detaches at the Exception notification 
-            // (and thus implicitly continues GN).
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-
-#ifdef  FEATURE_DBGIPC_TRANSPORT_VM
+        return;
     }
+
+    //
+    // Physically send the event via an OS Exception. We're using exceptions as a notification
+    // mechanism on top of the OS native debugging pipeline.
+    // @dbgtodo  cross-plat - this needs to be cross-plat.
+    //
+    EX_TRY
+    {
+        const DWORD dwFlags = 0; // continuable (eg, Debugger can continue GH)
+        RaiseException(CLRDBG_NOTIFICATION_EXCEPTION_CODE, dwFlags, NumItems(rgData), rgData);
+
+        // If debugger continues "GH" (DBG_CONTINUE), then we land here. 
+        // This is the expected path for a well-behaved ICorDebug debugger.
+    }
+    EX_CATCH
+    {
+        // If no debugger is attached, or if the debugger continues "GN" (DBG_EXCEPTION_NOT_HANDLED), then we land here.
+        // A naive (not-ICorDebug aware) native-debugger won't handle the exception and so land us here.
+        // We may also get here if a debugger detaches at the Exception notification 
+        // (and thus implicitly continues GN).
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 }
 
@@ -1992,15 +1977,9 @@ HRESULT Debugger::Startup(void)
         // Iff the debug pack is installed, then go through the telesto debugging pipeline.
         LOG((LF_CORDB, LL_INFO10, "Debugging service is enabled because debug pack is installed or Watson support is enabled)\n"));
 
-#ifdef FEATURE_DBGIPC_TRANSPORT_VM
-        DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-        if(!useTransport)
-        {
-#endif
-            // This may block while an attach occurs.
-            NotifyDebuggerOfTelestoStartup();
-#ifdef FEATURE_DBGIPC_TRANSPORT_VM
-        }
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+        // This may block while an attach occurs.
+        NotifyDebuggerOfTelestoStartup();
 #endif
     }
     else
@@ -2102,86 +2081,32 @@ HRESULT Debugger::Startup(void)
     _ASSERTE(SUCCEEDED(hr)); // throws on error
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-    if(useTransport)
-    {
-        // The in-process DAC for Mac is lazily initialized when we get the first DDMessage.
-        // We check whether the DAC and the runtime has matching versions when we do the initialization, and
-        // we'll fail if the versions don't match.  That's why we don't want to do the initialization here because
-        // even if we have the wrong version of DAC, managed apps can still run.  We just can't debug it.
+     // Create transport session and initialize it.
+     g_pDbgTransport = new DbgTransportSession();
+     hr = g_pDbgTransport->Init(m_pRCThread->GetDCB(), m_pAppDomainCB);
+     if (FAILED(hr))
+         ThrowHR(hr);
 
-        // Create transport control block and initialize it.
-        g_pDbgTransport = new DbgTransportSession();
-        hr = g_pDbgTransport->Init(m_pRCThread->GetDCB(), m_pAppDomainCB, &m_inProcDac);
-        if (FAILED(hr))
-            ThrowHR(hr);
+     bool waitForAttach = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgWaitForDebuggerAttach) != 0;
+     if (waitForAttach)
+     {
+         // Mark this process as launched by the debugger and the debugger as attached.
+         g_CORDebuggerControlFlags |= DBCF_GENERATE_DEBUG_CODE;
+         MarkDebuggerAttachedInternal();
 
-        // Create interface to talk to debugger proxy and initialize it.
-        DbgTransportProxy *pProxy = new DbgTransportProxy();
-        hr = pProxy->Init(g_pDbgTransport->GetPort());
-        if (FAILED(hr))
-            ThrowHR(hr);
-
-        // Contact the debugger proxy process for this machine. This has several purposes:
-        //  1) Register this runtime instance as available for debugging.
-        //  2) Check whether a debugger is already waiting to attach to us.
-        //  3) Publish the port number we expect debugging requests to target.
-        // The following call blocks until we receive a reply from the proxy or time out.
-        DbgProxyResult result = pProxy->RegisterWithProxy();
-        switch (result)
-        {
-        case RequestTimedOut:
-            // The proxy doesn't appear to be there, we're not debuggable as a result.
-            // To be careful (and avoid malicious types trying to connect to us even when the proxy is not up)
-            // neuter the transport so that it won't accept any connections. Ideally we'd just shutdown the
-            // debugger subsystem entirely, but this appears to be somewhat complex at this late stage.
-            g_pDbgTransport->Neuter();
-            break;
-        case RequestSuccessful:
-            // We registered with the proxy successfully. No debugger was interested in
-            // us just yet.
-            break;
-        case PendingDebuggerAttach:
-            // We registered with the proxy and found that a debugger was registered for
-            // an early attach.
-
-            // Mark this process as launched by the debugger and the debugger as attached.
-            g_CORDebuggerControlFlags |= DBCF_GENERATE_DEBUG_CODE;
-            MarkDebuggerAttachedInternal();
-
-            LazyInit();
-            DebuggerController::Initialize();
-            break;
-        default:
-            _ASSERTE(!"Unknown result code from DbgTransportSession::RegisterWithProxy()");
-        }
-
-        // The debugger no longer needs to talk with the proxy.
-        pProxy->Shutdown();
-        delete pProxy;
-    }
+         LazyInit();
+         DebuggerController::Initialize();
+     }
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
     RaiseStartupNotification();
     
     // Also initialize the AppDomainEnumerationIPCBlock
-#if defined(FEATURE_IPCMAN)
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-    if(useTransport)
-    {
-        m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
-    }
-    else
-    {
-#endif
-        m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    }
-#endif
-#else  // FEATURE_IPCMAN
+#if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
     m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
-#endif // FEATURE_IPCMAN
+#else
+    m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
+#endif 
 
     if (m_pAppDomainCB == NULL)
     {
@@ -5551,19 +5476,13 @@ void Debugger::TrapAllRuntimeThreads()
     }
     CONTRACTL_END;
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-    if(!useTransport)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+    // Only sync if RS requested it. 
+    if (!m_RSRequestedSync)
     {
-#endif
-        // Only sync if RS requested it. 
-        if (!m_RSRequestedSync)
-        {
-            return;
-        }
-        m_RSRequestedSync = FALSE;
-#ifdef FEATURE_DBGIPC_TRANSPORT_VM
+        return;
     }
+    m_RSRequestedSync = FALSE;
 #endif
 
     // If we're doing shutdown, then don't bother trying to communicate w/ the RS.

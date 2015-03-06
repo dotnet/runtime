@@ -8,7 +8,7 @@ if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&got
 if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
 if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
-if /i "%1" == "EnableAltJit" (set __EnableAltJit=true&set Alt_Jit_Name=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "TestEnv" (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "/?"      (goto Usage)
 
@@ -55,7 +55,7 @@ set Core_Root=%__BinDir%
 if not exist %XunitTestBinBase% echo Error: Ensure the Test Binaries are built and are present at %XunitTestBinBase%, Run - buildtest.cmd %__BuildArch% %__BuildType% to build the tests first. && exit /b 1
 if "%Core_Root%" == ""             echo Error: Ensure you have done a successful build of the Product and Run - runtest BuildArch BuildType {path to product binaries}. && exit /b 1
 if not exist %Core_Root%\coreclr.dll echo Error: Ensure you have done a successful build of the Product and %Core_Root% contains runtime binaries. && exit /b 1
-if defined __EnableAltJit          (if not exist %Core_Root%\%Alt_Jit_Name%.dll echo Error: Ensure alternative JIT %Alt_Jit_Name%.dll exist in %Core_Root%. && exit /b 1) 
+if not "%__TestEnv%"==""           (if not exist %__TestEnv% echo Error: Test Environment script not found && exit /b 1) 
 if not exist %__LogsDir%           md  %__LogsDir%
 
 :SkipDefaultCoreRootSetup
@@ -130,12 +130,12 @@ goto :eof
 :Usage
 echo.
 echo Usage:
-echo %0 BuildArch BuildType [SkipWrapperGeneration] [EnableAltJit ALT_JIT_NAME] CORE_ROOT   where:
+echo %0 BuildArch BuildType [SkipWrapperGeneration] [TestEnv TEST_ENV_SCRIPT] CORE_ROOT   where:
 echo.
 echo BuildArch is x64
 echo BuildType can be: Debug, Release
-echo SkipWrapperGeneration- Optional parameter this will run the same set of tests as the last time it was run
-echo EnableAltJit- Optional parameter this will use alternative JIT specified by ALT_JIT_NAME for testing 
+echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
+echo TestEnv- Optional parameter - this will run a custom script to set custom test envirommnent settings.
 echo CORE_ROOT The path to the runtime  
 goto :eof
 

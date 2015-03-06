@@ -36,9 +36,6 @@
     <SourcesNodac Include="$(Clrbase)\src\Debug\EE\Canary.cpp" />
     <SourcesNodac Include="$(Clrbase)\src\Debug\EE\shared.cpp" />
     <SourcesNodac Include="$(Clrbase)\src\Debug\EE\frameinfo.cpp" />
-    <SourcesNodac Include="$(Clrbase)\src\Debug\EE\InProcDac.cpp" />
-    <SourcesNodac Include="$(Clrbase)\src\Debug\EE\DbgTransportProxy.cpp" />
-    <SourcesNodac Include="$(Clrbase)\src\Debug\EE\ddunpack.cpp" />
   </ItemGroup>
   <ItemGroup>
     <I386Sources Condition="'$(TargetArch)' == 'i386'" Include="$(Clrbase)\src\Debug\EE\i386\x86walker.cpp" />
