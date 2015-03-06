@@ -138,7 +138,7 @@ When a GC is triggered, the GC must first determine which generation to collect.
 
 - Fragmentation of a generation – if a generation has high fragmentation, collecting that generation is likely to be productive.
 - If the memory load on the machine is too high, the GC may collect 
-  more aggressively if that’s likely to yield free space. This is improtant to 
+  more aggressively if that’s likely to yield free space. This is important to 
   prevent unnecessary paging (across the machine).
 - If the ephemeral segment is running out of space, the GC may do more aggressive ephemeral collections (meaning doing more gen1’s) to avoid acquiring a new heap segment.
 
