@@ -25,7 +25,7 @@
           ContinueOnError="ErrorAndContinue" />
           
     <PropertyGroup>
-      <CoverallsUploaderVersion>1.1.86</CoverallsUploaderVersion>
+      <CoverallsUploaderVersion>1.2</CoverallsUploaderVersion>
       <CoverallsUploaderCommandLine>$(PackagesDir)coveralls.io.$(CoverallsUploaderVersion)\tools\coveralls.net.exe</CoverallsUploaderCommandLine>
       <CoverallsUploaderOptions>--opencover $(CoverageReportDir)\*.coverage.xml -t $(CoverallsToken)</CoverallsUploaderOptions>
     </PropertyGroup>
