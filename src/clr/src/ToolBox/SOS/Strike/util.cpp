@@ -3334,7 +3334,7 @@ void DumpMDInfoFromMethodDescData(DacpMethodDescData * pMethodDescData, DacpReJi
 
     if (!fStackTraceFormat)
     {
-        ExtOut("Method Name:  %ls\n", wszNameBuffer);
+        ExtOut("Method Name:  %S\n", wszNameBuffer);
 
         DacpMethodTableData mtdata;
         if (SUCCEEDED(mtdata.Request(g_sos, pMethodDescData->MethodTablePtr)))
@@ -3360,7 +3360,7 @@ void DumpMDInfoFromMethodDescData(DacpMethodDescData * pMethodDescData, DacpReJi
     {
         if (!bFailed)
         {
-            ExtOut("%ls", wszNameBuffer);
+            ExtOut("%S", wszNameBuffer);
         }
         else
         {
