@@ -49,7 +49,6 @@
 #include "dllimportcallback.h"
 
 #include "canary.h"
-#include "inprocdac.h"
 
 #undef ASSERT
 #define CRASH(x)  _ASSERTE(!x)
@@ -836,17 +835,9 @@ private:
     DebuggerIPCEvent * GetRCThreadReceiveBuffer()
     {
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-        DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-        if(useTransport)
-        {
-            return reinterpret_cast<DebuggerIPCEvent *>(&m_receiveBuffer[0]);
-        }
-        else
-        {
-#endif  // FEATURE_DBGIPC_TRANSPORT_VM
-            return reinterpret_cast<DebuggerIPCEvent *>(&m_pDCB->m_receiveBuffer[0]);
-#ifdef FEATURE_DBGIPC_TRANSPORT_VM
-        }
+        return reinterpret_cast<DebuggerIPCEvent *>(&m_receiveBuffer[0]);
+#else
+        return reinterpret_cast<DebuggerIPCEvent *>(&m_pDCB->m_receiveBuffer[0]);
 #endif
     }
 
@@ -855,17 +846,9 @@ private:
     DebuggerIPCEvent * GetRCThreadSendBuffer()
     {
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-        DWORD useTransport = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgUseTransport);
-        if(useTransport)
-        {
-            return reinterpret_cast<DebuggerIPCEvent *>(&m_sendBuffer[0]);
-        }
-        else
-        {
-#endif  // FEATURE_DBGIPC_TRANSPORT_VM
-            return reinterpret_cast<DebuggerIPCEvent *>(&m_pDCB->m_sendBuffer[0]);
-#ifdef FEATURE_DBGIPC_TRANSPORT_VM
-        }
+        return reinterpret_cast<DebuggerIPCEvent *>(&m_sendBuffer[0]);
+#else  // FEATURE_DBGIPC_TRANSPORT_VM
+        return reinterpret_cast<DebuggerIPCEvent *>(&m_pDCB->m_sendBuffer[0]);
 #endif  // FEATURE_DBGIPC_TRANSPORT_VM
     }
 
@@ -2804,11 +2787,6 @@ private:
     DebuggerHeap                 m_executableHeap;
 
     PTR_DebuggerLazyInit         m_pLazyData;
-
-#if defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    InProcDac                    m_inProcDac;
-#endif // FEATURE_DBGIPC_TRANSPORT_VM
-
 
 
     // A list of all defines that affect layout of MD types
