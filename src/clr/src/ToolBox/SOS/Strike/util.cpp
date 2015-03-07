@@ -5231,6 +5231,27 @@ void WhitespaceOut(int count)
         g_ExtControl->Output(DEBUG_OUTPUT_NORMAL, FixedIndentString);
 }
 
+HRESULT 
+OutputVaList(
+    ULONG mask,
+    PCSTR format,
+    va_list args)
+{
+#ifdef FEATURE_PAL
+    char str[1024];
+
+    // Try and format our string into a fixed buffer first and see if it fits
+    int length = PAL__vsnprintf(str, sizeof(str), format, args);
+    if (length > 0)
+    {
+        return g_ExtControl->Output(mask, "%s", str);
+    }
+    return E_FAIL;
+#else
+    return g_ExtControl->OutputVaList(mask, format, args);
+#endif // FEATURE_PAL
+}
+
 void DMLOut(PCSTR format, ...)
 {
     if (Output::IsOutputSuppressed())
@@ -5248,7 +5269,7 @@ void DMLOut(PCSTR format, ...)
     else
 #endif
     {
-        g_ExtControl->OutputVaList(DEBUG_OUTPUT_NORMAL, format, args);
+        OutputVaList(DEBUG_OUTPUT_NORMAL, format, args);
     }
 
     va_end(args);
@@ -5278,7 +5299,7 @@ void ExtOut(PCSTR Format, ...)
     
     va_start(Args, Format);
     ExtOutIndent();
-    g_ExtControl->OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
+    OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
     va_end(Args);
 }
 
@@ -5290,7 +5311,7 @@ void ExtWarn(PCSTR Format, ...)
     va_list Args;
     
     va_start(Args, Format);
-    g_ExtControl->OutputVaList(DEBUG_OUTPUT_WARNING, Format, Args);
+    OutputVaList(DEBUG_OUTPUT_WARNING, Format, Args);
     va_end(Args);
 }
 
@@ -5299,7 +5320,7 @@ void ExtErr(PCSTR Format, ...)
     va_list Args;
     
     va_start(Args, Format);
-    g_ExtControl->OutputVaList(DEBUG_OUTPUT_ERROR, Format, Args);
+    OutputVaList(DEBUG_OUTPUT_ERROR, Format, Args);
     va_end(Args);
 }
 
@@ -5313,7 +5334,7 @@ void ExtDbgOut(PCSTR Format, ...)
     
         va_start(Args, Format);
         ExtOutIndent();
-        g_ExtControl->OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
+        OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
         va_end(Args);
     }
 #endif
