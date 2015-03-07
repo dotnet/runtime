@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using BigIntTools;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -18,7 +16,7 @@ namespace System.Numerics.Tests
         {
             Random random = new Random(s_seed);
 
-            //Just basic tests
+            // Just basic tests
             // Large Even Number
             VerifyIsEven((BigInteger)Int64.MaxValue + 1, true);
 
@@ -54,13 +52,12 @@ namespace System.Numerics.Tests
 
             // Large Negative Odd Number
             VerifyIsEven(((BigInteger)Int64.MaxValue + 2) * -1, false);
-
+            
 
             // Large Negative Random Even Number
             for (int i = 0; i < Reps; i++)
             {
                 string bigInt2 = BigIntTools.Utils.BuildRandomNumber(random.Next() % MaxDigits + 1, random.Next());
-
                 VerifyIsEven(BigInteger.Parse(bigInt2) * -2, true);
             }
 
@@ -83,9 +80,9 @@ namespace System.Numerics.Tests
         }
 
 
-        private static bool VerifyIsEven(BigInteger bigInt, bool expectedAnswer)
+        private static void VerifyIsEven(BigInteger bigInt, bool expectedAnswer)
         {
-            return expectedAnswer == bigInt.IsEven;
+            Assert.Equal(expectedAnswer, bigInt.IsEven);
         }
     }
 }
