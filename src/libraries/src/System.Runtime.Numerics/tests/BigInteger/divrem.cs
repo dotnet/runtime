@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using Tools;
 using Xunit;
 
@@ -10,11 +9,10 @@ namespace System.Numerics.Tests
     public class divremTest
     {
         private static int s_samples = 10;
-
         private static Random s_random = new Random(100);
 
         [Fact]
-        public static void RunDivRem_TwoLArgeBI()
+        public static void RunDivRem_TwoLargeBI()
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
@@ -24,7 +22,7 @@ namespace System.Numerics.Tests
             {
                 tempByteArray1 = GetRandomByteArray(s_random);
                 tempByteArray2 = GetRandomByteArray(s_random);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
             }
         }
 
@@ -39,27 +37,26 @@ namespace System.Numerics.Tests
             {
                 tempByteArray1 = GetRandomByteArray(s_random, 2);
                 tempByteArray2 = GetRandomByteArray(s_random, 2);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
             }
         }
-
-
+        
         [Fact]
         public static void RunDivRem_OneSmallOneLargeBI()
         {
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
 
-            // DivRem Method - One large and one small BigIntegers
+            // DivRem Method - One Large and one small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
                 tempByteArray1 = GetRandomByteArray(s_random);
                 tempByteArray2 = GetRandomByteArray(s_random, 2);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
 
                 tempByteArray1 = GetRandomByteArray(s_random, 2);
                 tempByteArray2 = GetRandomByteArray(s_random);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
             }
         }
 
@@ -69,12 +66,12 @@ namespace System.Numerics.Tests
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
 
-            // DivRem Method - One large BigIntegers and zero
+            // DivRem Method - One Large BigIntegers and zero
             for (int i = 0; i < s_samples; i++)
             {
                 tempByteArray1 = GetRandomByteArray(s_random);
                 tempByteArray2 = new byte[] { 0 };
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
 
                 Assert.Throws<DivideByZeroException>(() =>
                 {
@@ -94,7 +91,7 @@ namespace System.Numerics.Tests
             {
                 tempByteArray1 = GetRandomByteArray(s_random, 2);
                 tempByteArray2 = new byte[] { 0 };
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
 
                 Assert.Throws<DivideByZeroException>(() =>
                 {
@@ -109,113 +106,94 @@ namespace System.Numerics.Tests
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
 
-
-            //Check interesting cases for boundary conditions
-            //You'll either be shifting a 0 or 1 across the boundary
+            // Check interesting cases for boundary conditions
+            // You'll either be shifting a 0 or 1 across the boundary
             // 32 bit boundary  n2=0
-            Assert.True(VerifyDivRemString(Math.Pow(2, 32) + " 2 bDivRem"), " Verification Failed");
+            VerifyDivRemString(Math.Pow(2, 32) + " 2 bDivRem");
 
             // 32 bit boundary  n1=0 n2=1
-            Assert.True(VerifyDivRemString(Math.Pow(2, 33) + " 2 bDivRem"), " Verification Failed");
+            VerifyDivRemString(Math.Pow(2, 33) + " 2 bDivRem");
         }
 
-        public static bool RunDivRemTests(Random random)
+        [Fact]
+        public static void RunDivRemTests()
         {
-            bool ret = true;
             byte[] tempByteArray1 = new byte[0];
             byte[] tempByteArray2 = new byte[0];
 
             // DivRem Method - Two Large BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
-                tempByteArray1 = GetRandomByteArray(random);
-                tempByteArray2 = GetRandomByteArray(random);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                tempByteArray1 = GetRandomByteArray(s_random);
+                tempByteArray2 = GetRandomByteArray(s_random);
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
             }
 
             // DivRem Method - Two Small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
-                tempByteArray1 = GetRandomByteArray(random, 2);
-                tempByteArray2 = GetRandomByteArray(random, 2);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                tempByteArray1 = GetRandomByteArray(s_random, 2);
+                tempByteArray2 = GetRandomByteArray(s_random, 2);
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
             }
 
-            // DivRem Method - One large and one small BigIntegers
+            // DivRem Method - One Large and one small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
-                tempByteArray1 = GetRandomByteArray(random);
-                tempByteArray2 = GetRandomByteArray(random, 2);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                tempByteArray1 = GetRandomByteArray(s_random);
+                tempByteArray2 = GetRandomByteArray(s_random, 2);
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
 
-                tempByteArray1 = GetRandomByteArray(random, 2);
-                tempByteArray2 = GetRandomByteArray(random);
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                tempByteArray1 = GetRandomByteArray(s_random, 2);
+                tempByteArray2 = GetRandomByteArray(s_random);
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
             }
 
-            // DivRem Method - One large BigIntegers and zero
+            // DivRem Method - One Large BigIntegers and zero
             for (int i = 0; i < s_samples; i++)
             {
-                tempByteArray1 = GetRandomByteArray(random);
+                tempByteArray1 = GetRandomByteArray(s_random);
                 tempByteArray2 = new byte[] { 0 };
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
 
-                try
-                {
-                    VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
-                    ret = false;
-                }
-                catch (DivideByZeroException)
-                {
-                    //   caught expected exception.
-                }
+                Assert.Throws<DivideByZeroException>(() => { VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem"); });
             }
 
             // DivRem Method - One small BigIntegers and zero
             for (int i = 0; i < s_samples; i++)
             {
-                tempByteArray1 = GetRandomByteArray(random, 2);
+                tempByteArray1 = GetRandomByteArray(s_random, 2);
                 tempByteArray2 = new byte[] { 0 };
-                Assert.True(VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem"), " Verification Failed");
+                VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
 
-                try
-                {
-                    VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
-                    ret = false;
-                }
-                catch (DivideByZeroException)
-                {
-                    //   caught expected exception.
-                }
+                Assert.Throws<DivideByZeroException>(() => { VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem"); });
             }
 
 
-            //Check interesting cases for boundary conditions
-            //You'll either be shifting a 0 or 1 across the boundary
+            // Check interesting cases for boundary conditions
+            // You'll either be shifting a 0 or 1 across the boundary
             // 32 bit boundary  n2=0
-            Assert.True(VerifyDivRemString(Math.Pow(2, 32) + " 2 bDivRem"), " Verification Failed");
+            VerifyDivRemString(Math.Pow(2, 32) + " 2 bDivRem");
 
             // 32 bit boundary  n1=0 n2=1
-            Assert.True(VerifyDivRemString(Math.Pow(2, 33) + " 2 bDivRem"), " Verification Failed");
-            return ret;
+            VerifyDivRemString(Math.Pow(2, 33) + " 2 bDivRem");
         }
 
-        private static bool VerifyDivRemString(string opstring)
+        private static void VerifyDivRemString(string opstring)
         {
-            bool ret = true;
             StackCalc sc = new StackCalc(opstring);
             while (sc.DoNextOperation())
             {
-                ret &= Eval(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString(), String.Format("Out of Sync stacks found.  BigInteger {0} Mine {1}", sc.snCalc.Peek(), sc.myCalc.Peek()));
-                ret &= Eval(sc.VerifyOut(), String.Format("Out parameters not matching"));
+                Assert.Equal(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString());
+                Assert.True(sc.VerifyOut(), "Out parameters not matching");
             }
-            return ret;
         }
 
         private static Byte[] GetRandomByteArray(Random random)
         {
             return GetRandomByteArray(random, random.Next(1, 100));
         }
+
         private static Byte[] GetRandomByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
@@ -230,12 +208,15 @@ namespace System.Numerics.Tests
 
             return value;
         }
+
         private static bool IsZero(byte[] value)
         {
             for (int i = 0; i < value.Length; i++)
             {
                 if (value[i] != 0)
+                {
                     return false;
+                }
             }
             return true;
         }
@@ -251,27 +232,6 @@ namespace System.Numerics.Tests
             ret += "endmake ";
 
             return ret;
-        }
-
-        public static bool Eval<T>(T expected, T actual, String errorMsg)
-        {
-            bool retValue = expected == null ? actual == null : expected.Equals(actual);
-
-            if (!retValue)
-                return Eval(retValue, errorMsg +
-                " Expected:" + (null == expected ? "<null>" : expected.ToString()) +
-                " Actual:" + (null == actual ? "<null>" : actual.ToString()));
-
-            return true;
-        }
-        public static bool Eval(bool expression, string message)
-        {
-            if (!expression)
-            {
-                Console.WriteLine(message);
-            }
-
-            return expression;
         }
     }
 }

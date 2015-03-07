@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using Tools;
 using Xunit;
 
@@ -15,108 +14,101 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunSignTests()
         {
-            long temp;
             byte[] tempByteArray1 = new byte[0];
 
             // Sign Method - Large BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
                 tempByteArray1 = GetRandomByteArray(s_random);
-                Assert.True(VerifySignString(Print(tempByteArray1) + "uSign"), " Verification Failed");
+                VerifySignString(Print(tempByteArray1) + "uSign");
             }
 
             // Sign Method - Small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
                 tempByteArray1 = GetRandomByteArray(s_random, 2);
-                Assert.True(VerifySignString(Print(tempByteArray1) + "uSign"), " Verification Failed");
+                VerifySignString(Print(tempByteArray1) + "uSign");
             }
 
             // Sign Method - zero
-            Assert.True(VerifySignString("0 uSign"), " Verification Failed");
+            VerifySignString("0 uSign");
 
             // Sign Method - -1
-            Assert.True(VerifySignString("-1 uSign"), " Verification Failed");
+            VerifySignString("-1 uSign");
 
             // Sign Method - 1
-            Assert.True(VerifySignString("1 uSign"), " Verification Failed");
+            VerifySignString("1 uSign");
 
-            temp = Int32.MinValue;
             // Sign Method - Int32.MinValue
-            Assert.True(VerifySignString(temp.ToString() + " uSign"), " Verification Failed");
+            VerifySignString(Int32.MinValue.ToString() + " uSign");
 
             // Sign Method - Int32.MinValue-1
-            Assert.True(VerifySignString(temp.ToString() + " -1 b+ uSign"), " Verification Failed");
+            VerifySignString(Int32.MinValue.ToString() + " -1 b+ uSign");
 
             // Sign Method - Int32.MinValue+1
-            Assert.True(VerifySignString(temp.ToString() + " 1 b+ uSign"), " Verification Failed");
-
-            temp = Int32.MaxValue;
+            VerifySignString(Int32.MinValue.ToString() + " 1 b+ uSign");
+            
             // Sign Method - Int32.MaxValue
-            Assert.True(VerifySignString(temp.ToString() + " uSign"), " Verification Failed");
+            VerifySignString(Int32.MaxValue.ToString() + " uSign");
 
             // Sign Method - Int32.MaxValue-1
-            Assert.True(VerifySignString(temp.ToString() + " -1 b+ uSign"), " Verification Failed");
+            VerifySignString(Int32.MaxValue.ToString() + " -1 b+ uSign");
 
             // Sign Method - Int32.MaxValue+1
-            Assert.True(VerifySignString(temp.ToString() + " 1 b+ uSign"), " Verification Failed");
+            VerifySignString(Int32.MaxValue.ToString() + " 1 b+ uSign");
 
-            temp = Int64.MinValue;
             // Sign Method - Int64.MinValue
-            Assert.True(VerifySignString(temp.ToString() + " uSign"), " Verification Failed");
+            VerifySignString(Int64.MinValue.ToString() + " uSign");
 
             // Sign Method - Int64.MinValue-1
-            Assert.True(VerifySignString(temp.ToString() + " -1 b+ uSign"), " Verification Failed");
+            VerifySignString(Int64.MinValue.ToString() + " -1 b+ uSign");
 
             // Sign Method - Int64.MinValue+1
-            Assert.True(VerifySignString(temp.ToString() + " 1 b+ uSign"), " Verification Failed");
+            VerifySignString(Int64.MinValue.ToString() + " 1 b+ uSign");
 
-            temp = Int64.MaxValue;
             // Sign Method - Int64.MaxValue
-            Assert.True(VerifySignString(temp.ToString() + " uSign"), " Verification Failed");
+            VerifySignString(Int64.MaxValue.ToString() + " uSign");
 
             // Sign Method - Int64.MaxValue-1
-            Assert.True(VerifySignString(temp.ToString() + " -1 b+ uSign"), " Verification Failed");
+            VerifySignString(Int64.MaxValue.ToString() + " -1 b+ uSign");
 
             // Sign Method - Int64.MaxValue+1
-            Assert.True(VerifySignString(temp.ToString() + " 1 b+ uSign"), " Verification Failed");
+            VerifySignString(Int64.MaxValue.ToString() + " 1 b+ uSign");
         }
 
-        private static bool VerifySignString(string opstring)
+        private static void VerifySignString(string opstring)
         {
-            bool ret = true;
             StackCalc sc = new StackCalc(opstring);
             while (sc.DoNextOperation())
             {
-                ret &= Eval(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString(), String.Format("Out of Sync stacks found.  BigInteger {0} Mine {1}", sc.snCalc.Peek(), sc.myCalc.Peek()));
+                Assert.Equal(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString());
             }
-            return ret;
         }
-        private static bool VerifyIdentityString(string opstring1, string opstring2)
-        {
-            bool ret = true;
 
+        private static void VerifyIdentityString(string opstring1, string opstring2)
+        {
             StackCalc sc1 = new StackCalc(opstring1);
             while (sc1.DoNextOperation())
-            {	//Run the full calculation
+            {	
+                //Run the full calculation
                 sc1.DoNextOperation();
             }
 
             StackCalc sc2 = new StackCalc(opstring2);
             while (sc2.DoNextOperation())
-            {	//Run the full calculation
+            {
+                //Run the full calculation
                 sc2.DoNextOperation();
             }
 
-            ret &= Eval(sc1.snCalc.Peek().ToString(), sc2.snCalc.Peek().ToString(), String.Format("Out of Sync stacks found.  BigInteger1: {0} BigInteger2: {1}", sc1.snCalc.Peek(), sc2.snCalc.Peek()));
-
-            return ret;
+            Assert.Equal(sc1.snCalc.Peek().ToString(), sc2.snCalc.Peek().ToString());
         }
 
         private static Byte[] GetRandomByteArray(Random random)
         {
             return GetRandomByteArray(random, random.Next(0, 1024));
         }
+
         private static Byte[] GetRandomByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
@@ -140,27 +132,6 @@ namespace System.Numerics.Tests
             ret += "endmake ";
 
             return ret;
-        }
-
-        public static bool Eval<T>(T expected, T actual, String errorMsg)
-        {
-            bool retValue = expected == null ? actual == null : expected.Equals(actual);
-
-            if (!retValue)
-                return Eval(retValue, errorMsg +
-                " Expected:" + (null == expected ? "<null>" : expected.ToString()) +
-                " Actual:" + (null == actual ? "<null>" : actual.ToString()));
-
-            return true;
-        }
-        public static bool Eval(bool expression, string message)
-        {
-            if (!expression)
-            {
-                Console.WriteLine(message);
-            }
-
-            return expression;
         }
     }
 }

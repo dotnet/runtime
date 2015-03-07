@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -17,6 +15,7 @@ namespace System.Numerics.Tests
             int seed = 100;
             RunTests(seed);
         }
+
         public static void RunTests(int seed)
         {
             Random random = new Random(seed);
@@ -218,8 +217,7 @@ namespace System.Numerics.Tests
 
             // One Larger (BigInteger), Int64.MaxValue
             VerifyComparison((BigInteger)Int64.MaxValue + 1, Int64.MaxValue, 1);
-
-
+            
 
             //1 Random Inputs
             // Random BigInteger only differs by sign
@@ -399,6 +397,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
+
         private static void VerifyComparison(BigInteger x, Int32 y, int expectedResult)
         {
             bool expectedEquals = 0 == expectedResult;
@@ -437,6 +436,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
+
         private static void VerifyComparison(BigInteger x, UInt32 y, int expectedResult)
         {
             bool expectedEquals = 0 == expectedResult;
@@ -475,6 +475,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
+
         private static void VerifyComparison(BigInteger x, Int64 y, int expectedResult)
         {
             bool expectedEquals = 0 == expectedResult;
@@ -512,6 +513,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
+
         private static void VerifyComparison(BigInteger x, UInt64 y, int expectedResult)
         {
             bool expectedEquals = 0 == expectedResult;
@@ -549,6 +551,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
+
         private static void VerifyComparison(BigInteger x, bool IsXNegative, BigInteger y, bool IsYNegative, int expectedResult)
         {
             bool expectedEquals = 0 == expectedResult;
@@ -600,9 +603,7 @@ namespace System.Numerics.Tests
             Assert.Equal(expectedGreaterThan || expectedEquals, x >= y);
             Assert.Equal(expectedLessThan || expectedEquals, y >= x);
         }
-
-
-
+        
         private static void VerifyCompareResult(int expected, int actual, string message)
         {
             if (0 == expected)

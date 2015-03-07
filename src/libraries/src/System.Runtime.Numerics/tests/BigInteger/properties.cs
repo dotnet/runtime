@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using System.Globalization;
 using Xunit;
 
@@ -82,11 +81,12 @@ namespace System.Numerics.Tests
         {
             BigInteger bigInteger;
             byte[] tempByteArray;
-            // BigInteger.MinusOne == -1
 
+            // BigInteger.MinusOne == -1
             Assert.Equal(
                 CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + "1",
-                BigInteger.MinusOne.ToString());
+                BigInteger.MinusOne.ToString()
+            );
             Assert.Equal(new BigInteger((Int64)(-1)), BigInteger.MinusOne);
             Assert.Equal(new BigInteger((Double)(-1)), BigInteger.MinusOne);
             Assert.Equal(new BigInteger(new byte[] { 0xff, 0xff, 0xff, 0xff }), BigInteger.MinusOne);
@@ -102,11 +102,13 @@ namespace System.Numerics.Tests
 
                 Assert.Equal(
                      BigInteger.Negate(new BigInteger(tempByteArray)),
-                     BigInteger.MinusOne * bigInteger);
+                     BigInteger.MinusOne * bigInteger
+                );
 
                 Assert.Equal(
                     BigInteger.Negate(new BigInteger(tempByteArray)),
-                    bigInteger / BigInteger.MinusOne);
+                    bigInteger / BigInteger.MinusOne
+                );
             }
         }
 
@@ -114,6 +116,7 @@ namespace System.Numerics.Tests
         {
             return GetRandomByteArray(random, random.Next(0, 1024));
         }
+
         private static Byte[] GetRandomByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
@@ -125,6 +128,7 @@ namespace System.Numerics.Tests
 
             return value;
         }
+
         private static bool IsZero(byte[] value)
         {
             for (int i = 0; i < value.Length; ++i)
@@ -136,28 +140,6 @@ namespace System.Numerics.Tests
             }
 
             return true;
-        }
-
-        public static bool Eval<T>(T expected, T actual, String errorMsg)
-        {
-            bool retValue = expected == null ? actual == null : expected.Equals(actual);
-
-            if (!retValue)
-                return Eval(retValue, errorMsg +
-                " Expected:" + (null == expected ? "<null>" : expected.ToString()) +
-                " Actual:" + (null == actual ? "<null>" : actual.ToString()));
-
-            return true;
-        }
-
-        public static bool Eval(bool expression, string message)
-        {
-            if (!expression)
-            {
-                Console.WriteLine(message);
-            }
-
-            return expression;
         }
     }
 }

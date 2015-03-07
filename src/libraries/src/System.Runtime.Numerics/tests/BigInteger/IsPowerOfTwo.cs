@@ -1,10 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using BigIntTools;
-using System;
 using System.Collections;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -39,38 +36,38 @@ namespace System.Numerics.Tests
             bigIntegerLarge = new BigInteger(byteArray2);
             bigIntegerPowerOfTwo = new BigInteger(byteArray3);
 
-            //Just basic tests
+            // Just basic tests
             // Large Power Of Two
-            Assert.True(VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue + 1, true), " Verification Failed");
+            VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue + 1, true);
 
             // Large Non Power Of Two
-            Assert.True(VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue + 2, false), " Verification Failed");
+            VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue + 2, false);
 
 
             // Small Power Of Two
-            Assert.True(VerifyIsPowerOfTwo((BigInteger)Int16.MaxValue + 1, true), " Verification Failed");
+            VerifyIsPowerOfTwo((BigInteger)Int16.MaxValue + 1, true);
 
             // Small Non Power Of Two
-            Assert.True(VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue - 2, false), " Verification Failed");
+            VerifyIsPowerOfTwo((BigInteger)Int32.MaxValue - 2, false);
 
-            //Zero Case, 1, -1
+            // Zero Case, 1, -1
             // Zero
-            Assert.True(VerifyIsPowerOfTwo(BigInteger.Zero, false), " Verification Failed");
+            VerifyIsPowerOfTwo(BigInteger.Zero, false);
 
             // One
-            Assert.True(VerifyIsPowerOfTwo(BigInteger.One, true), " Verification Failed");
+            VerifyIsPowerOfTwo(BigInteger.One, true);
 
             // Negative One
-            Assert.True(VerifyIsPowerOfTwo(BigInteger.MinusOne, false), " Verification Failed");
+            VerifyIsPowerOfTwo(BigInteger.MinusOne, false);
 
             // Random Small BigInteger
-            Assert.True(VerifyIsPowerOfTwo(bigIntegerSmall, CheckExpected(byteArray1)), " Verification Failed");
+            VerifyIsPowerOfTwo(bigIntegerSmall, CheckExpected(byteArray1));
 
             // Random Large BigInteger
-            Assert.True(VerifyIsPowerOfTwo(bigIntegerLarge, CheckExpected(byteArray2)), " Verification Failed");
+            VerifyIsPowerOfTwo(bigIntegerLarge, CheckExpected(byteArray2));
 
             // Random BigInteger Power of Two
-            Assert.True(VerifyIsPowerOfTwo(bigIntegerPowerOfTwo, true), " Verification Failed");
+            VerifyIsPowerOfTwo(bigIntegerPowerOfTwo, true);
         }
 
         private static bool CheckExpected(byte[] value)
@@ -79,7 +76,7 @@ namespace System.Numerics.Tests
             bool expected = false;
             BitArray value2 = new BitArray(value);
 
-            //count the number or 1's in the value
+            // Count the number of 1's in the value
             for (int i = 0; i < value2.Length; i++)
             {
                 if (value2[i])
@@ -88,7 +85,7 @@ namespace System.Numerics.Tests
                 }
             }
 
-            //if only one 1 and value is positive. 
+            // If only one 1 and value is positive. 
             if ((1 == valueOne) && (!value2[value2.Length - 1]))
             {
                 expected = true;
@@ -122,7 +119,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static Byte[] GetPowerOfTwoByteArray(Random random)
+        private static byte[] GetPowerOfTwoByteArray(Random random)
         {
             double exactOnePosition;
 
@@ -143,13 +140,10 @@ namespace System.Numerics.Tests
 
             return value;
         }
-
-
-
-
-        private static bool VerifyIsPowerOfTwo(BigInteger bigInt, bool expectedAnswer)
+        
+        private static void VerifyIsPowerOfTwo(BigInteger bigInt, bool expectedAnswer)
         {
-            return expectedAnswer == bigInt.IsPowerOfTwo;
+            Assert.Equal(expectedAnswer, bigInt.IsPowerOfTwo);
         }
     }
 }

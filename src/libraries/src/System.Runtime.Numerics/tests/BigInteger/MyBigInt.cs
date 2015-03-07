@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Numerics;
 using Xunit;
 
@@ -13,6 +12,7 @@ namespace Tools
     public static class MyBigIntImp
     {
         public static BigInteger outParam = 0;
+
         public static BigInteger DoUnaryOperatorMine(BigInteger num1, string op)
         {
             List<byte> bytes1 = new List<byte>(num1.ToByteArray());
@@ -22,8 +22,14 @@ namespace Tools
             switch (op)
             {
                 case "uSign":
-                    if (IsZero(bytes1)) return new BigInteger(0);
-                    if (IsZero(Max(bytes1, new List<byte>(new byte[] { 0 })))) return new BigInteger(-1);
+                    if (IsZero(bytes1))
+                    {
+                        return new BigInteger(0);
+                    }
+                    if (IsZero(Max(bytes1, new List<byte>(new byte[] { 0 }))))
+                    {
+                        return new BigInteger(-1);
+                    }
                     return new BigInteger(1);
                 case "u~":
                     return new BigInteger(Not(bytes1).ToArray());
@@ -64,7 +70,10 @@ namespace Tools
                     }
                     return ApproximateBigInteger(result);
                 case "uAbs":
-                    if ((bytes1[bytes1.Count - 1] & 0x80) != 0) bytes1 = Negate(bytes1);
+                    if ((bytes1[bytes1.Count - 1] & 0x80) != 0)
+                    {
+                        bytes1 = Negate(bytes1);
+                    }
                     return new BigInteger(bytes1.ToArray());
                 case "u--":
                     return new BigInteger(Add(bytes1, new List<byte>(new byte[] { 0xff })).ToArray());
@@ -76,11 +85,12 @@ namespace Tools
                 case "u+":
                     return num1;
                 default:
-                    Console.WriteLine("Invalid operation found: {0}", op);
+                    Assert.True(false, String.Format("Invalid operation found: {0}", op));
                     break;
             }
             return new BigInteger();
         }
+
         public static BigInteger DoBinaryOperatorMine(BigInteger num1, BigInteger num2, string op)
         {
             List<byte> bytes1 = new List<byte>(num1.ToByteArray());
@@ -133,11 +143,12 @@ namespace Tools
                 case "b+":
                     return new BigInteger(Add(bytes1, bytes2).ToArray());
                 default:
-                    Console.WriteLine("Invalid operation found: {0}", op);
+                    Assert.True(false, String.Format("Invalid operation found: {0}", op));
                     break;
             }
             return new BigInteger();
         }
+
         public static BigInteger DoTertanaryOperatorMine(BigInteger num1, BigInteger num2, BigInteger num3, string op)
         {
             List<byte> bytes1 = new List<byte>(num1.ToByteArray());
@@ -149,7 +160,7 @@ namespace Tools
                 case "tModPow":
                     return new BigInteger(ModPow(bytes1, bytes2, bytes3).ToArray());
                 default:
-                    Console.WriteLine("Invalid operation found: {0}", op);
+                    Assert.True(false, String.Format("Invalid operation found: {0}", op));
                     break;
             }
             return new BigInteger();
@@ -171,7 +182,10 @@ namespace Tools
             {
                 int temp = bytes1[i] + bytes2[i];
 
-                if (carry) temp++;
+                if (carry)
+                {
+                    temp++;
+                }
                 carry = false;
 
                 if (temp > byte.MaxValue)
@@ -186,12 +200,16 @@ namespace Tools
 
             if ((num1neg == num2neg) & (num1neg != bnewneg))
             {
-                if (num1neg) extender = 0xff;
+                if (num1neg)
+                {
+                    extender = 0xff;
+                }
                 bnew.Add(extender);
             }
 
             return bnew;
         }
+
         private static List<byte> Negate(List<byte> bytes)
         {
             bool carry;
@@ -206,7 +224,10 @@ namespace Tools
             for (int i = 0; i < bytes.Count; i++)
             {
                 int temp = (i == 0 ? 0x01 : 0x00) + bytes[i];
-                if (carry) temp++;
+                if (carry)
+                {
+                    temp++;
+                }
                 carry = false;
 
                 if (temp > byte.MaxValue)
@@ -231,6 +252,7 @@ namespace Tools
 
             return bnew;
         }
+
         private static List<byte> Multiply(List<byte> bytes1, List<byte> bytes2)
         {
             NormalizeLengths(bytes1, bytes2);
@@ -261,13 +283,20 @@ namespace Tools
 
             return bresult;
         }
+
         private static List<byte> Divide(List<byte> bytes1, List<byte> bytes2)
         {
             bool numPos = ((bytes1[bytes1.Count - 1] & 0x80) == 0);
             bool denPos = ((bytes2[bytes2.Count - 1] & 0x80) == 0);
 
-            if (!numPos) bytes1 = Negate(bytes1);
-            if (!denPos) bytes2 = Negate(bytes2);
+            if (!numPos)
+            {
+                bytes1 = Negate(bytes1);
+            }
+            if (!denPos)
+            {
+                bytes2 = Negate(bytes2);
+            }
 
             bool qPos = (numPos == denPos);
 
@@ -296,7 +325,10 @@ namespace Tools
                 }
             }
             int shift = ba11loc - ba21loc;
-            if (shift < 0) return new List<byte>(new byte[] { (byte)0 });
+            if (shift < 0) 
+            {
+                return new List<byte>(new byte[] { (byte)0 });
+            }
             BitArray br = new BitArray(shift + 1, false);
 
             for (int i = 0; i < shift; i++)
@@ -329,13 +361,20 @@ namespace Tools
 
             return result;
         }
+
         private static List<byte> Remainder(List<byte> bytes1, List<byte> bytes2)
         {
             bool numPos = ((bytes1[bytes1.Count - 1] & 0x80) == 0);
             bool denPos = ((bytes2[bytes2.Count - 1] & 0x80) == 0);
 
-            if (!numPos) bytes1 = Negate(bytes1);
-            if (!denPos) bytes2 = Negate(bytes2);
+            if (!numPos)
+            {
+                bytes1 = Negate(bytes1); 
+            }
+            if (!denPos)
+            {
+                bytes2 = Negate(bytes2);
+            }
 
             Trim(bytes1);
             Trim(bytes2);
@@ -400,9 +439,13 @@ namespace Tools
             }
             return bytes1;
         }
+
         private static List<byte> Pow(List<byte> bytes1, List<byte> bytes2)
         {
-            if (IsZero(bytes2)) return new List<byte>(new byte[] { 1 });
+            if (IsZero(bytes2))
+            {
+                return new List<byte>(new byte[] { 1 });
+            }
 
             BitArray ba2 = new BitArray(bytes2.ToArray());
             int last1 = 0;
@@ -440,6 +483,7 @@ namespace Tools
             }
             return (result == null) ? new List<byte>(new byte[] { 1 }) : result;
         }
+
         private static List<byte> ModPow(List<byte> bytes1, List<byte> bytes2, List<byte> bytes3)
         {
             if (IsZero(bytes2))
@@ -486,6 +530,7 @@ namespace Tools
             }
             return (result == null) ? Remainder(new List<byte>(new byte[] { 1 }), bytes3) : result;
         }
+
         private static List<byte> GCD(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> temp;
@@ -493,8 +538,14 @@ namespace Tools
             bool numPos = ((bytes1[bytes1.Count - 1] & 0x80) == 0);
             bool denPos = ((bytes2[bytes2.Count - 1] & 0x80) == 0);
 
-            if (!numPos) bytes1 = Negate(bytes1);
-            if (!denPos) bytes2 = Negate(bytes2);
+            if (!numPos)
+            {
+                bytes1 = Negate(bytes1);
+            }
+            if (!denPos)
+            {
+                bytes2 = Negate(bytes2);
+            }
 
             Trim(bytes1);
             Trim(bytes2);
@@ -507,6 +558,7 @@ namespace Tools
             }
             return bytes1;
         }
+
         private static List<byte> Max(List<byte> bytes1, List<byte> bytes2)
         {
             bool b1Pos = ((bytes1[bytes1.Count - 1] & 0x80) == 0);
@@ -514,8 +566,14 @@ namespace Tools
 
             if (b1Pos != b2Pos)
             {
-                if (b1Pos) return bytes1;
-                if (b2Pos) return bytes2;
+                if (b1Pos)
+                {
+                    return bytes1;
+                }
+                if (b2Pos)
+                {
+                    return bytes2;
+                }
             }
 
             List<byte> sum = Add(bytes1, Negate(Copy(bytes2)));
@@ -527,6 +585,7 @@ namespace Tools
 
             return bytes1;
         }
+
         private static List<byte> And(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> bnew = new List<byte>();
@@ -539,6 +598,7 @@ namespace Tools
 
             return bnew;
         }
+
         private static List<byte> Or(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> bnew = new List<byte>();
@@ -551,6 +611,7 @@ namespace Tools
 
             return bnew;
         }
+
         private static List<byte> Xor(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> bnew = new List<byte>();
@@ -562,6 +623,7 @@ namespace Tools
             }
             return bnew;
         }
+
         private static List<byte> Not(List<byte> bytes)
         {
             List<byte> bnew = new List<byte>();
@@ -573,6 +635,7 @@ namespace Tools
 
             return bnew;
         }
+
         private static List<byte> ShiftLeft(List<byte> bytes1, List<byte> bytes2)
         {
             int byteShift = (int)new BigInteger(Divide(Copy(bytes2), new List<byte>(new byte[] { 8 })).ToArray());
@@ -630,6 +693,7 @@ namespace Tools
 
             return bytes1;
         }
+
         private static List<byte> ShiftLeftGrow(List<byte> bytes)
         {
             List<byte> bresult = new List<byte>();
@@ -638,9 +702,15 @@ namespace Tools
             {
                 byte newbyte = bytes[i];
 
-                if (newbyte > 127) newbyte -= 128;
+                if (newbyte > 127) 
+                {
+                    newbyte -= 128; 
+                }
                 newbyte = (byte)(newbyte * 2);
-                if ((i != 0) && (bytes[i - 1] >= 128)) newbyte++;
+                if ((i != 0) && (bytes[i - 1] >= 128))
+                {
+                    newbyte++;
+                }
 
                 bresult.Add(newbyte);
             }
@@ -655,6 +725,7 @@ namespace Tools
 
             return bresult;
         }
+
         private static List<byte> ShiftLeftDrop(List<byte> bytes)
         {
             List<byte> bresult = new List<byte>();
@@ -663,15 +734,22 @@ namespace Tools
             {
                 byte newbyte = bytes[i];
 
-                if (newbyte > 127) newbyte -= 128;
+                if (newbyte > 127)
+                {
+                    newbyte -= 128;
+                }
                 newbyte = (byte)(newbyte * 2);
-                if ((i != 0) && (bytes[i - 1] >= 128)) newbyte++;
+                if ((i != 0) && (bytes[i - 1] >= 128))
+                {
+                    newbyte++;
+                }
 
                 bresult.Add(newbyte);
             }
 
             return bresult;
         }
+
         private static List<byte> ShiftRight(List<byte> bytes)
         {
             List<byte> bresult = new List<byte>();
@@ -694,6 +772,7 @@ namespace Tools
 
             return bresult;
         }
+
         private static List<byte> SetLength(List<byte> bytes, int size)
         {
             List<byte> bresult = new List<byte>();
@@ -705,6 +784,7 @@ namespace Tools
 
             return bresult;
         }
+
         private static List<byte> Copy(List<byte> bytes)
         {
             List<byte> ret = new List<byte>();
@@ -714,6 +794,7 @@ namespace Tools
             }
             return ret;
         }
+
         private static void NormalizeLengths(List<byte> bytes1, List<byte> bytes2)
         {
             bool num1neg = (bytes1[bytes1.Count - 1] & 0x80) != 0;
@@ -743,6 +824,7 @@ namespace Tools
                 }
             }
         }
+
         private static void Trim(List<byte> bytes)
         {
             while (bytes.Count > 1)
@@ -771,6 +853,7 @@ namespace Tools
                 }
             }
         }
+
         private static List<byte> GetBytes(BitArray ba)
         {
             int length = ((ba.Length) / 8) + 1;
@@ -791,6 +874,7 @@ namespace Tools
 
             return mask;
         }
+
         private static String Print(byte[] bytes)
         {
             string ret = String.Empty;
@@ -800,12 +884,16 @@ namespace Tools
             }
             return ret;
         }
+
         private static bool IsZero(List<byte> list)
         {
             byte[] value = list.ToArray();
             for (int i = 0; i < value.Length; i++)
             {
-                if (value[i] != 0) return false;
+                if (value[i] != 0)
+                {
+                    return false;
+                }
             }
             return true;
         }
@@ -813,16 +901,28 @@ namespace Tools
         public static BigInteger ApproximateBigInteger(double value)
         {
             //Special case values;
-            if (Double.IsNaN(value)) return new BigInteger(-101);
-            if (Double.IsNegativeInfinity(value)) return new BigInteger(-102);
-            if (Double.IsPositiveInfinity(value)) return new BigInteger(-103);
+            if (Double.IsNaN(value))
+            {
+                return new BigInteger(-101);
+            }
+            if (Double.IsNegativeInfinity(value))
+            {
+                return new BigInteger(-102);
+            }
+            if (Double.IsPositiveInfinity(value))
+            {
+                return new BigInteger(-103);
+            }
 
             BigInteger result = new BigInteger(Math.Round(value, 0));
 
             if (result != 0)
             {
                 bool pos = (value > 0);
-                if (!pos) value = -value;
+                if (!pos)
+                {
+                    value = -value;
+                }
 
                 int size = (int)Math.Floor(Math.Log10(value));
 
@@ -832,7 +932,10 @@ namespace Tools
                     result = result - (result % BigInteger.Pow(10, size - 17));
                 }
 
-                if (!pos) value = -value;
+                if (!pos)
+                {
+                    value = -value;
+                }
             }
 
             return result;
