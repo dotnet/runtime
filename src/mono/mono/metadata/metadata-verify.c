@@ -659,7 +659,7 @@ verify_resources_table (VerifyContext *ctx)
 	DataDirectory it = ctx->data_directories [RESOURCE_TABLE_IDX];
 	guint32 offset;
 	guint16 named_entries, id_entries;
-	const char *ptr, *root, *end;
+	const char *ptr;
 
 	if (it.rva == 0)
 		return;
@@ -668,8 +668,7 @@ verify_resources_table (VerifyContext *ctx)
 		ADD_ERROR (ctx, g_strdup_printf ("Resource section is too small, must be at least 16 bytes long but it's %d long", it.size));
 
 	offset = it.translated_offset;
-	root = ptr = ctx->data + offset;
-	end = root + it.size;
+	ptr = ctx->data + offset;
 
 	g_assert (offset != INVALID_OFFSET);
 

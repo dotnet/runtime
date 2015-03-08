@@ -743,7 +743,11 @@ mono_pages_not_faulted (void *addr, size_t size)
 	int npages = (size + pagesize - 1) / pagesize;
 	char *faulted = g_malloc0 (sizeof (char*) * npages);
 
-	if (mincore (addr, size, faulted) != 0) {
+	/*
+	 * We cast `faulted` to void* because Linux wants an unsigned
+	 * char* while BSD wants a char*.
+	 */
+	if (mincore (addr, size, (void*)faulted) != 0) {
 		count = -1;
 	} else {
 		count = 0;

@@ -1880,7 +1880,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	size_t imt_table_bytes;
 	int gc_bits;
 	guint32 vtable_size, class_size;
-	guint32 cindex;
 	gpointer iter;
 	gpointer *interface_offsets;
 
@@ -2023,7 +2022,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		mono_stats.class_static_data_size += class_size;
 	}
 
-	cindex = -1;
 	iter = NULL;
 	while ((field = mono_class_get_fields (class, &iter))) {
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -4393,6 +4391,7 @@ mono_object_allocate (size_t size, MonoVTable *vtable)
 	return o;
 }
 
+#ifndef HAVE_SGEN_GC
 /**
  * mono_object_allocate_ptrfree:
  * @size: number of bytes to allocate
@@ -4407,6 +4406,7 @@ mono_object_allocate_ptrfree (size_t size, MonoVTable *vtable)
 	ALLOC_PTRFREE (o, vtable, size);
 	return o;
 }
+#endif
 
 static inline void *
 mono_object_allocate_spec (size_t size, MonoVTable *vtable)
@@ -6276,7 +6276,6 @@ void
 mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer addr, MonoMethod *method)
 {
 	MonoDelegate *delegate = (MonoDelegate *)this;
-	MonoClass *class;
 
 	g_assert (this);
 	g_assert (addr);
@@ -6284,7 +6283,6 @@ mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer a
 	if (method)
 		delegate->method = method;
 
-	class = this->vtable->klass;
 	mono_stats.delegate_creations++;
 
 #ifndef DISABLE_REMOTING
@@ -6349,7 +6347,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 	MonoDomain *domain = mono_domain_get ();
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoMethodMessage *msg;
-	int i, count, type;
+	int i, count;
 
 	msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class); 
 	
@@ -6371,7 +6369,6 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 		else 
 			vpos = params [i];
 
-		type = sig->params [i]->type;
 		class = mono_class_from_mono_type (sig->params [i]);
 
 		if (class->valuetype)

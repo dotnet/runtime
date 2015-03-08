@@ -617,8 +617,9 @@ is_valid_generic_argument (MonoType *type)
 	case MONO_TYPE_VOID:
 	//case MONO_TYPE_TYPEDBYREF:
 		return FALSE;
+	default:
+		return TRUE;
 	}
-	return TRUE;
 }
 
 static MonoType*
@@ -1350,8 +1351,9 @@ mono_type_has_exceptions (MonoType *type)
 		return type->data.array->eklass->exception_type;
 	case MONO_TYPE_GENERICINST:
 		return mono_generic_class_get_class (type->data.generic_class)->exception_type;
+	default:
+		return FALSE;
 	}
-	return FALSE;
 }
 
 /*
@@ -4264,7 +4266,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	GHashTable *override_map = NULL;
 	gboolean security_enabled = mono_security_enabled ();
 	MonoMethod *cm;
-	gpointer class_iter;
 #if (DEBUG_INTERFACE_VTABLE_CODE|TRACE_INTERFACE_VTABLE_CODE)
 	int first_non_interface_slot;
 #endif
@@ -4501,11 +4502,9 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 			// otherwise look for a matching method
 			if (override_im == NULL) {
 				int cm_index;
-				gpointer iter;
 				MonoMethod *cm;
 
 				// First look for a suitable method among the class methods
-				iter = NULL;
 				for (l = virt_methods; l; l = l->next) {
 					cm = l->data;
 					TRACE_INTERFACE_VTABLE (printf ("    For slot %d ('%s'.'%s':'%s'), trying method '%s'.'%s':'%s'... [EXPLICIT IMPLEMENTATION = %d][SLOT IS NULL = %d]", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL)));
@@ -4581,7 +4580,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	}
 
 	TRACE_INTERFACE_VTABLE (print_vtable_full (class, vtable, cur_slot, first_non_interface_slot, "AFTER SETTING UP INTERFACE METHODS", FALSE));
-	class_iter = NULL;
 	for (l = virt_methods; l; l = l->next) {
 		cm = l->data;
 		/*
@@ -6690,6 +6688,8 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	case MONO_TYPE_U:
 #endif
 		class->cast_class = mono_defaults.int64_class;
+		break;
+	default:
 		break;
 	}
 
@@ -9950,6 +9950,8 @@ can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
 		case MONO_TYPE_GENERICINST:
 			if (!can_access_type (access_klass, mono_class_from_mono_type (type)))
 				return FALSE;
+		default:
+			break;
 		}
 	}
 	return TRUE;
@@ -10247,8 +10249,9 @@ gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 		return TRUE;
+	default:
+		return FALSE;
 	}
-	return FALSE;
 }
 
 /**

@@ -1649,12 +1649,9 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 {
 	MonoType *sig_ret;
 	MonoMethodSignature *sig;
-	MonoMethodHeader *header;
 	MonoInst *ins;
 	int i;
 	CallInfo *cinfo;
-
-	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 
@@ -1693,14 +1690,8 @@ mono_arch_fill_argument_info (MonoCompile *cfg)
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
-		MonoType *arg_type;
 
 		ins = cfg->args [i];
-
-		if (sig->hasthis && (i == 0))
-			arg_type = &mono_defaults.object_class->byval_arg;
-		else
-			arg_type = sig->params [i - sig->hasthis];
 
 		switch (ainfo->storage) {
 		case ArgInIReg:
@@ -1729,14 +1720,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 {
 	MonoType *sig_ret;
 	MonoMethodSignature *sig;
-	MonoMethodHeader *header;
 	MonoInst *ins;
 	int i, offset;
 	guint32 locals_stack_size, locals_stack_align;
 	gint32 *offsets;
 	CallInfo *cinfo;
-
-	header = cfg->header;
 
 	sig = mono_method_signature (cfg->method);
 
@@ -1885,12 +1873,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		if (ins->opcode != OP_REGVAR) {
 			ArgInfo *ainfo = &cinfo->args [i];
 			gboolean inreg = TRUE;
-			MonoType *arg_type;
-
-			if (sig->hasthis && (i == 0))
-				arg_type = &mono_defaults.object_class->byval_arg;
-			else
-				arg_type = sig->params [i - sig->hasthis];
 
 			if (cfg->globalra) {
 				/* The new allocator needs info about the original locations of the arguments */
@@ -2141,6 +2123,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, AMD64_RSP, cinfo->sig_cookie.offset, sig_reg);
 }
 
+#ifdef ENABLE_LLVM
 static inline LLVMArgStorage
 arg_storage_to_llvm_arg_storage (MonoCompile *cfg, ArgStorage storage)
 {
@@ -2155,7 +2138,6 @@ arg_storage_to_llvm_arg_storage (MonoCompile *cfg, ArgStorage storage)
 	}
 }
 
-#ifdef ENABLE_LLVM
 LLVMCallInfo*
 mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 {
@@ -2256,11 +2238,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
 	MonoType *sig_ret;
-	int i, n, stack_size;
+	int i, n;
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
-
-	stack_size = 0;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
@@ -3781,8 +3761,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoCallInst *call;
 	guint offset;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	MonoInst *last_ins = NULL;
-	guint last_offset = 0;
 	int max_len;
 
 	/* Fix max_offset estimate for each successor bb */
@@ -6597,9 +6575,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 #endif
 		}
-	       
-		last_ins = ins;
-		last_offset = offset;
 	}
 
 	cfg->code_len = code - cfg->native_code;
@@ -7024,21 +6999,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* Keep this in sync with emit_load_volatile_arguments */
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
-		gint32 stack_offset;
-		MonoType *arg_type;
 
 		ins = cfg->args [i];
 
 		if ((ins->flags & MONO_INST_IS_DEAD) && !trace)
 			/* Unused arguments */
 			continue;
-
-		if (sig->hasthis && (i == 0))
-			arg_type = &mono_defaults.object_class->byval_arg;
-		else
-			arg_type = sig->params [i - sig->hasthis];
-
-		stack_offset = ainfo->offset + ARGS_OFFSET;
 
 		if (cfg->globalra) {
 			/* All the other moves are done by the register allocator */
@@ -7271,7 +7237,7 @@ void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	int quad, pos, i;
+	int quad, i;
 	guint8 *code;
 	int max_epilog_size;
 	CallInfo *cinfo;
@@ -7299,7 +7265,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		code = mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
 
 	/* the code restoring the registers must be kept in sync with OP_TAILCALL */
-	pos = 0;
 	
 	if (method->save_lmf) {
 		/* check if we need to restore protection of the stack after a stack overflow */
@@ -7606,7 +7571,6 @@ void*
 mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
 {
 	guchar *code = p;
-	CallInfo *cinfo = NULL;
 	MonoMethodSignature *sig;
 	MonoInst *inst;
 	int i, n, stack_area = 0;
@@ -7616,8 +7580,6 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	if (enable_arguments) {
 		/* Allocate a new area on the stack and save arguments there */
 		sig = mono_method_signature (cfg->method);
-
-		cinfo = get_call_info (cfg->generic_sharing_context, cfg->mempool, sig);
 
 		n = sig->param_count + sig->hasthis;
 

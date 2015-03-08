@@ -220,7 +220,6 @@ mono_debug_close_method (MonoCompile *cfg)
 	MonoDebugMethodJitInfo *jit;
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
-	MonoDebugMethodAddress *debug_info;
 	MonoMethod *method;
 	int i;
 
@@ -270,7 +269,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	for (i = 0; i < jit->num_line_numbers; i++)
 		jit->line_numbers [i] = g_array_index (info->line_numbers, MonoDebugLineNumberEntry, i);
 
-	debug_info = mono_debug_add_method (cfg->method_to_register, jit, cfg->domain);
+	mono_debug_add_method (cfg->method_to_register, jit, cfg->domain);
 
 	mono_debug_add_vg_method (method, jit);
 

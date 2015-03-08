@@ -1259,7 +1259,6 @@ static int normal_sections [] = { SECT_DATA, SECT_DEBUG_FRAME, SECT_DEBUG_INFO, 
 static int
 bin_writer_emit_writeout (MonoImageWriter *acfg)
 {
-	FILE *file;
 	ElfHeader header;
 	ElfProgHeader progh [4];
 	ElfSectHeader secth [SECT_NUM];
@@ -1277,10 +1276,8 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 	ElfSymbol *symtab;
 	ElfDynamic dynamic [14];
 	int *hash;
-	int i, num_sections, file_offset, virt_offset, size, num_symtab;
+	int i, num_sections, file_offset, virt_offset, size;
 	int num_local_syms;
-
-	file = acfg->fp;
 
 	/* Section headers */
 	memset (&secth, 0, sizeof (secth));
@@ -1305,7 +1302,6 @@ bin_writer_emit_writeout (MonoImageWriter *acfg)
 
 	num_sections = collect_sections (acfg, secth, all_sections, 16);
 	hash = build_hash (acfg, num_sections, &dyn_str_table);
-	num_symtab = hash [1]; /* FIXME */
 #if 0
 	g_print ("num_sections: %d\n", num_sections);
 	g_print ("dynsym: %d, dynstr size: %d\n", hash [1], (int)dyn_str_table.data->len);

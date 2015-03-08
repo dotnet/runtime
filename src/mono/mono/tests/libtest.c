@@ -980,10 +980,7 @@ mono_test_marshal_delegate5 (SimpleDelegate5 delegate)
 LIBTEST_API int STDCALL 
 mono_test_marshal_delegate6 (SimpleDelegate5 delegate)
 {
-	int res;
-
-	res = delegate (NULL);
-
+	delegate (NULL);
 	return 0;
 }
 

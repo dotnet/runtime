@@ -1244,13 +1244,12 @@ wrap_non_exception_throws (MonoMethod *m)
 		for (i = 0; i < attrs->num_attrs; ++i) {
 			MonoCustomAttrEntry *attr = &attrs->attrs [i];
 			const gchar *p;
-			int len, num_named, named_type, data_type, name_len;
+			int num_named, named_type, name_len;
 			char *name;
 
 			if (!attr->ctor || attr->ctor->klass != klass)
 				continue;
 			/* Decode the RuntimeCompatibilityAttribute. See reflection.c */
-			len = attr->data_size;
 			p = (const char*)attr->data;
 			g_assert (read16 (p) == 0x0001);
 			p += 2;
@@ -1260,7 +1259,7 @@ wrap_non_exception_throws (MonoMethod *m)
 			p += 2;
 			named_type = *p;
 			p ++;
-			data_type = *p;
+			/* data_type = *p; */
 			p ++;
 			/* Property */
 			if (named_type != 0x54)

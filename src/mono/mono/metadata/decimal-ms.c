@@ -1119,14 +1119,14 @@ RetDec:
 }
 
 // Decimal addition
-static MonoDecimalStatus
+static MonoDecimalStatus G_GNUC_UNUSED
 mono_decimal_add(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 {
     return DecAddSub (left, right, result, 0);
 }
 
 // Decimal subtraction
-static MonoDecimalStatus
+static MonoDecimalStatus G_GNUC_UNUSED
 mono_decimal_sub(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 {
     return DecAddSub (left, right, result, DECIMAL_NEG);
@@ -1369,7 +1369,7 @@ OverflowUnscale (uint32_t *quo, gboolean remainder)
 }
 
 // mono_decimal_divide - Decimal divide
-static MonoDecimalStatus
+static MonoDecimalStatus G_GNUC_UNUSED
 mono_decimal_divide_result(MonoDecimal *left, MonoDecimal *right, MonoDecimal *result)
 {
 	uint32_t   quo[3];
@@ -1715,7 +1715,7 @@ mono_decimal_divide_result(MonoDecimal *left, MonoDecimal *right, MonoDecimal *r
 }
 
 // mono_decimal_absolute - Decimal Absolute Value
-static void
+static void G_GNUC_UNUSED
 mono_decimal_absolute (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	COPYDEC(*result, *pdecOprd);
@@ -1748,7 +1748,7 @@ mono_decimal_round_to_int (MonoDecimal *pdecOprd, MonoDecimal *result)
 }
 
 // mono_decimal_negate - Decimal Negate
-static void
+static void G_GNUC_UNUSED
 mono_decimal_negate (MonoDecimal *pdecOprd, MonoDecimal *result)
 {
 	COPYDEC(*result, *pdecOprd);

@@ -528,7 +528,7 @@ add_source (HashEntry *entry, HashEntry *src)
 static void
 free_data (void)
 {
-	MonoObject *obj;
+	MonoObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
 	int total_srcs = 0;
 	int max_srcs = 0;
@@ -991,7 +991,7 @@ processing_stw_step (void)
 {
 	int i;
 	int bridge_count;
-	MonoObject *obj;
+	MonoObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
 	SGEN_TV_DECLARE (atv);
 	SGEN_TV_DECLARE (btv);
@@ -1047,8 +1047,7 @@ processing_build_callback_data (int generation)
 	int i, j;
 	int num_sccs, num_xrefs;
 	int max_entries, max_xrefs;
-	int sccs_size;
-	MonoObject *obj;
+	MonoObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;
@@ -1208,8 +1207,6 @@ processing_build_callback_data (int generation)
 			}
 		}
 	}
-
-	sccs_size = dyn_array_scc_size (&sccs);
 
 	for (i = 0; i < hash_table.num_entries; ++i) {
 		HashEntry *entry = all_entries [i];

@@ -200,7 +200,7 @@ terminal_get_dimensions (void)
 static void
 tty_teardown (void)
 {
-	int unused;
+	int unused G_GNUC_UNUSED;
 
 	if (!setup_finished)
 		return;
@@ -289,7 +289,7 @@ static struct sigaction save_sigcont, save_sigint, save_sigwinch;
 
 MONO_SIG_HANDLER_FUNC (static, sigcont_handler)
 {
-	int unused;
+	int unused G_GNUC_UNUSED;
 	// Ignore error, there is not much we can do in the sigcont handler.
 	tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr);
 

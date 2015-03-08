@@ -175,14 +175,12 @@ mono_debug_cleanup (void)
 void
 mono_debug_domain_create (MonoDomain *domain)
 {
-	MonoDebugDataTable *table;
-
 	if (!mono_debug_initialized)
 		return;
 
 	mono_debugger_lock ();
 
-	table = create_data_table (domain);
+	create_data_table (domain);
 
 	mono_debugger_unlock ();
 }
@@ -427,8 +425,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 {
 	MonoDebugDataTable *table;
 	MonoDebugMethodAddress *address;
-	MonoDebugMethodInfo *minfo;
-	MonoDebugHandle *handle;
 	guint8 buffer [BUFSIZ];
 	guint8 *ptr, *oldptr;
 	guint32 i, size, total_size, max_size;
@@ -436,9 +432,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	mono_debugger_lock ();
 
 	table = lookup_data_table (domain);
-
-	handle = mono_debug_get_image (method->klass->image);
-	minfo = mono_debug_lookup_method_internal (method);
 
 	max_size = (5 * 5) + 1 + (10 * jit->num_line_numbers) +
 		(25 + sizeof (gpointer)) * (1 + jit->num_params + jit->num_locals);

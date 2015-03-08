@@ -628,13 +628,11 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray)
 		return;
 	klass = array->obj.vtable->klass;
 
-	switch (klass->element_class->byval_arg.type) {
-		case MONO_TYPE_CLASS:
-			for(i = 0; i < array->max_length; ++i) 	
-				mono_marshal_free_ccw (mono_array_get (array, MonoObject*, i));
-			free(nativeArray);
-		break;
-	}		
+	if (klass->element_class->byval_arg.type == MONO_TYPE_CLASS) {
+		for(i = 0; i < array->max_length; ++i)
+			mono_marshal_free_ccw (mono_array_get (array, MonoObject*, i));
+		free(nativeArray);
+	}
 #endif
 }
 
@@ -1708,27 +1706,8 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 #endif /* DISABLE_COM */
 
 	case MONO_MARSHAL_CONV_SAFEHANDLE: {
-		int dar_release_slot, pos;
+		int pos;
 		
-		dar_release_slot = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-
-		/*
-		 * The following is ifdefed-out, because I have no way of doing the
-		 * DangerousRelease when destroying the structure
-		 */
-#if 0
-		/* set release = false */
-		mono_mb_emit_icon (mb, 0);
-		mono_mb_emit_stloc (mb, dar_release_slot);
-		if (!sh_dangerous_add_ref)
-			init_safe_handle ();
-
-		/* safehandle.DangerousAddRef (ref release) */
-		mono_mb_emit_ldloc (mb, 0); /* the source */
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_ldloc_addr (mb, dar_release_slot);
-		mono_mb_emit_managed_call (mb, sh_dangerous_add_ref, NULL);
-#endif
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
@@ -2326,7 +2305,6 @@ static gboolean
 mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec)
 {
 	MonoMarshalNative encoding;
-	MonoMarshalConv conv;
 
 	switch (t->type) {
 	case MONO_TYPE_VALUETYPE:
@@ -2336,7 +2314,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 	case MONO_TYPE_CLASS:
 		if (t->data.klass == mono_defaults.stringbuilder_class) {
 			gboolean need_free;
-			conv = mono_marshal_get_ptr_to_stringbuilder_conv (piinfo, spec, &need_free);
+			mono_marshal_get_ptr_to_stringbuilder_conv (piinfo, spec, &need_free);
 			return need_free;
 		}
 		return FALSE;
@@ -2592,10 +2570,8 @@ check_generic_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, gpointe
 	MonoMethod *res;
 	MonoMethod *inst, *def;
 	MonoGenericContext *ctx;
-	MonoMethod *def_method;
 
 	g_assert (orig_method->is_inflated);
-	def_method = ((MonoMethodInflated*)orig_method)->declaring;
 	ctx = mono_method_get_context (orig_method);
 
 	/*
@@ -6163,7 +6139,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		MonoClass *eklass;
 		guint32 label1, label2, label3;
-		int index_var, src_ptr, loc, esize, param_num, num_elem;
+		int index_var, src_ptr, esize, param_num, num_elem;
 		MonoMarshalConv conv;
 		gboolean is_string = FALSE;
 		
@@ -6224,7 +6200,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			esize = mono_class_native_size (eklass, NULL);
 		src_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 		mono_mb_emit_byte (mb, CEE_LDNULL);
 		mono_mb_emit_stloc (mb, conv_arg);
@@ -6341,7 +6316,7 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
 		MonoClass *eklass;
 		guint32 label1, label2, label3;
-		int index_var, dest_ptr, loc, esize, param_num, num_elem;
+		int index_var, dest_ptr, esize, param_num, num_elem;
 		MonoMarshalConv conv;
 		gboolean is_string = FALSE;
 
@@ -6389,7 +6364,6 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 			esize = mono_class_native_size (eklass, NULL);
 
 		dest_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		loc = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 
 		/* Check null */
 		mono_mb_emit_ldloc (mb, conv_arg);
@@ -6936,8 +6910,9 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 			return emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		else
 			return emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+	default:
+		return conv_arg;
 	}
-	return conv_arg;
 }
 
 #ifndef DISABLE_JIT
@@ -7153,6 +7128,8 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_BOOLEAN:
 			emit_marshal (&m, argnum, t, spec, tmp_locals [i], NULL, MARSHAL_ACTION_CONV_OUT);
+			break;
+		default:
 			break;
 		}
 	}
@@ -7705,6 +7682,8 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 			case MONO_TYPE_BOOLEAN:
 				emit_marshal (m, i, t, mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
+			default:
+				break;
 			}
 		}
 		else if (invoke_sig->params [i]->attrs & PARAM_ATTRIBUTE_OUT) {
@@ -7870,8 +7849,6 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			gint32 call_conv;
 			gint32 charset = 0;
 			MonoBoolean set_last_error = 0;
-			MonoBoolean best_fit_mapping = 0;
-			MonoBoolean throw_on_unmappable = 0;
 			MonoError error;
 
 			mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, &error);
@@ -7894,9 +7871,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 				} else if (!strcmp (narg->field->name, "SetLastError")) {
 					set_last_error = *(MonoBoolean*)mono_object_unbox (o);
 				} else if (!strcmp (narg->field->name, "BestFitMapping")) {
-					best_fit_mapping = *(MonoBoolean*)mono_object_unbox (o);
+					// best_fit_mapping = *(MonoBoolean*)mono_object_unbox (o);
 				} else if (!strcmp (narg->field->name, "ThrowOnUnmappableChar")) {
-					throw_on_unmappable = *(MonoBoolean*)mono_object_unbox (o);
+					// throw_on_unmappable = *(MonoBoolean*)mono_object_unbox (o);
 				} else {
 					g_assert_not_reached ();
 				}
@@ -8589,11 +8566,9 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	MonoMethodSignature *sig;
 	MonoMethod *res;
 	MonoGenericContext *ctx = NULL;
-	MonoMethod *orig_method = NULL;
 	MonoGenericContainer *container = NULL;
 
 	if (method->is_inflated && !mono_method_get_context (method)->method_inst) {
-		orig_method = method;
 		ctx = &((MonoMethodInflated*)method)->context;
 		method = ((MonoMethodInflated*)method)->declaring;
 		container = mono_method_get_generic_container (method);
@@ -10258,7 +10233,6 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 	info = mono_marshal_load_type_info (klass);
 
 	for (i = 0; i < info->num_fields; i++) {
-		MonoMarshalNative ntype;
 		MonoMarshalConv conv;
 		MonoType *ftype = info->fields [i].field->type;
 		char *cpos;
@@ -10266,8 +10240,8 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 		if (ftype->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 
-		ntype = mono_type_to_unmanaged (ftype, info->fields [i].mspec, TRUE, 
-						klass->unicode, &conv);
+		mono_type_to_unmanaged (ftype, info->fields [i].mspec, TRUE, 
+				klass->unicode, &conv);
 			
 		cpos = ptr + info->fields [i].offset;
 
@@ -10861,10 +10835,10 @@ mono_marshal_asany (MonoObject *o, MonoMarshalNative string_encoding, int param_
 
 		return res;
 	}
+	default:
+		break;
 	}
-
 	mono_raise_exception (mono_get_exception_argument ("", "No PInvoke conversion exists for value passed to Object-typed parameter."));
-
 	return NULL;
 }
 

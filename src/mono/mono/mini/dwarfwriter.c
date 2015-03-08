@@ -157,12 +157,6 @@ emit_pop_section (MonoDwarfWriter *w)
 }
 
 static inline void
-emit_local_symbol (MonoDwarfWriter *w, const char *name, const char *end_label, gboolean func) 
-{ 
-	img_writer_emit_local_symbol (w->w, name, end_label, func); 
-}
-
-static inline void
 emit_label (MonoDwarfWriter *w, const char *name) 
 { 
 	img_writer_emit_label (w->w, name); 
@@ -220,12 +214,6 @@ static inline void
 emit_symbol_diff (MonoDwarfWriter *w, const char *end, const char* start, int offset) 
 { 
 	img_writer_emit_symbol_diff (w->w, end, start, offset); 
-}
-
-static inline void
-emit_zero_bytes (MonoDwarfWriter *w, int num) 
-{ 
-	img_writer_emit_zero_bytes (w->w, num); 
 }
 
 static inline void
@@ -1065,7 +1053,6 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 		iter = NULL;
 		while ((field = mono_class_get_fields (klass, &iter))) {
 			const char *p;
-			int len;
 			MonoTypeEnum def_type;
 
 			if (strcmp ("value__", mono_field_get_name (field)) == 0)
@@ -1077,7 +1064,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 			emit_string (w, mono_field_get_name (field));
 
 			p = mono_class_get_field_default_value (field, &def_type);
-			len = mono_metadata_decode_blob_size (p, &p);
+			/* len = */ mono_metadata_decode_blob_size (p, &p);
 			switch (mono_class_enum_basetype (klass)->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:

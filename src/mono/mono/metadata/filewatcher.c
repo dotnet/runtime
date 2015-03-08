@@ -51,7 +51,6 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 	MonoDl *fam_module;
 	int lib_used = 4; /* gamin */
 	int inotify_instance;
-	void *iter;
 	char *err;
 
 	inotify_instance = ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ();
@@ -60,11 +59,9 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 		return 5; /* inotify */
 	}
 
-	iter = NULL;
 	fam_module = mono_dl_open ("libgamin-1.so", MONO_DL_LAZY, NULL);
 	if (fam_module == NULL) {
 		lib_used = 2; /* FAM */
-		iter = NULL;
 		fam_module = mono_dl_open ("libfam.so", MONO_DL_LAZY, NULL);
 	}
 

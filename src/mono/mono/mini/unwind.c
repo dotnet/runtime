@@ -682,14 +682,13 @@ mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len)
 	i = cached_info_next;
 	
 	if (cached_info_next >= cached_info_size) {
-		MonoUnwindInfo **old_table, **new_table;
+		MonoUnwindInfo **new_table;
 
 		/*
 		 * Avoid freeing the old table so mono_get_cached_unwind_info ()
 		 * doesn't need locks/hazard pointers.
 		 */
 
-		old_table = cached_info;
 		new_table = g_new0 (MonoUnwindInfo*, cached_info_size * 2);
 
 		memcpy (new_table, cached_info, cached_info_size * sizeof (MonoUnwindInfo*));
@@ -915,7 +914,7 @@ guint8*
 mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJitExceptionInfo **ex_info, guint32 *ex_info_len, gpointer **type_info, int *this_reg, int *this_offset)
 {
 	guint8 *p, *cie, *fde_current, *fde_aug = NULL, *code, *fde_cfi, *cie_cfi;
-	gint32 fde_len, cie_offset, pc_begin, pc_range, aug_len, fde_data_len;
+	gint32 fde_len, cie_offset, pc_begin, pc_range, aug_len;
 	gint32 cie_len, cie_id, cie_version, code_align, data_align, return_reg;
 	gint32 i, cie_aug_len, buf_len;
 	char *cie_aug_str;
@@ -1010,7 +1009,6 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 		aug_len = 0;
 	}
 	fde_cfi = p;
-	fde_data_len = fde + 4 + fde_len - p;
 
 	if (code_len)
 		*code_len = pc_range;

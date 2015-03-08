@@ -3286,7 +3286,7 @@ void
 mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native)
 {
 	MonoInst *iargs [4];
-	int context_used, n;
+	int n;
 	guint32 align = 0;
 	MonoMethod *memcpy_method;
 	MonoInst *size_ins = NULL;
@@ -3303,7 +3303,6 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
 		g_assert (!native);
-		context_used = mini_class_check_context_used (cfg, klass);
 		size_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_VALUE_SIZE);
 		memcpy_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_MEMCPY);
 	}
@@ -3382,7 +3381,7 @@ void
 mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass)
 {
 	MonoInst *iargs [3];
-	int n, context_used;
+	int n;
 	guint32 align;
 	MonoMethod *memset_method;
 	MonoInst *size_ins = NULL;
@@ -3392,7 +3391,6 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 	/* FIXME: Optimize this for the case when dest is an LDADDR */
 	mono_class_init (klass);
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
-		context_used = mini_class_check_context_used (cfg, klass);
 		size_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_VALUE_SIZE);
 		bzero_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_BZERO);
 		if (!bzero_method)
@@ -3950,9 +3948,6 @@ handle_unbox_gsharedvt (MonoCompile *cfg, MonoClass *klass, MonoInst *obj, MonoB
 		MonoInst *addr = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX);
 		MonoInst *unbox_call;
 		MonoMethodSignature *unbox_sig;
-		MonoInst *var;
-
-		var = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 
 		unbox_sig = mono_mempool_alloc0 (cfg->mempool, MONO_SIZEOF_METHOD_SIGNATURE + (1 * sizeof (MonoType *)));
 		unbox_sig->ret = &klass->byval_arg;
@@ -4105,7 +4100,7 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used,
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
 		MonoBasicBlock *is_ref_bb, *is_nullable_bb, *end_bb;
 		MonoInst *res, *is_ref, *src_var, *addr;
-		int addr_reg, dreg;
+		int dreg;
 
 		dreg = alloc_ireg (cfg);
 
@@ -4133,7 +4128,6 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used,
 		
 		/* Ref case */
 		MONO_START_BB (cfg, is_ref_bb);
-		addr_reg = alloc_ireg (cfg);
 
 		/* val is a vtype, so has to load the value manually */
 		src_var = get_vreg_to_inst (cfg, val->dreg);
@@ -4725,7 +4719,7 @@ handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, M
 {
 	MonoType *enum_type = mono_type_get_underlying_type (&klass->byval_arg);
 	guint32 load_opc = mono_type_to_load_membase (cfg, enum_type);
-	gboolean is_i4 = TRUE;
+	gboolean is_i4;
 
 	switch (enum_type->type) {
 	case MONO_TYPE_I8:
@@ -4735,6 +4729,9 @@ handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, M
 	case MONO_TYPE_U:
 #endif
 		is_i4 = FALSE;
+		break;
+	default:
+		is_i4 = TRUE;
 		break;
 	}
 
@@ -5657,7 +5654,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (strcmp (cmethod->name, "get_Chars") == 0 && fsig->param_count == 2) {
 			int dreg = alloc_ireg (cfg);
 			int index_reg = alloc_preg (cfg);
-			int mult_reg = alloc_preg (cfg);
 			int add_reg = alloc_preg (cfg);
 
 #if SIZEOF_REGISTER == 8
@@ -5671,11 +5667,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 			EMIT_NEW_X86_LEA (cfg, ins, args [0]->dreg, index_reg, 1, MONO_STRUCT_OFFSET (MonoString, chars));
 			add_reg = ins->dreg;
-			/* Avoid a warning */
-			mult_reg = 0;
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg, 
 								   add_reg, 0);
 #else
+			int mult_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, mult_reg, index_reg, 1);
 			MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, mult_reg, args [0]->dreg);
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADU2_MEMBASE, dreg, 
@@ -7459,13 +7454,11 @@ is_jit_optimizer_disabled (MonoMethod *m)
 		for (i = 0; i < attrs->num_attrs; ++i) {
 			MonoCustomAttrEntry *attr = &attrs->attrs [i];
 			const gchar *p;
-			int len;
 			MonoMethodSignature *sig;
 
 			if (!attr->ctor || attr->ctor->klass != klass)
 				continue;
 			/* Decode the attribute. See reflection.c */
-			len = attr->data_size;
 			p = (const char*)attr->data;
 			g_assert (read16 (p) == 0x0001);
 			p += 2;
@@ -12655,7 +12648,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				break;
 			case CEE_ENDFILTER: {
 				MonoExceptionClause *clause, *nearest;
-				int cc, nearest_num;
+				int cc;
 
 				CHECK_STACK (1);
 				--sp;
@@ -12668,15 +12661,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 2;
 
 				nearest = NULL;
-				nearest_num = 0;
 				for (cc = 0; cc < header->num_clauses; ++cc) {
 					clause = &header->clauses [cc];
 					if ((clause->flags & MONO_EXCEPTION_CLAUSE_FILTER) &&
 						((ip - header->code) > clause->data.filter_offset && (ip - header->code) <= clause->handler_offset) &&
-					    (!nearest || (clause->data.filter_offset < nearest->data.filter_offset))) {
+					    (!nearest || (clause->data.filter_offset < nearest->data.filter_offset)))
 						nearest = clause;
-						nearest_num = cc;
-					}
 				}
 				g_assert (nearest);
 				if ((ip - header->code) != nearest->handler_offset)

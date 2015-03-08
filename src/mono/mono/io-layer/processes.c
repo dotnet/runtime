@@ -114,7 +114,7 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 static void process_close (gpointer handle, gpointer data);
 static gboolean is_pid_valid (pid_t pid);
 
-#if !defined(__OpenBSD__)
+#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__))
 static FILE *
 open_process_map (int pid, const char *mode);
 #endif
@@ -1694,7 +1694,7 @@ static gboolean match_procname_to_modulename (char *procname, char *modulename)
 	return result;
 }
 
-#if !defined(__OpenBSD__)
+#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__))
 static FILE *
 open_process_map (int pid, const char *mode)
 {
@@ -2601,7 +2601,7 @@ static guint32
 process_wait (gpointer handle, guint32 timeout, gboolean alertable)
 {
 	WapiHandle_process *process_handle;
-	pid_t pid, ret;
+	pid_t pid G_GNUC_UNUSED, ret;
 	int status;
 	guint32 start;
 	guint32 now;

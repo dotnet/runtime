@@ -496,12 +496,10 @@ static void
 emit_time (LogBuffer *logbuffer, uint64_t value)
 {
 	uint64_t tdiff = value - logbuffer->last_time;
-	unsigned char *p;
 	if (value < logbuffer->last_time)
 		printf ("time went backwards\n");
 	//if (tdiff > 1000000)
 	//	printf ("large time offset: %llu\n", tdiff);
-	p = logbuffer->data;
 	encode_uleb128 (tdiff, logbuffer->data, &logbuffer->data);
 	/*if (tdiff != decode_uleb128 (p, &p))
 		printf ("incorrect encoding: %llu\n", tdiff);*/
@@ -2741,7 +2739,6 @@ create_profiler (const char *filename)
 		int fd = strtol (nf + 1, NULL, 10);
 		prof->file = fdopen (fd, "a");
 	} else {
-		FILE *f;
 		if (force_delete)
 			unlink (nf);
 		prof->file = fopen (nf, "wb");

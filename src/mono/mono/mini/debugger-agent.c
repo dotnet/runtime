@@ -8939,7 +8939,6 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	DebuggerTlsData *tls;
 	StackFrame *frame;
 	MonoDebugMethodJitInfo *jit;
-	MonoDebugVarInfo *var;
 	MonoMethodSignature *sig;
 	gssize id;
 	MonoMethodHeader *header;
@@ -9015,14 +9014,10 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 				g_assert (pos >= 0 && pos < jit->num_params);
 
-				var = &jit->params [pos];
-
 				add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->domain, FALSE);
 			} else {
 				g_assert (pos >= 0 && pos < jit->num_locals);
 
-				var = &jit->locals [pos];
-				
 				add_var (buf, jit, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->domain, FALSE);
 			}
 		}

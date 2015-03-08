@@ -129,15 +129,6 @@ decode_int (guint8 *buf, guint8 **endbuf, guint8 *limit)
 	return (((int)buf [0]) << 0) | (((int)buf [1]) << 8) | (((int)buf [2]) << 16) | (((int)buf [3]) << 24);
 }
 
-static inline int
-decode_short (guint8 *buf, guint8 **endbuf, guint8 *limit)
-{
-	*endbuf = buf + 2;
-	g_assert (*endbuf <= limit);
-
-	return (((int)buf [0]) << 0) | (((int)buf [1]) << 8);
-}
-
 static char*
 decode_string_value (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
