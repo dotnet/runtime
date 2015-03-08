@@ -21,4 +21,9 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
+  </PropertyGroup>
+  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
+
 </Project>
