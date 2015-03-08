@@ -4345,6 +4345,8 @@ mono_type_set_alignment (MonoTypeEnum type, int align)
 int
 mono_type_size (MonoType *t, int *align)
 {
+	MonoTypeEnum simple_type;
+
 	if (!t) {
 		*align = 1;
 		return 0;
@@ -4354,7 +4356,9 @@ mono_type_size (MonoType *t, int *align)
 		return sizeof (gpointer);
 	}
 
-	switch (t->type){
+	simple_type = t->type;
+ again:
+	switch (simple_type) {
 	case MONO_TYPE_VOID:
 		*align = 1;
 		return 0;
@@ -4427,9 +4431,14 @@ mono_type_size (MonoType *t, int *align)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		/* FIXME: Martin, this is wrong. */
-		*align = MONO_ABI_ALIGNOF (gpointer);
-		return sizeof (gpointer);
+		if (t->data.generic_param->gshared_constraint == 0 || t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE) {
+			*align = MONO_ABI_ALIGNOF (gpointer);
+			return sizeof (gpointer);
+		} else {
+			/* The gparam can only match types given by gshared_constraint */
+			simple_type = t->data.generic_param->gshared_constraint;
+			goto again;
+		}
 	default:
 		g_error ("mono_type_size: type 0x%02x unknown", t->type);
 	}
@@ -4453,6 +4462,7 @@ int
 mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 {
 	int tmp;
+	MonoTypeEnum simple_type;
 #if SIZEOF_VOID_P == SIZEOF_REGISTER
 	int stack_slot_size = sizeof (gpointer);
 	int stack_slot_align = MONO_ABI_ALIGNOF (gpointer);
@@ -4471,7 +4481,9 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		return stack_slot_size;
 	}
 
-	switch (t->type){
+	simple_type = t->type;
+ again:
+	switch (simple_type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I1:
@@ -4494,8 +4506,14 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_assert (allow_open);
-		*align = stack_slot_align;
-		return stack_slot_size;
+		if (t->data.generic_param->gshared_constraint == 0 || t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE) {
+			*align = stack_slot_align;
+			return stack_slot_size;
+		} else {
+			/* The gparam can only match types given by gshared_constraint */
+			simple_type = t->data.generic_param->gshared_constraint;
+			goto again;
+		}
 	case MONO_TYPE_TYPEDBYREF:
 		*align = stack_slot_align;
 		return stack_slot_size * 3;
@@ -4688,7 +4706,7 @@ mono_metadata_generic_param_hash (MonoGenericParam *p)
 	guint hash;
 	MonoGenericParamInfo *info;
 
-	hash = (mono_generic_param_num (p) << 2) | p->serial;
+	hash = (mono_generic_param_num (p) << 2) | p->gshared_constraint;
 	info = mono_generic_param_info (p);
 	/* Can't hash on the owner klass/method, since those might not be set when this is called */
 	if (info)
@@ -4703,7 +4721,7 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 		return TRUE;
 	if (mono_generic_param_num (p1) != mono_generic_param_num (p2))
 		return FALSE;
-	if (p1->serial != p2->serial)
+	if (p1->gshared_constraint != p2->gshared_constraint)
 		return FALSE;
 
 	/*

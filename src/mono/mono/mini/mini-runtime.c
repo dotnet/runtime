@@ -1670,7 +1670,7 @@ get_gsharedvt_type (MonoType *t)
 	MonoImage *image = NULL;
 
 	/*
-	 * Create an anonymous gparam with a different serial so normal gshared and gsharedvt methods have
+	 * Create an anonymous gparam with a different gshared_constraint so normal gshared and gsharedvt methods have
 	 * a different instantiation.
 	 */
 	g_assert (mono_generic_param_info (par));
@@ -1692,7 +1692,7 @@ get_gsharedvt_type (MonoType *t)
 	copy->owner = NULL;
 	// FIXME:
 	copy->image = mono_defaults.corlib;
-	copy->serial = 1;
+	copy->gshared_constraint = MONO_TYPE_VALUETYPE;
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = copy;
 
@@ -1709,33 +1709,7 @@ get_gsharedvt_type (MonoType *t)
 static gboolean
 is_gsharedvt_type (MonoType *t)
 {
-	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->serial == 1;
-}
-
-/* Return whenever METHOD is a gsharedvt method */
-static gboolean
-is_gsharedvt_method (MonoMethod *method)
-{
-	MonoGenericContext *context;
-	MonoGenericInst *inst;
-	int i;
-
-	if (!method->is_inflated)
-		return FALSE;
-	context = mono_method_get_context (method);
-	inst = context->class_inst;
-	if (inst) {
-		for (i = 0; i < inst->type_argc; ++i)
-			if (is_gsharedvt_type (inst->type_argv [i]))
-				return TRUE;
-	}
-	inst = context->method_inst;
-	if (inst) {
-		for (i = 0; i < inst->type_argc; ++i)
-			if (is_gsharedvt_type (inst->type_argv [i]))
-				return TRUE;
-	}
-	return FALSE;
+	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE;
 }
 
 static gboolean
@@ -1877,7 +1851,7 @@ mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *contex
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
-			if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->serial == 1)
+			if (is_gsharedvt_type (type))
 				gsctx->var_is_vt [i] = TRUE;
 		}
 	}
@@ -1893,7 +1867,7 @@ mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *contex
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
-			if ((type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && type->data.generic_param->serial == 1)
+			if (is_gsharedvt_type (type))
 				gsctx->mvar_is_vt [i] = TRUE;
 		}
 	}

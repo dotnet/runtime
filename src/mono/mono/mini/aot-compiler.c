@@ -2495,13 +2495,13 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		encode_value (container ? 1 : 0, p, &p);
 		if (container) {
 			encode_value (container->is_method, p, &p);
-			g_assert (par->serial == 0);
+			g_assert (par->gshared_constraint == 0);
 			if (container->is_method)
 				encode_method_ref (acfg, container->owner.method, p, &p);
 			else
 				encode_klass_ref (acfg, container->owner.klass, p, &p);
 		} else {
-			encode_value (par->serial, p, &p);
+			encode_value (par->gshared_constraint, p, &p);
 		}
 	} else if (klass->byval_arg.type == MONO_TYPE_PTR) {
 		encode_value (MONO_AOT_TYPEREF_PTR, p, &p);

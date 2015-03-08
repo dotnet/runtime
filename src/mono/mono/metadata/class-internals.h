@@ -563,12 +563,14 @@ struct _MonoDynamicGenericClass {
 struct _MonoGenericParam {
 	/*
 	 * Type or method this parameter was defined in.
-	 * If this is non-null, this is a MonoGenericParamFull structure.
 	 */
 	MonoGenericContainer *owner;
 	guint16 num;
-	/* For internal runtime use, used to make different versions of the same param */
-	guint16 serial;
+	/*
+	 * If != 0, this is a generated generic param used by the JIT to implement generic
+	 * sharing.
+	 */
+	MonoTypeEnum gshared_constraint;
 	/* 
 	 * If owner is NULL, or owner is 'owned' by this gparam,
 	 * then this is the image whose mempool this struct was allocated from.

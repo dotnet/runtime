@@ -467,7 +467,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		int type = decode_value (p, &p);
 		int num = decode_value (p, &p);
 		gboolean has_container = decode_value (p, &p);
-		int serial = 0;
+		MonoTypeEnum gshared_constraint = 0;
 
 		if (has_container) {
 			gboolean is_method = decode_value (p, &p);
@@ -490,19 +490,19 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				container = class_def->generic_container;
 			}
 		} else {
-			serial = decode_value (p, &p);
+			gshared_constraint = decode_value (p, &p);
 		}
 
 		t = g_new0 (MonoType, 1);
 		t->type = type;
 		if (container) {
 			t->data.generic_param = mono_generic_container_get_param (container, num);
-			g_assert (serial == 0);
+			g_assert (gshared_constraint == 0);
 		} else {
 			/* Anonymous */
 			MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));
 			par->num = num;
-			par->serial = serial;
+			par->gshared_constraint = gshared_constraint;
 			// FIXME:
 			par->image = mono_defaults.corlib;
 			t->data.generic_param = par;

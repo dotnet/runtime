@@ -6178,7 +6178,7 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 static MonoClass *
 get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_lock)
 {
-	int n = mono_generic_param_num (param) | ((guint32)param->serial << 16);
+	int n = mono_generic_param_num (param) | ((guint32)param->gshared_constraint << 16);
 	MonoImage *image = param->image;
 	GHashTable *ht;
 
@@ -6209,7 +6209,7 @@ get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_
 static void
 set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *klass)
 {
-	int n = mono_generic_param_num (param) | ((guint32)param->serial << 16);
+	int n = mono_generic_param_num (param) | ((guint32)param->gshared_constraint << 16);
 	MonoImage *image = param->image;
 
 	g_assert (image);
