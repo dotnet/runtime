@@ -384,11 +384,11 @@ void ZapWriter::WritePad(DWORD dwSize, BYTE fill)
     if (dwSize == 0)
         return;
 
-    memset(m_pBuffer, fill, max(WRITE_BUFFER_SIZE, dwSize));
+    memset(m_pBuffer, fill, min(WRITE_BUFFER_SIZE, dwSize));
 
     while (dwSize >= WRITE_BUFFER_SIZE)
     {
-        cbAvailable = max(WRITE_BUFFER_SIZE, dwSize);
+        cbAvailable = min(WRITE_BUFFER_SIZE, dwSize);
         IfFailThrow(m_pStream->Write(m_pBuffer, cbAvailable, NULL));
         dwSize -= cbAvailable;
     }
