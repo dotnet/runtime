@@ -1745,6 +1745,12 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 	return ji;
 }
 
+MonoJitInfo *
+mono_get_jit_info_from_method (MonoDomain *domain, MonoMethod *method)
+{
+	return lookup_method (domain, method);
+}
+
 #if ENABLE_JIT_MAP
 static FILE* perf_map_file;
 
