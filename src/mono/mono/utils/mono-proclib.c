@@ -99,7 +99,7 @@ mono_process_list (int *size)
 		if (res)
 			return NULL;
 		processes = malloc (data_len);
-		res = sysctl (mib, 4, NULL, &data_len, NULL, 0);
+		res = sysctl (mib, 4, processes, &data_len, NULL, 0);
 		if (res < 0) {
 			free (processes);
 			if (errno != ENOMEM)
