@@ -8,13 +8,13 @@ internal static partial class Interop
 {
     internal static partial class libc
     {
-        [DllImport(Libc)]
+        [DllImport(Libraries.Libc)]
         internal static extern int inotify_init();
 
-        [DllImport(Libc)]
+        [DllImport(Libraries.Libc)]
         internal static extern int inotify_add_watch(int fd, string pathname, uint mask);
 
-        [DllImport(Libc)]
+        [DllImport(Libraries.Libc)]
         internal static extern int inotify_rm_watch(int fd, int wd);
 
         [Flags]
