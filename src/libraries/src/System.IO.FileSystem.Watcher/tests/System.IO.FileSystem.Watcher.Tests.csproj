@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{20411A66-C7A4-4941-8FA2-66308365FD22}</ProjectGuid>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.IO.FileSystem.Watcher.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.IO.FileSystem.Watcher.csproj">
+      <Project>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</Project>
+      <Name>System.IO.FileSystem.Watcher</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FileSystemWatcher.Changed.cs" />
+    <Compile Include="FileSystemWatcher.Created.cs" />
+    <Compile Include="FileSystemWatcher.Deleted.cs" />
+    <Compile Include="FileSystemWatcher.Error.cs" />
+    <Compile Include="FileSystemWatcher.IncludeSubDirectories.cs" />
+    <Compile Include="FileSystemWatcher.InternalBufferSize.cs" />
+    <Compile Include="FileSystemWatcher.NotifyFilter.cs" />
+    <Compile Include="FileSystemWatcher.Renamed.cs" />
+    <Compile Include="Utility\TemporaryTestDirectory.cs" />
+    <Compile Include="Utility\TemporaryTestFile.cs" />
+    <Compile Include="Utility\TestFileSystemWatcher.cs" />
+    <Compile Include="Utility\Utility.cs" />
+    <Compile Include="ErrorEventArgs.unit.cs" />
+    <Compile Include="FileSystemEventArgs.unit.cs" />
+    <Compile Include="FileSystemWatcher.unit.cs" />
+    <Compile Include="RenamedEventArgs.unit.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

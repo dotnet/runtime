@@ -22,9 +22,17 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+    <ProjectReference Include="..\..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
       <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
       <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.IO.FileSystem.Watcher\src\System.IO.FileSystem.Watcher.csproj">
+      <Project>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</Project>
+      <Name>System.IO.FileSystem.Watcher</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.IO.FileSystem.Primitives\src\System.IO.FileSystem.Primitives.csproj">
+      <Project>{6c05678e-394c-4cff-b453-a18e28c8f2c3}</Project>
+      <Name>System.IO.FileSystem.Primitives</Name>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.FileSystem.csproj">
       <Project>{879c23dc-d828-4dfb-8e92-abbc11b71035}</Project>
