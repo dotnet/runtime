@@ -213,7 +213,7 @@ namespace System.IO
                     {
                         if (errorCode == 995 /* ERROR_OPERATION_ABORTED */)
                         {
-                            //Win2000 inside a service the first completion status is false
+                            //Inside a service the first completion status is false
                             //cannot return without monitoring again.
                             //Because this return statement is inside a try/finally block,
                             //the finally block will execute. It does restart the monitoring.

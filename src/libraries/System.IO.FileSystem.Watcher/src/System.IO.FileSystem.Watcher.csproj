@@ -39,10 +39,11 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
-    <Compile Include="Interop\Interop.Linux.cs" />
-    <Compile Include="$(CommonPath)\Interop\Interop.CoreFileIo.Unix.cs" />
-    <Compile Include="$(CommonPath)\Interop\Interop.Errors.Unix.cs" />
-    <Compile Include="$(CommonPath)\Interop\Interop.strerror.Unix.cs" />
+    <Compile Include="Interop\Linux\Interop.notify.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
