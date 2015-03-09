@@ -421,7 +421,7 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-console-l1-1-0.dll")]
         internal extern static uint GetConsoleOutputCP();
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, BestFitMapping = false)]
+        [DllImport("api-ms-win-security-cpwl-l1-1-0.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, BestFitMapping = false)]
         internal static extern bool CreateProcessWithLogonW(
             string userName,
             string domain,
