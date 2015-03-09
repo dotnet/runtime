@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Resources\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)\System\SR.cs" />
+    <Compile Include="System\HResults.cs" />
+    <Compile Include="System\IO\ErrorEventArgs.cs" />
+    <Compile Include="System\IO\ErrorEventHandler.cs" />
+    <Compile Include="System\IO\FileSystemEventArgs.cs" />
+    <Compile Include="System\IO\FileSystemEventHandler.cs" />
+    <Compile Include="System\IO\FileSystemWatcher.cs" />
+    <Compile Include="System\IO\InternalBufferOverflowException.cs" />
+    <Compile Include="System\IO\NotifyFilters.cs" />
+    <Compile Include="System\IO\PatternMatcher.cs" />
+    <Compile Include="System\IO\RenamedEventArgs.cs" />
+    <Compile Include="System\IO\RenamedEventHandler.cs" />
+    <Compile Include="System\IO\WatcherChangeTypes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <Compile Include="Microsoft\Win32\NativeMethods.cs" />
+    <Compile Include="Microsoft\Win32\SafeNativeMethods.cs" />
+    <Compile Include="Microsoft\Win32\UnsafeNativeMethods.cs" />
+    <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+    <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
+    <Compile Include="Interop\Interop.Linux.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.CoreFileIo.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.Errors.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.strerror.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
