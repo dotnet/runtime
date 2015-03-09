@@ -61,15 +61,15 @@ namespace System.IO
                                                            NotifyFilters.Security |
                                                            NotifyFilters.Size);
 
+#if DEBUG
         static FileSystemWatcher()
         {
-#if DEBUG
             int s_notifyFiltersValidMask = 0;
             foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
                 s_notifyFiltersValidMask |= enumValue;
             Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
-#endif
         }
+#endif
 
         ~FileSystemWatcher()
         {
@@ -262,7 +262,7 @@ namespace System.IO
             set
             {
                 value = (value == null) ? string.Empty : value;
-                if (String.Compare(_directory, value, StringComparison.OrdinalIgnoreCase) != 0)
+                if (!String.Equals(_directory, value, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!Directory.Exists(value))
                     {
