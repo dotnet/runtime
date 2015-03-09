@@ -41,7 +41,7 @@ namespace System.IO
             try { } finally
             {
                 int fd;
-                Interop.CheckIo(fd = Interop.inotify_init());
+                Interop.CheckIo(fd = Interop.libc.inotify_init());
                 handle = new SafeFileHandle((IntPtr)fd, ownsHandle: true);
             }
 
@@ -99,19 +99,19 @@ namespace System.IO
 
         /// <summary>
         /// Maps the FileSystemWatcher's NotifyFilters enumeration to the 
-        /// corresponding Interop.NotifyEvents values.
+        /// corresponding Interop.libc.NotifyEvents values.
         /// </summary>
         /// <param name="filters">The filters provided the by user.</param>
         /// <returns>The corresponding NotifyEvents values to use with inotify.</returns>
-        private static Interop.NotifyEvents TranslateFilters(NotifyFilters filters)
+        private static Interop.libc.NotifyEvents TranslateFilters(NotifyFilters filters)
         {
-            Interop.NotifyEvents result = 0;
+            Interop.libc.NotifyEvents result = 0;
 
             // We always include a few special inotify watch values that configure
             // the watch's behavior.
             result |=
-                Interop.NotifyEvents.IN_ONLYDIR |     // we only allow watches on directories
-                Interop.NotifyEvents.IN_EXCL_UNLINK;  // we want to stop monitoring unlinked files
+                Interop.libc.NotifyEvents.IN_ONLYDIR |     // we only allow watches on directories
+                Interop.libc.NotifyEvents.IN_EXCL_UNLINK;  // we want to stop monitoring unlinked files
 
             // For the Created and Deleted events, we need to always
             // register for the created/deleted inotify events, regardless
@@ -120,8 +120,8 @@ namespace System.IO
             // and having this for subdirectories results in duplicate notifications, one from 
             // the parent and one from self.
             result |= 
-                Interop.NotifyEvents.IN_CREATE | 
-                Interop.NotifyEvents.IN_DELETE;
+                Interop.libc.NotifyEvents.IN_CREATE | 
+                Interop.libc.NotifyEvents.IN_DELETE;
 
             // For the Changed event, which inotify events we subscribe to
             // are based on the NotifyFilters supplied.
@@ -141,15 +141,15 @@ namespace System.IO
                 NotifyFilters.Size;
             if ((filters & filtersForAccess) != 0)
             {
-                result |= Interop.NotifyEvents.IN_ACCESS;
+                result |= Interop.libc.NotifyEvents.IN_ACCESS;
             }
             if ((filters & filtersForModify) != 0)
             {
-                result |= Interop.NotifyEvents.IN_MODIFY;
+                result |= Interop.libc.NotifyEvents.IN_MODIFY;
             }
             if ((filters & filtersForAttrib) != 0)
             {
-                result |= Interop.NotifyEvents.IN_ATTRIB;
+                result |= Interop.libc.NotifyEvents.IN_ATTRIB;
             }
 
             // For the Rename event, we'll register for the corresponding move inotify events if the 
@@ -160,8 +160,8 @@ namespace System.IO
             if ((filters & filtersForMoved) != 0)
             {
                 result |=
-                    Interop.NotifyEvents.IN_MOVED_FROM |
-                    Interop.NotifyEvents.IN_MOVED_TO;
+                    Interop.libc.NotifyEvents.IN_MOVED_FROM |
+                    Interop.libc.NotifyEvents.IN_MOVED_TO;
             }
 
             return result;
@@ -210,7 +210,7 @@ namespace System.IO
             /// <summary>
             /// Filters to use when adding a watch on directories.
             /// </summary>
-            private readonly Interop.NotifyEvents _notifyFilters;
+            private readonly Interop.libc.NotifyEvents _notifyFilters;
             /// <summary>
             /// Whether to monitor subdirectories.  Unlike Win32, inotify does not implicitly monitor subdirectories;
             /// watches must be explicitly added for those subdirectories.
@@ -236,7 +236,7 @@ namespace System.IO
             /// <summary>Initializes the instance with all state necessary to operate a watch.</summary>
             internal RunningInstance(
                 FileSystemWatcher watcher, SafeFileHandle inotifyHandle, string directoryPath,
-                bool includeSubdirectories, Interop.NotifyEvents notifyFilters, CancellationToken cancellationToken)
+                bool includeSubdirectories, Interop.libc.NotifyEvents notifyFilters, CancellationToken cancellationToken)
             {
                 Debug.Assert(watcher != null);
                 Debug.Assert(inotifyHandle != null && !inotifyHandle.IsInvalid && !inotifyHandle.IsClosed);
@@ -299,7 +299,7 @@ namespace System.IO
 
                 // Add a watch for the full path.  If the path is already being watched, this will return 
                 // the existing descriptor.  This works even in the case of a rename.
-                int wd = (int)SysCall(fd => Interop.inotify_add_watch(fd, fullPath, (uint)_notifyFilters));
+                int wd = (int)SysCall(fd => Interop.libc.inotify_add_watch(fd, fullPath, (uint)_notifyFilters));
 
                 // Then store the path information into our map.
                 WatchedDirectory directoryEntry;
@@ -406,7 +406,7 @@ namespace System.IO
                         // Remove the inotify watch.  This could fail if our state has become inconsistent
                         // with the state of the world (e.g. due to lost events).  So we don't want failures
                         // to throw exceptions, but we do assert to detect coding problems during debugging.
-                        long result = Interop.inotify_rm_watch(fd, directoryEntry.WatchDescriptor);
+                        long result = Interop.libc.inotify_rm_watch(fd, directoryEntry.WatchDescriptor);
                         Debug.Assert(result >= 0);
                         return 0;
                     });
@@ -426,7 +426,7 @@ namespace System.IO
                     SysCall(fd => {
                         foreach (int wd in _wdToPathMap.Keys)
                         {
-                            int result = Interop.inotify_rm_watch(fd, wd);
+                            int result = Interop.libc.inotify_rm_watch(fd, wd);
                             Debug.Assert(result >= 0); // ignore errors; they're non-fatal, but they also shouldn't happen
                         }
                         return 0;
@@ -494,12 +494,12 @@ namespace System.IO
                         // If it is, we may need to do special processing, such as adding a watch for new 
                         // directories if IncludeSubdirectories is enabled.  Since we're only watching
                         // directories, any IN_IGNORED event is also for a directory.
-                        bool isDir = (mask & (uint)(Interop.NotifyEvents.IN_ISDIR | Interop.NotifyEvents.IN_IGNORED)) != 0;
+                        bool isDir = (mask & (uint)(Interop.libc.NotifyEvents.IN_ISDIR | Interop.libc.NotifyEvents.IN_IGNORED)) != 0;
 
                         // Renames come in the form of two events: IN_MOVED_FROM and IN_MOVED_TO.
                         // In general, these should come as a sequence, one immediately after the other.
                         // So, we delay raising an event for IN_MOVED_FROM until we see what comes next.
-                        if (previousEventName != null && ((mask & (uint)Interop.NotifyEvents.IN_MOVED_TO) == 0 || previousEventCookie != nextEvent.cookie))
+                        if (previousEventName != null && ((mask & (uint)Interop.libc.NotifyEvents.IN_MOVED_TO) == 0 || previousEventCookie != nextEvent.cookie))
                         {
                             // IN_MOVED_FROM without an immediately-following corresponding IN_MOVED_TO.
                             // We have to assume that it was moved outside of our root watch path, which
@@ -529,43 +529,43 @@ namespace System.IO
                             previousEventCookie = 0;
                         }
 
-                        const Interop.NotifyEvents switchMask =
-                            Interop.NotifyEvents.IN_Q_OVERFLOW | Interop.NotifyEvents.IN_IGNORED |
-                            Interop.NotifyEvents.IN_CREATE | Interop.NotifyEvents.IN_DELETE |
-                            Interop.NotifyEvents.IN_ACCESS | Interop.NotifyEvents.IN_MODIFY | Interop.NotifyEvents.IN_ATTRIB |
-                            Interop.NotifyEvents.IN_MOVED_FROM | Interop.NotifyEvents.IN_MOVED_TO;
-                        switch ((Interop.NotifyEvents)(mask & (uint)switchMask))
+                        const Interop.libc.NotifyEvents switchMask =
+                            Interop.libc.NotifyEvents.IN_Q_OVERFLOW | Interop.libc.NotifyEvents.IN_IGNORED |
+                            Interop.libc.NotifyEvents.IN_CREATE | Interop.libc.NotifyEvents.IN_DELETE |
+                            Interop.libc.NotifyEvents.IN_ACCESS | Interop.libc.NotifyEvents.IN_MODIFY | Interop.libc.NotifyEvents.IN_ATTRIB |
+                            Interop.libc.NotifyEvents.IN_MOVED_FROM | Interop.libc.NotifyEvents.IN_MOVED_TO;
+                        switch ((Interop.libc.NotifyEvents)(mask & (uint)switchMask))
                         {
-                            case Interop.NotifyEvents.IN_Q_OVERFLOW:
+                            case Interop.libc.NotifyEvents.IN_Q_OVERFLOW:
                                 watcher.NotifyInternalBufferOverflowEvent();
                                 break;
-                            case Interop.NotifyEvents.IN_CREATE:
+                            case Interop.libc.NotifyEvents.IN_CREATE:
                                 watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Created, expandedName);
                                 addWatch = true;
                                 break;
-                            case Interop.NotifyEvents.IN_IGNORED:
+                            case Interop.libc.NotifyEvents.IN_IGNORED:
                                 // We're getting an IN_IGNORED because a directory watch was removed.
                                 // and we're getting this far in our code because we still have an entry for it
                                 // in our dictionary.  So we want to clean up the relevant state, but not clean
                                 // attempt to call back to inotify to remove the watches.
                                 RemoveWatchedDirectory(associatedDirectoryEntry, removeInotify:false);
                                 break;
-                            case Interop.NotifyEvents.IN_DELETE:
+                            case Interop.libc.NotifyEvents.IN_DELETE:
                                 watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Deleted, expandedName);
                                 // We don't explicitly RemoveWatchedDirectory here, as that'll be handled
                                 // by IN_IGNORED processing if this is a directory.
                                 break;
-                            case Interop.NotifyEvents.IN_ACCESS:
-                            case Interop.NotifyEvents.IN_MODIFY:
-                            case Interop.NotifyEvents.IN_ATTRIB:
+                            case Interop.libc.NotifyEvents.IN_ACCESS:
+                            case Interop.libc.NotifyEvents.IN_MODIFY:
+                            case Interop.libc.NotifyEvents.IN_ATTRIB:
                                 watcher.NotifyFileSystemEventArgs(WatcherChangeTypes.Changed, expandedName);
                                 break;
-                            case Interop.NotifyEvents.IN_MOVED_FROM:
+                            case Interop.libc.NotifyEvents.IN_MOVED_FROM:
                                 previousEventName = expandedName;
                                 previousEventParent = isDir ? associatedDirectoryEntry : null;
                                 previousEventCookie = nextEvent.cookie;
                                 break;
-                            case Interop.NotifyEvents.IN_MOVED_TO:
+                            case Interop.libc.NotifyEvents.IN_MOVED_TO:
                                 if (previousEventName != null)
                                 {
                                     // If the previous name from IN_MOVED_FROM is non-null, then this is a rename.
