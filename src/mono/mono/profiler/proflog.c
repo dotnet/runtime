@@ -1843,7 +1843,7 @@ perf_event_syscall (struct perf_event_attr *attr, pid_t pid, int cpu, int group_
 	return syscall(/*__NR_perf_event_open*/ 298, attr, pid, cpu, group_fd, flags);
 #elif defined(__i386__)
 	return syscall(/*__NR_perf_event_open*/ 336, attr, pid, cpu, group_fd, flags);
-#elif defined(__arm__)
+#elif defined(__arm__) || defined (__aarch64__)
 	return syscall(/*__NR_perf_event_open*/ 364, attr, pid, cpu, group_fd, flags);
 #else
 	return -1;
