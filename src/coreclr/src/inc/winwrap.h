@@ -992,11 +992,9 @@ inline int LateboundMessageBoxW(HWND hWnd,
     DbgWPrintf(W("********\n"));
     DbgWPrintf(W("\n"));
 
-    // If a debugger is attached breakpoint as well.
-    if (IsDebuggerPresent())
-        DebugBreak();
-
-    return IDCANCEL;
+    // Indicate to the caller that message box was not actually displayed
+    SetLastError(ERROR_NOT_SUPPORTED);
+    return 0;
 }
 
 inline int LateboundMessageBoxA(HWND hWnd,
