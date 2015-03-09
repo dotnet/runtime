@@ -264,7 +264,7 @@ void
 mono_threads_core_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 	MEMORY_BASIC_INFORMATION meminfo;
-#ifdef TARGET_AMD64
+#ifdef _WIN64
 	/* win7 apis */
 	NT_TIB* tib = (NT_TIB*)NtCurrentTeb();
 	guint8 *stackTop = (guint8*)tib->StackBase;
