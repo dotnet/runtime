@@ -1947,7 +1947,7 @@ namespace System {
         [SecurityCritical]
         internal static Byte[] GetLocalTzFile() {
             // UNIXTODO
-            throw new NotImplementedException();
+            return null;
         }
 
         //
