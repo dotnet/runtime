@@ -388,7 +388,6 @@ struct _BinaryObject {
 };
 
 struct _MonoProfiler {
-	LogBuffer *buffers;
 	StatBuffer *stat_buffers;
 	FILE* file;
 #if defined (HAVE_SYS_ZLIB)
@@ -1762,13 +1761,6 @@ dump_sample_hits_inner (MonoProfiler *prof, StatBuffer *sbuf, int recurse, GPtrA
 }
 
 #if USE_PERF_EVENTS
-#ifndef __NR_perf_event_open
-#ifdef __arm__
-#define __NR_perf_event_open 364
-#else
-#define __NR_perf_event_open 241
-#endif
-#endif
 
 static int
 mono_cpu_count (void)
@@ -2518,10 +2510,10 @@ new_filename (const char* filename)
 	return res;
 }
 
-#ifndef DISABLE_HELPER_THREAD
-
 //this is exposed by the JIT, but it's not meant to be a supported API for now.
 extern void mono_threads_attach_tools_thread (void);
+
+#ifndef DISABLE_HELPER_THREAD
 
 static void*
 helper_thread (void* arg)
