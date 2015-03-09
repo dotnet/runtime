@@ -16,8 +16,12 @@
 
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)\System\SR.cs" />
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link> 
+    </Compile>
+    <Compile Include="$(CommonPath)\System\SR.cs">
+      <Link>Common\System\SR.cs</Link>
+    </Compile>
     <Compile Include="System\HResults.cs" />
     <Compile Include="System\IO\ErrorEventArgs.cs" />
     <Compile Include="System\IO\ErrorEventHandler.cs" />
@@ -33,17 +37,24 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Compile Include="Microsoft\Win32\NativeMethods.cs" />
-    <Compile Include="Microsoft\Win32\SafeNativeMethods.cs" />
     <Compile Include="Microsoft\Win32\UnsafeNativeMethods.cs" />
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
     <Compile Include="Interop\Linux\Interop.notify.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
+      <Link>Common\Interop\Unix\libc\Interop.read.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
+      <Link>Common\Interop\Unix\libc\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
