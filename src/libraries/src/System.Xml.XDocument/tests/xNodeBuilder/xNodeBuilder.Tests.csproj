@@ -13,6 +13,7 @@
       Disable running tests for this project as most of them are failing because of the infrastructure issue
       https://github.com/dotnet/corefx/issues/641
     -->
+    <TestCategories>OuterLoop</TestCategories>
     <RunTestsForProject>False</RunTestsForProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

@@ -10,6 +10,7 @@
     <RootNamespace>System.Numerics.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Numerics.Tests</AssemblyName>
     <ProjectGuid>{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}</ProjectGuid>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
