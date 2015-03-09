@@ -54,14 +54,14 @@ namespace System.IO
                 // to avoid race conditions that could result if the users quickly starts/stops/starts/stops/etc. causing multiple
                 // active operations to all be outstanding at the same time.
                 new RunningInstance(
-                    this, handle, directory,
+                    this, handle, _directory,
                     IncludeSubdirectories, TranslateFilters(NotifyFilter), cancellation.Token);
 
                 // Now that we've started running successfully, store the cancellation object and mark the instance
                 // as running.  We wait to store the cancellation token so that if there was a failure, StartRaisingEvents
                 // may be called to try again without first having to call StopRaisingEvents.
                 _cancellation = cancellation;
-                enabled = true;
+                _enabled = true;
             }
             catch
             {
@@ -82,7 +82,7 @@ namespace System.IO
             var cts = _cancellation;
             if (cts != null)
             {
-                enabled = false;
+                _enabled = false;
                 _cancellation = null;
                 cts.Cancel();
             }
@@ -632,7 +632,7 @@ namespace System.IO
                                 long result;
                                 fixed (byte* buf = _buffer)
                                 {
-                                    result = (long)Interop.read(fd, buf, (IntPtr)_buffer.Length);
+                                    result = (long)Interop.libc.read(fd, buf, (IntPtr)_buffer.Length);
                                 }
                                 Debug.Assert(result <= _buffer.Length);
                                 return result;
