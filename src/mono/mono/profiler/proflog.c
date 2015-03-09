@@ -69,11 +69,17 @@
 #endif
 
 #if defined(__linux__)
+
 #include <unistd.h>
 #include <sys/syscall.h>
 #include "perf_event.h"
+
+#ifndef DISABLE_PERF_EVENTS
 #define USE_PERF_EVENTS 1
+
 static int read_perf_mmap (MonoProfiler* prof, int cpu);
+#endif
+
 #endif
 
 #define BUFFER_SIZE (4096 * 16)
