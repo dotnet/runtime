@@ -9,6 +9,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>TreeManipulation.Tests</AssemblyName>
     <RootNamespace>XLinqTests</RootNamespace>
+    <TestCategories>OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
