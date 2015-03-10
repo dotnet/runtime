@@ -36,7 +36,9 @@
 class ApplicationSecurityDescriptor : public SecurityDescriptorBase<IApplicationSecurityDescriptor>
 {
 public:
+#ifndef FEATURE_PAL
     VPTR_VTABLE_CLASS(ApplicationSecurityDescriptor, SecurityDescriptorBase<IApplicationSecurityDescriptor>)
+#endif
 
 private:
     // Dependency in managed : System.Security.HostSecurityManager.cs

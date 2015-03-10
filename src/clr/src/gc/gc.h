@@ -356,6 +356,7 @@ void record_changed_seg (BYTE* start, BYTE* end,
 #define GC_ALLOC_ALIGN8_BIAS 0x4
 
 class GCHeap {
+    friend struct ::_DacGlobals;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif

@@ -133,7 +133,7 @@ enum GenericParamContextType
 
 class ICodeManager
 {
-    VPTR_BASE_VTABLE_CLASS(ICodeManager)
+    VPTR_BASE_VTABLE_CLASS_AND_CTOR(ICodeManager)
 
 public:
 
@@ -353,7 +353,7 @@ struct hdrInfo;
 
 class EECodeManager : public ICodeManager {
 
-    VPTR_VTABLE_CLASS(EECodeManager, ICodeManager)
+    VPTR_VTABLE_CLASS_AND_CTOR(EECodeManager, ICodeManager)
 
 public:
 

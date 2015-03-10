@@ -631,6 +631,7 @@ class CCLRErrorReportingManager :
 #endif // FEATURE_WINDOWSPHONE
 {
     friend class ClrDataAccess;
+    friend struct _DacGlobals;
 
     SVAL_DECL(ECustomDumpFlavor, g_ECustomDumpFlavor);
     
@@ -748,6 +749,8 @@ class CorHost2 :
 #endif
     , public CorExecutionManager
 {
+    friend struct _DacGlobals;
+
 public:
     CorHost2();
 
