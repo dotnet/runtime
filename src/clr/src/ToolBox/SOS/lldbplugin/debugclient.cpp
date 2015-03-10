@@ -33,6 +33,34 @@ DebugClient::OutputString(
     }
 }
 
+lldb::SBProcess
+DebugClient::GetCurrentProcess()
+{
+    lldb::SBProcess process;
+
+    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    if (target.IsValid())
+    {
+        process = target.GetProcess();
+    }
+
+    return process;
+}
+
+lldb::SBThread 
+DebugClient::GetCurrentThread()
+{
+    lldb::SBThread thread;
+
+    lldb::SBProcess process = GetCurrentProcess();
+    if (process.IsValid())
+    {
+        thread = process.GetSelectedThread();
+    }
+
+    return thread;
+}
+
 //----------------------------------------------------------------------------
 // IDebugControl2
 //----------------------------------------------------------------------------
@@ -178,16 +206,12 @@ DebugClient::ReadVirtual(
 {
     *bytesRead = 0;
 
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
-    if (!target.IsValid())
-    {
-        return E_FAIL;
-    }
-    lldb::SBProcess process = target.GetProcess();
+    lldb::SBProcess process = GetCurrentProcess();
     if (!process.IsValid())
     {
         return E_FAIL;
     }
+
     lldb::SBError error;
     *bytesRead = process.ReadMemory(offset, buffer, bufferSize, error);
 
@@ -437,5 +461,41 @@ DebugClient::GetModuleNames(
             *loadedImageNameSize = size;
         }
     }
+    return S_OK;
+}
+
+//----------------------------------------------------------------------------
+// IDebugSystemObjects
+//----------------------------------------------------------------------------
+
+HRESULT 
+DebugClient::GetCurrentThreadId(
+    PULONG id)
+{
+    *id = 0;
+
+    lldb::SBThread thread = GetCurrentThread();
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    *id = thread.GetIndexID();
+    return S_OK;
+}
+
+HRESULT 
+DebugClient::GetCurrentThreadSystemId(
+    PULONG sysId)
+{
+    *sysId = 0;
+
+    lldb::SBThread thread = GetCurrentThread();
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    *sysId = thread.GetThreadID();
     return S_OK;
 }
