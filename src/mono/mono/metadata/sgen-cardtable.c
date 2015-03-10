@@ -186,10 +186,11 @@ guint8 *sgen_shadow_cardtable;
 #define SGEN_CARDTABLE_END (sgen_cardtable + CARD_COUNT_IN_BYTES)
 
 static gboolean
-sgen_card_table_region_begin_scanning (mword start, mword end)
+sgen_card_table_region_begin_scanning (mword start, mword size)
 {
+	mword end = start + size;
 	/*XXX this can be improved to work on words and have a single loop induction var */
-	while (start <= end) {
+	while (start < end) {
 		if (sgen_card_table_card_begin_scanning (start))
 			return TRUE;
 		start += CARD_SIZE_IN_BYTES;
