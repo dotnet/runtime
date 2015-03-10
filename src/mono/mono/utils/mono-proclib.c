@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "utils/mono-proclib.h"
+#include "utils/mono-time.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -282,6 +283,32 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 	}
 	return buf;
 #endif
+}
+
+void
+mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gint64 *kernel_time)
+{
+	if (user_time)
+		*user_time = mono_process_get_data (pid, MONO_PROCESS_USER_TIME);
+
+	if (kernel_time)
+		*kernel_time = mono_process_get_data (pid, MONO_PROCESS_SYSTEM_TIME);
+
+	if (start_time) {
+		*start_time = 0;
+
+#if USE_SYSCTL
+		{
+			KINFO_PROC processi;
+
+			if (sysctl_kinfo_proc (pid, &processi))
+				*start_time = mono_100ns_datetime_from_timeval (processi.kp_proc.p_starttime);
+		}
+#endif
+
+		if (*start_time == 0)
+			*start_time = mono_process_get_data (pid, MONO_PROCESS_ELAPSED);
+	}
 }
 
 /*
