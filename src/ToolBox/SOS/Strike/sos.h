@@ -32,8 +32,6 @@ class LinearReadCache;
 class CGCDesc;
 class CGCDescSeries;
 
-#ifndef FEATURE_PAL
-
 namespace sos
 {
     class GCHeap;
@@ -793,5 +791,3 @@ namespace sos
     
     void BuildTypeWithExtraInfo(TADDR addr, unsigned int size, __inout_ecount(size) wchar_t *buffer);
 }
-
-#endif // !FEATURE_PAL
