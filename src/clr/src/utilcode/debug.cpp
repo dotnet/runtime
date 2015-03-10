@@ -482,28 +482,25 @@ int _DbgBreakCheck(
 
     switch(ret)
     {
-        // For abort, just quit the app.
-        case IDABORT:
-          TerminateProcess(GetCurrentProcess(), 1);
-//        WszFatalAppExit(0, W("Shutting down"));
+    // For abort, just quit the app.
+    case IDABORT:
+        TerminateProcess(GetCurrentProcess(), 1);
         break;
 
-        // Tell caller to break at the correct loction.
-        case IDRETRY:
-
-            if (IsDebuggerPresent())
-            {
-                SetErrorMode(0);
-            }
-            else
-            {
-                LaunchJITDebugger();
-            }
-
+    // Tell caller to break at the correct loction.
+    case IDRETRY:
+        if (IsDebuggerPresent())
+        {
+            SetErrorMode(0);
+        }
+        else
+        {
+            LaunchJITDebugger();
+        }
         return (true);
 
-        // If we want to ignore the assert, find out if this is forever.
-        case IDIGNORE:
+    // If we want to ignore the assert, find out if this is forever.
+    case IDIGNORE:
         if (formattedMessages) 
         {
             if (UtilMessageBoxCatastrophicNonLocalized(
@@ -531,6 +528,10 @@ int _DbgBreakCheck(
         psData->iLine = iLine;
         strcpy(psData->rcFile, szFile);
         break;
+
+    case 0:
+        // The message box was not displayed. Tell caller to break.
+        return true;
     }
 
     return (false);

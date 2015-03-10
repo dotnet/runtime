@@ -566,6 +566,30 @@ PAL_DeleteExecWatchpoint(
 
 
 PALIMPORT
+DWORD
+PALAPI
+PAL_PublishDacTableAddress(
+    IN PVOID address,
+    IN ULONG size
+    );
+
+PALIMPORT
+DWORD
+PALAPI
+PAL_GetDacTableAddress(
+    IN DWORD pid,
+    OUT PVOID *pAddress,
+    OUT PULONG pSize
+    );
+
+PALIMPORT
+VOID
+PALAPI
+PAL_CleanupDacTableAddress(
+    );
+
+
+PALIMPORT
 BOOL
 PALAPI
 PAL_RegisterMacEHPort();
