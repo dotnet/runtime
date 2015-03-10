@@ -87,6 +87,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.IO.FileSystem.DriveInfo**. Provides the System.IO.DriveInfo class, which enables developers to query local drive    information.
 
+* **System.IO.FileSystem.Watcher**. Provides the System.IO.Watcher class, which listens to the system directory change 
+  notifications and raises events when a directory or file within a directory changes.
+
 * **System.IO.MemoryMappedFiles**. Provides access to memory-mapped files, enabling code to read and write files by
   reading and writing memory.
 
