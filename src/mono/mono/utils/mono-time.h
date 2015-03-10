@@ -13,6 +13,11 @@ gint64  mono_100ns_ticks     (void);
 /* Returns the number of 100ns ticks since 1/1/1, UTC timezone */
 gint64  mono_100ns_datetime  (void);
 
+#ifndef HOST_WIN32
+gint64 mono_100ns_datetime_from_timeval (struct timeval tv);
+#endif
+
+
 /* Stopwatch class for internal runtime use */
 typedef struct {
 	gint64 start, stop;
