@@ -109,6 +109,7 @@ typedef struct MonoAotOptions {
 	gboolean soft_debug;
 	gboolean log_generics;
 	gboolean log_instances;
+	gboolean gen_seq_points_file;
 	gboolean direct_pinvoke;
 	gboolean direct_icalls;
 	gboolean no_direct_calls;
@@ -5405,7 +5406,7 @@ get_unwind_info_offset (MonoAotCompile *acfg, guint8 *encoded, guint32 encoded_l
 }
 
 static void
-emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
+emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean store_seq_points)
 {
 	MonoMethod *method;
 	int i, k, buf_size, method_index;
@@ -5432,15 +5433,15 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	}
 
 	seq_points = cfg->seq_point_info;
-
-	seq_points_size = (cfg->gen_seq_points)? seq_point_info_get_write_size (seq_points) : 0;
+	seq_points_size = (store_seq_points)? seq_point_info_get_write_size (seq_points) : 0;
 
 	buf_size = header->num_clauses * 256 + debug_info_size + 2048 + seq_points_size + cfg->gc_map_size;
+
 	p = buf = g_malloc (buf_size);
 
 	use_unwind_ops = cfg->unwind_ops != NULL;
 
-	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0) | (cfg->gc_map ? 64 : 0) | (jinfo->has_arch_eh_info ? 128 : 0);
+	flags = (jinfo->has_generic_jit_info ? 1 : 0) | (use_unwind_ops ? 2 : 0) | (header->num_clauses ? 4 : 0) | (seq_points_size ? 8 : 0) | (cfg->compile_llvm ? 16 : 0) | (jinfo->has_try_block_holes ? 32 : 0) | (cfg->gc_map ? 64 : 0) | (jinfo->has_arch_eh_info ? 128 : 0);
 
 	encode_value (flags, p, &p);
 
@@ -5641,7 +5642,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		}
 	}
 
-	if (seq_points)
+	if (seq_points_size)
 		p += seq_point_info_write (seq_points, p);
 
 	g_assert (debug_info_size < buf_size);
@@ -6439,6 +6440,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));			
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
+		} else if (str_begins_with (arg, "gen-seq-points-file")) {
+			opts->gen_seq_points_file = TRUE;
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
 			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "direct-icalls")) {
@@ -6503,6 +6506,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    tool-prefix=\n");
 			printf ("    readonly-value=\n");
 			printf ("    soft-debug\n");
+			printf ("    gen-seq-points-file\n");
 			printf ("    gc-maps\n");
 			printf ("    print-skipped\n");
 			printf ("    no-instances\n");
@@ -7832,15 +7836,41 @@ emit_exception_info (MonoAotCompile *acfg)
 	int i;
 	char symbol [256];
 	gint32 *offsets;
+	SeqPointData sp_data;
+	gboolean seq_points_to_file = FALSE;
 
 	offsets = g_new0 (gint32, acfg->nmethods);
 	for (i = 0; i < acfg->nmethods; ++i) {
 		if (acfg->cfgs [i]) {
-			emit_exception_debug_info (acfg, acfg->cfgs [i]);
-			offsets [i] = acfg->cfgs [i]->ex_info_offset;
+			MonoCompile *cfg = acfg->cfgs [i];
+
+			// By design aot-runtime decode_exception_debug_info is not able to load sequence point debug data from a file.
+			// As it is not possible to load debug data from a file its is also not possible to store it in a file.
+			gboolean method_seq_points_to_file = acfg->aot_opts.gen_seq_points_file &&
+				cfg->gen_seq_points && !cfg->gen_seq_points_debug_data;
+			gboolean method_seq_points_to_binary = cfg->gen_seq_points && !method_seq_points_to_file;
+			
+			emit_exception_debug_info (acfg, cfg, method_seq_points_to_binary);
+			offsets [i] = cfg->ex_info_offset;
+
+			if (method_seq_points_to_file) {
+				if (!seq_points_to_file) {
+					seq_point_data_init (&sp_data, acfg->nmethods);
+					seq_points_to_file = TRUE;
+				}
+				seq_point_data_add (&sp_data, cfg->method->token, cfg->seq_point_info);
+			}
 		} else {
 			offsets [i] = 0;
 		}
+	}
+
+	if (seq_points_to_file) {
+		char *seq_points_aot_file;
+		mono_image_get_aot_seq_point_path (acfg->image, &seq_points_aot_file);
+		seq_point_data_write (&sp_data, seq_points_aot_file);
+		seq_point_data_free (&sp_data);
+		g_free (seq_points_aot_file);
 	}
 
 	sprintf (symbol, "ex_info_offsets");

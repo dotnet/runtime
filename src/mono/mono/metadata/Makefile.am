@@ -204,7 +204,9 @@ common_sources = \
 	file-mmap.h	\
 	object-offsets.h	\
 	abi-details.h	\
-	metadata-cross-helpers.c
+	metadata-cross-helpers.c	\
+	seq-points-data.h	\
+	seq-points-data.c
 
 
 # These source files have compile time dependencies on GC code
