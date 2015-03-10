@@ -139,7 +139,9 @@ template<typename IT>
 class SecurityDescriptorBase : public IT, public SecurityDescriptor
 {
 public:
+#ifndef FEATURE_PAL
     VPTR_ABSTRACT_VTABLE_CLASS(SecurityDescriptorBase, IT) // needed for the DAC
+#endif
 
     inline SecurityDescriptorBase(AppDomain *pAppDomain, DomainAssembly *pAssembly, PEFile* pPEFile, LoaderAllocator *pLoaderAllocator);
 
