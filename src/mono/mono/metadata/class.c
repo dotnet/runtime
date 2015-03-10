@@ -1760,8 +1760,8 @@ mono_class_has_references (MonoClass *klass)
 MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type)
 {
-	/* When we do generic sharing we let type variables stand for reference types. */
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))
+	/* When we do generic sharing we let type variables stand for reference/primitive types. */
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && !type->data.generic_param->gshared_constraint)
 		return &mono_defaults.object_class->byval_arg;
 	return type;
 }
