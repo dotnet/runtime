@@ -5241,9 +5241,11 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	}
 	case MONO_PATCH_INFO_LDSTR_LIT: {
 		const char *s = patch_info->data.target;
+		int len = strlen (s);
 
-		encode_value (strlen (s), p, &p);
-		memcpy (p, s, strlen (s) + 1);
+		encode_value (len, p, &p);
+		memcpy (p, s, len + 1);
+		p += len + 1;
 		break;
 	}
 	default:

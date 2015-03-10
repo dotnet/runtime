@@ -3419,7 +3419,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		int len = decode_value (p, &p);
 		char *s;
 
-	    s = mono_mempool_alloc0 (mp, len + 1);
+		s = mono_mempool_alloc0 (mp, len + 1);
 		memcpy (s, p, len + 1);
 		p += len + 1;
 

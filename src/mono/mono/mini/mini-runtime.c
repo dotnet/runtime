@@ -1651,7 +1651,14 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR_LIT: {
-		target = mono_string_new (domain, patch_info->data.target);
+		int len;
+		char *s;
+
+		len = strlen (patch_info->data.target);
+		s = mono_domain_alloc0 (domain, len + 1);
+		memcpy (s, patch_info->data.target, len);
+		target = s;
+
 		break;
 	}
 	default:
