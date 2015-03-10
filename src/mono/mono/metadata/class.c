@@ -8435,8 +8435,6 @@ handle_enum:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_ARRAY: 
-	case MONO_TYPE_VAR:
-	case MONO_TYPE_MVAR:   
 		return sizeof (gpointer);
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
@@ -8452,7 +8450,12 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto handle_enum;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR: {
+		int align;
 
+		return mono_type_size (type, &align);
+	}
 	case MONO_TYPE_VOID:
 		return 0;
 		
