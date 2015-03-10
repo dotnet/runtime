@@ -51,14 +51,14 @@ LPWSTR REGUTIL::EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS)
     
     if(wcslen(name) > (size_t)(64 - 1 - (fPrependCOMPLUS ? LEN_OF_COMPLUS_PREFIX : 0)))
     {
-        return(0);
+        return NULL;
     }
 
 #ifdef ALLOW_REGISTRY
     if (fPrependCOMPLUS)
     {
         if (!EnvCacheValueNameSeenPerhaps(name))
-            return 0;
+            return NULL;
     }
 #endif // ALLOW_REGISTRY
 
@@ -75,21 +75,34 @@ LPWSTR REGUTIL::EnvGetString(LPCWSTR name, BOOL fPrependCOMPLUS)
 
     FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
-    int len = WszGetEnvironmentVariable(buff, 0, 0);
+    for (;;)
+    {
+        DWORD len = WszGetEnvironmentVariable(buff, 0, 0);
+        if (len == 0)
+        {
+            return NULL;
+        }
+
+        // If we can't get memory to return the string, then will simply pretend we didn't find it.
+        NewArrayHolder<WCHAR> ret(new (nothrow) WCHAR [len]); 
+        if (ret == NULL)
+        {
+            return NULL;
+        }
     
-    if (len == 0)
-    {
-        return(0);
-    }
+        DWORD actualLen = WszGetEnvironmentVariable(buff, ret, len);
+        if (actualLen == 0)
+        {
+            return NULL;
+        }
 
-    // If we can't get memory to return the string, then will simply pretend we didn't find it.
-    WCHAR * ret = new (nothrow) WCHAR [len]; 
-    if (ret != NULL)
-    {
-        WszGetEnvironmentVariable(buff, ret, len);
-    }
+        if (actualLen < len)
+        {
+            return ret.Extract(); 
+        }
 
-    return ret;
+        // Variable was changed by other thread - retry 
+    }
 }
 
 #ifdef ALLOW_REGISTRY
