@@ -160,7 +160,7 @@
     <XunitHost>corerun.exe</XunitHost>
     <CoverageHost>$(CoverageToolPath)</CoverageHost>
     <CoverageOutputFilePath>$(CoverageReportDir)$(MSBuildProjectName).coverage.xml</CoverageOutputFilePath>
-    <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1</CoverageOptions>
+    <CoverageOptions>-filter:"+[*]* -[*.Tests]*" -nodefaultfilters -excludebyattribute:*.ExcludeFromCodeCoverage* -skipautoprops -hideskipped:All -threshold:1 -oldstyle</CoverageOptions>
     <CoverageCommandLine>$(CoverageOptions) -returntargetcode -register:user -target:$(XunitHost) -output:$(CoverageOutputFilePath)</CoverageCommandLine>
   </PropertyGroup>
   
