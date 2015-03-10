@@ -1524,37 +1524,6 @@ LinearScan::doLinearScan()
 
     compiler->codeGen->regSet.rsClearRegsModified();
 
-#ifdef UNIX_AMD64_ABI
-    // Count the numbers of must initialize local vars. 
-    // Set the FramePointerRequired if there are more or equal to MAX_VARS_FOR_NO_FRAMEPOINTER MustInit vars.
-    // This way block initialize can be used. On Linux stosd requires RDI and RSI,
-    // which are the first 2 parameters to a callee. They need to be preserved on the stack. PUSH/POP 
-    // without FrameRegister breaks unwinding. 
-    // If more than MAX_VARS_FOR_NO_FRAMEPOINTER vars are used, the code for initializing the vars gets 
-    // big and an instruction group is not enough -
-    // (in emit.cpp there is an assert assert(emitCurIG != emitPrologIG);) multi_IG prologs are not allowed.
-    // So, set the frame to have a frame pointer and use block initialization.
-    unsigned lclNum;
-    unsigned lclMustInitCnt = 0;
-    LclVarDsc *varDsc;
-
-    for (lclNum = 0, varDsc = compiler->lvaTable;
-        lclNum < compiler->lvaCount;
-        lclNum++, varDsc++)
-    {
-        if (varDsc->lvMustInit)
-        {
-            lclMustInitCnt++;
-        }
-    }
-
-    if (lclMustInitCnt >= MAX_VARS_FOR_NO_FRAMEPOINTER)
-    {
-        compiler->codeGen->setFramePointerRequired(true);
-    }
-
-#endif // UNIX_AMD64_ABI
-
     // Figure out if we're going to use an RSP frame or an RBP frame. We need to do this
     // before building the intervals and ref positions, because those objects will embed
     // RBP in various register masks (like preferences) if RBP is allowed to be allocated.
