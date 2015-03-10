@@ -65,7 +65,7 @@ IXCLRDataProcess *g_clrData = NULL;
 ISOSDacInterface *g_sos = NULL;
 
 #ifdef FEATURE_PAL
-BOOL g_palInitialized = FALSE;
+PFN_CLRDataCreateInstance g_pCLRDataCreateInstance = NULL;
 #else
 ICorDebugProcess * g_pCorDebugProcess = NULL;
 #endif // FEATURE_PAL
@@ -4154,39 +4154,33 @@ void ResetGlobals(void)
 HRESULT LoadClrDebugDll(void)
 {
 #ifdef FEATURE_PAL
-    if (!g_palInitialized)
+    if (g_pCLRDataCreateInstance == NULL)
     {
         int err = PAL_Initialize(0, NULL);
         if(err != 0)
         {
             return E_FAIL;
         }
-        g_palInitialized = TRUE;
-    }
-    if (g_clrData == NULL)
-    {
         // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path
         HMODULE hdac = LoadLibraryA(MAKEDLLNAME_A("mscordaccore"));
         if (hdac == NULL)
         {
             return E_FAIL;
         }
-        PFN_CLRDataCreateInstance pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
-        if (pCLRDataCreateInstance == NULL)
+        g_pCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
+        if (g_pCLRDataCreateInstance == NULL)
         {
             FreeLibrary(hdac);
             return E_FAIL;
         }
-        ICLRDataTarget *target = new DataTarget();
-        HRESULT hr = pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, reinterpret_cast<void**>(&g_clrData));
-        if (FAILED(hr))
-        {
-            FreeLibrary(hdac);
-            g_clrData = NULL;
-            return hr;
-        }
     }
-    g_clrData->AddRef();
+    ICLRDataTarget *target = new DataTarget();
+    HRESULT hr = g_pCLRDataCreateInstance(__uuidof(IXCLRDataProcess), target, reinterpret_cast<void**>(&g_clrData));
+    if (FAILED(hr))
+    {
+        g_clrData = NULL;
+        return hr;
+    }
 #else
     WDBGEXTS_CLR_DATA_INTERFACE Query;
 
@@ -5237,6 +5231,27 @@ void WhitespaceOut(int count)
         g_ExtControl->Output(DEBUG_OUTPUT_NORMAL, FixedIndentString);
 }
 
+HRESULT 
+OutputVaList(
+    ULONG mask,
+    PCSTR format,
+    va_list args)
+{
+#ifdef FEATURE_PAL
+    char str[1024];
+
+    // Try and format our string into a fixed buffer first and see if it fits
+    int length = PAL__vsnprintf(str, sizeof(str), format, args);
+    if (length > 0)
+    {
+        return g_ExtControl->Output(mask, "%s", str);
+    }
+    return E_FAIL;
+#else
+    return g_ExtControl->OutputVaList(mask, format, args);
+#endif // FEATURE_PAL
+}
+
 void DMLOut(PCSTR format, ...)
 {
     if (Output::IsOutputSuppressed())
@@ -5254,7 +5269,7 @@ void DMLOut(PCSTR format, ...)
     else
 #endif
     {
-        g_ExtControl->OutputVaList(DEBUG_OUTPUT_NORMAL, format, args);
+        OutputVaList(DEBUG_OUTPUT_NORMAL, format, args);
     }
 
     va_end(args);
@@ -5284,7 +5299,7 @@ void ExtOut(PCSTR Format, ...)
     
     va_start(Args, Format);
     ExtOutIndent();
-    g_ExtControl->OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
+    OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
     va_end(Args);
 }
 
@@ -5296,7 +5311,7 @@ void ExtWarn(PCSTR Format, ...)
     va_list Args;
     
     va_start(Args, Format);
-    g_ExtControl->OutputVaList(DEBUG_OUTPUT_WARNING, Format, Args);
+    OutputVaList(DEBUG_OUTPUT_WARNING, Format, Args);
     va_end(Args);
 }
 
@@ -5305,7 +5320,7 @@ void ExtErr(PCSTR Format, ...)
     va_list Args;
     
     va_start(Args, Format);
-    g_ExtControl->OutputVaList(DEBUG_OUTPUT_ERROR, Format, Args);
+    OutputVaList(DEBUG_OUTPUT_ERROR, Format, Args);
     va_end(Args);
 }
 
@@ -5319,7 +5334,7 @@ void ExtDbgOut(PCSTR Format, ...)
     
         va_start(Args, Format);
         ExtOutIndent();
-        g_ExtControl->OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
+        OutputVaList(DEBUG_OUTPUT_NORMAL, Format, Args);
         va_end(Args);
     }
 #endif

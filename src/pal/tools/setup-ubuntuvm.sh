@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo Installing basic Ubuntu \(VM\) XPlat environment
 
