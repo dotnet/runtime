@@ -63,7 +63,7 @@ struct DebugOffsetToHandlerInfo
 
 class EEDebugInterface
 {
-    VPTR_BASE_VTABLE_CLASS(EEDebugInterface);
+    VPTR_BASE_VTABLE_CLASS_AND_CTOR(EEDebugInterface);
 
 public:
 

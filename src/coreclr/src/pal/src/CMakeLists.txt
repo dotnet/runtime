@@ -89,6 +89,7 @@ set(SOURCES
   misc/fmtmessage.cpp
   misc/interlock.cpp
   misc/miscpalapi.cpp
+  misc/dactableaddress.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp
   misc/time.cpp

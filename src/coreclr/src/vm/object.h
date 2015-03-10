@@ -747,6 +747,7 @@ class ArrayBase : public Object
     friend OBJECTREF FastAllocatePrimitiveArray(MethodTable* arrayType, DWORD cElements, BOOL bAllocateInLargeHeap);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
+    friend struct _DacGlobals;
 
 private:
     // This MUST be the first field, so that it directly follows Object.  This is because
