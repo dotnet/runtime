@@ -199,6 +199,47 @@ get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoPr
 	return NULL;
 }
 
+#if USE_SYSCTL
+
+#ifdef KERN_PROC2
+#define KINFO_PROC struct kinfo_proc2
+#else
+#define KINFO_PROC struct kinfo_proc
+#endif
+
+static gboolean
+sysctl_kinfo_proc (gpointer pid, KINFO_PROC* processi)
+{
+	int res;
+	size_t data_len = sizeof (KINFO_PROC);
+
+#ifdef KERN_PROC2
+	int mib [6];
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC2;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = GPOINTER_TO_UINT (pid);
+	mib [4] = sizeof(KINFO_PROC);
+	mib [5] = 400; /* XXX */
+
+	res = sysctl (mib, 6, processi, &data_len, NULL, 0);
+#else
+	int mib [4];
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = GPOINTER_TO_UINT (pid);
+
+	res = sysctl (mib, 4, processi, &data_len, NULL, 0);
+#endif /* KERN_PROC2 */
+
+	if (res < 0 || data_len != sizeof (KINFO_PROC))
+		return FALSE;
+
+	return TRUE;
+}
+#endif /* USE_SYSCTL */
+
 /**
  * mono_process_get_name:
  * @pid: pid of the process
@@ -212,44 +253,13 @@ char*
 mono_process_get_name (gpointer pid, char *buf, int len)
 {
 #if USE_SYSCTL
-	int res;
-#ifdef KERN_PROC2
-	int mib [6];
-	size_t data_len = sizeof (struct kinfo_proc2);
-	struct kinfo_proc2 processi;
-#else
-	int mib [4];
-	size_t data_len = sizeof (struct kinfo_proc);
-	struct kinfo_proc processi;
-#endif /* KERN_PROC2 */
+	KINFO_PROC processi;
 
 	memset (buf, 0, len);
 
-#ifdef KERN_PROC2
-	mib [0] = CTL_KERN;
-	mib [1] = KERN_PROC2;
-	mib [2] = KERN_PROC_PID;
-	mib [3] = GPOINTER_TO_UINT (pid);
-	mib [4] = sizeof(struct kinfo_proc2);
-	mib [5] = 400; /* XXX */
+	if (sysctl_kinfo_proc (pid, &processi))
+		strncpy (buf, processi.kinfo_name_member, len - 1);
 
-	res = sysctl (mib, 6, &processi, &data_len, NULL, 0);
-
-	if (res < 0 || data_len != sizeof (struct kinfo_proc2)) {
-		return buf;
-	}
-#else
-	mib [0] = CTL_KERN;
-	mib [1] = KERN_PROC;
-	mib [2] = KERN_PROC_PID;
-	mib [3] = GPOINTER_TO_UINT (pid);
-	
-	res = sysctl (mib, 4, &processi, &data_len, NULL, 0);
-	if (res < 0 || data_len != sizeof (struct kinfo_proc)) {
-		return buf;
-	}
-#endif /* KERN_PROC2 */
-	strncpy (buf, processi.kinfo_name_member, len - 1);
 	return buf;
 #else
 	char fname [128];
