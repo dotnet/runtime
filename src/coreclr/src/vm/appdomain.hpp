@@ -5162,8 +5162,7 @@ typedef VPTR(class SharedDomain) PTR_SharedDomain;
 
 class SharedDomain : public BaseDomain
 {
-
-    VPTR_VTABLE_CLASS(SharedDomain, BaseDomain)
+    VPTR_VTABLE_CLASS_AND_CTOR(SharedDomain, BaseDomain)
 
 public:
 

@@ -73,6 +73,8 @@ typedef const UTF8 *LPCUTF8;
 typedef DPTR(class SString) PTR_SString;
 class SString : private SBuffer
 {
+    friend struct _DacGlobals;
+
 private:
     enum Representation
     {
@@ -757,7 +759,6 @@ private:
     SString(void *buffer, COUNT_T size);
 
  private:
- 
     static int CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count, LocaleID lcid, BOOL stopOnNull, BOOL stopOnCount);
     static int CaseCompareHelper(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count, LocaleID lcid, BOOL stopOnNull, BOOL stopOnCount);
     
