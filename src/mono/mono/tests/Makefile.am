@@ -406,6 +406,7 @@ BASE_TEST_CS_SRC=		\
 	block_guard_restore_aligment_on_exit.cs	\
 	thread_static_gc_layout.cs \
 	sleep.cs \
+	bug-27147.cs	\
 	bug-17537.cs
 
 TEST_CS_SRC_DIST=	\
