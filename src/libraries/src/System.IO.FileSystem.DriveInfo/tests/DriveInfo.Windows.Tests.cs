@@ -38,7 +38,7 @@ namespace System.IO.FileSystem.DriveInfoTests
                 Assert.Equal(string.Format(@"{0}:\", validDriveLetter), dInfo.Name);
             }
         }
-        
+
         [Fact]
         public void TestGetDrives()
         {
@@ -90,6 +90,43 @@ namespace System.IO.FileSystem.DriveInfoTests
             // Test Invalid drive
             var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
             Assert.Equal(invalidDrive.DriveType, DriveType.NoRootDirectory);
+        }
+
+        [Fact]
+        public void TestValidDiskSpaceProperties()
+        {
+            bool win32Result;
+            long fbUser = -1;
+            long tbUser;
+            long fbTotal;
+            DriveInfo drive;
+
+            // Scenario 1: Drive Exists
+            drive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
+            if (drive.IsReady)
+            {
+                win32Result = GetDiskFreeSpaceEx(drive.Name, out fbUser, out tbUser, out fbTotal);
+                Assert.True(win32Result);
+
+                if (fbUser != drive.AvailableFreeSpace)
+                    Assert.True(drive.AvailableFreeSpace >= 0);
+
+                // totalsize should not change for a fixed drive.
+                Assert.Equal(tbUser, drive.TotalSize);
+
+                if (fbTotal != drive.TotalFreeSpace)
+                    Assert.True(drive.TotalFreeSpace >= 0);
+            }
+        }
+
+        [Fact]
+        public void TestInvalidDisksSpaceProperties()
+        {
+            var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
+
+            Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.AvailableFreeSpace; });
+            Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.TotalFreeSpace; });
+            Assert.Throws<DriveNotFoundException>(() => { var size = invalidDrive.TotalSize; });
         }
 
         [Fact, OuterLoop]
@@ -151,13 +188,13 @@ namespace System.IO.FileSystem.DriveInfoTests
         [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
         internal static extern int GetDriveType(string drive);
 
+        [DllImport("api-ms-win-core-file-l1-1-0.dll", SetLastError = true)]
+        internal static extern bool GetDiskFreeSpaceEx(String drive, out long freeBytesForUser, out long totalBytes, out long freeBytes);
+
         private IEnumerable<char> GetValidDriveLettersOnMachine()
         {
             uint mask = (uint)GetLogicalDrives();
-            if (mask == 0)
-            {
-                Assert.False(true, "Test Failed, Error calling Win32 GetLogicalDrive.");
-            }
+            Assert.NotEqual<uint>(mask, 0);
 
             var bits = new BitArray(new int[] { (int)mask });
             for (int i = 0; i < bits.Length; i++)
@@ -171,10 +208,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         private IEnumerable<char> GetInvalidDriveLettersOnMachine()
         {
             uint mask = (uint)GetLogicalDrives();
-            if (mask == 0)
-            {
-                Assert.False(true, "Test Failed, Error calling Win32 GetLogicalDrive.");
-            }
+            Assert.NotEqual<uint>(mask, 0);
 
             var bits = new BitArray(new int[] { (int)mask });
             for (int i = 0; i < bits.Length; i++)
