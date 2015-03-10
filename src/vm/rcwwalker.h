@@ -32,6 +32,8 @@
 //
 class RCWWalker
 {
+    friend struct _DacGlobals;
+
 private :
     static VolatilePtr<IJupiterGCManager>  s_pGCManager;            // The one and only GCManager instance
     static BOOL                     s_bGCStarted;                   // Has GC started?    

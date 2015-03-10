@@ -180,7 +180,9 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
             // If buffer is overrun, it is possible the saved callback has been trashed.
             // The callback is unsafe.
             //SetBufferOverrunHandler();
-
+#ifdef FEATURE_PAL
+            DacGlobals::Initialize();
+#endif
             if (!EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved))
             {
                 return FALSE;
@@ -194,6 +196,9 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 
     case DLL_PROCESS_DETACH:
         {
+#ifdef FEATURE_PAL
+            PAL_CleanupDacTableAddress();
+#endif
             EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE

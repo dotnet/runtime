@@ -28,7 +28,7 @@ typedef void (*FAVORCALLBACK)(void *);
 
 class DebugInterface
 {
-    VPTR_BASE_VTABLE_CLASS(DebugInterface);
+    VPTR_BASE_VTABLE_CLASS_AND_CTOR(DebugInterface);
 
 public:
 
