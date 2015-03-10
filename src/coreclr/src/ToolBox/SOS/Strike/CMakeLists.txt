@@ -79,6 +79,7 @@ else(WIN32)
     exts.cpp
     metadata.cpp
     strike.cpp
+    sos.cpp
     util.cpp
   )
 

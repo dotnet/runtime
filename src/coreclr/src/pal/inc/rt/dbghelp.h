@@ -29,5 +29,10 @@ Revision History:
 #pragma once
 #endif
 
+//
+// options that are set/returned by SymSetOptions() & SymGetOptions()
+// these are used as a mask
+//
+#define SYMOPT_LOAD_LINES                0x00000010
 
 #endif // _DBGHELP_
