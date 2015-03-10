@@ -339,7 +339,9 @@ struct _MonoImage {
 	GHashTable *pinvoke_scope_filenames;
 
 	/* Indexed by MonoGenericParam pointers */
-	GHashTable *gsharedvt_types;
+	GHashTable **gshared_types;
+	/* The length of the above array */
+	int gshared_types_len;
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.

@@ -1678,9 +1678,11 @@ get_gsharedvt_type (MonoType *t)
 		image = par->owner->image;
 
 		mono_image_lock (image);
-		if (!image->gsharedvt_types)
-			image->gsharedvt_types = g_hash_table_new (NULL, NULL);
-		res = g_hash_table_lookup (image->gsharedvt_types, par);
+		if (!image->gshared_types) {
+			image->gshared_types_len = 1;
+			image->gshared_types [0] = g_hash_table_new (NULL, NULL);
+		}
+		res = g_hash_table_lookup (image->gshared_types [0], par);
 		mono_image_unlock (image);
 		if (res)
 			return res;
@@ -1699,7 +1701,7 @@ get_gsharedvt_type (MonoType *t)
 	if (par->owner) {
 		mono_image_lock (image);
 		/* Duplicates are ok */
-		g_hash_table_insert (image->gsharedvt_types, par, res);
+		g_hash_table_insert (image->gshared_types [0], par, res);
 		mono_image_unlock (image);
 	}
 
