@@ -356,11 +356,14 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 #else // FEATURE_PAL
 
 BOOL g_bDacBroken = FALSE;
+// TEMPORARY until eeheap.cpp is included in linux builds
+MethodTableCache g_special_mtCache;
 
 PDEBUG_CLIENT         g_ExtClient;    
 PDEBUG_DATA_SPACES    g_ExtData;
 PDEBUG_CONTROL2       g_ExtControl;
 PDEBUG_SYMBOLS        g_ExtSymbols;
+PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
 
 extern "C" HRESULT
 ExtQuery(PDEBUG_CLIENT Client)
@@ -369,6 +372,7 @@ ExtQuery(PDEBUG_CLIENT Client)
     g_ExtControl = (PDEBUG_CONTROL2)Client;
     g_ExtData = (PDEBUG_DATA_SPACES)Client;
     g_ExtSymbols = (PDEBUG_SYMBOLS)Client;
+    g_ExtSystem = (PDEBUG_SYSTEM_OBJECTS)Client;
     return S_OK;
 }
 
@@ -385,6 +389,7 @@ ExtRelease(void)
     g_ExtControl = NULL;
     g_ExtData = NULL;
     g_ExtSymbols = NULL;
+    g_ExtSystem = NULL;
 }
 
 #endif // FEATURE_PAL

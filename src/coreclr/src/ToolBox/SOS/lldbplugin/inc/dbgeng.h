@@ -244,10 +244,40 @@ public:
 typedef class IDebugSymbols* PDEBUG_SYMBOLS;
 
 //----------------------------------------------------------------------------
+// IDebugSystemObjects
+//----------------------------------------------------------------------------
+
+class IDebugSystemObjects 
+{
+public:
+    // Controls implicit thread used by the
+    // debug engine.  The debuggers current
+    // thread is just a piece of data held
+    // by the debugger for calls which use
+    // thread-specific information.  In those
+    // calls the debuggers current thread is used.
+    // The debuggers current thread is not related
+    // to any system thread attribute.
+    // IDs for threads are small integer IDs
+    // maintained by the engine.  They are not
+    // related to system thread IDs.
+    virtual HRESULT GetCurrentThreadId(
+        PULONG id) = 0;
+
+    // Returns the system unique ID for the current thread.
+    // Not currently supported when kernel debugging.
+    virtual HRESULT GetCurrentThreadSystemId(
+        PULONG sysId) = 0;
+
+};
+
+typedef class IDebugSystemObjects* PDEBUG_SYSTEM_OBJECTS;
+
+//----------------------------------------------------------------------------
 // IDebugClient
 //----------------------------------------------------------------------------
 
-class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols
+class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects
 {
 };
 
