@@ -4894,7 +4894,7 @@ handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, unsigned char *ip)
  * Return the instruction representing the call. Set the cfg exception on failure.
  */
 static MonoInst*
-handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp, MonoClass *constrained_call,
+handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp, MonoClass *constrained_class,
 								   gboolean *ref_emit_widen, MonoBasicBlock **ref_bblock)
 {
 	MonoInst *ins = NULL;
@@ -4924,7 +4924,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 			args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (cmethod), cmethod, MONO_RGCTX_INFO_METHOD);
 		else
 			EMIT_NEW_METHODCONST (cfg, args [1], cmethod);
-		args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_call), constrained_call, MONO_RGCTX_INFO_KLASS);
+		args [2] = emit_get_rgctx_klass (cfg, mono_class_check_context_used (constrained_class), constrained_class, MONO_RGCTX_INFO_KLASS);
 
 		/* !fsig->hasthis is for the wrapper for the Object.GetType () icall */
 		if (fsig->hasthis && fsig->param_count) {
@@ -7709,7 +7709,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoImage *image;
 	guint32 token, ins_flag;
 	MonoClass *klass;
-	MonoClass *constrained_call = NULL;
+	MonoClass *constrained_class = NULL;
 	unsigned char *ip, *end, *target, *err_pos;
 	MonoMethodSignature *sig;
 	MonoGenericContext *generic_context = NULL;
@@ -8754,31 +8754,31 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 				cil_method = cmethod;
 				
-				if (constrained_call) {
+				if (constrained_class) {
 					if (method->wrapper_type != MONO_WRAPPER_NONE) {
 						if (cfg->verbose_level > 2)
-							printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_call));
-						if (!((constrained_call->byval_arg.type == MONO_TYPE_VAR ||
-							   constrained_call->byval_arg.type == MONO_TYPE_MVAR) &&
+							printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
+						if (!((constrained_class->byval_arg.type == MONO_TYPE_VAR ||
+							   constrained_class->byval_arg.type == MONO_TYPE_MVAR) &&
 							  cfg->generic_sharing_context)) {
-							cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_call, generic_context, &cfg->error);
+							cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, &cfg->error);
 							CHECK_CFG_ERROR;
 						}
 					} else {
 						if (cfg->verbose_level > 2)
-							printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_call));
+							printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
 
-						if ((constrained_call->byval_arg.type == MONO_TYPE_VAR || constrained_call->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+						if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
 							/* 
 							 * This is needed since get_method_constrained can't find 
 							 * the method in klass representing a type var.
 							 * The type var is guaranteed to be a reference type in this
 							 * case.
 							 */
-							if (!mini_is_gsharedvt_klass (cfg, constrained_call))
+							if (!mini_is_gsharedvt_klass (cfg, constrained_class))
 								g_assert (!cmethod->klass->valuetype);
 						} else {
-							cmethod = mono_get_method_constrained_checked (image, token, constrained_call, generic_context, &cil_method, &cfg->error);
+							cmethod = mono_get_method_constrained_checked (image, token, constrained_class, generic_context, &cil_method, &cfg->error);
 							CHECK_CFG_ERROR;
 						}
 					}
@@ -8834,7 +8834,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
 							check_for_pending_exc, cfg->compile_aot);
 						fsig = mono_method_signature (wrapper);
-					} else if (constrained_call) {
+					} else if (constrained_class) {
 						fsig = mono_method_signature (cmethod);
 					} else {
 						fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
@@ -8879,14 +8879,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
-			if (constrained_call) {
-				if (mini_is_gsharedvt_klass (cfg, constrained_call)) {
-					if ((cmethod->klass != mono_defaults.object_class) && constrained_call->valuetype && cmethod->klass->valuetype) {
+			if (constrained_class) {
+				if (mini_is_gsharedvt_klass (cfg, constrained_class)) {
+					if ((cmethod->klass != mono_defaults.object_class) && constrained_class->valuetype && cmethod->klass->valuetype) {
 						/* The 'Own method' case below */
 					} else if (cmethod->klass->image != mono_defaults.corlib && !(cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE) && !cmethod->klass->valuetype) {
 						/* 'The type parameter is instantiated as a reference type' case below. */
 					} else {
-						ins = handle_constrained_gsharedvt_call (cfg, cmethod, fsig, sp, constrained_call, &emit_widen, &bblock);
+						ins = handle_constrained_gsharedvt_call (cfg, cmethod, fsig, sp, constrained_class, &emit_widen, &bblock);
 						CHECK_CFG_EXCEPTION;
 						g_assert (ins);
 						goto call_end;
@@ -8896,17 +8896,17 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/*
 				 * We have the `constrained.' prefix opcode.
 				 */
-				if (constrained_call->valuetype && (cmethod->klass == mono_defaults.object_class || cmethod->klass == mono_defaults.enum_class->parent || cmethod->klass == mono_defaults.enum_class)) {
+				if (constrained_class->valuetype && (cmethod->klass == mono_defaults.object_class || cmethod->klass == mono_defaults.enum_class->parent || cmethod->klass == mono_defaults.enum_class)) {
 					/*
 					 * The type parameter is instantiated as a valuetype,
 					 * but that type doesn't override the method we're
 					 * calling, so we need to box `this'.
 					 */
-					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
-					ins->klass = constrained_call;
-					sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call), &bblock);
+					EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_class->byval_arg, sp [0]->dreg, 0);
+					ins->klass = constrained_class;
+					sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class), &bblock);
 					CHECK_CFG_EXCEPTION;
-				} else if (!constrained_call->valuetype) {
+				} else if (!constrained_class->valuetype) {
 					int dreg = alloc_ireg_ref (cfg);
 
 					/*
@@ -8924,27 +8924,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						/* Interface method */
 						int ioffset, slot;
 
-						mono_class_setup_vtable (constrained_call);
-						CHECK_TYPELOAD (constrained_call);
-						ioffset = mono_class_interface_offset (constrained_call, cmethod->klass);
+						mono_class_setup_vtable (constrained_class);
+						CHECK_TYPELOAD (constrained_class);
+						ioffset = mono_class_interface_offset (constrained_class, cmethod->klass);
 						if (ioffset == -1)
-							TYPE_LOAD_ERROR (constrained_call);
+							TYPE_LOAD_ERROR (constrained_class);
 						slot = mono_method_get_vtable_slot (cmethod);
 						if (slot == -1)
 							TYPE_LOAD_ERROR (cmethod->klass);
-						cmethod = constrained_call->vtable [ioffset + slot];
+						cmethod = constrained_class->vtable [ioffset + slot];
 
 						if (cmethod->klass == mono_defaults.enum_class) {
 							/* Enum implements some interfaces, so treat this as the first case */
-							EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_call->byval_arg, sp [0]->dreg, 0);
-							ins->klass = constrained_call;
-							sp [0] = handle_box (cfg, ins, constrained_call, mono_class_check_context_used (constrained_call), &bblock);
+							EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_class->byval_arg, sp [0]->dreg, 0);
+							ins->klass = constrained_class;
+							sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class), &bblock);
 							CHECK_CFG_EXCEPTION;
 						}
 					}
 					virtual = 0;
 				}
-				constrained_call = NULL;
+				constrained_class = NULL;
 			}
 
 			if (!calli && check_call_signature (cfg, fsig, sp))
@@ -9507,7 +9507,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ip += 1;
 			}
 			ins_flag = 0;
-			constrained_call = NULL;
+			constrained_class = NULL;
 			if (need_seq_point)
 				emit_seq_point (cfg, method, ip, FALSE, TRUE);
 			break;
@@ -12716,8 +12716,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			case CEE_CONSTRAINED_:
 				CHECK_OPSIZE (6);
 				token = read32 (ip + 2);
-				constrained_call = mini_get_class (method, token, generic_context);
-				CHECK_TYPELOAD (constrained_call);
+				constrained_class = mini_get_class (method, token, generic_context);
+				CHECK_TYPELOAD (constrained_class);
 				ip += 6;
 				break;
 			case CEE_CPBLK:
