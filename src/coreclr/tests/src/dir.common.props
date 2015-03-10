@@ -5,10 +5,10 @@
   <PropertyGroup>
     <__BuildArch Condition="'$(__BuildArch)' == ''">x64</__BuildArch>
     <__BuildType Condition="'$(__BuildType)' == ''">Debug</__BuildType>
-	<__BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</__BuildOS>
+    <__BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</__BuildOS>
     <BuildArch>$(__BuildArch)</BuildArch>
     <BuildType>$(__BuildType)</BuildType>
-	<BuildOS>$(__BuildOS)</BuildOS>
+    <BuildOS>$(__BuildOS)</BuildOS>
     <Configuration Condition="'$(Configuration)' ==''">$(BuildType)</Configuration>
     <Platform Condition="'$(Platform)'==''">$(BuildArch)</Platform>
   </PropertyGroup>
@@ -31,8 +31,9 @@
   <PropertyGroup>
     <BaseOutputPathWithConfig>$(ProjectDir)\..\binaries\tests\$(BuildOS).$(Platform).$(Configuration)\</BaseOutputPathWithConfig>
     <BaseOutputPathWithConfig Condition="'$(__TestWorkingDir)' != ''">$(__TestWorkingDir)\</BaseOutputPathWithConfig>
-    <BinDir>$(BaseOutputPathWithConfig)\..\..\..\</BinDir>
+    <BinDir>$(BaseOutputPathWithConfig)\..</BinDir>
     <BaseIntermediateOutputPath>$(BinDir)\intermediates\</BaseIntermediateOutputPath>
+    <__CMakeTestSlnDir Condition="'$(__CMakeTestSlnDir)' == ''">$(BaseOutputPathWithConfig)\CMake\</__CMakeTestSlnDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
     <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(SourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(SourceDir),''))</BuildProjectRelativeDir>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\$(BuildOS).$(Platform).$(Configuration)\</IntermediateOutputPath>
