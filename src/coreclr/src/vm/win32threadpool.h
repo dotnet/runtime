@@ -104,7 +104,7 @@ class ThreadpoolMgr
     friend class ManagedPerAppDomainTPCount;
     friend class PerAppDomainTPCountList;
     friend class HillClimbing;
-
+    friend struct _DacGlobals;
 
     //
     // UnfairSemaphore is a more scalable semaphore than CLRSemaphore.  It prefers to release threads that have more recently begun waiting,
@@ -1291,8 +1291,8 @@ private:
 
     static LONG Initialization;                         // indicator of whether the threadpool is initialized.
 
-    SVAL_DECL(LONG,MinLimitTotalWorkerThreads);          // same as MinLimitTotalCPThreads
-    SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);        // same as MaxLimitTotalCPThreads
+    SVAL_DECL(LONG,MinLimitTotalWorkerThreads);         // same as MinLimitTotalCPThreads
+    SVAL_DECL(LONG,MaxLimitTotalWorkerThreads);         // same as MaxLimitTotalCPThreads
         
     static Volatile<unsigned int> LastDequeueTime;      // used to determine if work items are getting thread starved 
     
@@ -1306,12 +1306,10 @@ private:
 
     static int ThreadAdjustmentInterval;
 
-    private:
-
     SPTR_DECL(WorkRequest,WorkRequestHead);             // Head of work request queue
     SPTR_DECL(WorkRequest,WorkRequestTail);             // Head of work request queue
 
-    static unsigned int LastCPThreadCreation;		    // last time a completion port thread was created
+    static unsigned int LastCPThreadCreation;		// last time a completion port thread was created
     static unsigned int NumberOfProcessors;             // = NumberOfWorkerThreads - no. of blocked threads
 
     static BOOL IsApcPendingOnWaitThread;               // Indicates if an APC is pending on the wait thread
@@ -1323,9 +1321,8 @@ public:
     static CrstStatic WorkerCriticalSection;
 
 private:
-
     static const DWORD WorkerTimeout = 20 * 1000;
-    static const DWORD WorkerTimeoutAppX = 5 * 1000; // shorter timeout to allow threads to exit prior to app suspension
+    static const DWORD WorkerTimeoutAppX = 5 * 1000;    // shorter timeout to allow threads to exit prior to app suspension
 
     SVAL_DECL(ThreadCounter,WorkerCounter);
 
@@ -1361,10 +1358,10 @@ private:
     static BOOL InitCompletionPortThreadpool;           // flag indicating whether completion port threadpool has been initialized
     static HANDLE GlobalCompletionPort;                 // used for binding io completions on file handles
 
-    public:
+public:
     SVAL_DECL(ThreadCounter,CPThreadCounter);
 
-    private:
+private:
     SVAL_DECL(LONG,MaxLimitTotalCPThreads);             // = MaxLimitCPThreadsPerCPU * number of CPUS
     SVAL_DECL(LONG,MinLimitTotalCPThreads);             
     SVAL_DECL(LONG,MaxFreeCPThreads);                   // = MaxFreeCPThreadsPerCPU * Number of CPUS

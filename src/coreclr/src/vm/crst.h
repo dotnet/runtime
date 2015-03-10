@@ -473,11 +473,12 @@ public:
         LIMITED_METHOD_CONTRACT;
     };
 
+#endif
+
     Crst() {
         LIMITED_METHOD_CONTRACT;
     }
 
-#endif
 #endif // CLR_STANDALONE_BINDER
 };
 
