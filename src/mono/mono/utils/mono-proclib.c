@@ -306,8 +306,13 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
 		}
 #endif
 
-		if (*start_time == 0)
-			*start_time = mono_process_get_data (pid, MONO_PROCESS_ELAPSED);
+		if (*start_time == 0) {
+			static guint64 boot_time = 0;
+			if (!boot_time)
+				boot_time = mono_100ns_datetime () - ((guint64)mono_msec_ticks ()) * 10000;
+
+			*start_time = boot_time + mono_process_get_data (pid, MONO_PROCESS_ELAPSED);
+		}
 	}
 }
 
@@ -550,7 +555,7 @@ mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProces
 	case MONO_PROCESS_FAULTS:
 		return get_process_stat_item (rpid, 6, TRUE, error);
 	case MONO_PROCESS_ELAPSED:
-		return get_process_stat_item (rpid, 18, FALSE, error) / get_user_hz ();
+		return get_process_stat_time (rpid, 18, FALSE, error);
 	case MONO_PROCESS_PPID:
 		return get_process_stat_time (rpid, 0, FALSE, error);
 	case MONO_PROCESS_PAGED_BYTES:
