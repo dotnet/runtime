@@ -1680,6 +1680,7 @@ get_gsharedvt_type (MonoType *t)
 		mono_image_lock (image);
 		if (!image->gshared_types) {
 			image->gshared_types_len = 1;
+			image->gshared_types = g_new0 (GHashTable, image->gshared_types_len);
 			image->gshared_types [0] = g_hash_table_new (NULL, NULL);
 		}
 		res = g_hash_table_lookup (image->gshared_types [0], par);
