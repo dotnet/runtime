@@ -1470,37 +1470,6 @@ handle_enum:
 	return 0;
 }
 
-ICALL_EXPORT guint32
-ves_icall_type_is_subtype_of (MonoReflectionType *type, MonoReflectionType *c, MonoBoolean check_interfaces)
-{
-	MonoClass *klass;
-	MonoClass *klassc;
-
-	g_assert (type != NULL);
-	
-	if (!c) /* FIXME: dont know what do do here */
-		return 0;
-
-	klass = mono_class_from_mono_type (type->type);
-	klassc = mono_class_from_mono_type (c->type);
-
-	/* Interface check requires a more complex setup so we
-	 * only do for them. Otherwise we simply avoid mono_class_init.
-	 */
-	if (check_interfaces) {
-		mono_class_init_or_throw (klass);
-		mono_class_init_or_throw (klassc);
-	} else if (!klass->supertypes || !klassc->supertypes) {
-		mono_class_setup_supertypes (klass);
-		mono_class_setup_supertypes (klassc);
-	}
-
-	if (type->type->byref)
-		return klassc == mono_defaults.object_class;
-
-	return mono_class_is_subclass_of (klass, klassc, check_interfaces);
-}
-
 static gboolean
 mono_type_is_primitive (MonoType *type)
 {
