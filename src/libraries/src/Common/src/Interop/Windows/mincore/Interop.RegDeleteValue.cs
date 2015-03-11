@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.REGISTRY_L1_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegDeleteValueW")]
+        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegDeleteValueW")]
         internal static extern int RegDeleteValue(SafeRegistryHandle hKey, String lpValueName);
     }
 }

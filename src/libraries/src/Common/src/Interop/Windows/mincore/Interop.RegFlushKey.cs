@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.REGISTRY_L1_APISET)]
+        [DllImport(Libraries.Registry_L1)]
         internal static extern int RegFlushKey(SafeRegistryHandle hKey);
     }
 }
