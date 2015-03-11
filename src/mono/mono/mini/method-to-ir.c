@@ -3293,6 +3293,9 @@ mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *kla
 	MonoInst *memcpy_ins = NULL;
 
 	g_assert (klass);
+	if (cfg->generic_sharing_context)
+		klass = mono_class_from_mono_type (mini_get_underlying_type (cfg, &klass->byval_arg));
+
 	/*
 	 * This check breaks with spilled vars... need to handle it during verification anyway.
 	 * g_assert (klass && klass == src->klass && klass == dest->klass);
@@ -3387,7 +3390,6 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 	static MonoMethod *bzero_method;
 
 	/* FIXME: Optimize this for the case when dest is an LDADDR */
-
 	mono_class_init (klass);
 	if (mini_is_gsharedvt_klass (cfg, klass)) {
 		context_used = mini_class_check_context_used (cfg, klass);
@@ -10549,7 +10551,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			token = read32 (ip + 1);
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
- 
+
 			mono_save_token_info (cfg, image, token, klass);
 
 			context_used = mini_class_check_context_used (cfg, klass);
