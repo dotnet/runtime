@@ -201,6 +201,7 @@ mono_debug_find_method
 mono_debug_free_method_jit_info
 mono_debug_free_source_location
 mono_debug_il_offset_from_address
+mono_debug_image_has_debug_info
 mono_debug_init
 mono_debug_lookup_locals
 mono_debug_lookup_method
@@ -223,6 +224,9 @@ mono_debugger_agent_register_transport
 mono_debugger_insert_breakpoint
 mono_debugger_method_has_breakpoint
 mono_debugger_run_finally
+mono_decimal_addsub
+mono_decimal_divide
+mono_decimal_from_number
 mono_declsec_flags_from_assembly
 mono_declsec_flags_from_class
 mono_declsec_flags_from_method
@@ -634,6 +638,7 @@ mono_mlist_set_next
 mono_module_file_get_object
 mono_module_get_object
 mono_monitor_enter
+mono_monitor_enter_v4
 mono_monitor_exit
 mono_monitor_try_enter
 mono_mprotect
@@ -759,6 +764,7 @@ mono_runtime_resource_set_callback
 mono_runtime_run_main
 mono_runtime_set_main_args
 mono_runtime_set_shutting_down
+mono_save_seq_point_info
 mono_security_core_clr_get_options
 mono_security_core_clr_require_elevated_permissions
 mono_security_core_clr_set_options
