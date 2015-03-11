@@ -275,7 +275,6 @@ public:
                 CROSS_PLATFORM_CONTEXT * cxr,
                 TADDR *exrAddr, 
                 PEXCEPTION_RECORD exr) const;
-
     // retrieve stack pointer, frame pointer, and instruction pointer from the target context
     virtual TADDR GetSP(const CROSS_PLATFORM_CONTEXT & ctx) const  { return ctx.Amd64Context.Rsp; }
     virtual TADDR GetBP(const CROSS_PLATFORM_CONTEXT & ctx) const  { return ctx.Amd64Context.Rbp; }
