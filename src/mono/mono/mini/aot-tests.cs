@@ -152,7 +152,6 @@ class Tests
 		public long o1, o2, o3;
 	}
 
-#if FALSE
 	[Category ("GSHAREDVT")]
 	public static int test_0_arm64_gsharedvt_out_vtypebyref () {
 		/* gsharedvt out trampoline with vtypebyref argument */
@@ -167,7 +166,6 @@ class Tests
 			return 1;
 		return 0;
 	}
-#endif
 
 	class Foo5<T> {
 		public static T Get_T (object o) {
