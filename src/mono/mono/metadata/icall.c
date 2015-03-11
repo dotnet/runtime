@@ -1364,15 +1364,6 @@ ves_icall_type_from_handle (MonoType *handle)
 	return mono_type_get_object (domain, handle);
 }
 
-ICALL_EXPORT MonoBoolean
-ves_icall_System_Type_EqualsInternal (MonoReflectionType *type, MonoReflectionType *c)
-{
-	if (c && type->type && c->type)
-		return mono_metadata_type_equal (type->type, c->type);
-	else
-		return (type == c) ? TRUE : FALSE;
-}
-
 /* System.TypeCode */
 typedef enum {
 	TYPECODE_EMPTY,
@@ -2420,19 +2411,6 @@ ves_icall_Type_MakeGenericType (MonoReflectionType *type, MonoArray *type_array)
 }
 
 ICALL_EXPORT gboolean
-ves_icall_Type_get_IsGenericInstance (MonoReflectionType *type)
-{
-	MonoClass *klass;
-
-	if (type->type->byref)
-		return FALSE;
-
-	klass = mono_class_from_mono_type (type->type);
-
-	return klass->generic_class != NULL;
-}
-
-ICALL_EXPORT gboolean
 ves_icall_Type_get_IsGenericType (MonoReflectionType *type)
 {
 	MonoClass *klass;
@@ -3249,82 +3227,8 @@ enum {
 	BFLAGS_OptionalParamBinding = 0x40000
 };
 
-ICALL_EXPORT MonoReflectionField *
-ves_icall_Type_GetField (MonoReflectionType *type, MonoString *name, guint32 bflags)
-{
-	MonoDomain *domain; 
-	MonoClass *startklass, *klass;
-	int match;
-	MonoClassField *field;
-	gpointer iter;
-	char *utf8_name;
-	int (*compare_func) (const char *s1, const char *s2) = NULL;
-	domain = ((MonoObject *)type)->vtable->domain;
-	klass = startklass = mono_class_from_mono_type (type->type);
-
-	if (!name) {
-		mono_set_pending_exception (mono_get_exception_argument_null ("name"));
-		return NULL;
-	}
-	if (type->type->byref)
-		return NULL;
-
-	compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
-
-handle_parent:
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
-	}
-
-	iter = NULL;
-	while ((field = mono_class_get_fields_lazy (klass, &iter))) {
-		guint32 flags = mono_field_get_flags (field);
-		match = 0;
-
-		if (mono_field_is_deleted_with_flags (field, flags))
-			continue;
-		if ((flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) == FIELD_ATTRIBUTE_PUBLIC) {
-			if (bflags & BFLAGS_Public)
-				match++;
-		} else if ((klass == startklass) || (flags & FIELD_ATTRIBUTE_FIELD_ACCESS_MASK) != FIELD_ATTRIBUTE_PRIVATE) {
-			if (bflags & BFLAGS_NonPublic) {
-				match++;
-			}
-		}
-		if (!match)
-			continue;
-		match = 0;
-		if (flags & FIELD_ATTRIBUTE_STATIC) {
-			if (bflags & BFLAGS_Static)
-				if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
-					match++;
-		} else {
-			if (bflags & BFLAGS_Instance)
-				match++;
-		}
-
-		if (!match)
-			continue;
-		
-		utf8_name = mono_string_to_utf8 (name);
-
-		if (compare_func (mono_field_get_name (field), utf8_name)) {
-			g_free (utf8_name);
-			continue;
-		}
-		g_free (utf8_name);
-		
-		return mono_field_get_object (domain, klass, field);
-	}
-	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
-		goto handle_parent;
-
-	return NULL;
-}
-
 ICALL_EXPORT MonoArray*
-ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
+ves_icall_Type_GetFields_internal (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoReflectionType *reftype)
 {
 	MonoDomain *domain; 
 	MonoClass *startklass, *klass, *refklass;
@@ -3332,12 +3236,15 @@ ves_icall_Type_GetFields_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoObject *member;
 	int i, match;
 	gpointer iter;
+	char *utf8_name = NULL;
+	int (*compare_func) (const char *s1, const char *s2) = NULL;	
 	MonoClassField *field;
 	MonoPtrArray tmp_array;
 
 	domain = ((MonoObject *)type)->vtable->domain;
 	if (type->type->byref)
 		return mono_array_new (domain, mono_defaults.field_info_class, 0);
+
 	klass = startklass = mono_class_from_mono_type (type->type);
 	refklass = mono_class_from_mono_type (reftype->type);
 
@@ -3378,6 +3285,17 @@ handle_parent:
 
 		if (!match)
 			continue;
+
+		if (name != NULL) {
+			if (utf8_name == NULL) {
+				utf8_name = mono_string_to_utf8 (name);
+				compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
+			}
+
+			if (compare_func (mono_field_get_name (field), utf8_name))
+				continue;
+		}
+
 		member = (MonoObject*)mono_field_get_object (domain, refklass, field);
 		mono_ptr_array_append (tmp_array, member);
 	}
@@ -3390,6 +3308,9 @@ handle_parent:
 		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
 
 	mono_ptr_array_destroy (tmp_array);
+
+	if (utf8_name != NULL)
+		g_free (utf8_name);
 
 	return res;
 }
@@ -3794,77 +3715,6 @@ loader_error:
 	return NULL;
 }
 
-ICALL_EXPORT MonoReflectionEvent *
-ves_icall_MonoType_GetEvent (MonoReflectionType *type, MonoString *name, guint32 bflags)
-{
-	MonoDomain *domain;
-	MonoClass *klass, *startklass;
-	gpointer iter;
-	MonoEvent *event;
-	MonoMethod *method;
-	gchar *event_name;
-	int (*compare_func) (const char *s1, const char *s2);
-
-	event_name = mono_string_to_utf8 (name);
-	if (type->type->byref)
-		return NULL;
-	klass = startklass = mono_class_from_mono_type (type->type);
-	domain = mono_object_domain (type);
-
-	mono_class_init_or_throw (klass);
-
-	compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
-handle_parent:	
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
-	}
-
-	iter = NULL;
-	while ((event = mono_class_get_events (klass, &iter))) {
-		if (compare_func (event->name, event_name))
-			continue;
-
-		method = event->add;
-		if (!method)
-			method = event->remove;
-		if (!method)
-			method = event->raise;
-		if (method) {
-			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
-				if (!(bflags & BFLAGS_Public))
-					continue;
-			} else {
-				if (!(bflags & BFLAGS_NonPublic))
-					continue;
-				if ((klass != startklass) && (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PRIVATE)
-					continue;
-			}
-
-			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-				if (!(bflags & BFLAGS_Static))
-					continue;
-				if (!(bflags & BFLAGS_FlattenHierarchy) && (klass != startklass))
-					continue;
-			} else {
-				if (!(bflags & BFLAGS_Instance))
-					continue;
-			}
-		} else 
-			if (!(bflags & BFLAGS_NonPublic))
-				continue;
-		
-		g_free (event_name);
-		return mono_event_get_object (domain, startklass, event);
-	}
-
-	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
-		goto handle_parent;
-
-	g_free (event_name);
-	return NULL;
-}
-
 static guint
 event_hash (gconstpointer data)
 {
@@ -3881,7 +3731,7 @@ event_equal (MonoEvent *event1, MonoEvent *event2)
 }
 
 ICALL_EXPORT MonoArray*
-ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, MonoReflectionType *reftype)
+ves_icall_Type_GetEvents_internal (MonoReflectionType *type, MonoString *name, guint32 bflags, MonoReflectionType *reftype)
 {
 	MonoException *ex;
 	MonoDomain *domain; 
@@ -3892,6 +3742,8 @@ ves_icall_Type_GetEvents_internal (MonoReflectionType *type, guint32 bflags, Mon
 	MonoEvent *event;
 	int i, match;
 	gpointer iter;
+	char *utf8_name = NULL;
+	int (*compare_func) (const char *s1, const char *s2) = NULL;	
 	GHashTable *events = NULL;
 	MonoPtrArray tmp_array;
 
@@ -3952,6 +3804,16 @@ handle_parent:
 		if (!match)
 			continue;
 
+		if (name != NULL) {
+			if (utf8_name == NULL) {
+				utf8_name = mono_string_to_utf8 (name);
+				compare_func = (bflags & BFLAGS_IgnoreCase) ? mono_utf8_strcasecmp : strcmp;
+			}
+
+			if (compare_func (event->name, utf8_name))
+				continue;
+		}		
+
 		if (g_hash_table_lookup (events, event))
 			continue;
 
@@ -3971,6 +3833,9 @@ handle_parent:
 
 	mono_ptr_array_destroy (tmp_array);
 
+	if (utf8_name != NULL)
+		g_free (utf8_name);
+
 	return res;
 
 loader_error:
@@ -3985,70 +3850,8 @@ loader_error:
 	return NULL;
 }
 
-ICALL_EXPORT MonoReflectionType *
-ves_icall_Type_GetNestedType (MonoReflectionType *type, MonoString *name, guint32 bflags)
-{
-	MonoDomain *domain; 
-	MonoClass *klass;
-	MonoClass *nested;
-	char *str;
-	gpointer iter;
-	
-	if (name == NULL) {
-		mono_set_pending_exception (mono_get_exception_argument_null ("name"));
-		return NULL;
-	}
-	
-	domain = ((MonoObject *)type)->vtable->domain;
-	if (type->type->byref)
-		return NULL;
-	klass = mono_class_from_mono_type (type->type);
-
-	str = mono_string_to_utf8 (name);
-
- handle_parent:
-	if (klass->exception_type != MONO_EXCEPTION_NONE) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
-		return NULL;
-	}
-
-	/*
-	 * If a nested type is generic, return its generic type definition.
-	 * Note that this means that the return value is essentially a
-	 * nested type of the generic type definition of @klass.
-	 *
-	 * A note in MSDN claims that a generic type definition can have
-	 * nested types that aren't generic.  In any case, the container of that
-	 * nested type would be the generic type definition.
-	 */
-	if (klass->generic_class)
-		klass = klass->generic_class->container_class;
-
-	iter = NULL;
-	while ((nested = mono_class_get_nested_types (klass, &iter))) {
-		int match = 0;
-		if ((nested->flags & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NESTED_PUBLIC) {
-			if (bflags & BFLAGS_Public)
-				match++;
-		} else {
-			if (bflags & BFLAGS_NonPublic)
-				match++;
-		}
-		if (!match)
-			continue;
-		if (strcmp (nested->name, str) == 0){
-			g_free (str);
-			return mono_type_get_object (domain, &nested->byval_arg);
-		}
-	}
-	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = klass->parent))
-		goto handle_parent;
-	g_free (str);
-	return NULL;
-}
-
 ICALL_EXPORT MonoArray*
-ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
+ves_icall_Type_GetNestedTypes (MonoReflectionType *type, MonoString *name, guint32 bflags)
 {
 	MonoDomain *domain; 
 	MonoClass *klass;
@@ -4057,6 +3860,7 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 	int i, match;
 	MonoClass *nested;
 	gpointer iter;
+	char *str = NULL;
 	MonoPtrArray tmp_array;
 
 	domain = ((MonoObject *)type)->vtable->domain;
@@ -4089,6 +3893,15 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 		}
 		if (!match)
 			continue;
+
+		if (name != NULL) {
+			if (str == NULL)
+				str = mono_string_to_utf8 (name);
+
+			if (strcmp (nested->name, str))
+				continue;
+		}
+
 		member = (MonoObject*)mono_type_get_object (domain, &nested->byval_arg);
 		mono_ptr_array_append (tmp_array, member);
 	}
@@ -4099,6 +3912,9 @@ ves_icall_Type_GetNestedTypes (MonoReflectionType *type, guint32 bflags)
 		mono_array_setref (res, i, mono_ptr_array_get (tmp_array, i));
 
 	mono_ptr_array_destroy (tmp_array);
+
+	if (!str)
+		g_free (str);
 
 	return res;
 }
