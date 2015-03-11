@@ -1,5 +1,9 @@
-#How to run CoreFx tests on top of CoreCLR binaries
-If you want to validate the changes you have made to the CoreCLR repo you can do that by running the CoreFx tests on top of the newly build binaries (from the CoreCLR repo)
+We have ported very few of our CoreCLR and mscorlib tests to the repo. When we do, this topic will grow. Until then, the following technique is a good sanity test for your changes.
+
+Validating your changes using CoreFX
+====================================
+
+It may be valuable to use CoreFX tests to validate your changes to CoreCLR or mscorlib.
 
 In order to do this you need to create a file called `localpublish.props` under the `<repo root>\packages` folder.
 The contents of the file should look like this (make sure to update the version to the current version of the CoreCLR package used by CoreFx):
@@ -15,6 +19,6 @@ The contents of the file should look like this (make sure to update the version 
       </ItemGroup>
     </Project>
 
-Once this file is there, subsequent builds of the CoreCLR repo are going to install the CoreCLR package into the location specified by `InstallLocation`.
+Once this file is there, subsequent builds of the CoreCLR repo will install the CoreCLR package into the location specified by `InstallLocation`.
 
-To run tests, follow the procedure for running tests in CoreFx
+To run tests, follow the procedure for running tests in CoreFX.
