@@ -5,6 +5,7 @@
 
 #include "sosplugin.h"
 #include <string.h>
+#include <dbgtargetcontext.h>
 
 DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject) :
     m_debugger(debugger),
@@ -485,6 +486,22 @@ DebugClient::GetCurrentThreadId(
 }
 
 HRESULT 
+DebugClient::SetCurrentThreadId(
+    ULONG id)
+{
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+    if (!process.SetSelectedThreadByIndexID(id))
+    {
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+HRESULT 
 DebugClient::GetCurrentThreadSystemId(
     PULONG sysId)
 {
@@ -497,5 +514,44 @@ DebugClient::GetCurrentThreadSystemId(
     }
 
     *sysId = thread.GetThreadID();
+    return S_OK;
+}
+
+//----------------------------------------------------------------------------
+// IDebugClient
+//----------------------------------------------------------------------------
+
+HRESULT 
+DebugClient::GetThreadContextById(
+    /* in */ ULONG32 threadID,
+    /* in */ ULONG32 contextFlags,
+    /* in */ ULONG32 contextSize,
+    /* out */ PBYTE context)
+{
+    if (contextSize < sizeof(DT_CONTEXT))
+    {
+        return E_FAIL;
+    }
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBThread thread = process.GetThreadByID(threadID);
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBFrame frame = thread.GetFrameAtIndex(0);
+    if (!frame.IsValid())
+    {
+        return E_FAIL;
+    }
+    DT_CONTEXT *dtcontext = (DT_CONTEXT*)context;
+
+    dtcontext->Rip = frame.GetPC();
+    dtcontext->Rsp = frame.GetSP();
+    dtcontext->Rbp = frame.GetFP();
+
     return S_OK;
 }
