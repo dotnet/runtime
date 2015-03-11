@@ -2542,8 +2542,24 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
 	*/
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
 		return type;
-	else
+	else if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+		MonoTypeEnum constraint = type->data.generic_param->gshared_constraint;
+		/* The gparam serial encodes the type this gparam can represent */
+		if (constraint == 0) {
+			return &mono_defaults.object_class->byval_arg;
+		} else {
+			MonoType t;
+			MonoClass *klass;
+
+			g_assert (constraint != MONO_TYPE_VALUETYPE);
+			memset (&t, 0, sizeof (t));
+			t.type = constraint;
+			klass = mono_class_from_mono_type (&t);
+			return &klass->byval_arg;
+		}
+	} else {
 		return mini_native_type_replace_type (mono_type_get_basic_type_from_generic (type));
+	}
 }
 
 /*
@@ -2712,53 +2728,85 @@ mini_is_gsharedvt_variable_klass (MonoCompile *cfg, MonoClass *klass)
 	return mini_is_gsharedvt_variable_type (cfg, &klass->byval_arg);
 }
 
+static char*
+get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
+{
+	if (constraint == MONO_TYPE_VALUETYPE)
+		return g_strdup_printf ("%s_GSHAREDVT", name);
+	else {
+		MonoType t;
+		char *tname, *tname2, *res;
 
+		memset (&t, 0, sizeof (t));
+		t.type = constraint;
+		tname = mono_type_full_name (&t);
+		tname2 = g_utf8_strup (tname, strlen (tname));
+		res = g_strdup_printf ("%s_%s", name, tname2);
+		g_free (tname);
+		g_free (tname2);
+		return res;
+	}
+}
+
+/*
+ * get_shared_gparam:
+ *
+ *   Create an anonymous gparam with a type variable with a constraint which encodes which types can match it.
+ */
 static MonoType*
-get_gsharedvt_type (MonoType *t)
+get_shared_gparam (MonoType *t, MonoTypeEnum constraint)
 {
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGenericParam *copy;
 	MonoType *res;
 	MonoImage *image = NULL;
+	char *name;
 
-	/*
-	 * Create an anonymous gparam with a different gshared_constraint so normal gshared and gsharedvt methods have
-	 * a different instantiation.
-	 */
 	g_assert (mono_generic_param_info (par));
-	if (par->owner) {
+	/* image might not be set for sre */
+	if (par->owner && par->owner->image) {
 		image = par->owner->image;
 
 		mono_image_lock (image);
 		if (!image->gshared_types) {
-			image->gshared_types_len = 1;
+			image->gshared_types_len = MONO_TYPE_INTERNAL;
 			image->gshared_types = g_new0 (GHashTable*, image->gshared_types_len);
-			image->gshared_types [0] = g_hash_table_new (NULL, NULL);
 		}
-		res = g_hash_table_lookup (image->gshared_types [0], par);
+		if (!image->gshared_types [constraint])
+			image->gshared_types [constraint] = g_hash_table_new (NULL, NULL);
+		res = g_hash_table_lookup (image->gshared_types [constraint], par);
 		mono_image_unlock (image);
 		if (res)
 			return res;
 		copy = mono_image_alloc0 (image, sizeof (MonoGenericParamFull));
 		memcpy (copy, par, sizeof (MonoGenericParamFull));
+		name = get_shared_gparam_name (constraint, ((MonoGenericParamFull*)copy)->info.name);
+		((MonoGenericParamFull*)copy)->info.name = mono_image_strdup (image, name);
+		g_free (name);
 	} else {
 		copy = g_memdup (par, sizeof (MonoGenericParam));
 	}
 	copy->owner = NULL;
 	// FIXME:
 	copy->image = mono_defaults.corlib;
-	copy->gshared_constraint = MONO_TYPE_VALUETYPE;
+	copy->gshared_constraint = constraint;
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = copy;
 
-	if (par->owner) {
+	if (image) {
 		mono_image_lock (image);
 		/* Duplicates are ok */
-		g_hash_table_insert (image->gshared_types [0], par, res);
+		g_hash_table_insert (image->gshared_types [constraint], par, res);
 		mono_image_unlock (image);
 	}
 
 	return res;
+}
+
+static MonoType*
+get_gsharedvt_type (MonoType *t)
+{
+	return get_shared_gparam (t, MONO_TYPE_VALUETYPE);
 }
 
 static MonoGenericInst*
