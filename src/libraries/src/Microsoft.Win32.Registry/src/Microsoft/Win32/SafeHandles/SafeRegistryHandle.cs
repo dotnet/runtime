@@ -28,7 +28,7 @@ namespace Microsoft.Win32.SafeHandles
         [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
         {
-            return (Interop.mincore.RegCloseKey(handle) == Interop.ERROR_SUCCESS);
+            return (Interop.mincore.RegCloseKey(handle) == Interop.mincore.Errors.ERROR_SUCCESS);
         }
     }
 }
