@@ -220,7 +220,7 @@ rehash (MonoGHashTable *hash)
 {
 	int diff = ABS (hash->last_rehash - hash->in_use);
 	RehashData data;
-	void *old_table;
+	void *old_table G_GNUC_UNUSED; /* unused on Boehm */
 
 	/* These are the factors to play with to change the rehashing strategy */
 	/* I played with them with a large range, and could not really get */

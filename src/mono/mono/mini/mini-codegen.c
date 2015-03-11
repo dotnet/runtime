@@ -779,10 +779,8 @@ spill_vreg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoInst *ins
 {
 	MonoInst *load;
 	int i, sel, spill;
-	int *symbolic;
 	MonoRegState *rs = cfg->rs;
 
-	symbolic = rs->symbolic [bank];
 	sel = rs->vassign [reg];
 
 	/* the vreg we need to spill lives in another logical reg bank */
@@ -827,10 +825,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 	MonoInst *load;
 	int i, sel, spill, num_sregs;
 	int sregs [MONO_MAX_SRC_REGS];
-	int *symbolic;
 	MonoRegState *rs = cfg->rs;
-
-	symbolic = rs->symbolic [bank];
 
 	g_assert (bank < MONO_NUM_REGBANKS);
 
@@ -1302,44 +1297,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->dreg = -1;
 		}
 
-		if (spec [MONO_INST_CLOB] == 'c' && MONO_IS_CALL (ins)) {
-			/* A call instruction implicitly uses all registers in call->out_ireg_args */
-
-			MonoCallInst *call = (MonoCallInst*)ins;
-			GSList *list;
-
-			list = call->out_ireg_args;
-			if (list) {
-				while (list) {
-					guint32 regpair;
-					int reg, hreg;
-
-					regpair = (guint32)(gssize)(list->data);
-					hreg = regpair >> 24;
-					reg = regpair & 0xffffff;
-
-					//reginfo [reg].prev_use = reginfo [reg].last_use;
-					//reginfo [reg].last_use = i;
-
-					list = g_slist_next (list);
-				}
-			}
-
-			list = call->out_freg_args;
-			if (list) {
-				while (list) {
-					guint32 regpair;
-					int reg, hreg;
-
-					regpair = (guint32)(gssize)(list->data);
-					hreg = regpair >> 24;
-					reg = regpair & 0xffffff;
-
-					list = g_slist_next (list);
-				}
-			}
-		}
-
 		++i;
 	}
 
@@ -1347,7 +1304,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	DEBUG (print_regtrack (reginfo, rs->next_vreg));
 	MONO_BB_FOR_EACH_INS_REVERSE_SAFE (bb, prev, ins) {
-		int prev_dreg, clob_dreg;
+		int prev_dreg;
 		int dest_dreg, clob_reg;
 		int dest_sregs [MONO_MAX_SRC_REGS], prev_sregs [MONO_MAX_SRC_REGS];
 		int dreg_high, sreg1_high;
@@ -1360,7 +1317,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		spec_src1 = spec [MONO_INST_SRC1];
 		spec_dest = spec [MONO_INST_DEST];
 		prev_dreg = -1;
-		clob_dreg = -1;
 		clob_reg = -1;
 		dest_dreg = -1;
 		dreg_high = -1;
@@ -1518,7 +1474,6 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					prev_dreg = ins->dreg;
 					assign_reg (cfg, rs, ins->dreg, new_dest, 0);
-					clob_dreg = ins->dreg;
 					create_copy_ins (cfg, bb, tmp, dest_sreg, new_dest, ins, ip, 0);
 					mono_regstate_free_int (rs, dest_sreg);
 					need_spill = FALSE;

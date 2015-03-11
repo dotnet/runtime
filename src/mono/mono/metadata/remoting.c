@@ -463,6 +463,8 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 		}
 		return;
 	}
+	default:
+		break;
 	}
 
 	if (mono_object_class (src) == mono_defaults.stringbuilder_class) {
@@ -1941,8 +1943,9 @@ mono_get_xdomain_marshal_type (MonoType *t)
 			return MONO_MARSHAL_COPY;
 		break;
 	}
+	default:
+		break;
 	}
-
 	return MONO_MARSHAL_SERIALIZE;
 }
 
@@ -1994,6 +1997,8 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 		}
 		return (MonoObject *) acopy;
 	}
+	default:
+		break;
 	}
 
 	if (mono_object_class (val) == mono_defaults.stringbuilder_class) {

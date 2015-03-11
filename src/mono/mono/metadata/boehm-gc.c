@@ -461,6 +461,8 @@ on_gc_notification (GCEventType event)
 		gc_stats.major_gc_time += mono_100ns_ticks () - gc_start_time;
 		mono_trace_message (MONO_TRACE_GC, "gc took %d usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 		break;
+	default:
+		break;
 	}
 
 	mono_profiler_gc_event (e, 0);

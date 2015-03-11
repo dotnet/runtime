@@ -304,12 +304,12 @@ static guint32
 mono_aot_get_offset (guint32 *table, int index)
 {
 	int i, group, ngroups, index_entry_size;
-	int start_offset, offset, noffsets, group_size;
+	int start_offset, offset, group_size;
 	guint8 *data_start, *p;
 	guint32 *index32 = NULL;
 	guint16 *index16 = NULL;
 	
-	noffsets = table [0];
+	/* noffsets = table [0]; */
 	group_size = table [1];
 	ngroups = table [2];
 	index_entry_size = table [3];
@@ -694,7 +694,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 {
 	MonoMethodSignature *sig;
 	guint32 flags;
-	int i, param_count, call_conv, gen_param_count = 0;
+	int i, param_count, call_conv;
 	guint8 *p = buf;
 	gboolean hasthis, explicit_this, has_gen_params;
 
@@ -706,7 +706,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	call_conv = flags & 0x0F;
 
 	if (has_gen_params)
-		gen_param_count = decode_value (p, &p);
+		/* gen_param_count = */ decode_value (p, &p);
 	param_count = decode_value (p, &p);
 	if (target && param_count != target->param_count)
 		return NULL;
@@ -2403,7 +2403,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	guint8 *fde, *cie, *code_start, *code_end;
 	int version, fde_count;
 	gint32 *table;
-	int i, j, pos, left, right, offset, offset1, offset2, code_len, func_encoding;
+	int i, j, pos, left, right, offset, offset1, offset2, code_len;
 	MonoJitExceptionInfo *ei;
 	guint32 fde_len, ei_len, nested_len, nindex;
 	gpointer *type_info;
@@ -2420,7 +2420,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 	version = *p;
 	g_assert (version == 3);
 	p ++;
-	func_encoding = *p;
+	/* func_encoding = *p; */
 	p ++;
 	p = ALIGN_PTR_TO (p, 4);
 
@@ -2598,7 +2598,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	gboolean has_generic_jit_info, has_dwarf_unwind_info, has_clauses, has_seq_points, has_try_block_holes, has_arch_eh_jit_info;
 	gboolean from_llvm, has_gc_map;
 	guint8 *p;
-	int generic_info_size, try_holes_info_size, num_holes, arch_eh_jit_info_size;
+	int try_holes_info_size, num_holes;
 	int this_reg = 0, this_offset = 0;
 	gboolean async;
 
@@ -2622,12 +2622,8 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	} else {
 		unwind_info = decode_value (p, &p);
 	}
-	if (has_generic_jit_info) {
+	if (has_generic_jit_info)
 		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
-		generic_info_size = sizeof (MonoGenericJitInfo);
-	} else {
-		generic_info_size = 0;
-	}
 
 	if (has_try_block_holes) {
 		num_holes = decode_value (p, &p);
@@ -2639,11 +2635,8 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 	if (has_arch_eh_jit_info) {
 		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
-		arch_eh_jit_info_size = sizeof (MonoArchEHJitInfo);
 		/* Overwrite the original code_len which includes alignment padding */
 		code_len = decode_value (p, &p);
-	} else {
-		arch_eh_jit_info_size = 0;
 	}
 
 	/* Exception table */
@@ -2975,7 +2968,7 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 	MonoAotModule *amodule = image->aot_module;
 	MonoMethod *method = NULL;
 	MonoJitInfo *jinfo;
-	guint8 *code, *code_end, *ex_info, *p;
+	guint8 *code, *ex_info, *p;
 	guint32 *table;
 	int nmethods;
 	gint32 *code_offsets;
@@ -3026,8 +3019,6 @@ mono_aot_find_jit_info (MonoDomain *domain, MonoImage *image, gpointer addr)
 
 	code_offsets = amodule->sorted_code_offsets;
 	offsets_len = amodule->sorted_code_offsets_len;
-
-	code_end = amodule->jit_code_end > amodule->llvm_code_end ? amodule->jit_code_end : amodule->llvm_code_end;
 
 	/* Binary search in the sorted_code_offsets table */
 	left = 0;

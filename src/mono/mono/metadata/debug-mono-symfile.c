@@ -826,8 +826,8 @@ mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo)
 {
 	MonoSymbolFile *symfile = minfo->handle->symfile;
 	const uint8_t *p;
-	int i, len, compile_unit_index, locals_offset, num_locals, block_index;
-	int namespace_id, code_block_table_offset;
+	int i, len, locals_offset, num_locals, block_index;
+	int code_block_table_offset;
 	MonoDebugLocalsInfo *res;
 
 	if (!symfile)
@@ -835,9 +835,9 @@ mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo)
 
 	p = symfile->raw_contents + minfo->data_offset;
 
-	compile_unit_index = read_leb128 (p, &p);
+	/* compile_unit_index = */ read_leb128 (p, &p);
 	locals_offset = read_leb128 (p, &p);
-	namespace_id = read_leb128 (p, &p);
+	/* namespace_id = */ read_leb128 (p, &p);
 	code_block_table_offset = read_leb128 (p, &p);
 
 	res = g_new0 (MonoDebugLocalsInfo, 1);

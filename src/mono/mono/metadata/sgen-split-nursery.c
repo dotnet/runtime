@@ -152,13 +152,6 @@ get_object_age (char *object)
 	return region_age [idx];
 }
 
-static inline void
-set_object_age (char *object, int age)
-{
-	size_t idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
-	region_age [idx] = age;
-}
-
 static void
 set_age_in_range (char *start, char *end, int age)
 {

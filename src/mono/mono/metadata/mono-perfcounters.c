@@ -1238,14 +1238,13 @@ custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name)
 {
 	SharedInstance* inst;
 	char *p;
-	int size, data_offset;
+	int size;
 	inst = find_custom_instance (cat, name);
 	if (inst)
 		return inst;
 	size = sizeof (SharedInstance) + strlen (name);
 	size += 7;
 	size &= ~7;
-	data_offset = size;
 	size += (sizeof (guint64) * cat->num_counters);
 	perfctr_lock ();
 	inst = (SharedInstance*) shared_data_reserve_room (size, FTYPE_INSTANCE);
@@ -1797,9 +1796,8 @@ static gboolean
 mono_perfcounter_foreach_shared_item (SharedHeader *header, gpointer data)
 {
 	int i;
-	char *p, *name, *help;
+	char *p, *name;
 	unsigned char type;
-	int seq_num;
 	void *addr;
 	SharedCategory *cat;
 	SharedCounter *counter;
@@ -1816,10 +1814,10 @@ mono_perfcounter_foreach_shared_item (SharedHeader *header, gpointer data)
 		for (i = 0; i < cat->num_counters; ++i) {
 			counter = (SharedCounter*) p;
 			type = (unsigned char)*p++;
-			seq_num = (int)*p++;
+			/* seq_num = (int)* */ p++;
 			name = p;
 			p += strlen (p) + 1;
-			help = p;
+			/* help = p; */
 			p += strlen (p) + 1;
 
 			inst = custom_get_instance (cat, counter, name);

@@ -1201,7 +1201,7 @@ WSAIoctl (guint32 fd, gint32 command,
 }
 
 #ifndef PLATFORM_PORT_PROVIDES_IOCTLSOCKET
-int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
+int ioctlsocket(guint32 fd, unsigned long command, gpointer arg)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;

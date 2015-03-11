@@ -371,7 +371,6 @@ dump_table_property (MonoImage *m)
 	for (i = 0; i < t->rows; i++){
 		guint32 cols [MONO_PROPERTY_SIZE];
 		char *type;
-		int bsize;
 		int prop_flags;
 		
 		mono_metadata_decode_row (t, i, cols, MONO_PROPERTY_SIZE);
@@ -385,7 +384,7 @@ dump_table_property (MonoImage *m)
 			strcat (flags, "hasdefault ");
 
 		ptr = mono_metadata_blob_heap (m, cols [MONO_PROPERTY_TYPE]);
-		bsize = mono_metadata_decode_blob_size (ptr, &ptr);
+		/* bsize = */ mono_metadata_decode_blob_size (ptr, &ptr);
 		/* ECMA claims 0x08 ... */
 		if (*ptr != 0x28 && *ptr != 0x08)
 			g_warning("incorrect signature in propert blob: 0x%x", *ptr);

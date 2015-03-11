@@ -492,7 +492,6 @@ MonoMethod*
 mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 {
 	MonoClass *klass;
-	const MonoTableInfo *tdef;
 	const MonoTableInfo *methods;
 	MonoMethod *method;
 	int i;
@@ -511,7 +510,8 @@ mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 		return mono_method_desc_search_in_class (desc, klass);
 	}
 
-	tdef = mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
+	/* FIXME: Is this call necessary?  We don't use its result. */
+	mono_image_get_table_info (image, MONO_TABLE_TYPEDEF);
 	methods = mono_image_get_table_info (image, MONO_TABLE_METHOD);
 	for (i = 0; i < mono_table_info_get_rows (methods); ++i) {
 		guint32 token = mono_metadata_decode_row_col (methods, i, MONO_METHOD_NAME);

@@ -229,7 +229,6 @@ GetCurrentThreadId (void)
 guint32
 SleepEx (guint32 ms, gboolean alertable)
 {
-	struct timespec req;
 	int ms_quot, ms_rem;
 	int ret;
 	gpointer current_thread = NULL;
@@ -257,9 +256,6 @@ SleepEx (guint32 ms, gboolean alertable)
 	ms_quot = ms / 1000;
 	ms_rem = ms % 1000;
 	
-	req.tv_sec=ms_quot;
-	req.tv_nsec=ms_rem*1000000;
-
 #if defined (__linux__) && !defined(PLATFORM_ANDROID)
 	/* Use clock_nanosleep () to prevent time drifting problems when nanosleep () is interrupted by signals */
 	ret = clock_gettime (CLOCK_MONOTONIC, &start);
@@ -283,6 +279,10 @@ SleepEx (guint32 ms, gboolean alertable)
 	}
 
 #else
+	struct timespec req;
+
+	req.tv_sec=ms_quot;
+	req.tv_nsec=ms_rem*1000000;
 
 again:
 	memset (&rem, 0, sizeof (rem));

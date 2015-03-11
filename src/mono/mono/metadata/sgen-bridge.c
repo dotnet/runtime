@@ -215,10 +215,6 @@ free_callback_data (SgenBridgeProcessor *processor)
 void
 sgen_bridge_processing_finish (int generation)
 {
-	unsigned long step_8;
-	SGEN_TV_DECLARE (atv);
-	SGEN_TV_DECLARE (btv);
-
 	bridge_processor.processing_build_callback_data (generation);
 	if (compare_bridge_processors ())
 		compare_to_bridge_processor.processing_build_callback_data (generation);
@@ -234,16 +230,11 @@ sgen_bridge_processing_finish (int generation)
 	if (compare_bridge_processors ())
 		sgen_compare_bridge_processor_results (&bridge_processor, &compare_to_bridge_processor);
 
-	SGEN_TV_GETTIME (btv);
-
 	null_weak_links_to_dead_objects (&bridge_processor, generation);
 
 	free_callback_data (&bridge_processor);
 	if (compare_bridge_processors ())
 		free_callback_data (&compare_to_bridge_processor);
-
-	SGEN_TV_GETTIME (atv);
-	step_8 = SGEN_TV_ELAPSED (btv, atv);
 
  after_callback:
 	bridge_processor.processing_after_callback (generation);

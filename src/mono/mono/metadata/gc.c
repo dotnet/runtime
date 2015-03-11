@@ -824,14 +824,12 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	guint slot = gchandle >> 3;
 	guint type = (gchandle & 7) - 1;
 	HandleData *handles = &gc_handles [type];
-	MonoObject *old_obj = NULL;
 
 	if (type > 3)
 		return;
 	lock_handles (handles);
 	if (slot < handles->size && (handles->bitmap [slot / 32] & (1 << (slot % 32)))) {
 		if (handles->type <= HANDLE_WEAK_TRACK) {
-			old_obj = handles->entries [slot];
 			if (handles->entries [slot])
 				mono_gc_weak_link_remove (&handles->entries [slot], handles->type == HANDLE_WEAK_TRACK);
 			if (obj)

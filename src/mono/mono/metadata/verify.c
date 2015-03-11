@@ -531,6 +531,8 @@ mono_type_is_valid_type_in_context_full (MonoType *type, MonoGenericContext *con
 			return FALSE;
 		break;
 	}
+	default:
+		break;
 	}
 	return TRUE;
 }
@@ -1449,6 +1451,8 @@ is_valid_bool_arg (ILStackDesc *arg)
 			 * is it a "class Foo<T>" or a "struct Foo<T>"?
 			 */
 			return !arg->type->data.generic_class->container_class->valuetype;
+		default:
+			return FALSE;
 		}
 	default:
 		return FALSE;
@@ -3902,6 +3906,8 @@ do_cast (VerifyContext *ctx, int token, const char *opcode) {
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_TYPEDBYREF: 
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid value for %s at 0x%04x", opcode, ctx->ip_offset));
+	default:
+		break;
 	}
 
 	do_box = is_boxed || mono_type_is_generic_argument(type) || mono_class_from_mono_type (type)->valuetype;
@@ -4417,8 +4423,6 @@ do_sizeof (VerifyContext *ctx, int token)
 static void
 do_localloc (VerifyContext *ctx)
 {
-	ILStackDesc *top;
-	
 	if (ctx->eval.size != 1) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Stack must have only size item in localloc at 0x%04x", ctx->ip_offset));
 		return;		
@@ -4430,7 +4434,7 @@ do_localloc (VerifyContext *ctx)
 	}
 
 	/*TODO verify top type*/
-	top = stack_pop (ctx);
+	/* top = */ stack_pop (ctx);
 
 	set_stack_value (ctx, stack_push (ctx), &mono_defaults.int_class->byval_arg, FALSE);
 	CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Instruction localloc in never verifiable at 0x%04x", ctx->ip_offset));
@@ -4822,7 +4826,7 @@ mono_method_verify (MonoMethod *method, int level)
 	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;
 
 	int i, n, need_merge = 0, start = 0;
-	guint token, ip_offset = 0, prefix = 0;
+	guint ip_offset = 0, prefix = 0;
 	MonoGenericContext *generic_context = NULL;
 	MonoImage *image;
 	VerifyContext ctx;
@@ -5367,7 +5371,7 @@ mono_method_verify (MonoMethod *method, int level)
 			code_bounds_check (5);
 			if (ctx.eval.size)
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Eval stack must be empty in jmp at 0x%04x", ip_offset));
-			token = read32 (ip + 1);
+			/* token = read32 (ip + 1); */
 			if (in_any_block (ctx.header, ip_offset))
 				ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("jmp cannot escape exception blocks at 0x%04x", ip_offset));
 
@@ -5386,7 +5390,7 @@ mono_method_verify (MonoMethod *method, int level)
 
 		case CEE_CALLI:
 			code_bounds_check (5);
-			token = read32 (ip + 1);
+			/* token = read32 (ip + 1); */
 			/*
 			 * FIXME: check signature, retval, arguments etc.
 			 * FIXME: check requirements for tail call

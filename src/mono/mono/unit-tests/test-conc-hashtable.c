@@ -261,7 +261,7 @@ parallel_writer_parallel_reader (void)
 	return res;
 }
 
-static void
+static void G_GNUC_UNUSED
 benchmark_conc (void)
 {
 	mono_mutex_t mutex;
@@ -284,7 +284,7 @@ benchmark_conc (void)
 
 }
 
-static void
+static void G_GNUC_UNUSED
 benchmark_glib (void)
 {
 	GHashTable *h;

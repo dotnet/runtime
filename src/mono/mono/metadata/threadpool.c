@@ -783,7 +783,7 @@ static gint8
 monitor_heuristic (gint16 *current, gint16 *history_size, SamplesHistory *history, ThreadPool *tp)
 {
 	int i;
-	gint8 decision;
+	gint8 decision G_GNUC_UNUSED;
 	gint16 cur, max = 0;
 	gboolean all_waitsleepjoin;
 	MonoInternalThread *thread;

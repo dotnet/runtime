@@ -609,14 +609,6 @@ mono_icall_get_wrapper (MonoJitICallInfo* callinfo)
 	return mono_icall_get_wrapper_full (callinfo, FALSE);
 }
 
-static void
-mono_dynamic_code_hash_insert (MonoDomain *domain, MonoMethod *method, MonoJitDynamicMethodInfo *ji)
-{
-	if (!domain_jit_info (domain)->dynamic_code_hash)
-		domain_jit_info (domain)->dynamic_code_hash = g_hash_table_new (NULL, NULL);
-	g_hash_table_insert (domain_jit_info (domain)->dynamic_code_hash, method, ji);
-}
-
 static MonoJitDynamicMethodInfo*
 mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 {
@@ -652,20 +644,6 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 		sig = NULL;
 
 	mono_register_jit_icall_full (func, name, sig, save, FALSE, save ? name : NULL);
-}
-
-/* Register a jit icall which doesn't throw exceptions through mono_raise_exception () */
-static void
-register_icall_noraise (gpointer func, const char *name, const char *sigstr)
-{
-	MonoMethodSignature *sig;
-
-	if (sigstr)
-		sig = mono_create_icall_signature (sigstr);
-	else
-		sig = NULL;
-
-	mono_register_jit_icall_full (func, name, sig, TRUE, TRUE, name);
 }
 
 static void
@@ -1672,21 +1650,6 @@ static gboolean
 is_gsharedvt_type (MonoType *t)
 {
 	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE;
-}
-
-static gboolean
-is_open_method (MonoMethod *method)
-{
-	MonoGenericContext *context;
-
-	if (!method->is_inflated)
-		return FALSE;
-	context = mono_method_get_context (method);
-	if (context->class_inst && context->class_inst->is_open)
-		return TRUE;
-	if (context->method_inst && context->method_inst->is_open)
-		return TRUE;
-	return FALSE;
 }
 
 void

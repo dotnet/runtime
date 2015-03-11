@@ -1859,52 +1859,6 @@ mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] |= (1 << (opcode & EMUL_HIT_MASK));
 }
 
-/*
- * For JIT icalls implemented in C.
- * NAME should be the same as the name of the C function whose address is FUNC.
- * If SAVE is TRUE, no wrapper is generated. This is for perf critical icalls which
- * can't throw exceptions.
- */
-static void
-register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
-{
-	MonoMethodSignature *sig;
-
-	if (sigstr)
-		sig = mono_create_icall_signature (sigstr);
-	else
-		sig = NULL;
-
-	mono_register_jit_icall_full (func, name, sig, save, FALSE, save ? name : NULL);
-}
-
-/* Register a jit icall which doesn't throw exceptions through mono_raise_exception () */
-static void
-register_icall_noraise (gpointer func, const char *name, const char *sigstr)
-{
-	MonoMethodSignature *sig;
-
-	if (sigstr)
-		sig = mono_create_icall_signature (sigstr);
-	else
-		sig = NULL;
-
-	mono_register_jit_icall_full (func, name, sig, TRUE, TRUE, name);
-}
-
-static void
-register_dyn_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
-{
-	MonoMethodSignature *sig;
-
-	if (sigstr)
-		sig = mono_create_icall_signature (sigstr);
-	else
-		sig = NULL;
-
-	mono_register_jit_icall (func, name, sig, save);
-}
-
 static void
 print_dfn (MonoCompile *cfg) {
 	int i, j;
@@ -2174,15 +2128,6 @@ mono_get_lmf_addr_intrinsic (MonoCompile* cfg)
 
 #endif /* !DISABLE_JIT */
 
-
-static gboolean
-mini_tls_key_supported (MonoTlsKey key)
-{
-	if (!MONO_ARCH_HAVE_TLS_GET)
-		return FALSE;
-
-	return mini_get_tls_offset (key) != -1;
-}
 
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
@@ -3084,12 +3029,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	MonoMethodHeader *header;
 	MonoMethodSignature *sig;
 	MonoError err;
-	guint8 *ip;
 	MonoCompile *cfg;
 	int dfn, i, code_size_ratio;
-#ifndef DISABLE_SSA
-	gboolean deadce_has_run = FALSE;
-#endif
 	gboolean try_generic_shared, try_llvm = FALSE;
 	MonoMethod *method_to_compile, *method_to_register;
 	gboolean method_is_gshared = FALSE;
@@ -3361,8 +3302,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 				cfg->verbose_level = 4;
 		}
 	}
-
-	ip = (guint8 *)header->code;
 
 	cfg->intvars = mono_mempool_alloc0 (cfg->mempool, sizeof (guint16) * STACK_MAX * header->max_stack);
 
@@ -3663,10 +3602,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			//mono_local_cprop (cfg);
 		}
 
-		if (cfg->opt & MONO_OPT_DEADCE) {
+		if (cfg->opt & MONO_OPT_DEADCE)
 			mono_ssa_deadce (cfg);
-			deadce_has_run = TRUE;
-		}
 
 		if ((cfg->flags & (MONO_CFG_HAS_LDELEMA|MONO_CFG_HAS_CHECK_THIS)) && (cfg->opt & MONO_OPT_ABCREM))
 			mono_perform_abc_removal (cfg);

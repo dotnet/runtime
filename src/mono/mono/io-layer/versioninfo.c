@@ -468,11 +468,9 @@ static gconstpointer
 get_fixedfileinfo_block (gconstpointer data, version_data *block)
 {
 	gconstpointer data_ptr;
-	gint32 data_len; /* signed to guard against underflow */
 	WapiFixedFileInfo *ffi;
 
 	data_ptr = get_versioninfo_block (data, block);
-	data_len = block->data_len;
 		
 	if (block->value_len != sizeof(WapiFixedFileInfo)) {
 		DEBUG ("%s: FIXEDFILEINFO size mismatch", __func__);

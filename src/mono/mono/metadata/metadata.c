@@ -3146,6 +3146,8 @@ mono_metadata_get_shared_type (MonoType *type)
 		if (type == &type->data.klass->this_arg)
 			return type;
 		break;
+	default:
+		break;
 	}
 
 	return NULL;
@@ -3315,6 +3317,8 @@ mono_metadata_free_type (MonoType *type)
 	case MONO_TYPE_ARRAY:
 		mono_metadata_free_array (type->data.array);
 		break;
+	default:
+		break;
 	}
 
 	g_free (type);
@@ -3350,14 +3354,13 @@ static MonoExceptionClause*
 parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr)
 {
 	unsigned char sect_data_flags;
-	const unsigned char *sptr;
 	int is_fat;
 	guint32 sect_data_len;
 	MonoExceptionClause* clauses = NULL;
 	
 	while (1) {
 		/* align on 32-bit boundary */
-		sptr = ptr = dword_align (ptr); 
+		ptr = dword_align (ptr); 
 		sect_data_flags = *ptr;
 		ptr++;
 		
@@ -3369,14 +3372,7 @@ parse_section_data (MonoImage *m, int *num_clauses, const unsigned char *ptr)
 			sect_data_len = ptr [0];
 			++ptr;
 		}
-		/*
-		g_print ("flags: %02x, len: %d\n", sect_data_flags, sect_data_len);
-		hex_dump (sptr, 0, sect_data_len+8);
-		g_print ("\nheader: ");
-		hex_dump (sptr-4, 0, 4);
-		g_print ("\n");
-		*/
-		
+
 		if (sect_data_flags & METHOD_HEADER_SECTION_EHTABLE) {
 			const unsigned char *p = dword_align (ptr);
 			int i;
@@ -3525,7 +3521,7 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	guint32 local_var_sig_tok, max_stack, code_size, init_locals;
 	const unsigned char *code;
 	MonoExceptionClause* clauses = NULL;
-	int hsize, num_clauses = 0;
+	int num_clauses = 0;
 	MonoTableInfo *t = &m->tables [MONO_TABLE_STANDALONESIG];
 	guint32 cols [MONO_STAND_ALONE_SIGNATURE_SIZE];
 
@@ -3544,7 +3540,6 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	case METHOD_HEADER_FAT_FORMAT:
 		fat_flags = read16 (ptr);
 		ptr += 2;
-		hsize = (fat_flags >> 12) & 0xf;
 		max_stack = read16 (ptr);
 		ptr += 2;
 		code_size = read32 (ptr);
@@ -3584,10 +3579,10 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		clauses = parse_section_data (m, &num_clauses, (const unsigned char*)ptr);
 	if (local_var_sig_tok) {
 		const char *locals_ptr;
-		int len=0, i, bsize;
+		int len=0, i;
 
 		locals_ptr = mono_metadata_blob_heap (m, cols [MONO_STAND_ALONE_SIGNATURE]);
-		bsize = mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
+		mono_metadata_decode_blob_size (locals_ptr, &locals_ptr);
 		if (*locals_ptr != 0x07)
 			g_warning ("wrong signature for locals blob");
 		locals_ptr++;
@@ -4696,8 +4691,9 @@ mono_metadata_type_hash (MonoType *t1)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		return ((hash << 5) - hash) ^ mono_metadata_generic_param_hash (t1->data.generic_param);
+	default:
+		return hash;
 	}
-	return hash;
 }
 
 static guint
@@ -5364,7 +5360,6 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 	MonoTableInfo *t;
 	guint32 cols [MONO_TYPESPEC_SIZE];
 	const char *ptr;
-	guint32 len;
 	MonoType *type, *type2;
 
 	mono_error_init (error);
@@ -5385,7 +5380,7 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 		return NULL;
 	}
 
-	len = mono_metadata_decode_value (ptr, &ptr);
+	mono_metadata_decode_value (ptr, &ptr);
 
 	type = mono_metadata_parse_type_internal (image, NULL, MONO_PARSE_TYPE, 0, TRUE, ptr, &ptr);
 	if (!type) {

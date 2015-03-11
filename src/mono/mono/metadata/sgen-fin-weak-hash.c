@@ -115,7 +115,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 	GrayQueue *queue = ctx.queue;
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	MonoObject *object;
-	gpointer dummy;
+	gpointer dummy G_GNUC_UNUSED;
 	char *copy;
 	SgenPointerQueue moved_fin_objects;
 
@@ -187,7 +187,7 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 	GrayQueue *queue = ctx.queue;
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	MonoObject *object;
-	gpointer dummy;
+	gpointer dummy G_GNUC_UNUSED;
 	SgenPointerQueue moved_fin_objects;
 
 	sgen_pointer_queue_init (&moved_fin_objects, INTERNAL_MEM_TEMPORARY);
@@ -575,7 +575,7 @@ finalizers_for_domain (MonoDomain *domain, MonoObject **out_array, int out_size,
 	SgenHashTable *hash_table)
 {
 	MonoObject *object;
-	gpointer dummy;
+	gpointer dummy G_GNUC_UNUSED;
 	int count;
 
 	if (no_finalize || !out_size || !out_array)
@@ -666,7 +666,7 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
 	GrayQueue *queue = ctx.queue;
 	void **link;
-	gpointer dummy;
+	gpointer dummy G_GNUC_UNUSED;
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
@@ -752,7 +752,7 @@ void
 sgen_null_links_for_domain (MonoDomain *domain, int generation)
 {
 	void **link;
-	gpointer dummy;
+	gpointer dummy G_GNUC_UNUSED;
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
@@ -784,7 +784,7 @@ void
 sgen_null_links_with_predicate (int generation, WeakLinkAlivePredicateFunc predicate, void *data)
 {
 	void **link;
-	gpointer dummy;
+	gpointer dummy G_GNUC_UNUSED;
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
 		char *object = DISLINK_OBJECT (link);
@@ -809,7 +809,7 @@ sgen_remove_finalizers_for_domain (MonoDomain *domain, int generation)
 {
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	MonoObject *object;
-	gpointer dummy;
+	gpointer dummy G_GNUC_UNUSED;
 
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
 		object = tagged_object_get_object (object);

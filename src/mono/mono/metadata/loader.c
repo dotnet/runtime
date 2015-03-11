@@ -448,7 +448,7 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	MonoTableInfo *tables = image->tables;
 	MonoType *sig_type;
 	guint32 cols[6];
-	guint32 nindex, class, class_table;
+	guint32 nindex, class;
 	const char *fname;
 	const char *ptr;
 	guint32 idx = mono_metadata_token_index (token);
@@ -468,15 +468,12 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 
 	switch (class) {
 	case MONO_MEMBERREF_PARENT_TYPEDEF:
-		class_table = MONO_TOKEN_TYPE_DEF;
 		klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | nindex, error);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPEREF:
-		class_table = MONO_TOKEN_TYPE_REF;
 		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
 		break;
 	case MONO_MEMBERREF_PARENT_TYPESPEC:
-		class_table = MONO_TOKEN_TYPE_SPEC;
 		klass = mono_class_get_and_inflate_typespec_checked (image, MONO_TOKEN_TYPE_SPEC | nindex, context, error);
 		break;
 	default:
@@ -1779,7 +1776,6 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	MonoTableInfo *tables = image->tables;
 	MonoGenericContainer *generic_container = NULL, *container = NULL;
 	const char *sig = NULL;
-	int size;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 
 	mono_error_init (error);
@@ -1849,7 +1845,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
-	size = mono_metadata_decode_blob_size (sig, &sig);
+	/* size = */ mono_metadata_decode_blob_size (sig, &sig);
 
 	container = klass->generic_container;
 
@@ -2530,7 +2526,6 @@ MonoMethodSignature*
 mono_method_signature_checked (MonoMethod *m, MonoError *error)
 {
 	int idx;
-	int size;
 	MonoImage* img;
 	const char *sig;
 	gboolean can_cache_signature;
@@ -2598,7 +2593,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		if (!mono_verifier_verify_method_signature (img, sig_offset, error))
 			return NULL;
 
-		size = mono_metadata_decode_blob_size (sig, &sig_body);
+		/* size = */ mono_metadata_decode_blob_size (sig, &sig_body);
 
 		signature = mono_metadata_parse_method_signature_full (img, container, idx, sig_body, NULL, error);
 		if (!signature)

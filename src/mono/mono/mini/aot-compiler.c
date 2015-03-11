@@ -344,18 +344,6 @@ emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsect
 }
 
 static inline void
-emit_push_section (MonoAotCompile *acfg, const char *section_name, int subsection)
-{
-	img_writer_emit_push_section (acfg->w, section_name, subsection);
-}
-
-static inline void
-emit_pop_section (MonoAotCompile *acfg)
-{
-	img_writer_emit_pop_section (acfg->w);
-}
-
-static inline void
 emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func) 
 { 
 	img_writer_emit_local_symbol (acfg->w, name, end_label, func); 
@@ -419,12 +407,6 @@ emit_padding (MonoAotCompile *acfg, int size)
 		else
 			emit_bytes (acfg, buf, 16);
 	}
-}
-
-static inline void
-emit_pointer_unaligned (MonoAotCompile *acfg, const char *target) 
-{ 
-	img_writer_emit_pointer_unaligned (acfg->w, target); 
 }
 
 static inline void
@@ -3775,7 +3757,7 @@ add_wrappers (MonoAotCompile *acfg)
 				MonoMethodSignature *sig = mono_method_signature (e->ctor);
 				const char *p = (const char*)e->data;
 				const char *named;
-				int slen, num_named, named_type, data_type;
+				int slen, num_named, named_type;
 				char *n;
 				MonoType *t;
 				MonoClass *klass;
@@ -3820,13 +3802,12 @@ add_wrappers (MonoAotCompile *acfg)
 				if (num_named == 1) {
 					int name_len;
 					char *name;
-					MonoType *prop_type;
 
 					/* parse ExportSymbol attribute */
 					named = p;
 					named_type = *named;
 					named += 1;
-					data_type = *named;
+					/* data_type = *named; */
 					named += 1;
 
 					name_len = mono_metadata_decode_blob_size (named, &named);
@@ -3837,8 +3818,6 @@ add_wrappers (MonoAotCompile *acfg)
 
 					g_assert (named_type == 0x54);
 					g_assert (!strcmp (name, "ExportSymbol"));
-
-					prop_type = &mono_defaults.string_class->byval_arg;
 
 					/* load_cattr_value (), string case */
 					g_assert (*named != (char)0xff);
@@ -4665,10 +4644,9 @@ get_file_index (MonoAotCompile *acfg, const char *source_file)
 static void
 emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, guint32 code_len, MonoJumpInfo *relocs, gboolean got_only, MonoDebugMethodJitInfo *debug_info)
 {
-	int i, pindex, start_index, method_index;
+	int i, pindex, start_index;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
-	MonoMethodHeader *header;
 	MonoDebugSourceLocation **locs = NULL;
 	gboolean skip;
 #ifdef MONO_ARCH_AOT_SUPPORTED
@@ -4677,12 +4655,6 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 	const char *direct_call_target = 0;
 	const char *direct_pinvoke;
 #endif
-
-	if (method) {
-		header = mono_method_get_header (method);
-
-		method_index = get_method_index (acfg, method);
-	}
 
 	if (acfg->gas_line_numbers && method && debug_info) {
 		locs = compute_line_numbers (method, code_len, debug_info);
@@ -4986,12 +4958,10 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	char *debug_sym = NULL;
 	char *symbol = NULL;
 	int func_alignment = AOT_FUNC_ALIGNMENT;
-	MonoMethodHeader *header;
 	char *export_name;
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
-	header = cfg->header;
 
 	method_index = get_method_index (acfg, method);
 	symbol = g_strdup_printf ("%sme_%x", acfg->temp_prefix, method_index);
@@ -5287,13 +5257,11 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	int pindex, buf_size, n_patches;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
-	MonoMethodHeader *header;
 	guint32 method_index;
 	guint8 *p, *buf;
 	guint32 first_got_offset;
 
 	method = cfg->orig_method;
-	header = mono_method_get_header (method);
 
 	method_index = get_method_index (acfg, method);
 
@@ -5410,8 +5378,7 @@ get_unwind_info_offset (MonoAotCompile *acfg, guint8 *encoded, guint32 encoded_l
 static void
 emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean store_seq_points)
 {
-	MonoMethod *method;
-	int i, k, buf_size, method_index;
+	int i, k, buf_size;
 	guint32 debug_info_size, seq_points_size;
 	guint8 *code;
 	MonoMethodHeader *header;
@@ -5421,11 +5388,8 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	gboolean use_unwind_ops = FALSE;
 	MonoSeqPointInfo *seq_points;
 
-	method = cfg->orig_method;
 	code = cfg->native_code;
 	header = cfg->header;
-
-	method_index = get_method_index (acfg, method);
 
 	if (!acfg->aot_opts.nodebug) {
 		mono_debug_serialize_debug_info (cfg, &debug_info, &debug_info_size);
@@ -5569,11 +5533,9 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	if (jinfo->has_generic_jit_info) {
 		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (jinfo);
 		MonoGenericSharingContext* gsctx = gi->generic_sharing_context;
-		guint8 *p1;
 		guint8 *buf2, *p2;
 		int len;
 
-		p1 = p;
 		encode_value (gi->nlocs, p, &p);
 		if (gi->nlocs) {
 			for (i = 0; i < gi->nlocs; ++i) {
@@ -5840,7 +5802,6 @@ emit_plt (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		char *debug_sym = NULL;
 		MonoPltEntry *plt_entry = NULL;
-		MonoJumpInfo *ji;
 
 		if (i == 0)
 			/* 
@@ -5849,7 +5810,6 @@ emit_plt (MonoAotCompile *acfg)
 			continue;
 
 		plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
-		ji = plt_entry->ji;
 
 		debug_sym = plt_entry->debug_sym;
 
@@ -5899,13 +5859,11 @@ emit_plt (MonoAotCompile *acfg)
 		for (i = 0; i < acfg->plt_offset; ++i) {
 			char *debug_sym = NULL;
 			MonoPltEntry *plt_entry = NULL;
-			MonoJumpInfo *ji;
 
 			if (i == 0)
 				continue;
 
 			plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
-			ji = plt_entry->ji;
 
 			/* Skip plt entries not actually called by LLVM code */
 			if (!plt_entry->llvm_used)
