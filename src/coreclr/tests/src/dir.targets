@@ -61,10 +61,10 @@
 
   <Target Name="CopyNativeProjectBinaries">
      <ItemGroup>
-        <NativeProjectBinaries Include="$(NativeProjectOutPutFolder)\**\*.*" />
+        <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\**\*.*" />
      </ItemGroup>
 
-     <Error  Text="Then Native Project files are missing in $(NativeProjectOutPutFolder) please run build from the root of the repo at least once"
+     <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
              Condition="'@(NativeProjectBinaries)' == ''" />
 
      <Copy
@@ -93,15 +93,16 @@
           Condition="'@(ProjectReference)' != ''"
           BeforeTargets="Build" >
      <ItemGroup>
-        <NativeProjectOutPutFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__CMakeTestSlnDir)src\))$(Configuration)\"/>
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\"/>
      </ItemGroup>
 
-       <Message Text= "Project filese are :$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) " />
-       <Message Text= "Project refernce are :%(ProjectReference.Identity)" />
-       <Message Text= "Native Project refernce are :%(NativeProjectReference.Identity)" />
-       <Message Text= "Native Project refernce are :%(NativeProjectReferenceNormalized.Identity)" />
-       <Message Text= "Native Binaries will be copied from :%(NativeProjectOutPutFoldersToCopy.Identity)" />
-   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutPutFolder=%(NativeProjectOutPutFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
+    <Message Text= "Project files are :$([System.String]::Copy(%(ProjectReference.FileName)).ToUpper()) " />
+    <Message Text= "Project references are :%(ProjectReference.Identity)" />
+    <Message Text= "Native project references are :%(NativeProjectReference.Identity)" />
+    <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
+    <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
+   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
   </Target>
 </Project>
+

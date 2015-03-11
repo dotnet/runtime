@@ -6,6 +6,12 @@ if (WIN32)
     add_definitions(-DWINDOWS=1)
 endif()
 
+# Compile options
+
+if (WIN32)
+    add_compile_options(-wd4820)
+endif()
+
 MACRO(SUBDIRLIST result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
   SET(dirlist "")
@@ -29,3 +35,4 @@ MACRO(ADDSUBDIR_REC  curdir)
 ENDMACRO()
 
 ADDSUBDIR_REC(${CMAKE_CURRENT_SOURCE_DIR})
+
