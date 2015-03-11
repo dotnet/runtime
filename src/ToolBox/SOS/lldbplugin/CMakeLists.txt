@@ -2,6 +2,11 @@ project(sosplugin)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+add_definitions(-D_TARGET_AMD64_=1)
+add_definitions(-DDBG_TARGET_64BIT=1)
+add_definitions(-DDBG_TARGET_AMD64=1)
+add_definitions(-DDBG_TARGET_WIN64=1)
+
 set(ENABLE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_UNIX} CACHE BOOL "Enable building the SOS plugin for LLDB.")
 set(REQUIRE_LLDBPLUGIN ${CLR_CMAKE_PLATFORM_LINUX} CACHE BOOL "Require building the SOS plugin for LLDB.")
 
@@ -48,6 +53,8 @@ add_compile_options(-Wno-delete-non-virtual-dtor)
 
 include_directories(inc)
 include_directories("${LLDB_H}")
+include_directories(${CLR_DIR}/src/debug/inc)
+include_directories(${CLR_DIR}/src/inc)
 
 set(SOURCES
     sosplugin.cpp
