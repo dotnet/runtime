@@ -36,7 +36,9 @@ mono_threads_core_interrupt (MonoThreadInfo *info)
 void
 mono_threads_core_abort_syscall (MonoThreadInfo *info)
 {
-	mono_threads_core_interrupt (info);
+	thread_suspend (info->native_handle);
+	thread_abort_safely (info->native_handle);
+	thread_resume (info->native_handle);
 }
 
 gboolean
