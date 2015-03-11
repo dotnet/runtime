@@ -108,6 +108,19 @@ public:
     HRESULT GetCurrentThreadId(
         PULONG id);
 
+    HRESULT SetCurrentThreadId(
+        ULONG id);
+
     HRESULT GetCurrentThreadSystemId(
         PULONG sysId);
+
+    //----------------------------------------------------------------------------
+    // IDebugClient
+    //----------------------------------------------------------------------------
+
+    HRESULT GetThreadContextById(
+        ULONG32 threadID,
+        ULONG32 contextFlags,
+        ULONG32 contextSize,
+        PBYTE context);
 };

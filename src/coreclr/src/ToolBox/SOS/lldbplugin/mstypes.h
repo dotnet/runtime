@@ -12,10 +12,19 @@ typedef VOID *PVOID;
 typedef int BOOL;
 typedef int LONG;   
 typedef unsigned int ULONG;
+typedef ULONG ULONG32;
 typedef ULONG *PULONG;
+typedef unsigned char BYTE;
+typedef BYTE *PBYTE;
+typedef unsigned short WORD;
+typedef unsigned int DWORD;
 
 typedef unsigned long long ULONG64;
 typedef ULONG64 *PULONG64;
+
+typedef long long LONGLONG;
+typedef unsigned long long ULONGLONG;
+typedef ULONGLONG DWORD64;
 
 typedef wchar_t WCHAR;
 typedef WCHAR *PWCHAR;
@@ -30,6 +39,12 @@ typedef int HRESULT;
 #define S_FALSE                          (HRESULT)0x00000001
 #define E_NOTIMPL                        (HRESULT)0x80004001
 #define E_FAIL                           (HRESULT)0x80004005
+
+#if defined(_MSC_VER) || defined(__llvm__)
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x) 
+#endif
 
 // Platform-specific library naming
 // 
