@@ -6153,9 +6153,14 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 
 	/*Init these fields to sane values*/
 	klass->min_align = 1;
-	klass->instance_size = sizeof (gpointer);
+	/*
+	 * This makes sure the the value size of this class is equal to the size of the types the gparam is
+	 * constrained to, the JIT depends on this.
+	 */
+	klass->instance_size = sizeof (MonoObject) + mono_type_stack_size_internal (&klass->byval_arg, NULL, TRUE);
 	mono_memory_barrier ();
 	klass->size_inited = 1;
+	klass->setup_fields_called = 1;
 
 	mono_class_setup_supertypes (klass);
 
