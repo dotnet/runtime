@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -11,74 +10,29 @@ namespace System.Numerics.Tests
     {
         private static void VerifyComplexComparison(Complex c1, Complex c2, bool expectedResult, bool expectedResultEqual)
         {
-            if (expectedResult != (c1 == c2))
-            {
-                Console.WriteLine("Error-8592 c1:{0} == c2{1} is not '{2}' as expected", c1, c2, expectedResult);
-                Assert.True(false, "Verification Failed");
-            }
-
-
-            if (expectedResult != (c2 == c1))
-            {
-                Console.WriteLine("Error-8592-1 c2:{0} == c1{1} is not '{2}' as expected", c2, c1, expectedResult);
-                Assert.True(false, "Verification Failed");
-            }
-
-            if (expectedResult == (c1 != c2))
-            {
-                Console.WriteLine("Error-81792 c1:{0} != c2{1} is not '{2}' as expected", c1, c2, !expectedResult);
-                Assert.True(false, "Verification Failed");
-            }
-
-            if (expectedResult == (c2 != c1))
-            {
-                Console.WriteLine("Error-81792-1 c2:{0} != c1{1} is not '{2}' as expected", c2, c1, !expectedResult);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.True(expectedResult == (c1 == c2), string.Format("c1:{0} == c2{1} is not '{2}' as expected", c1, c2, expectedResult));
+            Assert.True(expectedResult == (c2 == c1), string.Format("c2:{0} == c1{1} is not '{2}' as expected", c2, c1, expectedResult));
+            Assert.True(expectedResult != (c1 != c2), string.Format("c1:{0} != c2{1} is not '{2}' as expected", c1, c2, !expectedResult));
+            Assert.True(expectedResult != (c2 != c1), string.Format("c2:{0} != c1{1} is not '{2}' as expected", c2, c1, !expectedResult));
 
             bool result = c1.Equals(c2);
-            if (expectedResultEqual != result)
-            {
-                Console.WriteLine("Error-6172 c1:{0}.Equals(c2{1}) is not '{2}' as expected", c1, c2, expectedResultEqual);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.True(expectedResultEqual == result, string.Format("c1:{0}.Equals(c2{1}) is not '{2}' as expected", c1, c2, expectedResultEqual));
 
             if (result) // then verify Hash Code equality
             {
-                if (c1.GetHashCode() != c2.GetHashCode())
-                {
-                    Console.WriteLine("Error-9HaSh72 c1:{0}.GetHashCode() == c2:{1}.GetHashCode() is 'true' as expected", c1, c2);
-                    Assert.True(false, "Verification Failed");
-                }
+                Assert.True(c1.GetHashCode() == c2.GetHashCode(), string.Format("c1:{0}.GetHashCode() == c2:{1}.GetHashCode() is 'true' as expected", c1, c2));
             }
 
             result = c2.Equals(c1);
-            if (expectedResultEqual != result)
-            {
-                Console.WriteLine("Error-6172-1 c2:{0}.Equals(c1{1}) is not '{2}' as expected", c2, c1, expectedResultEqual);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.True(expectedResultEqual == result, string.Format("c2:{0}.Equals(c1{1}) is not '{2}' as expected", c2, c1, expectedResultEqual));
 
             if (result) // then verify Hash Code equality
             {
-                if (c2.GetHashCode() != c1.GetHashCode())
-                {
-                    Console.WriteLine("Error-9HaSh72-1 c2:{0}.GetHashCode() == c1:{1}.GetHashCode() is 'true' as expected", c2, c1);
-                    Assert.True(false, "Verification Failed");
-                }
+                Assert.True(c2.GetHashCode() == c1.GetHashCode(), string.Format("Obj c2:{0}.GetHashCode() == c1:{1}.GetHashCode() is 'true' as expected", c2, c1));
             }
 
-            if (expectedResult != c2.Equals((Object)c1))
-            {
-                Console.WriteLine("Error-6172Obj c2:{0}.Equals((object) c1{1}) is not '{2}' as expected", c2, c1, expectedResult);
-                Assert.True(false, "Verification Failed");
-            }
-
-            if (expectedResult != c1.Equals((Object)c2))
-            {
-                Console.WriteLine("Error-6172Obj-1 c1:{0}.Equals((object) c2{1}) is not '{2}' as expected", c1, c2, expectedResult);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.True(expectedResult == c2.Equals((Object)c1), string.Format("c2:{0}.Equals((object) c1{1}) is not '{2}' as expected", c2, c1, expectedResult));
+            Assert.True(expectedResult == c1.Equals((Object)c2), string.Format("c1:{0}.Equals((object) c2{1}) is not '{2}' as expected", c1, c2, expectedResult));
         }
 
         private static void VerifyComplexComparison(Complex c1, Complex c2, bool expectedResult)
@@ -89,11 +43,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_ZeroOneImaginaryOne()
         {
-            // local variables
-            bool expectedResult = false;
-
-            Double real = Support.GetRandomDoubleValue(false);
-            Double imaginary = Support.GetRandomDoubleValue(false);
+            double real = Support.GetRandomDoubleValue(false);
+            double imaginary = Support.GetRandomDoubleValue(false);
             Complex randomComplex = new Complex(real, imaginary);
 
             real = Support.GetRandomDoubleValue(true);
@@ -115,7 +66,7 @@ namespace System.Numerics.Tests
             VerifyComplexComparison(Complex.Zero, -Complex.ImaginaryOne, false);
             VerifyComplexComparison(Complex.Zero, -Complex.ImaginaryOne, false);
 
-            expectedResult = (randomComplex.Real == 0.0 && randomComplex.Imaginary == 0.0);
+            bool expectedResult = (randomComplex.Real == 0.0 && randomComplex.Imaginary == 0.0);
             VerifyComplexComparison(Complex.Zero, randomComplex, expectedResult);
 
             expectedResult = (randomComplexNeg.Real == 0.0 && randomComplexNeg.Imaginary == 0.0);
@@ -196,11 +147,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_MaxMinValues()
         {
-            // local variables
-            bool expectedResult;
-
-            Double real = Support.GetRandomDoubleValue(false);
-            Double imaginary = Support.GetRandomDoubleValue(false);
+            double real = Support.GetRandomDoubleValue(false);
+            double imaginary = Support.GetRandomDoubleValue(false);
             Complex randomComplex = new Complex(real, imaginary);
 
             real = Support.GetRandomDoubleValue(true);
@@ -215,12 +163,12 @@ namespace System.Numerics.Tests
             imaginary = Support.GetSmallRandomDoubleValue(true);
             Complex randomSmallComplexNeg = new Complex(real, imaginary);
 
-            Complex maxComplex = new Complex(Double.MaxValue, Double.MaxValue);
-            Complex minComplex = new Complex(Double.MinValue, Double.MinValue);
-            Complex maxReal = new Complex(Double.MaxValue, 0.0);
-            Complex minReal = new Complex(Double.MinValue, 0.0);
-            Complex maxImaginary = new Complex(0.0, Double.MaxValue);
-            Complex minImaginary = new Complex(0.0, Double.MinValue);
+            Complex maxComplex = new Complex(double.MaxValue, double.MaxValue);
+            Complex minComplex = new Complex(double.MinValue, double.MinValue);
+            Complex maxReal = new Complex(double.MaxValue, 0.0);
+            Complex minReal = new Complex(double.MinValue, 0.0);
+            Complex maxImaginary = new Complex(0.0, double.MaxValue);
+            Complex minImaginary = new Complex(0.0, double.MinValue);
 
             VerifyComplexComparison(maxComplex, maxComplex, true);
             VerifyComplexComparison(maxComplex, minComplex, false);
@@ -229,7 +177,7 @@ namespace System.Numerics.Tests
             VerifyComplexComparison(maxComplex, maxImaginary, false);
             VerifyComplexComparison(maxComplex, minImaginary, false);
 
-            expectedResult = (randomComplex.Real == maxComplex.Real && randomComplex.Imaginary == maxComplex.Imaginary);
+            bool expectedResult = (randomComplex.Real == maxComplex.Real && randomComplex.Imaginary == maxComplex.Imaginary);
             VerifyComplexComparison(maxComplex, randomComplex, expectedResult);
 
             expectedResult = (randomComplexNeg.Real == maxComplex.Real && randomComplexNeg.Imaginary == maxComplex.Imaginary);
@@ -329,8 +277,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_InvalidValues()
         {
-            Double real = Support.GetRandomDoubleValue(false);
-            Double imaginary = Support.GetRandomDoubleValue(false);
+            double real = Support.GetRandomDoubleValue(false);
+            double imaginary = Support.GetRandomDoubleValue(false);
             Complex randomComplex = new Complex(real, imaginary);
 
             foreach (double imaginaryInvalid in Support.doubleInvalidValues)
@@ -338,7 +286,7 @@ namespace System.Numerics.Tests
                 real = Support.GetRandomDoubleValue(false);
                 Complex randomInvalidComplex = new Complex(real, imaginaryInvalid);
                 VerifyComplexComparison(randomInvalidComplex, randomComplex, false);
-                VerifyComplexComparison(randomInvalidComplex, randomInvalidComplex, !Double.IsNaN(imaginaryInvalid), true);
+                VerifyComplexComparison(randomInvalidComplex, randomInvalidComplex, !double.IsNaN(imaginaryInvalid), true);
             }
 
             foreach (double realInvalid in Support.doubleInvalidValues)
@@ -346,7 +294,7 @@ namespace System.Numerics.Tests
                 imaginary = Support.GetRandomDoubleValue(false);
                 Complex randomInvalidComplex = new Complex(realInvalid, imaginary);
                 VerifyComplexComparison(randomInvalidComplex, randomComplex, false);
-                VerifyComplexComparison(randomInvalidComplex, randomInvalidComplex, !Double.IsNaN(realInvalid), true);
+                VerifyComplexComparison(randomInvalidComplex, randomInvalidComplex, !double.IsNaN(realInvalid), true);
             }
 
             foreach (double realInvalid in Support.doubleInvalidValues)
@@ -355,7 +303,7 @@ namespace System.Numerics.Tests
                 {
                     Complex randomInvalidComplex = new Complex(realInvalid, imaginaryInvalid);
                     VerifyComplexComparison(randomInvalidComplex, randomComplex, false);
-                    VerifyComplexComparison(randomInvalidComplex, randomInvalidComplex, !(Double.IsNaN(realInvalid) || Double.IsNaN(imaginaryInvalid)), true);
+                    VerifyComplexComparison(randomInvalidComplex, randomInvalidComplex, !(double.IsNaN(realInvalid) || double.IsNaN(imaginaryInvalid)), true);
                 }
             }
         }
@@ -364,40 +312,20 @@ namespace System.Numerics.Tests
         public static void RunTests_WithNonComplexObject()
         {
             // local variables
-            Double real = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
             Complex randomComplex = new Complex(real, 0.0);
 
             // verify with same double value
-
-            if (randomComplex.Equals((Object)real))
-            {
-                Console.WriteLine("Error-9674Obj randomComplex:{0}.Equals((object) real) is not 'false' as expected", randomComplex, real);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.False(randomComplex.Equals((Object)real), string.Format("Obj randomComplex:{0}.Equals((object) real) is not 'false' as expected", randomComplex, real));
 
             // verify with null
-
-            if (randomComplex.Equals((Object)null))
-            {
-                Console.WriteLine("Error-5441Obj randomComplex:{0}.Equals((object) null) is not 'false' as expected", randomComplex);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.False(randomComplex.Equals((Object)null), string.Format("Obj randomComplex:{0}.Equals((object) null) is not 'false' as expected", randomComplex));
 
             // verify with 0
-
-            if (randomComplex.Equals((Object)0))
-            {
-                Console.WriteLine("Error-5441Obj randomComplex:{0}.Equals((object) 0) is not 'false' as expected", randomComplex);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.False(randomComplex.Equals((Object)0), string.Format("Obj randomComplex:{0}.Equals((object) 0) is not 'false' as expected", randomComplex));
 
             // verify with string
-
-            if (randomComplex.Equals((Object)"0"))
-            {
-                Console.WriteLine("Error-5441Obj randomComplex:{0}.Equals((object) \"0\") is not 'false' as expected", randomComplex);
-                Assert.True(false, "Verification Failed");
-            }
+            Assert.False(randomComplex.Equals((Object)"0"), string.Format("Obj randomComplex:{0}.Equals((object) \"0\") is not 'false' as expected", randomComplex));
         }
     }
 }

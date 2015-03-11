@@ -2,26 +2,22 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class trigonometricOperations_CosTest
     {
-        private static void VerifyCos(Double x, Double y, Double expectedReal, Double expectedImaginary)
+        private static void VerifyCos(double x, double y, double expectedReal, double expectedImaginary)
         {
             Complex complex = new Complex(x, y);
             Complex cosComplex = Complex.Cos(complex);
 
-            if (false == Support.VerifyRealImaginaryProperties(cosComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error cOs-Err36C6s! Cos({0}):{1} != ({2},{3})", complex, cosComplex, expectedReal, expectedImaginary);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(cosComplex, expectedReal, expectedImaginary, 
+                string.Format("Cos({0}):{1} != ({2},{3})", complex, cosComplex, expectedReal, expectedImaginary));
         }
 
-        private static void VerifyCos(Double x, Double y)
+        private static void VerifyCos(double x, double y)
         {
             // the product formula: cos (x+iy) = cos(x)*cosh(y) - isin(x)sinh(y)
             // the verification formula: cos (z) = (Complex.Exp(i*z) + Complex.Exp(-i*z)) / 2
@@ -56,8 +52,8 @@ namespace System.Numerics.Tests
         public static void RunTests_RandomValidValues()
         {
             // Verify test results with ComplexInFirstQuad
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyCos(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -80,43 +76,43 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with Max
-            VerifyCos(Double.MaxValue, Double.MaxValue, Math.Cos(Double.MaxValue) * Double.PositiveInfinity, Double.NegativeInfinity); //for IA64
+            VerifyCos(double.MaxValue, double.MaxValue, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.NegativeInfinity); //for IA64
 
             // Verify test results with MaxReal
-            VerifyCos(Double.MaxValue, 0.0, Math.Cos(Double.MaxValue), 0); //for IA64
+            VerifyCos(double.MaxValue, 0.0, Math.Cos(double.MaxValue), 0); //for IA64
 
             // Verify test results with MaxImg
-            VerifyCos(0.0, Double.MaxValue, Double.PositiveInfinity, Double.NaN);
+            VerifyCos(0.0, double.MaxValue, double.PositiveInfinity, double.NaN);
 
             // Verify test results with Min
-            VerifyCos(Double.MinValue, Double.MinValue, Double.NegativeInfinity, Double.NegativeInfinity);
+            VerifyCos(double.MinValue, double.MinValue, double.NegativeInfinity, double.NegativeInfinity);
 
             // Verify test results with MinReal
-            VerifyCos(Double.MinValue, 0.0, Math.Cos(Double.MinValue), 0); //for IA64
+            VerifyCos(double.MinValue, 0.0, Math.Cos(double.MinValue), 0); //for IA64
 
             // Verify test results with MinImaginary
-            VerifyCos(0.0, Double.MinValue, Double.PositiveInfinity, Double.NaN);
+            VerifyCos(0.0, double.MinValue, double.PositiveInfinity, double.NaN);
         }
 
         [Fact]
         public static void RunTests_InvalidValues()
         {
             // Verify test results with invalid Imaginary
-            VerifyCos(1.0, Double.PositiveInfinity, Double.PositiveInfinity, Double.NegativeInfinity);
-            VerifyCos(1.0, Double.NegativeInfinity, Double.PositiveInfinity, Double.PositiveInfinity);
-            VerifyCos(1.0, Double.NaN, Double.NaN, Double.NaN);
+            VerifyCos(1.0, double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity);
+            VerifyCos(1.0, double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity);
+            VerifyCos(1.0, double.NaN, double.NaN, double.NaN);
 
             // Verify test results with invalid Real
-            VerifyCos(Double.PositiveInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifyCos(Double.NegativeInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifyCos(Double.NaN, 1.0, Double.NaN, Double.NaN);
+            VerifyCos(double.PositiveInfinity, 1.0, double.NaN, double.NaN);
+            VerifyCos(double.NegativeInfinity, 1.0, double.NaN, double.NaN);
+            VerifyCos(double.NaN, 1.0, double.NaN, double.NaN);
 
             // Verify test results with invalid Real and Imaginary
-            foreach (Double invalidReal in Support.doubleInvalidValues)
+            foreach (double invalidReal in Support.doubleInvalidValues)
             {
-                foreach (Double invalidImaginary in Support.doubleInvalidValues)
+                foreach (double invalidImaginary in Support.doubleInvalidValues)
                 {
-                    VerifyCos(invalidReal, invalidImaginary, Double.NaN, Double.NaN);
+                    VerifyCos(invalidReal, invalidImaginary, double.NaN, double.NaN);
                 }
             }
         }
