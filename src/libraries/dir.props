@@ -2,7 +2,7 @@
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
   <!-- Build Tools Version -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00015</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00017</BuildToolsVersion>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -33,22 +33,7 @@
     <NugetRestoreCommand>$(NugetRestoreCommand) $(NuGetConfigCommandLine)</NugetRestoreCommand>
     <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
   </PropertyGroup>
-  
-  <!-- Coverage options -->
-  <PropertyGroup>
-    <_CoverageEnabled>false</_CoverageEnabled>
-    <_CoverageEnabled Condition="'$(SkipTests)' != 'true' and '$(OS)' == 'Windows_NT' and '$(Coverage)' == 'true'">true</_CoverageEnabled>
-    <CoverageReportDir Condition="'$(CoverageReportDir)' == ''">$(BinDir)\tests\coverage\</CoverageReportDir>
-    <CoverageVersion>4.5.3809-rc94</CoverageVersion>
-    <CoverageToolPath>$(PackagesDir)OpenCover.$(CoverageVersion)\OpenCover.Console.exe</CoverageToolPath>
-    <CoverageReportGeneratorVersion>2.0.4.0</CoverageReportGeneratorVersion>
-    <CoverageReportGeneratorOptions>-targetdir:$(CoverageReportDir) -reporttypes:Html</CoverageReportGeneratorOptions>
-    <CoverageReportGeneratorCommandLine>$(PackagesDir)ReportGenerator.$(CoverageReportGeneratorVersion)\ReportGenerator.exe $(CoverageReportGeneratorOptions)</CoverageReportGeneratorCommandLine>
-    <!-- When coverage is enabled, we disallow building projects in parallel. There appear to be issues with the OpenCover tool
-         in these scenarios. -->
-    <SerializeProjects Condition="'$(_CoverageEnabled)'=='true'">true</SerializeProjects>
-  </PropertyGroup>
-  
+
   <!-- 
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, e.g. a project with
