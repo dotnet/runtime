@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.REGISTRY_L1_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
+        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
             String lpValueName,
@@ -19,7 +19,7 @@ internal partial class Interop
             byte[] lpData,
             int cbData);
 
-        [DllImport(Libraries.REGISTRY_L1_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
+        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
             String lpValueName,
@@ -28,7 +28,7 @@ internal partial class Interop
             char[] lpData,
             int cbData);
 
-        [DllImport(Libraries.REGISTRY_L1_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
+        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
             String lpValueName,
@@ -37,7 +37,7 @@ internal partial class Interop
             ref int lpData,
             int cbData);
 
-        [DllImport(Libraries.REGISTRY_L1_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
+        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
             String lpValueName,
@@ -46,7 +46,7 @@ internal partial class Interop
             ref long lpData,
             int cbData);
 
-        [DllImport(Libraries.REGISTRY_L1_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
+        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
             String lpValueName,

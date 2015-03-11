@@ -8,9 +8,8 @@ internal static partial class Interop
         internal const string Debug = "api-ms-win-core-debug-l1-1-0.dll";
         internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
         internal const string Localization = "api-ms-win-core-localization-l1-2-0.dll";
-        internal const string PROCESSENVIRONMENT_L1_APISET = "api-ms-win-core-processenvironment-l1-1-0.dll";
-        internal const string REGISTRY_L1_APISET = "api-ms-win-core-registry-l1-1-0.dll";
-        internal const string REGISTRY_L2_APISET = "api-ms-win-core-registry-l2-1-0.dll";
+        internal const string Registry_L1 = "api-ms-win-core-registry-l1-1-0.dll";
+        internal const string Registry_L2 = "api-ms-win-core-registry-l2-1-0.dll";
         internal const string User32 = "user32.dll";
     }
 }

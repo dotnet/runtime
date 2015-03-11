@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.REGISTRY_L2_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegConnectRegistryW")]
+        [DllImport(Libraries.Registry_L2, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegConnectRegistryW")]
         internal static extern int RegConnectRegistry(String machineName, SafeRegistryHandle key, out SafeRegistryHandle result);
     }
 }

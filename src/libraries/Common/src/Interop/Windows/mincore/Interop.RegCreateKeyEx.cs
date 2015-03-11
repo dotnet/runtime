@@ -11,7 +11,7 @@ internal partial class Interop
     {
         // Note: RegCreateKeyEx won't set the last error on failure - it returns
         // an error code if it fails.
-        [DllImport(Libraries.REGISTRY_L1_APISET, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegCreateKeyExW")]
+        [DllImport(Libraries.Registry_L1, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegCreateKeyExW")]
         internal static extern int RegCreateKeyEx(
             SafeRegistryHandle hKey,
             String lpSubKey,
