@@ -2946,17 +2946,16 @@ read_enum_value (const char *mem, int type)
 		return *(gint8*)mem;
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U2:
-		return *(guint16*)mem;
+		return read16 (mem);
 	case MONO_TYPE_I2:
-		return *(gint16*)mem;
+		return (gint16) read16 (mem);
 	case MONO_TYPE_U4:
-		return *(guint32*)mem;
+		return read32 (mem);
 	case MONO_TYPE_I4:
-		return *(gint32*)mem;
+		return (gint32) read32 (mem);
 	case MONO_TYPE_U8:
-		return *(guint64*)mem;
 	case MONO_TYPE_I8:
-		return *(gint64*)mem;
+		return read64 (mem);
 	default:
 		g_assert_not_reached ();
 	}
