@@ -2,21 +2,20 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class standardNumericalFunctions_PowTest
     {
-        private static void VerifyPow(Double a, Double b, Double c, Double d)
+        private static void VerifyPow(double a, double b, double c, double d)
         {
             Complex x = new Complex(a, b);
             Complex y = new Complex(c, d);
             Complex powComplex = Complex.Pow(x, y);
 
-            Double expectedReal = 0;
-            Double expectedImaginary = 0;
+            double expectedReal = 0;
+            double expectedImaginary = 0;
             if (0 == c && 0 == d)
                 expectedReal = 1;
             else if (!(0 == a && 0 == b))
@@ -27,21 +26,17 @@ namespace System.Numerics.Tests
                 expectedImaginary = expected.Imaginary;
             }
 
-            if (false == Support.VerifyRealImaginaryProperties(powComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error pOw-Err2534! Pow (({0}, {1}), ({2}, {3}))", a, b, c, d);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(powComplex, expectedReal, expectedImaginary, 
+                string.Format("Pow (({0}, {1}), ({2}, {3}))", a, b, c, d));
         }
 
-        private static void VerifyPow(Double a, Double b, Double doubleVal)
+        private static void VerifyPow(double a, double b, double doubleVal)
         {
             Complex x = new Complex(a, b);
             Complex powComplex = Complex.Pow(x, doubleVal);
 
-            Double expectedReal = 0;
-            Double expectedImaginary = 0;
+            double expectedReal = 0;
+            double expectedImaginary = 0;
             if (0 == doubleVal)
                 expectedReal = 1;
             else if (!(0 == a && 0 == b))
@@ -53,48 +48,36 @@ namespace System.Numerics.Tests
                 expectedImaginary = expected.Imaginary;
             }
 
-            if (false == Support.VerifyRealImaginaryProperties(powComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error pOw-Err2534! Pow (({0}, {1}), {2})", a, b, doubleVal);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(powComplex, expectedReal, expectedImaginary, 
+                string.Format("Pow (({0}, {1}), {2})", a, b, doubleVal));
         }
 
-        private static void RunTests_PowDouble(Double a, Double b)
+        private static void RunTests_PowDouble(double a, double b)
         {
-            //if (!Support.IsARM || !m_randomValues)
-            //{
-            //	VerifyPow(a, b, -1.0);
-            //}
             VerifyPow(a, b, 0.0);
             VerifyPow(a, b, 1.0);
 
-            Double randomPower = Support.GetSmallRandomDoubleValue(true);
+            double randomPower = Support.GetSmallRandomDoubleValue(true);
             VerifyPow(a, b, randomPower);
 
             randomPower = Support.GetSmallRandomDoubleValue(false);
             VerifyPow(a, b, randomPower);
 
-            foreach (Double power in Support.doubleInvalidValues)
+            foreach (double power in Support.doubleInvalidValues)
             {
                 VerifyPow(a, b, power);
             }
         }
 
-        private static void RunTests_PowComplex(Double a, Double b)
+        private static void RunTests_PowComplex(double a, double b)
         {
-            //if (!Support.IsARM || !m_randomValues)
-            //{
-            //	VerifyPow(a, b, -1.0, 0.0);
-            //}
             VerifyPow(a, b, 0.0, -1.0);
             VerifyPow(a, b, 0.0, 0.0);
             VerifyPow(a, b, 0.0, 1.0);
             VerifyPow(a, b, 1.0, 0.0);
 
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyPow(a, b, real, imaginary);
 
             real = Support.GetSmallRandomDoubleValue(true);
@@ -110,7 +93,7 @@ namespace System.Numerics.Tests
             VerifyPow(a, b, real, imaginary);
         }
 
-        private static void RunTests(Double a, Double b)
+        private static void RunTests(double a, double b)
         {
             RunTests_PowDouble(a, b);
             RunTests_PowComplex(a, b);
@@ -139,8 +122,8 @@ namespace System.Numerics.Tests
         public static void RunTests_RandomValidValues()
         {
             // Verify test results with ComplexInFirstQuad
-            Double real = Support.GetRandomDoubleValue(false);
-            Double imaginary = Support.GetRandomDoubleValue(false);
+            double real = Support.GetRandomDoubleValue(false);
+            double imaginary = Support.GetRandomDoubleValue(false);
             RunTests(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -163,10 +146,10 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with Max
-            RunTests(Double.MaxValue, Double.MaxValue);
+            RunTests(double.MaxValue, double.MaxValue);
 
             // Verify test results with Min
-            RunTests(Double.MinValue, Double.MinValue);
+            RunTests(double.MinValue, double.MinValue);
         }
     }
 }

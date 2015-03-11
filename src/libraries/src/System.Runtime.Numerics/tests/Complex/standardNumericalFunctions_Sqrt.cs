@@ -2,31 +2,27 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class standardNumericalFunctions_SqrtTest
     {
-        private static void VerifySqrtWithRectangularForm(Double real, Double imaginary, Double expectedReal, Double expectedImaginary)
+        private static void VerifySqrtWithRectangularForm(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             Complex complex = new Complex(real, imaginary);
             Complex sqrtComplex = Complex.Sqrt(complex);
-            if (false == Support.VerifyRealImaginaryProperties(sqrtComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error sQRt-Err2534! Sqrt({0}):{1} != ({2},{3})", complex, sqrtComplex, expectedReal, expectedImaginary);
-                Assert.True(false, "Verification Fail");
-            }
+            Support.VerifyRealImaginaryProperties(sqrtComplex, expectedReal, expectedImaginary, 
+                string.Format("Sqrt({0}):{1} != ({2},{3})", complex, sqrtComplex, expectedReal, expectedImaginary));
         }
 
-        private static void VerifySqrtWithRectangularForm(Double real, Double imaginary)
+        private static void VerifySqrtWithRectangularForm(double real, double imaginary)
         {
             // sqrt(a+bi) = +- (sqrt(r + a) + i sqrt(r - a) sign(b)) sqrt(2) / 2, unless a=-r and y = 0
             Complex complex = new Complex(real, imaginary);
 
-            Double expectedReal = 0.0;
-            Double expectedImaginary = 0.0;
+            double expectedReal = 0.0;
+            double expectedImaginary = 0.0;
 
             if (0 == imaginary)
             {
@@ -37,7 +33,7 @@ namespace System.Numerics.Tests
             }
             else
             {
-                Double scale = 1 / Math.Sqrt(2);
+                double scale = 1 / Math.Sqrt(2);
                 expectedReal = scale * Math.Sqrt(complex.Magnitude + complex.Real);
                 expectedImaginary = scale * Math.Sqrt(complex.Magnitude - complex.Real);
                 if (complex.Imaginary < 0)
@@ -69,13 +65,13 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with MaxReal
-            VerifySqrtWithRectangularForm(Double.MaxValue, 0.0, 1.34078079299426E+154, 0.0);
+            VerifySqrtWithRectangularForm(double.MaxValue, 0.0, 1.34078079299426E+154, 0.0);
 
             // Verify test results with MaxImg
-            VerifySqrtWithRectangularForm(0.0, Double.MaxValue, 9.48075190810917E+153, 9.48075190810917E+153);
+            VerifySqrtWithRectangularForm(0.0, double.MaxValue, 9.48075190810917E+153, 9.48075190810917E+153);
 
             // Verify test results with MinImaginary
-            VerifySqrtWithRectangularForm(0.0, Double.MinValue, 9.48075190810917E+153, -9.48075190810917E+153);
+            VerifySqrtWithRectangularForm(0.0, double.MinValue, 9.48075190810917E+153, -9.48075190810917E+153);
         }
     }
 }

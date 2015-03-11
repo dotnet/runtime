@@ -2,14 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class standardNumericalFunctions_ExpTest
     {
-        private static void VerifyExpWithAddition(Double real, Double imaginary)
+        private static void VerifyExpWithAddition(double real, double imaginary)
         {
             // verify with e(x+y) = e(x)*e(y) if xy == yx
             Complex realComplex = new Complex(real, 0.0);
@@ -29,11 +28,8 @@ namespace System.Numerics.Tests
             Complex complex = new Complex(real, imaginary);
             Complex complexExp = Complex.Exp(complex);
 
-            if (false == Support.VerifyRealImaginaryProperties(complexExp, expectedExp.Real, expectedExp.Imaginary))
-            {
-                Console.WriteLine("Error eXp-Err3521! Exp({0}):{1} != {2})", complex, complexExp, expectedExp);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(complexExp, expectedExp.Real, expectedExp.Imaginary,
+                string.Format("Exp({0}):{1} != {2})", complex, complexExp, expectedExp));
         }
 
         [Fact]
@@ -59,8 +55,8 @@ namespace System.Numerics.Tests
         public static void RunTests_RandomValidValues()
         {
             // Verify test results with ComplexInFirstQuad
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyExpWithAddition(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -84,37 +80,30 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with Max
-            Complex max = new Complex(Double.MaxValue, Double.MaxValue);
+            Complex max = new Complex(double.MaxValue, double.MaxValue);
 
             Complex complexExp = Complex.Exp(max);
-            if (false == Support.VerifyRealImaginaryProperties(complexExp, Math.Cos(Double.MaxValue) * Double.PositiveInfinity, Double.PositiveInfinity)) //for IA64
-            {
-                Console.WriteLine("Error eXp-Max:Err6589! Exp(Max) is not (Infinity, Infinity))");
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(complexExp, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity,
+                string.Format("Exp(Max) is not (Infinity, Infinity)"));
 
             // Verify test results with MaxReal
-
-            Complex maxReal = new Complex(Double.MaxValue, 0.0);
+            Complex maxReal = new Complex(double.MaxValue, 0.0);
 
             complexExp = Complex.Exp(max);
-            if (false == Support.VerifyRealImaginaryProperties(complexExp, Math.Cos(Double.MaxValue) * Double.PositiveInfinity, Double.PositiveInfinity)) //for IA64
-            {
-                Console.WriteLine("Error eXp-MAxReal:Err697.1! Exp(MaxReal) is not (Infinity, Infinity))");
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(complexExp, Math.Cos(double.MaxValue) * double.PositiveInfinity, double.PositiveInfinity, 
+                string.Format("Exp(MaxReal) is not (Infinity, Infinity))"));
 
             // Verify test results with MaxImg
-            VerifyExpWithAddition(0.0, Double.MaxValue);
+            VerifyExpWithAddition(0.0, double.MaxValue);
 
             // Verify test results with Min
-            VerifyExpWithAddition(Double.MinValue, Double.MinValue);
+            VerifyExpWithAddition(double.MinValue, double.MinValue);
 
             // Verify test results with MinReal
-            VerifyExpWithAddition(Double.MinValue, 0.0);
+            VerifyExpWithAddition(double.MinValue, 0.0);
 
             // Verify test results with MinImaginary
-            VerifyExpWithAddition(0.0, Double.MinValue);
+            VerifyExpWithAddition(0.0, double.MinValue);
         }
     }
 }
