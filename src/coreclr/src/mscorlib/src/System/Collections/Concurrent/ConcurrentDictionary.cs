@@ -11,28 +11,19 @@
 **
 ===========================================================*/
 
-// If CDS_COMPILE_JUST_THIS symbol is defined, this file compiles separately,
-// with no dependencies other than .NET Framework 3.5.
-
-//#define CDS_COMPILE_JUST_THIS
-
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Collections;
-using System.Runtime.Serialization;
 using System.Security;
 using System.Security.Permissions;
-using System.Collections.ObjectModel;
-
-#if !CDS_COMPILE_JUST_THIS
-using System.Diagnostics.Contracts;
-#endif
-
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Concurrent
 {
@@ -1890,12 +1881,7 @@ namespace System.Collections.Concurrent
                 bool lockTaken = false;
                 try
                 {
-#if CDS_COMPILE_JUST_THIS
-                    Monitor.Enter(m_tables.m_locks[i]);
-                    lockTaken = true;
-#else
                     Monitor.Enter(locks[i], ref lockTaken);
-#endif
                 }
                 finally
                 {
@@ -1987,14 +1973,7 @@ namespace System.Collections.Concurrent
         [Conditional("DEBUG")]
         private void Assert(bool condition)
         {
-#if CDS_COMPILE_JUST_THIS
-            if (!condition)
-            {
-                throw new Exception("Assertion failed.");
-            }
-#else
             Contract.Assert(condition);
-#endif
         }
 
         /// <summary>
@@ -2006,11 +1985,7 @@ namespace System.Collections.Concurrent
         {
             Assert(key != null);
 
-#if CDS_COMPILE_JUST_THIS
-            return key;
-#else
             return Environment.GetResourceString(key);
-#endif
         }
 
         /// <summary>
