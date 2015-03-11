@@ -264,14 +264,41 @@ public:
     virtual HRESULT GetCurrentThreadId(
         PULONG id) = 0;
 
+    virtual HRESULT SetCurrentThreadId(
+        ULONG id) = 0;
+
     // Returns the system unique ID for the current thread.
     // Not currently supported when kernel debugging.
     virtual HRESULT GetCurrentThreadSystemId(
         PULONG sysId) = 0;
-
 };
 
 typedef class IDebugSystemObjects* PDEBUG_SYSTEM_OBJECTS;
+
+//----------------------------------------------------------------------------
+// IDebugAdvanced3
+//----------------------------------------------------------------------------
+
+class IDebugAdvanced3
+{
+public:
+    // IDebugAdvanced.
+
+    // Get/SetThreadContext offer control over
+    // the full processor context for a thread.
+    // Higher-level functions, such as the
+    // IDebugRegisters interface, allow similar
+    // access in simpler and more generic ways.
+    // Get/SetThreadContext are useful when
+    // large amounts of thread context must
+    // be changed and processor-specific code
+    // is not a problem.
+    virtual HRESULT GetThreadContext(
+        PVOID context,
+        ULONG contextSize) = 0;
+};
+
+typedef class IDebugAdvanced3* PDEBUG_ADVANCED3;
 
 //----------------------------------------------------------------------------
 // IDebugClient
@@ -279,6 +306,14 @@ typedef class IDebugSystemObjects* PDEBUG_SYSTEM_OBJECTS;
 
 class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects
 {
+public:
+    // This is a special sos/lldb function used to implement the ICLRDataTarget interface and
+    // not actually part of the IDebugClient interface.
+    virtual HRESULT GetThreadContextById(
+        /* [in] */ ULONG32 threadID,
+        /* [in] */ ULONG32 contextFlags,
+        /* [in] */ ULONG32 contextSize,
+        /* [out, size_is(contextSize)] */ PBYTE context) = 0;
 };
 
 typedef class IDebugClient* PDEBUG_CLIENT;
