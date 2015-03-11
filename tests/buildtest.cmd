@@ -1,7 +1,16 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-set "__ProjectFilesDir=%~dp0"
+set "__ProjectDir=%~dp0..\"
+:: remove trailing slash
+if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
+set "__SourceDir=%__ProjectDir%\src"
+set "__TestDir=%__ProjectDir%\tests"
+set "__ProjectFilesDir=%__TestDir%"
+set "__PackagesDir=%__ProjectDir%\packages"
+set "__RootBinDir=%__ProjectDir%\binaries"
+set "__LogsDir=%__RootBinDir%\Logs"
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&shift&goto Arg_Loop)
@@ -20,22 +29,22 @@ goto Usage
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=debug
 if not defined __BuildOS set __BuildOS=Windows_NT
-if not defined __TestWorkingDir set "__TestWorkingDir=%__ProjectFilesDir%\..\binaries\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
-if not defined __LogsDir  set  "__LogsDir=%__ProjectFilesDir%..\binaries\Logs"
-if not defined __ProductSourceDir set "__ProductSourceDir=%__ProjectFilesDir%..\src"
-
+set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
+:: We have different managed and native intermediate dirs because the managed bits will include
+:: the configuration information deeper in the intermediates path.
+set "__NativeTestIntermediatesDir=%__RootBinDir%\tests\intermediates\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__ManagedTestIntermediatesDir=%__RootBinDir%\tests\intermediates"
 set "__TestManagedBuildLog=%__LogsDir%\Tests_Managed_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__TestNativeBuildLog=%__LogsDir%\Tests_Native_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-set "__CMakeTestSlnDir=%__TestWorkingDir%\CMake\"
 
-:: Switch to clean build mode if the binaries output folder does not exist
-if not exist "%__TestWorkingDir%" set __CleanBuild=1
-if not exist "%__LogsDir%" md "%__LogsDir%"
+:: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
+set "__CMakeBinDir=%__TestBinDir%"
+set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 
 :: Configure environment if we are doing a clean build.
-if not defined __CleanBuild goto CheckPrereqs
+if not defined __CleanBuild goto MakeDirectories
 echo Doing a clean test build
 echo.
 
@@ -43,8 +52,13 @@ echo.
 set __MSBCleanBuildArgs=/t:rebuild
 
 :: Cleanup the binaries drop folder
-if exist "%__TestWorkingDir%" rd /s /q "%__TestWorkingDir%"
+if exist "%__TestBinDir%" rmdir /S /Q "%__TestBinDir%"
 
+:MakeDirectories
+if not exist "%__TestBinDir%" md "%__TestBinDir%"
+if not exist "%__NativeTestIntermediatesDir%" md "%__NativeTestIntermediatesDir%"
+if not exist "%__ManagedTestIntermediatesDir%" md "%__ManagedTestIntermediatesDir%"
+if not exist "%__LogsDir%" md "%__LogsDir%"
 
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
@@ -56,7 +70,7 @@ if exist "%__TestWorkingDir%" rd /s /q "%__TestWorkingDir%"
 echo Checking pre-requisites...
 echo.
 :: Eval the output from probe-win1.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__ProductSourceDir%\pal\tools\probe-win.ps1"""') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
 
 :: Check presence of VS
 if defined VS120COMNTOOLS goto CheckVSExistence
@@ -94,19 +108,18 @@ goto :eof
 
 :GenVSSolution
 :: Regenerate the VS solution
-if not exist "%__CMakeTestSlnDir%" md "%__CMakeTestSlnDir%"
-pushd "%__CMakeTestSlnDir%"
-call "%__ProductSourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectFilesDir%\"
+pushd "%__NativeTestIntermediatesDir%"
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectFilesDir%\"
 popd
 
 :BuildComponents
-if exist "%__CMakeTestSlnDir%\install.vcxproj" goto BuildTestNativeComponents
+if exist "%__NativeTestIntermediatesDir%\install.vcxproj" goto BuildTestNativeComponents
 echo Failed to generate test native component build project!
 goto :eof
 
 REM Build CoreCLR
 :BuildTestNativeComponents
-%_msbuildexe% "%__CMakeTestSlnDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__TestNativeBuildLog%"
+%_msbuildexe% "%__NativeTestIntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__TestNativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto PerformManagedTestBuild
 echo Native component build failed. Refer !__TestNativeBuildLog! for details.
 goto :eof
@@ -126,7 +139,7 @@ if not defined VSINSTALLDIR echo Error: build.cmd should be run from a Visual St
 
 :BuildTests
 
-echo Starting the Manged Tests Build
+echo Starting the Managed Tests Build
 echo.
 :: Log build command line
 set _buildprefix=echo
@@ -144,7 +157,7 @@ goto :eof
 
 :build
 
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
 IF ERRORLEVEL 1 echo Test build failed. Refer !__TestManagedBuildLog! for details && exit /b 1
 
 endlocal

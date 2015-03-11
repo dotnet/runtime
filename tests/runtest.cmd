@@ -40,7 +40,7 @@ if not defined __BuildType set __BuildType=debug
 if not defined __BuildOS set __BuildOS=Windows_NT
 if not defined __BinDir    set  __BinDir=%__ProjectFilesDir%..\binaries\Product\%__BuildOS%.%__BuildArch%.%__BuildType%
 if not defined __TestWorkingDir set __TestWorkingDir=%__ProjectFilesDir%..\binaries\tests\%__BuildOS%.%__BuildArch%.%__BuildType%
-if not defined __LogsDir        set  __LogsDir=%__ProjectFilesDir%..\binaries\Logs\
+if not defined __LogsDir        set  __LogsDir=%__ProjectFilesDir%..\binaries\Logs
 
 :: Default global test environmet variables
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
