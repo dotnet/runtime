@@ -3029,6 +3029,11 @@ void *
 PALAPI
 PAL_GetStackLimit();
 
+PALIMPORT
+DWORD
+PALAPI
+PAL_GetLogicalCpuCountFromOS();
+
 #ifdef PLATFORM_UNIX
 
 #if defined(__FreeBSD__) && defined(_X86_)

@@ -42,6 +42,9 @@ typedef HRESULT (*ExecuteAssemblyFunction)(
                     int argc,
                     LPCSTR* argv,
                     LPCSTR managedAssemblyPath,
+                    LPCSTR entryPointAssemblyName,
+                    LPCSTR entryPointTypeName,
+                    LPCSTR entryPointMethodsName,
                     DWORD* exitCode);
 
 // Display the command line options
@@ -315,6 +318,9 @@ int ExecuteManagedAssembly(
                             managedAssemblyArgc,
                             managedAssemblyArgv,
                             managedAssemblyAbsolutePath,
+                            NULL,
+                            NULL,
+                            NULL,
                             (DWORD*)&exitCode);
 
             if (!SUCCEEDED(st))

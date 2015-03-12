@@ -3526,12 +3526,24 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
 
     bool fCreateNewTracker = false;
     bool fIsRethrow = false;
+    bool fIsInterleavedHandling = false;
+    bool fTransitionFromSecondToFirstPass = false;
+
+    StackFrame previousTrackerResumeStackFrame;
+    StackRange previousTrackerScannedStackRange;
+    UINT_PTR previousTrackerCatchToCallPC;
+    PTR_EXCEPTION_CLAUSE_TOKEN previousTrackerClauseForCatchToken;
+    EE_ILEXCEPTION_CLAUSE previousTrackerClauseForCatch;
+    ExceptionFlags previousTrackerExceptionFlags;
 
     // Initialize the out parameter.
     *pStackTraceState = STS_Append;
 
     if (NULL != pTracker)
     {
+        fTransitionFromSecondToFirstPass = fIsFirstPass && !pTracker->IsInFirstPass();
+        fIsInterleavedHandling = !!pTracker->m_ExceptionFlags.IsInterleavedHandling();
+
         CONSISTENCY_CHECK(!pTracker->m_ScannedStackRange.IsEmpty());
 
         if (pTracker->m_ExceptionFlags.IsRethrown())
@@ -3555,12 +3567,29 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
             _ASSERTE( ( sf == pTracker->m_ScannedStackRange.GetUpperBound() ) ||
                       ( fIsFirstPass || !pTracker->IsInFirstPass() ) );
 
-            if (fIsFirstPass && !pTracker->IsInFirstPass())
+            if (fTransitionFromSecondToFirstPass)
             {
-                // We just transition from 2nd pass to 1st pass without knowing it.
-                // This means that some unmanaged frame outside of the EE catches the previous exception,
-                // so we should trash the current tracker and create a new one.
-                EH_LOG((LL_INFO100, ">>NEW exception (the previous second pass finishes at some unmanaged frame outside of the EE)\n"));
+                if (fIsInterleavedHandling)
+                {
+                    // Remember part of the current state that needs to be transferred to
+                    // the newly created tracker.
+                    previousTrackerResumeStackFrame = pTracker->m_sfResumeStackFrame;
+                    previousTrackerScannedStackRange = pTracker->m_ScannedStackRange;
+                    previousTrackerCatchToCallPC = pTracker->m_uCatchToCallPC;
+                    previousTrackerClauseForCatchToken = pTracker->m_pClauseForCatchToken;
+                    previousTrackerClauseForCatch = pTracker->m_ClauseForCatch;
+                    previousTrackerExceptionFlags = pTracker->m_ExceptionFlags;
+
+                    // We just transitioned from 2nd pass to 1st pass when we handle the exception in an interleaved manner
+                    EH_LOG((LL_INFO100, ">>continued processing of PREVIOUS exception (interleaved handling)\n"));
+                }
+                else
+                {
+                    // We just transition from 2nd pass to 1st pass without knowing it.
+                    // This means that some unmanaged frame outside of the EE catches the previous exception,
+                    // so we should trash the current tracker and create a new one.
+                    EH_LOG((LL_INFO100, ">>NEW exception (the previous second pass finishes at some unmanaged frame outside of the EE)\n"));
+                }
 
                 {
                     GCX_COOP();
@@ -3638,6 +3667,20 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
         new (pNewTracker) ExceptionTracker(ControlPc,
                                            pExceptionRecord,
                                            pContextRecord);
+
+        if (fIsInterleavedHandling && fTransitionFromSecondToFirstPass)
+        {
+            // In interleaved exception handling a single exception is handled in an interleaved
+            // series of first and second passes. When we create a new tracker as a result
+            // of switching from the 2nd pass back to the 1st pass, we need to carry over
+            // several members that were set when processing one of the previous frames.
+            pNewTracker->m_sfResumeStackFrame = previousTrackerResumeStackFrame;
+            pNewTracker->m_uCatchToCallPC = previousTrackerCatchToCallPC;
+            pNewTracker->m_pClauseForCatchToken = previousTrackerClauseForCatchToken;
+            pNewTracker->m_ClauseForCatch = previousTrackerClauseForCatch;
+            pNewTracker->m_ExceptionFlags = previousTrackerExceptionFlags;
+            pNewTracker->m_ScannedStackRange = previousTrackerScannedStackRange;
+        }
 
         CONSISTENCY_CHECK(pNewTracker->IsValid());
         CONSISTENCY_CHECK(pThread == pNewTracker->m_pThread);
@@ -3786,10 +3829,14 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
                 // scanned stack range.
                 pTracker->m_sfFirstPassTopmostFrame = pTracker->m_ScannedStackRange.GetUpperBound();
 
-                // We have to detect this transition becuase otherwise we break when unmanaged code
+                // We have to detect this transition because otherwise we break when unmanaged code
                 // catches our exceptions.
                 EH_LOG((LL_INFO100, ">>tracker transitioned to second pass\n"));
-                pTracker->m_ScannedStackRange.Reset();
+                if (!fIsInterleavedHandling)
+                {
+                    pTracker->m_ScannedStackRange.Reset();
+                }
+
                 pTracker->m_ExceptionFlags.SetUnwindHasStarted();
                 if (pTracker->m_ExceptionFlags.UnwindingToFindResumeFrame())
                 {
@@ -3807,7 +3854,10 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
                 // Lean on the safe side and just reset everything unconditionally.
                 pTracker->FirstPassIsComplete();
 
-                EEToDebuggerExceptionInterfaceWrapper::ManagedExceptionUnwindBegin(pThread);
+                if (!fIsInterleavedHandling)
+                {
+                    EEToDebuggerExceptionInterfaceWrapper::ManagedExceptionUnwindBegin(pThread);
+                }
 
                 pTracker->ResetLimitFrame();
             }
@@ -4239,16 +4289,30 @@ bool IsSpInStackLimits(ULONG64 sp, ULONG64 stackLowAddress, ULONG64 stackHighAdd
 
 //---------------------------------------------------------------------------------------
 //
+// This function initiates unwinding of native frames during the unwinding of a managed 
+// exception. The managed exception can be propagated over several managed / native ranges 
+// until it is finally handled by a managed handler or leaves the stack unhandled and
+// aborts the current process.
+// This function is an assembler helper.
+//
+// Arguments:
+//      context - context at which to start the native unwinding
+extern "C" void StartUnwindingNativeFrames(CONTEXT* context);
+
+//---------------------------------------------------------------------------------------
+//
 // This functions performs an unwind procedure for a managed exception. The stack is unwound
-// until the target frame is reached. For each frame we use the its PC value to find
+// until the target frame is reached. For each frame we use its PC value to find
 // a handler using information that has been built by JIT.
 //
 // Arguments:
 //      exceptionRecord          - an exception record that stores information about the managed exception
-//      originalExceptionContext - the context that caused this exception to be thrown
+//      unwindStartContext       - the context that the unwind should start at. Either the original exception
+//                                 context (when the exception didn't cross native frames) or the first managed
+//                                 frame after crossing native frames.
 //      targetFrameSp            - specifies the call frame that is the target of the unwind
 //
-VOID DECLSPEC_NORETURN UnwindManagedException(EXCEPTION_RECORD* exceptionRecord, CONTEXT* originalExceptionContext, UINT_PTR targetFrameSp)
+VOID UnwindManagedExceptionPass2(EXCEPTION_RECORD* exceptionRecord, CONTEXT* unwindStartContext, UINT_PTR targetFrameSp)
 {
     UINT_PTR controlPc;
     EXCEPTION_DISPOSITION disposition;
@@ -4265,7 +4329,7 @@ VOID DECLSPEC_NORETURN UnwindManagedException(EXCEPTION_RECORD* exceptionRecord,
     // Indicate that we are performing second pass.
     exceptionRecord->ExceptionFlags = EXCEPTION_UNWINDING;
 
-    currentFrameContext = originalExceptionContext;
+    currentFrameContext = unwindStartContext;
     callerFrameContext = &contextStorage;
 
     memset(&dispatcherContext, 0, sizeof(DISPATCHER_CONTEXT));
@@ -4336,18 +4400,21 @@ VOID DECLSPEC_NORETURN UnwindManagedException(EXCEPTION_RECORD* exceptionRecord,
         }
         else
         {
-            controlPc = Thread::VirtualUnwindLeafCallFrame(currentFrameContext);
+            Thread::VirtualUnwindLeafCallFrame(currentFrameContext);
         }
 
-        //
-        //TODO: check whether we are crossing managed-to-native boundary
-        // and add support for this case.
-        //
+        // Check whether we are crossing managed-to-native boundary
+        if (!ExecutionManager::IsManagedCode(currentFrameContext->Rip))
+        {
+            // Return back to the UnwindManagedExceptionPass1 and let it unwind the native frames
+            return;
+        }
+
     } while (IsSpInStackLimits(currentFrameContext->Rsp, stackLowAddress, stackHighAddress) &&
         (establisherFrame != targetFrameSp));
 
-    printf("UnwindManagedException: Unwinding failed. Reached the end of the stack.\n");
-    UNREACHABLE();
+    _ASSERTE(!"UnwindManagedExceptionPass2: Unwinding failed. Reached the end of the stack");
+    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
 
 //---------------------------------------------------------------------------------------
@@ -4355,7 +4422,7 @@ VOID DECLSPEC_NORETURN UnwindManagedException(EXCEPTION_RECORD* exceptionRecord,
 // This functions performs dispatching of a managed exception.
 // It tries to find an exception handler by examining each frame in the call stack.
 // The search is started from the managed frame caused the exception to be thrown.
-// For each frame we use the its PC value to find a handler using information that
+// For each frame we use its PC value to find a handler using information that
 // has been built by JIT. If an exception handler is found then this function initiates
 // the second pass to unwind the stack and execute the handler.
 //
@@ -4363,12 +4430,11 @@ VOID DECLSPEC_NORETURN UnwindManagedException(EXCEPTION_RECORD* exceptionRecord,
 //      ex - a PAL_SEHException that stores information about the managed
 //           exception that needs to be dispatched.
 //
-VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
+VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 {
     CONTEXT frameContext;
-    CONTEXT originalExceptionContext;
+    CONTEXT unwindStartContext;
     EXCEPTION_DISPOSITION disposition;
-    EXCEPTION_RECORD exceptionRecord;
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
     UINT_PTR controlPc;
@@ -4377,20 +4443,21 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
     ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
     ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
 
-    // TODO: is there a better way to get the first managed frame?
-    originalExceptionContext.ContextFlags = CONTEXT_FULL;
-    GetThread()->GetThreadContext(&originalExceptionContext);
-    controlPc = Thread::VirtualUnwindToFirstManagedCallFrame(&originalExceptionContext);
+    RtlCaptureContext(&frameContext);
 
-    // Preserve the context that caused the exception. We need to pass it
-    // to ProcessCLRException for each frame that will be unwound.
-    memcpy(&frameContext, &originalExceptionContext, sizeof(CONTEXT));
+    controlPc = Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext);
+    
+    unwindStartContext = frameContext;
 
-    // Setup an exception record based on the information from the PAL exception and
-    // point it to the location in managed code where the exception has been thrown from.
-    memcpy(&exceptionRecord, &ex.ExceptionRecord, sizeof(EXCEPTION_RECORD));
-    exceptionRecord.ExceptionFlags = 0;
-    exceptionRecord.ExceptionAddress = (PVOID)controlPc;
+    if (!ExecutionManager::IsManagedCode(ex.ContextRecord.Rip))
+    {
+        // This is the first time we see the managed exception, set its context to the managed frame that has caused
+        // the exception to be thrown
+        ex.ContextRecord = frameContext;
+        ex.ExceptionRecord.ExceptionAddress = (VOID*)controlPc;
+    }
+
+    ex.ExceptionRecord.ExceptionFlags = 0;
 
     memset(&dispatcherContext, 0, sizeof(DISPATCHER_CONTEXT));
     disposition = ExceptionContinueSearch;
@@ -4428,9 +4495,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
             dispatcherContext.ContextRecord = &frameContext;
 
             // Find exception handler in the current frame
-            disposition = ProcessCLRException(&exceptionRecord,
+            disposition = ProcessCLRException(&ex.ExceptionRecord,
                 establisherFrame,
-                &originalExceptionContext,
+                &ex.ContextRecord,
                 &dispatcherContext);
 
             if (disposition == ExceptionContinueSearch)
@@ -4442,7 +4509,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
             {
                 // The first pass is complete. We have found the frame that
                 // will handle the exception. Start the second pass.
-                UnwindManagedException(&exceptionRecord, &originalExceptionContext, establisherFrame);
+                UnwindManagedExceptionPass2(&ex.ExceptionRecord, &unwindStartContext, establisherFrame);
             }
             else
             {
@@ -4455,15 +4522,69 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
             controlPc = Thread::VirtualUnwindLeafCallFrame(&frameContext);
         }
 
-        //
-        //TODO: check whether we are crossing managed-to-native boundary
-        // and add support for this case.
-        //
+        // Check whether we are crossing managed-to-native boundary
+        if (!ExecutionManager::IsManagedCode(controlPc))
+        {
+            // Save the exception flags of the first pass so that we can restore them after
+            // the partial second pass.
+            ExceptionFlags* currentFlags = GetThread()->GetExceptionState()->GetFlags();
+            ExceptionFlags firstPassFlags = *currentFlags;
+
+            // The second pass needs this flag to be reset
+            currentFlags->ResetUnwindingToFindResumeFrame();
+
+            // First we need to run the unwind second pass until we hit the current native frame.
+            // The targetFrameSp is set to max value to indicate that the target is not known yet.
+            const UINT_PTR TargetFrameSp = ULONG_PTR_MAX;
+            UnwindManagedExceptionPass2(&ex.ExceptionRecord, &unwindStartContext, TargetFrameSp);
+
+            // Restore back the state of the first pass. We need to reread the current flags pointer
+            // since if the exception tracker changed in the second pass, the pointer would be different.
+            currentFlags = GetThread()->GetExceptionState()->GetFlags();
+
+            // Set back the UnwindHasStarted flag so that the ExceptionTracker::GetOrCreateTracker
+            // detects that there was a second pass and that it needs to recreate the tracker.
+            firstPassFlags.SetUnwindHasStarted();
+
+            *currentFlags = firstPassFlags;
+
+            // Pop the last managed frame so that when the native frames are unwound and
+            // the UnwindManagedExceptionPass1 is resumed at the next managed frame, that
+            // managed frame is the current one set in the thread object.
+            GetThread()->GetFrame()->Pop();
+
+            // Tell the tracker that we are starting interleaved handling of the exception.
+            // The interleaved handling is used when an exception unwinding passes through
+            // interleaved managed and native stack frames. In that case, instead of
+            // performing first pass of the unwinding over all the stack range and then 
+            // second pass over the same range, we unwind each managed / native subrange
+            // separately, performing both passes on a subrange before moving to the next one.
+            GetThread()->GetExceptionState()->GetFlags()->SetIsInterleavedHandling();
+
+            // Now we need to unwind the native frames until we reach managed frames again or the exception is
+            // handled in the native code.
+            StartUnwindingNativeFrames(&frameContext);
+            UNREACHABLE();
+        }
+
     } while (IsSpInStackLimits(frameContext.Rsp, stackLowAddress, stackHighAddress));
 
-    printf("DispatchManagedException: Failed to find a handler. Reached the end of the stack.\n");
-    UNREACHABLE();
+    _ASSERTE(!"UnwindManagedExceptionPass1: Failed to find a handler. Reached the end of the stack");
+    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
+
+VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
+{
+    try
+    {
+        UnwindManagedExceptionPass1(ex);
+    }
+    catch (PAL_SEHException& ex)
+    {
+        DispatchManagedException(ex);
+    }
+}
+
 #endif // FEATURE_PAL
 
 void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_PTR TargetIP, UINT_PTR TargetFrameSp)
