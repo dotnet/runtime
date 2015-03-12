@@ -51,11 +51,15 @@ typedef VOID * HSATELLITE;
 static HSATELLITE s_hSatellite = NULL;
 static LPVOID s_lpLibRotorPalRt = NULL;
 typedef HSATELLITE (__stdcall *FnLoadSatelliteResource)(LPCWSTR);
-static FnLoadSatelliteResource LoadSatelliteResource;
 typedef BOOL (__stdcall *FnFreeSatelliteResource)(HSATELLITE);
 static FnFreeSatelliteResource FreeSatelliteResource;
+#ifndef FEATURE_PAL
+static FnLoadSatelliteResource LoadSatelliteResource;
 typedef UINT (__stdcall *FnLoadSatelliteStringW)(HSATELLITE, UINT, LPWSTR, UINT);
 static FnLoadSatelliteStringW LoadSatelliteStringW;
+#endif // FEATURE_PAL
+
+#ifndef FEATURE_PAL
 
 /*++
 Function :
@@ -106,7 +110,6 @@ static LPVOID FMTMSG_LoadLibrary( )
 error:
     return s_lpLibRotorPalRt;
 }
-
 
 /*++
 Function :
@@ -185,6 +188,7 @@ error:
     return s_hSatellite;
 }
 
+#endif // FEATURE_PAL
 
 /*++
 Function :
@@ -225,10 +229,11 @@ Returns the message as a wide string.
 --*/
 static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
 {
-    LPWSTR lpRetVal = NULL;
-    HSATELLITE hSatellite;
+    TRACE("Entered FMTMSG_GetMessageString\n");
 
-    TRACE( "Entered FMTMSG_GetMessageString\n" );
+    LPWSTR lpRetVal = NULL;
+#ifndef FEATURE_PAL
+    HSATELLITE hSatellite;
 
     hSatellite = s_hSatellite;
     if ( hSatellite == NULL )
@@ -282,6 +287,26 @@ static LPWSTR FMTMSG_GetMessageString( DWORD dwErrCode )
     }
 
 error:
+
+#else // FEATURE_PAL
+
+    // UNIXTODO: Implement real string loading from resources
+
+    lpRetVal =
+        (LPWSTR)LocalAlloc(LMEM_FIXED, (MAX_SAT_STRING_LENGTH + 1)
+        * sizeof(WCHAR));
+
+    if (lpRetVal)
+    {
+        _snwprintf(lpRetVal, MAX_SAT_STRING_LENGTH, W("Error %u"), dwErrCode);
+    }
+    else
+    {
+        ERROR("Unable to allocate memory.\n");
+    }
+
+#endif // FEATURE_PAL
+
     return lpRetVal;
 }
 
