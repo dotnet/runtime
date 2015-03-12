@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
+using Tools;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -43,7 +44,7 @@ namespace System.Numerics.Tests
                     BigInteger tempBigInteger = bigInteger / BigInteger.Zero;
                 });
 
-                if (!IsZero(tempByteArray))
+                if (!MyBigIntImp.IsZero(tempByteArray))
                 {
                     Assert.Equal(BigInteger.Zero, BigInteger.Zero / bigInteger);
                 }
@@ -112,34 +113,9 @@ namespace System.Numerics.Tests
             }
         }
 
-        private static Byte[] GetRandomByteArray(Random random)
+        private static byte[] GetRandomByteArray(Random random)
         {
-            return GetRandomByteArray(random, random.Next(0, 1024));
-        }
-
-        private static Byte[] GetRandomByteArray(Random random, int size)
-        {
-            byte[] value = new byte[size];
-
-            for (int i = 0; i < value.Length; ++i)
-            {
-                value[i] = (byte)random.Next(0, 256);
-            }
-
-            return value;
-        }
-
-        private static bool IsZero(byte[] value)
-        {
-            for (int i = 0; i < value.Length; ++i)
-            {
-                if (0 != value[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return MyBigIntImp.GetRandomByteArray(random, random.Next(0, 1024));
         }
     }
 }

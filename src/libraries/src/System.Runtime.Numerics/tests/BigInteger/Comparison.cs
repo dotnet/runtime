@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Tools;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -227,7 +228,8 @@ namespace System.Numerics.Tests
                 do
                 {
                     byteArray = GetRandomByteArray(random);
-                } while (IsZero(byteArray));
+                } 
+                while (MyBigIntImp.IsZero(byteArray));
 
                 BigInteger b2 = new BigInteger(byteArray);
                 if (b2 > (BigInteger)0)
@@ -290,7 +292,9 @@ namespace System.Numerics.Tests
             do
             {
                 byteArray = GetRandomByteArray(random);
-            } while (IsZero(byteArray));
+            } 
+            while (MyBigIntImp.IsZero(byteArray));
+
             isNegative = 0 == random.Next(0, 2);
             VerifyComparison(BigInteger.Zero, false, 0 / new BigInteger(byteArray), isNegative, 0);
 
@@ -335,7 +339,9 @@ namespace System.Numerics.Tests
             do
             {
                 byteArray = GetRandomByteArray(random);
-            } while (IsZero(byteArray));
+            } 
+            while (MyBigIntImp.IsZero(byteArray));
+
             BigInteger b1 = new BigInteger(byteArray);
             VerifyComparison(BigInteger.One, false, b1 / b1, false, 0);
         }
@@ -419,8 +425,7 @@ namespace System.Numerics.Tests
                 Assert.Equal(x.GetHashCode(), ((BigInteger)y).GetHashCode());
                 Assert.Equal(x.ToString(), ((BigInteger)y).ToString());
             }
-
-
+            
             Assert.Equal(x.GetHashCode(), x.GetHashCode());
             Assert.Equal(((BigInteger)y).GetHashCode(), ((BigInteger)y).GetHashCode());
 
@@ -716,34 +721,14 @@ namespace System.Numerics.Tests
             return 0;
         }
 
-        private static Byte[] GetRandomByteArray(Random random)
+        private static byte[] GetRandomByteArray(Random random)
         {
             return GetRandomByteArray(random, random.Next(0, 1024));
         }
 
-        private static Byte[] GetRandomByteArray(Random random, int size)
+        private static byte[] GetRandomByteArray(Random random, int size)
         {
-            byte[] value = new byte[size];
-
-            for (int i = 0; i < value.Length; ++i)
-            {
-                value[i] = (byte)random.Next(0, 256);
-            }
-
-            return value;
-        }
-
-        private static bool IsZero(byte[] value)
-        {
-            for (int i = 0; i < value.Length; ++i)
-            {
-                if (0 != value[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return MyBigIntImp.GetRandomByteArray(random, size);
         }
     }
 }

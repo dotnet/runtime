@@ -78,8 +78,7 @@ namespace System.Numerics.Tests
             // Negative One
             VerifyIsEven(BigInteger.MinusOne, false);
         }
-
-
+        
         private static void VerifyIsEven(BigInteger bigInt, bool expectedAnswer)
         {
             Assert.Equal(expectedAnswer, bigInt.IsEven);
