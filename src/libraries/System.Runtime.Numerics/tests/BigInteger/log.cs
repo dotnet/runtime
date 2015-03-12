@@ -156,21 +156,14 @@ namespace System.Numerics.Tests
             Assert.Equal(sc1.snCalc.Peek().ToString(), sc2.snCalc.Peek().ToString());
         }
 
-        private static Byte[] GetRandomByteArray(Random random)
+        private static byte[] GetRandomByteArray(Random random)
         {
             return GetRandomByteArray(random, random.Next(0, 100));
         }
 
-        private static Byte[] GetRandomByteArray(Random random, int size)
+        private static byte[] GetRandomByteArray(Random random, int size)
         {
-            byte[] value = new byte[size];
-
-            for (int i = 0; i < value.Length; ++i)
-            {
-                value[i] = (byte)random.Next(0, 256);
-            }
-
-            return value;
+            return MyBigIntImp.GetRandomByteArray(random, size);
         }
 
         private static Byte[] GetRandomPosByteArray(Random random, int size)
@@ -201,15 +194,7 @@ namespace System.Numerics.Tests
 
         private static String Print(byte[] bytes)
         {
-            String ret = "make ";
-
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                ret += bytes[i] + " ";
-            }
-            ret += "endmake ";
-
-            return ret;
+            return MyBigIntImp.Print(bytes);
         }
 
         private static bool ApproxEqual(double value1, double value2)

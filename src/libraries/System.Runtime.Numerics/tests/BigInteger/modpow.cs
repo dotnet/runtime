@@ -281,32 +281,22 @@ namespace System.Numerics.Tests
             Assert.Equal(sc1.snCalc.Peek().ToString(), sc2.snCalc.Peek().ToString());
         }
 
-        private static Byte[] GetRandomByteArray(Random random)
+        private static byte[] GetRandomByteArray(Random random)
         {
             return GetRandomByteArray(random, random.Next(1, 100));
         }
 
-        private static Byte[] GetRandomPosByteArray(Random random)
+        private static byte[] GetRandomPosByteArray(Random random)
         {
             return GetRandomPosByteArray(random, random.Next(1, 100));
         }
 
-        private static Byte[] GetRandomByteArray(Random random, int size)
+        private static byte[] GetRandomByteArray(Random random, int size)
         {
-            byte[] value = new byte[size];
-
-            while (IsZero(value))
-            {
-                for (int i = 0; i < value.Length; ++i)
-                {
-                    value[i] = (byte)random.Next(0, 256);
-                }
-            }
-
-            return value;
+            return MyBigIntImp.GetNonZeroRandomByteArray(random, size);
         }
 
-        private static Byte[] GetRandomPosByteArray(Random random, int size)
+        private static byte[] GetRandomPosByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -319,7 +309,7 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        private static Byte[] GetRandomNegByteArray(Random random, int size)
+        private static byte[] GetRandomNegByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
 
@@ -331,28 +321,10 @@ namespace System.Numerics.Tests
 
             return value;
         }
-
-        private static bool IsZero(byte[] value)
-        {
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (value[i] != 0)
-                    return false;
-            }
-            return true;
-        }
-
+        
         private static String Print(byte[] bytes)
         {
-            String ret = "make ";
-
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                ret += bytes[i] + " ";
-            }
-            ret += "endmake ";
-
-            return ret;
+            return MyBigIntImp.Print(bytes);
         }
     }
 }

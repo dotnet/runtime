@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Tools;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -957,7 +958,7 @@ namespace System.Numerics.Tests
         {
             BigInteger bigInteger;
             byte[] roundTrippedByteArray;
-            bool isZero = IsZero(value);
+            bool isZero = MyBigIntImp.IsZero(value);
 
             bigInteger = new BigInteger(value);
 
@@ -1154,20 +1155,7 @@ namespace System.Numerics.Tests
             // 1 * x = x
             Assert.Equal(bigInteger, (BigInteger.One * bigInteger));
         }
-
-        private static bool IsZero(byte[] value)
-        {
-            for (int i = 0; i < value.Length; ++i)
-            {
-                if (0 != value[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
+        
         private static bool IsOutOfRangeUInt64(byte[] value)
         {
             if (value.Length == 0)

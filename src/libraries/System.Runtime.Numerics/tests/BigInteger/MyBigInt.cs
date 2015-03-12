@@ -166,7 +166,7 @@ namespace Tools
             return new BigInteger();
         }
 
-        private static List<byte> Add(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Add(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> bnew = new List<byte>();
             bool num1neg = (bytes1[bytes1.Count - 1] & 0x80) != 0;
@@ -210,7 +210,7 @@ namespace Tools
             return bnew;
         }
 
-        private static List<byte> Negate(List<byte> bytes)
+        public static List<byte> Negate(List<byte> bytes)
         {
             bool carry;
             List<byte> bnew = new List<byte>();
@@ -253,7 +253,7 @@ namespace Tools
             return bnew;
         }
 
-        private static List<byte> Multiply(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Multiply(List<byte> bytes1, List<byte> bytes2)
         {
             NormalizeLengths(bytes1, bytes2);
             List<byte> bresult = new List<byte>();
@@ -284,7 +284,7 @@ namespace Tools
             return bresult;
         }
 
-        private static List<byte> Divide(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Divide(List<byte> bytes1, List<byte> bytes2)
         {
             bool numPos = ((bytes1[bytes1.Count - 1] & 0x80) == 0);
             bool denPos = ((bytes2[bytes2.Count - 1] & 0x80) == 0);
@@ -362,7 +362,7 @@ namespace Tools
             return result;
         }
 
-        private static List<byte> Remainder(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Remainder(List<byte> bytes1, List<byte> bytes2)
         {
             bool numPos = ((bytes1[bytes1.Count - 1] & 0x80) == 0);
             bool denPos = ((bytes2[bytes2.Count - 1] & 0x80) == 0);
@@ -440,7 +440,7 @@ namespace Tools
             return bytes1;
         }
 
-        private static List<byte> Pow(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Pow(List<byte> bytes1, List<byte> bytes2)
         {
             if (IsZero(bytes2))
             {
@@ -484,7 +484,7 @@ namespace Tools
             return (result == null) ? new List<byte>(new byte[] { 1 }) : result;
         }
 
-        private static List<byte> ModPow(List<byte> bytes1, List<byte> bytes2, List<byte> bytes3)
+        public static List<byte> ModPow(List<byte> bytes1, List<byte> bytes2, List<byte> bytes3)
         {
             if (IsZero(bytes2))
             {
@@ -531,7 +531,7 @@ namespace Tools
             return (result == null) ? Remainder(new List<byte>(new byte[] { 1 }), bytes3) : result;
         }
 
-        private static List<byte> GCD(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> GCD(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> temp;
 
@@ -559,7 +559,7 @@ namespace Tools
             return bytes1;
         }
 
-        private static List<byte> Max(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Max(List<byte> bytes1, List<byte> bytes2)
         {
             bool b1Pos = ((bytes1[bytes1.Count - 1] & 0x80) == 0);
             bool b2Pos = ((bytes2[bytes2.Count - 1] & 0x80) == 0);
@@ -586,7 +586,7 @@ namespace Tools
             return bytes1;
         }
 
-        private static List<byte> And(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> And(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> bnew = new List<byte>();
             NormalizeLengths(bytes1, bytes2);
@@ -599,7 +599,7 @@ namespace Tools
             return bnew;
         }
 
-        private static List<byte> Or(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Or(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> bnew = new List<byte>();
             NormalizeLengths(bytes1, bytes2);
@@ -612,7 +612,7 @@ namespace Tools
             return bnew;
         }
 
-        private static List<byte> Xor(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> Xor(List<byte> bytes1, List<byte> bytes2)
         {
             List<byte> bnew = new List<byte>();
             NormalizeLengths(bytes1, bytes2);
@@ -624,7 +624,7 @@ namespace Tools
             return bnew;
         }
 
-        private static List<byte> Not(List<byte> bytes)
+        public static List<byte> Not(List<byte> bytes)
         {
             List<byte> bnew = new List<byte>();
 
@@ -636,7 +636,7 @@ namespace Tools
             return bnew;
         }
 
-        private static List<byte> ShiftLeft(List<byte> bytes1, List<byte> bytes2)
+        public static List<byte> ShiftLeft(List<byte> bytes1, List<byte> bytes2)
         {
             int byteShift = (int)new BigInteger(Divide(Copy(bytes2), new List<byte>(new byte[] { 8 })).ToArray());
             sbyte bitShift = (sbyte)new BigInteger(Remainder(bytes2, new List<byte>(new byte[] { 8 })).ToArray());
@@ -694,7 +694,7 @@ namespace Tools
             return bytes1;
         }
 
-        private static List<byte> ShiftLeftGrow(List<byte> bytes)
+        public static List<byte> ShiftLeftGrow(List<byte> bytes)
         {
             List<byte> bresult = new List<byte>();
 
@@ -726,7 +726,7 @@ namespace Tools
             return bresult;
         }
 
-        private static List<byte> ShiftLeftDrop(List<byte> bytes)
+        public static List<byte> ShiftLeftDrop(List<byte> bytes)
         {
             List<byte> bresult = new List<byte>();
 
@@ -750,7 +750,7 @@ namespace Tools
             return bresult;
         }
 
-        private static List<byte> ShiftRight(List<byte> bytes)
+        public static List<byte> ShiftRight(List<byte> bytes)
         {
             List<byte> bresult = new List<byte>();
 
@@ -773,7 +773,7 @@ namespace Tools
             return bresult;
         }
 
-        private static List<byte> SetLength(List<byte> bytes, int size)
+        public static List<byte> SetLength(List<byte> bytes, int size)
         {
             List<byte> bresult = new List<byte>();
 
@@ -785,7 +785,7 @@ namespace Tools
             return bresult;
         }
 
-        private static List<byte> Copy(List<byte> bytes)
+        public static List<byte> Copy(List<byte> bytes)
         {
             List<byte> ret = new List<byte>();
             for (int i = 0; i < bytes.Count; i++)
@@ -795,7 +795,7 @@ namespace Tools
             return ret;
         }
 
-        private static void NormalizeLengths(List<byte> bytes1, List<byte> bytes2)
+        public static void NormalizeLengths(List<byte> bytes1, List<byte> bytes2)
         {
             bool num1neg = (bytes1[bytes1.Count - 1] & 0x80) != 0;
             bool num2neg = (bytes2[bytes2.Count - 1] & 0x80) != 0;
@@ -825,7 +825,7 @@ namespace Tools
             }
         }
 
-        private static void Trim(List<byte> bytes)
+        public static void Trim(List<byte> bytes)
         {
             while (bytes.Count > 1)
             {
@@ -854,7 +854,7 @@ namespace Tools
             }
         }
 
-        private static List<byte> GetBytes(BitArray ba)
+        public static List<byte> GetBytes(BitArray ba)
         {
             int length = ((ba.Length) / 8) + 1;
 
@@ -875,7 +875,30 @@ namespace Tools
             return mask;
         }
 
-        private static String Print(byte[] bytes)
+        public static String Print(byte[] bytes)
+        {
+            String ret = "make ";
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                ret += bytes[i] + " ";
+            }
+
+            ret += "endmake ";
+            return ret;
+        }
+        
+        public static String PrintFormatX(byte[] bytes)
+        {
+            string ret = String.Empty;
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                ret += bytes[i].ToString("x");
+            }
+            return ret;
+        }
+
+        public static String PrintFormatX2(byte[] bytes)
         {
             string ret = String.Empty;
             for (int i = 0; i < bytes.Length; i++)
@@ -885,9 +908,13 @@ namespace Tools
             return ret;
         }
 
-        private static bool IsZero(List<byte> list)
+        public static bool IsZero(List<byte> list)
         {
-            byte[] value = list.ToArray();
+            return IsZero(list.ToArray());
+        }
+
+        public static bool IsZero(byte[] value)
+        {
             for (int i = 0; i < value.Length; i++)
             {
                 if (value[i] != 0)
@@ -897,7 +924,24 @@ namespace Tools
             }
             return true;
         }
-
+        
+        public static byte[] GetNonZeroRandomByteArray(Random random, int size)
+        {
+            byte[] value = new byte[size];
+            while (IsZero(value))
+            {
+                random.NextBytes(value);
+            }
+            return value;
+        }
+        
+        public static byte[] GetRandomByteArray(Random random, int size)
+        {
+            byte[] value = new byte[size];
+            random.NextBytes(value);
+            return value;
+        }
+        
         public static BigInteger ApproximateBigInteger(double value)
         {
             //Special case values;
