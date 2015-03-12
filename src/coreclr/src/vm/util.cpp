@@ -1948,8 +1948,9 @@ DWORD GetLogicalCpuCountFromOS()
     static DWORD val = 0;
     DWORD retVal = 0;
 
-// UNIXTODO: Implement the functionality in PAL?
-#ifndef FEATURE_PAL    
+#ifdef FEATURE_PAL
+    retVal = PAL_GetLogicalCpuCountFromOS();
+#else // FEATURE_PAL    
     
     DWORD nEntries = 0;
 
@@ -2020,7 +2021,6 @@ lDone:
     {
         delete[] pslpi;                        // release the memory allocated for the SLPI array    
     }
-
 #endif // FEATURE_PAL
 
     return retVal;
