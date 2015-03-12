@@ -1899,6 +1899,14 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             }
         }
 
+#ifdef FEATURE_EVENT_TRACE
+        // Flush managed object allocation logging data.
+        // We do this after finalization is complete and returning threads have been trapped, so that
+        // no there will be no more managed allocations and no more GCs which will manipulate the
+        // allocation sampling data structures.
+        ETW::TypeSystemLog::FlushObjectAllocationEvents();
+#endif // FEATURE_EVENT_TRACE
+
 #ifdef FEATURE_PREJIT
         // If we're doing basic block profiling, we need to write the log files to disk.
 

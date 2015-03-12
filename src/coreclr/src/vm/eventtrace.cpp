@@ -3722,6 +3722,75 @@ VOID ETW::TypeSystemLog::DeleteTypeHashNoLock(AllLoggedTypes **ppAllLoggedTypes)
 
 //---------------------------------------------------------------------------------------
 //
+// Called from shutdown to give us the opportunity to dump any sampled object allocation
+// information before the process shuts down.
+//
+
+// static
+VOID ETW::TypeSystemLog::FlushObjectAllocationEvents()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // If logging is not enabled, then we don't need to do any work.
+    if (!(s_fHeapAllocLowEventEnabledNow || s_fHeapAllocHighEventEnabledNow))
+    {
+        return;
+    }
+
+    AllLoggedTypes * pThreadAllLoggedTypes = NULL;
+    Thread * pThread = NULL;
+
+    // Get the thread store lock.
+    ThreadStoreLockHolder tsl;
+
+    // Iterate over each thread and log any un-logged allocations.
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+    {
+        pThreadAllLoggedTypes = pThread->GetAllocationSamplingTable();
+        if (pThreadAllLoggedTypes == NULL)
+        {
+            continue;
+        }
+
+        DWORD dwAllocsSkippedForSample;
+        SIZE_T cbIgnoredSizeForSample;
+
+        // Iterate over each module.
+        AllLoggedTypesHash * pLoggedTypesHash = &pThreadAllLoggedTypes->allLoggedTypesHash;
+        for (AllLoggedTypesHash::Iterator iter = pLoggedTypesHash->Begin();
+            iter != pLoggedTypesHash->End();
+            ++iter)
+        {
+            // Iterate over each type in the module.
+            LoggedTypesFromModule * pLoggedTypesFromModule = *iter;
+            LoggedTypesFromModuleHash * pLoggedTypesFromModuleHash = &pLoggedTypesFromModule->loggedTypesFromModuleHash;
+            for (LoggedTypesFromModuleHash::Iterator typeIter = pLoggedTypesFromModuleHash->Begin();
+                typeIter != pLoggedTypesFromModuleHash->End();
+                ++typeIter)
+            {
+                dwAllocsSkippedForSample = typeIter->dwAllocsSkippedForSample;
+                cbIgnoredSizeForSample = typeIter->cbIgnoredSizeForSample;
+
+                // Only write the event if there were allocations that have not been logged.
+                if (dwAllocsSkippedForSample > 0 || cbIgnoredSizeForSample > 0)
+                {
+                    // Write the event based on which keyword was specified when ETW was configured.
+                    if (s_fHeapAllocHighEventEnabledNow)
+                    {
+                        FireEtwGCSampledObjectAllocationHigh(NULL, (LPVOID) typeIter->th.AsTAddr(), dwAllocsSkippedForSample, cbIgnoredSizeForSample, GetClrInstanceId());
+                    }
+                    else
+                    {
+                        FireEtwGCSampledObjectAllocationLow(NULL, (LPVOID) typeIter->th.AsTAddr(), dwAllocsSkippedForSample, cbIgnoredSizeForSample, GetClrInstanceId());
+                    }
+                }
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------------
+//
 // Whenever we detect that the Types keyword is off, this gets called. This eliminates the
 // global hash tables that tracked which types were logged (if the hash tables had been created
 // previously). If type events are turned back on later, we'll re-log them all as we
