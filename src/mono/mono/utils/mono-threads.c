@@ -721,6 +721,8 @@ mono_thread_info_begin_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 		return TRUE;
 	case AsyncSuspendInitSuspend:
 		return mono_threads_core_begin_async_suspend (info, interrupt_kernel);
+	default:
+		g_assert_not_reached ();
 	}
 }
 

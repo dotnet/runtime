@@ -457,7 +457,7 @@ STATE_SUSPEND_IN_PROGRESS: All those are invalid end states of a sucessfull fini
 MonoThreadUnwindState*
 mono_thread_info_get_suspend_state (MonoThreadInfo *info)
 {
-	int raw_state, cur_state, suspend_count;
+	int raw_state, cur_state, suspend_count G_GNUC_UNUSED;
 	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
 	switch (cur_state) {
 	case STATE_ASYNC_SUSPENDED:
