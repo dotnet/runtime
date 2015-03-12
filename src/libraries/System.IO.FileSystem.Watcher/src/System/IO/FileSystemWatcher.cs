@@ -1,12 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace System.IO
 {
@@ -81,7 +77,7 @@ namespace System.IO
         /// </devdoc>
         public FileSystemWatcher()
         {
-            _directory = String.Empty;
+            _directory = string.Empty;
             _filter = "*.*";
         }
 
@@ -176,13 +172,13 @@ namespace System.IO
             }
             set
             {
-                if (String.IsNullOrEmpty(value))
+                if (string.IsNullOrEmpty(value))
                 {
                     // Skip the string compare for "*.*" since it has no case-insensitive representation that differs from
                     // the case-sensitive representation.
                     _filter = "*.*";
                 }
-                else if (!String.Equals(_filter, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+                else if (!string.Equals(_filter, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
                 {
                     _filter = value;
                 }
@@ -262,7 +258,7 @@ namespace System.IO
             set
             {
                 value = (value == null) ? string.Empty : value;
-                if (!String.Equals(_directory, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(_directory, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
                 {
                     if (!Directory.Exists(value))
                     {

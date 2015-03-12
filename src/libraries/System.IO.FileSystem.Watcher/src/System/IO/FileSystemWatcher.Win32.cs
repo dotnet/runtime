@@ -5,7 +5,6 @@ using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.IO
@@ -274,7 +273,7 @@ namespace System.IO
 
                                 // Get filename length (in bytes):
                                 nameLength = *((int*)(buffPtr + offset + 8));
-                                name = new String((char*)(buffPtr + offset + 12), 0, nameLength / 2);
+                                name = new string((char*)(buffPtr + offset + 12), 0, nameLength / 2);
                             }
 
 
