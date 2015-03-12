@@ -3719,7 +3719,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         if (!varDsc->lvOnFrame)
         {
             if (!varDsc->lvIsParam 
-#if !defined(_TARGET_AMD64_) || defined(UNIX_AMD64_ABI)
+#if !defined(_TARGET_AMD64_)
                 || (varDsc->lvIsRegArg
 #if defined(_TARGET_ARM_) && defined(PROFILING_SUPPORTED)
                 && compIsProfilerHookNeeded() && !lvaIsPreSpilled(lclNum, codeGen->regSet.rsMaskPreSpillRegs(false))   // We need assign stack offsets for prespilled arguments
@@ -3751,10 +3751,8 @@ void Compiler::lvaFixVirtualFrameOffsets()
                 }
             }
 #endif
-#ifndef UNIX_AMD64_ABI
             // On System V environments the stkOffs could be 0 for params passed in registers.
             assert(codeGen->isFramePointerUsed() || varDsc->lvStkOffs >= 0); // Only EBP relative references can have negative offsets
-#endif // !UNIX_AMD64_ABI
         }
     }
 
@@ -4075,7 +4073,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
 //  lvaAssignVirtualFrameOffsetToArg() : Assign virtual stack offsets to an
 //  individual argument, and return the offset for the next argument.
 //  Note: This method only calculates the initial offset of the stack passed/spilled arguments 
-//  (if any - the RA might decide to spill(home on the stack) register passed argumets, if rarely used.)
+//  (if any - the RA might decide to spill(home on the stack) register passed arguments, if rarely used.)
 //        The final offset is calculated in lvaFixVirtualFrameOffsets method. It accounts for FP existance, 
 //        ret address slot, stack frame padding, alloca instructions, etc. 
 //
@@ -4134,6 +4132,12 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
             varDsc->lvStkOffs = argOffs;
             argOffs += sizeof(void *);
         }
+#ifdef UNIX_AMD64_ABI
+        else 
+        {
+            varDsc->lvStkOffs = 0;
+        }
+#endif
 #elif defined(_TARGET_ARM64_)
         // Register arguments don't take stack space.
 #elif defined(_TARGET_ARM_)
@@ -4390,7 +4394,6 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum, unsigned argSize
 void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 {
     int stkOffs = 0;
-
     // codeGen->isFramePointerUsed is set in regalloc phase. Initialize it to a guess for pre-regalloc layout.
     if (lvaDoneFrameLayout <= PRE_REGALLOC_FRAME_LAYOUT)    
         codeGen->setFramePointerUsed(codeGen->isFramePointerRequired());
@@ -4881,7 +4884,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 have_LclVarDoubleAlign = true;
             }
 
-            /* Reserve the stack space for this variable */
+            // Reserve the stack space for this variable
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
         }
     }
@@ -4900,7 +4903,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
          *
          *-------------------------------------------------------------------------
          */
-
         stkOffs = lvaAllocateTemps(stkOffs, mustDoubleAlign);
     }
 

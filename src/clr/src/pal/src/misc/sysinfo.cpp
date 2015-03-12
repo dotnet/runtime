@@ -298,4 +298,17 @@ GetCurrentProcessorNumber()
     return 0;
 }
 
+DWORD
+PALAPI
+PAL_GetLogicalCpuCountFromOS()
+{
+    DWORD numLogicalCores = 0;
+
+#if HAVE_SYSCONF
+    numLogicalCores = sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+
+    return numLogicalCores;
+}
+
 #endif // defined(_AMD64_)

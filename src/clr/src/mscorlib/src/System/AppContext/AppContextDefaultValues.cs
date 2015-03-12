@@ -26,6 +26,19 @@ namespace System
         [System.Security.SecuritySafeCritical]
         private static void ParseTargetFrameworkName(out string identifier, out string profile, out int version)
         {
+#if FEATURE_CORECLR
+            if (CompatibilitySwitches.IsAppSilverlight81)
+            {
+                // Since Silverlight apps don't have an explicit Main() the reading of the TFM 
+                // will not work and as a workaround we use the CompatibilitySwitch.IsAppSilverlight81 
+                // to identify if the given app targets SL 8.1 and accordingly give it the value WindowsPhone;80100
+                identifier = "WindowsPhone";
+                version = 80100;
+                profile = string.Empty;
+                return;
+            }
+#endif
+
             string targetFrameworkMoniker = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
 
             // If we don't have a TFM then we should default to the 4.0 behavior where all quirks are turned on.
