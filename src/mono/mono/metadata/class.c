@@ -6762,6 +6762,9 @@ mono_class_instance_size (MonoClass *klass)
 {	
 	if (!klass->size_inited)
 		mono_class_init (klass);
+	/* This can happen with dynamically created types */
+	if (!klass->fields_inited)
+		mono_class_setup_fields_locking (klass);
 
 	return klass->instance_size;
 }
