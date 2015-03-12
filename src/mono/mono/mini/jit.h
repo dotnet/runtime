@@ -65,6 +65,9 @@ MONO_API char*       mono_get_runtime_build_info    (void);
 MONO_API MonoJitInfo *
 mono_get_jit_info_from_method (MonoDomain *domain, MonoMethod *method);
 
+MONO_API void *
+mono_aot_get_method (MonoDomain *domain, MonoMethod *method);
+
 MONO_END_DECLS
 
 #endif
