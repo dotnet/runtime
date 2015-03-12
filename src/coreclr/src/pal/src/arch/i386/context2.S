@@ -8,15 +8,20 @@
 // and is always apply to the current thread.
 //
 
-#include "macros.inc"
+.intel_syntax noprefix
+#include "unixasmmacros.inc"
 
 #ifdef BIT64
+
+#define CONTEXT_AMD64   0x100000
 
 #define CONTEXT_CONTROL 1 // SegSs, Rsp, SegCs, Rip, and EFlags
 #define CONTEXT_INTEGER 2 // Rax, Rcx, Rdx, Rbx, Rbp, Rsi, Rdi, R8-R15
 #define CONTEXT_SEGMENTS 4 // SegDs, SegEs, SegFs, SegGs
 #define CONTEXT_FLOATING_POINT 8
 #define CONTEXT_DEBUG_REGISTERS 16 // Dr0-Dr3 and Dr6-Dr7
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
 
 #define CONTEXT_ContextFlags 6*8
 #define CONTEXT_SegCs CONTEXT_ContextFlags+8
@@ -78,66 +83,75 @@
 // Incoming:
 //  RDI: Context*
 //
-    .globl C_FUNC(CONTEXT_CaptureContext)
-C_FUNC(CONTEXT_CaptureContext):
-    testb $CONTEXT_INTEGER, CONTEXT_ContextFlags(%rdi)
-    je 0f
-    mov %rdi, CONTEXT_Rdi(%rdi)
-    mov %rsi, CONTEXT_Rsi(%rdi)
-    mov %rbx, CONTEXT_Rbx(%rdi)
-    mov %rdx, CONTEXT_Rdx(%rdi)
-    mov %rcx, CONTEXT_Rcx(%rdi)
-    mov %rax, CONTEXT_Rax(%rdi)
-    mov %rbp, CONTEXT_Rbp(%rdi)
-    mov %r8, CONTEXT_R8(%rdi)
-    mov %r9, CONTEXT_R9(%rdi)
-    mov %r10, CONTEXT_R10(%rdi)
-    mov %r11, CONTEXT_R11(%rdi)
-    mov %r12, CONTEXT_R12(%rdi)
-    mov %r13, CONTEXT_R13(%rdi)
-    mov %r14, CONTEXT_R14(%rdi)
-    mov %r15, CONTEXT_R15(%rdi)
-    jmp 1f
+LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
+    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_INTEGER
+    je      0f
+    mov     [rdi + CONTEXT_Rdi], rdi
+    mov     [rdi + CONTEXT_Rsi], rsi
+    mov     [rdi + CONTEXT_Rbx], rbx
+    mov     [rdi + CONTEXT_Rdx], rdx
+    mov     [rdi + CONTEXT_Rcx], rcx
+    mov     [rdi + CONTEXT_Rax], rax
+    mov     [rdi + CONTEXT_Rbp], rbp
+    mov     [rdi + CONTEXT_R8], r8
+    mov     [rdi + CONTEXT_R9], r9
+    mov     [rdi + CONTEXT_R10], r10
+    mov     [rdi + CONTEXT_R11], r11
+    mov     [rdi + CONTEXT_R12], r12
+    mov     [rdi + CONTEXT_R13], r13
+    mov     [rdi + CONTEXT_R14], r14
+    mov     [rdi + CONTEXT_R15], r15   
+    jmp     1f
 0:
     nop
 1:
-    testb $CONTEXT_CONTROL, CONTEXT_ContextFlags(%rdi)
-    je 2f
+    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
+    je      2f
     
     // Return address is @ RSP
-    mov (%rsp), %rdx
-    mov %rdx, CONTEXT_Rip(%rdi)
-    mov %cs, CONTEXT_SegCs(%rdi)
-    pushfq
-    pop %rdx
-    mov %edx, CONTEXT_EFlags(%rdi)
-    lea 8(%rsp), %rdx
-    mov %rdx, CONTEXT_Rsp(%rdi)
-    mov %ss, CONTEXT_SegSs(%rdi)
+    mov     rdx, [rsp]
+    mov     [rdi + CONTEXT_Rip], rdx
+.att_syntax 
+    mov     %cs, CONTEXT_SegCs(%rdi)
+.intel_syntax noprefix
+    push_eflags
+    pop_register rdx
+    mov     [rdi + CONTEXT_EFlags], edx
+    lea     rdx, [rsp + 8]
+    mov     [rdi + CONTEXT_Rsp], rdx
+.att_syntax 
+    mov     %ss, CONTEXT_SegSs(%rdi)
+.intel_syntax noprefix
 2:
     // Need to double check this is producing the right result
     // also that FFSXR (fast save/restore) is not turned on
     // otherwise it omits the xmm registers.
-    testb $CONTEXT_FLOATING_POINT, CONTEXT_ContextFlags(%rdi)
-    je 3f
-    fxsave CONTEXT_FltSave(%rdi)
+    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_FLOATING_POINT
+    je      3f
+    fxsave  [rdi + CONTEXT_FltSave]
 3:
-    testb $CONTEXT_DEBUG_REGISTERS, CONTEXT_ContextFlags(%rdi)
-    je 4f
-    mov %dr0, %rdx
-    mov %rdx, CONTEXT_Dr0(%rdi)
-    mov %dr1, %rdx
-    mov %rdx, CONTEXT_Dr1(%rdi)
-    mov %dr2, %rdx
-    mov %rdx, CONTEXT_Dr2(%rdi)
-    mov %dr3, %rdx
-    mov %rdx, CONTEXT_Dr3(%rdi)
-    mov %dr6, %rdx
-    mov %rdx, CONTEXT_Dr6(%rdi)
-    mov %dr7, %rdx
-    mov %rdx, CONTEXT_Dr7(%rdi)
+    test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_DEBUG_REGISTERS
+    je      4f
+    mov     rdx, dr0
+    mov     [rdi + CONTEXT_Dr0], rdx
+    mov     rdx, dr1
+    mov     [rdi + CONTEXT_Dr1], rdx
+    mov     rdx, dr2
+    mov     [rdi + CONTEXT_Dr2], rdx
+    mov     rdx, dr3
+    mov     [rdi + CONTEXT_Dr3], rdx
+    mov     rdx, dr6
+    mov     [rdi + CONTEXT_Dr6], rdx
+    mov     rdx, dr7
+    mov     [rdi + CONTEXT_Dr7], rdx
 4:
     ret
+LEAF_END CONTEXT_CaptureContext, _TEXT
+
+LEAF_ENTRY RtlCaptureContext, _TEXT
+    mov     DWORD PTR [rdi + CONTEXT_ContextFlags], (CONTEXT_AMD64 | CONTEXT_FULL | CONTEXT_SEGMENTS)
+    jmp     C_FUNC(CONTEXT_CaptureContext)
+LEAF_END RtlCaptureContext, _TEXT
 
 #else
 
