@@ -664,7 +664,12 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define FEATURE_EH_FUNCLETS      1
   #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define FEATURE_STACK_FP_X87     0 
+#ifndef UNIX_AMD64_ABI
   #define ETW_EBP_FRAMED           0       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
+#else // UNIX_AMD64_ABI
+  // TODO-Amd64-Unis: Enable Frame Pointer chaining for most methods when uniwinding and the rest is implemented. Set the following to 1.
+  #define ETW_EBP_FRAMED           0       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
+#endif // UNIX_AMD64_ABI
   #define FEATURE_FP_REGALLOC      0       // Enabled if RegAlloc is used to enregister Floating Point LclVars  
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
@@ -688,20 +693,24 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define STACK_ALIGN_SHIFT        3       // Shift-right amount to convert stack size in bytes to size in pointer sized words
 
 #ifndef UNIX_AMD64_ABI
+#if !ETW_EBP_FRAMED
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI|RBM_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
+#else // ETW_EBP_FRAMED
+  #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
+#endif // ETW_EBP_FRAMED
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
   #define RBM_FLT_CALLEE_SAVED    (RBM_XMM6|RBM_XMM7|RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
   #define RBM_FLT_CALLEE_TRASH    (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5)
 #else // UNIX_AMD64_ABI
+#if !ETW_EBP_FRAMED
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
+#else // ETW_EBP_FRAMED
+  #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
+#endif // ETW_EBP_FRAMED
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_RDI|RBM_RSI|RBM_EDX|RBM_ECX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
   #define RBM_FLT_CALLEE_SAVED    (0)
   #define RBM_FLT_CALLEE_TRASH    (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5|RBM_XMM6|RBM_XMM7| \
                                    RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
-  // Use this value to specify how many MustInit vars on Linux would trigger a FramePointer to be used.
-  // If there is no FramePointer blockInit in codegencommon.cpp is not used. There is a limit to the size of the 
-  // prolog (it should not exceed one IG.) Make sure we don't get in such case.
-  #define MAX_VARS_FOR_NO_FRAMEPOINTER 6
 #endif // UNIX_AMD64_ABI
   
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
@@ -768,7 +777,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES) // RBX, RSI, RDI, RBP, R12, R13, R14, R15
 #else // UNIX_AMD64_ABI
   #define REG_PREDICT_ORDER        REG_EAX, REG_EDI, REG_ESI, REG_EDX, REG_ECX, REG_EBX, REG_EBP, \
-    REG_R8, REG_R9, REG_R10, REG_R11, REG_R14, REG_R15, REG_R12, REG_R13
+                                   REG_R8, REG_R9, REG_R10, REG_R11, REG_R14, REG_R15, REG_R12, REG_R13
 
   #define CNT_CALLEE_SAVED         (6)
   #define CNT_CALLEE_TRASH         (9)

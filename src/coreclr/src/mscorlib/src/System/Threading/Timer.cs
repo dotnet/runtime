@@ -78,6 +78,7 @@ namespace System.Threading
             [SecuritySafeCritical]
             get
             {
+#if !FEATURE_PAL
                 if (Environment.IsWindows8OrAbove)
                 {
                     ulong time100ns;
@@ -90,6 +91,7 @@ namespace System.Threading
                     return (int)(uint)(time100ns / 10000);
                 }
                 else
+#endif
                 {
                     return Environment.TickCount;
                 }
