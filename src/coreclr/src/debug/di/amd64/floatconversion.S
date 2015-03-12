@@ -4,7 +4,7 @@
 //
 
 .intel_syntax noprefix
-#include "../../../vm/amd64/unixasmmacros.inc"
+#include <unixasmmacros.inc>
 
 LEAF_ENTRY FPFillR8, _TEXT
             movdqa  xmm0, [rdi]
