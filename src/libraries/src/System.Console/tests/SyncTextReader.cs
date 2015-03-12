@@ -3,9 +3,10 @@
 
 using System;
 using System.IO;
+using System.Text;
 using Xunit;
 
-public class SyncTextReaderTests
+public class SyncTextReader
 {
     // NOTE: These tests test the underlying SyncTextReader by
     // accessing the Console.In TextReader (which in fact is a SyncTextReader).
@@ -37,7 +38,7 @@ public class SyncTextReaderTests
         "Hello World",
     };
 
-    private static void Test(string content, Action<StreamReader> action)
+    private static void Test(string content, Action action)
     {
         TextWriter savedStandardOutput = Console.Out;
         TextReader savedStandardInput = Console.In;
@@ -46,19 +47,21 @@ public class SyncTextReaderTests
         {
             using (MemoryStream memStream = new MemoryStream())
             {
-                using (StreamWriter sw = new StreamWriter(memStream))
+                // Write the content, but leave the stream open.
+                using (StreamWriter sw = new StreamWriter(memStream, Encoding.Unicode, 1024, true))
                 {
                     sw.Write(content);
                     sw.Flush();
-
-                    memStream.Seek(0, SeekOrigin.Begin);
-
-                    using (StreamReader sr = new StreamReader(memStream))
-                    {
-                        Console.SetIn(sr);
-                        action(sr);
-                    }
                 }
+
+                memStream.Seek(0, SeekOrigin.Begin);
+
+                using (StreamReader sr = new StreamReader(memStream))
+                {
+                    Console.SetIn(sr);
+                    action();
+                }
+
             }
         }
         finally
@@ -72,7 +75,7 @@ public class SyncTextReaderTests
     public void ReadToEnd()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
-        Test(expected, reader => {
+        Test(expected, () => {
             // Given, When
             var result = Console.In.ReadToEnd();
 
@@ -86,9 +89,9 @@ public class SyncTextReaderTests
     public void ReadBlock()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
-        Test(new string(expected), reader => {
+        Test(new string(expected), () => {
             // Given
-            var buffer = new char[5];
+            var buffer = new char[expected.Length];
 
             // When
             var result = Console.In.ReadBlock(buffer, 0, 5);
@@ -104,9 +107,9 @@ public class SyncTextReaderTests
     public void Read()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
-        Test(new string(expected), reader => {
+        Test(new string(expected), () => {
             // Given
-            var buffer = new char[5];
+            var buffer = new char[expected.Length];
 
             // When
             var result = Console.In.Read(buffer, 0, 5);
@@ -121,14 +124,13 @@ public class SyncTextReaderTests
     [Fact]
     public void Peek()
     {
-        Test("ABC", reader => {
-            // Given, When
-            var first = Console.In.Peek();
-            var second = Console.In.Read();
-
-            // Then
-            Assert.Equal('A', (char)first);
-            Assert.Equal('A', (char)second);
+        const string expected = "ABC";
+        Test(expected, () => {
+            foreach (char expectedChar in expected)
+            {
+                Assert.Equal(expectedChar, Console.In.Peek());
+                Assert.Equal(expectedChar, Console.In.Read());
+            }
         });
     }
 
@@ -136,11 +138,9 @@ public class SyncTextReaderTests
     public void ReadToEndAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
-        Test(expected, reader => {
+        Test(expected, () => {
             // Given, When
-            var task = Console.In.ReadToEndAsync();
-            task.Wait(TimeSpan.FromSeconds(1));
-            var result = task.Result;
+            var result = Console.In.ReadToEndAsync().Result;
 
             // Then
             Assert.Equal(expected, result);
@@ -152,14 +152,12 @@ public class SyncTextReaderTests
     public void ReadBlockAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
-        Test(new string(expected), reader => {
+        Test(new string(expected), () => {
             // Given
-            var buffer = new char[5];
+            var buffer = new char[expected.Length];
 
             // When
-            var task = Console.In.ReadBlockAsync(buffer, 0, 5);
-            task.Wait(TimeSpan.FromSeconds(1));
-            var result = task.Result;
+            var result = Console.In.ReadBlockAsync(buffer, 0, 5).Result;
 
             // Then
             Assert.Equal(5, result);
@@ -172,14 +170,12 @@ public class SyncTextReaderTests
     public void ReadAsync()
     {
         var expected = new[] { 'H', 'e', 'l', 'l', 'o' };
-        Test(new string(expected), reader => {
+        Test(new string(expected), () => {
             // Given
-            var buffer = new char[5];
+            var buffer = new char[expected.Length];
 
             // When
-            var task = Console.In.ReadAsync(buffer, 0, 5);
-            task.Wait(TimeSpan.FromSeconds(1));
-            var result = task.Result;
+            var result = Console.In.ReadAsync(buffer, 0, 5).Result;
 
             // Then
             Assert.Equal(5, result);
@@ -192,13 +188,14 @@ public class SyncTextReaderTests
     public void ReadLineAsync()
     {
         var expected = string.Join(Environment.NewLine, s_testLines);
-        Test(expected, reader => {
+        Test(expected, () => {
             for (int i = 0; i < s_testLines.Length; i++)
             {
-                var task = Console.In.ReadLineAsync();
-                task.Wait(TimeSpan.FromSeconds(1));
+                // Given, When
+                var result = Console.In.ReadLineAsync().Result;
 
-                Assert.Equal(s_testLines[i], task.Result);
+                // Then
+                Assert.Equal(s_testLines[i], result);
             }
             Assert.Equal(-1, Console.Read());
         });
