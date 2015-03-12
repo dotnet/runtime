@@ -15,9 +15,15 @@ internal partial class Interop
 
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
 
-        [DllImport(Libraries.Localization, CharSet = CharSet.Unicode,  EntryPoint="FormatMessageW", SetLastError = true, BestFitMapping = true)]
-        private static extern int FormatMessage(int dwFlags, IntPtr lpSource_mustBeNull, uint dwMessageId,
-            int dwLanguageId, StringBuilder lpBuffer, int nSize, IntPtr[] arguments);
+        [DllImport(Libraries.Localization, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
+        private static extern int FormatMessage(
+            int dwFlags,
+            IntPtr lpSource_mustBeNull, 
+            uint dwMessageId,
+            int dwLanguageId,
+            StringBuilder lpBuffer,
+            int nSize,
+            IntPtr[] arguments);
 
         /// <summary>
         ///     Returns a string message for the specified Win32 error code.
