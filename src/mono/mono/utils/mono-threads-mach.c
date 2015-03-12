@@ -40,7 +40,11 @@ mono_threads_core_interrupt (MonoThreadInfo *info)
 void
 mono_threads_core_abort_syscall (MonoThreadInfo *info)
 {
-	thread_suspend (info->native_handle);
+	kern_return_t ret;
+	ret = thread_suspend (info->native_handle);
+	if (ret != KERN_SUCCESS)
+		return;
+
 	thread_abort_safely (info->native_handle);
 	thread_resume (info->native_handle);
 }
