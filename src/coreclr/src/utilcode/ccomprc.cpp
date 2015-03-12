@@ -828,7 +828,18 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
 
     return hr;
 #else  // !FEATURE_PAL
-    PORTABILITY_ASSERT("UNIXTODO: Implement string loading from resources");
+    // UNIXTODO: Implement real string loading from resources
+    int len = 0;
+    if (szBuffer && iMax)
+    {
+        len = _snwprintf(szBuffer, iMax, W("Resource string category=%d, id=0x%x"), eCategory, iResourceID);
+    }
+
+    if (pcwchUsed)
+    {
+        *pcwchUsed = len;
+    }
+
     return S_OK;
 #endif // !FEATURE_PAL
 }
