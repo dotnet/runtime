@@ -26,9 +26,11 @@
 
 #if defined(__APPLE__)
 #define C_FUNC(name) _##name
+#define EXTERNAL_C_FUNC(name) C_FUNC(name)
 #define LOCAL_LABEL(name) L##name
 #else
 #define C_FUNC(name) name
+#define EXTERNAL_C_FUNC(name) C_FUNC(name)@plt
 #define LOCAL_LABEL(name) .L##name
 #endif
 
@@ -131,13 +133,16 @@ C_FUNC(\Name\()_End):
 .macro save_xmm128_postrsp Reg, Offset
         __Offset = \Offset
         movdqa  [rsp + __Offset], \Reg
-        .cfi_rel_offset \Reg, __Offset
+        // NOTE: We cannot use ".cfi_rel_offset \Reg, __Offset" here, 
+        // the xmm registers are not supported by the libunwind
 .endm
 
 .macro restore_xmm128 Reg, ofs
         __Offset = \ofs
         movdqa          \Reg, [rsp + __Offset]
-        .cfi_restore \Reg
+        // NOTE: We cannot use ".cfi_restore \Reg" here, 
+        // the xmm registers are not supported by the libunwind
+        
 .endm
 
 .macro POP_CALLEE_SAVED_REGISTERS
@@ -153,6 +158,11 @@ C_FUNC(\Name\()_End):
 
 .macro push_register Reg
         push            \Reg
+        .cfi_adjust_cfa_offset 8
+.endm
+
+.macro push_eflags
+        pushfq
         .cfi_adjust_cfa_offset 8
 .endm
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This file invokes cmake and generates the build system for gcc.
 #
