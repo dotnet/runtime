@@ -410,11 +410,12 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyInternalBufferOverflowEvent()
         {
-            InternalBufferOverflowException ex = new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory));
-
-            ErrorEventArgs errevent = new ErrorEventArgs(ex);
-
-            OnError(errevent);
+            ErrorEventHandler handler = _onErrorHandler;
+            if (handler != null)
+            {
+                handler(this, new ErrorEventArgs(
+                    new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
+            }
         }
 
         /// <devdoc>
@@ -423,14 +424,13 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyRenameEventArgs(WatcherChangeTypes action, string name, string oldName)
         {
-            // filter if neither new name or old name match a specified pattern
-            if (!MatchPattern(name) && !MatchPattern(oldName))
+            // filter if there's no handler or neither new name or old name match a specified pattern
+            RenamedEventHandler handler = _onRenamedHandler;
+            if (handler != null && 
+                (MatchPattern(name) || MatchPattern(oldName)))
             {
-                return;
+                handler(this, new RenamedEventArgs(action, _directory, name, oldName));
             }
-
-            RenamedEventArgs renevent = new RenamedEventArgs(action, _directory, name, oldName);
-            OnRenamed(renevent);
         }
 
         /// <devdoc>
@@ -439,26 +439,26 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyFileSystemEventArgs(WatcherChangeTypes changeType, string name)
         {
-            if (!MatchPattern(name))
-            {
-                return;
-            }
-
-            var args = new FileSystemEventArgs(changeType, _directory, name);
+            FileSystemEventHandler handler = null;
             switch (changeType)
             {
                 case WatcherChangeTypes.Created:
-                    OnCreated(args);
+                    handler = _onCreatedHandler;
                     break;
                 case WatcherChangeTypes.Deleted:
-                    OnDeleted(args);
+                    handler = _onDeletedHandler;
                     break;
                 case WatcherChangeTypes.Changed:
-                    OnChanged(args);
+                    handler = _onChangedHandler;
                     break;
                 default:
                     Debug.Fail("Unknown FileSystemEvent change type!  Value: " + changeType);
                     break;
+            }
+
+            if (handler != null && MatchPattern(name))
+            {
+                handler(this, new FileSystemEventArgs(changeType, _directory, name));
             }
         }
 
@@ -468,9 +468,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnChanged(FileSystemEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             FileSystemEventHandler changedHandler = _onChangedHandler;
-
             if (changedHandler != null)
             {
                 changedHandler(this, e);
@@ -483,7 +481,6 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnCreated(FileSystemEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             FileSystemEventHandler createdHandler = _onCreatedHandler;
             if (createdHandler != null)
             {
@@ -497,7 +494,6 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnDeleted(FileSystemEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             FileSystemEventHandler deletedHandler = _onDeletedHandler;
             if (deletedHandler != null)
             {
@@ -511,7 +507,6 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnError(ErrorEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             ErrorEventHandler errorHandler = _onErrorHandler;
             if (errorHandler != null)
             {
