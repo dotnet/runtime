@@ -1545,13 +1545,16 @@ gint32 ves_icall_System_Net_Sockets_Socket_SendTo_internal(SOCKET sock, MonoArra
 
 static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 {
-	SOCKET sock;
+	MonoSafeHandle *safe_handle;
 	MonoClassField *field;
 	
-	field=mono_class_get_field_from_name(sockobj->vtable->klass, "socket");
-	sock=GPOINTER_TO_INT (*(gpointer *)(((char *)sockobj)+field->offset));
+	field = mono_class_get_field_from_name (sockobj->vtable->klass, "socket");
+	safe_handle = ((MonoSafeHandle*) (*(gpointer *)(((char *)sockobj)+field->offset)));
 
-	return(sock);
+	if (safe_handle == NULL)
+		return -1;
+
+	return (SOCKET) safe_handle->handle;
 }
 
 #define POLL_ERRORS (MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)
