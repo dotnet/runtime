@@ -10,34 +10,8 @@ using System.Threading;
 
 namespace System.IO
 {
-    // Win32 implementation of FileSystemWatcher's PAL.  The main partial definition of FileSystemWatcher expects:
-    // - StartRaisingEvents
-    // - StopRaisingEvents
-    // - FinalizeDispose
-
     public partial class FileSystemWatcher
     {
-        // Unmanaged handle to monitored directory
-        private SafeFileHandle _directoryHandle;
-
-        // Current "session" ID to ignore old events whenever we stop then restart.
-        private int _currentSession;
-
-        // Thread gate holder and constats
-        private bool _stopListening = false;
-
-        private void FinalizeDispose()
-        {
-            // We must explicitly dispose the handle to insure it gets closed before this object is finalized.
-            // Otherwise it is possible that the GC will decide to finalize the handle after this
-            // leaving a window of time where our callback could be invoked on a non-existent object.
-            _stopListening = true;
-            if (!IsHandleInvalid)
-            {
-                _directoryHandle.Dispose();
-            }
-        }
-
         private void StartRaisingEvents()
         {
             // If we're attached, don't do anything.
@@ -106,6 +80,31 @@ namespace System.IO
             // Set enabled to false
             _enabled = false;
         }
+
+        private void FinalizeDispose()
+        {
+            // We must explicitly dispose the handle to insure it gets closed before this object is finalized.
+            // Otherwise it is possible that the GC will decide to finalize the handle after this
+            // leaving a window of time where our callback could be invoked on a non-existent object.
+            _stopListening = true;
+            if (!IsHandleInvalid)
+            {
+                _directoryHandle.Dispose();
+            }
+        }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        // Unmanaged handle to monitored directory
+        private SafeFileHandle _directoryHandle;
+
+        // Current "session" ID to ignore old events whenever we stop then restart.
+        private int _currentSession;
+
+        // Thread gate holder and constats
+        private bool _stopListening = false;
 
         private bool IsHandleInvalid
         {
