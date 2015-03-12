@@ -529,6 +529,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	{
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
+	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_TYPE:
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:
@@ -678,6 +679,7 @@ free_inflated_info (MonoRgctxInfoType info_type, gpointer info)
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
+	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_TYPE:
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:
@@ -938,6 +940,8 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 	}
 	case MONO_RGCTX_INFO_KLASS:
 		return class;
+	case MONO_RGCTX_INFO_ELEMENT_KLASS:
+		return class->element_class;
 	case MONO_RGCTX_INFO_VTABLE: {
 		MonoVTable *vtable = mono_class_vtable (domain, class);
 		if (!vtable)
@@ -1219,6 +1223,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	switch (oti->info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
+	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_CAST_CACHE:
 		temporary = TRUE;
@@ -1232,6 +1237,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	switch (oti->info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
+	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_CAST_CACHE:
 	case MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE:
@@ -1528,6 +1534,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	switch (type) {
 	case MONO_RGCTX_INFO_STATIC_DATA: return "STATIC_DATA";
 	case MONO_RGCTX_INFO_KLASS: return "KLASS";
+	case MONO_RGCTX_INFO_ELEMENT_KLASS: return "ELEMENT_KLASS";
 	case MONO_RGCTX_INFO_VTABLE: return "VTABLE";
 	case MONO_RGCTX_INFO_TYPE: return "TYPE";
 	case MONO_RGCTX_INFO_REFLECTION_TYPE: return "REFLECTION_TYPE";
@@ -1620,6 +1627,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
+	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_TYPE:
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:
@@ -1663,6 +1671,7 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 	switch (info_type) {
 	case MONO_RGCTX_INFO_STATIC_DATA:
 	case MONO_RGCTX_INFO_KLASS:
+	case MONO_RGCTX_INFO_ELEMENT_KLASS:
 	case MONO_RGCTX_INFO_VTABLE:
 	case MONO_RGCTX_INFO_TYPE:
 	case MONO_RGCTX_INFO_REFLECTION_TYPE:

@@ -3874,7 +3874,7 @@ handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, int context_use
 		g_assert (klass->rank == 0);
 
 		element_class = emit_get_rgctx_klass (cfg, context_used,
-				klass->element_class, MONO_RGCTX_INFO_KLASS);
+				klass, MONO_RGCTX_INFO_ELEMENT_KLASS);
 
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, eclass_reg, element_class->dreg);
 		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");

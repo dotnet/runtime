@@ -105,7 +105,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 108
+#define MONO_AOT_FILE_VERSION 109
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -1088,6 +1088,7 @@ typedef struct {
 typedef enum {
 	MONO_RGCTX_INFO_STATIC_DATA,
 	MONO_RGCTX_INFO_KLASS,
+	MONO_RGCTX_INFO_ELEMENT_KLASS,
 	MONO_RGCTX_INFO_VTABLE,
 	MONO_RGCTX_INFO_TYPE,
 	MONO_RGCTX_INFO_REFLECTION_TYPE,
