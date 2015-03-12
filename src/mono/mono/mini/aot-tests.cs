@@ -49,6 +49,9 @@ class Tests
 		public static T Get_T (double d, T t) {
 			return t;
 		}
+		public static T Get_T2 (double d, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, T t) {
+			return t;
+		}
 	}
 
 	class Foo3<T> {
@@ -140,11 +143,15 @@ class Tests
 
 	interface IFaceFoo4<T> {
 		T Get_T (double d, T t);
+		T Get_T2 (double d, T t);
 	}
 
 	class Foo4<T> : IFaceFoo4<T> {
 		public T Get_T (double d, T t) {
 			return Foo2<T>.Get_T (d, t);
+		}
+		public T Get_T2 (double d, T t) {
+			return Foo2<T>.Get_T2 (d, 1, 2, 3, 4, 5, 6, 7, 8, t);
 		}
 	}
 
@@ -164,6 +171,10 @@ class Tests
 		var s_res = o.Get_T (1.0f, s);
 		if (s_res.o1 != 1 || s_res.o2 != 2 || s_res.o3 != 3)
 			return 1;
+		// Same with the byref argument passed on the stack
+		s_res = o.Get_T2 (1.0f, s);
+		if (s_res.o1 != 1 || s_res.o2 != 2 || s_res.o3 != 3)
+			return 2;
 		return 0;
 	}
 
