@@ -779,7 +779,13 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 #ifndef FEATURE_PAL
         uControlPc = VirtualUnwindCallFrame(pContext);
 #else // !FEATURE_PAL
-        PAL_VirtualUnwind(pContext, NULL);
+        BOOL success = PAL_VirtualUnwind(pContext, NULL);
+        if (!success)
+        {
+            _ASSERTE(!"Thread::VirtualUnwindToFirstManagedCallFrame: PAL_VirtualUnwind failed");
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+
         uControlPc = GetIP(pContext);
 #endif // !FEATURE_PAL
     }
