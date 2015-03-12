@@ -4821,15 +4821,7 @@ void CodeGen::genCheckUseBlockInit()
        we waste all the other slots.  Really need to compute the correct
        and compare that against zeroing the slots individually */
 
-#if defined(UNIX_AMD64_ABI)
-    // For AMD64_UNIX don't use block initialization if there is no FrameRegister.
-    // The RDI and RSI registers are in the block initialization and are also
-    // the first two parameters to a callee. 
-    // Need to push and pop them in the prolog and this will break unwinding.
-    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4)) && isFramePointerUsed();
-#else // UNIX_AMD64_ABI
-	genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4)); 
-#endif // UNIX_AMD64_ABI
+    genUseBlockInit = (genInitStkLclCnt > (largeGcStructs + 4)); 
 
     if  (genUseBlockInit)
     {
@@ -4843,20 +4835,37 @@ void CodeGen::genCheckUseBlockInit()
         }
 
 #ifdef _TARGET_XARCH_
-        /* If we're going to use "REP STOS", remember that we will trash EDI */
-        /* For fastcall we will have to save ECX, EAX
-         * so reserve two extra callee saved
-         * This is better than pushing eax, ecx, because we in the later
-         * we will mess up already computed offsets on the stack (for ESP frames)
-         */
+        // If we're going to use "REP STOS", remember that we will trash EDI
+        // For fastcall we will have to save ECX, EAX
+        // so reserve two extra callee saved
+        // This is better than pushing eax, ecx, because we in the later
+        // we will mess up already computed offsets on the stack (for ESP frames)
 
         regSet.rsSetRegsModified(RBM_EDI);
 
-        if  (maskCalleeRegArgMask & RBM_ECX)
-            regSet.rsSetRegsModified(RBM_ESI);
+        // For register arguments we may have to save ECX (and RDI on Amd64 System V OSes.)
+        // In such case use R12 and R13 registers.
+#ifdef UNIX_AMD64_ABI
+        if (maskCalleeRegArgMask & RBM_RCX)
+        {
+            regSet.rsSetRegsModified(RBM_R12);
+        }
 
-        if  (maskCalleeRegArgMask & RBM_EAX)
+        if (maskCalleeRegArgMask & RBM_RDI)
+        {
+            regSet.rsSetRegsModified(RBM_R13);
+        }
+#else // !UNIX_AMD64_ABI
+        if (maskCalleeRegArgMask & RBM_ECX)
+        {
+            regSet.rsSetRegsModified(RBM_ESI);
+        }
+#endif // !UNIX_AMD64_ABI
+
+        if (maskCalleeRegArgMask & RBM_EAX)
+        {
             regSet.rsSetRegsModified(RBM_EBX);
+        }
 
 #endif // _TARGET_XARCH_
 #ifdef _TARGET_ARM_
@@ -6038,7 +6047,6 @@ void            CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         popCount++;
         inst_RV(INS_pop, REG_EDI, TYP_I_IMPL);
     }
-
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
 
@@ -6080,12 +6088,6 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
 
     if  (genUseBlockInit)
     {
-#ifdef UNIX_AMD64_ABI
-        // Should not be here for Unix AMD64 if there is no Frame Pointer used.
-        // No block initialization in this case.
-        assert(isFramePointerUsed());
-#endif // UNIX_AMD64_ABI
-
         assert(untrLclHi > untrLclLo);
 #ifdef _TARGET_ARMARCH_
         /*
@@ -6254,11 +6256,6 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
         noway_assert(uCntBytes == 0);
 
 #elif defined(_TARGET_XARCH_)
-#ifdef UNIX_AMD64_ABI
-        // Save the RDI and RSI since they are the first and second params on System V systems.
-        inst_RV(INS_push, REG_RDI, TYP_I_IMPL);
-        inst_RV(INS_push, REG_RSI, TYP_I_IMPL);
-#endif // UNIX_AMD64_ABI
         /*
             Generate the following code:
 
@@ -6270,14 +6267,29 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
 
         noway_assert(regSet.rsRegsModified(RBM_EDI));
 
-        /* For register arguments we may have to save ECX */
-      
-        if  (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
+        // For register arguments we may have to save ECX (and RDI on Amd64 System V OSes.)
+#ifdef UNIX_AMD64_ABI
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
+        {
+            noway_assert(regSet.rsRegsModified(RBM_R12));
+            inst_RV_RV(INS_mov, REG_R12, REG_RCX);
+            regTracker.rsTrackRegTrash(REG_R12);
+        }
+
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
+        {
+            noway_assert(regSet.rsRegsModified(RBM_R13));
+            inst_RV_RV(INS_mov, REG_R13, REG_RDI);
+            regTracker.rsTrackRegTrash(REG_R13);
+        }
+#else // !UNIX_AMD64_ABI      
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
         {
             noway_assert(regSet.rsRegsModified(RBM_ESI));
             inst_RV_RV(INS_mov, REG_ESI, REG_ECX);
             regTracker.rsTrackRegTrash(REG_ESI);
         }
+#endif // !UNIX_AMD64_ABI      
 
         noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
 
@@ -6292,16 +6304,24 @@ void        CodeGen::genZeroInitFrame(int        untrLclHi,
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EAX);
         instGen   (INS_r_stosd);
 
-        /* Move back the argument registers */
-
-        if  (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-            inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
-
+        // Move back the argument registers
 #ifdef UNIX_AMD64_ABI
-        // Restore the RDI and RSI.
-         inst_RV(INS_pop, REG_RSI, TYP_I_IMPL);
-         inst_RV(INS_pop, REG_RDI, TYP_I_IMPL);
-#endif // UNIX_AMD64_ABI
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
+        {
+            inst_RV_RV(INS_mov, REG_RCX, REG_R12);
+        }
+        
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
+        {
+            inst_RV_RV(INS_mov, REG_RDI, REG_R13);
+        }
+#else // !UNIX_AMD64_ABI
+        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
+        {
+            inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
+        }
+#endif // !UNIX_AMD64_ABI
+
 #else // _TARGET_*
 #error Unsupported or unset target architecture
 #endif // _TARGET_*
