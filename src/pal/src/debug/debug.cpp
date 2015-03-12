@@ -520,15 +520,6 @@ SetThreadContext(
 
 VOID 
 PALAPI 
-RtlCaptureContext(
-  OUT PCONTEXT ContextRecord
-)
-{
-    ASSERT("UNIXTODO: Implement this");
-}
-
-VOID 
-PALAPI 
 RtlRestoreContext(
   IN PCONTEXT ContextRecord,
   IN PEXCEPTION_RECORD ExceptionRecord
