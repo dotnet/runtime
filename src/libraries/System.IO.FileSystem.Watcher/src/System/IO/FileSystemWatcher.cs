@@ -182,7 +182,7 @@ namespace System.IO
                     // the case-sensitive representation.
                     _filter = "*.*";
                 }
-                else if (String.Compare(_filter, value, StringComparison.OrdinalIgnoreCase) != 0)
+                else if (!String.Equals(_filter, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
                 {
                     _filter = value;
                 }
@@ -262,7 +262,7 @@ namespace System.IO
             set
             {
                 value = (value == null) ? string.Empty : value;
-                if (!String.Equals(_directory, value, StringComparison.OrdinalIgnoreCase))
+                if (!String.Equals(_directory, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
                 {
                     if (!Directory.Exists(value))
                     {
@@ -399,10 +399,9 @@ namespace System.IO
         private bool MatchPattern(string relativePath)
         {
             string name = System.IO.Path.GetFileName(relativePath);
-            if (name != null)
-                return PatternMatcher.StrictMatchPattern(_filter.ToUpperInvariant(), name.ToUpperInvariant());
-            else
-                return false;
+            return name != null ?
+                PatternMatcher.StrictMatchPattern(_filter, name) :
+                false;
         }
 
         /// <devdoc>

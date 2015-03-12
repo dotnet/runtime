@@ -86,6 +86,8 @@ namespace System.IO
             StopRaisingEvents();
         }
 
+        internal const bool CaseSensitive = true;
+
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
