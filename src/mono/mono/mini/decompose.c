@@ -466,7 +466,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins, MonoBasicBlock **out_cbb
 				MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, reg2, -1);
 				MONO_EMIT_NEW_BIALU (cfg, OP_IAND, reg1, reg1, reg2);
 				MONO_EMIT_NEW_ICOMPARE_IMM (cfg, reg1, 1);
-				MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "DivideByZeroException");
+				MONO_EMIT_NEW_COND_EXC (cfg, IEQ, "OverflowException");
 			}
 #endif
 			MONO_EMIT_NEW_BIALU (cfg, ins->opcode, ins->dreg, ins->sreg1, ins->sreg2);
