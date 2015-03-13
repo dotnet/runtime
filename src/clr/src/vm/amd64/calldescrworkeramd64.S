@@ -15,7 +15,7 @@
 //
 //      EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 //
-NESTED_ENTRY FastCallFinalizeWorker, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY FastCallFinalizeWorker, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov     rbp, rsp
         END_PROLOGUE
@@ -41,7 +41,7 @@ NESTED_END FastCallFinalizeWorker, _TEXT
 
 //extern "C" void CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
-NESTED_ENTRY CallDescrWorkerInternal, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov     rbp, rsp
         push_nonvol_reg rbx
