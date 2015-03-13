@@ -10,14 +10,8 @@ namespace System.Text
         {
             get
             {
-                // Note: GetACP is not available in the Windows Store Profile, but calling
-                // GetCPInfoEx with the value CP_ACP (0) yields the same result.
-                Interop.CPINFOEXW _cpInfo;
-                unsafe
-                {
-                    Interop.CPINFOEXW* _lpCPInfoExPtr = &(_cpInfo);
-                    return (Interop.GetCPInfoExW(Interop.CP_ACP, 0, _lpCPInfoExPtr) != 0) ? (int)_cpInfo.CodePage : 0;
-                }
+                int codePage;
+                return Interop.mincore.TryGetACPCodePage(out codePage) ? codePage : 0;
             }
         }
     }
