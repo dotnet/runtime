@@ -418,6 +418,10 @@ class Frame : public FrameBase
 
 public:
 
+#ifdef FEATURE_PAL
+    virtual ~Frame();
+#endif // FEATURE_PAL
+
     //------------------------------------------------------------------------
     // Special characteristics of a frame
     //------------------------------------------------------------------------
