@@ -18,6 +18,8 @@ namespace System.ComponentModel
         /// </devdoc>
         private readonly int nativeErrorCode;
 
+        private const int E_FAIL = unchecked((int)0x80004005);
+
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error 
         ///    that occured.</para>
@@ -41,7 +43,7 @@ namespace System.ComponentModel
             nativeErrorCode = error;
             // Win32Exception is not inheriting from ExternalException anymore, 
             // so we set the HResult manually to have the exact behavior we used to have when inherited from ExternalException
-            HResult = Interop.E_FAIL;
+            HResult = E_FAIL;
         }
 
         /// <devdoc>
@@ -62,7 +64,7 @@ namespace System.ComponentModel
             nativeErrorCode = Marshal.GetLastWin32Error();
             // Win32Exception is not inheriting from ExternalException anymore, 
             // so we set the HResult manually to have the exact behavior we used to have when inherited from ExternalException
-            HResult = Interop.E_FAIL;
+            HResult = E_FAIL;
         }
 
         /// <devdoc>

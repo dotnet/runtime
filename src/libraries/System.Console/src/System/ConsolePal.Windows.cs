@@ -17,6 +17,8 @@ namespace System
     // - ForegroundColor, BackgroundColor, ResetColor
     internal static class ConsolePal
     {
+        private static IntPtr s_InvalidHandleValue = new IntPtr(-1);
+
         public static Stream OpenStandardInput()
         {
             return GetStandardFile(InputHandle, FileAccess.Read);
@@ -34,17 +36,17 @@ namespace System
 
         private static IntPtr InputHandle
         {
-            get { return Interop.mincore.GetStdHandle(Interop.STD_INPUT_HANDLE); }
+            get { return Interop.mincore.GetStdHandle(Interop.mincore.HandleTypes.STD_INPUT_HANDLE); }
         }
 
         private static IntPtr OutputHandle
         {
-            get { return Interop.mincore.GetStdHandle(Interop.STD_OUTPUT_HANDLE); }
+            get { return Interop.mincore.GetStdHandle(Interop.mincore.HandleTypes.STD_OUTPUT_HANDLE); }
         }
 
         private static IntPtr ErrorHandle
         {
-            get { return Interop.mincore.GetStdHandle(Interop.STD_ERROR_HANDLE); }
+            get { return Interop.mincore.GetStdHandle(Interop.mincore.HandleTypes.STD_ERROR_HANDLE); }
         }
 
         private static Stream GetStandardFile(IntPtr handle, FileAccess access)
@@ -53,7 +55,7 @@ namespace System
             // stderr, & stdin could independently be set to INVALID_HANDLE_VALUE.
             // Additionally they might use 0 as an invalid handle.  We also need to
             // ensure that if the handle is meant to be writable it actually is.
-            if (handle == IntPtr.Zero || handle == Interop.InvalidHandleValue ||
+            if (handle == IntPtr.Zero || handle == s_InvalidHandleValue ||
                 (access != FileAccess.Read && !ConsoleHandleIsWritable(handle)))
             {
                 return Stream.Null;
@@ -129,7 +131,7 @@ namespace System
             get
             {
                 bool succeeded;
-                Interop.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
                 return succeeded ?
                     ColorAttributeToConsoleColor((Interop.mincore.Color)csbi.wAttributes & Interop.mincore.Color.BackgroundMask) :
                     ConsoleColor.Black; // for code that may be used from Windows app w/ no console
@@ -139,7 +141,7 @@ namespace System
                 Interop.mincore.Color c = ConsoleColorToColorAttribute(value, true);
 
                 bool succeeded;
-                Interop.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
                 // For code that may be used from Windows app w/ no console
                 if (!succeeded)
                     return;
@@ -161,7 +163,7 @@ namespace System
             get
             {
                 bool succeeded;
-                Interop.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
 
                 // For code that may be used from Windows app w/ no console
                 return succeeded ?
@@ -173,7 +175,7 @@ namespace System
                 Interop.mincore.Color c = ConsoleColorToColorAttribute(value, false);
 
                 bool succeeded;
-                Interop.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
+                Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
                 // For code that may be used from Windows app w/ no console
                 if (!succeeded)
                     return;
@@ -193,7 +195,7 @@ namespace System
         public static void ResetColor()
         {
             bool succeeded;
-            Interop.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
+            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi = GetBufferInfo(false, out succeeded);
             if (!succeeded)
                 return; // For code that may be used from Windows app w/ no console
 
@@ -231,30 +233,30 @@ namespace System
         // For apps that don't have a console (like Windows apps), they might
         // run other code that includes color console output.  Allow a mechanism
         // where that code won't throw an exception for simple errors.
-        private static Interop.CONSOLE_SCREEN_BUFFER_INFO GetBufferInfo(bool throwOnNoConsole, out bool succeeded)
+        private static Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO GetBufferInfo(bool throwOnNoConsole, out bool succeeded)
         {
             succeeded = false;
 
             IntPtr outputHandle = OutputHandle;
-            if (outputHandle == Interop.InvalidHandleValue)
+            if (outputHandle == s_InvalidHandleValue)
             {
                 if (throwOnNoConsole)
                 {
                     throw new IOException(SR.IO_NoConsole);
                 }
-                return new Interop.CONSOLE_SCREEN_BUFFER_INFO();
+                return new Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO();
             }
 
             // Note that if stdout is redirected to a file, the console handle may be a file.  
             // First try stdout; if this fails, try stderr and then stdin.
-            Interop.CONSOLE_SCREEN_BUFFER_INFO csbi;
+            Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO csbi;
             if (!Interop.mincore.GetConsoleScreenBufferInfo(outputHandle, out csbi) &&
                 !Interop.mincore.GetConsoleScreenBufferInfo(ErrorHandle, out csbi) &&
                 !Interop.mincore.GetConsoleScreenBufferInfo(InputHandle, out csbi))
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.ERROR_INVALID_HANDLE && !throwOnNoConsole)
-                    return new Interop.CONSOLE_SCREEN_BUFFER_INFO();
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE && !throwOnNoConsole)
+                    return new Interop.mincore.CONSOLE_SCREEN_BUFFER_INFO();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
 
@@ -282,9 +284,9 @@ namespace System
             internal WindowsConsoleStream(IntPtr handle, FileAccess access)
                 : base(access)
             {
-                Debug.Assert(handle != IntPtr.Zero && handle != Interop.InvalidHandleValue, "ConsoleStream expects a valid handle!");
+                Debug.Assert(handle != IntPtr.Zero && handle != s_InvalidHandleValue, "ConsoleStream expects a valid handle!");
                 _handle = handle;
-                _isPipe = Interop.mincore.GetFileType(handle) == Interop.FILE_TYPE_PIPE;
+                _isPipe = Interop.mincore.GetFileType(handle) == Interop.mincore.FileTypes.FILE_TYPE_PIPE;
             }
 
             protected override void Dispose(bool disposing)
@@ -304,7 +306,7 @@ namespace System
 
                 int bytesRead;
                 int errCode = ReadFileNative(_handle, buffer, offset, count, _isPipe, out bytesRead);
-                if (Interop.ERROR_SUCCESS != errCode)
+                if (Interop.mincore.Errors.ERROR_SUCCESS != errCode)
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
                 return bytesRead;
             }
@@ -314,7 +316,7 @@ namespace System
                 ValidateWrite(buffer, offset, count);
 
                 int errCode = WriteFileNative(_handle, buffer, offset, count);
-                if (Interop.ERROR_SUCCESS != errCode)
+                if (Interop.mincore.Errors.ERROR_SUCCESS != errCode)
                     throw Win32Marshal.GetExceptionForWin32Error(errCode);
                 return;
             }
@@ -345,7 +347,7 @@ namespace System
                 if (bytes.Length == 0)
                 {
                     bytesRead = 0;
-                    return Interop.ERROR_SUCCESS;
+                    return Interop.mincore.Errors.ERROR_SUCCESS;
                 }
 
                 bool readSuccess;
@@ -359,14 +361,14 @@ namespace System
                     // bytesRead = charsRead * BytesPerWChar;
                 }
                 if (readSuccess)
-                    return Interop.ERROR_SUCCESS;
+                    return Interop.mincore.Errors.ERROR_SUCCESS;
 
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
                 // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is mot an error, but EOF.)
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.ERROR_NO_DATA || errorCode == Interop.ERROR_BROKEN_PIPE)
-                    return Interop.ERROR_SUCCESS;
+                if (errorCode == Interop.mincore.Errors.ERROR_NO_DATA || errorCode == Interop.mincore.Errors.ERROR_BROKEN_PIPE)
+                    return Interop.mincore.Errors.ERROR_SUCCESS;
                 return errorCode;
             }
 
@@ -379,7 +381,7 @@ namespace System
 
                 // You can't use the fixed statement on an array of length 0.
                 if (bytes.Length == 0)
-                    return Interop.ERROR_SUCCESS;
+                    return Interop.mincore.Errors.ERROR_SUCCESS;
 
                 bool writeSuccess;
                 fixed (byte* p = bytes)
@@ -398,14 +400,14 @@ namespace System
                     // Debug.Assert(!writeSuccess || count / BytesPerWChar == charsWritten);
                 }
                 if (writeSuccess)
-                    return Interop.ERROR_SUCCESS;
+                    return Interop.mincore.Errors.ERROR_SUCCESS;
 
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
                 // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is mot an error, but EOF.)
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.ERROR_NO_DATA || errorCode == Interop.ERROR_BROKEN_PIPE)
-                    return Interop.ERROR_SUCCESS;
+                if (errorCode == Interop.mincore.Errors.ERROR_NO_DATA || errorCode == Interop.mincore.Errors.ERROR_BROKEN_PIPE)
+                    return Interop.mincore.Errors.ERROR_SUCCESS;
                 return errorCode;
             }
         }

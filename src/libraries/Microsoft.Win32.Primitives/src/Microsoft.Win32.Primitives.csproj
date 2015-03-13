@@ -20,7 +20,6 @@
 
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="Interop\Interop.cs" />
     <Compile Include="System\ComponentModel\Win32Exception.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
