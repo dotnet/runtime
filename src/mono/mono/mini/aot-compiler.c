@@ -6466,6 +6466,11 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
 			opts->llvm_path = g_strdup (arg + strlen ("llvm-path="));
+			if (!g_str_has_suffix (opts->llvm_path, G_DIR_SEPARATOR_S)) {
+				gchar *old = opts->llvm_path;
+				opts->llvm_path = g_strconcat (opts->llvm_path, G_DIR_SEPARATOR_S, NULL);
+				g_free (old);
+			}
 		} else if (!strcmp (arg, "llvm")) {
 			opts->llvm = TRUE;
 		} else if (str_begins_with (arg, "readonly-value=")) {
