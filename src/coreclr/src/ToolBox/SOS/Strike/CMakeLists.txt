@@ -79,6 +79,7 @@ else(WIN32)
     datatarget.cpp
     eeheap.cpp
     exts.cpp
+    gcroot.cpp
     metadata.cpp
     strike.cpp
     sos.cpp
