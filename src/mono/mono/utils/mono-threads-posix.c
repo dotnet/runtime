@@ -272,6 +272,7 @@ mono_threads_core_clear_interruption (void)
 int
 mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 {
+	THREADS_SUSPEND_DEBUG ("sending signal %d to %p[%p]\n", signum, info, mono_thread_info_get_tid (info));
 #ifdef USE_TKILL_ON_ANDROID
 	int result, old_errno = errno;
 	result = tkill (info->native_handle, signum);
@@ -312,16 +313,12 @@ mono_thread_search_alt_signal (int min_signal)
 #if !defined (SIGRTMIN)
 	g_error ("signal search only works with RTMIN");
 #else
-	static int abort_signum = -1;
 	int i;
-	if (abort_signum != -1)
-		return abort_signum;
 	/* we try to avoid SIGRTMIN and any one that might have been set already, see bug #75387 */
 	for (i = MAX (min_signal, SIGRTMIN) + 1; i < SIGRTMAX; ++i) {
 		struct sigaction sinfo;
 		sigaction (i, NULL, &sinfo);
 		if (sinfo.sa_handler == SIG_DFL && (void*)sinfo.sa_sigaction == (void*)SIG_DFL) {
-			abort_signum = i;
 			return i;
 		}
 	}
@@ -362,7 +359,7 @@ mono_thread_get_alt_resume_signal (void)
 #else
 	static int resume_signum = -1;
 	if (resume_signum == -1)
-		resume_signum = mono_thread_search_alt_signal (mono_thread_get_alt_suspend_signal ());
+		resume_signum = mono_thread_search_alt_signal (mono_thread_get_alt_suspend_signal () + 1);
 	return resume_signum;
 #endif /* SIGRTMIN */
 }
