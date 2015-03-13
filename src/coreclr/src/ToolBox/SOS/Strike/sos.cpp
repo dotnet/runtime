@@ -143,14 +143,14 @@ namespace sos
         return TO_TADDR(objData.ElementTypeHandle);
     }
 
-    wchar_t *Object::GetTypeName() const
+    const wchar_t *Object::GetTypeName() const
     {
         if (mTypeName == NULL)
             mTypeName = CreateMethodTableName(GetMT(), GetComponentMT());
             
         
         if (mTypeName == NULL)
-            return (wchar_t *)W("<error>");
+            return W("<error>");
 
         return mTypeName;
     }
