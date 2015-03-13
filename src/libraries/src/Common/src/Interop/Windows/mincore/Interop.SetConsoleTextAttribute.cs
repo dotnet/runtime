@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.CoreConsole_L2, SetLastError = true)]
+        [DllImport(Libraries.Console_L2, SetLastError = true)]
         internal extern static int SetConsoleTextAttribute(IntPtr hConsoleOutput, short wAttributes);
     }
 }

@@ -5,8 +5,8 @@ internal static partial class Interop
 {
     private static class Libraries
     {
-        internal const string CoreConsole_L1 = "api-ms-win-core-console-l1-1-0.dll";
-        internal const string CoreConsole_L2 = "api-ms-win-core-console-l2-1-0.dll";
+        internal const string Console_L1 = "api-ms-win-core-console-l1-1-0.dll";
+        internal const string Console_L2 = "api-ms-win-core-console-l2-1-0.dll";
         internal const string CoreFile = "api-ms-win-core-file-l1-1-0.dll";
         internal const string Debug = "api-ms-win-core-debug-l1-1-0.dll";
         internal const string Handle = "api-ms-win-core-handle-l1-1-0.dll";
