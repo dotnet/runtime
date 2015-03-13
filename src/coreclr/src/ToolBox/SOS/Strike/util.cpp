@@ -1746,7 +1746,7 @@ void DisplayFields(CLRDATA_ADDRESS cdaMT, DacpMethodTableData *pMTD, DacpMethodT
 // Return value: -1 = error, 
 //                0 = field not found, 
 //              > 0 = offset to field from objAddr
-int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, __in_z LPWSTR wszFieldName, BOOL bFirst)
+int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, __in_z LPCWSTR wszFieldName, BOOL bFirst)
 {
     TADDR mt = NULL;
     if FAILED(GetMTOfObject(TO_TADDR(cdaObj), &mt))
@@ -1758,7 +1758,7 @@ int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, __in_z LPWSTR wszFieldName, BOOL b
 // Return value: -1 = error, 
 //                0 = field not found, 
 //              > 0 = offset to field from objAddr
-int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, CLRDATA_ADDRESS cdaMT, __in_z LPWSTR wszFieldName,
+int GetObjFieldOffset(CLRDATA_ADDRESS cdaObj, CLRDATA_ADDRESS cdaMT, __in_z LPCWSTR wszFieldName,
                         BOOL bFirst/*=TRUE*/)
 {
 
@@ -3482,8 +3482,6 @@ HRESULT GetThreadList(DWORD_PTR **threadList, int *numThread)
     return S_OK;
 }
 
-#ifndef FEATURE_PAL
-
 CLRDATA_ADDRESS GetCurrentManagedThread ()
 {
     DacpThreadStoreData ThreadStore;
@@ -3511,6 +3509,7 @@ CLRDATA_ADDRESS GetCurrentManagedThread ()
     return NULL;
 }
 
+#ifndef FEATURE_PAL
 
 void ReloadSymbolWithLineInfo()
 {
