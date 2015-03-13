@@ -59,6 +59,9 @@ static gboolean gc_disabled = FALSE;
 
 static gboolean finalizing_root_domain = FALSE;
 
+gboolean log_finalizers = FALSE;
+gboolean do_not_finalize = FALSE;
+
 #define mono_finalizer_lock() mono_mutex_lock (&finalizer_mutex)
 #define mono_finalizer_unlock() mono_mutex_unlock (&finalizer_mutex)
 static mono_mutex_t finalizer_mutex;
@@ -101,6 +104,9 @@ static gboolean suspend_finalizers = FALSE;
 void
 mono_gc_run_finalize (void *obj, void *data)
 {
+	if (do_not_finalize)
+		return;
+
 	MonoObject *exc = NULL;
 	MonoObject *o;
 #ifndef HAVE_SGEN_GC
@@ -112,6 +118,9 @@ mono_gc_run_finalize (void *obj, void *data)
 	RuntimeInvokeFunction runtime_invoke;
 
 	o = (MonoObject*)((char*)obj + GPOINTER_TO_UINT (data));
+
+	if (log_finalizers)
+		g_log ("mono-gc-finalizers", G_LOG_LEVEL_DEBUG, "<%s at %p> Starting finalizer checks.", o->vtable->klass->name, o);
 
 	if (suspend_finalizers)
 		return;
@@ -132,6 +141,9 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer (obj, NULL);
+
+	if (log_finalizers)
+		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Registered finalizer as processed.", o->vtable->klass->name, o);
 
 	if (o->vtable->klass == mono_defaults.internal_thread_class) {
 		MonoInternalThread *t = (MonoInternalThread*)o;
@@ -201,6 +213,9 @@ mono_gc_run_finalize (void *obj, void *data)
 	 * create and precompile a wrapper which calls the finalize method using
 	 * a CALLVIRT.
 	 */
+	if (log_finalizers)
+		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o->vtable->klass->name, o);
+
 	if (!domain->finalize_runtime_invoke) {
 		MonoMethod *invoke = mono_marshal_get_runtime_invoke (mono_class_get_method_from_name_flags (mono_defaults.object_class, "Finalize", 0, 0), TRUE);
 
@@ -216,7 +231,13 @@ mono_gc_run_finalize (void *obj, void *data)
 				o->vtable->klass->name_space, o->vtable->klass->name);
 	}
 
+	if (log_finalizers)
+		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Calling finalizer.", o->vtable->klass->name, o);
+
 	runtime_invoke (o, NULL, &exc, NULL);
+
+	if (log_finalizers)
+		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Returned from finalizer.", o->vtable->klass->name, o);
 
 	if (exc)
 		mono_internal_thread_unhandled_exception (exc);
