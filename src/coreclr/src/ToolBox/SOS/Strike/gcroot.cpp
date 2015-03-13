@@ -389,7 +389,7 @@ void GCRootImpl::ReportSizeInfo(const SOSHandleData &handle, TADDR obj)
     TADDR mt = ReadPointer(obj);
     MTInfo *mtInfo = GetMTInfo(mt);
 
-    const wchar_t *type = mtInfo ? mtInfo->GetTypeName() : L"unknown type";
+    const wchar_t *type = mtInfo ? mtInfo->GetTypeName() : W("unknown type");
 
     size_t size = mSizes[obj];
     ExtOut("Handle (%s): %p -> %p: %d (0x%x) bytes (%S)\n", NameForHandle(handle.Type), SOS_PTR(handle.Handle),
@@ -410,7 +410,7 @@ void GCRootImpl::ReportSizeInfo(DWORD thread, const SOSStackRefData &stackRef, T
 
     TADDR mt = ReadPointer(obj);
     MTInfo *mtInfo = GetMTInfo(mt);
-    const wchar_t *type = mtInfo ? mtInfo->GetTypeName() : L"unknown type";
+    const wchar_t *type = mtInfo ? mtInfo->GetTypeName() : W("unknown type");
     
     size_t size = mSizes[obj];
     ExtOut("Thread %x (%S): %S: %d (0x%x) bytes (%S)\n", thread, frame.c_str(), regOutput.c_str(), size, size, type);
@@ -1299,7 +1299,6 @@ void PrintNotReachableInRange(TADDR rngStart, TADDR rngEnd, BOOL bExcludeReadyFo
 }
 
 
-#endif  // !FEATURE_PAL
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1919,11 +1918,11 @@ void HeapTraverser::PrintType(size_t ID,LPCWSTR name)
 #ifndef FEATURE_PAL
         // Sanitize name based on XML spec.
         std::wstring wname = name;
-        replace(wname, L"&", L"&amp;");
-        replace(wname, L"\"", L"&quot;");
-        replace(wname, L"'", L"&apos;");
-        replace(wname, L"<", L"&lt;");
-        replace(wname, L">", L"&gt;");
+        replace(wname, W("&"), W("&amp;"));
+        replace(wname, W("\""), W("&quot;"));
+        replace(wname, W("'"), W("&apos;"));
+        replace(wname, W("<"), W("&lt;"));
+        replace(wname, W(">"), W("&gt;"));
         name = wname.c_str();
 #endif
         fprintf(m_file,
@@ -2087,7 +2086,7 @@ void HeapTraverser::FindGCRootOnStacks()
 
             for (unsigned int i = 0; i < refCount; ++i)
                 if (refs[i].Object)
-                    PrintRoot(L"stack", TO_TADDR(refs[i].Object));
+                    PrintRoot(W("stack"), TO_TADDR(refs[i].Object));
         }
     }
     
@@ -2142,7 +2141,7 @@ void HeapTraverser::TraceHandles()
             break;
             
         for (unsigned int i = 0; i < fetched; ++i)
-            PrintRoot(L"handle", (size_t)data[i].Handle);
+            PrintRoot(W("handle"), (size_t)data[i].Handle);
     } while (fetched == _countof(data));
 }
 
@@ -2501,3 +2500,5 @@ bool sos::ObjectIterator::Verify() const
     char *c = NULL;
     return Verify(c, 0);
 }
+
+#endif  // !FEATURE_PAL

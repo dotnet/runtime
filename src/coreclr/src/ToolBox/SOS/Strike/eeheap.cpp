@@ -854,6 +854,8 @@ BOOL GCHeapUsageStats(const DacpGcHeapDetails& heap, BOOL bIncUnreachable, HeapU
     return TRUE;
 }
 
+#endif // FEATURE_PAL
+
 DWORD GetNumComponents(TADDR obj)
 {
     // The number of components is always the second pointer in the object.
@@ -915,6 +917,8 @@ BOOL GetSizeEfficient(DWORD_PTR dwAddrCurrObj,
     s = (bLarge ? AlignLarge(s) : Align (s));
     return TRUE;
 }
+
+#ifndef FEATURE_PAL
 
 // This function expects stat to be valid, and ready to get statistics.
 void GatherOneHeapFinalization(DacpGcHeapDetails& heapDetails, HeapStat *stat, BOOL bAllReady, BOOL bShort)

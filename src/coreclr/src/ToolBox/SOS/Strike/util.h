@@ -2802,7 +2802,6 @@ public:
         }
     }
 
-#ifndef FEATURE_PAL
     
     void ClearStats()
     {
@@ -2813,6 +2812,8 @@ public:
 #endif
     }
     
+#ifndef FEATURE_PAL
+
     void PrintStats(const char *func)
     {
 #ifdef _DEBUG
