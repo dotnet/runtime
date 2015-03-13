@@ -358,6 +358,7 @@ EnsureOpenSslInitialized()
     ENTRY("EnsureOpenSslInitialized()\n");
 
     pthread_mutex_lock(&g_OpenSslInitLock);
+
     if (g_OpenSslLocks != NULL)
     {
         // Already initialized; nothing more to do.
@@ -368,7 +369,8 @@ EnsureOpenSslInitialized()
     g_OpenSslLib = dlopen(libcryptoName, RTLD_NOW);
     if (g_OpenSslLib == NULL)
     {
-        ASSERT("Unable to load OpenSSL with dlerror \"%s\" \n", dlerror());
+        // CoreCLR does not require libcrypto as a dependency,
+        // even though various libraries might.
         dwRet = 1;
         goto done;
     }
@@ -416,8 +418,6 @@ EnsureOpenSslInitialized()
     setCallbackFunc((locking_function) LockingCallback);
 
 done:
-    pthread_mutex_unlock(&g_OpenSslInitLock);
-
     if (dwRet != 0)
     {
         // Cleanup on failure
@@ -445,9 +445,12 @@ done:
         }
     }
 
+    pthread_mutex_unlock(&g_OpenSslInitLock);
+
     // If successful, keep OpenSSL library open and initialized
 
     LOGEXIT("EnsureOpenSslInitialized returns DWORD %u\n", dwRet);
     PERF_EXIT(EnsureOpenSslInitialized);
     return dwRet;
 }
+
