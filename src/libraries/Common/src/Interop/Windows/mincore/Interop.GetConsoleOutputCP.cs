@@ -7,7 +7,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.CoreConsole_L1, SetLastError = true)]
+        [DllImport(Libraries.Console_L1, SetLastError = true)]
         internal extern static uint GetConsoleOutputCP();
     }
 }

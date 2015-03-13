@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.CoreConsole_L1, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "ReadConsoleW")]
+        [DllImport(Libraries.Console_L1, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "ReadConsoleW")]
         internal static unsafe extern bool ReadConsole(
             IntPtr hConsoleInput,
             Byte* lpBuffer,
