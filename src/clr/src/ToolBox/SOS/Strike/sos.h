@@ -424,7 +424,7 @@ namespace sos
          * Returns:
          *    A string containing the type of the object.
          */
-        wchar_t *GetTypeName() const;
+        const wchar_t *GetTypeName() const;
 
     private:
         void FillMTData() const;
