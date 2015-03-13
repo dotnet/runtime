@@ -759,8 +759,14 @@ Abstract:
   linux we need to use gettid(). 
 
 --*/
-#ifdef __LINUX__
+#if defined(__LINUX__)
 #define THREADSilentGetCurrentThreadId() (SIZE_T)syscall(SYS_gettid)
+#elif defined(__APPLE__)
+inline SIZE_T THREADSilentGetCurrentThreadId() {
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return (SIZE_T)tid;
+}
 #else
 #define THREADSilentGetCurrentThreadId() (SIZE_T)pthread_self()
 #endif
