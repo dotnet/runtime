@@ -4005,8 +4005,11 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		}
 
 		if (managed_alloc && !(cfg->opt & MONO_OPT_SHARED)) {
-			if (known_instance_size)
-				EMIT_NEW_ICONST (cfg, iargs [1], mono_gc_get_aligned_size_for_allocator (klass->instance_size));
+			if (known_instance_size) {
+				int size = mono_class_instance_size (klass);
+
+				EMIT_NEW_ICONST (cfg, iargs [1], mono_gc_get_aligned_size_for_allocator (size));
+			}
 			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 		}
 
@@ -4039,8 +4042,10 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 #endif
 
 		if (managed_alloc) {
+			int size = mono_class_instance_size (klass);
+
 			EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
-			EMIT_NEW_ICONST (cfg, iargs [1], mono_gc_get_aligned_size_for_allocator (klass->instance_size));
+			EMIT_NEW_ICONST (cfg, iargs [1], mono_gc_get_aligned_size_for_allocator (size));
 			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 		}
 		alloc_ftn = mono_class_get_allocation_ftn (vtable, for_box, &pass_lw);
@@ -8750,6 +8755,16 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				cil_method = cmethod;
 				
 				if (constrained_class) {
+					if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+						if (!mini_is_gsharedvt_klass (cfg, constrained_class)) {
+							g_assert (!cmethod->klass->valuetype);
+							if (!mini_type_is_reference (cfg, &constrained_class->byval_arg)) {
+								/* FIXME: gshared type constrained to a primitive type */
+								GENERIC_SHARING_FAILURE (CEE_CALL);
+							}
+						}
+					}
+
 					if (method->wrapper_type != MONO_WRAPPER_NONE) {
 						if (cfg->verbose_level > 2)
 							printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));

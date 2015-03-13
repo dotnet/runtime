@@ -15,8 +15,8 @@
 
 #include "mini.h"
 
-#define ALLOW_PARTIAL_SHARING TRUE
-//#define ALLOW_PARTIAL_SHARING FALSE
+//#define ALLOW_PARTIAL_SHARING TRUE
+#define ALLOW_PARTIAL_SHARING FALSE
  
 #if 0
 #define DEBUG(...) __VA_ARGS__
@@ -707,31 +707,21 @@ generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 						  gboolean allow_partial)
 {
 	int i;
-	gboolean has_ref = FALSE;
 
 	for (i = 0; i < inst->type_argc; ++i) {
 		MonoType *type = inst->type_argv [i];
 
-		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR))) {
-			has_ref = TRUE;
+		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
 			continue;
-		}
  
-		/*
-		 * Allow non ref arguments, if there is at least one ref argument
-		 * (partial sharing).
-		 * FIXME: Allow more types
-		 */
-		if (allow_partial && !type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U)))
+		/* Allow non ref arguments if they are primitive types or enums (partial sharing). */
+		if (allow_partial && !type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)))
 			continue;
 
 		return FALSE;
 	}
 
-	if (allow_partial)
-		return has_ref;
-	else
-		return TRUE;
+	return TRUE;
 }
 
 /*
@@ -2206,6 +2196,13 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 	if (!partial_sharing_supported ())
 		allow_partial = FALSE;
 
+	if (method->klass->image->dynamic)
+		/*
+		 * Enabling this causes corlib test failures because the JIT encounters generic instances whose
+		 * instance_size is 0.
+		 */
+		allow_partial = FALSE;
+
 	/*
 	 * Generic async methods have an associated state machine class which is a generic struct. This struct
 	 * is too large to be handled by gsharedvt so we make it visible to the AOT compiler by disabling sharing
@@ -2813,13 +2810,27 @@ get_shared_gparam (MonoType *t, MonoTypeEnum constraint)
 }
 
 static MonoType*
+get_shared_type (MonoType *t, MonoType *type)
+{
+	MonoTypeEnum ttype;
+
+	g_assert (!type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)));
+
+	/* Create a type variable with a constraint which encodes which types can match it */
+	ttype = type->type;
+	if (type->type == MONO_TYPE_VALUETYPE)
+		ttype = mono_class_enum_basetype (type->data.klass)->type;
+	return get_shared_gparam (t, ttype);
+}
+
+static MonoType*
 get_gsharedvt_type (MonoType *t)
 {
 	return get_shared_gparam (t, MONO_TYPE_VALUETYPE);
 }
 
 static MonoGenericInst*
-get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGenericContainer *container, gboolean all_vt, gboolean gsharedvt)
+get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGenericContainer *container, gboolean all_vt, gboolean gsharedvt, gboolean partial)
 {
 	MonoGenericInst *res;
 	MonoType **type_argv;
@@ -2829,6 +2840,9 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 	for (i = 0; i < inst->type_argc; ++i) {
 		if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)) {
 			type_argv [i] = shared_inst->type_argv [i];
+		} else if (partial) {
+			/* These types match the ones in generic_inst_is_sharable () */
+			type_argv [i] = get_shared_type (shared_inst->type_argv [i], inst->type_argv [i]);
 		} else if (all_vt) {
 			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else if (gsharedvt) {
@@ -2894,14 +2908,14 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		else
 			inst = shared_context.class_inst;
 		if (inst)
-			shared_context.class_inst = get_shared_inst (inst, shared_context.class_inst, class_container, all_vt, gsharedvt);
+			shared_context.class_inst = get_shared_inst (inst, shared_context.class_inst, class_container, all_vt, gsharedvt, partial);
 
 		if (context)
 			inst = context->method_inst;
 		else
 			inst = shared_context.method_inst;
 		if (inst)
-			shared_context.method_inst = get_shared_inst (inst, shared_context.method_inst, method_container, all_vt, gsharedvt);
+			shared_context.method_inst = get_shared_inst (inst, shared_context.method_inst, method_container, all_vt, gsharedvt, partial);
 
 		partial = TRUE;
 	}

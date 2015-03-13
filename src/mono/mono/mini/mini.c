@@ -3062,8 +3062,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			(opts & MONO_OPT_GSHARED) && mono_method_is_generic_sharable (method, FALSE);
 
 	/*
-		if (try_generic_shared && !mono_debug_count ())
-			try_generic_shared = FALSE;
+	if (try_generic_shared && !mono_debug_count ())
+		try_generic_shared = FALSE;
 	*/
 
 	if (opts & MONO_OPT_GSHARED) {
