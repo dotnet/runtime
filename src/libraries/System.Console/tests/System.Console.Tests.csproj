@@ -22,6 +22,7 @@
     <Compile Include="SetIn.cs" />
     <Compile Include="SetOut.cs" />
     <Compile Include="NegativeTesting.cs" />
+    <Compile Include="SyncTextReader.cs" />
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
