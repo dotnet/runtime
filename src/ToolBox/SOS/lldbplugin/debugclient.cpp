@@ -205,7 +205,10 @@ DebugClient::ReadVirtual(
     ULONG bufferSize,
     PULONG bytesRead)
 {
-    *bytesRead = 0;
+    if (bytesRead != nullptr)
+    {
+        *bytesRead = 0;
+    }
 
     lldb::SBProcess process = GetCurrentProcess();
     if (!process.IsValid())
@@ -214,8 +217,12 @@ DebugClient::ReadVirtual(
     }
 
     lldb::SBError error;
-    *bytesRead = process.ReadMemory(offset, buffer, bufferSize, error);
+    size_t read = process.ReadMemory(offset, buffer, bufferSize, error);
 
+    if (bytesRead != nullptr)
+    {
+        *bytesRead = read;
+    }
     return error.Success() ? S_OK : E_FAIL;
 }
 
