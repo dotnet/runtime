@@ -7163,11 +7163,17 @@ execute_system (const char * command)
 	int status;
 
 #if _WIN32
+	// We need an extra set of quotes around the whole command to properly handle commands 
+	// with spaces since internally the command is called through "cmd /c.
+	command = g_strdup_printf ("\"%s\"", command);
+
 	int size =  MultiByteToWideChar (CP_UTF8, 0 , command , -1, NULL , 0);
 	wchar_t* wstr = g_malloc (sizeof (wchar_t) * size);
 	MultiByteToWideChar (CP_UTF8, 0, command, -1, wstr , size);
 	status = _wsystem (wstr);
 	g_free (wstr);
+
+	g_free (command);
 #else
 	status = system (command);
 #endif
