@@ -787,6 +787,13 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
         }
 
         uControlPc = GetIP(pContext);
+
+        if (uControlPc == 0)
+        {
+            _ASSERTE(!"Thread::VirtualUnwindToFirstManagedCallFrame: PAL_VirtualUnwind reached end of the stack");
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+
 #endif // !FEATURE_PAL
     }
 
