@@ -418,9 +418,9 @@ class Frame : public FrameBase
 
 public:
 
-#ifdef FEATURE_PAL
+#if defined(FEATURE_PAL) && !defined(DACCESS_COMPILE) 
     virtual ~Frame();
-#endif // FEATURE_PAL
+#endif // FEATURE_PAL && !DACCESS_COMPILE 
 
     //------------------------------------------------------------------------
     // Special characteristics of a frame
