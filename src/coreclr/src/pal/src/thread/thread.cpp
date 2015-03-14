@@ -381,12 +381,7 @@ GetCurrentThreadId(
     //
     
     SIZE_T threadId = THREADSilentGetCurrentThreadId();
-
-#ifdef BIT64
-    dwThreadId = (DWORD)(threadId >> 2); // REVISIT_TODO: not guaranteed to be unique.
-#else // BIT64
     dwThreadId = threadId;
-#endif // BIT64 else
     
     LOGEXIT("GetCurrentThreadId returns DWORD %#x\n", dwThreadId);    
     PERF_EXIT(GetCurrentThreadId);

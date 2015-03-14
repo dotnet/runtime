@@ -1733,9 +1733,8 @@ private:
     void Linearize();
 };
 
-#ifndef FEATURE_PAL
-
 class CGCDesc;
+
 // The information MethodTableCache returns.
 struct MethodTableInfo
 {
@@ -1787,8 +1786,6 @@ private:
 };
 
 extern MethodTableCache g_special_mtCache;
-
-#endif //!FEATURE_PAL
 
 struct DumpArrayFlags
 {
@@ -2805,7 +2802,6 @@ public:
         }
     }
 
-#ifndef FEATURE_PAL
     
     void ClearStats()
     {
@@ -2816,6 +2812,8 @@ public:
 #endif
     }
     
+#ifndef FEATURE_PAL
+
     void PrintStats(const char *func)
     {
 #ifdef _DEBUG

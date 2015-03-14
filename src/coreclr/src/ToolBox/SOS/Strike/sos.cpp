@@ -143,14 +143,14 @@ namespace sos
         return TO_TADDR(objData.ElementTypeHandle);
     }
 
-    wchar_t *Object::GetTypeName() const
+    const wchar_t *Object::GetTypeName() const
     {
         if (mTypeName == NULL)
             mTypeName = CreateMethodTableName(GetMT(), GetComponentMT());
             
         
         if (mTypeName == NULL)
-            return L"<error>";
+            return W("<error>");
 
         return mTypeName;
     }
@@ -293,7 +293,7 @@ namespace sos
     {
         // Zombie objects are objects that reside in an unloaded AppDomain.
         MethodTable mt = addr;
-        return wcscmp(mt.GetName(), L"<Unloaded Type>") == 0;
+        return wcscmp(mt.GetName(), W("<Unloaded Type>")) == 0;
     }
     
     void MethodTable::Clear()
@@ -311,7 +311,7 @@ namespace sos
             mName = CreateMethodTableName(mMT);
         
         if (mName == NULL)
-            return L"<error>";
+            return W("<error>");
             
         return mName;
     }
@@ -862,18 +862,18 @@ namespace sos
             
             if (isArray)
             {
-                swprintf_s(buffer, size, L"%s[]", mt.GetName());
+                swprintf_s(buffer, size, W("%s[]"), mt.GetName());
             }
             else if (isString)
             {
                 wchar_t str[32];
                 obj.GetStringData(str, _countof(str));
                 
-                _snwprintf_s(buffer, size, _TRUNCATE, L"%s: \"%s\"", mt.GetName(), str);
+                _snwprintf_s(buffer, size, _TRUNCATE, W("%s: \"%s\""), mt.GetName(), str);
             }
             else
             {
-                _snwprintf_s(buffer, size, _TRUNCATE, L"%s", mt.GetName());
+                _snwprintf_s(buffer, size, _TRUNCATE, W("%s"), mt.GetName());
             }
         }
         catch (const sos::Exception &e)
@@ -883,7 +883,7 @@ namespace sos
             ArrayHolder<wchar_t> tmp = new wchar_t[len];
             MultiByteToWideChar(CP_ACP, 0, e.what(), -1, (wchar_t*)tmp, len);
             
-            swprintf_s(buffer, size, L"<invalid object: '%s'>", (wchar_t*)tmp);
+            swprintf_s(buffer, size, W("<invalid object: '%s'>"), (wchar_t*)tmp);
         }
     }
 }

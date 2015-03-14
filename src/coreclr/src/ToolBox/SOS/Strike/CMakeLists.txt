@@ -75,10 +75,14 @@ else(WIN32)
   add_compile_options(-fPIC)
 
   set(SOS_SOURCES
+    disasm.cpp
     datatarget.cpp
+    eeheap.cpp
     exts.cpp
+    gcroot.cpp
     metadata.cpp
     strike.cpp
+    sos.cpp
     util.cpp
   )
 
