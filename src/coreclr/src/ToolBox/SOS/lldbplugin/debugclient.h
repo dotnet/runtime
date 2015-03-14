@@ -10,6 +10,8 @@ private:
     lldb::SBCommandReturnObject &m_returnObject;
 
     void OutputString(ULONG mask, PCSTR str);
+    lldb::SBProcess GetCurrentProcess();
+    lldb::SBThread GetCurrentThread();
     
 public:
     DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject);
@@ -98,4 +100,27 @@ public:
         PSTR loadedImageNameBuffer,
         ULONG loadedImageNameBufferSize,
         PULONG loadedImageNameSize);
+
+    //----------------------------------------------------------------------------
+    // IDebugSystemObjects
+    //----------------------------------------------------------------------------
+
+    HRESULT GetCurrentThreadId(
+        PULONG id);
+
+    HRESULT SetCurrentThreadId(
+        ULONG id);
+
+    HRESULT GetCurrentThreadSystemId(
+        PULONG sysId);
+
+    //----------------------------------------------------------------------------
+    // IDebugClient
+    //----------------------------------------------------------------------------
+
+    HRESULT GetThreadContextById(
+        ULONG32 threadID,
+        ULONG32 contextFlags,
+        ULONG32 contextSize,
+        PBYTE context);
 };

@@ -2309,8 +2309,6 @@ BOOL NameForMT_s(DWORD_PTR MTAddr, __out_ecount (capacity_mdName) WCHAR *mdName,
     return SUCCEEDED(hr);
 }
 
-#ifndef FEATURE_PAL
-
 wchar_t *CreateMethodTableName(TADDR mt, TADDR cmt)
 {
     bool array = false;
@@ -2354,8 +2352,6 @@ wchar_t *CreateMethodTableName(TADDR mt, TADDR cmt)
 
     return res;
 }
-
-#endif // !FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -4136,9 +4132,7 @@ void ResetGlobals(void)
     // another managed process. Reset them to a default state here, as this command
     // is called on every SOS entry point.
     g_sos->GetUsefulGlobals(&g_special_usefulGlobals);
-#ifndef FEATURE_PAL
     g_special_mtCache.Clear();
-#endif
     g_special_rvCacheSpace.Clear();
     Output::ResetIndent();
 }

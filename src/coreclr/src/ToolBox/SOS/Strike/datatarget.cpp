@@ -144,8 +144,11 @@ HRESULT STDMETHODCALLTYPE
 DataTarget::GetCurrentThreadID(
     /* [out] */ ULONG32* threadID)
 {
-    *threadID = 0;
-    return E_NOTIMPL;
+    if (g_ExtSystem == NULL)
+    {
+        return E_UNEXPECTED;
+    }
+    return g_ExtSystem->GetCurrentThreadSystemId(threadID);
 }
 
 HRESULT STDMETHODCALLTYPE
@@ -155,7 +158,11 @@ DataTarget::GetThreadContext(
     /* [in] */ ULONG32 contextSize,
     /* [out, size_is(contextSize)] */ PBYTE context)
 {
-    return E_NOTIMPL;
+    if (g_ExtClient == NULL)
+    {
+        return E_UNEXPECTED;
+    }
+    return g_ExtClient->GetThreadContextById(threadID, contextFlags, contextSize, context);
 }
 
 HRESULT STDMETHODCALLTYPE

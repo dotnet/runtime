@@ -5,6 +5,7 @@
 
 #include "sosplugin.h"
 #include <string.h>
+#include <dbgtargetcontext.h>
 
 DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject) :
     m_debugger(debugger),
@@ -31,6 +32,34 @@ DebugClient::OutputString(
         // Can not use AppendMessage or AppendWarning because they add a newline.
         m_returnObject.Printf("%s", str);
     }
+}
+
+lldb::SBProcess
+DebugClient::GetCurrentProcess()
+{
+    lldb::SBProcess process;
+
+    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    if (target.IsValid())
+    {
+        process = target.GetProcess();
+    }
+
+    return process;
+}
+
+lldb::SBThread 
+DebugClient::GetCurrentThread()
+{
+    lldb::SBThread thread;
+
+    lldb::SBProcess process = GetCurrentProcess();
+    if (process.IsValid())
+    {
+        thread = process.GetSelectedThread();
+    }
+
+    return thread;
 }
 
 //----------------------------------------------------------------------------
@@ -178,16 +207,12 @@ DebugClient::ReadVirtual(
 {
     *bytesRead = 0;
 
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
-    if (!target.IsValid())
-    {
-        return E_FAIL;
-    }
-    lldb::SBProcess process = target.GetProcess();
+    lldb::SBProcess process = GetCurrentProcess();
     if (!process.IsValid())
     {
         return E_FAIL;
     }
+
     lldb::SBError error;
     *bytesRead = process.ReadMemory(offset, buffer, bufferSize, error);
 
@@ -437,5 +462,96 @@ DebugClient::GetModuleNames(
             *loadedImageNameSize = size;
         }
     }
+    return S_OK;
+}
+
+//----------------------------------------------------------------------------
+// IDebugSystemObjects
+//----------------------------------------------------------------------------
+
+HRESULT 
+DebugClient::GetCurrentThreadId(
+    PULONG id)
+{
+    *id = 0;
+
+    lldb::SBThread thread = GetCurrentThread();
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    *id = thread.GetIndexID();
+    return S_OK;
+}
+
+HRESULT 
+DebugClient::SetCurrentThreadId(
+    ULONG id)
+{
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+    if (!process.SetSelectedThreadByIndexID(id))
+    {
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+HRESULT 
+DebugClient::GetCurrentThreadSystemId(
+    PULONG sysId)
+{
+    *sysId = 0;
+
+    lldb::SBThread thread = GetCurrentThread();
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    *sysId = thread.GetThreadID();
+    return S_OK;
+}
+
+//----------------------------------------------------------------------------
+// IDebugClient
+//----------------------------------------------------------------------------
+
+HRESULT 
+DebugClient::GetThreadContextById(
+    /* in */ ULONG32 threadID,
+    /* in */ ULONG32 contextFlags,
+    /* in */ ULONG32 contextSize,
+    /* out */ PBYTE context)
+{
+    if (contextSize < sizeof(DT_CONTEXT))
+    {
+        return E_FAIL;
+    }
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBThread thread = process.GetThreadByID(threadID);
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBFrame frame = thread.GetFrameAtIndex(0);
+    if (!frame.IsValid())
+    {
+        return E_FAIL;
+    }
+    DT_CONTEXT *dtcontext = (DT_CONTEXT*)context;
+
+    dtcontext->Rip = frame.GetPC();
+    dtcontext->Rsp = frame.GetSP();
+    dtcontext->Rbp = frame.GetFP();
+
     return S_OK;
 }
