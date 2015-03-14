@@ -17,6 +17,11 @@ set "__RootBinDir=%__ProjectDir%\binaries"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
 
+:: Ensure we are not already running in a development prompt
+if "%VisualStudioVersion%" == "" goto Arg_Loop
+echo Please make sure to run %0 from a normal prompt (not from a development prompt!) 
+goto :eof
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "/?" goto Usage
