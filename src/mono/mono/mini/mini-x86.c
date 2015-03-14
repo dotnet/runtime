@@ -590,15 +590,18 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		add_general (&gr, param_regs, &stack_size, &cinfo->sig_cookie);
 	}
 
+	if (cinfo->vtype_retaddr) {
+		/* if the function returns a struct on stack, the called method already does a ret $0x4 */
+		cinfo->callee_stack_pop = 4;
+	} else if (CALLCONV_IS_STDCALL (sig) && sig->pinvoke) {
+		/* Have to compensate for the stack space popped by the native callee */
+		cinfo->callee_stack_pop = stack_size;
+	}
+
 	if (mono_do_x86_stack_align && (stack_size % MONO_ARCH_FRAME_ALIGNMENT) != 0) {
 		cinfo->need_stack_align = TRUE;
 		cinfo->stack_align_amount = MONO_ARCH_FRAME_ALIGNMENT - (stack_size % MONO_ARCH_FRAME_ALIGNMENT);
 		stack_size += cinfo->stack_align_amount;
-	}
-
-	if (cinfo->vtype_retaddr) {
-		/* if the function returns a struct on stack, the called method already does a ret $0x4 */
-		cinfo->callee_stack_pop = 4;
 	}
 
 	cinfo->stack_usage = stack_size;
