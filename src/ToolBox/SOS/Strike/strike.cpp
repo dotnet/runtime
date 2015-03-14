@@ -199,7 +199,11 @@ HMODULE g_hInstance = NULL;
 #define IfFailRet(EXPR) do { Status = (EXPR); if(FAILED(Status)) { return (Status); } } while (0)
 #endif
 
+#ifdef FEATURE_PAL
+#define NOTHROW
+#else
 #define NOTHROW (std::nothrow)
+#endif
 
 #define MINIDUMP_NOT_SUPPORTED()   \
     if (IsMiniDumpFile())      \
@@ -3937,7 +3941,7 @@ private:
             Flatten(vitr->str, (unsigned int)wcslen(vitr->str));
             out.WriteRow(Decimal(vitr->size), Decimal(vitr->count), vitr->str);
         }
-#endif
+#endif // FEATURE_PAL
     }
 
     void DumpHeapShort(sos::GCHeap &gcheap)
@@ -9887,7 +9891,7 @@ DECLARE_API(TraceToCode)
     return Status;
 
 }
-#endif
+#endif // FEATURE_PAL
 
 // This is an experimental and undocumented API that sets a debugger pseudo-register based
 // on the type of code at the given IP. It can be used in scripts to keep stepping until certain
@@ -9988,7 +9992,7 @@ DECLARE_API(GetCodeTypeFlags)
     return Status;
 
 }
-#endif
+#endif // FEATURE_PAL
 
 DECLARE_API(StopOnException)
 {
@@ -11466,6 +11470,7 @@ public:
     }
 };
 
+#endif // FEATURE_PAL
 
 #endif // FEATURE_PAL
 
@@ -11480,25 +11485,25 @@ WString BuildRegisterOutput(const SOSStackRefData &ref, bool printObj)
         if (SUCCEEDED(hr))
             res = reg;
         else
-            res = L"<unknown register>";
+            res = W("<unknown register>");
             
         if (ref.Offset)
         {
             int offset = ref.Offset;
             if (offset > 0)
             {
-                res += L"+";
+                res += W("+");
             }
             else
             {
-                res += L"-";
+                res += W("-");
                 offset = -offset;
             }
             
             res += Hex(offset);
         }
         
-        res += L": ";
+        res += W(": ");
     }
     
     if (ref.Address)
@@ -11507,19 +11512,19 @@ WString BuildRegisterOutput(const SOSStackRefData &ref, bool printObj)
     if (printObj)
     {
         if (ref.Address)
-            res += L" -> ";
+            res += W(" -> ");
 
         res += WString(ObjectPtr(ref.Object));
     }
 
     if (ref.Flags & SOSRefPinned)
     {
-        res += L" (pinned)";
+        res += W(" (pinned)");
     }
     
     if (ref.Flags & SOSRefInterior)
     {
-        res += L" (interior)";
+        res += W(" (interior)");
     }
     
     return res;
@@ -11534,11 +11539,12 @@ void PrintRef(const SOSStackRefData &ref, TableOutput &out)
         wchar_t type[128];
         sos::BuildTypeWithExtraInfo(TO_TADDR(ref.Object), _countof(type), type);
         
-        res += WString(L" - ") + type;
+        res += WString(W(" - ")) + type;
     }
     
     out.WriteColumn(2, res);
 }
+
 
 class ClrStackImpl
 {
@@ -11933,6 +11939,7 @@ private:
 };
 
 #ifndef FEATURE_PAL
+
 WatchCmd g_watchCmd;
 
 // The grand new !Watch command, private to Apollo for now
@@ -12060,7 +12067,8 @@ DECLARE_API(Watch)
 
     return Status;
 }
-#endif
+
+#endif // FEATURE_PAL
 
 DECLARE_API(ClrStack)
 {
@@ -12070,7 +12078,9 @@ DECLARE_API(ClrStack)
     BOOL bParams = FALSE;
     BOOL bLocals = FALSE;
     BOOL bSuppressLines = FALSE;
+#ifndef FEATURE_PAL
     BOOL bICorDebug = FALSE;
+#endif
     BOOL bGC = FALSE;
     BOOL dml = FALSE;
     DWORD frameToDumpVariablesFor = -1;
@@ -12091,7 +12101,9 @@ DECLARE_API(ClrStack)
         {"-p", &bParams, COBOOL, FALSE},
         {"-l", &bLocals, COBOOL, FALSE},
         {"-n", &bSuppressLines, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"-i", &bICorDebug, COBOOL, FALSE},
+#endif
         {"-gc", &bGC, COBOOL, FALSE},
         {"/d", &dml, COBOOL, FALSE},
     };
@@ -12117,6 +12129,7 @@ DECLARE_API(ClrStack)
         bParams = bLocals = TRUE;
     }
 
+#ifndef FEATURE_PAL
     if (bICorDebug)
     {
         if(nArg > 0)
@@ -12140,11 +12153,14 @@ DECLARE_API(ClrStack)
         EnableDMLHolder dmlHolder(TRUE);
         return ClrStackImplWithICorDebug::ClrStackFromPublicInterface(bParams, bLocals, FALSE, wvariableName, frameToDumpVariablesFor);
     }
+#endif // FEATURE_PAL
     
     ClrStackImpl::PrintCurrentThread(bParams, bLocals, bSuppressLines, bGC);
     
     return S_OK;
 }
+
+#ifndef FEATURE_PAL
 
 BOOL IsMemoryInfoAvailable()
 {

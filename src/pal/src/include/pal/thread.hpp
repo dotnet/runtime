@@ -26,6 +26,7 @@ Abstract:
 #include "cs.hpp"
 
 #include <pthread.h>    
+#include <sys/syscall.h>
 #if HAVE_MACH_EXCEPTIONS
 #include <mach/mach.h>
 #endif // HAVE_MACH_EXCEPTIONS
@@ -186,7 +187,7 @@ namespace CorUnix
 #if !HAVE_MACH_EXCEPTIONS
         BOOL safe_state;
         int signal_code;
-#endif // !HAVE_MACH_EXCEPTIONS
+#endif // !HAVE_MACH_EXCEPTIONSG
 
         CThreadSEHInfo()
         {
@@ -754,7 +755,20 @@ Abstract:
   bounds based lookaside system, why aren't we using it in the
   cache?
 
+  In order to match the thread ids that debuggers use at least for
+  linux we need to use gettid(). 
+
 --*/
-#define THREADSilentGetCurrentThreadId() (SIZE_T) pthread_self()
+#if defined(__LINUX__)
+#define THREADSilentGetCurrentThreadId() (SIZE_T)syscall(SYS_gettid)
+#elif defined(__APPLE__)
+inline SIZE_T THREADSilentGetCurrentThreadId() {
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return (SIZE_T)tid;
+}
+#else
+#define THREADSilentGetCurrentThreadId() (SIZE_T)pthread_self()
+#endif
 
 #endif // _PAL_THREAD_HPP_

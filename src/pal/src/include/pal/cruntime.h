@@ -35,6 +35,7 @@ extern "C"
 
 typedef enum
 {
+    PFF_NONE  =  0,
     PFF_MINUS =  1,
     PFF_POUND =  2,
     PFF_ZERO  =  4,
@@ -44,6 +45,14 @@ typedef enum
 
 typedef enum
 {
+    WIDTH_DEFAULT = -1,
+    WIDTH_STAR    = -2, /* e.g. "%*.10s"  */
+    WIDTH_INVALID = -3  /* e.g. "%*3.10s" */
+}WIDTH_FLAGS;
+
+typedef enum
+{
+    PRECISION_DEFAULT = -1,
     PRECISION_STAR    = -2, /* e.g. "%10.*s"  */
     PRECISION_DOT     = -3, /* e.g. "%10.s"   */
     PRECISION_INVALID = -4  /* e.g. "%10.*3s" */
@@ -51,6 +60,7 @@ typedef enum
 
 typedef enum
 {
+    PFF_PREFIX_DEFAULT  = -1,
     PFF_PREFIX_SHORT    = 1,
     PFF_PREFIX_LONG     = 2,
     PFF_PREFIX_LONGLONG = 3,
@@ -59,6 +69,7 @@ typedef enum
 
 typedef enum
 {
+    PFF_TYPE_DEFAULT = -1,
     PFF_TYPE_CHAR    = 1,
     PFF_TYPE_STRING  = 2,
     PFF_TYPE_WSTRING = 3,

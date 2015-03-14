@@ -154,11 +154,11 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
     LPSTR TempStr;
     LPSTR TempStrPtr;
 
-    *Width = -1;
-    *Precision = -1;
-    *Flags = 0;
-    *Prefix = -1;
-    *Type = -1;
+    *Width = WIDTH_DEFAULT;
+    *Precision = PRECISION_DEFAULT;
+    *Flags = PFF_NONE;
+    *Prefix = PFF_PREFIX_DEFAULT;
+    *Type = PFF_TYPE_DEFAULT;
 
     if (*Fmt && **Fmt == '%')
     {
@@ -221,6 +221,22 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
             return Result;
         }
     }
+    else if (**Fmt == '*')
+    {
+        *Width = WIDTH_STAR;
+        *Out++ = *(*Fmt)++;
+        if (isdigit((unsigned char) **Fmt))
+        {
+            /* this is an invalid width because we have a * then a number */
+            /* printf handles this by just printing the whole string */
+            *Width = WIDTH_INVALID;
+            while (isdigit((unsigned char) **Fmt))
+            {
+               *Out++ = *(*Fmt)++;
+            }
+        }
+    }
+
 
     /* grab precision specifier */
     if (**Fmt == '.')
@@ -249,8 +265,7 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
             *Out++ = *(*Fmt)++;
             if (isdigit((unsigned char) **Fmt))
             {
-                /* this is an invalid precision because we have a .* then a
-                   number */
+                /* this is an invalid precision because we have a .* then a number */
                 /* printf handles this by just printing the whole string */
                 *Precision = PRECISION_INVALID;
                 while (isdigit((unsigned char) **Fmt))
@@ -258,32 +273,10 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
                     *Out++ = *(*Fmt)++;
                 }
             }
-            else
-            {
-                *Precision = PRECISION_STAR;
-            }
         }
         else
         {
             *Precision = PRECISION_DOT;
-        }
-    }
-
-    /* grab width specifier */
-    if (**Fmt == '*')
-    {
-        *Precision = PRECISION_STAR;
-        *Out++ = *(*Fmt)++;
-        if (isdigit((unsigned char) **Fmt))
-        {
-            /* this is an invalid precision because we have a * then a
-               number */
-            /* printf handles this by just printing the whole string */
-            *Precision = PRECISION_INVALID;
-            while (isdigit((unsigned char) **Fmt))
-            {
-               *Out++ = *(*Fmt)++;
-            }
         }
     }
 
@@ -399,22 +392,30 @@ BOOL Internal_ExtractFormatA(CPalThread *pthrCurrent, LPCSTR *Fmt, LPSTR Out, LP
     {
         *Type = PFF_TYPE_P;
         (*Fmt)++;
-        *Out++ = '.';
-        
+
         if (*Prefix == PFF_PREFIX_LONGLONG)
         {
+            if (*Precision == PRECISION_DEFAULT)
+            {
+                *Precision = 16;
+                *Out++ = '.';
+                *Out++ = '1';
+                *Out++ = '6';
+            }
             /* native *printf does not support %I64p
                (actually %llp), so we need to cheat a little bit */
-            *Out++ = '1';
-            *Out++ = '6';
             *Out++ = 'l';
             *Out++ = 'l';
         }
         else
         {
-            *Out++ = '8';
+            if (*Precision == PRECISION_DEFAULT)
+            {
+                *Precision = 8;
+                *Out++ = '.';
+                *Out++ = '8';
+            }
         }
-
         *Out++ = 'X';
         Result = TRUE;
     }
@@ -437,11 +438,11 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
     LPSTR TempStr;
     LPSTR TempStrPtr;
 
-    *Width = -1;
-    *Precision = -1;
-    *Flags = 0;
-    *Prefix = -1;
-    *Type = -1; 
+    *Width = WIDTH_DEFAULT;
+    *Precision = PRECISION_DEFAULT;
+    *Flags = PFF_NONE;
+    *Prefix = PFF_PREFIX_DEFAULT;
+    *Type = PFF_TYPE_DEFAULT;
 
     if (*Fmt && **Fmt == '%')
     {
@@ -504,6 +505,21 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
             return Result;
         }
     }
+    else if (**Fmt == '*')
+    {
+        *Width = WIDTH_STAR;
+        *Out++ = (CHAR) *(*Fmt)++;
+        if (isdigit(**Fmt))
+        {
+            /* this is an invalid width because we have a * then a number */
+            /* printf handles this by just printing the whole string */
+            *Width = WIDTH_INVALID;
+            while (isdigit(**Fmt))
+            {
+                *Out++ = (CHAR) *(*Fmt)++;
+            }
+        }
+    }
 
     /* grab precision specifier */
     if (**Fmt == '.')
@@ -532,18 +548,13 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
             *Out++ = (CHAR) *(*Fmt)++;
             if (isdigit(**Fmt))
             {
-                /* this is an invalid precision because we have a .* then a
-                   number */
+                /* this is an invalid precision because we have a .* then a number */
                 /* printf handles this by just printing the whole string */
                 *Precision = PRECISION_INVALID;
                 while (isdigit(**Fmt))
                 {
                     *Out++ = (CHAR) *(*Fmt)++;
                 }
-            }
-            else
-            {
-                *Precision = PRECISION_STAR;
             }
         }
         else
@@ -684,27 +695,35 @@ BOOL Internal_ExtractFormatW(CPalThread *pthrCurrent, LPCWSTR *Fmt, LPSTR Out, L
     {
         *Type = PFF_TYPE_P;
         (*Fmt)++;
-        *Out++ = '.';
 
         if (*Prefix == PFF_PREFIX_LONGLONG)
         {
+            if (*Precision == PRECISION_DEFAULT)
+            {
+                *Precision = 16;
+                *Out++ = '.';
+                *Out++ = '1';
+                *Out++ = '6';
+            }
             /* native *printf does not support %I64p
                (actually %llp), so we need to cheat a little bit */
-            *Out++ = '1';
-            *Out++ = '6';
             *Out++ = 'l';
             *Out++ = 'l';
         }
         else
         {
+            if (*Precision == PRECISION_DEFAULT)
+            {
+                *Precision = 8;
+                *Out++ = '.';
+                *Out++ = '8';
+            }
             if (*Prefix == PFF_PREFIX_LONG_W)
             {
                 *Prefix = PFF_PREFIX_LONG;
             }
-            *Out++ = '8';
         }
         *Out++ = 'X';
-
         Result = TRUE;
     }
 
@@ -1139,6 +1158,17 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                  (Type == PFF_TYPE_WSTRING && (Flags & PFF_ZERO) != 0))
             {
                 WStrWasMalloced = FALSE;
+
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
+                else if (WIDTH_INVALID == Width)
+                {
+                    /* both a '*' and a number, ignore, but remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
+
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
@@ -1149,7 +1179,7 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                     TempInt = va_arg(ap, INT); /* value not used */
                 }
 
-                if ( Type == PFF_TYPE_STRING || Prefix == PFF_PREFIX_LONG_W)
+                if (Type == PFF_TYPE_STRING || Prefix == PFF_PREFIX_LONG_W)
                 {
                     TempWStr = va_arg(ap, LPWSTR);
                 }
@@ -1185,7 +1215,6 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                         PERF_EXIT(vfwprintf);
                         return -1;
                     }
-
                 }
 
                 INT Length = PAL_wcslen(TempWStr);
@@ -1260,6 +1289,13 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
             }
             else if (Prefix == PFF_PREFIX_LONG && Type == PFF_TYPE_CHAR)
             {
+                if (WIDTH_STAR == Width ||
+                    WIDTH_INVALID == Width)
+                {
+                    /* ignore (because it's a char), and remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
+
                 if (PRECISION_STAR == Precision ||
                     PRECISION_INVALID == Precision)
                 {
@@ -1288,10 +1324,16 @@ int CoreVfwprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const wchar_16 *for
                next arg */
             else if (Type == PFF_TYPE_N)
             {
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
+
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
                 }
+
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
                     *(va_arg(ap, short *)) = written;
@@ -1521,6 +1563,16 @@ int CoreVsnprintf(CPalThread *pthrCurrent, LPSTR Buffer, size_t Count, LPCSTR Fo
         {
             if (Prefix == PFF_PREFIX_LONG && Type == PFF_TYPE_STRING)
             {
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
+                else if (WIDTH_INVALID == Width)
+                {
+                    /* both a '*' and a number, ignore, but remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
+
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
@@ -1530,6 +1582,7 @@ int CoreVsnprintf(CPalThread *pthrCurrent, LPSTR Buffer, size_t Count, LPCSTR Fo
                     /* both a '*' and a number, ignore, but remove arg */
                     TempInt = va_arg(ap, INT); /* value not used */
                 }
+
                 TempWStr = va_arg(ap, LPWSTR);
                 Length = WideCharToMultiByte(CP_ACP, 0, TempWStr, -1, 0,
                                              0, 0, 0);
@@ -1594,6 +1647,13 @@ int CoreVsnprintf(CPalThread *pthrCurrent, LPSTR Buffer, size_t Count, LPCSTR Fo
             else if (Prefix == PFF_PREFIX_LONG && Type == PFF_TYPE_CHAR)
             {
                 CHAR TempBuffer[5];
+
+                if (WIDTH_STAR == Width ||
+                    WIDTH_INVALID == Width)
+                {
+                    /* ignore (because it's a char), and remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
                 if (PRECISION_STAR == Precision ||
                     PRECISION_INVALID == Precision)
                 {
@@ -1625,10 +1685,15 @@ int CoreVsnprintf(CPalThread *pthrCurrent, LPSTR Buffer, size_t Count, LPCSTR Fo
                next arg */
             else if (Type == PFF_TYPE_N)
             {
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
                 }
+
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
                     *(va_arg(ap, short *)) = BufferPtr - Buffer;
@@ -1787,6 +1852,17 @@ int CoreWvsnprintf(CPalThread *pthrCurrent, LPWSTR Buffer, size_t Count, LPCWSTR
                 (Type == PFF_TYPE_WSTRING && (Flags & PFF_ZERO) != 0))
             {             
                 BOOL needToFree = FALSE;
+
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
+                else if (WIDTH_INVALID == Width)
+                {
+                    /* both a '*' and a number, ignore, but remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
+
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
@@ -1889,6 +1965,13 @@ int CoreWvsnprintf(CPalThread *pthrCurrent, LPWSTR Buffer, size_t Count, LPCWSTR
             }
             else if (Prefix == PFF_PREFIX_LONG && Type == PFF_TYPE_CHAR)
             {
+                if (WIDTH_STAR == Width ||
+                    WIDTH_INVALID == Width)
+                {
+                    /* ignore (because it's a char), and remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
+
                 if (PRECISION_STAR == Precision ||
                     PRECISION_INVALID == Precision)
                 {
@@ -1911,10 +1994,15 @@ int CoreWvsnprintf(CPalThread *pthrCurrent, LPWSTR Buffer, size_t Count, LPCWSTR
                next arg */
             else if (Type == PFF_TYPE_N)
             {
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
                 }
+
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
                     *(va_arg(ap, short *)) = BufferPtr - Buffer;
@@ -2097,6 +2185,16 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
         {
             if (Prefix == PFF_PREFIX_LONG && Type == PFF_TYPE_STRING)
             {
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
+                else if (WIDTH_INVALID == Width)
+                {
+                    /* both a '*' and a number, ignore, but remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
+
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
@@ -2106,6 +2204,7 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                     /* both a '*' and a number, ignore, but remove arg */
                     TempInt = va_arg(ap, INT); /* value not used */
                 }
+
                 TempWStr = va_arg(ap, LPWSTR);
                 Length = WideCharToMultiByte(CP_ACP, 0, TempWStr, -1, 0,
                                              0, 0, 0);
@@ -2180,6 +2279,12 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
             else if (Prefix == PFF_PREFIX_LONG && Type == PFF_TYPE_CHAR)
             {
                 CHAR TempBuffer[5];
+                if (WIDTH_STAR == Width ||
+                    WIDTH_INVALID == Width)
+                {
+                    /* ignore (because it's a char), and remove arg */
+                    TempInt = va_arg(ap, INT); /* value not used */
+                }
                 if (PRECISION_STAR == Precision ||
                     PRECISION_INVALID == Precision)
                 {
@@ -2217,10 +2322,15 @@ int CoreVfprintf(CPalThread *pthrCurrent, PAL_FILE *stream, const char *format, 
                next arg */
             else if (Type == PFF_TYPE_N)
             {
+                if (WIDTH_STAR == Width)
+                {
+                    Width = va_arg(ap, INT);
+                }
                 if (PRECISION_STAR == Precision)
                 {
                     Precision = va_arg(ap, INT);
                 }
+
                 if (Prefix == PFF_PREFIX_SHORT)
                 {
                     *(va_arg(ap, short *)) = written;

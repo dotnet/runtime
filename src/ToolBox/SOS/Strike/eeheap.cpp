@@ -12,6 +12,8 @@
 #include "sos.h"
 #include "safemath.h"
 
+#ifndef FEATURE_PAL
+
 // This is the increment for the segment lookup data
 const int nSegLookupStgIncrement = 100;
 
@@ -337,6 +339,8 @@ void HeapStat::Delete()
     fLinear = FALSE;
 }
 
+#endif // !FEATURE_PAL
+
 // -----------------------------------------------------------------------
 //
 // MethodTableCache implementation
@@ -421,6 +425,8 @@ void MethodTableCache::Clear()
     ReverseLeftMost (root);
 }
 
+MethodTableCache g_special_mtCache;
+
 size_t Align (size_t nbytes)
 {
     return (nbytes + ALIGNCONST) & ~ALIGNCONST;
@@ -430,6 +436,8 @@ size_t AlignLarge(size_t nbytes)
 {
     return (nbytes + ALIGNCONSTLARGE) & ~ALIGNCONSTLARGE;
 }
+
+#ifndef FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -846,7 +854,7 @@ BOOL GCHeapUsageStats(const DacpGcHeapDetails& heap, BOOL bIncUnreachable, HeapU
     return TRUE;
 }
 
-MethodTableCache g_special_mtCache;
+#endif // FEATURE_PAL
 
 DWORD GetNumComponents(TADDR obj)
 {
@@ -909,6 +917,8 @@ BOOL GetSizeEfficient(DWORD_PTR dwAddrCurrObj,
     s = (bLarge ? AlignLarge(s) : Align (s));
     return TRUE;
 }
+
+#ifndef FEATURE_PAL
 
 // This function expects stat to be valid, and ready to get statistics.
 void GatherOneHeapFinalization(DacpGcHeapDetails& heapDetails, HeapStat *stat, BOOL bAllReady, BOOL bShort)
@@ -1909,3 +1919,5 @@ DWORD_PTR PrintModuleHeapInfo(__out_ecount(count) DWORD_PTR *moduleList, int cou
 
     return toReturn;
 }
+
+#endif // !FEATURE_PAL
