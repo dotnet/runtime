@@ -47,6 +47,16 @@ namespace System.Diagnostics.ProcessTests
             Process p = new Process();
             p.StartInfo.FileName = ProcessName;
             p.StartInfo.Arguments = optionalArgument;
+
+            // Profilers / code coverage tools doing coverage of the test process set environment
+            // variables to tell the targeted process what profiler to load.  We don't want the child process 
+            // to be profiled / have code coverage, so we remove these environment variables for that process 
+            // before it's started.
+            p.StartInfo.Environment.Remove("Cor_Profiler");
+            p.StartInfo.Environment.Remove("Cor_Enable_Profiling");
+            p.StartInfo.Environment.Remove("CoreClr_Profiler");
+            p.StartInfo.Environment.Remove("CoreClr_Enable_Profiling");
+
             return p;
         }
 
