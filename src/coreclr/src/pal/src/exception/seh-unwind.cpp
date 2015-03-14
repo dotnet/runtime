@@ -91,7 +91,8 @@ static void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, int reg, PDWORD64 *contextPointer)
 {
 #if defined(__APPLE__)
-    //OSXTODO
+    // Returning NULL indicates that we don't have context pointers available
+    *contextPointer = NULL;
 #else
     unw_save_loc_t saveLoc;
     unw_get_save_loc(cursor, reg, &saveLoc);
