@@ -629,6 +629,7 @@ struct _MonoGenericContainer {
 #define mono_generic_param_owner(p)		((p)->owner)
 #define mono_generic_param_num(p)		((p)->num)
 #define mono_generic_param_info(p)		(mono_generic_param_owner (p) ? &((MonoGenericParamFull *) p)->info : NULL)
+#define mono_generic_param_name(p)		(((mono_generic_param_owner (p) || (p)->gshared_constraint)) ? ((MonoGenericParamFull *) p)->info.name : NULL)
 #define mono_type_get_generic_param_owner(t)	(mono_generic_param_owner ((t)->data.generic_param))
 #define mono_type_get_generic_param_num(t)	(mono_generic_param_num   ((t)->data.generic_param))
 

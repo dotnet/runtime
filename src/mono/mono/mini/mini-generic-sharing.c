@@ -2790,7 +2790,9 @@ get_shared_gparam (MonoType *t, MonoTypeEnum constraint)
 		((MonoGenericParamFull*)copy)->info.name = mono_image_strdup (image, name);
 		g_free (name);
 	} else {
-		copy = g_memdup (par, sizeof (MonoGenericParam));
+		/* mono_generic_param_name () expects this to be a MonoGenericParamFull */
+		copy = (MonoGenericParam*)g_new0 (MonoGenericParamFull, 1);
+		memcpy (copy, par, sizeof (MonoGenericParam));
 	}
 	copy->owner = NULL;
 	// FIXME:
