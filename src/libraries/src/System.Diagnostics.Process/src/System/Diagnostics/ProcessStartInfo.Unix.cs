@@ -5,6 +5,8 @@ namespace System.Diagnostics
 {
     public sealed partial class ProcessStartInfo
     {
+        private const bool CaseSensitiveEnvironmentVariables = true;
+
         public string UserName
         {
             get { throw new PlatformNotSupportedException(); }
