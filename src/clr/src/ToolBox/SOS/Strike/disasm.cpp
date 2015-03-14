@@ -45,6 +45,7 @@ namespace X86GCDump
 #endif // SOS_TARGET_X86
 
 #ifdef SOS_TARGET_AMD64 
+#ifndef FEATURE_PAL
 #include "gcdump.h"
 #define DAC_ARG(x)
 #define SUPPORTS_DAC
@@ -56,6 +57,7 @@ namespace X86GCDump
     #endif
     #define LOG(x) ((void)0)
 #include "gcdumpnonx86.cpp"
+#endif // FEATURE_PAL
 #endif // SOS_TARGET_AMD64
 
 #include "disasm.h"
@@ -63,6 +65,8 @@ namespace X86GCDump
 #ifndef ERANGE
 #define ERANGE 34
 #endif
+
+#ifndef FEATURE_PAL
 
 PVOID
 GenOpenMapping(
@@ -1024,6 +1028,8 @@ void DumpStackWorker (DumpStackFlag &DSFlag)
     }
 }
 
+#endif // !FEATURE_PAL
+
 
 #ifdef SOS_TARGET_X86
 ///
@@ -1093,6 +1099,9 @@ LPCSTR AMD64Machine::s_SPName           = "RSP";
 ///
 void AMD64Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPrintf, bool encBytes, bool bPrintHeader) const
 {
+#ifdef FEATURE_PAL
+    ExtErr("AMD64Machine::DumpGCInfo not implemented\n");
+#else
     if (bPrintHeader)
     {
         ExtOut("Pointer table:\n");
@@ -1102,7 +1111,43 @@ void AMD64Machine::DumpGCInfo(BYTE* pTable, unsigned methodSize, printfFtn gcPri
     gcDump.gcPrintf = gcPrintf;
 
     gcDump.DumpGCTable(pTable, methodSize, 0);
+#endif // FEATURE_PAL
 }
+
+#ifdef FEATURE_PAL
+void AMD64Machine::Unassembly(
+    TADDR IPBegin, 
+    TADDR IPEnd, 
+    TADDR IPAskedFor, 
+    TADDR GCStressCodeCopy, 
+    GCEncodingInfo *pGCEncodingInfo, 
+    SOSEHInfo *pEHInfo,
+    BOOL bSuppressLines,
+    BOOL bDisplayOffsets) const
+{
+    ExtErr("AMD64Machine::Unassembly not implemented\n");
+}
+
+void AMD64Machine::IsReturnAddress(
+    TADDR retAddr, 
+    TADDR* whereCalled) const
+{
+    ExtErr("AMD64Machine::IsReturnAddress not implemented\n");
+}
+
+BOOL AMD64Machine::GetExceptionContext(
+    TADDR stack,
+    TADDR PC,
+    TADDR *cxrAddr,
+    CROSS_PLATFORM_CONTEXT * cxr,
+    TADDR *exrAddr,
+    PEXCEPTION_RECORD exr) const
+{ 
+    ExtErr("AMD64Machine::GetExceptionContext not implemented\n");
+    return FALSE;
+}
+#endif // FEATURE_PAL
+
 #endif // SOS_TARGET_AMD64
 
 #ifdef SOS_TARGET_ARM64

@@ -32,8 +32,6 @@ class LinearReadCache;
 class CGCDesc;
 class CGCDescSeries;
 
-#ifndef FEATURE_PAL
-
 namespace sos
 {
     class GCHeap;
@@ -426,7 +424,7 @@ namespace sos
          * Returns:
          *    A string containing the type of the object.
          */
-        wchar_t *GetTypeName() const;
+        const wchar_t *GetTypeName() const;
 
     private:
         void FillMTData() const;
@@ -793,5 +791,3 @@ namespace sos
     
     void BuildTypeWithExtraInfo(TADDR addr, unsigned int size, __inout_ecount(size) wchar_t *buffer);
 }
-
-#endif // !FEATURE_PAL

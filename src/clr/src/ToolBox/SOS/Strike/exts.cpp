@@ -9,8 +9,8 @@
 // 
 // ==--==
 #include "exts.h"
-#ifndef FEATURE_PAL
 #include "disasm.h"
+#ifndef FEATURE_PAL
 #include "EventCallbacks.h"
 
 #define VER_PRODUCTVERSION_W        (0x0100)
@@ -84,6 +84,8 @@ ExtQuery(PDEBUG_CLIENT Client)
     return Status;
 }
 
+#endif // FEATURE_PAL
+
 extern "C" HRESULT
 ArchQuery(void)
 {
@@ -127,6 +129,8 @@ ArchQuery(void)
     g_targetMachine = targetMachine;
     return S_OK;
 }
+
+#ifndef FEATURE_PAL
 
 // Cleans up all debugger interfaces.
 void
@@ -356,11 +360,13 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
 #else // FEATURE_PAL
 
 BOOL g_bDacBroken = FALSE;
+IMachine* g_targetMachine = NULL;
 
 PDEBUG_CLIENT         g_ExtClient;    
 PDEBUG_DATA_SPACES    g_ExtData;
 PDEBUG_CONTROL2       g_ExtControl;
 PDEBUG_SYMBOLS        g_ExtSymbols;
+PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
 
 extern "C" HRESULT
 ExtQuery(PDEBUG_CLIENT Client)
@@ -369,12 +375,7 @@ ExtQuery(PDEBUG_CLIENT Client)
     g_ExtControl = (PDEBUG_CONTROL2)Client;
     g_ExtData = (PDEBUG_DATA_SPACES)Client;
     g_ExtSymbols = (PDEBUG_SYMBOLS)Client;
-    return S_OK;
-}
-
-extern "C" HRESULT
-ArchQuery(void)
-{
+    g_ExtSystem = (PDEBUG_SYSTEM_OBJECTS)Client;
     return S_OK;
 }
 
@@ -385,6 +386,7 @@ ExtRelease(void)
     g_ExtControl = NULL;
     g_ExtData = NULL;
     g_ExtSymbols = NULL;
+    g_ExtSystem = NULL;
 }
 
 #endif // FEATURE_PAL
