@@ -479,6 +479,19 @@ VOID Frame::Pop(Thread *pThread)
     pThread->SetFrame(m_Next);
 }
 
+#ifdef FEATURE_PAL
+Frame::~Frame()
+{
+    // When the frame is destroyed, make sure it is no longer in the
+    // frame chain managed by the Thread.
+    Thread* pThread = GetThread();
+    if (pThread != NULL && pThread->GetFrame() == this)
+    {
+        Pop(pThread);
+    }
+}
+#endif FEATURE_PAL
+
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------
