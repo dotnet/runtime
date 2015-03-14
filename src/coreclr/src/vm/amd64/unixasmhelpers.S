@@ -225,6 +225,7 @@ LEAF_ENTRY StartUnwindingNativeFrames, _TEXT
 
         // Store return address to the stack
         push_register rax
+        push_nonvol_reg rbp
         call    EXTERNAL_C_FUNC(__cxa_rethrow)
 LEAF_END StartUnwindingNativeFrames, _TEXT
 
