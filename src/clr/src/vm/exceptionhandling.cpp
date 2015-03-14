@@ -4546,20 +4546,20 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             // detects that there was a second pass and that it needs to recreate the tracker.
             firstPassFlags.SetUnwindHasStarted();
 
-            *currentFlags = firstPassFlags;
-
-            // Pop the last managed frame so that when the native frames are unwound and
-            // the UnwindManagedExceptionPass1 is resumed at the next managed frame, that
-            // managed frame is the current one set in the thread object.
-            GetThread()->GetFrame()->Pop();
-
             // Tell the tracker that we are starting interleaved handling of the exception.
             // The interleaved handling is used when an exception unwinding passes through
             // interleaved managed and native stack frames. In that case, instead of
             // performing first pass of the unwinding over all the stack range and then 
             // second pass over the same range, we unwind each managed / native subrange
             // separately, performing both passes on a subrange before moving to the next one.
-            GetThread()->GetExceptionState()->GetFlags()->SetIsInterleavedHandling();
+            firstPassFlags.SetIsInterleavedHandling();
+
+            *currentFlags = firstPassFlags;
+
+            // Pop the last managed frame so that when the native frames are unwound and
+            // the UnwindManagedExceptionPass1 is resumed at the next managed frame, that
+            // managed frame is the current one set in the thread object.
+            GetThread()->GetFrame()->Pop();
 
             // Now we need to unwind the native frames until we reach managed frames again or the exception is
             // handled in the native code.
