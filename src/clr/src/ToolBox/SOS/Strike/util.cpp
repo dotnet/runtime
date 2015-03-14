@@ -3733,7 +3733,7 @@ void StringObjectContent(size_t obj, BOOL fLiteral, const int length)
     }
     
     DWORD_PTR dwAddr = (DWORD_PTR)pwszBuf.GetPtr();
-    if (g_sos->GetObjectStringData(TO_CDADDR(obj), stInfo.m_StringLength+1, pwszBuf, NULL)!=S_OK)
+    if (g_sos->GetObjectStringData(TO_CDADDR(obj), stInfo.m_StringLength, pwszBuf, NULL)!=S_OK)
     {
         ExtOut("Error getting string data\n");
         return;
