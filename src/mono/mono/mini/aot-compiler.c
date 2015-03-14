@@ -8727,7 +8727,7 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_NAME "nacl-as"
 #endif
 #elif defined(TARGET_OSX)
-#define AS_NAME "clang -c -x assembler"
+#define AS_NAME "clang"
 #else
 #define AS_NAME "as"
 #endif
@@ -8765,7 +8765,12 @@ compile_asm (MonoAotCompile *acfg)
 	} else {
 		objfile = g_strdup_printf ("%s.o", acfg->tmpfname);
 	}
-	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, acfg->as_args ? acfg->as_args->str : "", objfile, acfg->tmpfname);
+
+#ifdef TARGET_OSX
+	g_string_append (acfg->as_args, "-c -x assembler");
+#endif
+
+	command = g_strdup_printf ("\"%s%s\" %s %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS, AS_OPTIONS2, acfg->as_args ? acfg->as_args->str : "", objfile, acfg->tmpfname);
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
 	if (execute_system (command) != 0) {
 		g_free (command);
