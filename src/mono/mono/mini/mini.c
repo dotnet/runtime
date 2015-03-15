@@ -3037,6 +3037,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	gboolean run_cctors = (flags & JIT_FLAG_RUN_CCTORS) ? 1 : 0;
 	gboolean compile_aot = (flags & JIT_FLAG_AOT) ? 1 : 0;
 	gboolean full_aot = (flags & JIT_FLAG_FULL_AOT) ? 1 : 0;
+	gboolean gsharedvt_method = FALSE;
 #ifdef ENABLE_LLVM
 	gboolean llvm = (flags & JIT_FLAG_LLVM) ? 1 : 0;
 #endif
@@ -3049,12 +3050,16 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (MONO_METHOD_COMPILE_BEGIN_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_BEGIN (method);
 
+	/*
+	 * In AOT mode, method can be the following:
+	 * - the generic method definition. In this case, we are compiling the fully shared
+	 *   version of the method, i.e. the version where all the type parameters are
+	 *   reference types.
+	 * - a gsharedvt method.
+	 * - a method inflated with type parameters. This is for partial sharing.
+	 * - a method inflated with concrete types.
+	 */
 	if (compile_aot)
-		/* 
-		 * We might get passed the original generic method definition or
-		 * instances with type parameters.
-		 * FIXME: Remove the method->klass->generic_class limitation.
-		 */
 		try_generic_shared = mono_class_generic_sharing_enabled (method->klass) &&
 			(opts & MONO_OPT_GSHARED) && ((method->is_generic || method->klass->generic_container) || (!method->klass->generic_class && mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE)));
 	else
@@ -3080,7 +3085,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			try_generic_shared = FALSE;
 	}
 
-	if (is_gsharedvt_method (method) || (compile_aot && is_open_method (method))) {
+	gsharedvt_method = is_gsharedvt_method (method);
+	if (gsharedvt_method || (compile_aot && is_open_method (method))) {
 		/* We are AOTing a gshared method directly */
 		method_is_gshared = TRUE;
 		g_assert (compile_aot);
@@ -3141,11 +3147,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		return cfg;
 	}
 
-	if (cfg->generic_sharing_context && (mini_is_gsharedvt_sharable_method (method) || method_is_gshared)) {
+	if (cfg->generic_sharing_context && (gsharedvt_method || mini_is_gsharedvt_sharable_method (method))) {
 		MonoMethodInflated *inflated;
 		MonoGenericContext *context;
 
-		if (method_is_gshared) {
+		if (gsharedvt_method) {
 			g_assert (method->is_inflated);
 			inflated = (MonoMethodInflated*)method;
 			context = &inflated->context;
