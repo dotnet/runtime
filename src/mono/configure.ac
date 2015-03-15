@@ -70,9 +70,6 @@ AC_SUBST(libmono_ldflags)
 reloc_libdir=`basename ${libdir}`
 AC_SUBST(reloc_libdir)
 
-dnl if linker handles the version script
-no_version_script=no
-
 # Set to yes if Unix sockets cannot be created in an anonymous namespace
 need_link_unlink=no
 
@@ -310,7 +307,6 @@ case "$host" in
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])
-		no_version_script=yes
 		libdl=
 		libgc_threads=pthreads
 		has_dtrace=yes
@@ -432,13 +428,8 @@ AC_SUBST(export_ldflags)
 # Test whenever ld supports -version-script
 AC_PROG_LD
 AC_PROG_LD_GNU
-if test "x$lt_cv_prog_gnu_ld" = "xno"; then
-   no_version_script=yes
-fi
 
 AM_ICONV()
-
-AM_CONDITIONAL(NO_VERSION_SCRIPT, test x$no_version_script = xyes)
 
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h sys/param.h sys/sysctl.h libproc.h)
 AC_CHECK_HEADERS(sys/param.h sys/socket.h sys/ipc.h sys/sem.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h sys/inotify.h arpa/inet.h)

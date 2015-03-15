@@ -65,13 +65,8 @@ endif
 # hack for automake to have the same source file in a library and a bin
 genmdesc_CFLAGS = $(AM_CFLAGS)
 
-if NO_VERSION_SCRIPT
 monoldflags=$(export_ldflags)
 monobinldflags=$(export_ldflags) $(extra_runtime_ldflags)
-else
-monoldflags=-Wl,-version-script=$(srcdir)/ldscript $(export_ldflags)
-monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono $(export_ldflags) $(extra_runtime_ldflags)
-endif
 
 if HOST_WIN32
 libmonoldflags=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
@@ -743,7 +738,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 BUILT_SOURCES = version.h $(arch_built)
 
 CLEANFILES= $(BUILT_SOURCES) *.exe *.dll
-EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
+EXTRA_DIST = TestDriver.cs \
 	genmdesc.pl				\
 	$(test_sources) 			\
 	$(x86_sources) cpu-x86.md 		\
