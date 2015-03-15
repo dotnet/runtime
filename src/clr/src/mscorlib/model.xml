@@ -6150,13 +6150,16 @@
       <Member Name="UnsafeAddrOfPinnedArrayElement(System.Array,System.Int32)" />
       <Member Name="WriteByte(System.IntPtr,System.Byte)" />
       <Member Name="WriteByte(System.IntPtr,System.Int32,System.Byte)" />
+      <Member Name="WriteInt16(System.IntPtr,System.Char)" />      
       <Member Name="WriteInt16(System.IntPtr,System.Int16)" />
+      <Member Name="WriteInt16(System.IntPtr,System.Int32,System.Char)" />      
       <Member Name="WriteInt16(System.IntPtr,System.Int32,System.Int16)" />
       <Member Name="WriteInt32(System.IntPtr,System.Int32)" />
       <Member Name="WriteInt32(System.IntPtr,System.Int32,System.Int32)" />
       <Member Name="WriteInt64(System.IntPtr,System.Int32,System.Int64)" />
-      <Member Name="WriteInt64(System.IntPtr,System.Int64)" />
-      <Member Name="WriteIntPtr(System.IntPtr,System.IntPtr)" />
+      <Member Name="WriteInt64(System.IntPtr,System.Int64)" />            
+      <Member Name="WriteIntPtr(System.IntPtr,System.Int32,System.IntPtr)" />
+      <Member Name="WriteIntPtr(System.IntPtr,System.IntPtr)" />      
       <Member Name="ZeroFreeCoTaskMemUnicode(System.IntPtr)" />
       <Member Status="ImplRoot" Name="InitializeWrapperForWinRT(System.Object,System.IntPtr@)" Condition="FEATURE_COMINTEROP" />
       <Member Status="ImplRoot" Name="LoadLicenseManager" Condition="FEATURE_COMINTEROP" /><Member MemberType="Field" Name="SystemMaxDBCSCharSize" />
@@ -6186,11 +6189,11 @@
       <Member Name="PtrToStringBSTR(System.IntPtr)" />
       <Member Name="PtrToStructure&lt;T&gt;(System.IntPtr)" />
       <Member Name="PtrToStructure&lt;T&gt;(System.IntPtr,T)" />
-      <Member Name="ReadByte(System.Object,System.Int32)" />
-      <Member Name="ReadInt16(System.Object,System.Int32)" />
-      <Member Name="ReadInt32(System.Object,System.Int32)" />
-      <Member Name="ReadInt64(System.Object,System.Int32)" />
-      <Member Name="ReadIntPtr(System.Object,System.Int32)" />
+      <Member Name="ReadByte(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="ReadInt16(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="ReadInt32(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="ReadInt64(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="ReadIntPtr(System.Object,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
       <Member Name="ReAllocCoTaskMem(System.IntPtr,System.Int32)" />
       <Member Name="ReAllocHGlobal(System.IntPtr,System.IntPtr)" />
       <Member Name="SizeOf&lt;T&gt;" />
@@ -6202,15 +6205,12 @@
       <Member Name="StringToHGlobalUni(System.String)" />
       <Member Name="StructureToPtr&lt;T&gt;(T,System.IntPtr,System.Boolean)" />
       <Member Name="UnsafeAddrOfPinnedArrayElement&lt;T&gt;(T[],System.Int32)" />
-      <Member Name="WriteByte(System.Object,System.Int32,System.Byte)" />
-      <Member Name="WriteInt16(System.IntPtr,System.Char)" />
-      <Member Name="WriteInt16(System.IntPtr,System.Int32,System.Char)" />
-      <Member Name="WriteInt16(System.Object,System.Int32,System.Char)" />
-      <Member Name="WriteInt16(System.Object,System.Int32,System.Int16)" />
-      <Member Name="WriteInt32(System.Object,System.Int32,System.Int32)" />
-      <Member Name="WriteInt64(System.Object,System.Int32,System.Int64)" />
-      <Member Name="WriteIntPtr(System.IntPtr,System.Int32,System.IntPtr)" />
-      <Member Name="WriteIntPtr(System.Object,System.Int32,System.IntPtr)" />
+      <Member Name="WriteByte(System.Object,System.Int32,System.Byte)" Condition="FEATURE_LEGACYSURFACE" />      
+      <Member Name="WriteInt16(System.Object,System.Int32,System.Char)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="WriteInt16(System.Object,System.Int32,System.Int16)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="WriteInt32(System.Object,System.Int32,System.Int32)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="WriteInt64(System.Object,System.Int32,System.Int64)" Condition="FEATURE_LEGACYSURFACE" />
+      <Member Name="WriteIntPtr(System.Object,System.Int32,System.IntPtr)" Condition="FEATURE_LEGACYSURFACE" />
       <Member Name="ZeroFreeBSTR(System.IntPtr)" />
       <Member Name="ZeroFreeCoTaskMemAnsi(System.IntPtr)" />
       <Member Name="ZeroFreeGlobalAllocAnsi(System.IntPtr)" />
