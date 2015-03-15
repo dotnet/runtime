@@ -189,8 +189,35 @@ void AddFilesFromDirectoryToTpaList(const char* directory, std::string& tpaList)
         while ((entry = readdir(dir)) != nullptr)
         {
             // We are interested in files only
-            if (entry->d_type != DT_REG)
+            switch (entry->d_type)
             {
+            case DT_REG:
+                break;
+
+            // Handle symlinks and file systems that do not support d_type
+            case DT_LNK:
+            case DT_UNKNOWN:
+                {
+                    std::string fullFilename;
+
+                    fullFilename.append(directory);
+                    fullFilename.append("/");
+                    fullFilename.append(entry->d_name);
+
+                    struct stat sb;
+                    if (stat(fullFilename.c_str(), &sb) == -1)
+                    {
+                        continue;
+                    }
+
+                    if (!S_ISREG(sb.st_mode))
+                    {
+                        continue;
+                    }
+                }
+                break;
+
+            default:
                 continue;
             }
 
