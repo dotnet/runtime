@@ -9,6 +9,8 @@ namespace System.Diagnostics
         private SecureString _password;
         private bool _loadUserProfile;
 
+        private const bool CaseSensitiveEnvironmentVariables = false;
+
         public string UserName
         {
             get { return _userName ?? string.Empty; }

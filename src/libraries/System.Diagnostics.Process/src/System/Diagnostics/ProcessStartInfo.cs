@@ -85,7 +85,9 @@ namespace System.Diagnostics
                 if (_environmentVariables == null)
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
-                    _environmentVariables = new Dictionary<string, string>(envVars.Count);
+                    _environmentVariables = new Dictionary<string, string>(
+                        envVars.Count,
+                        CaseSensitiveEnvironmentVariables ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
                     foreach (DictionaryEntry entry in envVars)
                     {
                         _environmentVariables.Add((string)entry.Key, (string)entry.Value);
