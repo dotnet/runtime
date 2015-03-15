@@ -19,7 +19,7 @@ set __MSBCleanBuildArgs=
 
 :: Ensure we are not already running in a development prompt
 if "%VisualStudioVersion%" == "" goto Arg_Loop
-echo Please make sure to run %0 from a normal prompt (not from a development prompt!) 
+echo Please make sure to run %0 from a normal prompt (not from a VS Developer Command Prompt!) 
 goto :eof
 
 :Arg_Loop
