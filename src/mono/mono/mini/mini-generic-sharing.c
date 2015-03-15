@@ -2571,7 +2571,7 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
 /*
  * mini_type_get_underlying_type:
  *
- *   Return the underlying type of TYPE, taking into account enums, byref and generic
+ *   Return the underlying type of TYPE, taking into account enums, byref, bool, char and generic
  * sharing.
  */
 MonoType*
@@ -2583,7 +2583,15 @@ mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoType *type)
 		return &mono_defaults.int_class->byval_arg;
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
 		return type;
-	return mini_get_basic_type_from_generic (gsctx, mono_type_get_underlying_type (type));
+	type = mini_get_basic_type_from_generic (gsctx, mono_type_get_underlying_type (type));
+	switch (type->type) {
+	case MONO_TYPE_BOOLEAN:
+		return &mono_defaults.byte_class->byval_arg;
+	case MONO_TYPE_CHAR:
+		return &mono_defaults.uint16_class->byval_arg;
+	default:
+		return type;
+	}
 }
 
 /*

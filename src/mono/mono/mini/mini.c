@@ -429,11 +429,9 @@ handle_enum:
 	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 		return OP_STOREI1_MEMBASE_REG;
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 		return OP_STOREI2_MEMBASE_REG;
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -488,12 +486,10 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_I1:
 		return OP_LOADI1_MEMBASE;
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 		return OP_LOADU1_MEMBASE;
 	case MONO_TYPE_I2:
 		return OP_LOADI2_MEMBASE;
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 		return OP_LOADU2_MEMBASE;
 	case MONO_TYPE_I4:
 		return OP_LOADI4_MEMBASE;

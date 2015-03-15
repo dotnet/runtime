@@ -1487,14 +1487,12 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 		}
 		simpletype = mini_type_get_underlying_type (gsctx, sig->params [i]);
 		switch (simpletype->type) {
-		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 			cinfo->args [n].size = 1;
 			add_general (&gr, &stack_size, ainfo, TRUE);
 			n++;
 			break;
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 			cinfo->args [n].size = 2;
@@ -1658,12 +1656,10 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	{
 		simpletype = mini_type_get_underlying_type (gsctx, sig->ret);
 		switch (simpletype->type) {
-		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
@@ -2728,10 +2724,10 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 	// FIXME: Preprocess the info to speed up start_dyn_call ()
 	info->sig = sig;
 	info->cinfo = cinfo;
-	info->rtype = mini_replace_type (sig->ret);
+	info->rtype = mini_type_get_underlying_type (NULL, sig->ret);
 	info->param_types = g_new0 (MonoType*, sig->param_count);
 	for (i = 0; i < sig->param_count; ++i)
-		info->param_types [i] = mini_replace_type (sig->params [i]);
+		info->param_types [i] = mini_type_get_underlying_type (NULL, sig->params [i]);
 	
 	return (MonoDynCallInfo*)info;
 }
@@ -2800,7 +2796,6 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_U:
 			p->regs [slot] = (mgreg_t)*arg;
 			break;
-		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1:
 			p->regs [slot] = *(guint8*)arg;
 			break;
@@ -2811,7 +2806,6 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			p->regs [slot] = *(gint16*)arg;
 			break;
 		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
 			p->regs [slot] = *(guint16*)arg;
 			break;
 		case MONO_TYPE_I4:
@@ -2883,14 +2877,12 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		*(gint8*)ret = res;
 		break;
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 		*(guint8*)ret = res;
 		break;
 	case MONO_TYPE_I2:
 		*(gint16*)ret = res;
 		break;
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 		*(guint16*)ret = res;
 		break;
 	case MONO_TYPE_I4:

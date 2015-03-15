@@ -281,11 +281,9 @@ handle_enum:
 	switch (type->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 		return OP_MOVE;
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 		return OP_MOVE;
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
@@ -752,10 +750,8 @@ handle_enum:
 		return;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		inst->type = STACK_I4;
@@ -1290,10 +1286,8 @@ type_to_stack_type (MonoCompile *cfg, MonoType *t)
 	switch (t->type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return STACK_I4;
@@ -2147,10 +2141,8 @@ handle_enum:
 		return calli? OP_VOIDCALL_REG: virt? OP_VOIDCALL_MEMBASE: OP_VOIDCALL;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		return calli? OP_CALL_REG: virt? OP_CALL_MEMBASE: OP_CALL;
@@ -2228,10 +2220,8 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		return 1;
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I2:
 	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
 	case MONO_TYPE_I4:
 	case MONO_TYPE_U4:
 		if (arg->type != STACK_I4 && arg->type != STACK_PTR)
@@ -2353,10 +2343,8 @@ handle_enum:
 			continue;
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
-		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 			if (args [i]->type != STACK_I4 && args [i]->type != STACK_PTR)
