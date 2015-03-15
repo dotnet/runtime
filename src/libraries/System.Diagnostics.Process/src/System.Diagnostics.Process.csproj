@@ -59,9 +59,12 @@
   <ItemGroup Condition=" '$(OS)' == 'Unix' ">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
+    <Compile Include="System\Diagnostics\Process.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
-    <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.Unix.cs" />
+    <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitState.Unix.cs" />
     <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
