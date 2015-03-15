@@ -483,6 +483,7 @@ namespace System.Diagnostics.ProcessTests
             Environment2.Add("NewKey", "NewValue");
             Environment2.Add("NewKey2", "NewValue2");
             Assert.True(Environment2.ContainsKey("NewKey"));
+            Assert.True(Environment2.ContainsKey("newkey")); // Windows is case-insensitive (will need to adapt this when we support tests on Unix)
             Assert.False(Environment2.ContainsKey("NewKey99"));
 
             //Iterating
@@ -518,6 +519,7 @@ namespace System.Diagnostics.ProcessTests
 
             //Contains
             Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey", "NewValue")));
+            Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("nEwKeY", "NewValue"))); // case-insensitive keys on Windows
             Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey99", "NewValue99")));
 
             //Exception not thrown with invalid key
@@ -537,8 +539,11 @@ namespace System.Diagnostics.ProcessTests
             string stringout = null;
             bool retval = false;
             retval = Environment2.TryGetValue("NewKey", out stringout);
-            Assert.Equal("NewValue", stringout);
             Assert.True(retval);
+            Assert.Equal("NewValue", stringout);
+            retval = Environment2.TryGetValue("NeWkEy", out stringout);
+            Assert.True(retval);
+            Assert.Equal("NewValue", stringout);
 
             stringout = null;
             retval = false;
@@ -579,7 +584,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Throws<System.Collections.Generic.KeyNotFoundException>(() => { string a1 = Environment2["1bB"]; });
 
             Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey2", "NewValue2")));
-            Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("newkey2", "NewValue2")));
+            Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NEWKeY2", "NewValue2"))); // case-insensitive keys on Windows
             Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey2", "newvalue2")));
             Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("newkey2", "newvalue2")));
 
