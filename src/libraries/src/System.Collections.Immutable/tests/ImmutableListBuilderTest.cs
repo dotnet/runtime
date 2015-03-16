@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -297,6 +298,13 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(new[] { 9, 8 }, list.Cast<int>().ToArray());
             list.Clear();
             Assert.Equal(0, list.Count);
+        }
+
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableList.CreateBuilder<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableList.CreateBuilder<string>());
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)

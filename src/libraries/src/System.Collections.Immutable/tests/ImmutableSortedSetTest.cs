@@ -319,6 +319,16 @@ namespace System.Collections.Immutable.Test
             enumerator.Dispose();
         }
 
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedSet.Create<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableSortedSet.Create<string>("1", "2", "3"));
+
+            object rootNode = DebuggerAttributes.GetFieldValue(ImmutableSortedSet.Create<object>(), "_root");
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
+        }
+
         protected override IImmutableSet<T> Empty<T>()
         {
             return ImmutableSortedSet<T>.Empty;

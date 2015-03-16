@@ -1,10 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -408,6 +405,13 @@ namespace System.Collections.Concurrent.Tests
 
             Task.WaitAll(tasks);
             Assert.True(0 == failCount, "RTest9_ToArray:  One or more thread failed to get the correct bag items from ToArray");
+        }
+
+        [Fact]
+        public static void RTest10_DebuggerAttributes()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentBag<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ConcurrentBag<int>());
         }
 
         #region Helper Methods / Classes

@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -63,6 +61,13 @@ namespace System.Collections.Concurrent.Tests
             // "Test7_Exceptions:  CopyTo didn't throw ANE when null array passed");
             Assert.Throws<ArgumentOutOfRangeException>( () => queue.CopyTo(new int[1], -1));
             // "Test7_Exceptions:  CopyTo didn't throw AORE when negative array index passed");
+        }
+
+        [Fact]
+        public static void Test8_DebuggerAttributes()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentQueue<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ConcurrentQueue<int>());
         }
 
         [Fact]

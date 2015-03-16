@@ -31,6 +31,9 @@
     <Compile Include="PartitionerStaticTests.cs" />
     <Compile Include="RangePartitionerNegativeTests.cs" />
     <Compile Include="PartitionerHelpers.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>

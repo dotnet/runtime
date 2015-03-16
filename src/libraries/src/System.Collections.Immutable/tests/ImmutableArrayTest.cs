@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -1255,6 +1256,13 @@ namespace System.Collections.Immutable.Test
                 }
             };
             Task.WaitAll(Task.Run(mutator), Task.Run(mutator));
+        }
+
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create<string>()); // verify empty
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create(1, 2, 3));  // verify non-empty
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)

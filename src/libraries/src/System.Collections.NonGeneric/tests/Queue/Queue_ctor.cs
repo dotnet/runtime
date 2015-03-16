@@ -5,6 +5,7 @@ using System.Text;
 using System;
 using System.Collections;
 using Xunit;
+using System.Diagnostics;
 
 public class Queue_ctor
 {
@@ -71,6 +72,13 @@ public class Queue_ctor
         }
 
         Assert.True(bResult);
+    }
+
+    [Fact]
+    public void DebuggerAttributeTests()
+    {
+        DebuggerAttributes.ValidateDebuggerDisplayReferences(new Queue());
+        DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new Queue());
     }
 
 }

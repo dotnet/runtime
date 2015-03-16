@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Collections.StackTests
@@ -358,7 +359,12 @@ public class StackBasicTests
     {
         Assert.Throws<ArgumentNullException>(() => { Stack stack = new Stack(null); });
     }
-
-
+        
+    [Fact]
+    public void DebuggerAttributeTests()
+    {
+        DebuggerAttributes.ValidateDebuggerDisplayReferences(new Stack());
+        DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new Stack());
+    }
 }
 }

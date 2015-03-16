@@ -5,6 +5,7 @@ using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace Test
 {
@@ -143,5 +144,13 @@ namespace Test
             ObservableCollection<Guid> col = new ObservableCollection<Guid>((IEnumerable<Guid>)anArray);
             Assert.False(((ICollection<Guid>)col).IsReadOnly);
         }
+
+        [Fact]
+        public static void DebuggerAttributeTests()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ObservableCollection<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ObservableCollection<int>());
+        }
+
     }
 }
