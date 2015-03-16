@@ -2722,7 +2722,7 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 	ji = mono_jit_info_table_find (mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 
 	thread_interrupt (data->tls, info, NULL, ji);
-	return ResumeThread;
+	return MonoResumeThread;
 }
 
 /*
