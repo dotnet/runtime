@@ -657,7 +657,7 @@ PAL_IsDebuggerPresent()
 {
 #ifdef __LINUX__
     BOOL debugger_present = FALSE;
-    char buf[1024];
+    char buf[2048];
 
     int status_fd = open("/proc/self/status", O_RDONLY);
     if (status_fd == -1)
