@@ -232,12 +232,30 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContext->Rdi = *m_MachState.m_pRdi;
     pRD->pCurrentContext->Rsi = *m_MachState.m_pRsi;
 #endif
-    pRD->pCurrentContext->Rbx = *m_MachState.m_pRbx;
-    pRD->pCurrentContext->Rbp = *m_MachState.m_pRbp;
-    pRD->pCurrentContext->R12 = *m_MachState.m_pR12;
-    pRD->pCurrentContext->R13 = *m_MachState.m_pR13;
-    pRD->pCurrentContext->R14 = *m_MachState.m_pR14;
-    pRD->pCurrentContext->R15 = *m_MachState.m_pR15;
+    if (m_MachState.m_pRbx != NULL) 
+    {
+        pRD->pCurrentContext->Rbx = *m_MachState.m_pRbx;
+    }
+    if (m_MachState.m_pRbp != NULL)
+    {
+        pRD->pCurrentContext->Rbp = *m_MachState.m_pRbp;
+    }
+    if (m_MachState.m_pR12 != NULL)
+    {
+        pRD->pCurrentContext->R12 = *m_MachState.m_pR12;
+    }
+    if (m_MachState.m_pR13 != NULL)
+    {
+        pRD->pCurrentContext->R13 = *m_MachState.m_pR13;
+    }
+    if (m_MachState.m_pR14 != NULL)
+    {
+        pRD->pCurrentContext->R14 = *m_MachState.m_pR14;
+    }
+    if (m_MachState.m_pR15 != NULL)
+    {
+        pRD->pCurrentContext->R15 = *m_MachState.m_pR15;
+    }
 #ifndef UNIX_AMD64_ABI
     pRD->pCurrentContextPointers->Rdi = m_MachState.m_pRdi;
     pRD->pCurrentContextPointers->Rsi = m_MachState.m_pRsi;
