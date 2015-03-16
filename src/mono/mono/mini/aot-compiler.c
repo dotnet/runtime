@@ -6441,10 +6441,6 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "direct-icalls")) {
 			opts->direct_icalls = TRUE;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
-		} else if (str_begins_with (arg, "iphone-abi")) {
-			// older full-aot users did depend on this.
-#endif
 		} else if (str_begins_with (arg, "no-direct-calls")) {
 			opts->no_direct_calls = TRUE;
 		} else if (str_begins_with (arg, "print-skipped")) {
