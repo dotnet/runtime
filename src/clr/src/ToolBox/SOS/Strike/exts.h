@@ -137,12 +137,12 @@ extern PDEBUG_CONTROL2       g_ExtControl;
 extern PDEBUG_DATA_SPACES    g_ExtData;
 extern PDEBUG_SYMBOLS        g_ExtSymbols;
 extern PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
+extern PDEBUG_REGISTERS      g_ExtRegisters;
 
 #ifndef FEATURE_PAL
 
 // Global variables initialized by query.
 extern PDEBUG_DATA_SPACES2   g_ExtData2;
-extern PDEBUG_REGISTERS      g_ExtRegisters;
 extern PDEBUG_SYMBOLS2       g_ExtSymbols2;
 extern PDEBUG_ADVANCED3      g_ExtAdvanced3;
 

@@ -162,7 +162,7 @@ DataTarget::GetThreadContext(
     {
         return E_UNEXPECTED;
     }
-    return g_ExtClient->GetThreadContextById(threadID, contextFlags, contextSize, context);
+    return g_ExtSystem->GetThreadContextById(threadID, contextFlags, contextSize, context);
 }
 
 HRESULT STDMETHODCALLTYPE
