@@ -41,9 +41,9 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 }
 
 void
-mono_threads_core_abort_syscall (MonoThreadInfo *info)
+mono_threads_core_interrupt (MonoThreadInfo *info)
 {
-	mono_threads_core_interrupt (info);
+	mono_threads_core_abort_syscall (info);
 }
 
 gboolean
