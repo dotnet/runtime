@@ -2850,7 +2850,7 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 	for (i = 0; i < inst->type_argc; ++i) {
 		if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)) {
 			type_argv [i] = shared_inst->type_argv [i];
-		} else if (partial) {
+		} else if (!all_vt && partial) {
 			/* These types match the ones in generic_inst_is_sharable () */
 			type_argv [i] = get_shared_type (shared_inst->type_argv [i], inst->type_argv [i]);
 		} else if (all_vt) {

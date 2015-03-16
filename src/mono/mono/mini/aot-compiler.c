@@ -7573,16 +7573,19 @@ mono_aot_method_hash (MonoMethod *method)
 	int hashes_count;
 	guint32 *hashes_start, *hashes;
 	guint32 a, b, c;
+	MonoGenericInst *class_ginst = NULL;
 	MonoGenericInst *ginst = NULL;
 
 	/* Similar to the hash in mono_method_get_imt_slot () */
 
 	sig = mono_method_signature (method);
 
+	if (method->klass->generic_class)
+		class_ginst = method->klass->generic_class->context.class_inst;
 	if (method->is_inflated)
 		ginst = ((MonoMethodInflated*)method)->context.method_inst;
 
-	hashes_count = sig->param_count + 5 + (ginst ? ginst->type_argc : 0);
+	hashes_count = sig->param_count + 5 + (class_ginst ? class_ginst->type_argc : 0) + (ginst ? ginst->type_argc : 0);
 	hashes_start = g_malloc0 (hashes_count * sizeof (guint32));
 	hashes = hashes_start;
 
@@ -7593,7 +7596,12 @@ mono_aot_method_hash (MonoMethod *method)
 		klass = mono_defaults.object_class;
 
 	if (!method->wrapper_type) {
-		char *full_name = mono_type_full_name (&klass->byval_arg);
+		char *full_name;
+
+		if (klass->generic_class)
+			full_name = mono_type_full_name (&klass->generic_class->container_class->byval_arg);
+		else
+			full_name = mono_type_full_name (&klass->byval_arg);
 
 		hashes [0] = mono_metadata_str_hash (full_name);
 		hashes [1] = 0;
@@ -7612,6 +7620,10 @@ mono_aot_method_hash (MonoMethod *method)
 	hindex = 5;
 	for (i = 0; i < sig->param_count; i++) {
 		hashes [hindex ++] = mono_aot_type_hash (sig->params [i]);
+	}
+	if (class_ginst) {
+		for (i = 0; i < class_ginst->type_argc; ++i)
+			hashes [hindex ++] = mono_aot_type_hash (class_ginst->type_argv [i]);
 	}
 	if (ginst) {
 		for (i = 0; i < ginst->type_argc; ++i)
@@ -7768,7 +7780,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		value = get_method_index (acfg, method);
 
 		hash = mono_aot_method_hash (method) % table_size;
-		//printf ("X: %s %d\n", mono_method_full_name (method, 1), hash);
+		//printf ("X: %s %x\n", mono_method_full_name (method, 1), mono_aot_method_hash (method));
 
 		chain_lengths [hash] ++;
 		max_chain_length = MAX (max_chain_length, chain_lengths [hash]);
