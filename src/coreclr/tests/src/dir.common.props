@@ -30,13 +30,14 @@
 <!-- Setup the default output and intermediate paths -->
   <PropertyGroup>
     <BaseOutputPathWithConfig>$(ProjectDir)\..\binaries\tests\$(BuildOS).$(Platform).$(Configuration)\</BaseOutputPathWithConfig>
-    <BaseOutputPathWithConfig Condition="'$(__TestWorkingDir)' != ''">$(__TestWorkingDir)\</BaseOutputPathWithConfig>
+    <BaseOutputPathWithConfig Condition="'$(__TestBinDir)' != ''">$(__TestBinDir)\</BaseOutputPathWithConfig>
     <BinDir>$(BaseOutputPathWithConfig)\..</BinDir>
-    <BaseIntermediateOutputPath>$(BinDir)\intermediates\</BaseIntermediateOutputPath>
-    <__CMakeTestSlnDir Condition="'$(__CMakeTestSlnDir)' == ''">$(BaseOutputPathWithConfig)\CMake\</__CMakeTestSlnDir>
+    <BaseIntermediateOutputPath>$(ProjectDir)\..\binaries\tests\intermediates\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
+    <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\intermediates\$(BuildOS).$(Platform).$(Configuration)\))</__NativeTestIntermediatesDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
     <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(SourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(SourceDir),''))</BuildProjectRelativeDir>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\$(BuildOS).$(Platform).$(Configuration)\</IntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)</IntermediateOutputPath>
     <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutputPath>
   </PropertyGroup>
 
