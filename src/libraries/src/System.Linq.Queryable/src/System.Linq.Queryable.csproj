@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{BE12B753-C130-4B68-86E3-877F1AEE52C0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Linq.Queryable</AssemblyName>
+    <RootNamespace>System.Linq.Queryable</RootNamespace>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Linq\EnumerableExecutor.cs" />
+    <Compile Include="System\Linq\EnumerableQuery.cs" />
+    <Compile Include="System\Linq\EnumerableRewriter.cs" />
+    <Compile Include="System\Linq\Error.cs" />
+    <Compile Include="System\Linq\Expressions\OldExpressionVisitor.cs" />
+    <Compile Include="System\Linq\Expressions\ReadOnlyCollectionExtensions.cs" />
+    <Compile Include="System\Linq\Queryable.cs" />
+    <Compile Include="System\Linq\Strings.cs" />
+    <Compile Include="System\Linq\TypeHelper.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
