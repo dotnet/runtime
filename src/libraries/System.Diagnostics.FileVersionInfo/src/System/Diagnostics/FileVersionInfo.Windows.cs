@@ -15,7 +15,7 @@ namespace System.Diagnostics
 
             uint handle;  // This variable is not used, but we need an out variable.
             uint infoSize = Interop.mincore.GetFileVersionInfoSizeEx(
-                (uint)Interop.Constants.FileVerGetLocalised, _fileName, out handle);
+                (uint)Interop.mincore.FileVersionInfoType.FILE_VER_GET_LOCALISED, _fileName, out handle);
 
             if (infoSize != 0)
             {
@@ -24,7 +24,7 @@ namespace System.Diagnostics
                 {
                     IntPtr memIntPtr = new IntPtr((void*)memPtr);
                     if (Interop.mincore.GetFileVersionInfoEx(
-                            (uint)Interop.Constants.FileVerGetLocalised | (uint)Interop.Constants.FileVerGetNeutral,
+                            (uint)Interop.mincore.FileVersionInfoType.FILE_VER_GET_LOCALISED | (uint)Interop.mincore.FileVersionInfoType.FILE_VER_GET_NEUTRAL,
                             _fileName,
                             0U,
                             infoSize,
@@ -73,17 +73,17 @@ namespace System.Diagnostics
             return value.ToString("X8", CultureInfo.InvariantCulture);
         }
 
-        private static Interop.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
+        private static Interop.mincore.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
         {
             IntPtr memRef = IntPtr.Zero;
             uint memLen;
 
             if (Interop.mincore.VerQueryValue(memPtr, "\\", out memRef, out memLen))
             {
-                return (Interop.VS_FIXEDFILEINFO)Marshal.PtrToStructure<Interop.VS_FIXEDFILEINFO>(memRef);
+                return (Interop.mincore.VS_FIXEDFILEINFO)Marshal.PtrToStructure<Interop.mincore.VS_FIXEDFILEINFO>(memRef);
             }
 
-            return new Interop.VS_FIXEDFILEINFO();
+            return new Interop.mincore.VS_FIXEDFILEINFO();
         }
 
         private static string GetFileVersionLanguage(IntPtr memPtr)
@@ -147,7 +147,7 @@ namespace System.Diagnostics
 
             _language = GetFileVersionLanguage(memIntPtr);
 
-            Interop.VS_FIXEDFILEINFO ffi = GetFixedFileInfo(memIntPtr);
+            Interop.mincore.VS_FIXEDFILEINFO ffi = GetFixedFileInfo(memIntPtr);
             _fileMajor = (int)HIWORD(ffi.dwFileVersionMS);
             _fileMinor = (int)LOWORD(ffi.dwFileVersionMS);
             _fileBuild = (int)HIWORD(ffi.dwFileVersionLS);
@@ -157,11 +157,11 @@ namespace System.Diagnostics
             _productBuild = (int)HIWORD(ffi.dwProductVersionLS);
             _productPrivate = (int)LOWORD(ffi.dwProductVersionLS);
 
-            _isDebug = (ffi.dwFileFlags & (uint)Interop.Constants.VS_FF_Debug) != 0;
-            _isPatched = (ffi.dwFileFlags & (uint)Interop.Constants.VS_FF_Patched) != 0;
-            _isPrivateBuild = (ffi.dwFileFlags & (uint)Interop.Constants.VS_FF_PrivateBuild) != 0;
-            _isPreRelease = (ffi.dwFileFlags & (uint)Interop.Constants.VS_FF_Prerelease) != 0;
-            _isSpecialBuild = (ffi.dwFileFlags & (uint)Interop.Constants.VS_FF_SpecialBuild) != 0;
+            _isDebug = (ffi.dwFileFlags & (uint)Interop.mincore.FileVersionInfo.VS_FF_DEBUG) != 0;
+            _isPatched = (ffi.dwFileFlags & (uint)Interop.mincore.FileVersionInfo.VS_FF_PATCHED) != 0;
+            _isPrivateBuild = (ffi.dwFileFlags & (uint)Interop.mincore.FileVersionInfo.VS_FF_PRIVATEBUILD) != 0;
+            _isPreRelease = (ffi.dwFileFlags & (uint)Interop.mincore.FileVersionInfo.VS_FF_PRERELEASE) != 0;
+            _isSpecialBuild = (ffi.dwFileFlags & (uint)Interop.mincore.FileVersionInfo.VS_FF_SPECIALBUILD) != 0;
 
             // fileVersion is chosen based on best guess. Other fields can be used if appropriate.
             return (_fileVersion != string.Empty);

@@ -28,7 +28,12 @@
     <Compile Include="System\Globalization\Extensions.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
-    <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetLastError.cs">
+      <Link>Common\Interop\Windows\Interop.SetLastError.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Interop.Globalization.Extensions.manual.cs">
       <Link>Common\Interop\Interop.Globalization.Extensions.manual.cs</Link>
     </Compile>
