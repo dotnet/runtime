@@ -545,6 +545,13 @@ private:
                         PREGDISPLAY     pRD
                         );
 
+#ifdef FEATURE_PAL
+    OBJECTREF* GetCapturedRegister(
+                        int             regNum,
+                        PREGDISPLAY     pRD
+                        );
+#endif // FEATURE_PAL
+
     OBJECTREF* GetStackSlot(
                         INT32           spOffset,
                         GcStackSlotBase spBase,
