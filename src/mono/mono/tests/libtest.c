@@ -1097,12 +1097,18 @@ mono_test_marshal_stringbuilder (char *s, int n)
 }
 
 LIBTEST_API int STDCALL  
-mono_test_marshal_stringbuilder2 (char *s, int n)
+mono_test_marshal_stringbuilder_append (char *s, int length)
 {
-	const char m[] = "EFGH";
+	const char out_sentinel[] = "CSHARP_";
+	const char out_len = strlen (out_sentinel);
 
-	strncpy(s, m, n);
-	s [n] = '\0';
+	for (int i=0; i < length; i++) {
+		s [i] = out_sentinel [i % out_len];
+	}
+
+	s [length] = '\0';
+
+
 	return 0;
 }
 

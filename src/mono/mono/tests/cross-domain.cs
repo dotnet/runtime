@@ -13,7 +13,7 @@ public class Test: MarshalByRefObject
 		Test server = (Test) domain.CreateInstanceAndUnwrap(typeof(Test).Assembly.FullName, "Test");
 		return server.RunTest ();
 	}
-	
+
 	public int RunTest ()
 	{
 		try
@@ -58,13 +58,22 @@ public class Test: MarshalByRefObject
 				ba [n] = n;
 				
 			server.Run8 (ba);
-			
+
 			for (int n=0; n<ba.Length; n++)
 				CheckValue (ba[n], (byte) (ba.Length - n), 180);
 			
 			StringBuilder sb = new StringBuilder ("un");
-			server.Run9 (sb);
+			server.Run9_1 (sb);
 			Test.CheckValue (sb, new StringBuilder ("un"), 190);
+
+			StringBuilder sb2 = new StringBuilder ("prefix");
+			StringBuilder sb3 = server.Run9_2 (sb2);
+			Test.CheckValue (sb2, new StringBuilder ("prefix"), 192);
+			Test.CheckValue (sb3, new StringBuilder ("prefix-middle"), 192);
+			StringBuilder sb4 = server.Run9_3 (sb3);
+			Test.CheckValue (sb3, new StringBuilder ("prefix-middle"), 193);
+			Test.CheckValue (sb4, new StringBuilder ("prefix-middle-end"), 193);
+
 			
 		}
 		catch (TestException ex)
@@ -107,7 +116,10 @@ public class Test: MarshalByRefObject
 			StringBuilder sb2 = (StringBuilder) ob2;
 
 			if (sb1.ToString () != sb2.ToString ())
-				throw new TestException ("Strings are not equal", ec);
+				throw new TestException ("String in StringBuilders are not equal", ec);
+
+			if (sb1.Length != sb2.Length)
+				throw new TestException ("Lengths in StringBuilders are not equal", ec);
 		}
 		else if (!ob1.Equals (ob2))
 			throw new TestException ("Objects are not equal", ec);
@@ -201,14 +213,31 @@ public class Remo: MarshalByRefObject
 			bytes[n] = (byte) (bytes.Length - n);
 		}
 	}
-	
-	public void Run9 ([In,Out] StringBuilder sb)
+
+	public void Run9_1 ([In,Out] StringBuilder sb)
 	{
 		CheckThisDomain (90);
 		Test.CheckValue (sb, new StringBuilder ("un"), 91);
 		sb.Append ("-dos");
 	}
-	
+
+	public StringBuilder Run9_2 ([In] StringBuilder sb)
+	{
+		CheckThisDomain (91);
+		Test.CheckValue (sb, new StringBuilder ("prefix"), 92);
+		sb.Append ("-middle");
+		return sb;
+	}
+
+	public StringBuilder Run9_3 ([In,Out] StringBuilder sb)
+	{
+		CheckThisDomain (92);
+		Test.CheckValue (sb, new StringBuilder ("prefix-middle"), 93);
+		sb.Append ("-end");
+
+		return sb;
+	}
+
 	public void Peta ()
 	{
 		throw new Exception ("peta");
