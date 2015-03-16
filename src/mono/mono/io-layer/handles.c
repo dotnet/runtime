@@ -279,13 +279,6 @@ wapi_init (void)
 	_wapi_global_signal_mutex = &_WAPI_PRIVATE_HANDLES (GPOINTER_TO_UINT (_wapi_global_signal_handle)).signal_mutex;
 
 	wapi_processes_init ();
-
-	/* Using atexit here instead of an explicit function call in
-	 * a cleanup routine lets us cope when a third-party library
-	 * calls exit (eg if an X client loses the connection to its
-	 * server.)
-	 */
-	mono_atexit (handle_cleanup);
 }
 
 void
@@ -298,6 +291,7 @@ wapi_cleanup (void)
 	_wapi_error_cleanup ();
 	_wapi_thread_cleanup ();
 	wapi_processes_cleanup ();
+	handle_cleanup ();
 }
 
 static void _wapi_handle_init_shared (struct _WapiHandleShared *handle,
