@@ -18,7 +18,7 @@
       <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity).XUnitWrapper.dll')" />
     </ItemGroup>
     
-    <Error  Text=" The Wrappers must be compiled and placed at $(TestAssemblyDir) before they can be run, Do a clean Test Run"
+    <Error  Text=" The wrappers must be compiled and placed at $(TestAssemblyDir) before they can be run, Do a clean Test Run"
             Condition="'@(AllTestAssemblies)' == ''" />
     
     <Message Text= "AllTestAssemblies= @(AllTestAssemblies)"/>
