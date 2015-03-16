@@ -169,7 +169,6 @@ namespace System.IO
             }
             catch (ObjectDisposedException)
             { //Ignore
-                Debug.Assert(IsHandleInvalid, "ObjectDisposedException from something other than SafeHandle?");
             }
             catch (ArgumentNullException)
             { //Ignore
