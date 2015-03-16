@@ -3033,6 +3033,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	gboolean run_cctors = (flags & JIT_FLAG_RUN_CCTORS) ? 1 : 0;
 	gboolean compile_aot = (flags & JIT_FLAG_AOT) ? 1 : 0;
 	gboolean full_aot = (flags & JIT_FLAG_FULL_AOT) ? 1 : 0;
+	gboolean disable_direct_icalls = (flags & JIT_FLAG_NO_DIRECT_ICALLS) ? 1 : 0;
 	gboolean gsharedvt_method = FALSE;
 #ifdef ENABLE_LLVM
 	gboolean llvm = (flags & JIT_FLAG_LLVM) ? 1 : 0;
@@ -3124,6 +3125,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->explicit_null_checks = debug_options.explicit_null_checks;
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
+	cfg->disable_direct_icalls = disable_direct_icalls;
 	if (try_generic_shared)
 		cfg->generic_sharing_context = (MonoGenericSharingContext*)&cfg->gsctx;
 	cfg->compile_llvm = try_llvm;

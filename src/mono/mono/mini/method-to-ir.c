@@ -3002,15 +3002,10 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst 
 	 *   threads when debugging.
 	 */
 	if (info->no_raise) {
-		if (cfg->compile_aot) {
-			// FIXME: This might be loaded into a runtime during debugging
-			// even if it is not compiled using 'soft-debug'.
-		} else {
-			no_wrapper = TRUE;
-			/* LLVM on amd64 can't handle calls to non-32 bit addresses */
-			if ((cfg->compile_llvm && SIZEOF_VOID_P == 8) || cfg->gen_seq_points_debug_data)
-				no_wrapper = FALSE;
-		}
+		no_wrapper = TRUE;
+		/* LLVM on amd64 can't handle calls to non-32 bit addresses */
+		if ((cfg->compile_llvm && SIZEOF_VOID_P == 8) || cfg->gen_seq_points_debug_data || cfg->disable_direct_icalls)
+			no_wrapper = FALSE;
 	}
 
 	if (no_wrapper) {

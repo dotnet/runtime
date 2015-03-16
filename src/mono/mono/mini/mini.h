@@ -1325,6 +1325,8 @@ typedef enum {
 	JIT_FLAG_FULL_AOT = (1 << 2),
 	/* Whenever to compile with LLVM */
 	JIT_FLAG_LLVM = (1 << 3),
+	/* Whenever to disable direct calls to direct calls to icall functions */
+	JIT_FLAG_NO_DIRECT_ICALLS = (1 << 4)
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -1493,6 +1495,7 @@ typedef struct {
 	guint            disable_vreg_to_lvreg : 1;
 	guint            disable_deadce_vars : 1;
 	guint            disable_out_of_line_bblocks : 1;
+	guint            disable_direct_icalls : 1;
 	guint            create_lmf_var : 1;
 	/*
 	 * When this is set, the code to push/pop the LMF from the LMF stack is generated as IR

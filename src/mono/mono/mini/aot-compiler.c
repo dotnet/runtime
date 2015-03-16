@@ -6712,6 +6712,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags |= JIT_FLAG_FULL_AOT;
 	if (acfg->llvm)
 		flags |= JIT_FLAG_LLVM;
+	if (acfg->aot_opts.no_direct_calls)
+		flags |= JIT_FLAG_NO_DIRECT_ICALLS;
 	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), flags, 0);
 	mono_loader_clear_error ();
 
