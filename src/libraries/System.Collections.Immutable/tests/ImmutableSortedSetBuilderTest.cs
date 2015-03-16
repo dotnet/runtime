@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -325,6 +326,13 @@ namespace System.Collections.Immutable.Test
 
             Assert.Throws<ArgumentOutOfRangeException>(() => builder[-1]);
             Assert.Throws<ArgumentOutOfRangeException>(() => builder[3]);
+        }
+
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedSet.CreateBuilder<string>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableSortedSet.CreateBuilder<int>());
         }
     }
 }
