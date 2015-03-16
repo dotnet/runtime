@@ -103,6 +103,10 @@ case $OSName in
         __BuildOS=freebsd
         ;;
 
+    OpenBSD)
+        __BuildOS=openbsd
+        ;;
+
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         __BuildOS=linux
