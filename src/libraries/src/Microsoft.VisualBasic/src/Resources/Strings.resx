@@ -1,0 +1,351 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ID91" xml:space="preserve">
+    <value>Object variable or With block variable not set.</value>
+  </data>
+  <data name="ID92" xml:space="preserve">
+    <value>For loop not initialized.</value>
+  </data>
+  <data name="Argument_GEZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater or equal to zero.</value>
+  </data>
+  <data name="Argument_GTZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than zero.</value>
+  </data>
+  <data name="Argument_LengthGTZero1" xml:space="preserve">
+    <value>Length of argument '{0}' must be greater than zero.</value>
+  </data>
+  <data name="Argument_RangeTwoBytes1" xml:space="preserve">
+    <value>Argument '{0}' must be within the range of -32768 to 65535.</value>
+  </data>
+  <data name="Argument_MinusOneOrGTZero1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than 0 or equal to -1.</value>
+  </data>
+  <data name="Argument_GEMinusOne1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than or equal to -1.</value>
+  </data>
+  <data name="Argument_GEOne1" xml:space="preserve">
+    <value>Argument '{0}' must be greater than or equal to 1.</value>
+  </data>
+  <data name="Argument_RankEQOne1" xml:space="preserve">
+    <value>Argument '{0}' cannot be a multi-dimensional array.</value>
+  </data>
+  <data name="Argument_IComparable2" xml:space="preserve">
+    <value>Loop control variable of type '{1}' does not implement the 'System.IComparable' interface.</value>
+  </data>
+  <data name="Argument_NotNumericType2" xml:space="preserve">
+    <value>Type of argument '{0}' is '{1}', which is not numeric.</value>
+  </data>
+  <data name="Argument_InvalidValue1" xml:space="preserve">
+    <value>Argument '{0}' is not a valid value.</value>
+  </data>
+  <data name="Argument_InvalidValueType2" xml:space="preserve">
+    <value>Argument '{0}' cannot be converted to type '{1}'.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Arguments are not valid.</value>
+  </data>
+  <data name="Collection_BeforeAfterExclusive" xml:space="preserve">
+    <value>'Before' and 'After' arguments cannot be combined.</value>
+  </data>
+  <data name="Collection_DuplicateKey" xml:space="preserve">
+    <value>Add failed. Duplicate key value supplied.</value>
+  </data>
+  <data name="ForLoop_CommonType2" xml:space="preserve">
+    <value>Cannot convert start value of type '{0}' and step value of type '{1}' to a common numeric type.</value>
+  </data>
+  <data name="ForLoop_CommonType3" xml:space="preserve">
+    <value>Cannot convert start value of type '{0}', limit value of type '{1}', and step value of type '{2}' to a common numeric type.</value>
+  </data>
+  <data name="ForLoop_ConvertToType3" xml:space="preserve">
+    <value>Cannot convert argument '{0}' of type '{1}' to type '{2}'.</value>
+  </data>
+  <data name="ForLoop_OperatorRequired2" xml:space="preserve">
+    <value>Type '{0}' must define an operator '{1}', with parameters of type '{0}', to be used in a 'For' statement.</value>
+  </data>
+  <data name="ForLoop_UnacceptableOperator2" xml:space="preserve">
+    <value>Return and parameter types of '{0}' must be of type '{1}' to be used in a 'For' statement.</value>
+  </data>
+  <data name="ForLoop_UnacceptableRelOperator2" xml:space="preserve">
+    <value>Parameter types of '{0}' must be of type '{1}' to be used in a 'For' statement.</value>
+  </data>
+  <data name="InternalError" xml:space="preserve">
+    <value>Internal error in the Microsoft Visual Basic runtime.</value>
+  </data>
+  <data name="MaxErrNumber" xml:space="preserve">
+    <value>Error number must be within the range 0 to 65535.</value>
+  </data>
+  <data name="Argument_InvalidNullValue1" xml:space="preserve">
+    <value>Argument '{0}' is Nothing.</value>
+  </data>
+  <data name="Argument_InvalidRank1" xml:space="preserve">
+    <value>Argument '{0}' is not valid for the array.</value>
+  </data>
+  <data name="Argument_Range0to99_1" xml:space="preserve">
+    <value>Argument '{0}' must be within the range 0 to 99.</value>
+  </data>
+  <data name="Array_RankMismatch" xml:space="preserve">
+    <value>'ReDim' cannot change the number of dimensions.</value>
+  </data>
+  <data name="Array_TypeMismatch" xml:space="preserve">
+    <value>'ReDim' can only change the rightmost dimension.</value>
+  </data>
+  <data name="InvalidCast_FromTo" xml:space="preserve">
+    <value>Conversion from type '{0}' to type '{1}' is not valid.</value>
+  </data>
+  <data name="InvalidCast_FromStringTo" xml:space="preserve">
+    <value>Conversion from string \"{0}\" to type '{1}' is not valid.</value>
+  </data>
+  <data name="Argument_InvalidDateValue1" xml:space="preserve">
+    <value>Argument '{0}' cannot be converted to type 'Date'.</value>
+  </data>
+  <data name="ArgumentNotNumeric1" xml:space="preserve">
+    <value>Argument '{0}' cannot be converted to a numeric value.</value>
+  </data>
+  <data name="Argument_IndexLELength2" xml:space="preserve">
+    <value>Argument '{0}' must be less than or equal to the length of argument '{1}'.</value>
+  </data>
+  <data name="MissingMember_NoDefaultMemberFound1" xml:space="preserve">
+    <value>No default member found for type '{0}'.</value>
+  </data>
+  <data name="MissingMember_MemberNotFoundOnType2" xml:space="preserve">
+    <value>Public member '{0}' on type '{1}' not found.</value>
+  </data>
+  <data name="IntermediateLateBoundNothingResult1" xml:space="preserve">
+    <value>Invocation of '{0}' on type '{1}' returned Nothing.</value>
+  </data>
+  <data name="Argument_CollectionIndex" xml:space="preserve">
+    <value>Collection index must be in the range 1 to the size of the collection.</value>
+  </data>
+  <data name="RValueBaseForValueType" xml:space="preserve">
+    <value>Late-bound assignment to a field of value type '{0}' is not valid when '{1}' is the result of a late-bound expression.</value>
+  </data>
+  <data name="ExpressionNotProcedure" xml:space="preserve">
+    <value>Expression '{0}' is not a procedure, but occurs as the target of a procedure call.</value>
+  </data>
+  <data name="LateboundCallToInheritedComClass" xml:space="preserve">
+    <value>Managed classes derived from a COM class cannot be called late bound.</value>
+  </data>
+  <data name="MissingMember_ReadOnlyField2" xml:space="preserve">
+    <value>Field '{0}' of type '{1}' is 'ReadOnly'.</value>
+  </data>
+  <data name="Argument_InvalidNamedArgs" xml:space="preserve">
+    <value>Named arguments are not valid as array subscripts.</value>
+  </data>
+  <data name="SyncLockRequiresReferenceType1" xml:space="preserve">
+    <value>'SyncLock' operand cannot be of type '{0}' because '{0}' is not a reference type.</value>
+  </data>
+  <data name="NullReference_InstanceReqToAccessMember1" xml:space="preserve">
+    <value>Reference to non-shared member '{0}' requires an object reference.</value>
+  </data>
+  <data name="MatchArgumentFailure2" xml:space="preserve">
+    <value>Method invocation failed because '{0}' cannot be called with these arguments:{1}</value>
+  </data>
+  <data name="NoGetProperty1" xml:space="preserve">
+    <value>Property '{0}' is WriteOnly.</value>
+  </data>
+  <data name="NoSetProperty1" xml:space="preserve">
+    <value>Property '{0}' is ReadOnly.</value>
+  </data>
+  <data name="MethodAssignment1" xml:space="preserve">
+    <value>Method '{0}' cannot be the target of an assignment.</value>
+  </data>
+  <data name="NoViableOverloadCandidates1" xml:space="preserve">
+    <value>Overload resolution failed because no '{0}' is Public.</value>
+  </data>
+  <data name="NoArgumentCountOverloadCandidates1" xml:space="preserve">
+    <value>Overload resolution failed because no accessible '{0}' accepts this number of arguments.</value>
+  </data>
+  <data name="NoTypeArgumentCountOverloadCandidates1" xml:space="preserve">
+    <value>Overload resolution failed because no accessible '{0}' accepts this number of type arguments.</value>
+  </data>
+  <data name="NoCallableOverloadCandidates2" xml:space="preserve">
+    <value>Overload resolution failed because no Public '{0}' can be called with these arguments:{1}</value>
+  </data>
+  <data name="NoNonNarrowingOverloadCandidates2" xml:space="preserve">
+    <value>Overload resolution failed because no Public '{0}' can be called without a narrowing conversion:{1}</value>
+  </data>
+  <data name="NoMostSpecificOverload2" xml:space="preserve">
+    <value>Overload resolution failed because no Public '{0}' is most specific for these arguments:{1}</value>
+  </data>
+  <data name="AmbiguousCast2" xml:space="preserve">
+    <value>Conversion from type '{0}' to type '{1}' is ambiguous.</value>
+  </data>
+  <data name="NotMostSpecificOverload" xml:space="preserve">
+    <value>Not most specific.</value>
+  </data>
+  <data name="NamedParamNotFound2" xml:space="preserve">
+    <value>Named argument '{0}' matches no parameter of '{1}'.</value>
+  </data>
+  <data name="NamedParamArrayArgument1" xml:space="preserve">
+    <value>Named argument '{0}' cannot match a ParamArray parameter.</value>
+  </data>
+  <data name="NamedArgUsedTwice2" xml:space="preserve">
+    <value>Parameter '{0}' of '{1}' already has a matching argument.</value>
+  </data>
+  <data name="OmittedArgument1" xml:space="preserve">
+    <value>Argument not specified for parameter '{0}'.</value>
+  </data>
+  <data name="OmittedParamArrayArgument" xml:space="preserve">
+    <value>Omitted argument cannot match a ParamArray parameter.</value>
+  </data>
+  <data name="ArgumentMismatch3" xml:space="preserve">
+    <value>Argument matching parameter '{0}' cannot convert from '{1}' to '{2}'.</value>
+  </data>
+  <data name="ArgumentMismatchAmbiguous3" xml:space="preserve">
+    <value>Argument matching parameter '{0}' cannot convert from '{1}' to '{2}' because the conversion is ambiguous.</value>
+  </data>
+  <data name="ArgumentNarrowing3" xml:space="preserve">
+    <value>Argument matching parameter '{0}' narrows from '{1}' to '{2}'.</value>
+  </data>
+  <data name="ArgumentMismatchCopyBack3" xml:space="preserve">
+    <value>ByRef parameter '{0}' cannot convert from '{1}' to '{2}' when assigning back to the matching argument.</value>
+  </data>
+  <data name="ArgumentMismatchAmbiguousCopyBack3" xml:space="preserve">
+    <value>ByRef parameter '{0}' cannot convert from '{1}' to '{2}' when assigning back to the matching argument because the conversion is ambiguous.</value>
+  </data>
+  <data name="ArgumentNarrowingCopyBack3" xml:space="preserve">
+    <value>ByRef parameter '{0}' narrows from '{1}' to '{2}' when assigning back to the matching argument.</value>
+  </data>
+  <data name="UnboundTypeParam1" xml:space="preserve">
+    <value>Type parameter '{0}' cannot be determined.</value>
+  </data>
+  <data name="TypeInferenceFails1" xml:space="preserve">
+    <value>Type argument inference fails for argument matching parameter '{0}'.</value>
+  </data>
+  <data name="FailedTypeArgumentBinding" xml:space="preserve">
+    <value>Substitution of type arguments failed.</value>
+  </data>
+  <data name="UnaryOperand2" xml:space="preserve">
+    <value>Operator '{0}' is not defined for type '{1}'.</value>
+  </data>
+  <data name="BinaryOperands3" xml:space="preserve">
+    <value>Operator '{0}' is not defined for {1} and {2}.</value>
+  </data>
+  <data name="NoValidOperator_StringType1" xml:space="preserve">
+    <value>string \"{0}\"</value>
+  </data>
+  <data name="NoValidOperator_NonStringType1" xml:space="preserve">
+    <value>type '{0}'</value>
+  </data>
+  <data name="PropertySetMissingArgument1" xml:space="preserve">
+    <value>Call to set property '{0}' requires at least one argument.</value>
+  </data>
+</root>

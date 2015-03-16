@@ -66,13 +66,13 @@
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
-    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Release'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
-    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+    <DefineConstants>$(DefineConstants),TRACE</DefineConstants>
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->

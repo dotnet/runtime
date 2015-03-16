@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{FE25D593-8029-4726-ABC2-944522B5BE04}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <NoVbRuntimeReference>true</NoVbRuntimeReference>
+    <VBRuntime>None</VBRuntime>
+    <OptionStrict>On</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>Off</OptionInfer>
+    <MyType>Empty</MyType>
+    <OptionCompare>Binary</OptionCompare>
+    <WarningsNotAsErrors>42025</WarningsNotAsErrors>
+    <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
+    <AssemblyName>Microsoft.VisualBasic</AssemblyName>
+    <AssemblyVersion>10.0.0.0</AssemblyVersion>
+    <NoStdLib>true</NoStdLib>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Microsoft\VisualBasic\CallType.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\ConversionResolution.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\Conversions.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\DesignerGeneratedAttribute.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\ExceptionUtils.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\IDOBinder.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\IncompleteInitialization.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\NewLateBinding.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\ObjectFlowControl.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\Operators.Resolution.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\Operators.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\OptionCompareAttribute.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\OptionTextAttribute.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\OverloadResolution.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\ProjectData.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\StandardModuleAttribute.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\StaticLocalInitFlag.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\Symbols.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.LateBinder.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.vb" />
+    <Compile Include="Microsoft\VisualBasic\Constants.vb" />
+    <Compile Include="Microsoft\VisualBasic\ControlChars.vb" />
+    <Compile Include="Microsoft\VisualBasic\HideModuleNameAttribute.vb" />
+    <Compile Include="Microsoft\VisualBasic\Interaction.vb" />
+    <Compile Include="Microsoft\VisualBasic\Strings.vb" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
