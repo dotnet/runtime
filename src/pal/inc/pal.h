@@ -439,6 +439,12 @@ typedef long time_t;
 #define DLL_THREAD_DETACH  3
 #define DLL_PROCESS_DETACH 0
 
+#define PAL_INITIALIZE_SYNC_THREAD     0x01
+#define PAL_INITIALIZE_SIGNAL_THREAD   0x02
+#define PAL_INITIALIZE_ALL_SIGNALS     0x04
+#define PAL_INITIALIZE_ALL             0xff
+#define PAL_INITIALIZE_DLL             0x00
+
 typedef DWORD (PALAPI *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
 
@@ -448,16 +454,21 @@ PALIMPORT
 int
 PALAPI
 PAL_Initialize(
-            int argc,
-            const char * const argv[]);
+    int argc,
+    const char * const argv[]);
+
+PALIMPORT
+int
+PALAPI
+PAL_InitializeDLL();
 
 PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-            const char *szExePath,
-            const char *szCoreCLRPath,
-            BOOL fStayInPAL);
+    const char *szExePath,
+    const char *szCoreCLRPath,
+    BOOL fStayInPAL);
 
 PALIMPORT
 DWORD_PTR
@@ -473,7 +484,7 @@ PALIMPORT
 void
 PALAPI
 PAL_Terminate(
-          void);
+    void);
 
 /// <summary>
 /// This function shuts down PAL and exits the current process with
@@ -482,25 +493,26 @@ PAL_Terminate(
 PALIMPORT
 void
 PALAPI
-PAL_TerminateEx(int exitCode);
+PAL_TerminateEx(
+    int exitCode);
 
 PALIMPORT
 void
 PALAPI
 PAL_InitializeDebug(
-          void);
+    void);
 
 PALIMPORT
 HMODULE
 PALAPI
 PAL_RegisterLibraryW(
-         IN LPCWSTR lpLibFileName);
+    IN LPCWSTR lpLibFileName);
 
 PALIMPORT
 BOOL
 PALAPI
 PAL_UnregisterLibraryW(
-         IN HMODULE hLibModule);
+    IN HMODULE hLibModule);
 
 #ifdef UNICODE
 #define PAL_RegisterLibrary PAL_RegisterLibraryW
@@ -511,15 +523,15 @@ PALIMPORT
 BOOL
 PALAPI
 PAL_GetPALDirectoryW(
-             OUT LPWSTR lpDirectoryName,
-             IN UINT cchDirectoryName);
+    OUT LPWSTR lpDirectoryName,
+    IN UINT cchDirectoryName);
 
 PALIMPORT
 BOOL
 PALAPI
 PAL_GetPALDirectoryA(
-             OUT LPSTR lpDirectoryName,
-             IN UINT cchDirectoryName);
+    OUT LPSTR lpDirectoryName,
+    IN UINT cchDirectoryName);
 
 #ifdef UNICODE
 #define PAL_GetPALDirectory PAL_GetPALDirectoryW
@@ -531,9 +543,9 @@ PALIMPORT
 BOOL
 PALAPI
 PAL_Random(
-        IN BOOL bStrong,
-        IN OUT LPVOID lpBuffer,
-        IN DWORD dwLength);
+    IN BOOL bStrong,
+    IN OUT LPVOID lpBuffer,
+    IN DWORD dwLength);
 
 // This helper will be used *only* by the CoreCLR to determine
 // if an address lies inside CoreCLR or not.

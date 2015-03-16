@@ -94,6 +94,7 @@ static PCRITICAL_SECTION init_critsec = NULL;
 
 char g_szCoreCLRPath[MAX_PATH] = { 0 };
 
+static int Initialize(int argc, const char *const argv[], DWORD flags);
 static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (CPalThread *pThread, int argc, const char * const *argv);
 static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name);
@@ -136,8 +137,48 @@ Return:
 int
 PALAPI
 PAL_Initialize(
-            int argc,
-            const char *const argv[])
+    int argc,
+    const char *const argv[])
+{
+    return Initialize(argc, argv, PAL_INITIALIZE_ALL);
+}
+
+/*++
+Function:
+  PAL_InitializeDLL
+
+Abstract:
+    Initializes the non-runtime DLLs/modules like the DAC and SOS.
+
+Return:
+  0 if successful
+  -1 if it failed
+
+--*/
+int
+PALAPI
+PAL_InitializeDLL()
+{
+    return Initialize(0, NULL, PAL_INITIALIZE_DLL);
+}
+
+/*++
+Function:
+  Initialize
+
+Abstract:
+  Common PAL initialization function.
+
+Return:
+  0 if successful
+  -1 if it failed
+
+--*/
+int
+Initialize(
+    int argc,
+    const char *const argv[],
+    DWORD flags)
 {
     PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = NULL;
@@ -336,8 +377,7 @@ PAL_Initialize(
         //
         // Initialize the synchronization manager
         //
-
-        g_pSynchronizationManager = 
+        g_pSynchronizationManager =
             CPalSynchMgrController::CreatePalSynchronizationManager(pThread);
 
         palError = ERROR_GEN_FAILURE;
@@ -408,21 +448,23 @@ PAL_Initialize(
         // CreateInitialProcessAndThreadObjects took ownership of this memory.
         command_line = NULL;
 
-        //
-        // Tell the synchronization manager to start its worker thread
-        //
-
-        palError = CPalSynchMgrController::StartWorker(pThread);
-        if (NO_ERROR != palError)
+        if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
-            ERROR("Synch manager failed to start worker thread\n");
-            goto CLEANUP5;
+            //
+            // Tell the synchronization manager to start its worker thread
+            //
+            palError = CPalSynchMgrController::StartWorker(pThread);
+            if (NO_ERROR != palError)
+            {
+                ERROR("Synch manager failed to start worker thread\n");
+                goto CLEANUP5;
+            }
         }
 
         palError = ERROR_GEN_FAILURE;
 
         /* initialize structured exception handling stuff (signals, etc) */
-        if (FALSE == SEHInitialize(pThread))
+        if (FALSE == SEHInitialize(pThread, flags))
         {
             ERROR("Unable to initialize SEH support\n");
             goto CLEANUP5;
@@ -499,7 +541,7 @@ CLEANUP10:
 CLEANUP8:
     MAPCleanup();
 CLEANUP6:
-    SEHCleanup();
+    SEHCleanup(flags);
 CLEANUP5:
     PROCCleanupInitialProcess();
 CLEANUP4:
@@ -813,7 +855,7 @@ PALCommonCleanup(PALCLEANUP_STEP step, BOOL full_cleanup)
                    LOADFreeModules requires SEH to be functional when calling DllMain.
                    Therefore SEHCleanup must go between LOADFreeModules and
                    PROCCleanupInitialProcess */
-                SEHCleanup();
+                SEHCleanup(PAL_INITIALIZE_ALL);
                 PROCCleanupInitialProcess();
             }
 
