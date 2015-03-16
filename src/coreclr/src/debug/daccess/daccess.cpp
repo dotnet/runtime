@@ -5800,35 +5800,34 @@ ClrDataAccess::RawGetMethodName(
             maxPrecodeSize = max(maxPrecodeSize, sizeof(RemotingPrecode));
 #endif
 
-            EX_TRY
+            for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
             {
-                for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
+                EX_TRY
                 {
                     // Try to find matching precode entrypoint
-                    if (PrecodeStubManager::IsPrecodeByAsm(alignedAddress))
+                    Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
+                    if (pPrecode != NULL)
                     {
-                        Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
-                        if (pPrecode != NULL)
+                        methodDesc = pPrecode->GetMethodDesc();
+                        if (methodDesc != NULL)
                         {
-                            methodDesc = pPrecode->GetMethodDesc();
-                            if (methodDesc != NULL)
+                            if (DacValidateMD(methodDesc))
                             {
                                 if (displacement)
                                 {
                                     *displacement = TO_TADDR(address) - PCODEToPINSTR(alignedAddress);
                                 }
-
                                 goto NameFromMethodDesc;
                             }
                         }
                     }
                     alignedAddress -= PRECODE_ALIGNMENT;
                 }
+                EX_CATCH
+                {
+                }
+                EX_END_CATCH(SwallowAllExceptions)
             }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(SwallowAllExceptions)
         }
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
