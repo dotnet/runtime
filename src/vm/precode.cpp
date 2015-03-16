@@ -347,8 +347,6 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
 
 #ifndef CROSSGEN_COMPILE
     ClrFlushInstructionCache(pPrecode, size);
-
-    _ASSERTE(PrecodeStubManager::IsPrecodeByAsm(pPrecode->GetEntryPoint()));
 #endif
 
     return pPrecode;
