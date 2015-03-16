@@ -9,9 +9,7 @@
 // 
 // ==--==
 #include "sos.h"
-#ifndef FEATURE_PAL
 #include "disasm.h"
-#endif // FEATURE_PAL
 #include <dbghelp.h>
 
 #include "corhdr.h"
@@ -1942,8 +1940,6 @@ CLRDATA_ADDRESS GetAppDomainForMT(CLRDATA_ADDRESS mtPtr)
             assembly.ParentDomain;
 }
 
-#ifndef FEATURE_PAL
-
 CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr)
 {
     CLRDATA_ADDRESS appDomain = NULL;
@@ -2054,8 +2050,6 @@ CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr)
 
     return appDomain;
 }
-
-#endif // !FEATURE_PAL
 
 HRESULT FileNameForModule (DWORD_PTR pModuleAddr, __out_ecount (MAX_PATH) WCHAR *fileName)
 {
@@ -2258,12 +2252,15 @@ void DomainInfo (DacpAppDomainData *pDomain)
     ExtOut("\n");
 }
 
-
 #ifdef FEATURE_PAL
+
 DWORD_PTR GetExpression(const char *exp)
 {
-    return exp ? strtoul(exp, NULL, 16) : 0;
+    DWORD_PTR result = 0;
+    g_ExtClient->GetExpression(exp, &result);
+    return result;
 }
+
 #endif // FEATURE_PAL
 
 /**********************************************************************\
@@ -2456,8 +2453,6 @@ BOOL IsStringObject (size_t obj)
     return FALSE;
 }
 
-#ifndef FEATURE_PAL
-
 void DumpStackObjectsOutput(const char *location, DWORD_PTR objAddr, BOOL verifyFields)
 {
 #ifndef FEATURE_PAL
@@ -2522,10 +2517,13 @@ void DumpStackObjectsInternal(size_t StackTop, size_t StackBottom, BOOL verifyFi
 
 void DumpRegObjectHelper(const char *regName, BOOL verifyFields)
 {
-    ULONG IREG;
-    DEBUG_VALUE value;
     DWORD_PTR reg;
-    
+#ifdef FEATURE_PAL    
+    if (FAILED(g_ExtRegisters->GetValueByName(regName, &reg)))
+        return;
+#else
+    DEBUG_VALUE value;
+    ULONG IREG;
     if (FAILED(g_ExtRegisters->GetIndexByName(regName, &IREG)) ||
         FAILED(g_ExtRegisters->GetValue(IREG, &value)))
         return;
@@ -2537,6 +2535,7 @@ void DumpRegObjectHelper(const char *regName, BOOL verifyFields)
 #else
 #error Unsupported target
 #endif
+#endif // FEATURE_PAL
 
     DumpStackObjectsOutput(regName, reg, verifyFields);
 }
@@ -2827,8 +2826,6 @@ Failure:
     delete [] moduleList;
     return NULL;
 }
-
-#endif // !FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -3509,10 +3506,10 @@ CLRDATA_ADDRESS GetCurrentManagedThread ()
     return NULL;
 }
 
-#ifndef FEATURE_PAL
 
 void ReloadSymbolWithLineInfo()
 {
+#ifndef FEATURE_PAL
     static BOOL bLoadSymbol = FALSE;
     if (!bLoadSymbol)
     {
@@ -3533,8 +3530,11 @@ void ReloadSymbolWithLineInfo()
         // reload mscoree.pdb and clrjit.pdb to get line info
         bLoadSymbol = TRUE;
     }
+#endif
 }
 
+
+#ifndef FEATURE_PAL
 
 // Return 1 if the function is our stub
 // Return MethodDesc if the function is managed
@@ -3733,7 +3733,7 @@ void StringObjectContent(size_t obj, BOOL fLiteral, const int length)
     }
     
     DWORD_PTR dwAddr = (DWORD_PTR)pwszBuf.GetPtr();
-    if (g_sos->GetObjectStringData(TO_CDADDR(obj), stInfo.m_StringLength, pwszBuf, NULL)!=S_OK)
+    if (g_sos->GetObjectStringData(TO_CDADDR(obj), stInfo.m_StringLength+1, pwszBuf, NULL)!=S_OK)
     {
         ExtOut("Error getting string data\n");
         return;
@@ -4149,7 +4149,7 @@ HRESULT LoadClrDebugDll(void)
 #ifdef FEATURE_PAL
     if (g_pCLRDataCreateInstance == NULL)
     {
-        int err = PAL_Initialize(0, NULL);
+        int err = PAL_InitializeDLL();
         if(err != 0)
         {
             return E_FAIL;
@@ -4780,8 +4780,6 @@ UnloadClrDebugDll(void)
 #endif
 }
 
-#ifndef FEATURE_PAL
-
 typedef enum
 {
     GC_HEAP_INVALID = 0,
@@ -4795,8 +4793,6 @@ typedef enum
 *    This function is called to find out if runtime is server build    *  
 *                                                                      *
 \**********************************************************************/
-
-#endif // !FEATURE_PAL
 
 DacpGcHeapData *g_pHeapData = NULL;
 DacpGcHeapData g_HeapData;

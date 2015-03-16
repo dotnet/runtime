@@ -2075,14 +2075,10 @@ struct StringHolder
 
 ULONG DebuggeeType();
 
-#ifndef FEATURE_PAL
-
 inline BOOL IsKernelDebugger ()
 {
     return DebuggeeType() == DEBUG_CLASS_KERNEL;
 }
-
-#endif // !FEATURE_PAL
 
 void    ResetGlobals(void);
 HRESULT LoadClrDebugDll(void);
