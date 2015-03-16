@@ -436,8 +436,6 @@ class PrecodeStubManager : public StubManager
 #endif
 
   public:
-    static BOOL IsPrecodeByAsm(PCODE stubStartAddress);
-
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
