@@ -47,7 +47,7 @@ set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\intermediates\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__ToolsDir=%__RootBinDir%\tools"
-set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -63,12 +63,6 @@ set __MSBCleanBuildArgs=/t:rebuild
 
 :: Cleanup the binaries drop folder
 if exist "%__RootBinDir%" rd /s /q "%__RootBinDir%"
-
-:: Cleanup the logs folder
-if exist "%__LogsDir%" rd /s /q "%__LogsDir%"
-
-::Cleanup intermediates folder
-if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 
 :MakeDirectories
 if not exist "%__BinDir%" md "%__BinDir%"
@@ -188,7 +182,7 @@ goto :eof
 echo Repo successfully built.
 echo.
 echo Product binaries are available at !__BinDir!
-echo Test binaries are available at !__TestWorkingDir!
+echo Test binaries are available at !__TestBinDir!
 goto :eof
 
 :Usage
