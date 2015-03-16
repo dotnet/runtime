@@ -844,7 +844,7 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 		goto done;
 
 	switch (result = callback (info, user_data)) {
-	case ResumeThread:
+	case MonoResumeThread:
 		mono_hazard_pointer_set (hp, 1, info);
 		mono_thread_info_core_resume (info);
 		mono_threads_wait_pending_operations ();

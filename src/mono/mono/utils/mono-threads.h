@@ -264,7 +264,7 @@ typedef struct {
 
 //Not using 0 and 1 to ensure callbacks are not returning bad data
 typedef enum {
-	ResumeThread = 0x1234,
+	MonoResumeThread = 0x1234,
 	KeepSuspended = 0x4321,
 } SuspendThreadResult;
 

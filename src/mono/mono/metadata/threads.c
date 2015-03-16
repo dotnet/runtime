@@ -3262,7 +3262,7 @@ print_thread_dump (MonoThreadInfo *info, gpointer ud)
 
 	g_string_free (text, TRUE);
 	fflush (stdout);
-	return ResumeThread;
+	return MonoResumeThread;
 }
 
 static void
@@ -4605,11 +4605,11 @@ abort_thread_critical (MonoThreadInfo *info, gpointer ud)
 	gboolean running_managed;
 
 	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info)))
-		return ResumeThread;
+		return MonoResumeThread;
 
 	/*someone is already interrupting it*/
 	if (InterlockedCompareExchange (&thread->interruption_requested, 1, 0) == 1)
-		return ResumeThread;
+		return MonoResumeThread;
 
 	InterlockedIncrement (&thread_interruption_requested);
 
@@ -4622,7 +4622,7 @@ abort_thread_critical (MonoThreadInfo *info, gpointer ud)
 		/*Set the thread to call */
 		if (data->install_async_abort)
 			mono_thread_info_setup_async_call (info, self_interrupt_thread, NULL);
-		return ResumeThread;
+		return MonoResumeThread;
 	} else {
 		if (mono_thread_notify_pending_exc_fn)
 			/* The JIT will notify the thread about the interruption */
@@ -4636,7 +4636,7 @@ abort_thread_critical (MonoThreadInfo *info, gpointer ud)
 		 * make it return.
 		 */
 		data->interrupt_handle = mono_thread_info_prepare_interrupt (thread->handle);
-		return ResumeThread;
+		return MonoResumeThread;
 	}
 }
 
@@ -4703,7 +4703,7 @@ suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
 		if (mono_thread_notify_pending_exc_fn && !running_managed)
 			/* The JIT will notify the thread about the interruption */
 			mono_thread_notify_pending_exc_fn (info);
-		return ResumeThread;
+		return MonoResumeThread;
 	}
 }
 	
