@@ -410,7 +410,11 @@ update_sgen_info (SgenThreadInfo *info)
 		g_error ("BAD STACK");
 
 	info->stack_start = stack_start;
+#ifdef USE_MONO_CTX
 	info->ctx = mono_thread_info_get_suspend_state (info)->ctx;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 static int
