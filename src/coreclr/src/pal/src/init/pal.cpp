@@ -664,14 +664,14 @@ PAL_IsDebuggerPresent()
     {
         return FALSE;
     }
-    ssize_t num_read = read(status_fd, buf, sizeof(buf));
+    ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
 
     if (num_read > 0)
     {
         static const char TracerPid[] = "TracerPid:";
         char *tracer_pid;
 
-        buf[num_read] = 0;
+        buf[num_read] = '\0';
         tracer_pid = strstr(buf, TracerPid);
         if (tracer_pid)
         {
