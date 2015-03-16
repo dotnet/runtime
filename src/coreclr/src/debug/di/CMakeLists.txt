@@ -17,7 +17,6 @@ set(CORDBDI_SOURCES
   hash.cpp
   module.cpp
   nativepipeline.cpp
-  eventredirectionpipeline.cpp
   platformspecific.cpp
   process.cpp
   rsappdomain.cpp
