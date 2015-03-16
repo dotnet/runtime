@@ -244,10 +244,10 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
 void
 mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text);
 
-gpointer
+gchar*
 mono_string_builder_to_utf8 (MonoStringBuilder *sb);
 
-gpointer
+gunichar2*
 mono_string_builder_to_utf16 (MonoStringBuilder *sb);
 
 gpointer

@@ -694,32 +694,88 @@ mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnu
 	mono_array_to_byvalarray (native_arr, arr, mono_defaults.byte_class, elnum);
 }
 
+static MonoStringBuilder *
+mono_string_builder_new (void)
+{
+	static MonoClass *string_builder_class;
+	static MonoMethod *sb_ctor;
+	static void *args [1];
+	static int initial_len;
+
+	if (!string_builder_class) {
+		MonoMethodDesc *desc;
+
+		string_builder_class = mono_class_from_name (mono_defaults.corlib, "System.Text", "StringBuilder");
+		g_assert (string_builder_class);
+		desc = mono_method_desc_new (":.ctor(int)", FALSE);
+		sb_ctor = mono_method_desc_search_in_class (desc, string_builder_class);
+		g_assert (sb_ctor);
+		mono_method_desc_free (desc);
+
+		// We make a new array in the _to_builder function, so this
+		// array will always be garbage collected.
+		initial_len = 1;
+		args [0] = &initial_len;
+	}
+
+	MonoStringBuilder *sb = (MonoStringBuilder*)mono_object_new (mono_domain_get (), string_builder_class);
+	MonoObject *exc;
+	g_assert (sb);
+
+	mono_runtime_invoke (sb_ctor, sb, args, &exc);
+
+	g_assert (sb->chunkChars->max_length == initial_len);
+	g_assert (!exc);
+
+	return sb;
+}
+
+static void
+mono_string_utf16_to_builder_copy (MonoStringBuilder *sb, gunichar2 *text, size_t len)
+{
+	MonoClass *ac = mono_array_class_get (mono_defaults.char_class, 1);
+	g_assert (ac);
+
+	MonoArray* newArray = mono_array_new (mono_domain_get (), mono_defaults.char_class, len);
+
+	gunichar2 *charDst = (gunichar2 *)newArray->vector;
+	gunichar2 *charSrc = (gunichar2 *)text;
+	memcpy (charDst, charSrc, sizeof (gunichar2) * len);
+
+	MONO_OBJECT_SETREF (sb, chunkChars, newArray);
+	sb->chunkOffset = 0;
+	sb->chunkLength = len;
+
+	return;
+}
+
+MonoStringBuilder *
+mono_string_utf16_to_builder2 (gunichar2 *text)
+{
+	if (!text)
+		return NULL;
+
+	MonoStringBuilder *sb = mono_string_builder_new ();
+	mono_string_utf16_to_builder (sb, text);
+
+	return sb;
+}
+
 void
 mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 {
-	GError *error = NULL;
-	guint16 *ut;
-	glong items_written;
-	int l;
 
 	if (!sb || !text)
 		return;
 
-	l = strlen (text);
+	int len = strlen (text);
+	GError *error = NULL;
+	gunichar2* ut = g_utf8_to_utf16 (text, len, NULL, NULL, &error);
 
-	ut = g_utf8_to_utf16 (text, l, NULL, &items_written, &error);
-	
-	if (items_written > mono_stringbuilder_capacity (sb))
-		items_written = mono_stringbuilder_capacity (sb);
-	
 	if (!error) {
-		if (! sb->str || sb->str == sb->cached_str)
-			MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), items_written));
-		
-		memcpy (mono_string_chars (sb->str), ut, items_written * 2);
-		sb->length = items_written;
-		sb->cached_str = NULL;
-	} else 
+		MONO_OBJECT_SETREF (sb, chunkPrevious, NULL);
+		mono_string_utf16_to_builder_copy (sb, ut, len);
+	} else
 		g_error_free (error);
 
 	g_free (ut);
@@ -728,97 +784,26 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 MonoStringBuilder *
 mono_string_utf8_to_builder2 (char *text)
 {
-	int l;
-	MonoStringBuilder *sb;
-	static MonoClass *string_builder_class;
-	static MonoMethod *sb_ctor;
-	void *args [1];
-	MonoObject *exc;
-
 	if (!text)
 		return NULL;
 
-	if (!string_builder_class) {
-		MonoMethodDesc *desc;
-
-		string_builder_class = mono_class_from_name (mono_defaults.corlib, "System.Text", "StringBuilder");
-		g_assert (string_builder_class);
-		desc = mono_method_desc_new (":.ctor(int)", FALSE);
-		sb_ctor = mono_method_desc_search_in_class (desc, string_builder_class);
-		g_assert (sb_ctor);
-		mono_method_desc_free (desc);
-	}
-
-	l = strlen (text);
-
-	sb = (MonoStringBuilder*)mono_object_new (mono_domain_get (), string_builder_class);
-	g_assert (sb);
-	args [0] = &l;
-	mono_runtime_invoke (sb_ctor, sb, args, &exc);
-	g_assert (!exc);
-
+	MonoStringBuilder *sb = mono_string_builder_new ();
 	mono_string_utf8_to_builder (sb, text);
 
 	return sb;
 }
 
-/*
- * FIXME: This routine does not seem to do what it seems to do
- * the @text is never copied into the string builder
- */
+
 void
 mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 {
-	guint32 len;
-
 	if (!sb || !text)
 		return;
 
-	g_assert (mono_string_chars (sb->str) == text);
+	guint32 len;
+	for (len = 0; text [len] != 0; ++len);
 
-	for (len = 0; text [len] != 0; ++len)
-		;
-
-	sb->length = len;
-}
-
-MonoStringBuilder *
-mono_string_utf16_to_builder2 (gunichar2 *text)
-{
-	int len;
-	MonoStringBuilder *sb;
-	static MonoClass *string_builder_class;
-	static MonoMethod *sb_ctor;
-	void *args [1];
-	MonoObject *exc;
-
-	if (!text)
-		return NULL;
-
-	if (!string_builder_class) {
-		MonoMethodDesc *desc;
-
-		string_builder_class = mono_class_from_name (mono_defaults.corlib, "System.Text", "StringBuilder");
-		g_assert (string_builder_class);
-		desc = mono_method_desc_new (":.ctor(int)", FALSE);
-		sb_ctor = mono_method_desc_search_in_class (desc, string_builder_class);
-		g_assert (sb_ctor);
-		mono_method_desc_free (desc);
-	}
-
-	for (len = 0; text [len] != 0; ++len)
-		;
-
-	sb = (MonoStringBuilder*)mono_object_new (mono_domain_get (), string_builder_class);
-	g_assert (sb);
-	args [0] = &len;
-	mono_runtime_invoke (sb_ctor, sb, args, &exc);
-	g_assert (!exc);
-
-	sb->length = len;
-	memcpy (mono_string_chars (sb->str), text, len * 2);
-
-	return sb;
+	mono_string_utf16_to_builder_copy (sb, text, len);
 }
 
 /**
@@ -831,35 +816,38 @@ mono_string_utf16_to_builder2 (gunichar2 *text)
  *
  * The return value must be released with g_free.
  */
-gpointer
+gchar*
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
 	GError *error = NULL;
-	gchar *tmp, *res = NULL;
 
 	if (!sb)
 		return NULL;
 
-	if ((sb->str == sb->cached_str) && (sb->str->length == 0)) {
-		/* 
-		 * The sb could have been allocated with the default capacity and be empty.
-		 * we need to alloc a buffer of the default capacity in this case.
-		 */
-		MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), 16));
-		sb->cached_str = NULL;
-	}
 
-	tmp = g_utf16_to_utf8 (mono_string_chars (sb->str), sb->length, NULL, NULL, &error);
+	gunichar2 *str_utf16 = mono_string_builder_to_utf16 (sb);
+
+	guint str_len = mono_string_builder_string_length (sb);
+
+	gchar *tmp = g_utf16_to_utf8 (str_utf16, str_len, NULL, NULL, &error);
+
 	if (error) {
 		g_error_free (error);
+		g_free (str_utf16);
 		mono_raise_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
+		return NULL;
 	} else {
-		res = mono_marshal_alloc (mono_stringbuilder_capacity (sb) + 1);
-		memcpy (res, tmp, sb->length + 1);
-		g_free (tmp);
-	}
+		guint len = mono_string_builder_length (sb) + 1;
+		gchar *res = mono_marshal_alloc (len * sizeof (gchar));
+		g_assert (str_len < len);
+		memcpy (res, tmp, str_len * sizeof (gchar));
+		res[str_len] = '\0';
 
-	return res;
+
+		g_free (str_utf16);
+		g_free (tmp);
+		return res;
+	}
 }
 
 /**
@@ -872,35 +860,43 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
  *
  * The return value must not be freed.
  */
-gpointer
+gunichar2*
 mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 {
 	if (!sb)
 		return NULL;
 
-	g_assert (sb->str);
+	g_assert (sb->chunkChars);
 
-	/*
-	 * The stringbuilder might not have ownership of this string. If this is
-	 * the case, we must duplicate the string, so that we don't munge immutable
-	 * strings
-	 */
-	if (sb->str == sb->cached_str) {
-		/* 
-		 * The sb could have been allocated with the default capacity and be empty.
-		 * we need to alloc a buffer of the default capacity in this case.
-		 */
-		if (sb->str->length == 0)
-			MONO_OBJECT_SETREF (sb, str, mono_string_new_size (mono_domain_get (), 16));
-		else
-			MONO_OBJECT_SETREF (sb, str, mono_string_new_utf16 (mono_domain_get (), mono_string_chars (sb->str), mono_stringbuilder_capacity (sb)));
-		sb->cached_str = NULL;
-	}
-	
-	if (sb->length == 0)
-		*(mono_string_chars (sb->str)) = '\0';
+	guint len = mono_string_builder_length (sb);
 
-	return mono_string_chars (sb->str);
+	if (len == 0)
+		len = 1;
+
+	gunichar2 *str = mono_marshal_alloc ((len + 1) * sizeof (gunichar2));
+	str[len] = '\0';
+
+	if (len == 0)
+		return str;
+
+	MonoStringBuilder* chunk = sb;
+	do {
+		if (chunk->chunkLength > 0) {
+			// Check that we will not overrun our boundaries.
+			gunichar2 *source = (gunichar2 *)chunk->chunkChars->vector;
+
+			if (chunk->chunkLength <= len) {
+				memcpy (str + chunk->chunkOffset, source, chunk->chunkLength * sizeof(gunichar2));
+			} else {
+				g_error ("A chunk in the StringBuilder had a length longer than expected from the offset.");
+			}
+
+			len -= chunk->chunkLength;
+		}
+		chunk = chunk->chunkPrevious;
+	} while (chunk != NULL);
+
+	return str;
 }
 
 static gpointer
