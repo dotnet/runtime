@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Xunit;
@@ -240,6 +241,13 @@ namespace System.Collections.Immutable.Test
 
             Assert.Throws<ArgumentNullException>(() => ImmutableStack.CreateRange((IEnumerable<int>)null));
             Assert.Throws<ArgumentNullException>(() => ImmutableStack.Create((int[])null));
+        }
+
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableStack.Create<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableStack.Create<string>("1", "2", "3"));
         }
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)

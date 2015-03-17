@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -535,6 +533,13 @@ namespace System.Collections.Concurrent.Tests
             Assert.False(dictionary.IsEmpty);
             Assert.Equal(1, dictionary.Keys.Count);
             Assert.Equal(1, dictionary.Values.Count);
+        }
+
+        [Fact]
+        public static void TestDebuggerAttributes()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentDictionary<string, int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ConcurrentDictionary<string, int>());
         }
 
         [Fact]

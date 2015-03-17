@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Text;
 using Xunit;
 
@@ -106,6 +107,13 @@ namespace System.Collections.SortedListTests
             Assert.True(((CtorTestClass)sl2.GetKey(1)).GetString().Equals("bcd"));
 
             Assert.True(((CtorTestClass)sl2.GetKey(2)).GetString().Equals("cde"));
+        }
+
+        [Fact]
+        public void DebuggerAttributeTests()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new SortedList());
         }
     }
 }

@@ -2182,7 +2182,6 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A simple view of the immutable collection that the debugger can show to the developer.
     /// </summary>
-    [ExcludeFromCodeCoverage]
     internal class ImmutableSortedSetDebuggerProxy<T>
     {
         /// <summary>

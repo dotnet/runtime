@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Collections.HashtableTests
@@ -19,7 +18,6 @@ namespace System.Collections.HashtableTests
             //
             // [] Constructor: Create Hashtable using default settings.
             //
-            Console.Out.WriteLine("Create Hashtable using default settings");
             hash = new Hashtable();
             Assert.NotNull(hash);
 
@@ -307,6 +305,13 @@ namespace System.Collections.HashtableTests
             {
                 hash = new Hashtable((int)100000000, .5f);
             });
+        }
+
+        [Fact]
+        public void DebuggerAttributeTests()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new Hashtable());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new Hashtable());
         }
     }
 }

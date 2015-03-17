@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -639,6 +640,13 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(20, builder.Capacity);
             Assert.Equal(2, builder.Count);
             Assert.Equal(new[] { 1, 2 }, builder.ToArray());
+        }
+
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.CreateBuilder<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableArray.CreateBuilder<string>(4));
         }
 
         private static ImmutableArray<T>.Builder CreateBuilderWithCount<T>(int count)

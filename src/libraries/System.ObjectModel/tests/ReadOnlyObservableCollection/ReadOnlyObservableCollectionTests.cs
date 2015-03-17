@@ -6,13 +6,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace Test
 {
     /// <summary>
     /// Tests the public properties and constructor in ObservableCollection<T>.
     /// </summary>
-     public class ReadOnlyObservableCollectionTests
+    public class ReadOnlyObservableCollectionTests
     {
         [Fact]
         public static void Ctor_Tests()
@@ -195,6 +196,13 @@ namespace Test
             Assert.Throws<NotSupportedException>(() => readOnlyColAsIList.RemoveAt(0));
             Assert.Throws<NotSupportedException>(() => readOnlyColAsIList.Clear());
             helper.VerifyReadOnlyCollection(readOnlyCol, anArray);
+        }
+
+        [Fact]
+        public static void DebuggerAttribute_Tests()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyObservableCollection<int>(new ObservableCollection<int>()));
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ReadOnlyObservableCollection<int>(new ObservableCollection<int>()));
         }
     }
 
