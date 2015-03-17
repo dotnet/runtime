@@ -4741,7 +4741,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     unsigned curOffs = pCodeInfo->GetRelOffset();
 
 #ifdef _TARGET_ARM_
-    // On ARM, the low-order bit if an instruction pointer indicates Thumb vs. ARM mode.
+    // On ARM, the low-order bit of an instruction pointer indicates Thumb vs. ARM mode.
     // Mask this off; all instructions are two-byte aligned.
     curOffs &= (~THUMB_CODE);
 #endif // _TARGET_ARM_
@@ -4807,7 +4807,11 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     if (!(flags & ExecutionAborted))
     {
         if (!(flags & ActiveStackFrame))
+        {
             curOffs--;
+            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags !ExecutionAborted && !ActiveStackFrame. Now reporting GC refs for %s at offset %04x.\n",
+                methodName, curOffs));
+        }
     }
     else
     {
@@ -4817,7 +4821,11 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
 
         if (flags & AbortingCall)
+        {
             curOffs--;
+            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags ExecutionAborted && AbortingCall. Now reporting GC refs for %s at offset %04x.\n",
+                methodName, curOffs));
+        }
     }
 #endif  // USE_GC_INFO_DECODER
 

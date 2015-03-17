@@ -763,14 +763,21 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 #endif
 
     case CORINFO_HELP_PROF_FCN_ENTER:
+#ifdef _TARGET_AMD64_
+        return RBM_PROFILER_ENTER_TRASH;
+#else
+        unreached();
+#endif
     case CORINFO_HELP_PROF_FCN_LEAVE:
     case CORINFO_HELP_PROF_FCN_TAILCALL:
 #ifdef _TARGET_AMD64_
-        return RBM_PROFILER_ELT_TRASH;
+        return RBM_PROFILER_LEAVE_TRASH;
 #else
         unreached();
 #endif
 
+    case CORINFO_HELP_STOP_FOR_GC:
+        return RBM_STOP_FOR_GC_TRASH;
 
     default:
         return RBM_CALLEE_TRASH;
@@ -791,9 +798,11 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
     switch (helper)
     {
     case CORINFO_HELP_PROF_FCN_ENTER:
+        return RBM_PROFILER_ENTER_TRASH;
+
     case CORINFO_HELP_PROF_FCN_LEAVE:
     case CORINFO_HELP_PROF_FCN_TAILCALL:
-        return RBM_PROFILER_ELT_TRASH;
+        return RBM_PROFILER_LEAVE_TRASH;
 
     default:
         return RBM_CALLEE_TRASH_NOGC;
@@ -6671,7 +6680,7 @@ void CodeGen::genProfilingEnterCallback(regNumber  initReg,
     // This will emit either 
     // "call ip-relative 32-bit offset" or 
     // "mov rax, helper addr; call rax"
-    genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
+    genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);  
 
     // TODO-AMD64-CQ: Rather than reloading, see if this could be optimized by combining with prolog
     // generation logic that moves args around as required by first BB entry point conditions
@@ -6758,6 +6767,9 @@ void CodeGen::genProfilingEnterCallback(regNumber  initReg,
     //
     genPrologPadForReJit();
 
+    // This will emit either 
+    // "call ip-relative 32-bit offset" or 
+    // "mov rax, helper addr; call rax"
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER,
                       0,             // argSize. Again, we have to lie about it
                       EA_UNKNOWN);   // retSize
@@ -6818,7 +6830,7 @@ void                CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORIN
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaTable[compiler->info.compThisArg].lvIsInReg())
     {
         regMaskTP thisPtrMask = genRegMask(compiler->lvaTable[compiler->info.compThisArg].lvRegNum);
-        noway_assert((RBM_PROFILER_ELT_TRASH & thisPtrMask) == 0);
+        noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
     }
 
     // At this point return value is computed and stored in RAX or XMM0.

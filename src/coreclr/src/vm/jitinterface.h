@@ -1069,6 +1069,19 @@ public:
 
     DWORD getExpectedTargetArchitecture();
 
+    int getIntConfigValue(
+        const wchar_t *name,
+        int defaultValue
+        );
+
+    wchar_t *getStringConfigValue(
+        const wchar_t *name
+        );
+
+    void freeStringConfigValue(
+        wchar_t *value
+        );
+
     CEEInfo(MethodDesc * fd = NULL, bool fVerifyOnly = false) :
         m_pOverride(NULL),
         m_pMethodBeingCompiled(fd),

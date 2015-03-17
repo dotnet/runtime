@@ -2133,7 +2133,11 @@ void                CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsig
 
 void        CodeGen::genEmitHelperCall(unsigned    helper,
                                        int         argSize,
-                                       emitAttr    retSize)
+                                       emitAttr    retSize
+#ifndef LEGACY_BACKEND
+                                       ,regNumber   callTargetReg /*= REG_NA */
+#endif // !LEGACY_BACKEND
+                                       )
 {
     NYI("Helper call");
 }

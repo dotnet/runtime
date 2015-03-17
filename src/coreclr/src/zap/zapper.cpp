@@ -755,7 +755,7 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
 
     if (FAILED(hr))
     {
-        Error(W("Unable to load Jit Compiler: %s\r\n"), pwzJitName);
+        Error(W("Unable to load Jit Compiler: %s, hr=0x%08x\r\n"), pwzJitName, hr);
         ThrowLastError();
     }
 
