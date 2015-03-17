@@ -2926,24 +2926,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint offset;
 	guint8 *code = cfg->native_code + cfg->code_len;
 	guint last_offset = 0;
-	int max_len, cpos, src2;
+	int max_len, src2;
 
 	/* we don't align basic blocks of loops on s390 */
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
 
-	cpos = bb->max_offset;
-
-	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
-		//MonoCoverageInfo *cov = mono_get_coverage_info (cfg->method);
-		//g_assert (!mono_compile_aot);
-		//cpos += 6;
-		//if (bb->cil_code)
-		//	cov->data [bb->dfn].iloffset = bb->cil_code - cfg->cil_code;
-		/* this is not thread save, but good enough */
-		/* fixme: howto handle overflows? */
-		//x86_inc_mem (code, &cov->data [bb->dfn].count); 
+	if ((cfg->prof_options & MONO_PROFILE_COVERAGE) && cfg->coverage_info) {
+		MonoProfileCoverageInfo *cov = cfg->coverage_info;
+		g_assert (!mono_compile_aot);
+		cov->data [bb->dfn].cil_code = bb->cil_code;
+		/* This is not thread save, but good enough */
+		S390_SET (code, s390_r1, &cov->data [bb->dfn].count);
+		s390_alsi (code, 0, s390_r1, 1);
 	}
 
 	MONO_BB_FOR_EACH_INS (bb, ins) {
@@ -4613,8 +4609,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached ();
 		}
 	       
-		cpos += max_len;
-
 		last_offset = offset;
 	}
 
