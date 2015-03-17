@@ -245,11 +245,11 @@ public:
 #endif // !LEGACY_BACKEND
 
 protected:
-#ifdef _TARGET_AMD64_
+#ifndef LEGACY_BACKEND
     void                genEmitHelperCall   (unsigned       helper,
                                              int            argSize,
                                              emitAttr       retSize,
-                                             regNumber      callTarget = REG_HELPER_CALL_TARGET);
+                                             regNumber      callTarget = REG_NA);
 #else
     void                genEmitHelperCall   (unsigned       helper,
                                              int            argSize,

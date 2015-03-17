@@ -535,19 +535,16 @@ public:
 #ifdef DEBUG
         void dump(ValueNumStore* vnStore)
         {
-            if (vnArray != NoVN)
-            {
-                vnStore->vnDump(vnStore->m_pComp, vnArray);
-                if (arrOper != GT_NONE)
-                {
-                    printf(vnStore->VNFuncName((VNFunc) arrOper));
-                    vnStore->vnDump(vnStore->m_pComp, arrOp);
-                }
-            }
+            vnStore->vnDump(vnStore->m_pComp, cmpOp);
             printf(" ");
             printf(vnStore->VNFuncName((VNFunc) cmpOper));
-            vnStore->vnDump(vnStore->m_pComp, cmpOp);
             printf(" "); 
+            vnStore->vnDump(vnStore->m_pComp, vnArray);
+            if (arrOper != GT_NONE)
+            {
+                printf(vnStore->VNFuncName((VNFunc) arrOper));
+                vnStore->vnDump(vnStore->m_pComp, arrOp);
+            }
         }
 #endif
     };
@@ -588,10 +585,56 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
-    // Requires that "vn" is a constant, and that its type is compatible with the explicitly passed
-    // type "T".
+    // Convert a vartype_t to the value number's storage type for that vartype_t.
+    // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
+    // Lang is the language (C++) type for the corresponding vartype_t.
+    template <int N>
+    struct VarTypConv              { };
+    template <>
+    struct VarTypConv<TYP_INT>     { typedef INT32 Type; typedef int Lang; };
+    template <>
+    struct VarTypConv<TYP_FLOAT>   { typedef INT32 Type; typedef float Lang; };
+    template <> 
+    struct VarTypConv<TYP_LONG>    { typedef INT64 Type; typedef INT64 Lang; };
+    template <>
+    struct VarTypConv<TYP_DOUBLE>  { typedef INT64 Type; typedef double Lang; };
+    template <> 
+    struct VarTypConv<TYP_BYREF>   { typedef INT64 Type; typedef void* Lang; };
+    template <>
+    struct VarTypConv<TYP_REF>     { typedef class Object* Type; typedef class Object* Lang; };
+
+private:
+    struct Chunk;
+
+    template <typename T>
+    static T CoerceTypRefToT(Chunk* c, unsigned offset);
+
+    // Get the actual value and coerce the actual type c->m_typ to the wanted type T.
+    template <typename T>
+    T SafeGetConstantValue(Chunk* c, unsigned offset)
+    {
+        switch (c->m_typ)
+        {
+        case TYP_REF:
+            return CoerceTypRefToT<T>(c, offset);
+        case TYP_BYREF:
+            return (T) reinterpret_cast<VarTypConv<TYP_BYREF>::Type*>(c->m_defs)[offset];
+        case TYP_INT: 
+            return (T) reinterpret_cast<VarTypConv<TYP_INT>::Type*>(c->m_defs)[offset];
+        case TYP_LONG:
+            return (T) reinterpret_cast<VarTypConv<TYP_LONG>::Type*>(c->m_defs)[offset];
+        case TYP_FLOAT: 
+            return (T) reinterpret_cast<VarTypConv<TYP_FLOAT>::Lang*>(c->m_defs)[offset];
+        case TYP_DOUBLE: 
+            return (T) reinterpret_cast<VarTypConv<TYP_DOUBLE>::Lang*>(c->m_defs)[offset];
+        default:
+            assert(false);
+            return (T) 0;
+        }
+    }
+
     template<typename T>
-    T ConstantValue(ValueNum vn)
+    T ConstantValueInternal(ValueNum vn DEBUGARG(bool coerce))
     {
         Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
         assert(c->m_attribs == CEA_Const || c->m_attribs == CEA_Handle);
@@ -620,12 +663,53 @@ public:
                 C_ASSERT(offsetof(VNHandle, m_cnsVal) == 0);
                 return (T) reinterpret_cast<VNHandle*>(c->m_defs)[offset].m_cnsVal;
             }
-            return reinterpret_cast<T*>(c->m_defs)[offset];
+#ifdef DEBUG
+            if (!coerce)
+            {
+                T val1 = reinterpret_cast<T*>(c->m_defs)[offset];
+                T val2 = SafeGetConstantValue<T>(c, offset);
+
+                // Detect if there is a mismatch between the VN storage type and explicitly
+                // passed-in type T.
+                bool mismatch = false;
+                if (varTypeIsFloating(c->m_typ))
+                {
+                    mismatch = (memcmp(&val1, &val2, sizeof(val1)) != 0);
+                }
+                else
+                {
+                    mismatch = (val1 != val2);
+                }
+
+                if (mismatch)
+                {
+                    assert(!"Called ConstantValue<T>(vn), but type(T) != type(vn); Use CoercedConstantValue instead.");
+                }
+            }
+#endif
+            return SafeGetConstantValue<T>(c, offset);
 
         default:
             assert(false);  // We do not record constants of this typ.
             return (T)0;
         }
+    }
+
+public:
+    // Requires that "vn" is a constant, and that its type is compatible with the explicitly passed
+    // type "T". Also, note that "T" has to have an accurate storage size of the TypeOfVN(vn).
+    template<typename T>
+    T ConstantValue(ValueNum vn)
+    {
+        return ConstantValueInternal<T>(vn DEBUGARG(false));
+    }
+
+    // Requires that "vn" is a constant, and that its type can be coerced to the explicitly passed
+    // type "T".
+    template<typename T>
+    T CoercedConstantValue(ValueNum vn)
+    {
+        return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
     // Given a value number "vn", go through the list of VNs that are handles
@@ -767,6 +851,12 @@ private:
             assert(m_numUsed < ChunkSize);
             return m_numUsed++;
         }
+
+        template <int N>
+        struct Alloc
+        {
+            typedef typename ValueNumStore::VarTypConv<N>::Type Type;
+        };
     };
 
     struct VNHandle: public KeyFuncsDefEquals<VNHandle>

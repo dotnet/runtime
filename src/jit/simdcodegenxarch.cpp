@@ -813,52 +813,115 @@ CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
         baseType == TYP_INT &&
         iset == InstructionSet_SSE2)
     {
-        // We need an additional xmm register as temp.
+        // We need a temporary register that is NOT the same as the target,
+        // and we MAY need another.
         assert(simdNode->gtRsvdRegs != RBM_NONE);
         assert(genCountBits(simdNode->gtRsvdRegs) == 2);
 
         regMaskTP tmpRegsMask = simdNode->gtRsvdRegs;
         regMaskTP tmpReg1Mask = genFindLowestBit(tmpRegsMask);
         tmpRegsMask &= ~tmpReg1Mask;
-        regNumber tmpReg1 = genRegNumFromMask(tmpReg1Mask);
-        regNumber tmpReg2 = genRegNumFromMask(tmpRegsMask);      
+        regNumber tmpReg = genRegNumFromMask(tmpReg1Mask);
+        regNumber tmpReg2 = genRegNumFromMask(tmpRegsMask);
+        // The register allocator guarantees the following conditions:
+        // - the only registers that may be the same among op1Reg, op2Reg, tmpReg
+        //   and tmpReg2 are op1Reg and op2Reg.
+        // Let's be extra-careful and assert that now.
+        assert((op1Reg != tmpReg) && (op1Reg != tmpReg2) &&
+               (op2Reg != tmpReg) && (op2Reg != tmpReg2) &&
+               (tmpReg != tmpReg2));
 
-        // tmpReg1 = op1 >> 4-bytes
-        inst_RV_RV(INS_movaps, tmpReg1, op1Reg, targetType, emitActualTypeSize(targetType));
-        getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(targetType), tmpReg1, 4);
+        // We will start by setting things up so that:
+        //    - We have op1 in op1Reg and targetReg, and they are different registers.
+        //    - We have op2 in op2Reg and tmpReg
+        //    - Either we will leave the input registers (the original op1Reg and op2Reg) unmodified,
+        //      OR they are the targetReg that will be produced.
+        //      (Note that in the code we generate below op1Reg and op2Reg are never written.)
+        // We will copy things as necessary to ensure that this is the case.
+        // Note that we can swap op1 and op2, since multiplication is commutative.
+        // We will not modify the values in op1Reg and op2Reg.
+        // (Though note that if either op1 or op2 is the same as targetReg, we will make
+        // a copy and use that copy as the input register.  In that case we WILL modify
+        // the original value in the register, but will wind up with the result in targetReg
+        // in the end, as expected.)
 
-        // tmpReg2 = op2 >> 4-bytes
-        inst_RV_RV(INS_movaps, tmpReg2, op2Reg);
-        getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(targetType), tmpReg2, 4);
+        // First, we need a tmpReg that is NOT the same as targetReg.
+        // Note that if we have another reg that is the same as targetReg,
+        // we can use tmpReg2 for that case, as we will not have hit this case.
+        if (tmpReg == targetReg)
+        {
+            tmpReg = tmpReg2;
+        }
 
-        // tmpReg1 = unsigned double word multiply of tmpReg1 and tmpReg2. Essentially
-        // tmpReg1[63:0] = op1[1] * op2[1] 
-        // tmpReg2[127:64] = op1[3] * op2[3] 
-        inst_RV_RV(INS_pmuludq, tmpReg1, tmpReg2, targetType, emitActualTypeSize(targetType));
+        if (op2Reg == targetReg)
+        {
+            // We will swap the operands.
+            // Since the code below only deals with registers, this now becomes the case where
+            // op1Reg == targetReg.
+            op2Reg = op1Reg;
+            op1Reg = targetReg;
+        }
+        if (op1Reg == targetReg)
+        {
+            // Copy op1, and make tmpReg2 the new op1Reg.
+            // Note that those regs can't be the same, as we asserted above.
+            // Also, we know that tmpReg2 hasn't been used, because we couldn't have hit
+            // the "tmpReg == targetReg" case.
+            inst_RV_RV(INS_movaps, tmpReg2, op1Reg, targetType, emitActualTypeSize(targetType));
+            op1Reg = tmpReg2;
+            inst_RV_RV(INS_movaps, tmpReg, op2Reg, targetType, emitActualTypeSize(targetType));
+            // However, we have one more case to worry about: what if op2Reg is also targetReg
+            // (i.e. we have the same operand as op1 and op2)?
+            // In that case we will set op2Reg to the same register as op1Reg.
+            if (op2Reg == targetReg)
+            {
+                op2Reg = tmpReg2;
+            }
+        }
+        else
+        {
+            // Copy op1 to targetReg and op2 to tmpReg.
+            inst_RV_RV(INS_movaps, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
+            inst_RV_RV(INS_movaps, tmpReg, op2Reg, targetType, emitActualTypeSize(targetType));
+        }
+        // Let's assert that things are as we expect.
+        //    - We have op1 in op1Reg and targetReg, and they are different registers.
+        assert(op1Reg != targetReg);
+        //    - We have op2 in op2Reg and tmpReg, and they are different registers.
+        assert(op2Reg != tmpReg);
+        //    - Either we are going to leave op1's reg unmodified, or it is the targetReg.
+        assert((op1->gtRegNum == op1Reg) || (op1->gtRegNum == op2Reg) || (op1->gtRegNum == targetReg));
+        //    - Similarly, we are going to leave op2's reg unmodified, or it is the targetReg.
+        assert((op2->gtRegNum == op1Reg) || (op2->gtRegNum == op2Reg) || (op2->gtRegNum == targetReg));
+
+        // Now we can generate the code.
+
+        // targetReg = op1 >> 4-bytes (op1 is already in targetReg)
+        getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(targetType), targetReg, 4);
+
+        // tmpReg  = op2 >> 4-bytes (op2 is already in tmpReg)
+        getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(targetType), tmpReg, 4);
+
+        // tmp = unsigned double word multiply of targetReg and tmpReg. Essentially
+        // tmpReg[63:0] = op1[1] * op2[1] 
+        // tmpReg[127:64] = op1[3] * op2[3] 
+        inst_RV_RV(INS_pmuludq, tmpReg, targetReg, targetType, emitActualTypeSize(targetType));
+
+        // Extract first and third double word results from tmpReg
+        // tmpReg = shuffle(0,0,2,0) of tmpReg
+        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), tmpReg, tmpReg, 0x08);
 
         // targetReg[63:0] = op1[0] * op2[0]
         // targetReg[127:64] = op1[2] * op2[2]                
-        if (op2Reg == targetReg)
-        {
-            otherReg = op1Reg;
-        }
-        else if (op1Reg != targetReg)
-        {
-            inst_RV_RV(INS_movaps, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
-        }
-        inst_RV_RV(INS_pmuludq, targetReg, otherReg, targetType, emitActualTypeSize(targetType));
-
-        // Extract first and third double word results from tmpReg1
-        // tmpReg2 = shuffle(0,0,2,0) of tmpReg1
-        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), tmpReg2, tmpReg1, 0x08);
+        inst_RV_RV(INS_movaps, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
+        inst_RV_RV(INS_pmuludq, targetReg, op2Reg, targetType, emitActualTypeSize(targetType));
 
         // Extract first and third double word results from targetReg
-        // tmpReg1 = shuffle(0,0,2,0) of targetReg
-        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), tmpReg1, targetReg, 0x08);
+        // targetReg = shuffle(0,0,2,0) of targetReg
+        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), targetReg, targetReg, 0x08);
 
         // pack the results into a single vector
-        inst_RV_RV(INS_movaps, targetReg, tmpReg1, targetType, emitActualTypeSize(targetType));
-        inst_RV_RV(INS_punpckldq, targetReg, tmpReg2, targetType, emitActualTypeSize(targetType));
+        inst_RV_RV(INS_punpckldq, targetReg, tmpReg, targetType, emitActualTypeSize(targetType));
     }
     else
     {

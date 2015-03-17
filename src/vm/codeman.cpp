@@ -188,17 +188,17 @@ void UnwindInfoTable::Register()
         {
             _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
             hHandle = NULL;
-            STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]", ret, iRangeStart, iRangeEnd);
+            STRESS_LOG3(LF_JIT, LL_ERROR, "UnwindInfoTable::Register ERROR %x creating table [%p, %p]\n", ret, iRangeStart, iRangeEnd);
         }
         else  
         {
-            STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::Register Handle: %p [%p, %p]", hHandle, iRangeStart, iRangeEnd);
+            STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::Register Handle: %p [%p, %p]\n", hHandle, iRangeStart, iRangeEnd);
         }
     }
     EX_CATCH
     {
         hHandle = NULL;
-        STRESS_LOG2(LF_JIT, LL_ERROR, "UnwindInfoTable::Register Exception while creating table [%p, %p]", 
+        STRESS_LOG2(LF_JIT, LL_ERROR, "UnwindInfoTable::Register Exception while creating table [%p, %p]\n",
             iRangeStart, iRangeEnd);
         _ASSERTE(!"Failed to publish UnwindInfo (ignorable)");
     }
@@ -212,7 +212,7 @@ void UnwindInfoTable::UnRegister()
     hHandle = 0;
     if (handle != 0) 
     {
-        STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::UnRegister Handle: %p [%p, %p]", handle, iRangeStart, iRangeEnd);
+        STRESS_LOG3(LF_JIT, LL_INFO100, "UnwindInfoTable::UnRegister Handle: %p [%p, %p]\n", handle, iRangeStart, iRangeEnd);
         pRtlDeleteGrowableFunctionTable(handle);
     }
 }
@@ -277,7 +277,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, RUNT
             // Add to the function table
             pRtlGrowFunctionTable(unwindInfo->hHandle, unwindInfo->cTableCurCount);
 
-            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%xp TO END, now 0x%x entries", 
+            STRESS_LOG5(LF_JIT, LL_INFO1000, "AddToUnwindTable Handle: %p [%p, %p] ADDING 0x%xp TO END, now 0x%x entries\n",
                 unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd, 
                 data->BeginAddress, unwindInfo->cTableCurCount);
             return;
@@ -294,7 +294,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, RUNT
     if (usedSpace == unwindInfo->cTableMaxCount)
         desiredSpace = usedSpace * 3 / 2 + 1;        // Increase by 50%
 
-    STRESS_LOG7(LF_JIT, LL_INFO100, "AddToUnwindTable Handle: %p [%p, %p] SLOW Realloc Cnt 0x%x Max 0x%x NewMax 0x%x, Adding %x", 
+    STRESS_LOG7(LF_JIT, LL_INFO100, "AddToUnwindTable Handle: %p [%p, %p] SLOW Realloc Cnt 0x%x Max 0x%x NewMax 0x%x, Adding %x\n",
         unwindInfo->hHandle, unwindInfo->iRangeStart, unwindInfo->iRangeEnd, 
         unwindInfo->cTableCurCount, unwindInfo->cTableMaxCount, desiredSpace, data->BeginAddress);
 
@@ -307,7 +307,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, RUNT
     {
         if (!inserted && data->BeginAddress < unwindInfo->pTable[fromIdx].BeginAddress)
         {
-            STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at MID position 0x%x", toIdx);
+            STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at MID position 0x%x\n", toIdx);
             newTab->pTable[toIdx++] = *data;
             inserted = true;
         }
@@ -316,11 +316,11 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, RUNT
     }
     if (!inserted) 
     {
-        STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at END position 0x%x", toIdx);
+        STRESS_LOG1(LF_JIT, LL_INFO100, "AddToUnwindTable Inserted at END position 0x%x\n", toIdx);
         newTab->pTable[toIdx++] = *data;
     }
     newTab->cTableCurCount = toIdx;
-    STRESS_LOG2(LF_JIT, LL_INFO100, "AddToUnwindTable New size 0x%x max 0x%x", 
+    STRESS_LOG2(LF_JIT, LL_INFO100, "AddToUnwindTable New size 0x%x max 0x%x\n",
         newTab->cTableCurCount, newTab->cTableMaxCount);
     _ASSERTE(newTab->cTableCurCount <= newTab->cTableMaxCount);
 
@@ -354,7 +354,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, RUNT
     if (unwindInfo != NULL)
     {
         DWORD relativeEntryPoint = (DWORD)(entryPoint - baseAddress);
-        STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x", 
+        STRESS_LOG3(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removing %p BaseAddress %p rel %x\n",
             entryPoint, baseAddress, relativeEntryPoint);
         for(ULONG i = 0; i < unwindInfo->cTableCurCount; i++)
         {
@@ -364,12 +364,12 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, RUNT
                 if (unwindInfo->pTable[i].UnwindData != 0)
                     unwindInfo->cDeletedEntries++;
                 unwindInfo->pTable[i].UnwindData = 0;        // Mark the entry for deletion
-                STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed entry 0x%x", i);
+                STRESS_LOG1(LF_JIT, LL_INFO100, "RemoveFromUnwindInfoTable Removed entry 0x%x\n", i);
                 return;
             }
         }
     }
-    STRESS_LOG2(LF_JIT, LL_WARNING, "RemoveFromUnwindInfoTable COULD NOT FIND %p BaseAddress %p", 
+    STRESS_LOG2(LF_JIT, LL_WARNING, "RemoveFromUnwindInfoTable COULD NOT FIND %p BaseAddress %p\n",
         entryPoint, baseAddress);
 }
 
@@ -519,7 +519,7 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
             delete newCrst;    // we were in a race and failed, throw away the Crst we made.
 
     } EX_CATCH {
-        STRESS_LOG1(LF_JIT, LL_ERROR, "Exception happened when doing unwind Info rundown. EIP of last AV = %p", g_LastAccessViolationEIP);
+        STRESS_LOG1(LF_JIT, LL_ERROR, "Exception happened when doing unwind Info rundown. EIP of last AV = %p\n", g_LastAccessViolationEIP);
         _ASSERTE(!"Exception thrown while publishing 'catchup' ETW unwind information");
         s_publishingActive = false;     // Try to minimize damage.  
     } EX_END_CATCH(SwallowAllExceptions);
@@ -1162,7 +1162,6 @@ EEJitManager::EEJitManager()
     m_JITCompiler      = NULL;
 #ifdef _TARGET_AMD64_
     m_JITCompilerOther = NULL;
-    m_fUsingCompatJit  = false;
 #endif
 #ifdef ALLOW_SXS_JIT
     m_alternateJit     = NULL;
@@ -1271,6 +1270,41 @@ void EEJitManager::SetCpuInfo()
     m_dwCPUCompileFlags = dwCPUCompileFlags;
 }
 
+// Define some data that we can use to get a better idea of what happened when we get a Watson dump that indicates the JIT failed to load.
+// This will be used and updated by the JIT loading and initialization functions, and the data written will get written into a Watson dump.
+
+enum JIT_LOAD_JIT_ID
+{
+    JIT_LOAD_MAIN = 500,    // The "main" JIT. Normally, this is named "clrjit.dll". Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
+    JIT_LOAD_LEGACY,        // The "legacy" JIT. Normally, this is named "compatjit.dll" (aka, JIT64). This only applies to AMD64.
+    JIT_LOAD_ALTJIT         // An "altjit". By default, named "protojit.dll". Used both internally, as well as externally for JIT CTP builds.
+};
+
+enum JIT_LOAD_STATUS
+{
+    JIT_LOAD_STATUS_STARTING = 1001,                   // The JIT load process is starting. Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
+    JIT_LOAD_STATUS_DONE_LOAD,                         // LoadLibrary of the JIT dll succeeded.
+    JIT_LOAD_STATUS_DONE_GET_SXSJITSTARTUP,            // GetProcAddress for "sxsJitStartup" succeeded.
+    JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP,           // Calling sxsJitStartup() succeeded.
+    JIT_LOAD_STATUS_DONE_GET_GETJIT,                   // GetProcAddress for "getJit" succeeded.
+    JIT_LOAD_STATUS_DONE_CALL_GETJIT,                  // Calling getJit() succeeded.
+    JIT_LOAD_STATUS_DONE_CALL_GETVERSIONIDENTIFIER,    // Calling ICorJitCompiler::getVersionIdentifier() succeeded.
+    JIT_LOAD_STATUS_DONE_VERSION_CHECK,                // The JIT-EE version identifier check succeeded.
+    JIT_LOAD_STATUS_DONE,                              // The JIT load is complete, and successful.
+};
+
+struct JIT_LOAD_DATA
+{
+    JIT_LOAD_JIT_ID     jld_id;         // Which JIT are we currently loading?
+    JIT_LOAD_STATUS     jld_status;     // The current load status of a JIT load attempt.
+    HRESULT             jld_hr;         // If the JIT load fails, the last jld_status will be JIT_LOAD_STATUS_STARTING.
+                                        //   In that case, this will contain the HRESULT returned by LoadLibrary.
+                                        //   Otherwise, this will be S_OK (which is zero).
+};
+
+// Here's the global data for JIT load and initialization state.
+JIT_LOAD_DATA g_JitLoadData;
+
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -1283,13 +1317,22 @@ void EEJitManager::SetCpuInfo()
 //                     Note that if the given JIT is loaded, but the interface is mismatched, then *phJit will be legal and non-NULL
 //                     even though *ppICorJitCompiler is NULL. This allows the caller to unload the JIT dll, if necessary
 //                     (nobody does this today).
+// pJitLoadData      - Pointer to a structure that we update as we load and initialize the JIT to indicate how far we've gotten. This
+//                     is used to help understand problems we see with JIT loading that come in via Watson dumps. Since we don't throw
+//                     an exception immediately upon failure, we can lose information about what the failure was if we don't store this
+//                     information in a way that persists into a process dump.
 // 
-static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler)
+
+static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler, IN OUT JIT_LOAD_DATA* pJitLoadData)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(phJit != NULL);
     _ASSERTE(ppICorJitCompiler != NULL);
+    _ASSERTE(pJitLoadData != NULL);
+
+    pJitLoadData->jld_status = JIT_LOAD_STATUS_STARTING;
+    pJitLoadData->jld_hr     = S_OK;
 
     *phJit = NULL;
     *ppICorJitCompiler = NULL;
@@ -1319,6 +1362,8 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
     if (SUCCEEDED(hr))
     {
+        pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_LOAD;
+
         EX_TRY
         {
             typedef void (__stdcall* psxsJitStartup) (CoreClrCallbacks const &);
@@ -1326,39 +1371,72 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
             if (sxsJitStartupFn)
             {
+                pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_SXSJITSTARTUP;
+
                 CoreClrCallbacks cccallbacks = GetClrCallbacks();
                 (*sxsJitStartupFn) (cccallbacks);
+
+                pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP;
 
                 typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
                 pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
 
                 if (getJitFn)
                 {
+                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_GETJIT;
+
                     ICorJitCompiler* pICorJitCompiler = (*getJitFn)();
                     if (pICorJitCompiler != NULL)
                     {
+                        pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_GETJIT;
+
                         GUID versionId;
                         memset(&versionId, 0, sizeof(GUID));
                         pICorJitCompiler->getVersionIdentifier(&versionId);
 
-                        if (memcmp(&versionId, &JITEEVersionIdentifier, sizeof(GUID)) != 0)
+                        pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_GETVERSIONIDENTIFIER;
+
+                        if (memcmp(&versionId, &JITEEVersionIdentifier, sizeof(GUID)) == 0)
                         {
-                            // Mismatched version ID. Fail the load.
-                            LOG((LF_JIT, LL_FATALERROR, "Mismatched JIT version identifier"));
+                            pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_VERSION_CHECK;
+
+                            // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
+                            *ppICorJitCompiler = pICorJitCompiler;
+
+                            // The JIT is completely loaded and initialized now.
+                            pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE;
                         }
                         else
                         {
-                            // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
-                            *ppICorJitCompiler = pICorJitCompiler;
+                            // Mismatched version ID. Fail the load.
+                            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: mismatched JIT version identifier in %S\n", pwzJitName));
                         }
                     }
+                    else
+                    {
+                        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to get ICorJitCompiler in %S\n", pwzJitName));
+                    }
                 }
+                else
+                {
+                    LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to find 'getJit' entrypoint in %S\n", pwzJitName));
+                }
+            }
+            else
+            {
+                LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to find 'sxsJitStartup' entrypoint in %S\n", pwzJitName));
             }
         }
         EX_CATCH
         {
+            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: caught an exception trying to initialize %S\n", pwzJitName));
         }
         EX_END_CATCH(SwallowAllExceptions)
+    }
+    else
+    {
+        pJitLoadData->jld_hr = hr;
+        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to load %S, hr=0x%08x\n", pwzJitName, hr));
     }
 }
 
@@ -1408,10 +1486,10 @@ BOOL EEJitManager::LoadJIT()
     m_JITCompiler = NULL;
 #ifdef _TARGET_AMD64_
     m_JITCompilerOther = NULL;
-    m_fUsingCompatJit  = false;
 #endif
 
-    LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler);
+    g_JitLoadData.jld_id = JIT_LOAD_MAIN;
+    LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler, &g_JitLoadData);
 
     // Set as a courtesy to code:CorCompileGetRuntimeDll
     s_ngenCompilerDll = m_JITCompiler;
@@ -1491,19 +1569,13 @@ BOOL EEJitManager::LoadJIT()
             // everything. You can imagine a policy where if the user requests the compatjit, and we fail
             // to load it, that we fail noisily. We don't do that currently.
             ICorJitCompiler* fallbackICorJitCompiler;
-            LoadAndInitializeJIT(pwzJitName, &m_JITCompilerOther, &fallbackICorJitCompiler);
+            g_JitLoadData.jld_id = JIT_LOAD_LEGACY;
+            LoadAndInitializeJIT(pwzJitName, &m_JITCompilerOther, &fallbackICorJitCompiler, &g_JitLoadData);
             if (fallbackICorJitCompiler != nullptr)
             {
                 // Tell the main JIT to fall back to the "fallback" JIT compiler, in case some
                 // obfuscator tries to directly call the main JIT's getJit() function.
                 newJitCompiler->setRealJit(fallbackICorJitCompiler);
-                // Record the fact that we are using the compat jit so that if the VM
-                // needs to behave differently for the compat jit it can query this value
-                //
-                // Currently we do behave differently when deciding how to call the 
-                // CORINFO_HELP_STOP_FOR_GC jithelper.
-                //
-                m_fUsingCompatJit = true;
             }
         }
     }
@@ -1537,7 +1609,8 @@ BOOL EEJitManager::LoadJIT()
             altJitName = MAKEDLLNAME_W(W("protojit"));
         }
 
-        LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler);
+        g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
+        LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData);
     }
 
 #endif // ALLOW_SXS_JIT 

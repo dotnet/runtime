@@ -436,6 +436,8 @@ void Lowering::TreeNodeInfoInit(GenTree* stmt)
             {
                 MakeSrcContained(tree, tree->gtOp.gtOp1);
             }
+            info->internalIntCount = 1;
+            info->setInternalCandidates(l, l->allRegs(TYP_INT));
             break;
 
         case GT_MOD:
