@@ -655,7 +655,7 @@ BOOL
 PALAPI
 PAL_IsDebuggerPresent()
 {
-#ifdef __LINUX__
+#if defined(__LINUX__)
     BOOL debugger_present = FALSE;
     char buf[2048];
 
@@ -680,8 +680,17 @@ PAL_IsDebuggerPresent()
     }
 
     return debugger_present;
+#elif defined(__APPLE__)
+    struct kinfo_proc info = {};
+    size_t size = sizeof(info);
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
+    int ret = sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, NULL, 0);
+
+    if (ret == 0)
+        return ((info.kp_proc.p_flag & P_TRACED) != 0);
+
+    return FALSE;
 #else
-    // Always retun false for OSx for now.
     return FALSE;
 #endif
 }
