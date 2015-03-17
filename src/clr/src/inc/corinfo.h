@@ -296,6 +296,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
     CORINFO_HELP_OVERFLOW,          // throw an overflow exception
     CORINFO_HELP_THROWDIVZERO,      // throw a divide by zero exception
+#ifndef RYUJIT_CTPBUILD
+    CORINFO_HELP_THROWNULLREF,      // throw a null reference exception
+#endif
 
     CORINFO_HELP_INTERNALTHROW,     // Support for really fast jit
     CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
@@ -455,8 +458,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_CHKCAST,
     CORINFO_HELP_READYTORUN_STATIC_BASE,
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
-    // TODO: Clean this up together with some other change to version the JIT-EE interface
-#define CORINFO_HELP_READYTORUN_DELEGATE_CTOR CORINFO_HELP_EE_PRESTUB
+    CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
 #endif
 
 #ifdef REDHAWK
@@ -3329,6 +3331,35 @@ public:
             __out_ecount (FQNameCapacity) char * szFQName, /* OUT */
             size_t FQNameCapacity  /* IN */
             ) = 0;
+
+#if !defined(RYUJIT_CTPBUILD)
+    /*************************************************************************/
+    //
+    // Configuration values - Allows querying of the CLR configuration.
+    //
+    /*************************************************************************/
+
+    //  Return an integer ConfigValue if any.
+    //
+    virtual int getIntConfigValue(
+        const wchar_t *name, 
+        int defaultValue
+        ) = 0;
+
+    //  Return a string ConfigValue if any.
+    //
+    virtual wchar_t *getStringConfigValue(
+        const wchar_t *name
+        ) = 0;
+
+    // Free a string ConfigValue returned by the runtime.
+    // JITs using the getStringConfigValue query are required
+    // to return the string values to the runtime for deletion.
+    // this avoid leaking the memory in the JIT.
+    virtual void freeStringConfigValue(
+        wchar_t *value
+        ) = 0;
+#endif // RYUJIT_CTPBUILD
 };
 
 /*****************************************************************************

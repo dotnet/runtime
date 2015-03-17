@@ -768,6 +768,12 @@ public:
     void HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers);
     void ThrowExceptionForJitResult(HRESULT result);
     void ThrowExceptionForHelper(const CORINFO_HELPER_DESC * throwHelper);
+
+    int getIntConfigValue(const wchar_t *name, int defaultValue);
+
+    wchar_t *getStringConfigValue(const wchar_t *name);
+
+    void freeStringConfigValue(wchar_t *value);
 };
 
 #endif // __ZAPINFO_H__
