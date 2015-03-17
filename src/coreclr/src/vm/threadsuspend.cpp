@@ -2459,15 +2459,9 @@ LPrepareRetry:
 void Thread::SetRudeAbortEndTimeFromEEPolicy()
 {
     LIMITED_METHOD_CONTRACT;
-    DWORD timeout;
-    if (HasLockInCurrentDomain())
-    {
-        timeout = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-    }
-    else
-    {
-        timeout = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
-    }
+
+    DWORD timeout = GetEEPolicy()->GetTimeout(OPR_ThreadRudeAbortInCriticalRegion);
+
     ULONGLONG newEndTime;
     if (timeout == INFINITE)
     {

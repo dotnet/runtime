@@ -11989,7 +11989,6 @@ DECLARE_API(Watch)
     if(addExpression.data != NULL || aExpression.data != NULL)
     {
         WCHAR pAddExpression[MAX_EXPRESSION];
-        memset(pAddExpression, 0, MAX_EXPRESSION);
         swprintf_s(pAddExpression, MAX_EXPRESSION, W("%S"), addExpression.data != NULL ? addExpression.data : aExpression.data);
         Status = g_watchCmd.Add(pAddExpression);
     }
@@ -12013,7 +12012,6 @@ DECLARE_API(Watch)
     else if(saveName.data != NULL || sName.data != NULL)
     {
         WCHAR pSaveName[MAX_EXPRESSION];
-        memset(pSaveName, 0, MAX_EXPRESSION);
         swprintf_s(pSaveName, MAX_EXPRESSION, W("%S"), saveName.data != NULL ? saveName.data : sName.data);
         Status = g_watchCmd.SaveList(pSaveName);
     }
@@ -12029,10 +12027,8 @@ DECLARE_API(Watch)
              return S_FALSE;
         }
         WCHAR pOldName[MAX_EXPRESSION];
-        memset(pOldName, 0, MAX_EXPRESSION);
         swprintf_s(pOldName, MAX_EXPRESSION, W("%S"), renameOldName.data);
         WCHAR pNewName[MAX_EXPRESSION];
-        memset(pNewName, 0, MAX_EXPRESSION);
         swprintf_s(pNewName, MAX_EXPRESSION, W("%S"), expression.data);
         g_watchCmd.RenameList(pOldName, pNewName);
     }
@@ -12040,7 +12036,7 @@ DECLARE_API(Watch)
     else if(expandIndex != -1 || expression.data == NULL)
     {
         WCHAR pExpression[MAX_EXPRESSION];
-        memset(pExpression, 0, MAX_EXPRESSION);
+        pExpression[0] = '\0';
 
         if(expandIndex != -1)
         {
@@ -12055,7 +12051,8 @@ DECLARE_API(Watch)
             }
         }
         WCHAR pFilterName[MAX_EXPRESSION];
-        memset(pFilterName, 0, MAX_EXPRESSION);
+        pFilterName[0] = '\0';
+
         if(filterName.data != NULL)
         {
             swprintf_s(pFilterName, MAX_EXPRESSION, W("%S"), filterName.data);

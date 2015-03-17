@@ -169,7 +169,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     // Can we encode the type using a short ET encoding?
     // 
-    CorElementType elemType = elemType = TryEncodeUsingShortcut(pMT);
+    CorElementType elemType = TryEncodeUsingShortcut(pMT);
     if (elemType != ELEMENT_TYPE_END)
     {
         _ASSERTE(pMT->IsTypicalTypeDefinition());
