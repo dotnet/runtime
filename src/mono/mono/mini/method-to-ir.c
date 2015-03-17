@@ -4216,12 +4216,16 @@ icall_is_direct_callable (MonoCompile *cfg, MonoMethod *cmethod)
 		direct_icall_type_hash = h;
 	}
 
+	// FIXME:
+	return FALSE;
+#if 0
 	if (cmethod->klass == mono_defaults.math_class)
 		return TRUE;
 	/* No locking needed */
 	if (cmethod->klass->image == mono_defaults.corlib && g_hash_table_lookup (direct_icall_type_hash, cmethod->klass->name))
 		return TRUE;
 	return FALSE;
+#endif
 }
 
 #define is_complex_isinst(klass) ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
