@@ -10,7 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{1F3D70
 		..\.nuget\packages.config = ..\.nuget\packages.config
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Pipes.BasicTests", "tests\System.IO.Pipes.BasicTests.csproj", "{142469EC-D665-4FE2-845A-FDA69F9CC557}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Pipes.Tests", "tests\System.IO.Pipes.Tests.csproj", "{142469EC-D665-4FE2-845A-FDA69F9CC557}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

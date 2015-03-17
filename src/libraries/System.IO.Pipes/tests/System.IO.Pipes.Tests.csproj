@@ -7,7 +7,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <AssemblyName>System.IO.Pipes.BasicTests</AssemblyName>
+    <AssemblyName>System.IO.Pipes.Tests</AssemblyName>
     <SignAssembly>false</SignAssembly>
     <ProjectGuid>{142469EC-D665-4FE2-845A-FDA69F9CC557}</ProjectGuid>
     <NuGetPackageImportStamp>d2615b94</NuGetPackageImportStamp>
