@@ -5455,22 +5455,32 @@ static MonoString*
 mono_string_is_interned_lookup (MonoString *str, int insert)
 {
 	MonoGHashTable *ldstr_table;
-	MonoString *res;
+	MonoString *s, *res;
 	MonoDomain *domain;
 	
 	domain = ((MonoObject *)str)->vtable->domain;
 	ldstr_table = domain->ldstr_table;
 	ldstr_lock ();
-	if ((res = mono_g_hash_table_lookup (ldstr_table, str))) {
+	res = mono_g_hash_table_lookup (ldstr_table, str);
+	if (res) {
 		ldstr_unlock ();
 		return res;
 	}
 	if (insert) {
-		str = mono_string_get_pinned (str);
-		if (str)
-			mono_g_hash_table_insert (ldstr_table, str, str);
+		/* Allocate outside the lock */
 		ldstr_unlock ();
-		return str;
+		s = mono_string_get_pinned (str);
+		if (s) {
+			ldstr_lock ();
+			res = mono_g_hash_table_lookup (ldstr_table, str);
+			if (res) {
+				ldstr_unlock ();
+				return res;
+			}
+			mono_g_hash_table_insert (ldstr_table, s, s);
+			ldstr_unlock ();
+		}
+		return s;
 	} else {
 		LDStrInfo ldstr_info;
 		ldstr_info.orig_domain = domain;
