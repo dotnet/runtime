@@ -2791,6 +2791,7 @@ Compiler::fgWalkResult  Compiler::fgWalkTreePost(GenTreePtr    *pTree,
  * Returns true if the block was added to throw one of:
  *    range-check exception
  *    divide by zero exception  (Not used on X86/X64)
+ *    null reference exception (Not currently used)
  *    overflow exception
  */
 
@@ -2810,6 +2811,9 @@ bool                Compiler::fgIsThrowHlpBlk(BasicBlock * block)
 
     if (!((call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL))   ||
           (call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
+#ifndef RYUJIT_CTPBUILD
+          (call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
+#endif
           (call->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW))))
         return false;
 

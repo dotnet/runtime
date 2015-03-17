@@ -219,21 +219,24 @@ NESTED_END NDirectImportThunk, _TEXT
 ;------------------------------------------------
 ; JIT_RareDisableHelper
 ;
-; The JIT expects this helper to preserve registers used for return values
+; The JIT expects this helper to preserve all 
+; registers that can be used for return values
 ;
 
 NESTED_ENTRY JIT_RareDisableHelper, _TEXT
 
-    push rax
-    alloc_stack         30h
+    alloc_stack         38h
     END_PROLOGUE
-    movdqu [rsp+20h], xmm0
 
-    call JIT_RareDisableHelperWorker
+    movdqa      [rsp+20h], xmm0     ; Save xmm0  
+    mov         [rsp+30h], rax      ; Save rax  
 
-    movdqu xmm0, [rsp+20h]
-    add                 rsp, 30h
-    pop                 rax
+    call        JIT_RareDisableHelperWorker
+
+    movdqa      xmm0, [rsp+20h]     ; Restore xmm0	
+    mov         rax,  [rsp+30h]     ; Restore rax  
+
+    add         rsp, 38h
     ret
 
 NESTED_END JIT_RareDisableHelper, _TEXT

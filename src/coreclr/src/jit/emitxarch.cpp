@@ -82,6 +82,7 @@ bool emitter::IsThreeOperandBinaryAVXInstruction(instruction ins)
             ins == INS_pcmpeqw  || ins == INS_pcmpgtw  ||
             ins == INS_pcmpeqb  || ins == INS_pcmpgtb  ||
             ins == INS_pcmpeqq  || ins == INS_pcmpgtq  ||
+            ins == INS_pmulld   || ins == INS_pmullw   ||
 
             ins == INS_shufps   || ins == INS_shufpd   ||
             ins == INS_minps    || ins == INS_minss    ||
@@ -1628,15 +1629,6 @@ UNATIVE_OFFSET      emitter::emitInsSizeSV(size_t code, int var, int dsp)
         }
         assert(tmp != nullptr);
         offs = tmp->tdTempOffs();
-
-        // For SP-based frames, temps will only have zero offset if there is nothing else on the stack.
-        // Note that we would generally expect something else to be on the stack if we have a spill temp
-        // (minimally, the callee-save register area, since we wouldn't expect to spill if we haven't even
-        // used any callee-save regs).  However, in a stress mode this can happen.
-
-        assert(emitComp->isFramePointerUsed() ||
-               (offs != 0) ||
-               emitComp->tmpSize == emitComp->compLclFrameSize);
 
         // We only care about the magnitude of the offset here, to determine instruction size.
         if (emitComp->isFramePointerUsed())

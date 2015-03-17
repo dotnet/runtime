@@ -1118,7 +1118,6 @@ public:
     HINSTANCE           m_JITCompiler;
 #ifdef _TARGET_AMD64_
     HINSTANCE           m_JITCompilerOther; // Stores the handle of the legacy JIT, if one is loaded.
-    bool                m_fUsingCompatJit;  // true if we are using the JIT64 compat jit, false otherwise
 #endif
 
 #ifdef ALLOW_SXS_JIT
@@ -1405,15 +1404,6 @@ private:
         JumpStubBlockHeader * m_pBlocks;
         JumpStubTable m_Table;
     };
-
-#if defined(_TARGET_AMD64_)
-public :
-    static bool UsingCompatJit()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_pEEJitManager != nullptr) && m_pEEJitManager->m_fUsingCompatJit;
-    }
-#endif 
 };
 
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
