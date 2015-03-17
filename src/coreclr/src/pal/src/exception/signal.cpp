@@ -537,45 +537,20 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
         ASSERT("sigprocmask failed; error is %d (%s)\n",errno, strerror(errno));
     } 
 
-    /* see if we can safely try to handle the exception. we can't if the signal
-       occurred while looking for an exception handler, because this would most 
-       likely result in infinite recursion */
-    if(SEHGetSafeState(pthrCurrent))
+    if (g_hardwareExceptionHandler != NULL)
     {
-        // Indicate the thread is no longer safe to handle signals.
-        SEHSetSafeState(pthrCurrent, FALSE);
-        SEHRaiseException(pthrCurrent, pointers, code);
+        PAL_SEHException exception(pointers->ExceptionRecord, pointers->ContextRecord);
 
-        // SEHRaiseException may have returned before resetting the safe 
-        // state; do it here.
-        SEHSetSafeState(pthrCurrent, TRUE);
+        g_hardwareExceptionHandler(&exception);
 
-        // Use sigreturn, in case the exception handler has changed some
-        // registers. sigreturn allows us to set the context and terminate
-        // the signal handling.
-        CONTEXTToNativeContext(&context, ucontext);
-
-#if HAVE_SETCONTEXT
-        setcontext(ucontext);
-#elif HAVE__THREAD_SYS_SIGRETURN
-        _thread_sys_sigreturn(ucontext);
-#elif HAVE_SIGRETURN
-        sigreturn(ucontext);
-#else
-#error Missing a sigreturn equivalent on this platform!
-#endif
-        ASSERT("sigreturn has returned, it should not.\n");
+        ASSERT("HandleHardwareException has returned, it should not.\n");
     }
     else
     {
-        /* signal was received while in an unsafe mode. we were already 
-           handling a signal when we got this one, and trying to handle it 
-           again would most likely result in the signal being triggered again 
-           (infinite recursion). abort. */
-        ERROR("got a signal during unsafe portion of exception handling. "
-              "aborting\n")
-        ExitProcess(pointers->ExceptionRecord->ExceptionCode);
+        ASSERT("Unhandled hardware exception\n");
     }
+
+    ExitProcess(pointers->ExceptionRecord->ExceptionCode);
 }
 
 /*++
