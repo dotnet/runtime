@@ -1686,32 +1686,35 @@ ProcessFuncletsForGCReporting:
                     fRecheckCurrentFrame = false;
                     
                     // When enumerating GC references for "liveness" reporting, depending upon the architecture,
-                    // the reponsibility of who reports what varies:
-                    // 
-                    // 1) On x86, ARM and X64 (via RyuJIT) the funclet reports all references belonging to itself and its parent method.
-                    // 
-                    // 2) X64 (via JIT64) has the reporting distributed between the funclets and the parent method.
+                    // the responsibility of who reports what varies:
+                    //
+                    // 1) On ARM, ARM64, and X64 (using RyuJIT), the funclet reports all references belonging
+                    //    to itself and its parent method. This is indicated by the WantsReportOnlyLeaf flag being
+                    //    set in the GC information for a function.
+                    //
+                    // 2) X64 (using JIT64) has the reporting distributed between the funclets and the parent method.
                     //    If some reference(s) get double reported, JIT64 can handle that by playing conservative.
-                    //    
+                    //    JIT64 does NOT set the WantsReportOnlyLeaf flag in the function GC information.
+                    //
                     // 3) On ARM, the reporting is done by funclets (if present). Otherwise, the primary method
                     //    does it.
-                    //    
-                    // On x64 and ARM, the GCStackCrawlCallback is invoked with a new flag indicating that
+                    //
+                    // 4) x86 behaves like (1)
+                    //
+                    // For non-x86, the GcStackCrawlCallBack is invoked with a new flag indicating that
                     // the stackwalk is being done for GC reporting purposes - this flag is GC_FUNCLET_REFERENCE_REPORTING.
-                    // The presence of this flag influences how stackwalker will enumerate frames, which frames will
-                    // result in the callback being invoked, etc. The idea is that we want to report only the 
+                    // The presence of this flag influences how the stackwalker will enumerate frames; which frames will
+                    // result in the callback being invoked; etc. The idea is that we want to report only the 
                     // relevant frames via the callback that are active on the callstack. This removes the need to
-                    // double report (even though JIT64 does it today), reporting of dead frames, and makes the
+                    // double report (even though JIT64 does it), reporting of dead frames, and makes the
                     // design of reference reporting more consistent (and easier to understand) across architectures.
-                    // 
-                    // NOTE: This flag is applicable only to X64 and ARM.
                     // 
                     // The algorithm is as follows (at a conceptual level):
                     // 
                     // 1) For each enumerated managed (frameless) frame, check if it is a funclet or not.
-                    //  1.1) If its not a funclet, pass the frame to the callback and goto (2).
-                    //  1.2) If its a funclet, we preserve the callerSP of the parent frame where the funclet was invoked from. 
-                    //       Passthe funclet to the callback.
+                    //  1.1) If it is not a funclet, pass the frame to the callback and goto (2).
+                    //  1.2) If it is a funclet, we preserve the callerSP of the parent frame where the funclet was invoked from. 
+                    //       Pass the funclet to the callback.
                     //  1.3) For filter funclets, we enumerate all frames until we reach the parent. Once the parent is reached,
                     //       pass it to the callback with a flag indicating that its corresponding funclet has already performed
                     //       the reporting. 
@@ -1720,18 +1723,18 @@ ProcessFuncletsForGCReporting:
                     //       the reporting.
                     //  1.5) If we see non-filter funclets while processing a filter funclet, then goto (1.4). Once we have reached the 
                     //       parent of the non-filter funclet, resume filter funclet processing as described in (1.3).
-                    // 2) If another frame enumerated, goto (1). Otherwise, stackwalk is complete.
+                    // 2) If another frame is enumerated, goto (1). Otherwise, stackwalk is complete.
                     // 
                     // Note: When a flag is passed to the callback indicating that the funclet for a parent frame has already
-                    //       reported the references, RyuJIT (ARM) will simply do nothing and return from the callback.
-                    //       JIT64, on the other hand, will ignore the flag and perform reporting (again), like it does today.
-                    //       
-                    // Note: For non-filter funcelts there is a small window during unwind where we have conceptually unwound past a
+                    //       reported the references, RyuJIT will simply do nothing and return from the callback.
+                    //       JIT64, on the other hand, will ignore the flag and perform reporting (again).
+                    //
+                    // Note: For non-filter funclets there is a small window during unwind where we have conceptually unwound past a
                     //       funclet but have not yet reached the parent/handling frame.  In this case we might need the parent to
                     //       report its GC roots.  See comments around use of m_fDidFuncletReportGCReferences for more details.
                     //
                     // Needless to say, all applicable (read: active) explicit frames are also processed.
-                    // 
+
                     // Check if we are in the mode of enumerating GC references (or not)
                     if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                     {
@@ -1741,27 +1744,23 @@ ProcessFuncletsForGCReporting:
                             // Have we been processing a filter funclet without encountering any non-filter funclets?
                             if ((m_fProcessNonFilterFunclet == false) && (m_fProcessIntermediaryNonFilterFunclet == false))
                             {
-                                // Yes, we have. Check the current frame
-                                // and if it is the parent we are looking for,
-                                // clear the flag indicating that its funclet
-                                // has already reported the GC references (see
-                                // below comment for Dev11 376329 explaining
-                                // why we do this).
+                                // Yes, we have. Check the current frame and if it is the parent we are looking for,
+                                // clear the flag indicating that its funclet has already reported the GC references (see
+                                // below comment for Dev11 376329 explaining why we do this).
                                 if (ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, m_sfFuncletParent))
                                 {
                                     STRESS_LOG2(LF_GCROOTS, LL_INFO100, 
                                     "STACKWALK: Reached parent of filter funclet @ CallerSP: %p, m_crawl.pFunc = %p\n", 
                                     m_sfFuncletParent.SP, m_crawl.pFunc);
                                  
-                                    // Dev11 376329 - ARM: GC hole during filter funclet dispatch
-                                    // filters are invoked during the first pass so we cannot skip
-                                    // reporting the parent frame since it's still live.  normally
-                                    // this would cause double reporting however for filters the JIT
+                                    // Dev11 376329 - ARM: GC hole during filter funclet dispatch.
+                                    // Filters are invoked during the first pass so we cannot skip
+                                    // reporting the parent frame since it's still live.  Normally
+                                    // this would cause double reporting, however for filters the JIT
                                     // will report all GC roots as pinned to alleviate this problem.
-                                    // note that JIT64 does not have this problem since it always
+                                    // Note that JIT64 does not have this problem since it always
                                     // reports the parent frame (this flag is essentially ignored)
-                                    // so it's safe to make this change for both architectures (but
-                                    // once AMD64 moves to RyuJIT the fix will become relevant there).
+                                    // so it's safe to make this change for all (non-x86) architectures.
                                     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
                                     ResetGCRefReportingState();
                                     
@@ -1797,8 +1796,9 @@ ProcessFuncletsForGCReporting:
                         }
                         else
                         {
-                            // We dont have any funclet parent reference. Check if the current
-                            // frame represents a funclet.
+                            _ASSERTE(m_sfFuncletParent.IsNull());
+
+                            // We don't have any funclet parent reference. Check if the current frame represents a funclet.
                             if (m_crawl.IsFunclet())
                             {
                                 // Get a reference to the funclet's parent frame.
@@ -1816,9 +1816,9 @@ ProcessFuncletsForGCReporting:
                                 
                                     bool fIsFilterFunclet = m_crawl.IsFilterFunclet();
                                 
-                                     STRESS_LOG4(LF_GCROOTS, LL_INFO100, 
-                                     "STACKWALK: Found %sFilter funclet @ SP: %p, m_crawl.pFunc = %p; FuncletParentCallerSP: %p\n", 
-                                     (fIsFilterFunclet)?"":"Non-", m_crawl.GetRegisterSet()->SP, m_crawl.pFunc, m_sfFuncletParent.SP);
+                                    STRESS_LOG4(LF_GCROOTS, LL_INFO100, 
+                                    "STACKWALK: Found %sFilter funclet @ SP: %p, m_crawl.pFunc = %p; FuncletParentCallerSP: %p\n", 
+                                    (fIsFilterFunclet) ? "" : "Non-", GetRegdisplaySP(m_crawl.GetRegisterSet()), m_crawl.pFunc, m_sfFuncletParent.SP);
                                  
                                     if (!fIsFilterFunclet)
                                     {
@@ -1837,19 +1837,20 @@ ProcessFuncletsForGCReporting:
                                     }
                                     else
                                     {
+                                        _ASSERTE(fIsFilterFunclet);
                                         m_fProcessNonFilterFunclet = false;
                                     
                                         // Nothing more to do as we have come across a filter funclet. In this case, we will:
                                         // 
                                         // 1) Get a reference to the parent frame
                                         // 2) Report the funclet
-                                        // 3) Continue to report the parent frame, alongwith a flag that funclet has been reported (see above)
+                                        // 3) Continue to report the parent frame, along with a flag that funclet has been reported (see above)
                                         // 4) Continue to report all upstack frames
                                     }
                                 }
-                            }
+                            } // end if (m_crawl.IsFunclet())
                         }
-                    }
+                    } // end if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                 }
                 while(fRecheckCurrentFrame == true);
                 
@@ -1859,19 +1860,19 @@ ProcessFuncletsForGCReporting:
 
                     if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                     {
-                        // When a nested exception escapes, it will unwind pass a funclet.  In addition, it'll
+                        // When a nested exception escapes, it will unwind past a funclet.  In addition, it will
                         // unwind the frame chain up to the funclet.  When that happens, we'll basically lose 
-                        // all the stack frames higher than and equal to he funclet.  We can't skip funclets in 
-                        // the usual way because the first frame we see won't be a funclet.  It'll be something 
-                        // which have conceptually been unwound.  We need to use the information on the 
+                        // all the stack frames higher than and equal to the funclet.  We can't skip funclets in 
+                        // the usual way because the first frame we see won't be a funclet.  It will be something 
+                        // which has conceptually been unwound.  We need to use the information on the 
                         // ExceptionTracker to determine if a stack frame is in the unwound stack region.
                         //
                         // If we are enumerating frames for GC reporting and we determined that
                         // the current frame needs to be reported, ensure that it has not already
                         // been unwound by the active exception. If it has been, then we will set a flag
                         // indicating that its references need not be reported. The CrawlFrame, however,
-                        // will still be passed to the GC stackwalk callback incase it represents a dynamic
-                        // method, to allow the GC to keep them alive.
+                        // will still be passed to the GC stackwalk callback in case it represents a dynamic
+                        // method, to allow the GC to keep that method alive.
                         if (ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(&m_crawl))
                         {
                             // Invoke the GC callback for this crawlframe (to keep any dynamic methods alive) but do not report its references.
@@ -1920,9 +1921,6 @@ ProcessFuncletsForGCReporting:
                                         "STACKWALK: Reached parent of non-filter funclet @ CallerSP: %p, m_crawl.pFunc = %p\n", 
                                         m_sfParent.SP, m_crawl.pFunc);
                                         
-                                        // If we are here, we should be in GC reference reporting mode.
-                                        _ASSERTE(m_flags & GC_FUNCLET_REFERENCE_REPORTING);
-                                        
                                         // landing here indicates that the funclet's parent has been unwound so
                                         // this will always be true, no need to predicate on the state of the funclet
                                         m_crawl.fShouldParentToFuncletSkipReportingGCReferences = true;
@@ -1931,7 +1929,6 @@ ProcessFuncletsForGCReporting:
                                         m_fDidFuncletReportGCReferences = true;
                                         
                                         ResetGCRefReportingState(m_fProcessIntermediaryNonFilterFunclet);
-                                        
                                     }
 
                                     m_sfParent.Clear();
@@ -1946,11 +1943,11 @@ ProcessFuncletsForGCReporting:
                                     }
                                 }
                             }
-                        }
+                        } // end if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                         
                         if (m_crawl.fShouldCrawlframeReportGCReferences)
                         {
-                            // Skip the callback for this frame - we dont do this for unwound frames encountered
+                            // Skip the callback for this frame - we don't do this for unwound frames encountered
                             // in GC stackwalk since they may represent dynamic methods whose resolver objects
                             // the GC may need to keep alive.
                             break;
@@ -1958,10 +1955,12 @@ ProcessFuncletsForGCReporting:
                     }
                     else
                     {
+                        _ASSERTE(!fSkipFrameDueToUnwind);
+
                         // Check if we are skipping frames.
                         if (!m_sfParent.IsNull())
                         {
-                            // Check if our have reached our target method frame.
+                            // Check if we have reached our target method frame.
                             // IsMaxVal() is a special value to indicate that we should skip one frame.
                             if (m_sfParent.IsMaxVal() ||
                                 ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, m_sfParent))
@@ -1973,8 +1972,8 @@ ProcessFuncletsForGCReporting:
                                     _ASSERTE(m_flags & GC_FUNCLET_REFERENCE_REPORTING);
 
                                     STRESS_LOG2(LF_GCROOTS, LL_INFO100, 
-                                    "STACKWALK: Reached parent of non-filter funclet @ CallerSP: %p, m_crawl.pFunc = %p\n", 
-                                    m_sfParent.SP, m_crawl.pFunc);
+                                    "STACKWALK: Reached parent of non-filter funclet @ CallerSP: " FMT_ADDR ", m_crawl.pFunc = " FMT_ADDR "\n", 
+                                    DBG_ADDR(m_sfParent.SP), DBG_ADDR(m_crawl.pFunc));
 
                                     // by default a funclet's parent won't report its GC roots since they would have already
                                     // been reported by the funclet.  however there is a small window during unwind before
@@ -1986,7 +1985,10 @@ ProcessFuncletsForGCReporting:
                                         // we have reached the parent frame of the funclet which didn't report roots since it was already unwound.
                                         // check if the parent frame of the funclet is also handling an exception. if it is, then we will need to
                                         // report roots for it since the catch handler may use references inside it.
-                                    
+
+                                        STRESS_LOG0(LF_GCROOTS, LL_INFO100,
+                                        "STACKWALK: Reached parent of funclet which didn't report GC roots, since funclet is already unwound.\n");
+
                                         ExceptionTracker* pTracker = m_crawl.pThread->GetExceptionState()->GetCurrentExceptionTracker();
                                         if (pTracker->GetCallerOfActualHandlingFrame() == m_sfFuncletParent)
                                         {
@@ -2006,8 +2008,8 @@ ProcessFuncletsForGCReporting:
                                         }
                                         
                                         STRESS_LOG4(LF_GCROOTS, LL_INFO100, 
-                                        "Funclet didn't report references: handling frame: %p, m_sfFuncletParent = %p, is funclet: %d, skip reporting %d\n", 
-                                        pTracker->GetEstablisherOfActualHandlingFrame().SP, m_sfFuncletParent.SP, m_crawl.IsFunclet(), shouldSkipReporting);
+                                        "Funclet didn't report references: handling frame: " FMT_ADDR ", m_sfFuncletParent = " FMT_ADDR ", is funclet: %d, skip reporting %d\n", 
+                                        DBG_ADDR(pTracker->GetEstablisherOfActualHandlingFrame().SP), DBG_ADDR(m_sfFuncletParent.SP), m_crawl.IsFunclet(), shouldSkipReporting);
                                     }
                                     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = shouldSkipReporting;
 
@@ -2016,7 +2018,7 @@ ProcessFuncletsForGCReporting:
 
                                 m_sfParent.Clear();
                             }
-                        }
+                        } // end if (!m_sfParent.IsNull())
 
                         if (m_sfParent.IsNull() && m_crawl.IsFunclet())
                         {
@@ -2493,7 +2495,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         m_crawl.isIPadjusted  = FALSE;
 
 #if defined(_TARGET_X86_)
-        // remember, x86 handles the manages stack frame before the explicit frames contained in it
+        // remember, x86 handles the managed stack frame before the explicit frames contained in it
         if (CheckForSkippedFrames())
         {
             _ASSERTE(m_frameState == SFITER_SKIPPED_FRAME_FUNCTION);

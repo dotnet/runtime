@@ -3043,7 +3043,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                         }
                         if (argLdobj->gtOper == GT_LCL_VAR)
                         {
-                            LclVarDsc *  varDsc = &lvaTable[argLdobj->gtLclVarCommon.gtLclNum];
+                            unsigned lclNum = argLdobj->gtLclVarCommon.gtLclNum;
+                            LclVarDsc *  varDsc = &lvaTable[lclNum];
 
                             if (varDsc->lvPromoted)
                             {
@@ -3074,6 +3075,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* callNode)
                                     else
                                     {
                                         // use GT_LCL_FLD to swizzle the single field struct to a new type
+                                        lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DNER_LocalField));
                                         argLdobj->ChangeOper(GT_LCL_FLD);
                                         argLdobj->gtType = structBaseType;
                                     }
@@ -9563,7 +9565,7 @@ CM_ADD_OP:
                     // Dereferencing the pointer in either case will have the
                     // same effect.
 
-                    if (varTypeIsGC(op2->TypeGet()))
+                    if (!gtIsActiveCSE_Candidate(op1) && varTypeIsGC(op2->TypeGet()))
                     {
                         op2->gtType = tree->gtType;
                         DEBUG_DESTROY_NODE(op1);
@@ -9574,10 +9576,12 @@ CM_ADD_OP:
                     // Remove the addition iff it won't change the tree type
                     // to TYP_REF.
 
-                    if ((op1->TypeGet() == tree->TypeGet()) ||
-                        (op1->TypeGet() != TYP_REF))
+                    if (!gtIsActiveCSE_Candidate(op2) && 
+                        ((op1->TypeGet() == tree->TypeGet()) ||
+                        (op1->TypeGet() != TYP_REF)))
                     {
-                        if ((op2->OperGet() == GT_CNS_INT)      &&
+                        if (fgGlobalMorph &&
+                            (op2->OperGet() == GT_CNS_INT)      &&
                             (op2->gtIntCon.gtFieldSeq != NULL)  &&
                             (op2->gtIntCon.gtFieldSeq != FieldSeqStore::NotAField()))
                         {
@@ -9955,6 +9959,15 @@ CM_ADD_OP:
         //
         if ((op1->OperGet() == GT_COMMA) && !optValnumCSE_phase)
         {
+            /* After fgGlobalMorph we will check for op1 as a GT_COMMA with an unconditional throw node */
+            if (!fgGlobalMorph && fgIsCommaThrow(op1))
+            {
+                // No need to push the GT_IND node into the comma.
+                // As it will get deleted instead. 
+                // (see the code immediately after this switch stmt)
+                break;  // out of this switch stmt
+            }
+
             // Perform the transform IND(COMMA(x, ..., z)) == COMMA(x, ..., IND(z)).
             // TBD: this transformation is currently necessary for correctness -- it might
             // be good to analyze the failures that result if we don't do this, and fix them
@@ -11564,7 +11577,7 @@ GenTreePtr          Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac
             bndsChk->gtArrLen = fgMorphTree(bndsChk->gtArrLen);
             bndsChk->gtIndex = fgMorphTree(bndsChk->gtIndex);
             // If the index is a comma(throw, x), just return that.
-            if (fgIsCommaThrow(bndsChk->gtIndex))
+            if (!optValnumCSE_phase && fgIsCommaThrow(bndsChk->gtIndex))
             {
                 tree = bndsChk->gtIndex;
             }
@@ -12383,7 +12396,7 @@ void                Compiler::fgMorphStmts(BasicBlock * block,
 #endif
 
         /* Check for morph as a GT_COMMA with an unconditional throw */
-        if (fgIsCommaThrow(morph, true))
+        if (!gtIsActiveCSE_Candidate(morph) && fgIsCommaThrow(morph, true))
         {
             /* Use the call as the new stmt */
             morph = morph->gtOp.gtOp1;
@@ -14579,7 +14592,7 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq
             if (op1Fs != NULL)
             {
                 op1Fs = GetFieldSeqStore()->Append(op1Fs, fieldSeq);
-                op1->gtOp.gtOp2->gtIntCon.gtFieldSeq = op1Fs;
+                op1->gtOp.gtOp1->gtIntCon.gtFieldSeq = op1Fs;
             }
         }
         else if (op1->gtOp.gtOp2->OperGet() == GT_CNS_INT)
@@ -14589,6 +14602,17 @@ void Compiler::fgAddFieldSeqForZeroOffset(GenTreePtr op1, FieldSeqNode* fieldSeq
             {
                 op2Fs = GetFieldSeqStore()->Append(op2Fs, fieldSeq);
                 op1->gtOp.gtOp2->gtIntCon.gtFieldSeq = op2Fs;
+            }
+        }
+        break;
+
+    case GT_CNS_INT:
+        {
+            FieldSeqNode* op1Fs = op1->gtIntCon.gtFieldSeq;
+            if (op1Fs != NULL)
+            {
+                op1Fs = GetFieldSeqStore()->Append(op1Fs, fieldSeq);
+                op1->gtIntCon.gtFieldSeq = op1Fs;
             }
         }
         break;
