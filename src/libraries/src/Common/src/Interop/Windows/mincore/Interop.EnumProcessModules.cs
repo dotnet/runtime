@@ -9,12 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SECURITY_ATTRIBUTES
-        {
-            internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
-            internal bool bInheritHandle;
-        }
+        [DllImport(Libraries.Psapi_Obsolete, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true, EntryPoint = "K32EnumProcessModules")]
+        internal static extern bool EnumProcessModules(SafeProcessHandle handle, IntPtr modules, int size, ref int needed);
     }
 }
