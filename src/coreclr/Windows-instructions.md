@@ -23,7 +23,7 @@ Building the repository
 
 1. Clone CoreCLR.
     - `git clone https://github.com/dotnet/coreclr`
-    - Alternatitely, clone a fork. This is the best approach if you plan to contribute to the repo.
+    - Alternatively, clone a fork. This is the best approach if you plan to contribute to the repo.
 3. Open a new command prompt and navigate to the root of the cloned repo.
 4. Invoke "build.cmd clean"
 
