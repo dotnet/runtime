@@ -1685,7 +1685,7 @@ private:
     template<class T>
     inline bool MisalignedRead(CORDB_ADDRESS addr, T *t)
     {
-        return SUCCEEDED(DacReadAll(TO_TADDR(addr), t, sizeof(t), false));
+        return SUCCEEDED(DacReadAll(TO_TADDR(addr), t, sizeof(T), false));
     }
 
 private:
