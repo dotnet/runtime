@@ -362,14 +362,26 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
         pAbortContext = GetThread()->GetAbortContext();
     }
 
+#ifndef FEATURE_PAL
+#define HANDLE_NULL_CONTEXT_POINTER _ASSERTE(false)
+#else // FEATURE_PAL
+#define HANDLE_NULL_CONTEXT_POINTER
+#endif // FEATURE_PAL
+
 #define UPDATEREG(reg)                                                                      \
     do {                                                                                    \
-        _ASSERTE(pRegDisplay->pCurrentContextPointers->reg != NULL);                        \
-        STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating reg %p to %p from %p\n",              \
-                pContextRecord->reg,                                                        \
-                *pRegDisplay->pCurrentContextPointers->reg,                                 \
-                pRegDisplay->pCurrentContextPointers->reg);                                 \
-        pContextRecord->reg = *pRegDisplay->pCurrentContextPointers->reg;                   \
+        if (pRegDisplay->pCurrentContextPointers->reg != NULL)                              \
+        {                                                                                   \
+            STRESS_LOG3(LF_GCROOTS, LL_INFO100, "Updating reg %p to %p from %p\n",          \
+                    pContextRecord->reg,                                                    \
+                    *pRegDisplay->pCurrentContextPointers->reg,                             \
+                    pRegDisplay->pCurrentContextPointers->reg);                             \
+            pContextRecord->reg = *pRegDisplay->pCurrentContextPointers->reg;               \
+        }                                                                                   \
+        else                                                                                \
+        {                                                                                   \
+            HANDLE_NULL_CONTEXT_POINTER;                                                    \
+        }                                                                                   \
         if (pAbortContext)                                                                  \
         {                                                                                   \
             pAbortContext->reg = pContextRecord->reg;                                       \
