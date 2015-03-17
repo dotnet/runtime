@@ -4658,6 +4658,20 @@ vell_icall_MonoType_get_core_clr_security_level (MonoReflectionType *this)
 	return mono_security_core_clr_class_level (klass);
 }
 
+ICALL_EXPORT int
+ves_icall_MonoField_get_core_clr_security_level (MonoReflectionField *this)
+{
+	MonoClassField *field = this->field;
+	return mono_security_core_clr_field_level (field, TRUE);
+}
+
+ICALL_EXPORT int
+ves_icall_MonoMethod_get_core_clr_security_level (MonoReflectionMethod *this)
+{
+	MonoMethod *method = this->method;
+	return mono_security_core_clr_method_level (method, TRUE);
+}
+
 static void
 fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *aname, MonoAssemblyName *name, const char *absolute, gboolean by_default_version, gboolean default_publickey, gboolean default_token)
 {
