@@ -24,7 +24,7 @@
   <!-- Common nuget properties -->
   <PropertyGroup>
     <NuGetToolPath Condition="'$(NuGetToolPath)' == ''">$(PackagesDir)NuGet.exe</NuGetToolPath>
-    <NuGetConfigFile>$(SourceDir)NuGet.Config</NuGetConfigFile>
+    <NuGetConfigFile Condition="'$(NuGetConfigFile)' == ''">$(SourceDir)NuGet.Config</NuGetConfigFile>
     <NuGetConfigCommandLine>-ConfigFile "$(NuGetConfigFile)"</NuGetConfigCommandLine>
 
     <NugetRestoreCommand>"$(NuGetToolPath)"</NugetRestoreCommand>
