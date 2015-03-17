@@ -8709,14 +8709,117 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			start_new_bblock = 1;
 			break;
 		}
-		case CEE_CALLI:
+		case CEE_CALLI: {
+			MonoInst *addr;
+			MonoMethodSignature *fsig;
+
+			CHECK_OPSIZE (5);
+			token = read32 (ip + 1);
+
+			ins = NULL;
+
+			//GSHAREDVT_FAILURE (*ip);
+			cmethod = NULL;
+			CHECK_STACK (1);
+			--sp;
+			addr = *sp;
+			fsig = mini_get_signature (method, token, generic_context);
+
+			if (method->dynamic && fsig->pinvoke) {
+				MonoInst *args [3];
+
+				/*
+				 * This is a call through a function pointer using a pinvoke
+				 * signature. Have to create a wrapper and call that instead.
+				 * FIXME: This is very slow, need to create a wrapper at JIT time
+				 * instead based on the signature.
+				 */
+				EMIT_NEW_IMAGECONST (cfg, args [0], method->klass->image);
+				EMIT_NEW_PCONST (cfg, args [1], fsig);
+				args [2] = addr;
+				addr = mono_emit_jit_icall (cfg, mono_get_native_calli_wrapper, args);
+			}
+
+			n = fsig->param_count + fsig->hasthis;
+
+			CHECK_STACK (n);
+
+			//g_assert (!virtual || fsig->hasthis);
+
+			sp -= n;
+
+			inline_costs += 10 * num_calls++;
+
+			/*
+			 * Making generic calls out of gsharedvt methods.
+			 * This needs to be used for all generic calls, not just ones with a gsharedvt signature, to avoid
+			 * patching gshared method addresses into a gsharedvt method.
+			 */
+			if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
+				/*
+				 * We pass the address to the gsharedvt trampoline in the rgctx reg
+				 */
+				MonoInst *callee = addr;
+
+				if (method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE)
+					/* Not tested */
+					GSHAREDVT_FAILURE (*ip);
+
+				addr = emit_get_rgctx_sig (cfg, context_used,
+											  fsig, MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI);
+				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, callee);
+				goto calli_end;
+			}
+
+			/* Prevent inlining of methods with indirect calls */
+			INLINE_FAILURE ("indirect call");
+
+			if (addr->opcode == OP_PCONST || addr->opcode == OP_AOTCONST || addr->opcode == OP_GOT_ENTRY) {
+				int info_type;
+				gpointer info_data;
+
+				/*
+				 * Instead of emitting an indirect call, emit a direct call
+				 * with the contents of the aotconst as the patch info.
+				 */
+				if (addr->opcode == OP_PCONST || addr->opcode == OP_AOTCONST) {
+					info_type = addr->inst_c1;
+					info_data = addr->inst_p0;
+				} else {
+					info_type = addr->inst_right->inst_c1;
+					info_data = addr->inst_right->inst_left;
+				}
+
+				if (info_type == MONO_PATCH_INFO_ICALL_ADDR || info_type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+					ins = (MonoInst*)mono_emit_abs_call (cfg, info_type, info_data, fsig, sp);
+					NULLIFY_INS (addr);
+					goto calli_end;
+				}
+			}
+			ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
+
+			calli_end:
+
+			/* End of call, INS should contain the result of the call, if any */
+
+			if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+				g_assert (ins);
+				*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
+			}
+
+			CHECK_CFG_EXCEPTION;
+
+			ip += 5;
+			ins_flag = 0;
+			constrained_class = NULL;
+			break;
+		}
 		case CEE_CALL:
 		case CEE_CALLVIRT: {
 			MonoInst *addr = NULL;
 			MonoMethodSignature *fsig = NULL;
 			int array_rank = 0;
 			int virtual = *ip == CEE_CALLVIRT;
-			int calli = *ip == CEE_CALLI;
 			gboolean pass_imt_from_rgctx = FALSE;
 			MonoInst *imt_arg = NULL;
 			MonoInst *keep_this_alive = NULL;
@@ -8733,163 +8836,138 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean skip_ret = FALSE;
 			gboolean delegate_invoke = FALSE;
 			gboolean direct_icall = FALSE;
+			MonoMethod *cil_method;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
 
 			ins = NULL;
 
-			if (calli) {
-				//GSHAREDVT_FAILURE (*ip);
-				cmethod = NULL;
-				CHECK_STACK (1);
-				--sp;
-				addr = *sp;
-				fsig = mini_get_signature (method, token, generic_context);
-
-				if (method->dynamic && fsig->pinvoke) {
-					MonoInst *args [3];
-
-					/*
-					 * This is a call through a function pointer using a pinvoke
-					 * signature. Have to create a wrapper and call that instead.
-					 * FIXME: This is very slow, need to create a wrapper at JIT time
-					 * instead based on the signature.
-					 */
-					EMIT_NEW_IMAGECONST (cfg, args [0], method->klass->image);
-					EMIT_NEW_PCONST (cfg, args [1], fsig);
-					args [2] = addr;
-					addr = mono_emit_jit_icall (cfg, mono_get_native_calli_wrapper, args);
-				}
-			} else {
-				MonoMethod *cil_method;
-
-				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
-				cil_method = cmethod;
+			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			cil_method = cmethod;
 				
-				if (constrained_class) {
-					if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
-						if (!mini_is_gsharedvt_klass (cfg, constrained_class)) {
-							g_assert (!cmethod->klass->valuetype);
-							if (!mini_type_is_reference (cfg, &constrained_class->byval_arg)) {
-								/* FIXME: gshared type constrained to a primitive type */
-								GENERIC_SHARING_FAILURE (CEE_CALL);
-							}
-						}
-					}
-
-					if (method->wrapper_type != MONO_WRAPPER_NONE) {
-						if (cfg->verbose_level > 2)
-							printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
-						if (!((constrained_class->byval_arg.type == MONO_TYPE_VAR ||
-							   constrained_class->byval_arg.type == MONO_TYPE_MVAR) &&
-							  cfg->generic_sharing_context)) {
-							cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, &cfg->error);
-							CHECK_CFG_ERROR;
-						}
-					} else {
-						if (cfg->verbose_level > 2)
-							printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
-
-						if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
-							/* 
-							 * This is needed since get_method_constrained can't find 
-							 * the method in klass representing a type var.
-							 * The type var is guaranteed to be a reference type in this
-							 * case.
-							 */
-							if (!mini_is_gsharedvt_klass (cfg, constrained_class))
-								g_assert (!cmethod->klass->valuetype);
-						} else {
-							cmethod = mono_get_method_constrained_checked (image, token, constrained_class, generic_context, &cil_method, &cfg->error);
-							CHECK_CFG_ERROR;
+			if (constrained_class) {
+				if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+					if (!mini_is_gsharedvt_klass (cfg, constrained_class)) {
+						g_assert (!cmethod->klass->valuetype);
+						if (!mini_type_is_reference (cfg, &constrained_class->byval_arg)) {
+							/* FIXME: gshared type constrained to a primitive type */
+							GENERIC_SHARING_FAILURE (CEE_CALL);
 						}
 					}
 				}
-					
-				if (!cmethod || mono_loader_get_last_error ())
-					LOAD_ERROR;
-				if (!dont_verify && !cfg->skip_visibility) {
-					MonoMethod *target_method = cil_method;
-					if (method->is_inflated) {
-						target_method = mini_get_method_allow_open (method, token, NULL, &(mono_method_get_generic_container (method_definition)->context));
+
+				if (method->wrapper_type != MONO_WRAPPER_NONE) {
+					if (cfg->verbose_level > 2)
+						printf ("DM Constrained call to %s\n", mono_type_get_full_name (constrained_class));
+					if (!((constrained_class->byval_arg.type == MONO_TYPE_VAR ||
+						   constrained_class->byval_arg.type == MONO_TYPE_MVAR) &&
+						  cfg->generic_sharing_context)) {
+						cmethod = mono_get_method_constrained_with_method (image, cil_method, constrained_class, generic_context, &cfg->error);
+						CHECK_CFG_ERROR;
 					}
-					if (!mono_method_can_access_method (method_definition, target_method) &&
-						!mono_method_can_access_method (method, cil_method))
-						METHOD_ACCESS_FAILURE (method, cil_method);
-				}
-
-				if (mono_security_core_clr_enabled ())
-					ensure_method_is_allowed_to_call_method (cfg, method, cil_method, bblock, ip);
-
-				if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
-					/* MS.NET seems to silently convert this to a callvirt */
-					virtual = 1;
-
-				{
-					/*
-					 * MS.NET accepts non virtual calls to virtual final methods of transparent proxy classes and
-					 * converts to a callvirt.
-					 *
-					 * tests/bug-515884.il is an example of this behavior
-					 */
-					const int test_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL | METHOD_ATTRIBUTE_STATIC;
-					const int expected_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL;
-					if (!virtual && mono_class_is_marshalbyref (cmethod->klass) && (cmethod->flags & test_flags) == expected_flags && cfg->method->wrapper_type == MONO_WRAPPER_NONE)
-						virtual = 1;
-				}
-
-				if (!cmethod->klass->inited)
-					if (!mono_class_init (cmethod->klass))
-						TYPE_LOAD_ERROR (cmethod->klass);
-
-				fsig = mono_method_signature (cmethod);
-				if (!fsig)
-					LOAD_ERROR;
-				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
-				    mini_class_is_system_array (cmethod->klass)) {
-					array_rank = cmethod->klass->rank;
-				} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && icall_is_direct_callable (cfg, cmethod)) {
-					direct_icall = TRUE;
-				} else if (fsig->pinvoke) {
-					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
-																		   check_for_pending_exc, cfg->compile_aot);
-					fsig = mono_method_signature (wrapper);
-				} else if (constrained_class) {
 				} else {
-					fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
-					CHECK_CFG_ERROR;
+					if (cfg->verbose_level > 2)
+						printf ("Constrained call to %s\n", mono_type_get_full_name (constrained_class));
+
+					if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
+						/* 
+						 * This is needed since get_method_constrained can't find 
+						 * the method in klass representing a type var.
+						 * The type var is guaranteed to be a reference type in this
+						 * case.
+						 */
+						if (!mini_is_gsharedvt_klass (cfg, constrained_class))
+							g_assert (!cmethod->klass->valuetype);
+					} else {
+						cmethod = mono_get_method_constrained_checked (image, token, constrained_class, generic_context, &cil_method, &cfg->error);
+						CHECK_CFG_ERROR;
+					}
 				}
-
-				mono_save_token_info (cfg, image, token, cil_method);
-
-				if (!(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
-					need_seq_point = TRUE;
-
-				/* Don't support calls made using type arguments for now */
-				/*
-				if (cfg->gsharedvt) {
-					if (mini_is_gsharedvt_signature (cfg, fsig))
-						GSHAREDVT_FAILURE (*ip);
+			}
+					
+			if (!cmethod || mono_loader_get_last_error ())
+				LOAD_ERROR;
+			if (!dont_verify && !cfg->skip_visibility) {
+				MonoMethod *target_method = cil_method;
+				if (method->is_inflated) {
+					target_method = mini_get_method_allow_open (method, token, NULL, &(mono_method_get_generic_container (method_definition)->context));
 				}
-				*/
+				if (!mono_method_can_access_method (method_definition, target_method) &&
+					!mono_method_can_access_method (method, cil_method))
+					METHOD_ACCESS_FAILURE (method, cil_method);
 			}
 
-			if (cmethod && mono_security_cas_enabled ()) {
+			if (mono_security_core_clr_enabled ())
+				ensure_method_is_allowed_to_call_method (cfg, method, cil_method, bblock, ip);
+
+			if (!virtual && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT))
+				/* MS.NET seems to silently convert this to a callvirt */
+				virtual = 1;
+
+			{
+				/*
+				 * MS.NET accepts non virtual calls to virtual final methods of transparent proxy classes and
+				 * converts to a callvirt.
+				 *
+				 * tests/bug-515884.il is an example of this behavior
+				 */
+				const int test_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL | METHOD_ATTRIBUTE_STATIC;
+				const int expected_flags = METHOD_ATTRIBUTE_VIRTUAL | METHOD_ATTRIBUTE_FINAL;
+				if (!virtual && mono_class_is_marshalbyref (cmethod->klass) && (cmethod->flags & test_flags) == expected_flags && cfg->method->wrapper_type == MONO_WRAPPER_NONE)
+					virtual = 1;
+			}
+
+			if (!cmethod->klass->inited)
+				if (!mono_class_init (cmethod->klass))
+					TYPE_LOAD_ERROR (cmethod->klass);
+
+			fsig = mono_method_signature (cmethod);
+			if (!fsig)
+				LOAD_ERROR;
+			if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
+				mini_class_is_system_array (cmethod->klass)) {
+				array_rank = cmethod->klass->rank;
+			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && icall_is_direct_callable (cfg, cmethod)) {
+				direct_icall = TRUE;
+			} else if (fsig->pinvoke) {
+				MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
+																	   check_for_pending_exc, cfg->compile_aot);
+				fsig = mono_method_signature (wrapper);
+			} else if (constrained_class) {
+			} else {
+				fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
+				CHECK_CFG_ERROR;
+			}
+
+			mono_save_token_info (cfg, image, token, cil_method);
+
+			if (!(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
+				need_seq_point = TRUE;
+
+			/* Don't support calls made using type arguments for now */
+			/*
+			  if (cfg->gsharedvt) {
+			  if (mini_is_gsharedvt_signature (cfg, fsig))
+			  GSHAREDVT_FAILURE (*ip);
+			  }
+			*/
+
+			if (mono_security_cas_enabled ()) {
 				if (check_linkdemand (cfg, method, cmethod))
 					INLINE_FAILURE ("linkdemand");
 				CHECK_CFG_EXCEPTION;
 			}
 
-			if (cmethod && cmethod->string_ctor && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
+			if (cmethod->string_ctor && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
 				g_assert_not_reached ();
 
 			n = fsig->param_count + fsig->hasthis;
 
-			if (!cfg->generic_sharing_context && cmethod && cmethod->klass->generic_container)
+			if (!cfg->generic_sharing_context && cmethod->klass->generic_container)
 				UNVERIFIED;
 
-			if (!cfg->generic_sharing_context && cmethod)
+			if (!cfg->generic_sharing_context)
 				g_assert (!mono_method_check_context_used (cmethod));
 
 			CHECK_STACK (n);
@@ -8966,15 +9044,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				constrained_class = NULL;
 			}
 
-			if (!calli && check_call_signature (cfg, fsig, sp))
+			if (check_call_signature (cfg, fsig, sp))
 				UNVERIFIED;
 
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-			if (cmethod && (cmethod->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke"))
+			if ((cmethod->klass->parent == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke"))
 				delegate_invoke = TRUE;
 #endif
 
-			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
+			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
 				bblock = cfg->cbb;
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					type_to_eval_stack_type ((cfg), fsig->ret, ins);
@@ -8988,15 +9066,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * If the callee is a shared method, then its static cctor
 			 * might not get called after the call was patched.
 			 */
-			if (cfg->generic_sharing_context && cmethod && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
+			if (cfg->generic_sharing_context && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
 				emit_generic_class_init (cfg, cmethod->klass);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
-			if (cmethod)
-				check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
+			check_method_sharing (cfg, cmethod, &pass_vtable, &pass_mrgctx);
 
-			if (cfg->generic_sharing_context && cmethod) {
+			if (cfg->generic_sharing_context) {
 				MonoGenericContext *cmethod_context = mono_method_get_context (cmethod);
 
 				context_used = mini_method_check_context_used (cfg, cmethod);
@@ -9063,7 +9140,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (pass_imt_from_rgctx) {
 				g_assert (!pass_vtable);
-				g_assert (cmethod);
 
 				imt_arg = emit_get_rgctx_method (cfg, context_used,
 					cmethod, MONO_RGCTX_INFO_METHOD);
@@ -9073,8 +9149,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MONO_EMIT_NEW_CHECK_THIS (cfg, sp [0]->dreg);
 
 			/* Calling virtual generic methods */
-			if (cmethod && virtual && 
-			    (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
+			if (virtual && (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) && 
 		 	    !(MONO_METHOD_IS_FINAL (cmethod) && 
 			      cmethod->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK) &&
 			    fsig->generic_param_count && 
@@ -9139,7 +9214,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * To work around this, we extend such try blocks to include the last x bytes
 			 * of the Monitor.Enter () call.
 			 */
-			if (cmethod && cmethod->klass == mono_defaults.monitor_class && !strcmp (cmethod->name, "Enter") && mono_method_signature (cmethod)->param_count == 1) {
+			if (cmethod->klass == mono_defaults.monitor_class && !strcmp (cmethod->name, "Enter") && mono_method_signature (cmethod)->param_count == 1) {
 				MonoBasicBlock *tbb;
 
 				GET_BBLOCK (cfg, tbb, ip + 5);
@@ -9154,7 +9229,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Conversion to a JIT intrinsic */
-			if (cmethod && (cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
+			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
 				bblock = cfg->cbb;
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
 					type_to_eval_stack_type ((cfg), fsig->ret, ins);
@@ -9164,7 +9239,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Inlining */
-			if (cmethod && (cfg->opt & MONO_OPT_INLINE) &&
+			if ((cfg->opt & MONO_OPT_INLINE) &&
 				(!virtual || !(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) &&
 			    mono_method_check_inlining (cfg, cmethod)) {
 				int costs;
@@ -9233,7 +9308,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * This needs to be used for all generic calls, not just ones with a gsharedvt signature, to avoid
 			 * patching gshared method addresses into a gsharedvt method.
 			 */
-			if (cmethod && cfg->gsharedvt && (mini_is_gsharedvt_signature (cfg, fsig) || cmethod->is_inflated || cmethod->klass->generic_class) &&
+			if (cfg->gsharedvt && (mini_is_gsharedvt_signature (cfg, fsig) || cmethod->is_inflated || cmethod->klass->generic_class) &&
 				!(cmethod->klass->rank && cmethod->klass->byval_arg.type != MONO_TYPE_SZARRAY)) {
 				MonoRgctxInfoType info_type;
 
@@ -9270,20 +9345,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				addr = emit_get_rgctx_gsharedvt_call (cfg, context_used, fsig, cmethod, info_type);
 
 				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
-				goto call_end;
-			} else if (calli && cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, fsig)) {
-				/*
-				 * We pass the address to the gsharedvt trampoline in the rgctx reg
-				 */
-				MonoInst *callee = addr;
-
-				if (method->wrapper_type != MONO_WRAPPER_DELEGATE_INVOKE)
-					/* Not tested */
-					GSHAREDVT_FAILURE (*ip);
-
-				addr = emit_get_rgctx_sig (cfg, context_used,
-											  fsig, MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI);
-				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, callee);
 				goto call_end;
 			}
 
@@ -9322,42 +9383,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Direct calls to icalls */
 			if (direct_icall) {
 				ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, cmethod, fsig, sp);
-				goto call_end;
-			}
-
-			/* Indirect calls */
-			if (addr) {
-				if (call_opcode == CEE_CALL)
-					g_assert (context_used);
-				else if (call_opcode == CEE_CALLI)
-					g_assert (!vtable_arg);
-
-				/* Prevent inlining of methods with indirect calls */
-				INLINE_FAILURE ("indirect call");
-
-				if (addr->opcode == OP_PCONST || addr->opcode == OP_AOTCONST || addr->opcode == OP_GOT_ENTRY) {
-					int info_type;
-					gpointer info_data;
-
-					/* 
-					 * Instead of emitting an indirect call, emit a direct call
-					 * with the contents of the aotconst as the patch info.
-					 */
-					if (addr->opcode == OP_PCONST || addr->opcode == OP_AOTCONST) {
-						info_type = addr->inst_c1;
-						info_data = addr->inst_p0;
-					} else {
-						info_type = addr->inst_right->inst_c1;
-						info_data = addr->inst_right->inst_left;
-					}
-					
-					if (info_type == MONO_PATCH_INFO_ICALL_ADDR || info_type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-						ins = (MonoInst*)mono_emit_abs_call (cfg, info_type, info_data, fsig, sp);
-						NULLIFY_INS (addr);
-						goto call_end;
-					}
-				}
-				ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, imt_arg, vtable_arg);
 				goto call_end;
 			}
 	      				
@@ -9412,7 +9437,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: Enabling TAILC breaks some inlining/stack trace/etc tests */
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
-			if (cmethod && (ins_flag & MONO_INST_TAILCALL) &&
+			if ((ins_flag & MONO_INST_TAILCALL) &&
 				!vtable_arg && !cfg->generic_sharing_context && is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
 				supported_tail_call = TRUE;
 
