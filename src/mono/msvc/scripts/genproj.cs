@@ -539,6 +539,9 @@ class MsbuildGenerator {
 		case "/codepage":
 			CodePage = value;
 			return true;
+
+		case "/-getresourcestrings":
+			return true;
 		}
 
 		Console.WriteLine ("Failing with : {0}", arg);
