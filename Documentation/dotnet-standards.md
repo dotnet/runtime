@@ -39,6 +39,26 @@ ECMA 335 - CLI
 - [Partition V: Debug Interchange Format](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20V.pdf)
 - [Partition VI: Annexes](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20VI.pdf)
 
+**ECMA Technical Report 084: Information Derived from Partition IV XML File**
+
+- [ECMA TR/84 Report (PDF)](http://www.ecma-international.org/publications/files/ECMA-TR/TR-084.pdf)
+- [ECMA TR/84 Tools and Source Code](http://www.ecma-international.org/publications/files/ECMA-TR/TR-084.zip)
+
+**ECMA Technical Report 089: Common Generics**
+
+- [ECMA TR/89 Report (PDF)](http://www.ecma-international.org/publications/files/ECMA-TR/TR-089.pdf)
+- [ECMA TR/89 Source Code](http://www.ecma-international.org/publications/files/ECMA-TR/TR-089.zip)
+
+ECMA 372 - C++/CLI
+==================
+
+The C++/CLI language was standardized as [ECMA 372](http://www.ecma-international.org/publications/standards/Ecma-372.htm) in 2005.
+
+**ECMA 372 Resources**
+
+- [ECMA 372 Standard Overview](http://www.ecma-international.org/publications/standards/Ecma-372.htm)
+- [ECMA 372 Standard (PDF)](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-372.pdf)
+
 Shared Source CLI (SSCLI)
 =========================
 
