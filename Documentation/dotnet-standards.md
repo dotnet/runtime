@@ -44,15 +44,12 @@ ECMA 335 - CLI
 - [ECMA TR/84 Report (PDF)](http://www.ecma-international.org/publications/files/ECMA-TR/TR-084.pdf)
 - [ECMA TR/84 Tools and Source Code](http://www.ecma-international.org/publications/files/ECMA-TR/TR-084.zip)
 
-**ECMA Technical Report 089: Common Generics**
-
-- [ECMA TR/89 Report (PDF)](http://www.ecma-international.org/publications/files/ECMA-TR/TR-089.pdf)
-- [ECMA TR/89 Source Code](http://www.ecma-international.org/publications/files/ECMA-TR/TR-089.zip)
-
 ECMA 372 - C++/CLI
 ==================
 
 The C++/CLI language was standardized as [ECMA 372](http://www.ecma-international.org/publications/standards/Ecma-372.htm) in 2005.
+
+EMCA 372 is supported by the .NET Framework, but not .NET Core.
 
 **ECMA 372 Resources**
 
