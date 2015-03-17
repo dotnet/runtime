@@ -799,13 +799,13 @@ void HostCodeHeap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     size_t size = dac_cast<TADDR>(m_pLastAvailableCommittedAddr) - addr;
 
 #if (_DEBUG)
-        // Test hook: when testing on debug builds, we want an easy way to test that the while
-        // correctly terminates in the face of ridiculous stuff from the target.
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget) == 1)
-        {
-            // Pretend the object is very large.
-            size |= 0xefefefef << 28;
-        }
+    // Test hook: when testing on debug builds, we want an easy way to test that the while
+    // correctly terminates in the face of ridiculous stuff from the target.
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget) == 1)
+    {
+        // Pretend the object is very large.
+        size |= 0xf0000000;
+    }
 #endif // (_DEBUG)
 
     while (size)

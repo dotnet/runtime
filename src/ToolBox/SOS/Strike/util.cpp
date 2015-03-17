@@ -4973,7 +4973,7 @@ HRESULT GetMTOfObject(TADDR obj, TADDR *mt)
         return E_POINTER;
 
     // Read the MethodTable and if we succeed, get rid of the mark bits.
-    HRESULT hr = rvCache->Read(obj, mt, sizeof(mt), NULL);
+    HRESULT hr = rvCache->Read(obj, mt, sizeof(TADDR), NULL);
     if (SUCCEEDED(hr))
         *mt &= ~3;
 
