@@ -960,7 +960,7 @@ mono_arch_get_throw_pending_exception (MonoTrampInfo **info, gboolean aot)
 
 	/* Call the throw trampoline */
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_throw_exception");
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_throw_exception");
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		throw_trampoline = mono_get_throw_exception ();
