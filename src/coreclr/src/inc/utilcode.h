@@ -4476,18 +4476,6 @@ UINT64 GetIA64Imm64(UINT64 qword0, UINT64 qword1);
 void PutIA64Imm64(UINT64 * pBundle, UINT64 imm64);
 
 //*****************************************************************************
-//  Extract the addl 22-bit signed immediate from an IA64 bundle
-//  (Format A5)
-//*****************************************************************************
-INT32 GetIA64Imm22(UINT64 * pBundle, UINT32 slot);
-
-//*****************************************************************************
-//  Deposit the addl 22-bit signed immediate into an IA64 bundle
-//  (Format A5)
-//*****************************************************************************
-void  PutIA64Imm22(UINT64 * pBundle, UINT32 slot, INT32 imm22);
-
-//*****************************************************************************
 //  Extract the IP-Relative signed 25-bit immediate from an IA64 bundle
 //  (Formats B1, B2 or B3)
 //  Note that due to branch target alignment requirements
