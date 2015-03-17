@@ -721,6 +721,9 @@ ICALL(REMSER_1, "InternalExecute", ves_icall_InternalExecute)
 ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
 #endif
 
+ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
+ICALL(RFH_1, "SetValueInternal", ves_icall_MonoField_SetValueInternal)
+
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
 ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethod_GetFunctionPointer)
 
