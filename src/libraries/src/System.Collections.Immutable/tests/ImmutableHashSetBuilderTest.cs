@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -277,6 +278,12 @@ namespace System.Collections.Immutable.Test
             Assert.False(builder.IsReadOnly);
 
             CollectionAssertAreEquivalent(new[] { "a", "b" }, builder.ToArray()); // tests enumerator
+        }
+
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableHashSet.CreateBuilder<int>());
         }
     }
 }

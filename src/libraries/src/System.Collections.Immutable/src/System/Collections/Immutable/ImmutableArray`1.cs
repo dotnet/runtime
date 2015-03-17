@@ -262,7 +262,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the string to display in the debugger watches window for this instance.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay
         {

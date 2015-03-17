@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Collections.ArrayListTests
@@ -84,6 +83,13 @@ namespace System.Collections.ArrayListTests
             // []  Attempt invalid construction (parm)
             //
             Assert.Throws<ArgumentNullException>(() => arrListColl = new ArrayList(null));
+        }
+
+        [Fact]
+        public void DebuggerAttributeTests()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ArrayList());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ArrayList());
         }
     }
 }

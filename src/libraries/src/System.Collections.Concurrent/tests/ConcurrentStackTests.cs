@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -474,6 +471,13 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<NotSupportedException>(
                () => { object obj = collection.SyncRoot; });
                // "TestICollection:  ICollection.SyncRoot didn't throw NotSupportedException! for collection type: ConcurrentStack");
+        }
+
+        [Fact]
+        public static void Test10_DebuggerAttributes()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentStack<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ConcurrentStack<int>());
         }
 
         [Fact]

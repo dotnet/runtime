@@ -349,6 +349,16 @@ namespace System.Collections.Immutable.Test
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             enumerator.Dispose();
         }
+        
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedDictionary.Create<string, int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableSortedDictionary.Create<int, int>());
+
+            object rootNode = DebuggerAttributes.GetFieldValue(ImmutableSortedDictionary.Create<string, string>(), "_root");
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
+        }
 
         ////[Fact] // not really a functional test -- but very useful to enable when collecting perf traces.
         public void EnumerationPerformance()

@@ -705,6 +705,16 @@ namespace System.Collections.Immutable.Test
             Assert.Throws<NotSupportedException>(() => list[0] = 1);
         }
 
+        [Fact]
+        public void DebuggerAttributesValid()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableList.Create<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableList.Create<double>(1, 2, 3));
+
+            object rootNode = DebuggerAttributes.GetFieldValue(ImmutableList.Create<string>("1", "2", "3"), "_root");
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
+        }
+
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             return ImmutableList<T>.Empty.AddRange(contents);

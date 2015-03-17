@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace Collections
 {
@@ -206,6 +207,16 @@ namespace Collections
             Assert.Throws<NotSupportedException>(() => dictAsIDictionary.Clear());
 
             helper.VerifyCollection(dictionary, expectedArr); //verifying that the collection has not changed.
+        }
+
+        [Fact]
+        public static void DebuggerAttributeTests()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()));
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()));
+
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()).Keys);
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()).Values);
         }
     }
 

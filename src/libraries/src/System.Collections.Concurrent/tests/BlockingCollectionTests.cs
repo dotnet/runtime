@@ -1,10 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -179,6 +177,13 @@ namespace System.Collections.Concurrent.Tests
         {
             Test0_Construction(-1);
             Test0_Construction(10);
+        }
+
+        [Fact]
+        public static void TestDebuggerAttributes()
+        {
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(new BlockingCollection<int>());
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new BlockingCollection<int>());
         }
 
         [Fact]
