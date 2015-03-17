@@ -1,3 +1,23 @@
+/*
+ * threadpool-microsoft.c: Microsoft threadpool runtime support
+ *
+ * Author:
+ *	Ludovic Henry (ludovic.henry@xamarin.com)
+ *
+ * Copyright 2015 Xamarin, Inc (http://www.xamarin.com)
+ */
+
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+// Files:
+//  - src/vm/comthreadpool.cpp
+//  - src/vm/win32threadpoolcpp
+//  - src/vm/threadpoolrequest.cpp
+//  - src/vm/hillclimbing.cpp
+//
+// Ported from C++ to C and adjusted to Mono runtime
 
 #include <stdlib.h>
 #include <complex.h>
