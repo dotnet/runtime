@@ -1,12 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace System.IO
 {
@@ -81,7 +77,7 @@ namespace System.IO
         /// </devdoc>
         public FileSystemWatcher()
         {
-            _directory = String.Empty;
+            _directory = string.Empty;
             _filter = "*.*";
         }
 
@@ -176,13 +172,13 @@ namespace System.IO
             }
             set
             {
-                if (String.IsNullOrEmpty(value))
+                if (string.IsNullOrEmpty(value))
                 {
                     // Skip the string compare for "*.*" since it has no case-insensitive representation that differs from
                     // the case-sensitive representation.
                     _filter = "*.*";
                 }
-                else if (String.Compare(_filter, value, StringComparison.OrdinalIgnoreCase) != 0)
+                else if (!string.Equals(_filter, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
                 {
                     _filter = value;
                 }
@@ -262,7 +258,7 @@ namespace System.IO
             set
             {
                 value = (value == null) ? string.Empty : value;
-                if (!String.Equals(_directory, value, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(_directory, value, CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
                 {
                     if (!Directory.Exists(value))
                     {
@@ -399,10 +395,9 @@ namespace System.IO
         private bool MatchPattern(string relativePath)
         {
             string name = System.IO.Path.GetFileName(relativePath);
-            if (name != null)
-                return PatternMatcher.StrictMatchPattern(_filter.ToUpperInvariant(), name.ToUpperInvariant());
-            else
-                return false;
+            return name != null ?
+                PatternMatcher.StrictMatchPattern(_filter, name) :
+                false;
         }
 
         /// <devdoc>
@@ -411,11 +406,12 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyInternalBufferOverflowEvent()
         {
-            InternalBufferOverflowException ex = new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory));
-
-            ErrorEventArgs errevent = new ErrorEventArgs(ex);
-
-            OnError(errevent);
+            ErrorEventHandler handler = _onErrorHandler;
+            if (handler != null)
+            {
+                handler(this, new ErrorEventArgs(
+                    new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
+            }
         }
 
         /// <devdoc>
@@ -424,14 +420,13 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyRenameEventArgs(WatcherChangeTypes action, string name, string oldName)
         {
-            // filter if neither new name or old name match a specified pattern
-            if (!MatchPattern(name) && !MatchPattern(oldName))
+            // filter if there's no handler or neither new name or old name match a specified pattern
+            RenamedEventHandler handler = _onRenamedHandler;
+            if (handler != null && 
+                (MatchPattern(name) || MatchPattern(oldName)))
             {
-                return;
+                handler(this, new RenamedEventArgs(action, _directory, name, oldName));
             }
-
-            RenamedEventArgs renevent = new RenamedEventArgs(action, _directory, name, oldName);
-            OnRenamed(renevent);
         }
 
         /// <devdoc>
@@ -440,26 +435,26 @@ namespace System.IO
         /// <internalonly/>
         private void NotifyFileSystemEventArgs(WatcherChangeTypes changeType, string name)
         {
-            if (!MatchPattern(name))
-            {
-                return;
-            }
-
-            var args = new FileSystemEventArgs(changeType, _directory, name);
+            FileSystemEventHandler handler = null;
             switch (changeType)
             {
                 case WatcherChangeTypes.Created:
-                    OnCreated(args);
+                    handler = _onCreatedHandler;
                     break;
                 case WatcherChangeTypes.Deleted:
-                    OnDeleted(args);
+                    handler = _onDeletedHandler;
                     break;
                 case WatcherChangeTypes.Changed:
-                    OnChanged(args);
+                    handler = _onChangedHandler;
                     break;
                 default:
                     Debug.Fail("Unknown FileSystemEvent change type!  Value: " + changeType);
                     break;
+            }
+
+            if (handler != null && MatchPattern(name))
+            {
+                handler(this, new FileSystemEventArgs(changeType, _directory, name));
             }
         }
 
@@ -469,9 +464,7 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnChanged(FileSystemEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             FileSystemEventHandler changedHandler = _onChangedHandler;
-
             if (changedHandler != null)
             {
                 changedHandler(this, e);
@@ -484,7 +477,6 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnCreated(FileSystemEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             FileSystemEventHandler createdHandler = _onCreatedHandler;
             if (createdHandler != null)
             {
@@ -498,7 +490,6 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnDeleted(FileSystemEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             FileSystemEventHandler deletedHandler = _onDeletedHandler;
             if (deletedHandler != null)
             {
@@ -512,7 +503,6 @@ namespace System.IO
         [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnError(ErrorEventArgs e)
         {
-            // To avoid race between remove handler and raising the event
             ErrorEventHandler errorHandler = _onErrorHandler;
             if (errorHandler != null)
             {
