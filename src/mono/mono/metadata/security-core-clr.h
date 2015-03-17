@@ -53,6 +53,7 @@ extern MonoException* mono_security_core_clr_is_field_access_allowed (MonoMethod
 extern MonoException* mono_security_core_clr_is_call_allowed (MonoMethod *caller, MonoMethod *callee);
 
 extern MonoSecurityCoreCLRLevel mono_security_core_clr_class_level (MonoClass *klass);
+extern MonoSecurityCoreCLRLevel mono_security_core_clr_field_level (MonoClassField *field, gboolean with_class_level);
 extern MonoSecurityCoreCLRLevel mono_security_core_clr_method_level (MonoMethod *method, gboolean with_class_level);
 
 extern gboolean mono_security_core_clr_is_platform_image (MonoImage *image);
