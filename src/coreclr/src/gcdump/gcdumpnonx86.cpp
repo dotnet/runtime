@@ -266,10 +266,8 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      table,
                                                   | DECODE_CODE_LENGTH
                                                   | DECODE_PSP_SYM
                                                   | DECODE_VARARG
-                                                  | DECODE_PSP_SYM
                                                   | DECODE_GENERICS_INST_CONTEXT
                                                   | DECODE_GC_LIFETIMES
-                                                  | DECODE_GENERICS_INST_CONTEXT
                                                   | DECODE_PROLOG_LENGTH),
                              0);
 
