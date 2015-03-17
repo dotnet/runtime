@@ -6362,22 +6362,11 @@ bool DacHeapWalker::GetSize(TADDR tMT, size_t &size)
 
         if (cs)
         {
-            if (mt->IsString())
-            {
-                DWORD tmp = 0;
-                if (mCache.Read(mCurrObj+sizeof(TADDR), &tmp))
-                    cs *= tmp;
-                else
-                    ret = false;
-            }
+            DWORD tmp = 0;
+            if (mCache.Read(mCurrObj+sizeof(TADDR), &tmp))
+                cs *= tmp;
             else
-            {
-                DWORD tmp = 0;
-                if (mCache.Read(mCurrObj+sizeof(TADDR), &tmp))
-                    cs *= tmp;
-                else
-                    ret = false;
-            }
+                ret = false;
         }
 
         size = mt->GetBaseSize() + cs;

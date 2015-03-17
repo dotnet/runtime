@@ -92,7 +92,7 @@ inline void Object::EnumMemoryRegions(void)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DumpGeneration_IntentionallyCorruptDataFromTarget) == 1)
     {
         // Pretend all objects are incredibly large.
-        size |= 0xefefefef << 28;
+        size |= 0xf0000000;
     }
 #endif // defined (_DEBUG)
 
