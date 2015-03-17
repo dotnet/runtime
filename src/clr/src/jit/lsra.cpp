@@ -27,6 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     - First, any internal registers are defined.
     - Next, any source registers are used (and are then freed if they are last use and are not identified as "delayRegFree").
     - Next, the internal registers are used (and are then freed).
+    - Next, any registers in the kill set for the instruction are killed.
     - Next, the destination register(s) are defined (multiple destination registers are only supported on ARM)
     - Finally, any "delayRegFree" source registers are freed.
   There are several things to note about this order:
@@ -524,7 +525,9 @@ LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefP
     {
         // This is case #5.
         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE5));
-        regMaskTP candidates = allRegs(interval->registerType);
+        RegisterType regType = interval->registerType;
+        assert((getRegisterType(interval, defRefPosition) == regType) && (getRegisterType(interval, useRefPosition) == regType));
+        regMaskTP candidates = allRegs(regType);
         defRefPosition->registerAssignment = candidates;
         return;
     }
@@ -593,8 +596,8 @@ LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 #endif // _TARGET_AMD64_
 
     Interval * theInterval = rp->getInterval();
-    regMaskTP  calleeSaveMask = calleeSaveRegs(theInterval->registerType);
 #ifdef DEBUG
+    regMaskTP  calleeSaveMask = calleeSaveRegs(getRegisterType(theInterval, rp));
     if (doReverseCallerCallee())
     {
         regMaskTP newAssignment = rp->registerAssignment;
@@ -4124,11 +4127,60 @@ LinearScan::registerIsAvailable(RegRecord *physRegRecord, LsraLocation currentLo
     return (nextRefLocation >= currentLoc);
 }
 
-// Find a free register that satisfies the requirements for refPosition, and takes into account
-// the preferences for the given Interval
+//------------------------------------------------------------------------
+// getRegisterType: Get the RegisterType to use for the given RefPosition
 //
-// TODO-CQ: Consider whether we need to use a different order for tree temps than for vars, as
-// reg predict does
+// Arguments:
+//    currentInterval: The interval for the current allocation
+//    refPosition:     The RefPosition of the current Interval for which a register is being allocated
+//
+// Return Value:
+//    The RegisterType that should be allocated for this RefPosition
+//
+// Notes:
+//    This will nearly always be identical to the registerType of the interval, except in the case
+//    of SIMD types of 8 bytes (currently only Vector2) when they are passed and returned in integer
+//    registers.
+//    This method need only be called in situations where we may be dealing with the register requirements
+//    of a RefTypeUse RefPosition (i.e. not when we are only looking at the type of an interval, nor when
+//    we are interested in the "defining" type of the interval).  This is because the situation of interest
+//    only happens at the use (where it must be copied to an integer register).
+
+RegisterType
+LinearScan::getRegisterType(Interval *currentInterval, RefPosition* refPosition)
+{
+    assert(refPosition->getInterval() == currentInterval);
+    RegisterType regType = currentInterval->registerType;
+    regMaskTP candidates = refPosition->registerAssignment;
+#if defined(FEATURE_SIMD) && defined(_TARGET_AMD64_)
+    if ((candidates & allRegs(regType)) == RBM_NONE)
+    {
+        assert(genMaxOneBit(candidates)              &&
+                (regType == TYP_DOUBLE)              &&
+                (refPosition->refType == RefTypeUse) &&
+                ((candidates & (RBM_ARG_REGS | RBM_LNGRET)) != RBM_NONE));
+        regType = TYP_INT;
+    }
+#else // !(defined(FEATURE_SIMD) && defined(_TARGET_AMD64_))
+    assert((candidates & allRegs(regType)) != RBM_NONE);
+#endif // !(defined(FEATURE_SIMD) && defined(_TARGET_AMD64_))
+    return regType;
+}
+
+//------------------------------------------------------------------------
+// tryAllocateFreeReg: Find a free register that satisfies the requirements for refPosition,
+//                     and takes into account the preferences for the given Interval
+//
+// Arguments:
+//    currentInterval: The interval for the current allocation
+//    refPosition:     The RefPosition of the current Interval for which a register is being allocated
+//
+// Return Value:
+//    The regNumber, if any, allocated to the RefPositon.  Returns REG_NA if no free register is found.
+//
+// Notes:
+//    TODO-CQ: Consider whether we need to use a different order for tree temps than for vars, as
+//    reg predict does
 
 static const regNumber  lsraRegOrder[]      = { REG_VAR_ORDER };
 const unsigned          lsraRegOrderSize    = ArrLen(lsraRegOrder);
@@ -4140,7 +4192,7 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
 {
     regNumber foundReg = REG_NA;
 
-    RegisterType regType = currentInterval->registerType;
+    RegisterType regType = getRegisterType(currentInterval, refPosition);
     const regNumber * regOrder;
     unsigned          regOrderSize;
     if (useFloatReg(regType))
@@ -4579,16 +4631,23 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
     return foundReg;
 }
 
-// This is slightly different than in the "Optimized Interval Splitting" paper in that
-// registers are always either free or busy (active) so there's no notion of a register
-// being somehow "reserved" when an interval has a hole
+//------------------------------------------------------------------------
+// allocateBusyReg: Find a busy register that satisfies the requirements for refPosition,
+//                  and that can be spilled.
 //
+// Arguments:
+//    current:         The interval for the current allocation
+//    refPosition:     The RefPosition of the current Interval for which a register is being allocated
+//
+// Return Value:
+//    The regNumber allocated to the RefPositon.  Returns REG_NA if no free register is found.
+
 regNumber
 LinearScan::allocateBusyReg(Interval *current, RefPosition *refPosition)
 {
     regNumber foundReg = REG_NA;
 
-    RegisterType regType = current->registerType;
+    RegisterType regType = getRegisterType(current, refPosition);
     regMaskTP candidates = refPosition->registerAssignment;
     regMaskTP preferences = (current->registerPreferences & candidates);
     if (preferences == RBM_NONE) preferences = candidates;
@@ -4755,7 +4814,7 @@ LinearScan::allocateBusyReg(Interval *current, RefPosition *refPosition)
 // Otherwise, spill something with the farthest next use
 //
 regNumber
-LinearScan::assignCopyReg(RefPosition * refPosition, RegisterType regType)
+LinearScan::assignCopyReg(RefPosition * refPosition)
 {
     Interval * currentInterval = refPosition->getInterval();
     assert(currentInterval != nullptr);
@@ -4819,7 +4878,7 @@ void LinearScan::assignPhysReg( RegRecord * regRec, Interval * interval)
     interval->assignedReg = regRec;
 
 #ifdef _TARGET_ARM_
-    if (interval->registerType == TYP_DOUBLE)
+    if ((interval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
     {
         RegRecord * nextRegRec = getRegisterRecord(REG_NEXT(regRec->regNum));
         nextRegRec->assignedInterval = interval;
@@ -4948,7 +5007,7 @@ void LinearScan::unassignPhysReg( RegRecord * regRec, RefPosition* spillRefPosit
     regRec->assignedInterval = nullptr;
 
 #ifdef _TARGET_ARM_
-    if (assignedInterval->registerType == TYP_DOUBLE)
+    if ((assignedInterval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
     {
         RegRecord * nextRegRec = getRegisterRecord(REG_NEXT(regRec->regNum));
         nextRegRec->assignedInterval = nullptr;
@@ -6010,8 +6069,7 @@ LinearScan::allocateRegisters()
                 {
                     if (!RefTypeIsDef(currentRefPosition->refType))
                     {
-                        regNumber copyReg =
-                            assignCopyReg(currentRefPosition, currentInterval->registerType);
+                        regNumber copyReg = assignCopyReg(currentRefPosition);
                         assert(copyReg != REG_NA);
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, copyReg));
                         lastAllocatedRefPosition = currentRefPosition;
@@ -6066,7 +6124,7 @@ LinearScan::allocateRegisters()
                 if (refType == RefTypeUpperVectorSaveDef)
                 {
                     // TODO-CQ: Determine whether copying to two integer callee-save registers would be profitable.
-                    currentRefPosition->registerAssignment = allRegs(TYP_FLOAT);
+                    currentRefPosition->registerAssignment = (allRegs(TYP_FLOAT) & RBM_FLT_CALLEE_TRASH);
                     assignedRegister = tryAllocateFreeReg(currentInterval, currentRefPosition);
                     // There MUST be caller-save registers available, because they have all just been killed.
                     assert(assignedRegister != REG_NA);

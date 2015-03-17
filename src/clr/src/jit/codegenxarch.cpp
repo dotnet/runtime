@@ -2272,15 +2272,14 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             BasicBlock* skipLabel = genCreateTempLabel();
 
             inst_JMP(genJumpKindForOper(GT_EQ, true), skipLabel);
+
             // emit the call to the EE-helper that stops for GC (or other reasons)
+            assert(treeNode->gtRsvdRegs != RBM_NONE);
+            assert(genCountBits(treeNode->gtRsvdRegs) == 1);
+            regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
+            assert(genIsValidIntReg(tmpReg));
 
-
-            genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN
-#ifdef _TARGET_AMD64_
-                , REG_ECX
-#endif
-            );
-
+            genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN, tmpReg);
             genDefineTempLabel(skipLabel);
         }
         break;
@@ -4653,36 +4652,81 @@ void CodeGen::genConsumeBlockOp(GenTreeBlkOp* blkNode, regNumber dstReg, regNumb
     // We have to consume the registers, and perform any copies, in the actual execution order.
     // The nominal order is: dst, src, size.  However this may have been changed
     // with reverse flags on either the GT_LIST or the GT_INITVAL itself.
+    // Note that the register allocator ensures that the registers ON THE NODES will not interfere
+    // with one another if consumed (i.e. reloaded or moved to their ASSIGNED reg) in execution order.
+    // Further, it ensures that they will not interfere with one another if they are then copied
+    // to the REQUIRED register (if a fixed register requirement) in execution order.  This requires,
+    // then, that we first consume all the operands, then do any necessary moves.
 
     GenTree* dst = blkNode->Dest();
     GenTree* src = blkNode->gtOp.gtOp1->gtOp.gtOp2;
     GenTree* size = blkNode->gtOp.gtOp2;
+    GenTree* op1;
+    GenTree* op2;
+    GenTree* op3;
+    regNumber reg1, reg2, reg3;
     if (!blkNode->IsReverseOp() && !blkNode->gtOp1->IsReverseOp())
     {
-        genConsumeRegAndCopy(dst, dstReg);
-        genConsumeRegAndCopy(src, srcReg);
-        genConsumeRegAndCopy(size, sizeReg);
+        op1 = dst;
+        reg1 = dstReg;
+        op2 = src;
+        reg2 = srcReg;
+        op3 = size;
+        reg3 = sizeReg;
     }
     else if (!blkNode->IsReverseOp())
     {
-        // We know that the GT_LIST must be reversed.
-        genConsumeRegAndCopy(src, srcReg);
-        genConsumeRegAndCopy(dst, dstReg);
-        genConsumeRegAndCopy(size, sizeReg);
+        // We know that the operands for the GT_LIST node 'blkNode->gtOp.gtOp1' are reversed.
+        op1 = src;
+        reg1 = srcReg;
+        op2 = dst;
+        reg2 = dstReg;
+        op3 = size;
+        reg3 = sizeReg;
     }
     else if (!blkNode->gtOp1->IsReverseOp())
     {
-        // We know from above that the initBlkNode must be reversed.
-        genConsumeRegAndCopy(size, sizeReg);
-        genConsumeRegAndCopy(dst, dstReg);
-        genConsumeRegAndCopy(src, srcReg);
+        // We know from above that the operands to 'blkNode' are reversed.
+        op1 = size;
+        reg1 = sizeReg;
+        op2 = dst;
+        reg2 = dstReg;
+        op3 = src;
+        reg3 = srcReg;
     }
     else
     {
         // They are BOTH reversed.
-        genConsumeRegAndCopy(size, sizeReg);
-        genConsumeRegAndCopy(src, srcReg);
-        genConsumeRegAndCopy(dst, dstReg);
+        op1 = size;
+        reg1 = sizeReg;
+        op2 = src;
+        reg2= srcReg;
+        op3 = dst;
+        reg3 = dstReg;
+    }
+    if (reg1 != REG_NA)
+    {
+        genConsumeReg(op1);
+    }
+    if (reg2 != REG_NA)
+    {
+        genConsumeReg(op2);
+    }
+    if (reg3 != REG_NA)
+    {
+        genConsumeReg(op3);
+    }
+    if ((reg1 != REG_NA) && (op1->gtRegNum != reg1))
+    {
+        inst_RV_RV(INS_mov, reg1, op1->gtRegNum, op1->TypeGet());
+    }
+    if ((reg2 != REG_NA) && (op2->gtRegNum != reg2))
+    {
+        inst_RV_RV(INS_mov, reg2, op2->gtRegNum, op2->TypeGet());
+    }
+    if ((reg3 != REG_NA) && (op3->gtRegNum != reg3))
+    {
+        inst_RV_RV(INS_mov, reg3, op3->gtRegNum, op3->TypeGet());
     }
 }
 
@@ -6671,15 +6715,15 @@ CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize DEBUG
 void        CodeGen::genEmitHelperCall(unsigned    helper,
                                        int         argSize,
                                        emitAttr    retSize
-#ifdef _TARGET_AMD64_
-                                       ,regNumber   callTargetReg /*= REG_HELPER_CALL_TARGET*/
-#endif // _TARGET_AMD64_
+#ifndef LEGACY_BACKEND
+                                       ,regNumber   callTargetReg /*= REG_NA */
+#endif // !LEGACY_BACKEND
                                        )
 {
     void * addr = NULL, *pAddr = NULL;
-#ifdef _TARGET_X86_
+#ifdef LEGACY_BACKEND
     regNumber callTargetReg = REG_EAX;
-#endif // _TARGET_X86_
+#endif // LEGACY_BACKEND
 
     emitter::EmitCallType  callType = emitter::EC_FUNC_TOKEN;
     addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
@@ -6696,10 +6740,25 @@ void        CodeGen::genEmitHelperCall(unsigned    helper,
         }
         else
         {
+#ifdef _TARGET_AMD64_
             // If this address cannot be encoded as PC-relative 32-bit offset, load it into REG_HELPER_CALL_TARGET
             // and use register indirect addressing mode to make the call.
             //    mov   reg, addr
             //    call  [reg]
+
+            if (callTargetReg == REG_NA)
+            {
+                // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
+                // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
+                callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+            }
+
+            regMaskTP callTargetMask = genRegMask(callTargetReg);
+            regMaskTP callKillSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+            // assert that all registers in callTargetMask are in the callKillSet
+            noway_assert((callTargetMask & callKillSet) == callTargetMask);
+#endif
             callTarget = callTargetReg;
             CodeGen::genSetRegToIcon(callTarget, (ssize_t) pAddr, TYP_I_IMPL);
             callType = emitter::EC_INDIR_ARD;
