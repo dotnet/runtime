@@ -961,6 +961,40 @@ mono_security_core_clr_class_level (MonoClass *class)
 }
 
 /*
+ * mono_security_core_clr_field_level:
+ *
+ *	Return the MonoSecurityCoreCLRLevel for the specified field.
+ *	If with_class_level is TRUE then the type (class) will also be
+ *	checked, otherwise this will only report the information about
+ *	the field itself.
+ */
+MonoSecurityCoreCLRLevel
+mono_security_core_clr_field_level (MonoClassField *field, gboolean with_class_level)
+{
+	MonoCustomAttrInfo *cinfo;
+	MonoSecurityCoreCLRLevel level = MONO_SECURITY_CORE_CLR_TRANSPARENT;
+
+	/* if get_reflection_caller returns NULL then we assume the caller has NO privilege */
+	if (!field)
+		return level;
+
+	/* non-platform code is always Transparent - whatever the attributes says */
+	if (!mono_security_core_clr_test && !mono_security_core_clr_is_platform_image (field->parent->image))
+		return level;
+
+	cinfo = mono_custom_attrs_from_field (field->parent, field);
+	if (cinfo) {
+		level = mono_security_core_clr_level_from_cinfo (cinfo, field->parent->image);
+		mono_custom_attrs_free (cinfo);
+	}
+
+	if (with_class_level && level == MONO_SECURITY_CORE_CLR_TRANSPARENT)
+		level = mono_security_core_clr_class_level (field->parent);
+
+	return level;
+}
+
+/*
  * mono_security_core_clr_method_level:
  *
  *	Return the MonoSecurityCoreCLRLevel for the specified method.
@@ -1066,6 +1100,12 @@ mono_security_core_clr_is_call_allowed (MonoMethod *caller, MonoMethod *callee)
 
 MonoSecurityCoreCLRLevel
 mono_security_core_clr_class_level (MonoClass *class)
+{
+	return MONO_SECURITY_CORE_CLR_TRANSPARENT;
+}
+
+MonoSecurityCoreCLRLevel
+mono_security_core_clr_field_level (MonoClassField *field, gboolean with_class_level)
 {
 	return MONO_SECURITY_CORE_CLR_TRANSPARENT;
 }

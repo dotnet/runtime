@@ -588,6 +588,7 @@ ICALL(MFIELD_5, "GetRawConstantValue", ves_icall_MonoField_GetRawConstantValue)
 ICALL(MFIELD_3, "GetValueInternal", ves_icall_MonoField_GetValueInternal)
 ICALL(MFIELD_6, "ResolveType", ves_icall_MonoField_ResolveType)
 ICALL(MFIELD_4, "SetValueInternal", ves_icall_MonoField_SetValueInternal)
+ICALL(MFIELD_7, "get_core_clr_security_level", ves_icall_MonoField_get_core_clr_security_level)
 
 ICALL_TYPE(MGENCM, "System.Reflection.MonoGenericCMethod", MGENCM_1)
 ICALL(MGENCM_1, "get_ReflectedType", ves_icall_MonoGenericMethod_get_ReflectedType)
@@ -609,6 +610,7 @@ ICALL(MMETH_5, "MakeGenericMethod_impl", mono_reflection_bind_generic_method_par
 ICALL(MMETH_6, "get_IsGenericMethod", ves_icall_MonoMethod_get_IsGenericMethod)
 ICALL(MMETH_7, "get_IsGenericMethodDefinition", ves_icall_MonoMethod_get_IsGenericMethodDefinition)
 ICALL(MMETH_8, "get_base_method", ves_icall_MonoMethod_get_base_method)
+ICALL(MMETH_10, "get_core_clr_security_level", ves_icall_MonoMethod_get_core_clr_security_level)
 ICALL(MMETH_9, "get_name", ves_icall_MonoMethod_get_name)
 
 ICALL_TYPE(MMETHI, "System.Reflection.MonoMethodInfo", MMETHI_4)
