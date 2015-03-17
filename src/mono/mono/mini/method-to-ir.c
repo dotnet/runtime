@@ -4216,16 +4216,12 @@ icall_is_direct_callable (MonoCompile *cfg, MonoMethod *cmethod)
 		direct_icall_type_hash = h;
 	}
 
-	// FIXME:
-	return FALSE;
-#if 0
 	if (cmethod->klass == mono_defaults.math_class)
 		return TRUE;
 	/* No locking needed */
 	if (cmethod->klass->image == mono_defaults.corlib && g_hash_table_lookup (direct_icall_type_hash, cmethod->klass->name))
 		return TRUE;
 	return FALSE;
-#endif
 }
 
 #define is_complex_isinst(klass) ((klass->flags & TYPE_ATTRIBUTE_INTERFACE) || klass->rank || mono_class_is_nullable (klass) || mono_class_is_marshalbyref (klass) || (klass->flags & TYPE_ATTRIBUTE_SEALED) || klass->byval_arg.type == MONO_TYPE_VAR || klass->byval_arg.type == MONO_TYPE_MVAR)
@@ -9386,7 +9382,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			/* Direct calls to icalls */
 			if (direct_icall) {
-				ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, cmethod, fsig, sp);
+				MonoMethod *wrapper;
+				int costs;
+
+				/* Inline the wrapper */
+				wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
+
+				costs = inline_method (cfg, wrapper, fsig, sp, ip, cfg->real_offset, TRUE, &bblock);
+				g_assert (costs > 0);
+				cfg->real_offset += 5;
+
+				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+					/* *sp is already set by inline_method */
+					sp++;
+					push_res = FALSE;
+				}
+
+				inline_costs += costs;
+
 				goto call_end;
 			}
 	      				
