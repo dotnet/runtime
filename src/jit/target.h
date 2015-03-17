@@ -570,6 +570,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_FLOATRET             RBM_NONE
   #define RBM_DOUBLERET            RBM_NONE
 
+  // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
+  #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
+
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP
   #define STR_FPBASE               "ebp"
@@ -858,8 +861,7 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   //    in some form.  We can use custom calling convention for Leave callback.
   //    For e.g return value could be preserved in rcx so that it is available for
   //    profiler.
-  #define REG_HELPER_CALL_TARGET            REG_RAX
-  #define RBM_HELPER_CALL_TARGET            RBM_RAX
+  #define REG_DEFAULT_HELPER_CALL_TARGET    REG_RAX
 
   // GenericPInvokeCalliHelper VASigCookie Parameter 
   #define REG_PINVOKE_COOKIE_PARAM          REG_R11
@@ -997,9 +999,15 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4|RBM_ARG_5)
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)
 #endif // UNIX_AMD64_ABI
+
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\amd64\amshelpers.asm for more details.
-  #define RBM_PROFILER_ELT_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_ENTER_TRASH  RBM_CALLEE_TRASH
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+
+  // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
+  // See vm\amd64\amshelpers.asm for more details.
+  #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 
   // What sort of reloc do we use for [disp32] address mode
   #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32
@@ -1266,6 +1274,10 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define RBM_FLOATRET             RBM_F0
   #define RBM_DOUBLERET           (RBM_F0|RBM_F1)
 
+  // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
+  // See vm\arm\amshelpers.asm for more details.
+  #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+
   #define REG_FPBASE               REG_R11
   #define RBM_FPBASE               RBM_R11
   #define STR_FPBASE               "r11"
@@ -1523,6 +1535,9 @@ typedef unsigned short          regPairNoSmall; // arm: need 12 bits
   #define REG_FLOATRET             REG_V0
   #define RBM_FLOATRET             RBM_V0
   #define RBM_DOUBLERET            RBM_V0
+
+  // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
+  #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
 
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP

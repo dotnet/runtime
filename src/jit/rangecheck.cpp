@@ -8,6 +8,12 @@
 #include "jitpch.h"
 #include "rangecheck.h"
 
+// Max stack depth (path length) in walking the UD chain.
+static const int MAX_SEARCH_DEPTH = 100;
+
+// Max nodes to visit in the UD chain for the current method being compiled.
+static const int MAX_VISIT_BUDGET = 8192;
+
 // RangeCheck constructor.
 RangeCheck::RangeCheck(Compiler* pCompiler)
     : m_pCompiler(pCompiler)
@@ -15,7 +21,13 @@ RangeCheck::RangeCheck(Compiler* pCompiler)
     , m_pRangeMap(nullptr)
     , m_pOverflowMap(nullptr)
     , m_fMappedDefs(false)
+    , m_nVisitBudget(MAX_VISIT_BUDGET)
 {
+}
+
+bool RangeCheck::IsOverBudget()
+{
+    return (m_nVisitBudget <= 0);
 }
 
 // Get the range map in which computed ranges are cached.
@@ -90,51 +102,8 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTreePtr upper)
     int arrSize = m_pCompiler->vnStore->GetNewArrSize(arrRefVN);
     JITDUMP("Array size is: %d\n", arrSize);
 
-    // Upper limit is array.
-    if (range.UpperLimit().IsArray())
-    {
-        // If the upper limit doesn't match range's array reference, return false.
-        if (range.UpperLimit().vn != arrRefVN)
-        {
-            return false;
-        }
-        // If lower limit is 0 and upper limit is array len, we are done (TODO: do we check for a.len at least 1??)
-        if (range.LowerLimit().IsConstant() && range.LowerLimit().GetConstant() == 0)
-        {
-            return true;
-        }
-
-        if (arrSize <= 0)
-        {
-            return false;
-        }
-
-        // If lower limit is constant, check if less than a.len
-        if (range.LowerLimit().IsConstant())
-        {
-            int cns = range.LowerLimit().GetConstant();
-            if (cns < arrSize)
-            {
-                return true;
-            }
-        }
-
-        // If lower limit is a.len - cns, return true.
-        if (range.LowerLimit().IsBinOpArray())
-        {
-            if (range.LowerLimit().vn != arrRefVN)
-            {
-                return false;
-            }
-            int cns = range.LowerLimit().GetConstant();
-            if (cns <= 0 && -cns < arrSize)
-            {
-                return true;
-            }
-        }
-    }
-    // If upper limit is a.len - cns
-    else if (range.UpperLimit().IsBinOpArray())
+    // Upper limit: a.len + ucns (upper limit constant).
+    if (range.UpperLimit().IsBinOpArray())
     {
         if (range.UpperLimit().vn != arrRefVN)
         {
@@ -142,7 +111,9 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTreePtr upper)
         }
 
         int ucns = range.UpperLimit().GetConstant();
-        if (ucns > 0)
+        
+        // Upper limit: a.Len + [0..n]
+        if (ucns >= 0)
         {
             return false;
         }
@@ -152,39 +123,28 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTreePtr upper)
         {
             return false;
         }
-
-        if (arrSize <= 0)
-        {
-            return false;
-        }
  
-        // If a.len + ucns, if ucns > 0 or a.len - ucns, is smaller than the size.
-        if (ucns > 0 || -ucns >= arrSize)
-        {
-            return false;
-        }
-
+        // Since upper limit is bounded by the array, return true if lower bound is good.
+        // TODO-CQ: I am retaining previous behavior to minimize ASM diffs, but we could
+        // return "true" here if GetConstant() >= 0 instead of "== 0".
         if (range.LowerLimit().IsConstant() && range.LowerLimit().GetConstant() == 0)
         {
             return true;
         }
-
-        // If the range's lower limit is constant. Check if less than array size.
-        if (range.LowerLimit().IsConstant())
+        
+        // Check if we have the array size allocated by new.
+        if (arrSize <= 0)
         {
-            int lcns = range.LowerLimit().GetConstant();
-            if (lcns >= 0)
-            {
-                return lcns < arrSize; 
-            }
+            return false;
         }
 
-        // upper limit = a.len + ucns. ucns <= 0
-        // lower limit = a.len + cns.
+        // At this point,
+        // upper limit = a.len + ucns. ucns < 0
+        // lower limit = a.len + lcns.
         if (range.LowerLimit().IsBinOpArray())
         {
             int lcns = range.LowerLimit().GetConstant();
-            if (lcns > 0 || -lcns >= arrSize)
+            if (lcns >= 0 || -lcns > arrSize)
             {
                 return false;
             }
@@ -207,13 +167,13 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTreePtr upper)
         {
             int lcns = range.LowerLimit().GetConstant();
             // Make sure lcns < ucns which is already less than arrSize.
-            return (lcns >= 0 && lcns < ucns);
+            return (lcns >= 0 && lcns <= ucns);
         }
         if (range.LowerLimit().IsBinOpArray())
         {
             int lcns = range.LowerLimit().GetConstant();
             // a.len + lcns, make sure we don't subtract too much from a.len.
-            if (lcns > 0 || -lcns >= arrSize)
+            if (lcns >= 0 || -lcns > arrSize)
             {
                 return false;
             }
@@ -241,6 +201,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
     }
 
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
+    m_pCurBndsChk = bndsChk;
     GenTreePtr treeIndex = bndsChk->gtIndex;
 
     // Take care of constant index first, like a[2], for example.
@@ -271,7 +232,17 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
 
     // Get the range for this index.
     SearchPath* path = new (m_pCompiler->getAllocator()) SearchPath(m_pCompiler->getAllocator());
+
     Range range = GetRange(block, stmt, treeIndex, path, false DEBUGARG(0));
+
+    // If upper or lower limit is found to be unknown (top), or it was found to
+    // be unknown because of over budget or a deep search, then return early.
+    if (range.UpperLimit().IsUnknown() || range.LowerLimit().IsUnknown())
+    {
+        // Note: If we had stack depth too deep in the GetRange call, we'd be
+        // too deep even in the DoesOverflow call. So return early.
+        return;
+    }
 
     if (DoesOverflow(block, stmt, treeIndex, path))
     {
@@ -526,6 +497,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, EXPSET_TP assertions, Rang
         {
             // Get i, a.len, cns and < as "info."
             m_pCompiler->vnStore->GetArrLenArithBoundInfo(curAssertion->op1.vn, &info);
+                       
             if (m_pCompiler->lvaTable[lcl->gtLclNum].GetPerSsaData(lcl->gtSsaNum)->m_vnPair.GetConservative()
                     != info.cmpOp)
             {
@@ -538,7 +510,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, EXPSET_TP assertions, Rang
             case GT_ADD:
                 {
                     // If the operand that operates on the array is not constant, then done.
-                    if (!m_pCompiler->vnStore->IsVNConstant(info.arrOp))
+                    if (!m_pCompiler->vnStore->IsVNConstant(info.arrOp) || m_pCompiler->vnStore->TypeOfVN(info.arrOp) != TYP_INT)
                     {
                         break;
                     }
@@ -552,6 +524,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, EXPSET_TP assertions, Rang
         {
             // Get the info as "i", "<" and "a.len"
             m_pCompiler->vnStore->GetArrLenBoundInfo(curAssertion->op1.vn, &info);
+
             ValueNum lclVn = m_pCompiler->lvaTable[lcl->gtLclNum].GetPerSsaData(lcl->gtSsaNum)->m_vnPair.GetConservative();
             // If we don't have the same variable we are comparing against, bail.
             if (lclVn != info.cmpOp)
@@ -579,34 +552,103 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, EXPSET_TP assertions, Rang
 #ifdef DEBUG
         if (m_pCompiler->verbose) m_pCompiler->optPrintAssertion(curAssertion, index);
 #endif
+
+        noway_assert(limit.IsBinOpArray() || limit.IsArray());
+
+        ValueNum arrLenVN = m_pCurBndsChk->gtArrLen->gtVNPair.GetConservative();
+        ValueNum arrRefVN = m_pCompiler->vnStore->GetArrForLenVn(arrLenVN);
+
+        // During assertion prop we add assertions of the form:
+        // 
+        //      (i < a.Length) == 0
+        //      (i < a.Length) != 0
+        //
+        // At this point, we have detected that op1.vn is (i < a.Length) or (i < a.Length + cns),
+        // and the op2.vn is 0.
+        //
+        // Now, let us check if we are == 0 (i.e., op1 assertion is false) or != 0 (op1 assertion
+        // is true.),
+        //
         // If we have an assertion of the form == 0 (i.e., equals false), then reverse relop.
+        // The relop has to be reversed because we have: (i < a.Length) is false which is the same
+        // as (i >= a.Length).
         genTreeOps cmpOper = (genTreeOps) info.cmpOper;
         if (curAssertion->assertionKind == Compiler::OAK_EQUAL)
         {
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
+
+        // Bounds are inclusive, so add -1 for upper bound when "<". But make sure we won't overflow.
+        if (cmpOper == GT_LT && !limit.AddConstant(-1))
+        {
+            continue;
+        }
+        // Bounds are inclusive, so add +1 for lower bound when ">". But make sure we won't overflow.
+        if (cmpOper == GT_GT && !limit.AddConstant(1))
+        {
+            continue;
+        }
+
+        // Doesn't tighten the current bound. So skip.
+        if (pRange->uLimit.IsConstant() && limit.vn != arrRefVN)
+        {
+            continue;
+        }
+
+        // Check if the incoming limit from assertions tightens the existing upper limit.
+        if ((pRange->uLimit.IsArray() || pRange->uLimit.IsBinOpArray()) && pRange->uLimit.vn == arrRefVN)
+        {
+            // We have checked the current range's (pRange's) upper limit is either of the form:
+            //      a.Length
+            //      a.Length + cns
+            //      and a == the bndsChkCandidate's arrRef
+            //
+            // We want to check if the incoming limit tightens the bound, and for that the
+            // we need to make sure that incoming limit is also on a.Length or a.Length + cns
+            // and not b.Length or some c.Length.
+
+            if (limit.vn != arrRefVN)
+            {
+                JITDUMP("Array ref did not match cur=$%x, assert=$%x\n", arrRefVN, limit.vn);
+                continue;
+            }
+
+            int curCns = (pRange->uLimit.IsBinOpArray()) ? pRange->uLimit.cns : 0;
+            int limCns = (limit.IsBinOpArray()) ? limit.cns : 0;
+            
+            // Incoming limit doesn't tighten the existing upper limit.
+            if (limCns >= curCns)
+            {
+                JITDUMP("Bound limit %d doesn't tighten current bound %d\n", limCns, curCns);
+                continue;
+            }
+        }
+        else
+        {
+            // Current range's upper bound is not "a.Length or a.Length + cns" and the
+            // incoming limit is not on the same arrRef as the bounds check candidate.
+            // So we could skip this assertion. But in cases, of Dependent or Unknown
+            // type of upper limit, the incoming assertion still tightens the upper
+            // bound to a saner value. So do not skip the assertion.
+        }
+
+        // cmpOp (loop index i) cmpOper a.len +/- cns
         switch (cmpOper)
         {
         case GT_LT:
-            pRange->lLimit = limit;
-            break;
-
-        case GT_GT:
             pRange->uLimit = limit;
             break;
 
+        case GT_GT:
+            pRange->lLimit = limit;
+            break;
+
         case GT_GE:
-            if (limit.AddConstant(1))
-            {
-                pRange->uLimit = limit;
-            }
+            pRange->lLimit = limit;
             break;
 
         case GT_LE:
-            if (limit.AddConstant(1))
-            {
-                pRange->lLimit = limit;
-            }
+            pRange->uLimit = limit;
             break;
         }
         JITDUMP("The range after edge merging:");
@@ -627,12 +669,12 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTreePtr stmt, GenTreePtr o
     {
         GenTreePhiArg* arg = (GenTreePhiArg*) op;
         BasicBlock* pred = arg->gtPredBB;
-        if (pred->bbNext == block)
+        if (pred->bbFallsThrough() && pred->bbNext == block)
         {
             assertions = pred->bbAssertionOut;
             JITDUMP("Merge assertions from pred BB%02d edge: %0I64X\n", pred->bbNum, assertions);
         }
-        else if (pred->bbJumpDest == block)
+        else if ((pred->bbJumpKind == BBJ_COND || pred->bbJumpKind == BBJ_ALWAYS) && pred->bbJumpDest == block)
         {
             if (m_pCompiler->bbJtrueAssertionOut != NULL)
             {
@@ -754,7 +796,11 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock* block, GenTreePtr stmt, Ge
     return Range(Limit(Limit::keUnknown));
 }
 
-#define ARRLEN_MAX (1 << 20)
+// https://msdn.microsoft.com/en-us/windows/apps/hh285054.aspx
+// CLR throws IDS_EE_ARRAY_DIMENSIONS_EXCEEDED if array length is > INT_MAX.
+// new byte[INT_MAX]; still throws OutOfMemoryException on my system with 32 GB RAM.
+// I believe practical limits are still smaller than this number.
+#define ARRLEN_MAX (0x7FFFFFFF)
 
 // Get the limit's maximum possible value, treating array length to be ARRLEN_MAX.
 bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
@@ -773,6 +819,10 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
             {
                 tmp = ARRLEN_MAX;
             }
+            if (IntAddOverflows(tmp, limit.GetConstant()))
+            {
+                return false;
+            }
             max1 = tmp + limit.GetConstant();
         }
         break;
@@ -784,22 +834,26 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
             {
                 tmp = ARRLEN_MAX;
             }
-            max1 = ARRLEN_MAX;
+            max1 = tmp;
         }
         break;
 
     case Limit::keSsaVar:
     case Limit::keBinOp:
-        if (m_pCompiler->vnStore->IsVNConstant(limit.vn))
+        if (m_pCompiler->vnStore->IsVNConstant(limit.vn) && m_pCompiler->vnStore->TypeOfVN(limit.vn) == TYP_INT)
         {
            max1 = m_pCompiler->vnStore->ConstantValue<int>(limit.vn);
         }
         else
         {
-            return true;
+            return false;
         }
         if (limit.type == Limit::keBinOp)
         {
+            if (IntAddOverflows(max1, limit.GetConstant()))
+            {
+                return false;
+            }
             max1 += limit.GetConstant();
         }
         break;
@@ -863,6 +917,7 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePt
     JITDUMP("Checking bin op overflow %s %s\n",
             op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
             op2Range->ToString(m_pCompiler->getAllocatorDebugOnly()));
+
     if (!AddOverflows(op1Range->UpperLimit(), op2Range->UpperLimit()))
     {
         return false;
@@ -928,6 +983,8 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTree
     JITDUMP("Does overflow %p?\n", dspPtr(expr));
     path->Set(expr, block);
 
+    noway_assert(path->GetCount() <= MAX_SEARCH_DEPTH);
+
     bool overflows = true;
 
     // Remove hashtable entry for expr when we exit the present scope.
@@ -976,12 +1033,45 @@ struct Node
 // eg.: merge((0, dep), (dep, dep)) = (0, dep)
 Range RangeCheck::ComputeRange(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent))
 {
-    path->Set(expr, block);
+    bool newlyAdded = path->Set(expr, block);
     Range range = Limit(Limit::keUndef);
 
     ValueNum vn = expr->gtVNPair.GetConservative();
+    // If newly added in the current search path, then reduce the budget.
+    if (newlyAdded)
+    {
+        // Assert that we are not re-entrant for a node which has been
+        // visited and resolved before and not currently on the search path.
+        noway_assert(!GetRangeMap()->Lookup(expr));
+        m_nVisitBudget--;
+    }
+    // Prevent quadratic behavior.
+    if (IsOverBudget())
+    {
+        // Set to unknown, since an Unknown range resolution, will stop further
+        // searches. This is because anything that merges with Unknown will
+        // yield Unknown. Unknown is lattice top.
+        range = Range(Limit(Limit::keUnknown));
+        JITDUMP("GetRange not tractable within max node visit budget.\n");
+    }
+    // Prevent unbounded recursion.
+    else if (path->GetCount() > MAX_SEARCH_DEPTH)
+    {
+        // Unknown is lattice top, anything that merges with Unknown will yield Unknown.
+        range = Range(Limit(Limit::keUnknown));
+        JITDUMP("GetRange not tractable within max stack depth.\n");
+    }
+    // TODO-CQ: The current implementation is reliant on integer storage types
+    // for constants. It could use INT64. Still, representing ULONG constants 
+    // might require preserving the var_type whether it is a un/signed 64-bit.
+    // JIT64 doesn't do anything for "long" either. No asm diffs.
+    else if (expr->TypeGet() == TYP_LONG || expr->TypeGet() == TYP_ULONG)
+    {
+        range = Range(Limit(Limit::keUnknown));
+        JITDUMP("GetRange long or ulong, setting to unknown value.\n");
+    }
     // If VN is constant return range as constant.
-    if (m_pCompiler->vnStore->IsVNConstant(vn))
+    else if (m_pCompiler->vnStore->IsVNConstant(vn))
     {
         range = (m_pCompiler->vnStore->TypeOfVN(vn) == TYP_INT)
               ? Range(Limit(Limit::keConstant, m_pCompiler->vnStore->ConstantValue<int>(vn)))
@@ -991,12 +1081,13 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTreePtr stmt, GenTreePtr ex
     else if (expr->IsLocal())
     {
         range = ComputeRangeForLocalDef(block, stmt, expr, path, monotonic DEBUGARG(indent + 1));
+        MergeAssertion(block, stmt, expr, path, &range DEBUGARG(indent + 1));
     }
     // If add, then compute the range for the operands and add them.
     else if (expr->OperGet() == GT_ADD)
     {
-        return ComputeRangeForBinOp(block, stmt,
-                expr->gtGetOp1(), expr->gtGetOp2(), expr->OperGet(), path, monotonic DEBUGARG(indent + 1));
+        range = ComputeRangeForBinOp(block, stmt,
+                    expr->gtGetOp1(), expr->gtGetOp2(), GT_ADD, path, monotonic DEBUGARG(indent + 1));
     }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperGet() == GT_PHI)
@@ -1023,13 +1114,6 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTreePtr stmt, GenTreePtr ex
                 JITDUMP("PhiArg %p is already being computed\n", dspPtr(args->Current()));
                 cur->range = Range(Limit(Limit::keDependent));
                 MergeAssertion(block, stmt, args->Current(), path, &cur->range DEBUGARG(indent + 1));
-                continue;
-            }
-            if (GetRangeMap()->Lookup(args->Current()))
-            {
-                Range* p = nullptr;
-                GetRangeMap()->Lookup(args->Current(), &p);
-                cur->range = *p;
                 continue;
             }
             cur->range = GetRange(block, stmt, args->Current(), path, monotonic DEBUGARG(indent + 1));
@@ -1199,6 +1283,10 @@ void RangeCheck::OptimizeRangeChecks()
         {
             for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
             {
+                if (IsOverBudget())
+                {
+                    return;
+                }
                 OptimizeRangeCheck(block, stmt, tree);
             }
         }

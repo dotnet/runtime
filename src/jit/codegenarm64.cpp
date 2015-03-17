@@ -6128,7 +6128,8 @@ CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize DEBUG
 
 void        CodeGen::genEmitHelperCall(unsigned    helper,
                                        int         argSize,
-                                       emitAttr    retSize)
+                                       emitAttr    retSize,
+                                       regNumber   callTargetReg /*= REG_NA */)
 {
     void* addr  = nullptr;
     void* pAddr = nullptr;
@@ -6154,6 +6155,19 @@ void        CodeGen::genEmitHelperCall(unsigned    helper,
             // and use register indirect addressing mode to make the call.
             //    mov   reg, addr
             //    call  [reg]
+            if (callTargetReg == REG_NA)
+            {
+                // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
+                // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
+                callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+            }
+
+            regMaskTP callTargetMask = genRegMask(callTargetReg);
+            regMaskTP callKillSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+
+            // assert that all registers in callTargetMask are in the callKillSet
+            noway_assert((callTargetMask & callKillSet) == callTargetMask);
+
             callTarget = callTargetReg;
             CodeGen::genSetRegToIcon(callTarget, (ssize_t) pAddr, TYP_I_IMPL);
             callType = emitter::EC_INDIR_ARD;
