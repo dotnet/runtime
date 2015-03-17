@@ -59,7 +59,7 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 	if (ret == KERN_SUCCESS)
 		ret = thread_abort (info->native_handle);
 
-	thread_resume (info->native_handle);
+	g_assert (thread_resume (info->native_handle) == KERN_SUCCESS);
 }
 
 gboolean
