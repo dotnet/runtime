@@ -1517,6 +1517,7 @@ typedef struct {
 	guint            uses_simd_intrinsics : 1;
 	guint            keep_cil_nops : 1;
 	guint            gen_seq_points : 1;
+	/* Generate seq points for use by the debugger */
 	guint            gen_seq_points_debug_data : 1;
 	guint            explicit_null_checks : 1;
 	guint            compute_gc_maps : 1;

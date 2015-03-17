@@ -4165,7 +4165,6 @@ handle_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_used,
 	}
 }
 
-
 static gboolean
 mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *klass, int context_used)
 {
@@ -4191,6 +4190,37 @@ mini_class_has_reference_variant_generic_argument (MonoCompile *cfg, MonoClass *
 		if (mini_type_is_reference (cfg, type))
 			return TRUE;
 	}
+	return FALSE;
+}
+
+static GHashTable* direct_icall_type_hash;
+
+static gboolean
+icall_is_direct_callable (MonoCompile *cfg, MonoMethod *cmethod)
+{
+	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
+	if ((cfg->compile_llvm && SIZEOF_VOID_P == 8) || cfg->gen_seq_points_debug_data || cfg->disable_direct_icalls)
+		return FALSE;
+
+	/*
+	 * An icall is directly callable if it doesn't directly or indirectly call mono_raise_exception ().
+	 * Whitelist a few icalls for now.
+	 */
+	if (!direct_icall_type_hash) {
+		GHashTable *h = g_hash_table_new (g_str_hash, g_str_equal);
+
+		g_hash_table_insert (h, (char*)"Decimal", GUINT_TO_POINTER (1));
+		g_hash_table_insert (h, (char*)"Number", GUINT_TO_POINTER (1));
+		g_hash_table_insert (h, (char*)"Buffer", GUINT_TO_POINTER (1));
+		mono_memory_barrier ();
+		direct_icall_type_hash = h;
+	}
+
+	if (cmethod->klass == mono_defaults.math_class)
+		return TRUE;
+	/* No locking needed */
+	if (cmethod->klass->image == mono_defaults.corlib && g_hash_table_lookup (direct_icall_type_hash, cmethod->klass->name))
+		return TRUE;
 	return FALSE;
 }
 
@@ -8702,6 +8732,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean push_res = TRUE;
 			gboolean skip_ret = FALSE;
 			gboolean delegate_invoke = FALSE;
+			gboolean direct_icall = FALSE;
 
 			CHECK_OPSIZE (5);
 			token = read32 (ip + 1);
@@ -8715,7 +8746,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				--sp;
 				addr = *sp;
 				fsig = mini_get_signature (method, token, generic_context);
-				n = fsig->param_count + fsig->hasthis;
 
 				if (method->dynamic && fsig->pinvoke) {
 					MonoInst *args [3];
@@ -8813,34 +8843,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (!mono_class_init (cmethod->klass))
 						TYPE_LOAD_ERROR (cmethod->klass);
 
+				fsig = mono_method_signature (cmethod);
+				if (!fsig)
+					LOAD_ERROR;
 				if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
 				    mini_class_is_system_array (cmethod->klass)) {
 					array_rank = cmethod->klass->rank;
-					fsig = mono_method_signature (cmethod);
+				} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && icall_is_direct_callable (cfg, cmethod)) {
+					direct_icall = TRUE;
+				} else if (fsig->pinvoke) {
+					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
+																		   check_for_pending_exc, cfg->compile_aot);
+					fsig = mono_method_signature (wrapper);
+				} else if (constrained_class) {
 				} else {
-					fsig = mono_method_signature (cmethod);
-
-					if (!fsig)
-						LOAD_ERROR;
-
-					if (fsig->pinvoke) {
-						MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod,
-							check_for_pending_exc, cfg->compile_aot);
-						fsig = mono_method_signature (wrapper);
-					} else if (constrained_class) {
-						fsig = mono_method_signature (cmethod);
-					} else {
-						fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
-						CHECK_CFG_ERROR;
-					}
+					fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, &cfg->error);
+					CHECK_CFG_ERROR;
 				}
 
 				mono_save_token_info (cfg, image, token, cil_method);
 
 				if (!(seq_point_locs && mono_bitset_test_fast (seq_point_locs, ip + 5 - header->code)))
 					need_seq_point = TRUE;
-
-				n = fsig->param_count + fsig->hasthis;
 
 				/* Don't support calls made using type arguments for now */
 				/*
@@ -8849,16 +8873,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						GSHAREDVT_FAILURE (*ip);
 				}
 				*/
-
-				if (mono_security_cas_enabled ()) {
-					if (check_linkdemand (cfg, method, cmethod))
-						INLINE_FAILURE ("linkdemand");
-					CHECK_CFG_EXCEPTION;
-				}
-
-				if (cmethod->string_ctor && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
-					g_assert_not_reached ();
 			}
+
+			if (cmethod && mono_security_cas_enabled ()) {
+				if (check_linkdemand (cfg, method, cmethod))
+					INLINE_FAILURE ("linkdemand");
+				CHECK_CFG_EXCEPTION;
+			}
+
+			if (cmethod && cmethod->string_ctor && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
+				g_assert_not_reached ();
+
+			n = fsig->param_count + fsig->hasthis;
 
 			if (!cfg->generic_sharing_context && cmethod && cmethod->klass->generic_container)
 				UNVERIFIED;
@@ -9293,16 +9319,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto call_end;
 			}
 
+			/* Direct calls to icalls */
+			if (direct_icall) {
+				ins = (MonoInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR, cmethod, fsig, sp);
+				goto call_end;
+			}
+
 			/* Indirect calls */
 			if (addr) {
 				if (call_opcode == CEE_CALL)
 					g_assert (context_used);
 				else if (call_opcode == CEE_CALLI)
 					g_assert (!vtable_arg);
-				else
-					/* FIXME: what the hell is this??? */
-					g_assert (cmethod->flags & METHOD_ATTRIBUTE_FINAL ||
-							!(cmethod->flags & METHOD_ATTRIBUTE_FINAL));
 
 				/* Prevent inlining of methods with indirect calls */
 				INLINE_FAILURE ("indirect call");
