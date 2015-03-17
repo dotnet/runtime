@@ -151,6 +151,7 @@ namespace ETW
         static void OnKeywordsChanged();
         static void Cleanup();
         static VOID DeleteTypeHashNoLock(AllLoggedTypes **ppAllLoggedTypes);
+        static VOID FlushObjectAllocationEvents();
 
     private:
         static BOOL ShouldLogType(TypeHandle th);
