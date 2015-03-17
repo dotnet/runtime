@@ -932,12 +932,17 @@ static MonoImage *
 do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		    gboolean care_about_cli, gboolean care_about_pecoff)
 {
+	MonoCLIImageInfo *iinfo;
+	MonoDotNetHeader *header;
 	GSList *errors = NULL;
 
 	mono_profiler_module_event (image, MONO_PROFILE_START_LOAD);
 
 	mono_image_init (image);
 
+	iinfo = image->image_info;
+	header = &iinfo->cli_header;
+		
 	if (status)
 		*status = MONO_IMAGE_IMAGE_INVALID;
 
