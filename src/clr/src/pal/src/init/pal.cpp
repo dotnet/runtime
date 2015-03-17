@@ -53,6 +53,8 @@ Abstract:
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <string.h>
+#include <fcntl.h>
 
 #if HAVE_POLL
 #include <poll.h>
@@ -653,8 +655,35 @@ BOOL
 PALAPI
 PAL_IsDebuggerPresent()
 {
-    // Always retun false for now.
+#ifdef __LINUX__
+    BOOL debugger_present = FALSE;
+    char buf[2048];
+
+    int status_fd = open("/proc/self/status", O_RDONLY);
+    if (status_fd == -1)
+    {
+        return FALSE;
+    }
+    ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
+
+    if (num_read > 0)
+    {
+        static const char TracerPid[] = "TracerPid:";
+        char *tracer_pid;
+
+        buf[num_read] = '\0';
+        tracer_pid = strstr(buf, TracerPid);
+        if (tracer_pid)
+        {
+            debugger_present = !!atoi(tracer_pid + sizeof(TracerPid) - 1);
+        }
+    }
+
+    return debugger_present;
+#else
+    // Always retun false for OSx for now.
     return FALSE;
+#endif
 }
 
 /*++
