@@ -87,6 +87,25 @@ ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc)
   m_mapSelectBudget = fMapSelBudget.val(CLRConfig::INTERNAL_JitVNMapSelBudget);
 }
 
+template <typename T>
+T ValueNumStore::CoerceTypRefToT(Chunk* c, unsigned offset)
+{
+    noway_assert(sizeof(T) >= sizeof(VarTypConv<TYP_REF>::Type));
+    return (T) reinterpret_cast<VarTypConv<TYP_REF>::Type*>(c->m_defs)[offset];
+}
+
+template <>
+float ValueNumStore::CoerceTypRefToT<float>(Chunk* c, unsigned offset)
+{
+    unreached();
+}
+
+template <>
+double ValueNumStore::CoerceTypRefToT<double>(Chunk* c, unsigned offset)
+{
+    unreached();
+}
+
 // static.
 template<typename T>
 T ValueNumStore::EvalOp(VNFunc vnf, T v0)
@@ -575,13 +594,19 @@ ValueNumStore::Chunk::Chunk(IAllocator* alloc, ValueNum* pNextBaseVN, var_types 
         switch (typ)
         {
         case TYP_INT:
+            m_defs = new (alloc) Alloc<TYP_INT>::Type[ChunkSize];
+            break;
         case TYP_FLOAT:
-            m_defs = new (alloc) INT32[ChunkSize];
+            m_defs = new (alloc) Alloc<TYP_FLOAT>::Type[ChunkSize];
             break;
         case TYP_LONG:
+            m_defs = new (alloc) Alloc<TYP_LONG>::Type[ChunkSize];
+            break;
         case TYP_DOUBLE:
+            m_defs = new (alloc) Alloc<TYP_DOUBLE>::Type[ChunkSize];
+            break;
         case TYP_BYREF:
-            m_defs = new (alloc) INT64[ChunkSize];
+            m_defs = new (alloc) Alloc<TYP_BYREF>::Type[ChunkSize];
             break;
         case TYP_REF:
             // We allocate space for a single REF constant, NULL, so we can access these values uniformly.
@@ -2711,9 +2736,18 @@ void ValueNumStore::GetArrLenBoundInfo(ValueNum vn, ArrLenArithBoundInfo* info)
     GetVNFunc(vn, &funcAttr);
 
     bool isOp1ArrLen = IsVNArrLen(funcAttr.m_args[1]);
-    info->cmpOper = funcAttr.m_func;
-    info->cmpOp = funcAttr.m_args[isOp1ArrLen ? 0 : 1];
-    info->vnArray = GetArrForLenVn(funcAttr.m_args[isOp1ArrLen ? 1 : 0]);
+    if (isOp1ArrLen)
+    {
+        info->cmpOper = funcAttr.m_func;
+        info->cmpOp = funcAttr.m_args[0];
+        info->vnArray = GetArrForLenVn(funcAttr.m_args[1]);
+    }
+    else
+    {
+        info->cmpOper = GenTree::SwapRelop((genTreeOps) funcAttr.m_func);
+        info->cmpOp = funcAttr.m_args[1];
+        info->vnArray = GetArrForLenVn(funcAttr.m_args[0]);
+    }
 }
 
 bool ValueNumStore::IsVNArrLenArith(ValueNum vn)
@@ -2736,9 +2770,18 @@ void ValueNumStore::GetArrLenArithInfo(ValueNum vn, ArrLenArithBoundInfo* info)
     GetVNFunc(vn, &funcArith);
 
     bool isOp1ArrLen = IsVNArrLen(funcArith.m_args[1]);
-    info->arrOper = funcArith.m_func;
-    info->arrOp = funcArith.m_args[isOp1ArrLen ? 0 : 1];
-    info->vnArray = GetArrForLenVn(funcArith.m_args[isOp1ArrLen ? 1 : 0]);
+    if (isOp1ArrLen)
+    {
+        info->arrOper = funcArith.m_func;
+        info->arrOp = funcArith.m_args[0];
+        info->vnArray = GetArrForLenVn(funcArith.m_args[1]);
+    }
+    else
+    {
+        info->arrOper = funcArith.m_func;
+        info->arrOp = funcArith.m_args[1];
+        info->vnArray = GetArrForLenVn(funcArith.m_args[0]);
+    }
 }
 
 bool ValueNumStore::IsVNArrLenArithBound(ValueNum vn)
@@ -2778,9 +2821,18 @@ void ValueNumStore::GetArrLenArithBoundInfo(ValueNum vn, ArrLenArithBoundInfo* i
 
     // Check whether op0 or op1 ia arr len arithmetic.
     bool isOp1ArrLenArith = IsVNArrLenArith(funcAttr.m_args[1]);
-    info->cmpOper = funcAttr.m_func;
-    info->cmpOp = funcAttr.m_args[isOp1ArrLenArith ? 0 : 1];
-    GetArrLenArithInfo(funcAttr.m_args[isOp1ArrLenArith ? 1 : 0], info);
+    if (isOp1ArrLenArith)
+    {
+        info->cmpOper = funcAttr.m_func;
+        info->cmpOp = funcAttr.m_args[0];
+        GetArrLenArithInfo(funcAttr.m_args[1], info);
+    }
+    else
+    {
+        info->cmpOper = GenTree::SwapRelop((genTreeOps) funcAttr.m_func);
+        info->cmpOp = funcAttr.m_args[1];
+        GetArrLenArithInfo(funcAttr.m_args[0], info);
+    }
 }
 
 ValueNum ValueNumStore::GetArrForLenVn(ValueNum vn)
@@ -2808,9 +2860,10 @@ int ValueNumStore::GetNewArrSize(ValueNum vn)
     VNFuncApp funcAttr;
     if (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == VNF_JitNewArr)
     {
-        if (IsVNConstant(funcAttr.m_args[1]))
+        ValueNum arg1VN = funcAttr.m_args[1];
+        if (IsVNConstant(arg1VN) && TypeOfVN(arg1VN) == TYP_INT)
         {
-            return ConstantValue<int>(funcAttr.m_args[1]);
+            return ConstantValue<int>(arg1VN);
         }
     }
     return 0;

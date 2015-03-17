@@ -2515,17 +2515,10 @@ void * ZapInfo::getHelperFtn (CorInfoHelpFunc ftnNum, void **ppIndirection)
         return NULL;
 #ifdef _TARGET_AMD64_
     case CORINFO_HELP_STOP_FOR_GC:
-        // Note that JIT64 (the compat jit) has an issue where it fails when trying
-        // to make an indirect call using OPCONDCALL so we always use a direct call 
-        // for JIT64. m_hJitLegacy == NULL means that we are using RyuJIT.
-        // The JIT64 also does not depend upon having RAX preserved across the call.
-        if (m_zapper->m_hJitLegacy == NULL)
-        {
-            // Force all calls in ngen images for this helper to use an indirect call.
-            // We cannot use a jump stub to reach this helper because 
-            // the RAX register can contain a return value.
-            dwHelper |= CORCOMPILE_HELPER_PTR;
-        }
+        // Force all calls in ngen images for this helper to use an indirect call.
+        // We cannot use a jump stub to reach this helper because 
+        // the RAX register can contain a return value.
+        dwHelper |= CORCOMPILE_HELPER_PTR;
    break;
 #endif
     default:
@@ -4711,4 +4704,35 @@ BOOL ZapInfo::CurrentMethodHasProfileData()
     ULONG size;
     ICorJitInfo::ProfileBuffer * profileBuffer;
     return SUCCEEDED(getBBProfileData(m_currentMethodHandle, &size, &profileBuffer, NULL));
+}
+
+int ZapInfo::getIntConfigValue(const wchar_t *name, int defaultValue)
+{
+    int ret;
+
+    // Translate JIT call into runtime configuration query
+    CLRConfig::ConfigDWORDInfo info{name, defaultValue, CLRConfig::REGUTIL_default};
+
+    // Perform a CLRConfig look up on behalf of the JIT.
+    ret = CLRConfig::GetConfigValue(info);
+
+    return ret;
+}
+
+wchar_t *ZapInfo::getStringConfigValue(const wchar_t *name)
+{
+    wchar_t *returnStr = nullptr;
+
+    // Translate JIT call into runtime configuration query
+    CLRConfig::ConfigStringInfo info { name, CLRConfig::REGUTIL_default };
+
+    // Perform a CLRConfig look up on behalf of the JIT.
+    returnStr = CLRConfig::GetConfigValue(info);
+
+    return returnStr;
+}
+
+void ZapInfo::freeStringConfigValue(wchar_t *value)
+{
+    CLRConfig::FreeConfigString(value);
 }

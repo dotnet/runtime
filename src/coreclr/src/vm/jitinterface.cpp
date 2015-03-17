@@ -10608,15 +10608,9 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         // and the STOP_FOR_GC helper which maps to JIT_RareDisableHelper.
         // In the case of the STOP_FOR_GC helper RAX can be holding a function return value.
         //
-        // Note that JIT64 (the compat jit) has an issue where it fails when trying
-        // to make an indirect call using OPCONDCALL so we always use a direct call 
-        // for JIT64. UsingCompatJit() == true means that we are using JIT64.
-        // The JIT64 also does not depend upon having RAX preserved across the call
-        // 
-        if (((dynamicFtnNum == DYNAMIC_CORINFO_HELP_STOP_FOR_GC) &&
-             (ExecutionManager::UsingCompatJit() == false)         ) ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER     ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE     ||
+        if (dynamicFtnNum == DYNAMIC_CORINFO_HELP_STOP_FOR_GC    ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL)
         {
             _ASSERTE(ppIndirection != NULL);
@@ -13869,6 +13863,100 @@ void CEEInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.
+}
+
+// Allow access to CLRConfig environment variables from the JIT with
+// out exposing CLR internals. 
+// 
+// Args:
+//     name         - String name being queried for.
+//     defaultValue - Default integer value to return if no value is found.
+//
+// Returns:
+//     Raw string from environment variable.  Caller owns the string.
+//
+int CEEInfo::getIntConfigValue(
+    const wchar_t *name,  int defaultValue
+    )
+{
+    CONTRACTL{
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    DWORD ret = defaultValue;
+
+    JIT_TO_EE_TRANSITION();
+
+    // Translate JIT call into runtime configuration query
+    CLRConfig::ConfigDWORDInfo info{ name, defaultValue, CLRConfig::REGUTIL_default };
+
+    // Perform a CLRConfig look up on behalf of the JIT.
+    ret = CLRConfig::GetConfigValue(info);
+
+    EE_TO_JIT_TRANSITION();
+
+    return ret;
+}
+
+// Allow access to CLRConfig environment variables from the JIT with
+// out exposing CLR internals. 
+// 
+// Args:
+//     name - String name being queried for.
+//
+// Returns:
+//     Raw string from environment variable.  Caller owns the string.
+//
+wchar_t *CEEInfo::getStringConfigValue(
+    const wchar_t *name
+    )
+{
+    CONTRACTL{
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    wchar_t * returnStr = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    // Translate JIT call into runtime configuration query
+    CLRConfig::ConfigStringInfo info{ name, CLRConfig::REGUTIL_default };
+
+    // Perform a CLRConfig look up on behalf of the JIT.
+    returnStr = CLRConfig::GetConfigValue(info);
+
+    EE_TO_JIT_TRANSITION();
+
+    return returnStr;
+}
+
+// Free runtime allocated CLRConfig strings requrested by the JIT.
+//
+// Args:
+//    value - String to be freed.
+//
+void CEEInfo::freeStringConfigValue(
+    wchar_t *value
+    )
+{
+    CONTRACTL{
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    CLRConfig::FreeConfigString(value);
+
+    EE_TO_JIT_TRANSITION();
 }
 
 #endif // !DACCESS_COMPILE

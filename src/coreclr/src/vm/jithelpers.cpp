@@ -5152,6 +5152,24 @@ HCIMPL0(void, JIT_ThrowDivZero)
 HCIMPLEND
 
 /*********************************************************************/
+HCIMPL0(void, JIT_ThrowNullRef)
+{
+  FCALL_CONTRACT;
+
+  /* Make no assumptions about the current machine state */
+  ResetCurrentContext();
+
+  FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+  HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+  COMPlusThrow(kNullReferenceException);
+
+  HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL1(void, IL_VerificationError,  int ilOffset)
 {
     FCALL_CONTRACT;

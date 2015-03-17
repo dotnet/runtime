@@ -6709,6 +6709,9 @@ bool         Compiler::fgIsThrow(GenTreePtr     tree)
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_VERIFICATION)) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)  ) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
+#ifndef RYUJIT_CTPBUILD
+        (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
+#endif
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW)       ) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)     )   )
     {

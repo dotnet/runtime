@@ -356,11 +356,11 @@ extern "C" ICorJitCompiler* __stdcall getJit();
 #if !defined(RYUJIT_CTPBUILD)
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 9110edd8-8fc3-4e3d-8ac9-12555ff9be9c */
-    0x9110edd8,
-    0x8fc3,
-    0x4e3d,
-    {0x8a, 0xc9, 0x12, 0x55, 0x5f, 0xf9, 0xbe, 0x9c}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 8e31af35-be80-4484-a91a-b096a08a49fe */
+  0x8e31af35,
+  0xbe80,
+  0x4484,
+  { 0xa9, 0x1a, 0xb0, 0x96, 0xa0, 0x8a, 0x49, 0xfe }
   };
 
 #else

@@ -3544,7 +3544,7 @@ public:
     #define NOTIFY_ON_INITIAL_NATIVE_CONTEXT 0x4000
     
     // Indicates that we are enumerating GC references and should follow appropriate
-    // callback rules for parent methods vs funclets. Only supported on X64 and ARM.
+    // callback rules for parent methods vs funclets. Only supported on non-x86 platforms.
     // 
     // Refer to StackFrameIterator::Filter for detailed comments on this flag.
     #define GC_FUNCLET_REFERENCE_REPORTING 0x8000
