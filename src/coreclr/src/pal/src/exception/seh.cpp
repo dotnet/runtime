@@ -129,6 +129,15 @@ void SEHCleanup (void)
 #endif
 }
 
+PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
+
+VOID
+PALAPI 
+PAL_SetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
+{
+    g_hardwareExceptionHandler = handler;
+}
+
 #ifdef FEATURE_PAL_SXS
 BOOL
 PALAPI
