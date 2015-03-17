@@ -2987,11 +2987,22 @@ mono_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer
 	return ins;
 }
 
+static gboolean
+direct_icalls_enabled (MonoCompile *cfg)
+{
+	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
+#ifdef TARGET_AMD64
+	if (cfg->compile_llvm)
+		return FALSE;
+#endif
+	if (cfg->gen_seq_points_debug_data || cfg->disable_direct_icalls)
+		return FALSE;
+	return TRUE;
+}
+
 MonoInst*
 mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args, MonoBasicBlock **out_cbb)
 {
-	gboolean no_wrapper = FALSE;
-
 	/*
 	 * Call the jit icall without a wrapper if possible.
 	 * The wrapper is needed for the following reasons:
@@ -3001,14 +3012,7 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst 
 	 * - to be able to do stack walks for asynchronously suspended
 	 *   threads when debugging.
 	 */
-	if (info->no_raise) {
-		no_wrapper = TRUE;
-		/* LLVM on amd64 can't handle calls to non-32 bit addresses */
-		if ((cfg->compile_llvm && SIZEOF_VOID_P == 8) || cfg->gen_seq_points_debug_data || cfg->disable_direct_icalls)
-			no_wrapper = FALSE;
-	}
-
-	if (no_wrapper) {
+	if (info->no_raise && direct_icalls_enabled (cfg)) {
 		char *name;
 		int costs;
 
@@ -4199,7 +4203,7 @@ static gboolean
 icall_is_direct_callable (MonoCompile *cfg, MonoMethod *cmethod)
 {
 	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
-	if ((cfg->compile_llvm && SIZEOF_VOID_P == 8) || cfg->gen_seq_points_debug_data || cfg->disable_direct_icalls)
+	if (!direct_icalls_enabled (cfg))
 		return FALSE;
 
 	/*
