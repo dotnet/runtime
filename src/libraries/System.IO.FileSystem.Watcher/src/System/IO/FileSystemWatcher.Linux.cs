@@ -11,19 +11,8 @@ using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    // Linux implementation of FileSystemWatcher's PAL.  The main partial definition of FileSystemWatcher expects:
-    // - StartRaisingEvents
-    // - StopRaisingEvents
-    // - FinalizeDispose
-    
     public partial class FileSystemWatcher
     {
-        /// <summary>
-        /// Cancellation for the currently running watch operation.  
-        /// This is non-null if an operation has been started and null if stopped.
-        /// </summary>
-        private CancellationTokenSource _cancellation;
-
         /// <summary>Starts a new watch operation if one is not currently running.</summary>
         private void StartRaisingEvents()
         {
@@ -96,6 +85,18 @@ namespace System.IO
             // thus we need to explicitly call it here.
             StopRaisingEvents();
         }
+
+        internal const bool CaseSensitive = true;
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        /// <summary>
+        /// Cancellation for the currently running watch operation.  
+        /// This is non-null if an operation has been started and null if stopped.
+        /// </summary>
+        private CancellationTokenSource _cancellation;
 
         /// <summary>
         /// Maps the FileSystemWatcher's NotifyFilters enumeration to the 
