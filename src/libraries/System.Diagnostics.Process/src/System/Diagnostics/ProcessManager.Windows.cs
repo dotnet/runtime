@@ -130,8 +130,8 @@ namespace System.Diagnostics
             // So we will try to get the privilege here.
             // We could fail if the user account doesn't have right to do this, but that's fair.
 
-            Interop.LUID luid = new Interop.LUID();
-            if (!Interop.mincore.LookupPrivilegeValue(null, Interop.SeDebugPrivilege, out luid))
+            Interop.mincore.LUID luid = new Interop.mincore.LUID();
+            if (!Interop.mincore.LookupPrivilegeValue(null, Interop.mincore.SeDebugPrivilege, out luid))
             {
                 return;
             }
@@ -141,15 +141,15 @@ namespace System.Diagnostics
             {
                 if (!Interop.mincore.OpenProcessToken(
                         Interop.mincore.GetCurrentProcess(),
-                        Interop.TOKEN_ADJUST_PRIVILEGES,
+                        Interop.mincore.HandleOptions.TOKEN_ADJUST_PRIVILEGES,
                         out tokenHandle))
                 {
                     return;
                 }
 
-                Interop.TokenPrivileges tp = new Interop.TokenPrivileges();
+                Interop.mincore.TokenPrivileges tp = new Interop.mincore.TokenPrivileges();
                 tp.Luid = luid;
-                tp.Attributes = Interop.SE_PRIVILEGE_ENABLED;
+                tp.Attributes = Interop.mincore.SEPrivileges.SE_PRIVILEGE_ENABLED;
 
                 // AdjustTokenPrivileges can return true even if it didn't succeed (when ERROR_NOT_ALL_ASSIGNED is returned).
                 Interop.mincore.AdjustTokenPrivileges(tokenHandle, false, tp, 0, IntPtr.Zero, IntPtr.Zero);
@@ -203,7 +203,7 @@ namespace System.Diagnostics
             int result = Marshal.GetLastWin32Error();
             if (threadHandle.IsInvalid)
             {
-                if (result == Interop.ERROR_INVALID_PARAMETER)
+                if (result == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
                     throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString(CultureInfo.CurrentCulture)));
                 throw new Win32Exception(result);
             }
@@ -315,13 +315,13 @@ namespace System.Diagnostics
             if (processId == SystemProcessID || processId == IdleProcessID)
             {
                 // system process and idle process doesn't have any modules 
-                throw new Win32Exception(Interop.EFail, SR.EnumProcessModuleFailed);
+                throw new Win32Exception(Interop.mincore.Errors.EFail, SR.EnumProcessModuleFailed);
             }
 
             SafeProcessHandle processHandle = SafeProcessHandle.InvalidHandle;
             try
             {
-                processHandle = ProcessManager.OpenProcess(processId, Interop.PROCESS_QUERY_INFORMATION | Interop.PROCESS_VM_READ, true);
+                processHandle = ProcessManager.OpenProcess(processId, Interop.mincore.ProcessOptions.PROCESS_QUERY_INFORMATION | Interop.mincore.ProcessOptions.PROCESS_VM_READ, true);
 
                 IntPtr[] moduleHandles = new IntPtr[64];
                 GCHandle moduleHandlesArrayHandle = new GCHandle();
@@ -358,7 +358,7 @@ namespace System.Diagnostics
                             SafeProcessHandle hCurProcess = SafeProcessHandle.InvalidHandle;
                             try
                             {
-                                hCurProcess = ProcessManager.OpenProcess(unchecked((int)Interop.mincore.GetCurrentProcessId()), Interop.PROCESS_QUERY_INFORMATION, true);
+                                hCurProcess = ProcessManager.OpenProcess(unchecked((int)Interop.mincore.GetCurrentProcessId()), Interop.mincore.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
                                 bool wow64Ret;
 
                                 wow64Ret = Interop.mincore.IsWow64Process(hCurProcess, ref sourceProcessIsWow64);
@@ -376,7 +376,7 @@ namespace System.Diagnostics
                                 if (sourceProcessIsWow64 && !targetProcessIsWow64)
                                 {
                                     // Wow64 isn't going to allow this to happen, the best we can do is give a descriptive error to the user.
-                                    throw new Win32Exception(Interop.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
+                                    throw new Win32Exception(Interop.mincore.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
                                 }
                             }
                             finally
@@ -422,7 +422,7 @@ namespace System.Diagnostics
                     {
                         ModuleInfo moduleInfo = new ModuleInfo();
                         IntPtr moduleHandle = moduleHandles[i];
-                        Interop.NtModuleInfo ntModuleInfo = new Interop.NtModuleInfo();
+                        Interop.mincore.NtModuleInfo ntModuleInfo = new Interop.mincore.NtModuleInfo();
                         if (!Interop.mincore.GetModuleInformation(processHandle, moduleHandle, ntModuleInfo, Marshal.SizeOf(ntModuleInfo)))
                             throw new Win32Exception();
                         moduleInfo._sizeOfImage = ntModuleInfo.SizeOfImage;
@@ -450,7 +450,7 @@ namespace System.Diagnostics
                     }
                     catch (Win32Exception e)
                     {
-                        if (e.NativeErrorCode == Interop.ERROR_INVALID_HANDLE || e.NativeErrorCode == Interop.ERROR_PARTIAL_COPY)
+                        if (e.NativeErrorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE || e.NativeErrorCode == Interop.mincore.Errors.ERROR_PARTIAL_COPY)
                         {
                             // It's possible that another thread casued this module to become
                             // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
@@ -487,8 +487,8 @@ namespace System.Diagnostics
 
         public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
         {
-            Interop.NtProcessBasicInfo info = new Interop.NtProcessBasicInfo();
-            int status = Interop.mincore.NtQueryInformationProcess(processHandle, Interop.NtQueryProcessBasicInfo, info, (int)Marshal.SizeOf(info), null);
+            Interop.NtDll.NtProcessBasicInfo info = new Interop.NtDll.NtProcessBasicInfo();
+            int status = Interop.NtDll.NtQueryInformationProcess(processHandle, Interop.NtDll.NtQueryProcessBasicInfo, info, (int)Marshal.SizeOf(info), null);
             if (status != 0)
             {
                 throw new InvalidOperationException(SR.CantGetProcessId, new Win32Exception(status));
@@ -560,22 +560,22 @@ namespace System.Diagnostics
             {
                 dataHandle = GCHandle.Alloc(data, GCHandleType.Pinned);
                 IntPtr dataBlockPtr = dataHandle.AddrOfPinnedObject();
-                Interop.PERF_DATA_BLOCK dataBlock = new Interop.PERF_DATA_BLOCK();
+                Interop.mincore.PERF_DATA_BLOCK dataBlock = new Interop.mincore.PERF_DATA_BLOCK();
                 Marshal.PtrToStructure(dataBlockPtr, dataBlock);
                 IntPtr typePtr = (IntPtr)((long)dataBlockPtr + dataBlock.HeaderLength);
-                Interop.PERF_INSTANCE_DEFINITION instance = new Interop.PERF_INSTANCE_DEFINITION();
-                Interop.PERF_COUNTER_BLOCK counterBlock = new Interop.PERF_COUNTER_BLOCK();
+                Interop.mincore.PERF_INSTANCE_DEFINITION instance = new Interop.mincore.PERF_INSTANCE_DEFINITION();
+                Interop.mincore.PERF_COUNTER_BLOCK counterBlock = new Interop.mincore.PERF_COUNTER_BLOCK();
                 for (int i = 0; i < dataBlock.NumObjectTypes; i++)
                 {
-                    Interop.PERF_OBJECT_TYPE type = new Interop.PERF_OBJECT_TYPE();
+                    Interop.mincore.PERF_OBJECT_TYPE type = new Interop.mincore.PERF_OBJECT_TYPE();
                     Marshal.PtrToStructure(typePtr, type);
                     IntPtr instancePtr = (IntPtr)((long)typePtr + type.DefinitionLength);
                     IntPtr counterPtr = (IntPtr)((long)typePtr + type.HeaderLength);
-                    List<Interop.PERF_COUNTER_DEFINITION> counterList = new List<Interop.PERF_COUNTER_DEFINITION>();
+                    List<Interop.mincore.PERF_COUNTER_DEFINITION> counterList = new List<Interop.mincore.PERF_COUNTER_DEFINITION>();
 
                     for (int j = 0; j < type.NumCounters; j++)
                     {
-                        Interop.PERF_COUNTER_DEFINITION counter = new Interop.PERF_COUNTER_DEFINITION();
+                        Interop.mincore.PERF_COUNTER_DEFINITION counter = new Interop.mincore.PERF_COUNTER_DEFINITION();
                         Marshal.PtrToStructure(counterPtr, counter);
                         string counterName = library.GetCounterName(counter.CounterNameTitleIndex);
 
@@ -586,7 +586,7 @@ namespace System.Diagnostics
                         counterList.Add(counter);
                         counterPtr = (IntPtr)((long)counterPtr + counter.ByteLength);
                     }
-                    Interop.PERF_COUNTER_DEFINITION[] counters = new Interop.PERF_COUNTER_DEFINITION[counterList.Count];
+                    Interop.mincore.PERF_COUNTER_DEFINITION[] counters = new Interop.mincore.PERF_COUNTER_DEFINITION[counterList.Count];
                     counterList.CopyTo(counters, 0);
                     for (int j = 0; j < type.NumInstances; j++)
                     {
@@ -667,12 +667,12 @@ namespace System.Diagnostics
             return temp;
         }
 
-        static ThreadInfo GetThreadInfo(Interop.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.PERF_COUNTER_DEFINITION[] counters)
+        static ThreadInfo GetThreadInfo(Interop.mincore.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.mincore.PERF_COUNTER_DEFINITION[] counters)
         {
             ThreadInfo threadInfo = new ThreadInfo();
             for (int i = 0; i < counters.Length; i++)
             {
-                Interop.PERF_COUNTER_DEFINITION counter = counters[i];
+                Interop.mincore.PERF_COUNTER_DEFINITION counter = counters[i];
                 long value = ReadCounterValue(counter.CounterType, (IntPtr)((long)instancePtr + counter.CounterOffset));
                 switch ((ValueId)counter.CounterNameTitlePtr)
                 {
@@ -731,12 +731,12 @@ namespace System.Diagnostics
             }
         }
 
-        static ProcessInfo GetProcessInfo(Interop.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.PERF_COUNTER_DEFINITION[] counters)
+        static ProcessInfo GetProcessInfo(Interop.mincore.PERF_OBJECT_TYPE type, IntPtr instancePtr, Interop.mincore.PERF_COUNTER_DEFINITION[] counters)
         {
             ProcessInfo processInfo = new ProcessInfo();
             for (int i = 0; i < counters.Length; i++)
             {
-                Interop.PERF_COUNTER_DEFINITION counter = counters[i];
+                Interop.mincore.PERF_COUNTER_DEFINITION counter = counters[i];
                 long value = ReadCounterValue(counter.CounterType, (IntPtr)((long)instancePtr + counter.CounterOffset));
                 switch ((ValueId)counter.CounterNameTitlePtr)
                 {
@@ -795,7 +795,7 @@ namespace System.Diagnostics
 
         static long ReadCounterValue(int counterType, IntPtr dataPtr)
         {
-            if ((counterType & Interop.NtPerfCounterSizeLarge) != 0)
+            if ((counterType & Interop.mincore.PerfCounterOptions.NtPerfCounterSizeLarge) != 0)
                 return Marshal.ReadInt64(dataPtr);
             else
                 return (long)Marshal.ReadInt32(dataPtr);
@@ -891,19 +891,19 @@ namespace System.Diagnostics
 
                     bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
 
-                    status = Interop.mincore.NtQuerySystemInformation(
-                        Interop.NtQuerySystemProcessInformation,
+                    status = Interop.NtDll.NtQuerySystemInformation(
+                        Interop.NtDll.NtQuerySystemProcessInformation,
                         bufferHandle.AddrOfPinnedObject(),
                         bufferSize,
                         out requiredSize);
 
-                    if ((uint)status == Interop.STATUS_INFO_LENGTH_MISMATCH)
+                    if ((uint)status == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                     {
                         if (bufferHandle.IsAllocated) bufferHandle.Free();
                         buffer = null;
                         bufferSize = GetNewBufferSize(bufferSize, requiredSize);
                     }
-                } while ((uint)status == Interop.STATUS_INFO_LENGTH_MISMATCH);
+                } while ((uint)status == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH);
 
                 if (status < 0)
                 { // see definition of NT_SUCCESS(Status) in SDK

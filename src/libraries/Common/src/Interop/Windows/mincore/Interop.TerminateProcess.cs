@@ -9,12 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SECURITY_ATTRIBUTES
-        {
-            internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
-            internal bool bInheritHandle;
-        }
+        [DllImport(Libraries.ProcessThread_L1, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        internal static extern bool TerminateProcess(SafeProcessHandle processHandle, int exitCode);
     }
 }

@@ -4,17 +4,13 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
+using System.Security;
 
 internal partial class Interop
 {
     internal partial class mincore
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SECURITY_ATTRIBUTES
-        {
-            internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
-            internal bool bInheritHandle;
-        }
+        [DllImport(Libraries.ProcessThread_L1, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        internal static extern int GetPriorityClass(SafeProcessHandle handle);
     }
 }

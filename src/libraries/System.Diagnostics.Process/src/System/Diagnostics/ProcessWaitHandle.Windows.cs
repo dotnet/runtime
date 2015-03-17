@@ -20,7 +20,7 @@ namespace System.Diagnostics
                 out waitHandle,
                 0,
                 false,
-                Interop.DUPLICATE_SAME_ACCESS);
+                Interop.mincore.HandleOptions.DUPLICATE_SAME_ACCESS);
 
             if (!succeeded)
             {
