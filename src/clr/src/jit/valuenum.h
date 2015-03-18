@@ -155,17 +155,17 @@ private:
 
     // Returns "true" iff gtOper is a legal value number function.
     // (Requires InitValueNumStoreStatics to have been run.)
-    static inline bool GenTreeOpIsLegalVNFunc(genTreeOps gtOper);
+    static bool GenTreeOpIsLegalVNFunc(genTreeOps gtOper);
 
     // Returns "true" iff "vnf" is a commutative (and thus binary) operator.
     // (Requires InitValueNumStoreStatics to have been run.)
-    static inline bool VNFuncIsCommutative(VNFunc vnf);
+    static bool VNFuncIsCommutative(VNFunc vnf);
 
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
-    static inline bool VNFuncIsComparison(VNFunc vnf);
+    static bool VNFuncIsComparison(VNFunc vnf);
 
     // Returns "true" iff "vnf" can be evaluated for constant arguments.
-    static inline bool CanEvalForConstantArgs(VNFunc vnf);
+    static bool CanEvalForConstantArgs(VNFunc vnf);
 
     // return vnf(v0)
     template<typename T>
@@ -1176,22 +1176,41 @@ private:
 // Inline functions.
 
 // static
-bool ValueNumStore::GenTreeOpIsLegalVNFunc(genTreeOps gtOper)
+inline bool ValueNumStore::GenTreeOpIsLegalVNFunc(genTreeOps gtOper)
 {
     return (s_vnfOpAttribs[gtOper] & VNFOA_IllegalGenTreeOp) == 0;
 }
 
 // static
-bool ValueNumStore::VNFuncIsCommutative(VNFunc vnf)
+inline bool ValueNumStore::VNFuncIsCommutative(VNFunc vnf)
 {
     return (s_vnfOpAttribs[vnf] & VNFOA_Commutative) != 0;
 }
 
-bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
+inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
 {
     if (vnf >= VNF_Boundary) return false;
     genTreeOps gtOp = genTreeOps(vnf);
     return GenTree::OperIsCompare(gtOp) != 0;
+}
+
+template <typename T>
+inline T ValueNumStore::CoerceTypRefToT(Chunk* c, unsigned offset)
+{
+    noway_assert(sizeof(T) >= sizeof(VarTypConv<TYP_REF>::Type));
+    return (T) reinterpret_cast<VarTypConv<TYP_REF>::Type*>(c->m_defs)[offset];
+}
+
+template <>
+inline float ValueNumStore::CoerceTypRefToT<float>(Chunk* c, unsigned offset)
+{
+    unreached();
+}
+
+template <>
+inline double ValueNumStore::CoerceTypRefToT<double>(Chunk* c, unsigned offset)
+{
+    unreached();
 }
 
 /*****************************************************************************/
