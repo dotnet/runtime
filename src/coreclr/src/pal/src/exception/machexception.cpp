@@ -525,12 +525,10 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord)
 #define REX_SIB_BASE_EXT        0x01        // XXXXXXX1
 #define REX_OPCODE_REG_EXT      0x01        // XXXXXXX1
 
-bool IsDivByZeroAnIntegerOverflow(EXCEPTION_POINTERS *pExceptionPointers)
+bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord)
 {
-    _ASSERTE(pExceptionPointers->ExceptionRecord->ExceptionCode  == EXCEPTION_INT_DIVIDE_BY_ZERO);
+    _ASSERTE(pExRecord->ExceptionCode  == EXCEPTION_INT_DIVIDE_BY_ZERO);
 
-    PCONTEXT pContext = pExceptionPointers->ContextRecord;
-    
     BYTE * pCode = (BYTE*)(size_t)pContext->Rip;
     INT64  divisor  = 0;
     bool fIsOperand64bit = false;
@@ -635,10 +633,6 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
     }
 #endif // FEATURE_PAL_SXS
 
-    EXCEPTION_POINTERS pointers;
-    pointers.ExceptionRecord = pExRecord;
-    pointers.ContextRecord = pContext;
-
 #if defined(_AMD64_)
     // MACTODO_Future: Pull the x86 version here as well.
     if (pExRecord->ExceptionCode == EXCEPTION_INT_DIVIDE_BY_ZERO)
@@ -650,16 +644,28 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
         //
         // Thus, we will attempt to decode the instruction @ RIP to determine if that
         // is the case using the faulting context.
-        if (IsDivByZeroAnIntegerOverflow(&pointers))
+        if (IsDivByZeroAnIntegerOverflow(pContext, pExRecord))
         {
             // Yes, it is. So change the exception code to reflect that.
-            pointers.ExceptionRecord->ExceptionCode = EXCEPTION_INT_OVERFLOW;
+            pExRecord->ExceptionCode = EXCEPTION_INT_OVERFLOW;
         }
     }
 #endif // defined(_AMD64_)
 
-    // Raise the exception
-    SEHRaiseException(pThread, &pointers, 0);
+    if (g_hardwareExceptionHandler != NULL)
+    {
+        PAL_SEHException exception(pExRecord, pContext);
+
+        g_hardwareExceptionHandler(&exception);
+
+        ASSERT("HandleHardwareException has returned, it should not.\n");
+    }
+    else
+    {
+        ASSERT("Unhandled hardware exception\n");
+    }
+
+    ExitProcess(pExRecord->ExceptionCode);
 }
 
 #if defined(_X86_) || defined(_AMD64_)
