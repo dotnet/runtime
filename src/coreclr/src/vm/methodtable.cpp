@@ -633,6 +633,25 @@ void MethodTable::SetHasTypeEquivalence()
 }
 #endif
 
+#ifdef FEATURE_ICASTABLE
+void MethodTable::SetICastable()
+{
+    LIMITED_METHOD_CONTRACT;
+    SetFlag(enum_flag_ICastable);
+}
+#endif
+
+BOOL MethodTable::IsICastable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_ICASTABLE    
+    return GetFlag(enum_flag_ICastable);
+#else
+    return FALSE;    
+#endif
+}
+  
+
 #endif // !DACCESS_COMPILE
 
 //==========================================================================================
@@ -775,6 +794,43 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         // use to dispatch the call.
         RETURN(pItfMD);
     }
+
+#ifdef FEATURE_ICASTABLE
+    // In case of ICastable, instead of trying to find method implementation in the real object type
+    // we call pObj.GetValueInternal() and call GetMethodDescForInterfaceMethod() again with whatever type it returns.
+    // It allows objects that implement ICastable to mimic behavior of other types.             
+    if (pServerMT->IsICastable() && 
+        !pItfMD->HasMethodInstantiation() && 
+        !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way 
+    {
+        GCStress<cfg_any>::MaybeTrigger();
+
+        // Make call to obj.GetImplType(interfaceTypeObj)
+        MethodDesc *pGetImplTypeMD = pServerMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(METHOD__ICASTABLE__GETIMPLTYPE));
+        OBJECTREF ownerManagedType = ownerType.GetManagedClassObject(); //GC triggers
+
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pGetImplTypeMD);
+        
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pServer);
+        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(ownerManagedType);
+
+        OBJECTREF impTypeObj = NULL;
+        CALL_MANAGED_METHOD_RETREF(impTypeObj, OBJECTREF, args);
+
+        INDEBUG(ownerManagedType = NULL); //ownerManagedType wasn't protected during the call
+        if (impTypeObj == NULL) // GetImplType returns default(RuntimeTypeHandle)
+        {
+            COMPlusThrow(kEntryPointNotFoundException);    
+        }
+
+        ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
+        TypeHandle resulTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+
+        RETURN(pResultMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD));
+    }
+#endif    
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
