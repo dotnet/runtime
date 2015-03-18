@@ -17,11 +17,6 @@ set "__RootBinDir=%__ProjectDir%\binaries"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
 
-:: Ensure we are not already running in a development prompt
-if "%VisualStudioVersion%" == "" goto Arg_Loop
-echo Please make sure to run %0 from a normal prompt (not from a VS Developer Command Prompt!) 
-goto :eof
-
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "/?" goto Usage
@@ -151,6 +146,9 @@ endlocal
 REM setlocal to prepare for vsdevcmd.bat
 setlocal
 set __AdditionalMSBuildArgs=
+
+rem Explicitly set Platform causes conflicts in mscorlib project files. Clear it to allow building from VS x64 Native Tools Command Prompt
+set Platform=
 
 if defined __UnixMscorlibOnly set __AdditionalMSBuildArgs=/p:BuildNugetPackage=false
 
