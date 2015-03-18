@@ -2,15 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
-using System;
 using System.Runtime.InteropServices;
-using System.Security;
 
 internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.ProcessThread_L1, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.ProcessThread_L1, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int GetPriorityClass(SafeProcessHandle handle);
     }
 }

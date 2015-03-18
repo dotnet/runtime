@@ -7,7 +7,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Psapi, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true, EntryPoint = "K32EnumProcesses")]
+        [DllImport(Libraries.Psapi, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "K32EnumProcesses")]
         internal static extern bool EnumProcesses(int[] processIds, int size, out int needed);
     }
 }

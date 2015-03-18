@@ -12,8 +12,8 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct LUID
         {
-            public int LowPart;
-            public int HighPart;
+            internal int LowPart;
+            internal int HighPart;
         }
 
     }
