@@ -18,10 +18,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\ArrayT.cs">
+    <Compile Include="$(CommonPath)\System\ArrayT.cs">
       <Link>Common\System\ArrayT.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
