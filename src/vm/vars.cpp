@@ -94,6 +94,11 @@ GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 GPTR_IMPL(MethodTable,      g_pBaseRuntimeClass);
 #endif
 
+#ifdef FEATURE_ICASTABLE
+GPTR_IMPL(MethodTable,      g_pICastableInterface);
+#endif // FEATURE_ICASTABLE
+
+
 GPTR_IMPL(MethodDesc,       g_pPrepareConstrainedRegionsMethod);
 GPTR_IMPL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
