@@ -48,10 +48,89 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SecurityOptions.cs">
+      <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleOptions.cs">
+      <Link>Common\Interop\Windows\Interop.HandleOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.PipeOptions.cs">
+      <Link>Common\Interop\Windows\Interop.PipeOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileTypes.cs">
+      <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
+      <Link>Common\Interop\Windows\Interop.GetCurrentProcess.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateHandle_IntPtr.cs">
+      <Link>Common\Interop\Windows\Interop.DuplicateHandle_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreatePipe_SafePipeHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CreatePipe_SafePipeHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConnectNamedPipe.cs">
+      <Link>Common\Interop\Windows\Interop.ConnectNamedPipe.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WaitNamedPipe.cs">
+      <Link>Common\Interop\Windows\Interop.WaitNamedPipe.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetNamedPipeHandleState.cs">
+      <Link>Common\Interop\Windows\Interop.GetNamedPipeHandleState.cs</Link>
+    </Compile>
+	<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetNamedPipeInfo.cs">
+      <Link>Common\Interop\Windows\Interop.GetNamedPipeInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateNamedPipeClient.cs">
+      <Link>Common\Interop\Windows\Interop.CreateNamedPipeClient.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetNamedPipeHandleState.cs">
+      <Link>Common\Interop\Windows\Interop.SetNamedPipeHandleState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CancelIoEx.cs">
+      <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FlushFileBuffers.cs">
+      <Link>Common\Interop\Windows\Interop.FlushFileBuffers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs">
+      <Link>Common\Interop\Windows\Interop.ReadFile_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs">
+      <Link>Common\Interop\Windows\Interop.WriteFile_IntPtr.cs</Link>
+    </Compile>
+	<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs</Link>
+    </Compile>
+		<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DisconnectNamedPipe.cs">
+      <Link>Common\Interop\Windows\Interop.DisconnectNamedPipe.cs</Link>
+    </Compile>
+		<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateNamedPipe.cs">
+      <Link>Common\Interop\Windows\Interop.CreateNamedPipe.cs</Link>
+    </Compile>	
+			<Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MaxLengths.cs">
+      <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
+    </Compile>	
+	
+	
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
-    <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\IOCancellationHelper.Windows.cs" />

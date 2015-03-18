@@ -20,7 +20,6 @@ internal partial class Interop
         [DllImport(Interop.Libraries.User32, CharSet = CharSet.Unicode, EntryPoint = "MessageBoxW", ExactSpelling = true, SetLastError = true)]
         private static extern int MessageBoxSystem(IntPtr hWnd, string text, string caption, int type);
 
-        [System.Security.SecurityCritical]
         public static int MessageBox(IntPtr hWnd, string text, string caption, int type)
         {
             try

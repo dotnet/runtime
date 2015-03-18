@@ -10,7 +10,7 @@ namespace System.IO
             private readonly bool _asDirectory;
 
             // Cache the file/directory information
-            internal Interop.WIN32_FILE_ATTRIBUTE_DATA _data;
+            internal Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA _data;
 
             // Cache any error retrieving the file/directory information
             // We use this field in conjunction with the Refresh method which should never throw.
@@ -27,7 +27,7 @@ namespace System.IO
                 _dataInitialized = -1;
             }
 
-            public Win32FileSystemObject(string fullPath, Interop.WIN32_FIND_DATA findData, bool asDirectory)
+            public Win32FileSystemObject(string fullPath, Interop.mincore.WIN32_FIND_DATA findData, bool asDirectory)
             {
                 _asDirectory = asDirectory;
                 _fullPath = fullPath;
@@ -86,7 +86,7 @@ namespace System.IO
                         // but Exists is supposed to return true or false.
                         return false;
                     }
-                    return (_data.fileAttributes != -1) && (_asDirectory == ((_data.fileAttributes & Interop.FILE_ATTRIBUTE_DIRECTORY) == Interop.FILE_ATTRIBUTE_DIRECTORY));
+                    return (_data.fileAttributes != -1) && (_asDirectory == ((_data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY));
                 }
             }
 
@@ -133,7 +133,7 @@ namespace System.IO
             {
                 if (_dataInitialized == -1)
                 {
-                    _data = new Interop.WIN32_FILE_ATTRIBUTE_DATA();
+                    _data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
                     Refresh();
                 }
 

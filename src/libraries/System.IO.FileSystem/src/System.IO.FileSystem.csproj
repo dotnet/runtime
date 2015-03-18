@@ -49,7 +49,7 @@
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="Interop\Interop.Windows.cs" />
+    <Compile Include="Common\Helpers.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="System\IO\FileStream.Win32.cs" />
@@ -79,21 +79,129 @@
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.CreateDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SecurityOptions.cs">
+      <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileTypes.cs">
+      <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileType_SafeHandle.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FlushFileBuffers.cs">
+      <Link>Common\Interop\Windows\Interop.FlushFileBuffers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetEndOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.SetEndOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetFilePointerEx.cs">
+      <Link>Common\Interop\Windows\Interop.SetFilePointerEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs">
+      <Link>Common\Interop\Windows\Interop.ReadFile_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_IntPtr.cs">
+      <Link>Common\Interop\Windows\Interop.WriteFile_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DeleteFile.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileInformationByHandleEx.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetFileInformationByHandle.cs">
+      <Link>Common\Interop\Windows\Interop.SetFileInformationByHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileAttributesEx.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileAttributesEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetFileAttributes.cs">
+      <Link>Common\Interop\Windows\Interop.SetFileAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MoveFileEx.cs">
+      <Link>Common\Interop\Windows\Interop.MoveFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.GetCurrentDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetCurrentDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.SetCurrentDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLongPathName.cs">
+      <Link>Common\Interop\Windows\Interop.GetLongPathName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DeleteVolumeMountPoint.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RemoveDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.RemoveDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FindFirstFileEx.cs">
+      <Link>Common\Interop\Windows\Interop.FindFirstFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FindNextFile.cs">
+      <Link>Common\Interop\Windows\Interop.FindNextFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FindClose.cs">
+      <Link>Common\Interop\Windows\Interop.FindClose.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileAttributes.cs">
+      <Link>Common\Interop\Windows\Interop.FileAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MaxLengths.cs">
+      <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true'">
-    <Compile Include="Interop\Interop.Win7.cs" />
+    <Compile Include="Common\Helpers.Win7.cs" />
     <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFileEx.cs">
+      <Link>Common\Interop\Windows\Interop.CopyFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetErrorMode.cs">
+      <Link>Common\Interop\Windows\Interop.SetErrorMode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CancelIoEx.cs">
+      <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
-    <Compile Include="Interop\Interop.Win8.cs" />
+    <Compile Include="Common\Helpers.Win8.cs" />
     <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
     <Compile Include="System\IO\MultiplexingWin32WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTIOExtensions.cs" />
     <Compile Include="System\IO\WinRTFileStream.cs" />
     <Compile Include="System\IO\WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTFileSystemObject.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CopyFile2.cs">
+      <Link>Common\Interop\Windows\Interop.CopyFile2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFile2.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
