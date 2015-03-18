@@ -9,6 +9,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) 	\
 	$(GLIB_CFLAGS)
 
+if !HOST_WIN32
 if !DISABLE_LIBRARIES
 if !DISABLE_PROFILER
 bin_PROGRAMS = mprof-report
@@ -25,6 +26,7 @@ libmono_profiler_cov_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespac
 endif
 if PLATFORM_ANDROID
 libmono_profiler_log_la_LDFLAGS = -avoid-version
+endif
 endif
 endif
 endif
