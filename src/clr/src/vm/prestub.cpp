@@ -984,6 +984,26 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
         {
             pDispatchingMT = curobj->GetTrueMethodTable();
 
+#ifdef FEATURE_ICASTABLE
+            if (pDispatchingMT->IsICastable())
+            {
+                MethodTable *pMDMT = pMD->GetMethodTable();
+                TypeHandle objectType(pDispatchingMT);
+                TypeHandle methodType(pMDMT);
+
+                GCStress<cfg_any>::MaybeTrigger();
+                INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
+                if (!objectType.CanCastTo(methodType)) 
+                {
+                    // Apperantly ICastable magic was involved when we chose this method to be called
+                    // that's why we better stick to the MethodTable it belongs to, otherwise 
+                    // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
+
+                    pDispatchingMT = pMDMT;
+                }
+            }
+#endif // FEATURE_ICASTABLE
+
             // For value types, the only virtual methods are interface implementations.
             // Thus pDispatching == pMT because there
             // is no inheritance in value types.  Note the BoxedEntryPointStubs are shared
@@ -1958,13 +1978,14 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             else
                 token = DispatchToken::CreateDispatchToken(slot);
 
-            OBJECTREF pObj = pEMFrame->GetThis();
-            if (pObj == NULL) {
+            OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
+            _ASSERTE(protectedObj != NULL);
+            if (*protectedObj == NULL) {
                 COMPlusThrow(kNullReferenceException);
             }
-
+            
             StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-            pCode = pMgr->ResolveWorker(&callSite, pObj, token, VirtualCallStubManager::SK_LOOKUP);
+            pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
             _ASSERTE(pCode != NULL);
         }
         else

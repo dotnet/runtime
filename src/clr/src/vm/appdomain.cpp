@@ -2979,6 +2979,10 @@ void SystemDomain::LoadBaseSystemClasses()
 #endif // _DEBUG
 #endif
 
+#ifdef FEATURE_ICASTABLE
+    g_pICastableInterface = MscorlibBinder::GetClass(CLASS__ICASTABLE);
+#endif // FEATURE_ICASTABLE
+
     // Load a special marker method used to detect Constrained Execution Regions
     // at jit time.
     g_pPrepareConstrainedRegionsMethod = MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__PREPARE_CONSTRAINED_REGIONS);
