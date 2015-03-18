@@ -1052,7 +1052,7 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 			/* Need to add an out wrapper */
 
 			/* FIXME: We have no access to the gsharedvt signature/gsctx used by the caller, so have to construct it ourselves */
-			gmethod = mini_get_shared_method (method);
+			gmethod = mini_get_shared_method_full (method, FALSE, TRUE);
 			sig = mono_method_signature (method);
 			gsig = mono_method_signature (gmethod);
 			ctx = mono_method_get_context (gmethod);
@@ -2902,7 +2902,8 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		MonoGenericContext *context = mono_method_get_context (method);
 		MonoGenericInst *inst;
 
-		partial = mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE);
+		if (!is_gsharedvt)
+			partial = mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE);
 
 		gsharedvt = is_gsharedvt || (!partial && mini_is_gsharedvt_sharable_method (method));
 
