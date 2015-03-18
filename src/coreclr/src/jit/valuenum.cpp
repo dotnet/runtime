@@ -87,25 +87,6 @@ ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc)
   m_mapSelectBudget = fMapSelBudget.val(CLRConfig::INTERNAL_JitVNMapSelBudget);
 }
 
-template <typename T>
-T ValueNumStore::CoerceTypRefToT(Chunk* c, unsigned offset)
-{
-    noway_assert(sizeof(T) >= sizeof(VarTypConv<TYP_REF>::Type));
-    return (T) reinterpret_cast<VarTypConv<TYP_REF>::Type*>(c->m_defs)[offset];
-}
-
-template <>
-float ValueNumStore::CoerceTypRefToT<float>(Chunk* c, unsigned offset)
-{
-    unreached();
-}
-
-template <>
-double ValueNumStore::CoerceTypRefToT<double>(Chunk* c, unsigned offset)
-{
-    unreached();
-}
-
 // static.
 template<typename T>
 T ValueNumStore::EvalOp(VNFunc vnf, T v0)
