@@ -145,7 +145,7 @@ namespace System.IO
             _bufferLength = bufferSize;
             _useAsyncIO = useAsyncIO;
 
-            if (_parent.CanSeek)
+            if (CanSeek)
             {
                 SeekCore(0, SeekOrigin.Current);
             }
