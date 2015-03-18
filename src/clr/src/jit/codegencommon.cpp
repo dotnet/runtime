@@ -4849,7 +4849,6 @@ void CodeGen::genCheckUseBlockInit()
         // so reserve two extra callee saved
         // This is better than pushing eax, ecx, because we in the later
         // we will mess up already computed offsets on the stack (for ESP frames)
-
         regSet.rsSetRegsModified(RBM_EDI);
 
         // For register arguments we may have to save ECX (and RDI on Amd64 System V OSes.)
@@ -5420,23 +5419,43 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
 
 #else // !CPU_LOAD_STORE_ARCH
 
+        // Code size for each instruction. We need this because the 
+        // backward branch is hard-coded with the number of bytes to branch.
+
         // loop:
+        // For x86
         //      test [esp + eax], eax       3
         //      sub eax, 0x1000             5
         //      cmp EAX, -frameSize         5
         //      jge loop                    2
+        //
+        // For AMD64 using RAX
+        //      test [rsp + rax], rax       4
+        //      sub rax, 0x1000             6
+        //      cmp rax, -frameSize         6
+        //      jge loop                    2
+        //
+        // For AMD64 using RBP
+        //      test [rsp + rbp], rbp       4
+        //      sub rbp, 0x1000             7
+        //      cmp rbp, -frameSize         7
+        //      jge loop                    2
         getEmitter()->emitIns_R_ARR(INS_TEST, EA_PTRSIZE, initReg, REG_SPBASE, initReg, 0);
         inst_RV_IV(INS_sub,  initReg, CORINFO_PAGE_SIZE, EA_PTRSIZE);
         inst_RV_IV(INS_cmp,  initReg, -((ssize_t)frameSize), EA_PTRSIZE);
-        inst_IV   (INS_jge, -15 AMD64_ONLY(-3));   // Branch backwards to Start of Loop
+        int extraBytesForBackJump = 0;
+#ifdef _TARGET_AMD64_
+        extraBytesForBackJump = ((initReg == REG_EAX) ? 3 : 5);
+#endif // _TARGET_AMD64_
+        inst_IV(INS_jge, -15 - extraBytesForBackJump);   // Branch backwards to Start of Loop
 
 #endif // !CPU_LOAD_STORE_ARCH
 
         *pInitRegZeroed = false;  // The initReg does not contain zero
 
 #ifdef _TARGET_XARCH_
-        // The backward branch above depends upon using EAX
-        assert(initReg == REG_EAX);
+        // The backward branch above depends upon using EAX (and for Amd64 funclets EBP)
+        assert((initReg == REG_EAX) AMD64_ONLY(|| (initReg == REG_EBP)));
 
         if (pushedStubParam)
         {
