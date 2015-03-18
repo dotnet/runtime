@@ -24,6 +24,7 @@ class Thread;
 #include "interoputil.h"
 
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
+bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
 #if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
 

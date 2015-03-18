@@ -5941,6 +5941,13 @@ public:
     }
 };
 
+typedef VOID (PALAPI *PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetHardwareExceptionHandler(IN PHARDWARE_EXCEPTION_HANDLER handler);
+
 #endif // __cplusplus
 
 // Start of a try block for exceptions raised by RaiseException
