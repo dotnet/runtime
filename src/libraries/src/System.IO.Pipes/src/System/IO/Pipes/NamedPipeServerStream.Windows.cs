@@ -39,7 +39,7 @@ namespace System.IO.Pipes
 
 
             int openMode = ((int)direction) |
-                           (maxNumberOfServerInstances == 1 ? Interop.FILE_FLAG_FIRST_PIPE_INSTANCE : 0) |
+                           (maxNumberOfServerInstances == 1 ? Interop.mincore.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE : 0) |
                            (int)options;
 
             // We automatically set the ReadMode to match the TransmissionMode.
@@ -51,7 +51,7 @@ namespace System.IO.Pipes
                 maxNumberOfServerInstances = 255;
             }
 
-            Interop.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
+            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
             SafePipeHandle handle = Interop.mincore.CreateNamedPipe(fullPipeName, openMode, pipeModes,
                 maxNumberOfServerInstances, outBufferSize, inBufferSize, 0, ref secAttrs);
 
@@ -81,17 +81,17 @@ namespace System.IO.Pipes
             }
             else
             {
-                if (!Interop.mincore.ConnectNamedPipe(InternalHandle, Interop.NULL))
+                if (!Interop.mincore.ConnectNamedPipe(InternalHandle, IntPtr.Zero))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
-                    if (errorCode != Interop.ERROR_PIPE_CONNECTED)
+                    if (errorCode != Interop.mincore.Errors.ERROR_PIPE_CONNECTED)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
 
                     // pipe already connected
-                    if (errorCode == Interop.ERROR_PIPE_CONNECTED && State == PipeState.Connected)
+                    if (errorCode == Interop.mincore.Errors.ERROR_PIPE_CONNECTED && State == PipeState.Connected)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
                     }
@@ -144,10 +144,10 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
 
-            StringBuilder userName = new StringBuilder(Interop.CREDUI_MAX_USERNAME_LENGTH + 1);
+            StringBuilder userName = new StringBuilder(Interop.mincore.CREDUI_MAX_USERNAME_LENGTH + 1);
 
-            if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, Interop.NULL, Interop.NULL,
-                Interop.NULL, Interop.NULL, userName, userName.Capacity))
+            if (!Interop.mincore.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, IntPtr.Zero,
+                IntPtr.Zero, IntPtr.Zero, userName, userName.Capacity))
             {
                 WinIOError(Marshal.GetLastWin32Error());
             }
@@ -287,7 +287,7 @@ namespace System.IO.Pipes
             {
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (errorCode == Interop.ERROR_IO_PENDING)
+                if (errorCode == Interop.mincore.Errors.ERROR_IO_PENDING)
                 {
                     if (cancellationHelper != null)
                     {
@@ -302,7 +302,7 @@ namespace System.IO.Pipes
                 asyncResult._overlapped = null;
 
                 // Did the client already connect to us?
-                if (errorCode == Interop.ERROR_PIPE_CONNECTED)
+                if (errorCode == Interop.mincore.Errors.ERROR_PIPE_CONNECTED)
                 {
                     if (State == PipeState.Connected)
                     {
@@ -382,7 +382,7 @@ namespace System.IO.Pipes
             // Now check for any error during the read.
             if (afsar._errorCode != 0)
             {
-                if (afsar._errorCode == Interop.ERROR_OPERATION_ABORTED)
+                if (afsar._errorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
                 {
                     if (cancellationHelper != null)
                     {
@@ -412,7 +412,7 @@ namespace System.IO.Pipes
             asyncResult._overlapped = null;
 
             // Special case for when the client has already connected to us.
-            if (errorCode == Interop.ERROR_PIPE_CONNECTED)
+            if (errorCode == Interop.mincore.Errors.ERROR_PIPE_CONNECTED)
             {
                 errorCode = 0;
             }

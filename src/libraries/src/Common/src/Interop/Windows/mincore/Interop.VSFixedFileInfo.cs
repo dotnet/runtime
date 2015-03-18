@@ -10,19 +10,19 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct VS_FIXEDFILEINFO
         {
-            public uint dwSignature;
-            public uint dwStrucVersion;
-            public uint dwFileVersionMS;
-            public uint dwFileVersionLS;
-            public uint dwProductVersionMS;
-            public uint dwProductVersionLS;
-            public uint dwFileFlagsMask;
-            public uint dwFileFlags;
-            public uint dwFileOS;
-            public uint dwFileType;
-            public uint dwFileSubtype;
-            public uint dwFileDateMS;
-            public uint dwFileDateLS;
+            internal uint dwSignature;
+            internal uint dwStrucVersion;
+            internal uint dwFileVersionMS;
+            internal uint dwFileVersionLS;
+            internal uint dwProductVersionMS;
+            internal uint dwProductVersionLS;
+            internal uint dwFileFlagsMask;
+            internal uint dwFileFlags;
+            internal uint dwFileOS;
+            internal uint dwFileType;
+            internal uint dwFileSubtype;
+            internal uint dwFileDateMS;
+            internal uint dwFileDateLS;
         }
     }
 }

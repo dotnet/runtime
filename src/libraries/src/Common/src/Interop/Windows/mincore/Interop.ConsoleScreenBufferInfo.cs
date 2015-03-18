@@ -20,17 +20,17 @@ internal partial class Interop
         [StructLayoutAttribute(LayoutKind.Sequential)]
         internal partial struct COORD
         {
-            public short X;
-            public short Y;
+            internal short X;
+            internal short Y;
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]
         internal partial struct SMALL_RECT
         {
-            public short Left;
-            public short Top;
-            public short Right;
-            public short Bottom;
+            internal short Left;
+            internal short Top;
+            internal short Right;
+            internal short Bottom;
         }
 
         internal enum Color : short
