@@ -23,11 +23,14 @@ The CLR fixes problems like these by defining a [very complete specification][ec
 - The lifetime semantics of a loaded program, the mechanism by which one CLR EXE file can refer to another CLR EXE and the rules on how the runtime finds the referenced files at execution time.
 - A class library that leverages the features that the CLR provides (e.g., garbage collection, exceptions, or generic types) to give access both to basic functionality (e.g., integers, strings, arrays, lists, or dictionaries) as well as to operating system services (e.g., files, network, or user interaction).
 
+Multi-language Support
+----------------------
+
 Defining, specifying and implementing all of these details is a huge undertaking, which is why complete abstractions like the CLR are very rare.  In fact, the vast majority of such reasonably complete abstractions were built for single languages.  For example, the Java runtime, the Perl interpreter or the early version of the Visual Basic runtime offer similarly complete abstraction boundaries.  What distinguishes the CLR from these earlier efforts is its multi-language nature.  With the possible exception of Visual Basic (because it leverages the COM object model), the experience within the language is often very good, but interoperating with programs written in other languages is very difficult at best.  Interoperation is difficult because these languages can only communicate with "foreign" languages by using the primitives provided by the operating system.  Because the OS abstraction level is so low (e.g., the operating system has no concept of a garbage-collected heap), needlessly complicated techniques are necessary.  By providing a COMMON LANGUAGE RUNTIME, the CLR allows languages to communicate with each other with high-level constructs (e.g., GC-collected structures), easing the interoperation burden dramatically.
 
 Because the runtime is shared among _many_ languages, it means that more resources can be put into supporting it well.  Building good debuggers and profilers for a language is a lot of work, and thus they exist in a full-featured form only for the most important programming languages.  Nevertheless, because languages that are implemented on the CLR can reuse this infrastructure, the burden on any particular language is reduced substantially.  Perhaps even more important, any language built on the CLR immediately has access to _all_ the class libraries built on top of the CLR.  This large (and growing) body of (debugged and supported) functionality is a huge reason why the CLR has been so successful.
 
-In short, the runtime is a complete specification of the exact bits one has to put in a file to create and run a program.  The virtual machine that runs these files is at a high level appropriate for implementing a broad class of programming languages.  This virtual machine, along with an ever growing body of class libraries that run on that virtual machine, is what we call the common language runtime ( CLR).
+In short, the runtime is a complete specification of the exact bits one has to put in a file to create and run a program.  The virtual machine that runs these files is at a high level appropriate for implementing a broad class of programming languages.  This virtual machine, along with an ever growing body of class libraries that run on that virtual machine, is what we call the common language runtime (CLR).
 
 # The Primary Goal of the CLR
 
@@ -250,12 +253,10 @@ Phew!  The runtime does a lot! It has taken many pages just to describe _some_ o
 - [MSDN Entry for the CLR][clr]
 - [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)
 - [ECMA Standard for the Common Language Infrastructure (CLI)][ecma-spec]
-  - [Partition I Concepts and Architecture](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20I.pdf)
-  - [Partition II Meta Data Definition and Semantics](http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20II.pdf)
-  - [Partition III CIL Instruction Set][cil-spec]
 - [.NET Framework Design Guidelines](http://msdn.microsoft.com/en-us/library/ms229042.aspx)
+- [CoreCLR Repo Documentation](README.md)
 
-[ecma-spec]: http://www.ecma-international.org/publications/standards/Ecma-335.htm
-[clr]: http://msdn.microsoft.com/en-us/library/8bs2ecf4(VS.71).aspx
+[clr]: http://msdn.microsoft.com/library/8bs2ecf4.aspx
+[ecma-spec]: dotnet-standards.md 
 [cil-spec]: http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf
 [fx-design-guidelines]: http://msdn.microsoft.com/en-us/library/ms229042.aspx
