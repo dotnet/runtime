@@ -93,6 +93,10 @@ bool FixNonvolatileRegisters(UINT_PTR  uOriginalSP,
 
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
+#ifdef FEATURE_PAL
+VOID PALAPI HandleHardwareException(PAL_SEHException* ex);
+#endif // FEATURE_PAL
+
 static ExceptionTracker* GetTrackerMemory()
 {
     CONTRACTL
@@ -148,6 +152,11 @@ void InitializeExceptionHandling()
 
     // Initialize the lock used for synchronizing access to the stacktrace in the exception object
     g_StackTraceArrayLock.Init(LOCK_TYPE_DEFAULT, TRUE);
+
+#ifdef FEATURE_PAL
+    // Register handler of hardware exceptions like null reference in PAL
+    PAL_SetHardwareExceptionHandler(HandleHardwareException);
+#endif // FEATURE_PAL
 }
 
 struct UpdateObjectRefInResumeContextCallbackState
@@ -4595,6 +4604,29 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
     {
         DispatchManagedException(ex);
     }
+}
+
+VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
+{
+    // Create frame necessary for the exception handling
+    FrameWithCookie<FaultingExceptionFrame> fef;
+#if defined(WIN64EXCEPTIONS)
+    *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
+#endif // WIN64EXCEPTIONS
+    GCX_COOP();
+    fef.InitAndLink(&ex->ContextRecord);
+
+    // A hardware exception is handled only if it happened in a jitted code or 
+    // in one of the JIT helper functions (JIT_MemSet, ...)
+    PCODE controlPc = GetIP(&ex->ContextRecord);
+    if (ExecutionManager::IsManagedCode(controlPc) || IsIPInMarkedJitHelper(controlPc))
+    {
+        DispatchManagedException(*ex);
+        UNREACHABLE();
+    }
+
+    _ASSERTE(!"HandleHardwareException: Hardware exception happened out of managed code");
+    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
 
 #endif // FEATURE_PAL

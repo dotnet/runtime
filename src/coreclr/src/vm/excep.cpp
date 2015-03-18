@@ -7233,8 +7233,9 @@ EXTERN_C void JIT_WriteBarrier_Debug_End();
 EXTERN_C void FCallMemcpy_End();
 #endif
 
-static
-bool IsIPExcluded(UINT_PTR uControlPc)
+// Check if the passed in instruction pointer is in one of the
+// JIT helper functions.
+bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -7292,7 +7293,7 @@ AdjustContextForWriteBarrier(
     CONTEXT             tempContext;
     CONTEXT*            pExceptionContext = pContext;
 
-    BOOL fExcluded = IsIPExcluded((UINT_PTR)f_IP);
+    BOOL fExcluded = IsIPInMarkedJitHelper((UINT_PTR)f_IP);
 
     if (fExcluded)
     {
