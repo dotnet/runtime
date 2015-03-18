@@ -21,13 +21,15 @@
 #include <Winbase.h>
 #endif
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#if defined(_POSIX_VERSION)
 #include <sys/errno.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
-#include <sys/proc.h>
 #include <sys/resource.h>
+#endif
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+#include <sys/proc.h>
 #if defined(__APPLE__)
 #include <mach/mach.h>
 #endif
