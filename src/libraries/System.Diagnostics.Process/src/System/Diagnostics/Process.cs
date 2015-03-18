@@ -482,6 +482,11 @@ namespace System.Diagnostics
             {
                 if (_startInfo == null)
                 {
+                    if (Associated && Process.GetCurrentProcessId() != Id)
+                    {
+                        throw new InvalidOperationException(SR.CantGetProcessStartInfo);
+                    }
+
                     _startInfo = new ProcessStartInfo();
                 }
                 return _startInfo;
