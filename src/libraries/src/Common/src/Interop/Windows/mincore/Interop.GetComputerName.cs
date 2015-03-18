@@ -7,12 +7,14 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Kernel32_L2, CharSet = System.Runtime.InteropServices.CharSet.Unicode, EntryPoint = "GetComputerNameW")]
+        [DllImport(Libraries.Kernel32_L2, CharSet = CharSet.Unicode, EntryPoint = "GetComputerNameW")]
         private extern static int GetComputerName(char[] lpBuffer, ref uint nSize);
+
+        private const int MacMachineNameLength = 256;
 
         internal static string GetComputerName()
         {
-            char[] buffer = new char[256];
+            char[] buffer = new char[MacMachineNameLength];
             uint length = (uint)buffer.Length;
 
             Interop.mincore.GetComputerName(buffer, ref length);

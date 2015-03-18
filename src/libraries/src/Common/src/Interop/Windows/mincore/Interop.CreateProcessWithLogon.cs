@@ -22,7 +22,6 @@ internal partial class Interop
             [MarshalAs(UnmanagedType.LPTStr)] string lpCurrentDirectory,
             STARTUPINFO lpStartupInfo,
             PROCESS_INFORMATION lpProcessInformation);
-        //    }
 
         [Flags]
         internal enum LogonFlags

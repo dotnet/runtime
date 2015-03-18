@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.ProcessThread_L1_1, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.ProcessThread_L1_1, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool GetThreadTimes(SafeThreadHandle handle, out long creation, out long exit, out long kernel, out long user);
     }
 }

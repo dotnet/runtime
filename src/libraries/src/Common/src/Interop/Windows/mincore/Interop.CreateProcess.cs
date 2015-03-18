@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.ProcessThread_L1, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateProcessW")]
+        [DllImport(Libraries.ProcessThread_L1, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateProcessW")]
         internal static extern bool CreateProcess(
             [MarshalAs(UnmanagedType.LPTStr)] string lpApplicationName,
             StringBuilder lpCommandLine,
@@ -55,7 +55,8 @@ internal partial class Interop
             internal SafeFileHandle hStdOutput = new SafeFileHandle(IntPtr.Zero, false);
             internal SafeFileHandle hStdError = new SafeFileHandle(IntPtr.Zero, false);
 
-            internal STARTUPINFO()
+            internal
+                STARTUPINFO()
             {
                 cb = Marshal.SizeOf(this);
             }

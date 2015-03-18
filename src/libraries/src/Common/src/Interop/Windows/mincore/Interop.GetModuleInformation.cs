@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Psapi_Obsolete, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true, EntryPoint = "K32GetModuleInformation")]
+        [DllImport(Libraries.Psapi_Obsolete, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "K32GetModuleInformation")]
         internal static extern bool GetModuleInformation(SafeProcessHandle processHandle, IntPtr moduleHandle, NtModuleInfo ntModuleInfo, int size);
 
         [StructLayout(LayoutKind.Sequential)]

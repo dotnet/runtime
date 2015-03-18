@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.Handle, SetLastError = true, BestFitMapping = false)]
-        public static extern bool DuplicateHandle(
+        internal static extern bool DuplicateHandle(
             SafeProcessHandle hSourceProcessHandle,
             SafeHandle hSourceHandle,
             SafeProcessHandle hTargetProcess,
@@ -21,7 +21,7 @@ internal partial class Interop
         );
 
         [DllImport(Libraries.Handle, SetLastError = true, BestFitMapping = false)]
-        public static extern bool DuplicateHandle(
+        internal static extern bool DuplicateHandle(
             SafeProcessHandle hSourceProcessHandle,
             SafeHandle hSourceHandle,
             SafeProcessHandle hTargetProcess,

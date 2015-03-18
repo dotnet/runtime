@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class NtDll
     {
-        [DllImport(Libraries.NtDll, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode)]
         internal static extern int NtQuerySystemInformation(int query, IntPtr dataPtr, int size, out int returnedSize);
 
         internal const int NtQuerySystemProcessInformation = 5;

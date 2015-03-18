@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.ProcessThread_L1_2, CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.ProcessThread_L1_2, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool SetProcessPriorityBoost(SafeProcessHandle handle, bool disabled);
     }
 }
