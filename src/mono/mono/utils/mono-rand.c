@@ -80,7 +80,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size)
 {
 	HCRYPTPROV provider;
 
-	g_assert (handle)
+	g_assert (handle);
 	provider = (HCRYPTPROV) *handle;
 
 	if (!CryptGenRandom (provider, buffer_size, buffer)) {
