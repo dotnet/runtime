@@ -36,11 +36,10 @@
 
   <!-- 
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
-  Projects that do have OS-specific implementations use OS_Debug and OS_Release, e.g. a project with
-  a Windows implementation and a Unix implementation will have Windows_Debug, Windows_Release, Unix_Debug,
-  and Unix_Release.  For cases where a general Unix implementation needs to be further specialized for Linux vs Mac,
-  a project may have Windows, Linux, and Mac implementations, in which case it would have Windows_Debug,
-  Windows_Release, Linux_Debug, Linux_Release, Mac_Debug, and Mac_Release.
+  Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
+  if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
+  OSX_[Debug|Release] and Linux_[Debug|Release] configurations.  We do this so that we place all the output under
+  a single binary folder and can have a similar experiance between the command line and Visual Studio.
   
   Since now have multiple *Debug and *Release configurations, ConfigurationGroup is set to Debug for any of the
   debug configurations, and to Release for any of the release configurations.
@@ -56,12 +55,15 @@
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">$(Configuration)</ConfigurationGroup>
  
     <OS Condition="$(Configuration.StartsWith('Windows'))">Windows_NT</OS>
-    <OS Condition="$(Configuration.StartsWith('Unix'))">Unix</OS>
-    <!-- TODO: Determine actual settings once we have Linux vs Mac specialization -->
-    <OS Condition="$(Configuration.StartsWith('Linux'))">Unix</OS>
-    <OS Condition="$(Configuration.StartsWith('Mac'))">Unix</OS>
+    <OS Condition="$(Configuration.StartsWith('Linux'))">Linux</OS>
+    <OS Condition="$(Configuration.StartsWith('OSX'))">OSX</OS>
 
     <OSGroup Condition="'$(OSGroup)'==''">$(OS)</OSGroup>
+  </PropertyGroup>
+
+  <!-- While we transition away from OS=Unix to OS=Linux/OS=OSX, treat OS=Unix as OS=Linux -->
+  <PropertyGroup>
+    <OSGroup Condition="'$(OS)' == 'Unix'">Linux</OSGroup>
   </PropertyGroup>
   
   <!-- Setup Default symbol and optimization for Configuration -->
@@ -105,6 +107,15 @@
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
+  </PropertyGroup>
+
+  <!-- Setup common target properties that we use to conditionally include sources -->
+  <PropertyGroup>
+    <TargetsWindows Condition="'$(OS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsLinux Condition="'$(OS)' == 'Linux' or '$(OS)' == 'Unix'">true</TargetsLinux>  <!-- While we transition away from OS=Unix to OS=Linux/OS=OSX, treat OS=Unix as OS=Linux -->
+    <TargetsOSX Condition="'$(OS)' == 'OSX'">true</TargetsOSX>
+
+    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>

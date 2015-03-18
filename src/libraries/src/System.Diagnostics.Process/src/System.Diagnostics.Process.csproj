@@ -37,7 +37,7 @@
     <Compile Include="System\Diagnostics\ThreadState.cs" />
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -196,7 +196,7 @@
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
