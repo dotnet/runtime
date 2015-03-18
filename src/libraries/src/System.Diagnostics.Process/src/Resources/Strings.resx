@@ -243,4 +243,7 @@
   <data name="CounterDataCorrupt" xml:space="preserve">
     <value>Cannot load Performance Counter data because an unexpected registry key value type was read from '{0}'.</value>
   </data>
+  <data name="CantGetProcessStartInfo" xml:space="preserve">
+    <value>Process was not started by this object and this object process id does not much current process id, so requested information cannot be determined.</value>
+  </data>
 </root>
