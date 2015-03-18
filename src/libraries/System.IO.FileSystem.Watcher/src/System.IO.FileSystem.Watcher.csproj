@@ -34,12 +34,12 @@
     <Compile Include="System\IO\RenamedEventHandler.cs" />
     <Compile Include="System\IO\WatcherChangeTypes.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="Microsoft\Win32\NativeMethods.cs" />
     <Compile Include="Microsoft\Win32\UnsafeNativeMethods.cs" />
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.inotify.cs" >
       <Link>Common\Interop\Linux\Interop.inotify.cs</Link>
