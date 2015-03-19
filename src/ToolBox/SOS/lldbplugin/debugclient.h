@@ -12,6 +12,8 @@ private:
     void OutputString(ULONG mask, PCSTR str);
     lldb::SBProcess GetCurrentProcess();
     lldb::SBThread GetCurrentThread();
+    lldb::SBFrame GetCurrentFrame();
+    HRESULT GetExpression(lldb::SBFrame frame, PCSTR exp, PDWORD_PTR result);
     
 public:
     DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject);
@@ -114,6 +116,27 @@ public:
     HRESULT GetCurrentThreadSystemId(
         PULONG sysId);
 
+    HRESULT GetThreadIdBySystemId(
+        ULONG sysId,
+        PULONG id);
+
+    //----------------------------------------------------------------------------
+    // IDebugRegisters
+    //----------------------------------------------------------------------------
+
+    HRESULT GetValueByName(
+        PCSTR name,
+        PDWORD_PTR debugValue);
+
+    HRESULT GetInstructionOffset(
+        PULONG64 offset);
+
+    HRESULT GetStackOffset(
+        PULONG64 offset);
+
+    HRESULT GetFrameOffset(
+        PULONG64 offset);
+
     //----------------------------------------------------------------------------
     // IDebugClient
     //----------------------------------------------------------------------------
@@ -123,4 +146,8 @@ public:
         ULONG32 contextFlags,
         ULONG32 contextSize,
         PBYTE context);
+
+    HRESULT GetExpression(
+        PCSTR exp,
+        PDWORD_PTR result);
 };

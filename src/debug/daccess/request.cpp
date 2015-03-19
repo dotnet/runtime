@@ -1354,7 +1354,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __ou
     if (SUCCEEDED(hr))
     {
         PTR_StringObject str(TO_TADDR(obj));
-        ULONG32 needed = (ULONG32)str->GetStringLength();
+        ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
 
         if (stringData && count > 0)
         {
@@ -1362,12 +1362,12 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, __ou
                 count = needed;
 
             TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_Characters);
-            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count*sizeof(wchar_t), &needed);
+            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(wchar_t), &needed);
         
             if (SUCCEEDED(hr))
-                stringData[count] = 0;
+                stringData[count - 1] = W('\0');
             else
-                stringData[0] = 0;
+                stringData[0] = W('\0');
         }
         else
         {
@@ -2255,7 +2255,7 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                     appdomainData->FailedAssemblyCount++;
                 }
             }
-
+#ifndef FEATURE_PAL
             // MiniDumpNormal doesn't guarantee to dump the SecurityDescriptor, let it fail.
             EX_TRY
             {
@@ -2271,6 +2271,7 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                 }
             }
             EX_END_CATCH(SwallowAllExceptions)
+#endif // FEATURE_PAL
         }
     }
 

@@ -271,49 +271,68 @@ public:
     // Not currently supported when kernel debugging.
     virtual HRESULT GetCurrentThreadSystemId(
         PULONG sysId) = 0;
-};
 
-typedef class IDebugSystemObjects* PDEBUG_SYSTEM_OBJECTS;
+    // Looks up a debugger thread ID for the given
+    // system thread ID.
+    // Currently when kernel debugging this will fail
+    // if the thread is not executing on a processor.
+    virtual HRESULT GetThreadIdBySystemId(
+        ULONG sysId,
+        PULONG id) = 0;
 
-//----------------------------------------------------------------------------
-// IDebugAdvanced3
-//----------------------------------------------------------------------------
-
-class IDebugAdvanced3
-{
-public:
-    // IDebugAdvanced.
-
-    // Get/SetThreadContext offer control over
-    // the full processor context for a thread.
-    // Higher-level functions, such as the
-    // IDebugRegisters interface, allow similar
-    // access in simpler and more generic ways.
-    // Get/SetThreadContext are useful when
-    // large amounts of thread context must
-    // be changed and processor-specific code
-    // is not a problem.
-    virtual HRESULT GetThreadContext(
-        PVOID context,
-        ULONG contextSize) = 0;
-};
-
-typedef class IDebugAdvanced3* PDEBUG_ADVANCED3;
-
-//----------------------------------------------------------------------------
-// IDebugClient
-//----------------------------------------------------------------------------
-
-class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects
-{
-public:
     // This is a special sos/lldb function used to implement the ICLRDataTarget interface and
-    // not actually part of the IDebugClient interface.
+    // not actually part of dbgeng's IDebugSystemObjects interface.
     virtual HRESULT GetThreadContextById(
         /* [in] */ ULONG32 threadID,
         /* [in] */ ULONG32 contextFlags,
         /* [in] */ ULONG32 contextSize,
         /* [out, size_is(contextSize)] */ PBYTE context) = 0;
+};
+
+typedef class IDebugSystemObjects* PDEBUG_SYSTEM_OBJECTS;
+
+//----------------------------------------------------------------------------
+// IDebugRegister
+//----------------------------------------------------------------------------
+
+class IDebugRegister
+{
+public:
+    // This is the combination of dbgeng's GetIndexByName and GetValue and not
+    // actually part of the dbgeng's IDebugRegister interface.
+    virtual HRESULT GetValueByName(
+        PCSTR name,
+        PDWORD_PTR value) = 0;
+
+    // Abstracted pieces of processor information.
+    // The mapping of these values to architectural
+    // registers is architecture-specific and their
+    // interpretation and existence may vary.  They
+    // are intended to be directly compatible with
+    // calls which take this information, such as
+    // stack walking.
+    virtual HRESULT GetInstructionOffset(
+        PULONG64 offset) = 0;
+
+    virtual HRESULT GetStackOffset(
+        PULONG64 offset) = 0;
+
+    virtual HRESULT GetFrameOffset(
+        PULONG64 offset) = 0;
+};
+
+typedef class IDebugRegister* PDEBUG_REGISTERS;
+
+//----------------------------------------------------------------------------
+// IDebugClient
+//----------------------------------------------------------------------------
+
+class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects, IDebugRegister
+{
+public:
+    virtual HRESULT GetExpression(
+        /* [in] */ PCSTR exp,
+        /* [out] */ PDWORD_PTR result) = 0;
 };
 
 typedef class IDebugClient* PDEBUG_CLIENT;
