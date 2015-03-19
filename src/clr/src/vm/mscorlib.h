@@ -2188,11 +2188,17 @@ DEFINE_CLASS(FRAME_SECURITY_DESCRIPTOR_WITH_RESOLVER, Security, FrameSecurityDes
 #endif // FEATURE_COMPRESSEDSTACK
 
 #ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(ASYNC_TRACING_EVENT_ARGS,       WindowsFoundationDiag,	        TracingStatusChangedEventArgs)
+DEFINE_CLASS(ASYNC_TRACING_EVENT_ARGS,       WindowsFoundationDiag,         TracingStatusChangedEventArgs)
 DEFINE_CLASS(IASYNC_TRACING_EVENT_ARGS,      WindowsFoundationDiag,         ITracingStatusChangedEventArgs)
 #endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(MODULEBASE,        Reflection,         Module)
+
+#ifdef FEATURE_ICASTABLE
+DEFINE_CLASS(ICASTABLE,         CompilerServices,   ICastable)
+DEFINE_METHOD(ICASTABLE,        ISINSTANCEOF,       IsInstanceOfInterface, IM_RuntimeTypeHandle_RefException_RetBool)
+DEFINE_METHOD(ICASTABLE,        GETIMPLTYPE,        GetImplType, IM_RuntimeTypeHandle_RetRuntimeTypeHandle)
+#endif // FEATURE_ICASTABLE
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD

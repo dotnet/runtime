@@ -1007,7 +1007,7 @@
     <Member MemberType="Property" Name="Default" />
     <Member Name="GetAssemblyName(System.String)" />
     <Member Name="GetLoadContext(System.Reflection.Assembly)" />
-	<Member Name="InitializeDefaultContext(System.Runtime.Loader.AssemblyLoadContext)" />
+    <Member Name="InitializeDefaultContext(System.Runtime.Loader.AssemblyLoadContext)" />
     <Member Name="LoadFromAssemblyName(System.Reflection.AssemblyName)" />
     <Member Name="Load(System.Reflection.AssemblyName)" />
     <Member Name="LoadFromAssemblyPath(System.String)" />
@@ -2039,7 +2039,7 @@
 
     </Type>
     <Type Name="System.ExecutionEngineException" />
-	<Type Name="System.FieldAccessException">
+    <Type Name="System.FieldAccessException">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.String)" />
       <Member Name="#ctor(System.String,System.Exception)" />
@@ -5749,6 +5749,10 @@
     <Type Name="System.Runtime.CompilerServices.IsConst"> <!-- for MC++ -->
     </Type>
     <Type Name="System.Runtime.CompilerServices.IsCopyConstructed"> <!-- for MC++ -->
+    </Type>
+    <Type Name="System.Runtime.CompilerServices.ICastable"> 
+      <Member Name="IsInstanceOfInterface(System.RuntimeTypeHandle,System.Exception@)" /> <!-- EE -->
+      <Member Name="GetImplType(System.RuntimeTypeHandle)" /> <!-- EE -->
     </Type>
     <Type Name="System.Runtime.CompilerServices.IsExplicitlyDereferenced"> <!-- for MC++ -->
     </Type>
@@ -9772,19 +9776,19 @@
       <Member MemberType="Field" Name="Xml" />
     </Type>
 
-	<Type Name="System.Diagnostics.Tracing.EventDescriptor">
-	  <Member Name="#ctor(System.Int32,System.Byte,System.Byte,System.Int64)" />
+    <Type Name="System.Diagnostics.Tracing.EventDescriptor">
+      <Member Name="#ctor(System.Int32,System.Byte,System.Byte,System.Int64)" />
       <Member Name="#ctor(System.Int32,System.Byte,System.Byte,System.Byte,System.Byte,System.Int32,System.Int64)" />
       <Member Name="get_EventId" />
       <Member Name="get_Channel" /> 
       <Member Name="get_Level" />  
       <Member Name="get_Opcode" />
-	  <Member Name="get_Task" />
-	  <Member Name="get_Version" />
-	  <Member Name="Equals(System.Object)" />
-	  <Member Name="Equals(System.Diagnostics.Tracing.EventDescriptor)" />
-    </Type>	
-	
+      <Member Name="get_Task" />
+      <Member Name="get_Version" />
+      <Member Name="Equals(System.Object)" />
+      <Member Name="Equals(System.Diagnostics.Tracing.EventDescriptor)" />
+    </Type> 
+    
     <Type Name="System.Diagnostics.Tracing.EventChannel">
       <Member MemberType="Field" Name="Admin" />
       <Member MemberType="Field" Name="Analytic" />
@@ -9810,7 +9814,7 @@
     <Type Name="System.Diagnostics.Tracing.EventDataAttribute">
       <Member Name="#ctor" />
       <Member MemberType="Property" Name="Name" /> 
-	  <Member MemberType="Property" Name="Level" />  
+      <Member MemberType="Property" Name="Level" />  
       <Member MemberType="Property" Name="Opcode" />  
       <Member MemberType="Property" Name="Keywords" />  
       <Member MemberType="Property" Name="Tags" />  
@@ -9849,7 +9853,7 @@
       <Member Name="OnEventWritten(System.Diagnostics.Tracing.EventWrittenEventArgs)" />
     </Type>    
     
-	<Type Name="System.Diagnostics.Tracing.EventManifestOptions">
+    <Type Name="System.Diagnostics.Tracing.EventManifestOptions">
       <Member MemberType="Field" Name="AllCultures" />
       <Member MemberType="Field" Name="AllowEventSourceOverride" />
       <Member MemberType="Field" Name="None" />
@@ -9874,11 +9878,11 @@
     <Type Name="System.Diagnostics.Tracing.EventSource"> 
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Boolean)" />
-	  <Member Name="#ctor(System.Diagnostics.Tracing.EventSourceSettings)" />
-	  <Member Name="#ctor(System.Diagnostics.Tracing.EventSourceSettings,System.String[])" />
-	  <Member Name="#ctor(System.String)" />
-	  <Member Name="#ctor(System.String,System.Diagnostics.Tracing.EventSourceSettings)" />
-	  <Member Name="#ctor(System.String,System.Diagnostics.Tracing.EventSourceSettings,System.String[])" />
+      <Member Name="#ctor(System.Diagnostics.Tracing.EventSourceSettings)" />
+      <Member Name="#ctor(System.Diagnostics.Tracing.EventSourceSettings,System.String[])" />
+      <Member Name="#ctor(System.String)" />
+      <Member Name="#ctor(System.String,System.Diagnostics.Tracing.EventSourceSettings)" />
+      <Member Name="#ctor(System.String,System.Diagnostics.Tracing.EventSourceSettings,System.String[])" />
       <Member Name="get_Guid" />
       <Member Name="get_Name" />
       <Member MemberType="Property" Name="ConstructionException" />
@@ -9889,7 +9893,7 @@
       <Member Name="GenerateManifest(System.Type,System.String,System.Diagnostics.Tracing.EventManifestOptions)" />
       <Member Name="GetGuid(System.Type)" />
       <Member Name="GetName(System.Type)" />
-	  <Member Name="GetTrait(System.String)" />
+      <Member Name="GetTrait(System.String)" />
       <Member Name="GetSources" />
       <Member Name="IsEnabled" />
       <Member Name="IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords)" />
@@ -9927,7 +9931,7 @@
       <Member Name="WriteEventCore(System.Int32,System.Int32,System.Diagnostics.Tracing.EventSource+EventData*)" />
       <Member Name="WriteEventWithRelatedActivityId(System.Int32,System.Guid,System.Object[])" />
       <Member Name="WriteEventWithRelatedActivityIdCore(System.Int32,System.Guid*,System.Int32,System.Diagnostics.Tracing.EventSource+EventData*)" />
-	  <Member Name="get_Settings" /> 
+      <Member Name="get_Settings" /> 
     </Type>
 
     <Type Name="System.Diagnostics.Tracing.EventSource+EventData">
@@ -9979,8 +9983,8 @@
       <Member MemberType="Field" Name="None" /> 
     </Type>  
 
-	<Type Name="System.Diagnostics.Tracing.EventFieldAttribute">
-	  <Member Name="#ctor" />
+    <Type Name="System.Diagnostics.Tracing.EventFieldAttribute">
+      <Member Name="#ctor" />
       <Member MemberType="Property" Name="Tags" />
       <Member MemberType="Property" Name="Name" />
       <Member MemberType="Property" Name="Format" />
@@ -9995,10 +9999,10 @@
       <Member Name="get_Message" />
       <Member Name="get_Opcode" />
       <Member Name="get_Payload" />
-	  <Member Name="get_PayloadNames" />
+      <Member Name="get_PayloadNames" />
       <Member Name="get_Task" />
       <Member Name="get_Version" />
-	  <Member Name="get_Tags" />
+      <Member Name="get_Tags" />
       <Member MemberType="Property" Name="ActivityId" />
       <Member MemberType="Property" Name="EventName" />
       <Member MemberType="Property" Name="RelatedActivityId" />
@@ -11667,10 +11671,10 @@
       <Member Status="ImplRoot" Name="CreateUnwrapPromise&lt;TResult&gt;(System.Threading.Tasks.Task,System.Boolean)" />
       <Member Status="ImplRoot" Name="NotifyDebuggerOfWaitCompletion"                       />
       <Member Status="ImplRoot" Name="SetNotificationForWaitCompletion(System.Boolean)"     />
-	  <!--Internal helper members exposed to be used by VS Debugger-->
-	  <Member Status="ImplRoot" Name="GetDelegateContinuationsForDebugger" />
-	  <Member Status="ImplRoot" Name="GetActiveTaskFromId(System.Int32)" />
-	  <Member Status="ImplRoot" Name="GetActiveTasks" />
+      <!--Internal helper members exposed to be used by VS Debugger-->
+      <Member Status="ImplRoot" Name="GetDelegateContinuationsForDebugger" />
+      <Member Status="ImplRoot" Name="GetActiveTaskFromId(System.Int32)" />
+      <Member Status="ImplRoot" Name="GetActiveTasks" />
     </Type>
     <Type Status="ImplRoot" Name="System.Threading.Tasks.SystemThreadingTasks_TaskDebugView">
       <Member Status="ImplRoot" Name="#ctor(System.Threading.Tasks.Task)" />
