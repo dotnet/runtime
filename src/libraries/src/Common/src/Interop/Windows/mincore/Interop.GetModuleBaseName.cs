@@ -4,17 +4,13 @@
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal partial class Interop
 {
     internal partial class mincore
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SECURITY_ATTRIBUTES
-        {
-            internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
-            internal bool bInheritHandle;
-        }
+        [DllImport(Libraries.Psapi_Obsolete, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "K32GetModuleBaseNameW")]
+        internal static extern int GetModuleBaseName(SafeProcessHandle processHandle, IntPtr moduleHandle, StringBuilder baseName, int size);
     }
 }

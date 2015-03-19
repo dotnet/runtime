@@ -10,11 +10,11 @@ internal partial class Interop
     internal partial class mincore
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal struct SECURITY_ATTRIBUTES
+        internal struct LUID
         {
-            internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
-            internal bool bInheritHandle;
+            internal int LowPart;
+            internal int HighPart;
         }
+
     }
 }

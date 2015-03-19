@@ -268,16 +268,16 @@ namespace System.Diagnostics
                         error = Marshal.GetHRForException(e);
                         switch (error)
                         {
-                            case Interop.RPC_S_CALL_FAILED:
-                            case Interop.ERROR_INVALID_HANDLE:
-                            case Interop.RPC_S_SERVER_UNAVAILABLE:
+                            case Interop.mincore.RPCStatus.RPC_S_CALL_FAILED:
+                            case Interop.mincore.Errors.ERROR_INVALID_HANDLE:
+                            case Interop.mincore.RPCStatus.RPC_S_SERVER_UNAVAILABLE:
                                 Init();
-                                goto case Interop.WAIT_TIMEOUT;
+                                goto case Interop.mincore.WaitOptions.WAIT_TIMEOUT;
 
-                            case Interop.WAIT_TIMEOUT:
-                            case Interop.ERROR_NOT_READY:
-                            case Interop.ERROR_LOCK_FAILED:
-                            case Interop.ERROR_BUSY:
+                            case Interop.mincore.WaitOptions.WAIT_TIMEOUT:
+                            case Interop.mincore.Errors.ERROR_NOT_READY:
+                            case Interop.mincore.Errors.ERROR_LOCK_FAILED:
+                            case Interop.mincore.Errors.ERROR_BUSY:
                                 --waitRetries;
                                 if (waitSleep == 0)
                                 {

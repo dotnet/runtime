@@ -13,7 +13,7 @@ namespace System.Diagnostics
         {
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.THREAD_SET_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION))
                 {
                     if (Interop.mincore.SetThreadIdealProcessor(threadHandle, value) < 0)
                     {
@@ -42,7 +42,7 @@ namespace System.Diagnostics
         {
             get
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.THREAD_QUERY_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
                 {
                     bool disabled;
                     if (!Interop.mincore.GetThreadPriorityBoost(threadHandle, out disabled))
@@ -54,7 +54,7 @@ namespace System.Diagnostics
             }
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.THREAD_SET_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION))
                 {
                     if (!Interop.mincore.SetThreadPriorityBoost(threadHandle, !value))
                         throw new Win32Exception();
@@ -71,7 +71,7 @@ namespace System.Diagnostics
         {
             get
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.THREAD_QUERY_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
                 {
                     int value = Interop.mincore.GetThreadPriority(threadHandle);
                     if (value == 0x7fffffff)
@@ -83,7 +83,7 @@ namespace System.Diagnostics
             }
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.THREAD_SET_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION))
                 {
                     if (!Interop.mincore.SetThreadPriority(threadHandle, (int)value))
                     {
@@ -103,7 +103,7 @@ namespace System.Diagnostics
         {
             set
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.THREAD_SET_INFORMATION | Interop.THREAD_QUERY_INFORMATION))
+                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_SET_INFORMATION | Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
                 {
                     if (Interop.mincore.SetThreadAffinityMask(threadHandle, value) == IntPtr.Zero)
                     {
@@ -154,7 +154,7 @@ namespace System.Diagnostics
         /// <summary>Gets timing information for the thread.</summary>
         private ProcessThreadTimes GetThreadTimes()
         {
-            using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.THREAD_QUERY_INFORMATION))
+            using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.mincore.ThreadOptions.THREAD_QUERY_INFORMATION))
             {
                 var threadTimes = new ProcessThreadTimes();
                 if (!Interop.mincore.GetThreadTimes(threadHandle,
