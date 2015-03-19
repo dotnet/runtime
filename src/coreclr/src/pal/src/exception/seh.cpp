@@ -73,34 +73,37 @@ Function :
 
     Initialize all SEH-related stuff (signals, etc)
 
-    (no parameters)
+Parameters :
+    CPalThread * pthrCurrent : reference to the current thread.
+    PAL initialize flags
 
 Return value :
     TRUE  if SEH support initialization succeeded
     FALSE otherwise
 --*/
-BOOL SEHInitialize (CPalThread *pthrCurrent)
+BOOL SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
 {
     BOOL bRet = FALSE;
-#if !HAVE_MACH_EXCEPTIONS
-    PAL_ERROR palError = NO_ERROR;
-#endif // !HAVE_MACH_EXCEPTIONS
 
     if (!SEHInitializeConsole())
     {
         ERROR("SEHInitializeConsole failed!\n");
-        SEHCleanup();
+        SEHCleanup(flags);
         goto SEHInitializeExit;
     }
 
 #if !HAVE_MACH_EXCEPTIONS
-    SEHInitializeSignals();
-    palError = StartExternalSignalHandlerThread(pthrCurrent);
-    if (NO_ERROR != palError)
+    SEHInitializeSignals(flags);
+
+    if (flags & PAL_INITIALIZE_SIGNAL_THREAD)
     {
-        ERROR("StartExternalSignalHandlerThread returned %d\n", palError);
-        SEHCleanup();
-        goto SEHInitializeExit;
+        PAL_ERROR palError = StartExternalSignalHandlerThread(pthrCurrent);
+        if (NO_ERROR != palError)
+        {
+            ERROR("StartExternalSignalHandlerThread returned %d\n", palError);
+            SEHCleanup(flags);
+            goto SEHInitializeExit;
+        }
     }
 #endif
     bRet = TRUE;
@@ -115,17 +118,20 @@ Function :
 
     Undo work done by SEHInitialize
 
-    (no parameters, no return value)
+Parameters :
+    PAL initialize flags
+
+    (no return value)
     
 --*/
-void SEHCleanup (void)
+void SEHCleanup (DWORD flags)
 {
     TRACE("Cleaning up SEH\n");
 
 #if HAVE_MACH_EXCEPTIONS
     SEHCleanupExceptionPort();
 #else
-    SEHCleanupSignals();
+    SEHCleanupSignals(flags);
 #endif
 }
 

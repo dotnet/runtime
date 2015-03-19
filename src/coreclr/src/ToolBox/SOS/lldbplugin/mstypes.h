@@ -15,16 +15,27 @@ typedef unsigned int ULONG;
 typedef ULONG ULONG32;
 typedef ULONG *PULONG;
 typedef unsigned char BYTE;
+typedef unsigned char UCHAR;
 typedef BYTE *PBYTE;
 typedef unsigned short WORD;
+typedef unsigned short USHORT;
 typedef unsigned int DWORD;
 
+typedef long long LONG64;
 typedef unsigned long long ULONG64;
 typedef ULONG64 *PULONG64;
 
 typedef long long LONGLONG;
 typedef unsigned long long ULONGLONG;
 typedef ULONGLONG DWORD64;
+
+#ifdef DBG_TARGET_64BIT
+typedef ULONG64 ULONG_PTR, *PULONG_PTR;
+typedef ULONG64 DWORD_PTR, *PDWORD_PTR;
+#else
+typedef ULONG32 ULONG_PTR, *PULONG_PTR;
+typedef ULONG32 DWORD_PTR, *PDWORD_PTR;
+#endif
 
 typedef wchar_t WCHAR;
 typedef WCHAR *PWCHAR;
