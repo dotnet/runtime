@@ -74,7 +74,7 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 	if (!mono_threads_transition_finish_async_suspend (info)) {
 		mono_threads_add_to_pending_operation_set (info);
 		result = ResumeThread (handle);
-		g_assert (result == 0);
+		g_assert (result == 1);
 		CloseHandle (handle);
 		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/1 %p -> %d\n", (void*)id, 0);
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
@@ -89,7 +89,7 @@ mono_threads_core_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_
 	} else {
 		mono_threads_transition_async_suspend_compensation (info);
 		result = ResumeThread (handle);
-		g_assert (result == 0);
+		g_assert (result == 1);
 		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %d\n", (void*)info->native_handle, 0);
 	}
 
