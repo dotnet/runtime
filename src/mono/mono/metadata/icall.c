@@ -6964,14 +6964,14 @@ mono_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
 }
 
 ICALL_EXPORT MonoObject*
-mono_TypedReference_ToObject (MonoTypedRef tref)
+mono_TypedReference_ToObject (MonoTypedRef* tref)
 {
-	if (MONO_TYPE_IS_REFERENCE (tref.type)) {
-		MonoObject** objp = tref.value;
+	if (MONO_TYPE_IS_REFERENCE (tref->type)) {
+		MonoObject** objp = tref->value;
 		return *objp;
 	}
 
-	return mono_value_box (mono_domain_get (), tref.klass, tref.value);
+	return mono_value_box (mono_domain_get (), tref->klass, tref->value);
 }
 
 ICALL_EXPORT MonoTypedRef
