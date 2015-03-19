@@ -19,8 +19,9 @@ Install the following packages for the toolchain:
 - lldb-3.6-dev 
 - libunwind8 
 - libunwind8-dev  
+- gettext
 
-In order to get lldb-3.7 on Ubuntu 14.04, we need to add an additional package soure:
+In order to get lldb-3.6 on Ubuntu 14.04, we need to add an additional package source:
 
 ```
 ellismg@linux:~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.6 main" | sudo tee /etc/apt/sources.list.d/llvm.list
@@ -77,7 +78,7 @@ The output is placed in ```binaries\intermediates\Unix.x64.Debug\mscorlib.dll```
 For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
 ```
-D:\git\corefx> build.cmd /p:OS=Unix /p:SkipTests=true
+D:\git\corefx> build.cmd /p:OS=Linux /p:SkipTests=true
 ```
 
 It's also possible to add ```/t:rebuild``` to the build.cmd to force it to delete the previously built assemblies.
@@ -128,7 +129,7 @@ ellismg@linux:~$ mkdir ~/coreclr-demo/packages
 ellismg@linux:~$ cd ~/coreclr-demo/packages
 ```
 
-Make a ```packages.config``` file with the following text. These are the required dependencies of this particular app. Different apps will have different dependencies and require a different package.config - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
+Make a ```packages.config``` file with the following text. These are the required dependencies of this particular app. Different apps will have different dependencies and require a different ```packages.config``` - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
 
 ```
 <?xml version="1.0" encoding="utf-8"?>
