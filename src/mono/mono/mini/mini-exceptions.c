@@ -2751,7 +2751,7 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		}
 		mono_runtime_printf_err ("[ERROR] FATAL UNHANDLED EXCEPTION: %s", msg);
 		g_free (msg);
-#if defined(__APPLE__) && defined(__arm__)
+#if defined(HOST_IOS)
 		g_assertion_message ("Terminating runtime due to unhandled exception");
 #else
 		exit (mono_environment_exitcode_get ());
