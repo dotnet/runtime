@@ -177,7 +177,7 @@ namespace System.Runtime.Loader
             Assembly assembly = Load(assemblyName);
             if (assembly == null)
             {
-                throw new FileLoadException(Environment.GetResourceString("IO.FileLoad"), requestedSimpleName);
+                throw new FileNotFoundException(Environment.GetResourceString("IO.FileLoad"), requestedSimpleName);
             }
             
             // Get the name of the loaded assembly
