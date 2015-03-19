@@ -4435,6 +4435,21 @@ GetDateFormatEx(
 #define GetDateFormat GetDateFormatW
 #endif
 
+
+PALIMPORT
+int
+PALAPI
+PAL_GetResourceString(
+        IN LPCSTR lpDomain,
+        IN DWORD dwResourceId,
+        OUT LPWSTR lpWideCharStr,
+        IN int cchWideChar);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_BindResources(IN LPCSTR lpDomain);
+
 #define EXCEPTION_NONCONTINUABLE 0x1
 #define EXCEPTION_UNWINDING 0x2
 
