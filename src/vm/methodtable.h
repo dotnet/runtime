@@ -856,6 +856,12 @@ public:
     }
 #endif // !FEATURE_COMINTEROP
 
+#ifdef FEATURE_ICASTABLE
+    void SetICastable();
+#endif  
+
+    BOOL IsICastable(); // This type implements ICastable interface
+
 #ifdef FEATURE_TYPEEQUIVALENCE
     // type has opted into type equivalence or is instantiated by/derived from a type that is
     BOOL HasTypeEquivalence()
@@ -3762,7 +3768,7 @@ private:
 #ifdef FEATURE_REMOTING
         enum_flag_ContextStatic             = 0x00000040,
 #endif
-        enum_flag_UNUSED_ComponentSize_2    = 0x00000080,
+        enum_flag_HasRemotingVtsInfo        = 0x00000080,   // Optional data present indicating VTS methods and optional fields
 
         enum_flag_HasVariance               = 0x00000100,   // This is an instantiated type some of whose type parameters are co or contra-variant
 
@@ -3843,7 +3849,7 @@ private:
         enum_flag_IfInterfaceThenHasGuidInfo    = 0x00200000, // Does the type has optional GuidInfo
 #endif // FEATURE_COMINTEROP
 
-        enum_flag_HasRemotingVtsInfo          = 0x00400000, // Optional data present indicating VTS methods and optional fields
+        enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
         enum_flag_HasIndirectParent           = 0x00800000, // m_pParentMethodTable has double indirection
 
@@ -3859,18 +3865,15 @@ private:
         enum_flag_Collectible                 = 0x10000000,
         enum_flag_ContainsGenericVariables    = 0x20000000,   // we cache this flag to help detect these efficiently and
                                                               // to detect this condition when restoring
-#ifdef FEATURE_COMINTEROP
-        enum_flag_ComObject                   = 0x40000000, // class is a com object
-#endif
 
+        enum_flag_ComObject                   = 0x40000000, // class is a com object
+        
         enum_flag_HasComponentSize            = 0x80000000,   // This is set if component size is used for flags.
 
-#ifdef FEATURE_COMINTEROP
         // Types that require non-trivial interface cast have this bit set in the category
-        enum_flag_NonTrivialInterfaceCast   = 0x00080000 | enum_flag_ComObject,
-#else
-        enum_flag_NonTrivialInterfaceCast   = 0x00080000,
-#endif
+        enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
+                                             | enum_flag_ComObject
+                                             | enum_flag_ICastable
 
     };  // enum WFLAGS_HIGH_ENUM
 
