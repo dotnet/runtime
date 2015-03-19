@@ -262,6 +262,11 @@ LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.debug.dll");
 LPCWSTR CCompRC::m_pFallbackResource= W("mscorrc.dll");
 #endif // !FEATURE_CORECLR
 
+#ifdef FEATURE_PAL
+LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc.debug";
+LPCSTR CCompRC::m_pFallbackResourceDomain = "mscorrc";
+#endif // FEATURE_PAL
+
 HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
 {
     CONTRACTL
@@ -307,6 +312,25 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
     {
         return E_OUTOFMEMORY;
     }
+
+#ifdef FEATURE_PAL
+
+    if (m_pResourceFile == m_pDefaultResource)
+    {
+        m_pResourceDomain = m_pDefaultResourceDomain;
+    }
+    else if (m_pResourceFile == m_pFallbackResource)
+    {
+        m_pResourceDomain = m_pFallbackResourceDomain;
+    }
+    else
+    {
+        _ASSERTE(!"Unsupported resource file");
+    }
+
+    PAL_BindResources(m_pResourceDomain);
+
+#endif // FEATURE_PAL
 
     if (m_csMap == NULL)
     {
@@ -828,11 +852,10 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
 
     return hr;
 #else  // !FEATURE_PAL
-    // UNIXTODO: Implement real string loading from resources
     int len = 0;
     if (szBuffer && iMax)
     {
-        len = _snwprintf(szBuffer, iMax, W("Resource string category=%d, id=0x%x"), eCategory, iResourceID);
+        len = PAL_GetResourceString(m_pResourceDomain, iResourceID, szBuffer, iMax);
     }
 
     if (pcwchUsed)
