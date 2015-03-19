@@ -2922,8 +2922,8 @@ mono_method_get_unmanaged_thunk (MonoMethod *method)
 	return mono_compile_method (method);
 }
 
-static void
-set_value (MonoType *type, void *dest, void *value, int deref_pointer)
+void
+mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer)
 {
 	int t;
 	if (type->byref) {
@@ -3035,7 +3035,7 @@ mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
 	dest = (char*)obj + field->offset;
-	set_value (field->type, dest, value, FALSE);
+	mono_copy_value (field->type, dest, value, FALSE);
 }
 
 /**
@@ -3068,7 +3068,7 @@ mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
 	} else {
 		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
-	set_value (field->type, dest, value, FALSE);
+	mono_copy_value (field->type, dest, value, FALSE);
 }
 
 /**
@@ -3137,7 +3137,7 @@ mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
 	g_return_if_fail (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC));
 
 	src = (char*)obj + field->offset;
-	set_value (field->type, value, src, TRUE);
+	mono_copy_value (field->type, value, src, TRUE);
 }
 
 /**
@@ -3352,7 +3352,7 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 	} else {
 		src = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
-	set_value (field->type, value, src, TRUE);
+	mono_copy_value (field->type, value, src, TRUE);
 }
 
 /**
