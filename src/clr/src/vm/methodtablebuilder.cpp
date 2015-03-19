@@ -2116,6 +2116,13 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
+#ifdef FEATURE_ICASTABLE
+    if (!IsValueClass() && g_pICastableInterface != NULL && pMT->CanCastToInterface(g_pICastableInterface))
+    {
+        pMT->SetICastable();
+    }
+#endif // FEATURE_ICASTABLE            
+
     // Grow the typedef ridmap in advance as we can't afford to
     // fail once we set the resolve bit
     pModule->EnsureTypeDefCanBeStored(bmtInternal->pType->GetTypeDefToken());
@@ -10065,6 +10072,26 @@ VOID MethodTableBuilder::ScanTypeForVtsInfo()
         PRECONDITION(IsTdSerializable(GetAttrClass()));
     }
     CONTRACTL_END;
+
+    //
+    // Do not mark System.String as needing vts info. The MethodTable bit used for VtsInfo
+    // is used for other purpose on System.String, and System.String does need VtsInfo anyway
+    // because of it is special-cased by the object cloner.
+    //
+    if (g_pStringClass == NULL)
+    {
+        LPCUTF8 name, nameSpace;
+
+        if (FAILED(GetMDImport()->GetNameOfTypeDef(GetCl(), &name, &nameSpace)))
+        {
+            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+        }
+
+        if (strcmp(name, g_StringName) == 0 && strcmp(nameSpace, g_SystemNS) == 0)
+        {
+            return;
+        }
+    }    
 
     DWORD i;
     // Scan all the non-virtual, non-abstract, non-generic instance methods for

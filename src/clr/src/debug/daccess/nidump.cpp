@@ -5669,7 +5669,7 @@ NativeImageDumper::EnumMnemonics s_MTFlagsLow[] =
 #if defined(FEATURE_REMOTING)
     MTFLAG_ENTRY(ContextStatic),
 #endif
-    MTFLAG_ENTRY(UNUSED_ComponentSize_2),
+    MTFLAG_ENTRY(HasRemotingVtsInfo),
     MTFLAG_ENTRY(HasVariance),
     MTFLAG_ENTRY(HasDefaultCtor),
     MTFLAG_ENTRY(HasPreciseInitCctors),
@@ -5717,7 +5717,9 @@ NativeImageDumper::EnumMnemonics s_MTFlagsHigh[] =
 #if defined(FEATURE_COMINTEROP)
     MTFLAG_ENTRY(IfInterfaceThenHasGuidInfo),
 #endif
-    MTFLAG_ENTRY(HasRemotingVtsInfo),
+#if defined(FEATURE_ICASTABLE)    
+    MTFLAG_ENTRY(ICastable),
+#endif    
     MTFLAG_ENTRY(HasIndirectParent),
     MTFLAG_ENTRY(ContainsPointers),
     MTFLAG_ENTRY(HasTypeEquivalence),
