@@ -5885,7 +5885,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		}
 		break;
 	handle_vtype:
-	case MONO_TYPE_VALUETYPE: {
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF: {
 		int nfields;
 		gpointer iter;
 		MonoClassField *f;
