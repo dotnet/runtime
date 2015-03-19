@@ -94,7 +94,7 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 			 
 - .csproj project files then include the interop code they need, e.g.
 ```XML
-<ItemGroup Condition=" '$(OS)' == 'Unix' ">
+<ItemGroup Condition=" '$(PlatformUnix)' == 'true' ">
     <Compile Include="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="Interop\Unix\libc\Interop.strerror.cs" />
     <Compile Include="Interop\Unix\libc\Interop.getenv.cs" />
@@ -105,6 +105,20 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
     ...
 </ItemGroup
 ```
+
+### Build System
+When building CoreFx, we use the "OS" property to control what target platform we are building for.  The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
+
+The build system sets a few MSBuild properties, depending on the OS setting:
+
+* TargetsWindows
+* TargetsLinux
+* TargetsOSX
+* TargetsUnix
+
+TargetsUnix is true for both OSX and Linux builds and can be used to include code that can be used on both Linux and OSX (e.g. it is written against a POSIX API that is present on both platforms).
+
+You should not test the value of the OS property directly, instead use one of the values above.
 
 ### Constants
 - Wherever possible, constants should be defined as "const".  Only if the data type doesn’t support this (e.g. IntPtr) should they instead be static readonly fields.
