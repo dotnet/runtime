@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_SGen|Win32">
@@ -69,6 +69,7 @@
     <ClCompile Include="..\mono\metadata\monitor.c" />
     <ClCompile Include="..\mono\metadata\mono-basic-block.c" />
     <ClCompile Include="..\mono\metadata\mono-config.c" />
+    <ClCompile Include="..\mono\metadata\mono-config-dirs.c" />
     <ClCompile Include="..\mono\metadata\mono-cq.c" />
     <ClCompile Include="..\mono\metadata\mono-debug.c" />
     <ClCompile Include="..\mono\metadata\mono-endian.c" />
@@ -163,6 +164,7 @@
     <ClInclude Include="..\mono\metadata\monitor.h" />
     <ClInclude Include="..\mono\metadata\mono-basic-block.h" />
     <ClInclude Include="..\mono\metadata\mono-config.h" />
+    <ClInclude Include="..\mono\metadata\mono-config-dirs.h" />
     <ClInclude Include="..\mono\metadata\mono-cq.h" />
     <ClInclude Include="..\mono\metadata\mono-debug-debugger.h" />
     <ClInclude Include="..\mono\metadata\mono-debug.h" />

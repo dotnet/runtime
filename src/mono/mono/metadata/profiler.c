@@ -19,6 +19,7 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internal.h"
+#include "mono/metadata/mono-config-dirs.h"
 #include "mono/io-layer/io-layer.h"
 #include "mono/utils/mono-dl.h"
 #include <string.h>
@@ -1197,9 +1198,8 @@ mono_profiler_load (const char *desc)
 		}
 		if (!load_embedded_profiler (desc, mname)) {
 			libname = g_strdup_printf ("mono-profiler-%s", mname);
-#if defined (MONO_ASSEMBLIES)
-			res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
-#endif
+			if (mono_config_get_assemblies_dir ())
+				res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
 			if (!res)
 				res = load_profiler_from_directory (NULL, libname, desc);
 			if (!res)

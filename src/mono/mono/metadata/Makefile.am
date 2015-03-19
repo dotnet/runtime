@@ -71,13 +71,10 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLA
 #
 # Make sure any prefix changes are updated in the binaries too.
 #
-#  assembly.c uses MONO_ASSEMBLIES
-#  mono-config.c uses MONO_CFG_DIR
-#
 # This won't result in many more false positives than AC_DEFINEing them
 # in configure.ac.
 #
-assembly.lo mono-config.lo: Makefile
+mono-config-dirs.lo: Makefile
 
 CLEANFILES = mono-bundle.stamp
 
@@ -143,6 +140,8 @@ common_sources = \
 	mono-basic-block.c	\
 	mono-basic-block.h	\
 	mono-config.c		\
+	mono-config-dirs.h		\
+	mono-config-dirs.c		\
 	mono-cq.c		\
 	mono-cq.h		\
 	mono-debug.h		\

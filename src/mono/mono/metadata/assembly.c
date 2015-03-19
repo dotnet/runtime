@@ -28,6 +28,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
+#include <mono/metadata/mono-config-dirs.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/utils/mono-path.h>
@@ -562,14 +563,10 @@ mono_assembly_getrootdir (void)
 void
 mono_set_dirs (const char *assembly_dir, const char *config_dir)
 {
-#if defined (MONO_ASSEMBLIES)
 	if (assembly_dir == NULL)
-		assembly_dir = MONO_ASSEMBLIES;
-#endif
-#if defined (MONO_CFG_DIR)
+		assembly_dir = mono_config_get_assemblies_dir ();
 	if (config_dir == NULL)
-		config_dir = MONO_CFG_DIR;
-#endif
+		config_dir = mono_config_get_cfg_dir ();
 	mono_assembly_setrootdir (assembly_dir);
 	mono_set_config_dir (config_dir);
 }
@@ -601,7 +598,7 @@ compute_base (char *path)
 static void
 fallback (void)
 {
-	mono_set_dirs (MONO_ASSEMBLIES, MONO_CFG_DIR);
+	mono_set_dirs (mono_config_get_assemblies_dir (), mono_config_get_cfg_dir ());
 }
 
 static G_GNUC_UNUSED void
@@ -610,11 +607,14 @@ set_dirs (char *exe)
 	char *base;
 	char *config, *lib, *mono;
 	struct stat buf;
+	const char *bindir;
 	
 	/*
 	 * Only /usr prefix is treated specially
 	 */
-	if (strncmp (exe, MONO_BINDIR, strlen (MONO_BINDIR)) == 0 || (base = compute_base (exe)) == NULL){
+	bindir = mono_config_get_bin_dir ();
+	g_assert (bindir);
+	if (strncmp (exe, bindir, strlen (bindir)) == 0 || (base = compute_base (exe)) == NULL){
 		fallback ();
 		return;
 	}
