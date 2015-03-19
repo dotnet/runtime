@@ -82,22 +82,6 @@ struct _MonoNativeOverlapped {
 	gpointer event_handle;
 };
 
-/* Keep in sync with System.Threading.RegisteredWaitHandleSafe */
-typedef struct _MonoRegisteredWaitHandleSafe MonoRegisteredWaitHandleSafe;
-struct _MonoRegisteredWaitHandleSafe {
-	MonoObject object;
-	gpointer registered_wait_handle;
-	MonoWaitHandle *internal_wait_object;
-	gboolean release_needed; // init: false
-	volatile gint32 lock; // initt: 0
-};
-
-/* Keep in sync with System.Threading.RegisteredWaitHandle */
-struct _MonoRegisteredWaitHandle {
-	MonoObject object;
-	MonoRegisteredWaitHandleSafe *internal_registered_wait;
-};
-
 /* Keep in sync with the System.MonoAsyncCall class which provides GC tracking */
 typedef struct _MonoAsyncCall MonoAsyncCall;
 struct _MonoAsyncCall {
@@ -1593,15 +1577,6 @@ ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (Mono
 	/* This copy the behavior of the current Mono implementation */
 	mono_raise_exception (mono_get_exception_not_implemented (NULL));
 	return FALSE;
-}
-
-gpointer
-ves_icall_System_Threading_Microsoft_ThreadPool_RegisterWaitForSingleObjectNative (MonoWaitHandle *wait_handle, MonoObject *state, guint timeout_internal, gboolean execute_only_once,
-	MonoRegisteredWaitHandle *registered_wait_handle, gint stack_mark, gboolean compress_stack)
-{
-	// FIXME
-	mono_raise_exception (mono_get_exception_not_implemented (NULL));
-	return NULL;
 }
 
 gboolean

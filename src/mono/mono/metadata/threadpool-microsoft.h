@@ -4,7 +4,6 @@
 #include <glib.h>
 
 typedef struct _MonoRuntimeWorkItem MonoRuntimeWorkItem;
-typedef struct _MonoRegisteredWaitHandle MonoRegisteredWaitHandle;
 typedef struct _MonoNativeOverlapped MonoNativeOverlapped;
 
 static void
@@ -69,8 +68,6 @@ gboolean
 ves_icall_System_Threading_Microsoft_ThreadPool_RequestWorkerThread (void);
 gboolean
 ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped);
-gpointer
-ves_icall_System_Threading_Microsoft_ThreadPool_RegisterWaitForSingleObjectNative (MonoWaitHandle *wait_handle, MonoObject *state, guint timeout_internal, gboolean execute_only_once, MonoRegisteredWaitHandle *registered_wait_handle, gint stack_mark, gboolean compress_stack);
 gboolean
 ves_icall_System_Threading_Microsoft_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle);
 
