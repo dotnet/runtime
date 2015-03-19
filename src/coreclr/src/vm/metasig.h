@@ -347,9 +347,9 @@ DEFINE_METASIG_T(SM(FrameSecurityDescriptor_PMS_OutPMS_RuntimeMethodHandleIntern
                  C(FRAME_SECURITY_DESCRIPTOR) C(PERMISSION_SET) r(C(PERMISSION_SET)) g(METHOD_HANDLE_INTERNAL), F))
 DEFINE_METASIG_T(SM(FrameSecurityDescriptor_RetInt, C(FRAME_SECURITY_DESCRIPTOR), i))
 DEFINE_METASIG_T(SM(DynamicResolver_IPermission_PermissionToken_RuntimeMethodHandleInternal_RetBool, \
-				 C(DYNAMICRESOLVER) C(IPERMISSION) C(PERMISSION_TOKEN) g(METHOD_HANDLE_INTERNAL), F))
+                 C(DYNAMICRESOLVER) C(IPERMISSION) C(PERMISSION_TOKEN) g(METHOD_HANDLE_INTERNAL), F))
 DEFINE_METASIG_T(SM(DynamicResolver_PMS_OutPMS_RuntimeMethodHandleInternal_RetBool, \
-				 C(DYNAMICRESOLVER) C(PERMISSION_SET) r(C(PERMISSION_SET)) g(METHOD_HANDLE_INTERNAL), F))
+                 C(DYNAMICRESOLVER) C(PERMISSION_SET) r(C(PERMISSION_SET)) g(METHOD_HANDLE_INTERNAL), F))
 DEFINE_METASIG_T(SM(PermissionListSet_PMS_PMS_RetPermissionListSet, \
                  C(PERMISSION_LIST_SET) C(PERMISSION_SET) C(PERMISSION_SET), C(PERMISSION_LIST_SET)))
 DEFINE_METASIG_T(SM(PMS_IntPtr_RuntimeMethodHandleInternal_Assembly_SecurityAction_RetVoid, C(PERMISSION_SET) I g(METHOD_HANDLE_INTERNAL) C(ASSEMBLY) g(SECURITY_ACTION), v))
@@ -674,6 +674,9 @@ DEFINE_METASIG(SM(RefObject_Object_Object_RetObject, r(j) j j, j))
 
 DEFINE_METASIG_T(SM(RefCleanupWorkList_RetVoid, r(C(CLEANUP_WORK_LIST)), v))
 DEFINE_METASIG_T(SM(RefCleanupWorkList_SafeHandle_RetIntPtr, r(C(CLEANUP_WORK_LIST)) C(SAFE_HANDLE), I))
+
+DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefException_RetBool, g(RT_TYPE_HANDLE) r(C(EXCEPTION)), F))
+DEFINE_METASIG_T(IM(RuntimeTypeHandle_RetRuntimeTypeHandle, g(RT_TYPE_HANDLE), g(RT_TYPE_HANDLE)))
 
 // Undefine macros in case we include the file again in the compilation unit
 

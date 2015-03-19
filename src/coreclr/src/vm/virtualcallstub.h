@@ -9,7 +9,6 @@
 
 
 //
-
 // See code:VirtualCallStubManager for details
 //
 // ============================================================================
@@ -494,11 +493,12 @@ private:
                                           size_t token,
                                           void *target);
 
-    //Given a dispatch token and a method table, determine the
+    //Given a dispatch token, an object and a method table, determine the
     //target address to go to.  The return value (BOOL) states whether this address
     //is cacheable or not.
     static BOOL Resolver(MethodTable   * pMT,
                          DispatchToken   token,
+                         OBJECTREF     * protectedObj,
                          PCODE         * ppTarget);
 
     // This can be used to find a target without needing the ability to throw
@@ -554,7 +554,7 @@ private:
     static void STDCALL BackPatchWorkerStatic(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
 
 public:
-    PCODE ResolveWorker(StubCallSite* pCallSite, OBJECTREF pObj, DispatchToken token, StubKind stubKind);
+    PCODE ResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token, StubKind stubKind);
     void BackPatchWorker(StubCallSite* pCallSite);
 
     //Change the callsite to point to stub
