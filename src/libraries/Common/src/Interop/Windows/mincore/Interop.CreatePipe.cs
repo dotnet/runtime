@@ -9,12 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct SECURITY_ATTRIBUTES
-        {
-            internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
-            internal bool bInheritHandle;
-        }
+        [DllImport(Libraries.Pipe, SetLastError = true)]
+        internal static extern bool CreatePipe(out SafeFileHandle hReadPipe, out SafeFileHandle hWritePipe, ref SECURITY_ATTRIBUTES lpPipeAttributes, int nSize);
     }
 }
