@@ -367,6 +367,7 @@ PDEBUG_DATA_SPACES    g_ExtData;
 PDEBUG_CONTROL2       g_ExtControl;
 PDEBUG_SYMBOLS        g_ExtSymbols;
 PDEBUG_SYSTEM_OBJECTS g_ExtSystem;
+PDEBUG_REGISTERS      g_ExtRegisters;
 
 extern "C" HRESULT
 ExtQuery(PDEBUG_CLIENT Client)
@@ -376,6 +377,7 @@ ExtQuery(PDEBUG_CLIENT Client)
     g_ExtData = (PDEBUG_DATA_SPACES)Client;
     g_ExtSymbols = (PDEBUG_SYMBOLS)Client;
     g_ExtSystem = (PDEBUG_SYSTEM_OBJECTS)Client;
+    g_ExtRegisters = (PDEBUG_REGISTERS)Client;
     return S_OK;
 }
 
@@ -387,6 +389,7 @@ ExtRelease(void)
     g_ExtData = NULL;
     g_ExtSymbols = NULL;
     g_ExtSystem = NULL;
+    g_ExtRegisters = NULL;
 }
 
 #endif // FEATURE_PAL

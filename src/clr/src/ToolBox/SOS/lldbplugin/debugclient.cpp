@@ -62,6 +62,18 @@ DebugClient::GetCurrentThread()
     return thread;
 }
 
+lldb::SBFrame 
+DebugClient::GetCurrentFrame()
+{
+    lldb::SBFrame frame;
+    lldb::SBThread thread = GetCurrentThread();
+    if (thread.IsValid())
+    {
+        frame = thread.GetSelectedFrame();
+    }
+    return frame;
+}
+
 //----------------------------------------------------------------------------
 // IDebugControl2
 //----------------------------------------------------------------------------
@@ -524,6 +536,93 @@ DebugClient::GetCurrentThreadSystemId(
     return S_OK;
 }
 
+HRESULT 
+DebugClient::GetThreadIdBySystemId(
+    ULONG sysId,
+    PULONG id)
+{
+    *id = 0;
+
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBThread thread = process.GetThreadByID(sysId);
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    *id = thread.GetIndexID();
+    return S_OK;
+}
+
+//----------------------------------------------------------------------------
+// IDebugRegisters
+//----------------------------------------------------------------------------
+
+HRESULT
+DebugClient::GetValueByName(
+    PCSTR name,
+    PDWORD_PTR debugValue)
+{
+    *debugValue = 0;
+    lldb::SBFrame frame = GetCurrentFrame();
+    if (!frame.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBValue value = frame.FindRegister(name);
+    if (!value.IsValid())
+    {
+        return E_FAIL;
+    }
+    *debugValue = value.GetValueAsUnsigned();
+    return S_OK;
+}
+
+HRESULT 
+DebugClient::GetInstructionOffset(
+    PULONG64 offset)
+{
+    *offset = 0;
+    lldb::SBFrame frame = GetCurrentFrame();
+    if (!frame.IsValid())
+    {
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+HRESULT 
+DebugClient::GetStackOffset(
+    PULONG64 offset)
+{
+    *offset = 0;
+    lldb::SBFrame frame = GetCurrentFrame();
+    if (!frame.IsValid())
+    {
+        return E_FAIL;
+    }
+    *offset = frame.GetSP();
+    return S_OK;
+}
+
+HRESULT 
+DebugClient::GetFrameOffset(
+    PULONG64 offset)
+{
+    *offset = 0;
+    lldb::SBFrame frame = GetCurrentFrame();
+    if (!frame.IsValid())
+    {
+        return E_FAIL;
+    }
+    *offset = frame.GetFP();
+    return S_OK;
+}
+
 //----------------------------------------------------------------------------
 // IDebugClient
 //----------------------------------------------------------------------------
@@ -561,4 +660,50 @@ DebugClient::GetThreadContextById(
     dtcontext->Rbp = frame.GetFP();
 
     return S_OK;
+}
+
+HRESULT
+DebugClient::GetExpression(
+    lldb::SBFrame frame,
+    PCSTR exp,
+    PDWORD_PTR result)
+{
+    lldb::SBValue value = frame.EvaluateExpression(exp, lldb::eNoDynamicValues);
+    if (!value.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBError error;
+    *result = value.GetValueAsUnsigned(error);
+    if (error.Fail())
+    {
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+HRESULT
+DebugClient::GetExpression(
+    PCSTR exp,
+    PDWORD_PTR result)
+{
+    *result = 0;
+    if (exp == nullptr)
+    {
+        return E_FAIL;
+    }
+    lldb::SBFrame frame = GetCurrentFrame();
+    if (!frame.IsValid())
+    {
+        return E_FAIL;
+    }
+    HRESULT hr = GetExpression(frame, exp, result);
+    if (hr != S_OK)
+    {
+        std::string str;
+        str.append("0x");
+        str.append(exp);
+        hr = GetExpression(frame, str.c_str(), result);
+    }
+    return hr;
 }
