@@ -638,5 +638,46 @@ namespace System.Diagnostics.ProcessTests
             }
             );
         }
+
+        [Fact]
+        public void Process_StartInfo()
+        {
+            {
+                Process process = CreateProcessInfinite();
+                process.Start();
+
+                Assert.Equal(ProcessName, process.StartInfo.FileName);
+
+                process.Kill();
+                process.WaitForExit(WaitInMS);
+            }
+
+            {
+                Process process = CreateProcessInfinite();
+                process.Start();
+
+                Assert.Throws<System.InvalidOperationException>(() => (process.StartInfo = new ProcessStartInfo()));
+
+                process.Kill();
+                process.WaitForExit(WaitInMS);
+            }
+
+            {
+                Process process = new Process();
+                process.StartInfo = new ProcessStartInfo(ProcessName);
+                Assert.Equal(ProcessName, process.StartInfo.FileName);
+            }
+
+            {
+                Process process = Process.GetCurrentProcess();
+                Assert.Throws<System.InvalidOperationException>(() => process.StartInfo);
+            }
+
+            {
+                Process process = Process.Start(ProcessName);
+                process.Start();
+                Assert.Equal(ProcessName, process.StartInfo.FileName);
+            }
+        }
     }
 }

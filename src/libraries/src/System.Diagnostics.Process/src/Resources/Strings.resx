@@ -244,6 +244,9 @@
     <value>Cannot load Performance Counter data because an unexpected registry key value type was read from '{0}'.</value>
   </data>
   <data name="CantGetProcessStartInfo" xml:space="preserve">
-    <value>Process was not started by this object and this object process id does not much current process id, so requested information cannot be determined.</value>
+    <value>Process was not started by this object, so requested information cannot be determined.</value>
+  </data>
+  <data name="CantSetProcessStartInfo" xml:space="preserve">
+    <value>Process is already associated with a real process, so the requested operation cannot be performed.</value>
   </data>
 </root>
