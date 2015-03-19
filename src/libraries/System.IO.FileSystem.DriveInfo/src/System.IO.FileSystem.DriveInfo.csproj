@@ -19,7 +19,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Mac_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Mac_Release|AnyCPU' " />
   <!-- References are resolved from packages.config -->
-  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -49,7 +49,7 @@
       <Link>Common\Interop\Unix\Interop.setmntent.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="System\IO\__Error.cs" />
     <Compile Include="System\IO\DriveInfo.Windows.cs" />

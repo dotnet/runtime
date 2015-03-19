@@ -10,10 +10,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <!-- References are resolved from packages.config -->
   <!-- Compiled Source Files -->
   <ItemGroup>
@@ -29,7 +31,7 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedViewStream.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileRights.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -51,7 +53,7 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Unix' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
