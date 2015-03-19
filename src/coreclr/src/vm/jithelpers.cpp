@@ -2360,8 +2360,11 @@ TypeHandle::CastResult STDCALL ObjIsInstanceOfNoGC(Object *pObject, TypeHandle t
         return TypeHandle::CanCast;
 
     if (pMT->IsTransparentProxy() ||
-        pMT->IsComObjectType() && toTypeHnd.IsInterface())
+           (toTypeHnd.IsInterface() && ( pMT->IsComObjectType() || pMT->IsICastable() ))
+       )
+    {      
         return TypeHandle::MaybeCast;
+    }
 
     if (pMT->IsArray())
     {
@@ -2439,6 +2442,35 @@ BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd)
         // allow an object of type T to be cast to Nullable<T> (they have the same representation)
         fCast = TRUE;
     }
+#ifdef FEATURE_ICASTABLE
+    // If type implements ICastable interface we give it a chance to tell us if it can be casted 
+    // to a given type.
+    else if (toTypeHnd.IsInterface() && fromTypeHnd.GetMethodTable()->IsICastable())
+    {
+        // Make actuall call to obj.IsInstanceOfInterface(interfaceTypeObj, out exception)
+        OBJECTREF exception = NULL;
+        GCPROTECT_BEGIN(exception);
+        MethodTable *pFromTypeMT = fromTypeHnd.GetMethodTable();
+        MethodDesc *pIsInstanceOfMD = pFromTypeMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(METHOD__ICASTABLE__ISINSTANCEOF)); //GC triggers
+        OBJECTREF managedType = toTypeHnd.GetManagedClassObject(); //GC triggers
+
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pIsInstanceOfMD);
+
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(obj);
+        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(managedType);
+        args[ARGNUM_2] = PTR_TO_ARGHOLDER(&exception);
+
+        CALL_MANAGED_METHOD(fCast, BOOL, args);
+        INDEBUG(managedType = NULL); // managedType isn't protected during the call
+
+        if (exception != NULL)
+        {
+            RealCOMPlusThrow(exception);
+        }
+        GCPROTECT_END(); //exception
+    }
+#endif // FEATURE_ICASTABLE
 
     GCPROTECT_END();
 
@@ -5033,12 +5065,12 @@ HCIMPL1(void, IL_Throw,  Object* obj)
         // then do not clear the "_stackTrace" field of the exception object.
         if (GetThread()->GetExceptionState()->IsRaisingForeignException())
         {
-	        ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
         }
         else
 #endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
         {
-	        ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
         }
     }
 
@@ -5297,9 +5329,9 @@ void DoJITFailFast ()
 #if defined(_TARGET_X86_)
     __report_gsfailure();
 #else // !defined(_TARGET_X86_)
-	// On AMD64/IA64/ARM, we need to pass a stack cookie, which will be saved in the context record 
-	// that is used to raise the buffer-overrun exception by __report_gsfailure.
-	__report_gsfailure((ULONG_PTR)0);
+    // On AMD64/IA64/ARM, we need to pass a stack cookie, which will be saved in the context record 
+    // that is used to raise the buffer-overrun exception by __report_gsfailure.
+    __report_gsfailure((ULONG_PTR)0);
 #endif // defined(_TARGET_X86_)
 #else // FEATURE_PAL
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, FailFast))

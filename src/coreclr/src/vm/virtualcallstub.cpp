@@ -1204,6 +1204,10 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif    
+
     FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
     StubDispatchFrame * pSDFrame = &frame;
 
@@ -1280,12 +1284,13 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
     else
         token = DispatchToken::CreateDispatchToken(slot);
 
-    OBJECTREF pObj = pSDFrame->GetThis();
-    if (pObj == NULL) {
+    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
+    _ASSERTE(protectedObj != NULL);
+    if (*protectedObj == NULL) {
         COMPlusThrow(kNullReferenceException);
     }
 
-    pTarget = pMgr->ResolveWorker(&callSite, pObj, token, VirtualCallStubManager::SK_LOOKUP);
+    pTarget = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
     _ASSERTE(pTarget != NULL);
 
     // Ready to return
@@ -1509,6 +1514,10 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
     FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
     StubDispatchFrame * pSDFrame = &frame;
 
@@ -1516,7 +1525,9 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
-    OBJECTREF pObj = pSDFrame->GetThis();
+    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
+    _ASSERTE(protectedObj != NULL);
+    OBJECTREF pObj = *protectedObj;
 
     PCODE target = NULL;
 
@@ -1588,7 +1599,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     }
 #endif
 
-    target = pMgr->ResolveWorker(&callSite, pObj, token, stubKind);
+    target = pMgr->ResolveWorker(&callSite, protectedObj, token, stubKind);
 
     GCPROTECT_END();
 
@@ -1624,7 +1635,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
 }
 
 PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
-                                            OBJECTREF pObj,
+                                            OBJECTREF *protectedObj,
                                             DispatchToken token,
                                             StubKind stubKind)
 {
@@ -1633,14 +1644,13 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(pObj != NULL);
+        PRECONDITION(protectedObj != NULL);
+        PRECONDITION(*protectedObj != NULL);
+        PRECONDITION(IsProtectedByGCFrame(protectedObj));
     } CONTRACTL_END;
 
-    MethodTable* objectType = pObj->GetMethodTable();
+    MethodTable* objectType = (*protectedObj)->GetMethodTable();
     CONSISTENCY_CHECK(CheckPointer(objectType));
-
-    // pObj is not protected. Clear it in debug builds to avoid accidental use.
-    INDEBUG(pObj = NULL);
 
 #ifdef STUB_LOGGING 
     if (g_dumpLogCounter != 0)
@@ -1772,11 +1782,12 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     if (target == NULL)
     {
         CONSISTENCY_CHECK(stub == CALL_STUB_EMPTY_ENTRY);
-        patch = Resolver(objectType, token, &target);
+        patch = Resolver(objectType, token, protectedObj, &target);
 
 #if defined(_DEBUG) 
-        if (!objectType->IsTransparentProxy() &&
-            !objectType->IsComObjectType())
+        if ( !objectType->IsTransparentProxy() &&
+             !objectType->IsComObjectType() &&
+             !objectType->IsICastable())
         {
             CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
         }
@@ -2065,7 +2076,8 @@ it means that the token is not resolvable.
 BOOL 
 VirtualCallStubManager::Resolver(
     MethodTable * pMT, 
-    DispatchToken token, 
+    DispatchToken token,
+    OBJECTREF   * protectedObj, // this one can actually be NULL, consider using pMT is you don't need the object itself
     PCODE *       ppTarget)
 {
     CONTRACTL {
@@ -2215,40 +2227,73 @@ VirtualCallStubManager::Resolver(
         }
     }
 #ifdef FEATURE_COMINTEROP
-    else if (IsInterfaceToken(token))
+    else if (pMT->IsComObjectType() && IsInterfaceToken(token))
     {
-        if (pMT->IsComObjectType())
-        {	        
-            MethodTable * pItfMT = GetTypeFromToken(token);
-            implSlot = pItfMT->FindDispatchSlot(token.GetSlotNumber());
+        MethodTable * pItfMT = GetTypeFromToken(token);
+        implSlot = pItfMT->FindDispatchSlot(token.GetSlotNumber());
 
-            if (pItfMT->HasInstantiation())
+        if (pItfMT->HasInstantiation())
+        {
+            DispatchSlot ds(implSlot);
+            MethodDesc * pTargetMD = ds.GetMethodDesc();
+            if (!pTargetMD->HasMethodInstantiation())
             {
-                DispatchSlot ds(implSlot);
-                MethodDesc * pTargetMD = ds.GetMethodDesc();
-                if (!pTargetMD->HasMethodInstantiation())
-                {
-                    _ASSERTE(pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative));
+                _ASSERTE(pItfMT->IsProjectedFromWinRT() || pItfMT->IsWinRTRedirectedInterface(TypeHandle::Interop_ManagedToNative));
 
-                    MethodDesc *pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                        pTargetMD, 
-                        pItfMT, 
-                        FALSE,              // forceBoxedEntryPoint
-                        Instantiation(),    // methodInst
-                        FALSE,              // allowInstParam
-                        TRUE);              // forceRemotableMethod
+                MethodDesc *pInstMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                    pTargetMD, 
+                    pItfMT, 
+                    FALSE,              // forceBoxedEntryPoint
+                    Instantiation(),    // methodInst
+                    FALSE,              // allowInstParam
+                    TRUE);              // forceRemotableMethod
 
-                    _ASSERTE(pInstMD->IsComPlusCall() || pInstMD->IsGenericComPlusCall());
+                _ASSERTE(pInstMD->IsComPlusCall() || pInstMD->IsGenericComPlusCall());
 
-                    *ppTarget = pInstMD->GetStableEntryPoint();
-                    return TRUE;
-                }
+                *ppTarget = pInstMD->GetStableEntryPoint();
+                return TRUE;
             }
-
-            fShouldPatch = TRUE;
         }
+
+        fShouldPatch = TRUE;
     }
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_ICASTABLE
+    else if (pMT->IsICastable() && protectedObj != NULL && *protectedObj != NULL)
+    {
+        GCStress<cfg_any>::MaybeTrigger();
+
+        // In case of ICastable, instead of trying to find method implementation in the real object type
+        // we call pObj.GetValueInternal() and call Resolver() again with whatever type it returns.
+        // It allows objects that implement ICastable to mimic behavior of other types. 
+        MethodTable * pTokenMT = GetTypeFromToken(token);
+
+        // Make call to obj.GetImplType(interfaceTypeObj)
+        MethodDesc *pGetImplTypeMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(METHOD__ICASTABLE__GETIMPLTYPE));
+        OBJECTREF tokenManagedType = pTokenMT->GetManagedClassObject(); //GC triggers
+
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pGetImplTypeMD);
+
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*protectedObj);
+        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(tokenManagedType);
+
+        OBJECTREF impTypeObj = NULL;
+        CALL_MANAGED_METHOD_RETREF(impTypeObj, OBJECTREF, args);
+
+        INDEBUG(tokenManagedType = NULL); //tokenManagedType wasn't protected during the call
+        if (impTypeObj == NULL) // GetImplType returns default(RuntimeTypeHandle)
+        {
+            COMPlusThrow(kEntryPointNotFoundException);    
+        }
+
+        ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
+        TypeHandle resulTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+
+        return Resolver(pResultMT, token, protectedObj, ppTarget);
+    }
+#endif // FEATURE_ICASTABLE
 
     if (implSlot.IsNull())
     {
@@ -2586,7 +2631,10 @@ VirtualCallStubManager::GetTarget(
 
     // No match, now do full resolve
     BOOL fPatch;
-    fPatch = Resolver(pMT, token, &target);
+
+    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
+    // We need to review if this is the case and refactor this code if we want ICastable to become officially supported    
+    fPatch = Resolver(pMT, token, NULL, &target);
     _ASSERTE(target != NULL);
 
 #ifndef STUB_DISPATCH_PORTABLE
@@ -4162,7 +4210,9 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     CONSISTENCY_CHECK(!pMT->IsTransparentProxy());
 
     PCODE target = NULL;
-    VirtualCallStubManager::Resolver(pMT, token, &target);
+    // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
+    // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
+    VirtualCallStubManager::Resolver(pMT, token, NULL, &target);
 
     return pMT->GetMethodDescForSlotAddress(target);
 }
