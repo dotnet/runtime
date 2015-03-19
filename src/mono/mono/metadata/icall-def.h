@@ -1018,7 +1018,6 @@ ICALL(TYPE_2, "internal_from_name", ves_icall_type_from_name)
 ICALL_TYPE(TYPEDR, "System.TypedReference", TYPEDR_1)
 ICALL(TYPEDR_1, "MakeTypedReferenceInternal", mono_TypedReference_MakeTypedReferenceInternal)
 ICALL(TYPEDR_2, "ToObject",	mono_TypedReference_ToObject)
-ICALL(TYPEDR_3, "ToObjectInternal",	mono_TypedReference_ToObjectInternal)
 
 ICALL_TYPE(VALUET, "System.ValueType", VALUET_1)
 ICALL(VALUET_1, "InternalEquals", ves_icall_System_ValueType_Equals)

@@ -6974,17 +6974,6 @@ mono_TypedReference_ToObject (MonoTypedRef tref)
 	return mono_value_box (mono_domain_get (), tref.klass, tref.value);
 }
 
-ICALL_EXPORT MonoObject*
-mono_TypedReference_ToObjectInternal (MonoType *type, gpointer value, MonoClass *klass)
-{
-	if (MONO_TYPE_IS_REFERENCE (type)) {
-		MonoObject** objp = value;
-		return *objp;
-	}
-
-	return mono_value_box (mono_domain_get (), klass, value);
-}
-
 ICALL_EXPORT MonoTypedRef
 mono_TypedReference_MakeTypedReferenceInternal (MonoObject *target, MonoArray *fields)
 {
