@@ -60,6 +60,7 @@
     <FeatureClassicCominterop>true</FeatureClassicCominterop>
     <FeatureLegacySurface>true</FeatureLegacySurface>
     <FeatureCominterop>true</FeatureCominterop>
+    <FeatureICastable>true</FeatureICastable>
     <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
     <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
     <FeatureCrypto>true</FeatureCrypto>
