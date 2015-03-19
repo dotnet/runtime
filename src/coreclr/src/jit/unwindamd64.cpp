@@ -121,7 +121,15 @@ void Compiler::unwindPush(regNumber reg)
     unsigned int cbProlog = unwindGetCurrentOffset(func);
     noway_assert((BYTE)cbProlog == cbProlog);
     code->CodeOffset = (BYTE)cbProlog;
-    if (RBM_CALLEE_SAVED & genRegMask(reg))
+    if ((RBM_CALLEE_SAVED & genRegMask(reg))
+#if ETW_EBP_FRAMED
+        // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+        // is excluded from the callee-save register list.
+        // Make sure the register gets PUSH unwind info in this case,
+        // since it is pushed as a frame register.
+        || (reg == REG_FPBASE)
+#endif // ETW_EBP_FRAMED
+        )
     {
         code->UnwindOp = UWOP_PUSH_NONVOL;
         code->OpInfo = (BYTE)reg;
