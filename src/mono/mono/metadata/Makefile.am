@@ -61,12 +61,12 @@ boehm_libraries = $(shared_boehm_libraries) libmonoruntime-static.la
 endif
 
 if DISABLE_EXECUTABLES
-noinst_LTLIBRARIES = $(shared_sgen_libraries) $(shared_boehm_libraries)
+noinst_LTLIBRARIES = libmonoruntime-config.la $(shared_sgen_libraries) $(shared_boehm_libraries)
 else
-noinst_LTLIBRARIES = $(boehm_libraries) $(sgen_libraries)
+noinst_LTLIBRARIES = libmonoruntime-config.la $(boehm_libraries) $(sgen_libraries)
 endif
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\" $(SHARED_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
 #
 # Make sure any prefix changes are updated in the binaries too.
@@ -76,9 +76,17 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLA
 #
 mono-config-dirs.lo: Makefile
 
-CLEANFILES = mono-bundle.stamp
+#
+# This library is used to localize the usage of MONO_BINDIR etc. to just one source file, thus enabling
+# ccache to work even if the value of these defines change. We need to use a convenience library since automake
+# doesn't support per file cflags.
+#
+libmonoruntime_config_la_SOURCES = \
+	mono-config-dirs.h		\
+	mono-config-dirs.c
+libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
 
-libmonoruntime_static_la_LIBADD = $(bundle_obj) $(libmonoruntime_la_LIBADD)
+CLEANFILES = mono-bundle.stamp
 
 null_sources = \
 	console-null.c
@@ -140,8 +148,6 @@ common_sources = \
 	mono-basic-block.c	\
 	mono-basic-block.h	\
 	mono-config.c		\
-	mono-config-dirs.h		\
-	mono-config-dirs.c		\
 	mono-cq.c		\
 	mono-cq.h		\
 	mono-debug.h		\
@@ -283,17 +289,21 @@ sgen_sources = \
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
+libmonoruntime_la_LIBADD = libmonoruntime-config.la
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(sgen_sources)
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)
+libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la
 
 libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
 libmonoruntime_static_la_LDFLAGS = -static
 libmonoruntime_static_la_CFLAGS = $(BOEHM_DEFINES)
+libmonoruntime_static_la_LIBADD = $(bundle_obj) $(libmonoruntime_la_LIBADD)
 
 libmonoruntimesgen_static_la_SOURCES = $(libmonoruntimesgen_la_SOURCES)
 libmonoruntimesgen_static_la_LDFLAGS = -static
 libmonoruntimesgen_static_la_CFLAGS = $(SGEN_DEFINES)
+libmonoruntimesgen_static_la_LIBADD = $(libmonoruntimesgen_la_LIBADD)
 
 libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 
