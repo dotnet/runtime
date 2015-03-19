@@ -592,6 +592,33 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 	assert (logbuffer->data <= logbuffer->data_end);
 }
 
+typedef struct {
+	MonoMethod *method;
+	MonoJitInfo *found;
+} MethodSearch;
+
+static void
+find_method (MonoDomain *domain, void *user_data)
+{
+	MethodSearch *search = user_data;
+
+	if (search->found)
+		return;
+
+	MonoJitInfo *ji = mono_get_jit_info_from_method (domain, search->method);
+
+	// It could be AOT'd, so we need to force it to be loaded.
+	if (!ji) {
+		// Loads the method as a side effect.
+		mono_aot_get_method (domain, search->method);
+
+		ji = mono_get_jit_info_from_method (domain, search->method);
+	}
+
+	if (ji)
+		search->found = ji;
+}
+
 static void
 register_method_local (MonoProfiler *prof, MonoDomain *domain, MonoMethod *method, MonoJitInfo *ji)
 {
@@ -599,15 +626,12 @@ register_method_local (MonoProfiler *prof, MonoDomain *domain, MonoMethod *metho
 		g_assert (ji);
 
 	if (!mono_conc_hashtable_lookup (prof->method_table, method)) {
-		if (!ji)
-			ji = mono_get_jit_info_from_method (domain, method);
-
-		// It could be AOT'd, so we need to force it to be loaded.
 		if (!ji) {
-			// Loads the method as a side effect.
-			mono_aot_get_method (domain, method);
+			MethodSearch search = { method, NULL };
 
-			ji = mono_get_jit_info_from_method (domain, method);
+			mono_domain_foreach (find_method, &search);
+
+			ji = search.found;
 		}
 
 		g_assert (ji);
