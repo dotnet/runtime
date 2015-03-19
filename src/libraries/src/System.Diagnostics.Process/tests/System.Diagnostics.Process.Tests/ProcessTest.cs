@@ -213,6 +213,7 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
+        [ActiveIssue(606)]
         public void Process_MainModule()
         {
             // Get MainModule property from a Process object
