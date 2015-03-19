@@ -35,7 +35,8 @@
   >
     <ItemGroup>
       <PossibleTargetFrameworks Include="$(_TargetFrameworkDirectories)" />
-      <ReferencePath Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" />
+      <ReferencePath Condition="'$(LinkLocalMscorlib)' != 'true'" Include="%(PossibleTargetFrameworks.Identity)mscorlib.dll" />
+      <ReferencePath Condition="'$(LinkLocalMscorlib)' == 'true'" Include="$(ProjectDir)\..\binaries\Product\$(BuildOS).$(BuildArch).$(BuildType)\mscorlib.dll" />
     </ItemGroup>
   </Target>
 
