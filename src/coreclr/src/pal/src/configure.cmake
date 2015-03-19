@@ -6,7 +6,7 @@ include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
 
-set(CMAKE_REQUIRED_DEFINITIONS "-D_DEFAULT_SOURCE")
+set(CMAKE_REQUIRED_DEFINITIONS "-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 check_include_files(ieeefp.h HAVE_IEEEFP_H)
 check_include_files(alloca.h HAVE_ALLOCA_H)
 check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
