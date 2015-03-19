@@ -94,6 +94,15 @@ C_FUNC(\Name\()_End):
 
 .macro NESTED_END Name, Section
         LEAF_END \Name, \Section
+#if defined(__APPLE__)
+        .section __LD,__compact_unwind,regular,debug
+        .quad C_FUNC(\Name)
+        .set C_FUNC(\Name\()_Size), C_FUNC(\Name\()_End) - C_FUNC(\Name)
+        .long C_FUNC(\Name\()_Size)
+        .long 0x04000000 # DWARF
+        .quad 0
+        .quad 0
+#endif
 .endm
 
 .macro END_PROLOGUE
