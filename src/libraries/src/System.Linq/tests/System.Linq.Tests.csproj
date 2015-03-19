@@ -19,6 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CachedEnumerator.cs" />
+    <Compile Include="EnumerableTests.cs" />
     <Compile Include="EmptyEnumerable.cs" />
   </ItemGroup>
   <ItemGroup>
