@@ -103,9 +103,12 @@ Function :
 
     Set-up signal handlers to catch signals and translate them to exceptions
 
-    (no parameters, no return value)
+Parameters :
+    PAL initialize flags
+
+    (no return value)
 --*/
-void SEHInitializeSignals(void)
+void SEHInitializeSignals(DWORD flags)
 {
     TRACE("Initializing signal handlers\n");
 
@@ -124,50 +127,54 @@ void SEHInitializeSignals(void)
 
        see sigaction man page for more details
     */
-    handle_signal(SIGHUP,    fatal_signal_handler);
-    handle_signal(SIGINT,    sigint_handler);
-    handle_signal(SIGQUIT,   sigquit_handler);
     handle_signal(SIGILL,    sigill_handler);
     handle_signal(SIGTRAP,   sigtrap_handler);
-    handle_signal(SIGABRT,   fatal_signal_handler); 
-#ifdef SIGEMT
-    handle_signal(SIGEMT,    fatal_signal_handler);
-#endif // SIGEMT
     handle_signal(SIGFPE,    sigfpe_handler);
     handle_signal(SIGBUS,    sigbus_handler);
     handle_signal(SIGSEGV,   sigsegv_handler);
-    handle_signal(SIGSYS,    fatal_signal_handler); 
-    handle_signal(SIGALRM,   fatal_signal_handler); 
-    handle_signal(SIGTERM,   fatal_signal_handler); 
-    handle_signal(SIGURG,    NULL);
-    handle_signal(SIGTSTP,   NULL);
-    handle_signal(SIGCONT,   NULL);
-    handle_signal(SIGCHLD,   NULL);
-    handle_signal(SIGTTIN,   NULL);
-    handle_signal(SIGTTOU,   NULL);
-    handle_signal(SIGIO,     NULL);
-    handle_signal(SIGXCPU,   fatal_signal_handler);
-    handle_signal(SIGXFSZ,   fatal_signal_handler);
-    handle_signal(SIGVTALRM, fatal_signal_handler);
-    handle_signal(SIGPROF,   fatal_signal_handler);
-    handle_signal(SIGWINCH,  NULL);
+
+    if (flags & PAL_INITIALIZE_ALL_SIGNALS)
+    {
+        handle_signal(SIGHUP,    fatal_signal_handler);
+        handle_signal(SIGINT,    sigint_handler);
+        handle_signal(SIGQUIT,   sigquit_handler);
+        handle_signal(SIGABRT,   fatal_signal_handler); 
+#ifdef SIGEMT
+        handle_signal(SIGEMT,    fatal_signal_handler);
+#endif // SIGEMT
+        handle_signal(SIGSYS,    fatal_signal_handler); 
+        handle_signal(SIGALRM,   fatal_signal_handler); 
+        handle_signal(SIGTERM,   fatal_signal_handler); 
+        handle_signal(SIGURG,    NULL);
+        handle_signal(SIGTSTP,   NULL);
+        handle_signal(SIGCONT,   NULL);
+        handle_signal(SIGCHLD,   NULL);
+        handle_signal(SIGTTIN,   NULL);
+        handle_signal(SIGTTOU,   NULL);
+        handle_signal(SIGIO,     NULL);
+        handle_signal(SIGXCPU,   fatal_signal_handler);
+        handle_signal(SIGXFSZ,   fatal_signal_handler);
+        handle_signal(SIGVTALRM, fatal_signal_handler);
+        handle_signal(SIGPROF,   fatal_signal_handler);
+        handle_signal(SIGWINCH,  NULL);
 #ifdef SIGINFO
-    handle_signal(SIGINFO,   NULL);
+        handle_signal(SIGINFO,   NULL);
 #endif  // SIGINFO
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
-    handle_signal(SIGUSR1,   suspend_handler);
-    handle_signal(SIGUSR2,   resume_handler);
+        handle_signal(SIGUSR1,   suspend_handler);
+        handle_signal(SIGUSR2,   resume_handler);
 #endif
-    
-    /* The default action for SIGPIPE is process termination.
-       Since SIGPIPE can be signaled when trying to write on a socket for which
-       the connection has been dropped, we need to tell the system we want
-       to ignore this signal. 
-       
-       Instead of terminating the process, the system call which would had
-       issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
-    */
-    signal(SIGPIPE, SIG_IGN);
+        
+        /* The default action for SIGPIPE is process termination.
+           Since SIGPIPE can be signaled when trying to write on a socket for which
+           the connection has been dropped, we need to tell the system we want
+           to ignore this signal. 
+           
+           Instead of terminating the process, the system call which would had
+           issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
+        */
+        signal(SIGPIPE, SIG_IGN);
+    }
 }
 
 /*++
@@ -176,39 +183,46 @@ Function :
 
     Restore default signal handlers
 
-    (no parameters, no return value)
+Parameters :
+    PAL initialize flags
+
+    (no return value)
     
 note :
 reason for this function is that during PAL_Terminate, we reach a point where 
 SEH isn't possible anymore (handle manager is off, etc). Past that point, 
 we can't avoid crashing on a signal     
 --*/
-void SEHCleanupSignals (void)
+void SEHCleanupSignals (DWORD flags)
 {
     TRACE("Restoring default signal handlers\n");
 
-    handle_signal(SIGHUP,    NULL);
-    handle_signal(SIGINT,    NULL);
-    handle_signal(SIGQUIT,   NULL);
-    handle_signal(SIGILL,    NULL);
-    handle_signal(SIGTRAP,   NULL);
-    handle_signal(SIGABRT,   NULL); 
+    handle_signal(SIGILL, NULL);
+    handle_signal(SIGTRAP, NULL);
+    handle_signal(SIGFPE, NULL);
+    handle_signal(SIGBUS, NULL);
+    handle_signal(SIGSEGV, NULL);
+
+    if (flags & PAL_INITIALIZE_ALL_SIGNALS)
+    {
+        handle_signal(SIGHUP, NULL);
+        handle_signal(SIGINT, NULL);
+        handle_signal(SIGQUIT, NULL);
+        handle_signal(SIGABRT, NULL);
 #ifdef SIGEMT
-    handle_signal(SIGEMT,    NULL);
+        handle_signal(SIGEMT,    NULL);
 #endif // SIGEMT
-    handle_signal(SIGFPE,    NULL);
-    handle_signal(SIGBUS,    NULL);
-    handle_signal(SIGPIPE,   NULL);
-    handle_signal(SIGSEGV,   NULL);
-    handle_signal(SIGSYS,    NULL); 
-    handle_signal(SIGALRM,   NULL); 
-    handle_signal(SIGTERM,   NULL); 
-    handle_signal(SIGXCPU,   NULL);
-    handle_signal(SIGXFSZ,   NULL);
-    handle_signal(SIGVTALRM, NULL);
-    handle_signal(SIGPROF,   NULL);
-    /* Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
-    during cleanup after this function has been called. */
+        handle_signal(SIGSYS, NULL);
+        handle_signal(SIGALRM, NULL);
+        handle_signal(SIGTERM, NULL);
+        handle_signal(SIGXCPU, NULL);
+        handle_signal(SIGXFSZ, NULL);
+        handle_signal(SIGVTALRM, NULL);
+        handle_signal(SIGPROF, NULL);
+        handle_signal(SIGPIPE, NULL);
+        /* Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
+        during cleanup after this function has been called. */
+    }
 }
 
 

@@ -112,9 +112,7 @@
 #define DEFINE_EXT_GLOBALS
 
 #include "data.h"
-#ifndef FEATURE_PAL
 #include "disasm.h"
-#endif // !FEATURE_PAL
 
 #include "predeftlsslot.h"
 
@@ -200,10 +198,11 @@ HMODULE g_hInstance = NULL;
 #endif
 
 #ifdef FEATURE_PAL
+
 #define NOTHROW
-#else
-#define NOTHROW (std::nothrow)
-#endif
+#define MINIDUMP_NOT_SUPPORTED()
+
+#else // !FEATURE_PAL
 
 #define MINIDUMP_NOT_SUPPORTED()   \
     if (IsMiniDumpFile())      \
@@ -213,7 +212,8 @@ HMODULE g_hInstance = NULL;
         return Status;         \
     }
 
-#ifndef FEATURE_PAL
+#define NOTHROW (std::nothrow)
+
 #include "safemath.h"
 
 DECLARE_API (MinidumpMode)
@@ -560,6 +560,8 @@ DECLARE_API (EEStack)
     return Status;
 }
 
+#endif // FEATURE_PAL
+
 HRESULT DumpStackObjectsRaw(size_t nArg, __in_z LPSTR exprBottom, __in_z LPSTR exprTop, BOOL bVerify)
 {
     size_t StackTop = 0;
@@ -709,6 +711,8 @@ DECLARE_API(DumpMD)
     return Status;
 }
 
+#ifndef FEATURE_PAL
+
 BOOL GatherDynamicInfo(TADDR DynamicMethodObj, DacpObjectData *codeArray, 
                        DacpObjectData *tokenArray, TADDR *ptokenArrayAddr)
 {
@@ -785,6 +789,7 @@ BOOL GatherDynamicInfo(TADDR DynamicMethodObj, DacpObjectData *codeArray,
     bRet = TRUE; // whew.
     return bRet;
 }
+
 
 DECLARE_API(DumpIL)
 {
@@ -1103,6 +1108,8 @@ DECLARE_API(DumpSigElem)
     DumpSigWorker(dwSigAddr, dwModuleAddr, FALSE);
     return Status;
 }
+
+#endif // FEATURE_PAL
 
 
 /**********************************************************************\
@@ -1999,8 +2006,6 @@ DECLARE_API(DumpObj)
     
     return Status;
 }
-
-#endif // FEATURE_PAL
 
 CLRDATA_ADDRESS isExceptionObj(CLRDATA_ADDRESS mtObj)
 {
@@ -5152,6 +5157,8 @@ DECLARE_API(FinalizeQueue)
     return Status;
 }
 
+#endif // FEATURE_PAL
+
 enum {
     // These are the values set in m_dwTransientFlags.
     // Note that none of these flags survive a prejit save/restore.
@@ -5436,6 +5443,7 @@ DECLARE_API(DumpAssembly)
     AssemblyInfo(&Assembly);
     return Status;
 }
+
 
 String GetHostingCapabilities(DWORD hostConfig)
 {
@@ -6589,7 +6597,6 @@ private:
 };
 
 Breakpoints g_bpoints;
-#endif
 
 // Controls whether optimizations are disabled on module load and whether NGEN can be used
 BOOL g_fAllowJitOptimization = TRUE;
@@ -7404,6 +7411,8 @@ DECLARE_API(ThreadPool)
     return Status;
 }
 
+#endif // FEATURE_PAL
+
 DECLARE_API(FindAppDomain)
 {
     INIT_API();
@@ -7486,6 +7495,8 @@ DECLARE_API(FindAppDomain)
     
     return Status;
 }
+
+#ifndef FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -12232,8 +12243,6 @@ DECLARE_API(SaveModule)
 {
     INIT_API();
     MINIDUMP_NOT_SUPPORTED();    
-    
-#ifndef FEATURE_PAL
 
     StringHolder Location;
     DWORD_PTR moduleAddr = NULL;
@@ -12420,13 +12429,6 @@ DECLARE_API(SaveModule)
 end:
     CloseHandle (hFile);
     return Status;
-
-#else
-
-    _ASSERTE(false);
-    return E_FAIL;
-
-#endif // FEATURE_PAL
 }
 
 #ifdef _DEBUG
@@ -12935,7 +12937,6 @@ Exit:
     return Status;
 }
 
-#ifndef FEATURE_PAL
 // TODO: Convert PAL_TRY_NAKED to something that works on the Mac.
 HRESULT CALLBACK ImplementEFNStackTraceTry(
     PDEBUG_CLIENT Client,
@@ -12980,7 +12981,7 @@ HRESULT CALLBACK _EFN_StackTrace(
 
     return Status;
 }
-#endif // !FEATURE_PAL
+
 
 BOOL FormatFromRemoteString(DWORD_PTR strObjPointer, __out_ecount(cchString) PWSTR wszBuffer, ULONG cchString)
 {
