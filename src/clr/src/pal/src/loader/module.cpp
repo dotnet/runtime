@@ -1913,7 +1913,7 @@ PAL_GetCoreClrModuleBase()
 {
     LPCVOID retval = NULL;
 
-    PERF_ENTRY(PAL_GetModuleBaseFromHModule);
+    PERF_ENTRY(PAL_GetCoreClrModuleBase);
     ENTRY("PAL_GetCoreClrModuleBase\n");
 
     if(pal_module.dl_handle != NULL)
@@ -1949,4 +1949,33 @@ PAL_GetCoreClrModuleBase()
     LOGEXIT("PAL_GetCoreClrModuleBase returns %p\n", retval);
     PERF_EXIT(PAL_GetCoreClrModuleBase);
     return retval;
+}
+
+// Get base address of the module containing this function 
+// (in case of CoreCLR process PAL_GetPalModuleBase() == PAL_GetCoreClrModuleBase())
+PALAPI
+LPCVOID
+PAL_GetPalModuleBase()
+{
+    LPCVOID retval = NULL;
+
+    PERF_ENTRY(PAL_GetPalModuleBase);
+    ENTRY("PAL_GetPalModuleBase\n");
+
+    Dl_info info;
+    void *current_func = reinterpret_cast<void *>(PAL_GetPalModuleBase);
+    if (dladdr(current_func, &info) != 0)
+    {
+        retval = info.dli_fbase;
+    }
+    else 
+    {
+        TRACE("Can't get base address of the current module\n");
+        SetLastError(ERROR_INVALID_DATA);
+    }
+
+    LOGEXIT("PAL_GetPalModuleBase returns %p\n", retval);
+    PERF_EXIT(PAL_GetPalModuleBase);
+    return retval;
+
 }

@@ -3340,6 +3340,14 @@ PALAPI
 LPCVOID
 PAL_GetCoreClrModuleBase();
 
+
+// Get base address of the module containing this function 
+// (in case of CoreCLR process PAL_GetPalModuleBase() == PAL_GetCoreClrModuleBase())
+PALAPI
+LPCVOID
+PAL_GetPalModuleBase();
+
+
 PALIMPORT
 LPVOID
 PALAPI
