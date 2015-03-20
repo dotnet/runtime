@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <AssemblyName>System.Private.DataContractSerialization</AssemblyName>
+    <RootNamespace>System.Private.DataContractSerialization</RootNamespace>
+    <OutputType>Library</OutputType>
+    <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectGuid>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</ProjectGuid>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <FileAlignment>512</FileAlignment>
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
+    <JsonSources>System\Runtime\Serialization\JSON</JsonSources>
+    <XmlSources>System\Xml</XmlSources>
+    <TextSources>System\Text</TextSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\__HResults.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\Attributes.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\CodeGenerator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ClassDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\CollectionDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContractSet.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DateTimeOffsetAdapter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DiagnosticUtility.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DictionaryGlobals.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContractResolver.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContractSerializer.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataContractSerializerSettings.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\DataMember.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\EnumDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\Globals.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\HybridObjectCache.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ObjectToIdCache.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ObjectReferenceStack.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\PrimitiveDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SchemaExporter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ScopedKnownTypes.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlFormatGeneratorStatics.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlFormatReaderGenerator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlFormatWriterGenerator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializer.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerContext.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContext.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContext.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlReaderDelegator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlSerializableReader.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlSerializableWriter.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\XmlWriterDelegator.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SerializationMode.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\TypeCode.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ExceptionDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
+    <Compile Include="$(XmlSources)\ArrayHelper.cs" />
+    <Compile Include="$(XmlSources)\IStreamProvider.cs" Condition="'$(BuildProjectName)' == 'CoreSys'" />
+    <Compile Include="$(XmlSources)\IXmlDictionary.cs" />
+    <Compile Include="$(XmlSources)\PrefixHandle.cs" />
+    <Compile Include="$(XmlSources)\StringHandle.cs" />
+    <Compile Include="$(XmlSources)\UniqueId.cs" />
+    <Compile Include="$(XmlSources)\ValueHandle.cs" />
+    <Compile Include="$(XmlSources)\XmlBaseReader.cs" />
+    <Compile Include="$(XmlSources)\XmlBaseWriter.cs" />
+    <Compile Include="$(XmlSources)\XmlBinaryNodeType.cs" />
+    <Compile Include="$(XmlSources)\XmlBinaryReader.cs" />
+    <Compile Include="$(XmlSources)\XmlBinaryReaderSession.cs" />
+    <Compile Include="$(XmlSources)\XmlBinaryWriter.cs" />
+    <Compile Include="$(XmlSources)\XmlBinaryWriterSession.cs" />
+    <Compile Include="$(XmlSources)\XmlBufferReader.cs" />
+    <Compile Include="$(XmlSources)\XmlConverter.cs" />
+    <Compile Include="$(XmlSources)\XmlDictionary.cs" />
+    <Compile Include="$(XmlSources)\XmlDictionaryWriter.cs" />
+    <Compile Include="$(XmlSources)\XmlDictionaryReader.cs" />
+    <Compile Include="$(XmlSources)\XmlDictionaryReaderQuotas.cs" />
+    <Compile Include="$(XmlSources)\XmlDictionaryString.cs" />
+    <Compile Include="$(XmlSources)\XmlExceptionHelper.cs" />
+    <Compile Include="$(XmlSources)\XmlNodeWriter.cs" />
+    <Compile Include="$(XmlSources)\XmlStreamNodeWriter.cs" />
+    <Compile Include="$(XmlSources)\XmlSchemaSet.cs" />
+    <Compile Include="$(XmlSources)\XmlUTF8TextReader.cs" />
+    <Compile Include="$(XmlSources)\EncodingStreamWrapper.cs" />
+    <Compile Include="$(TextSources)\Base64Encoding.cs" />
+    <Compile Include="$(TextSources)\SurrogateChar.cs" />
+    <Compile Include="$(JsonSources)\DataContractJsonSerializer.cs" />
+    <Compile Include="$(JsonSources)\JsonGlobals.cs" />
+    <Compile Include="$(JsonSources)\XmlObjectSerializerReadContextComplexJson.cs" />
+    <Compile Include="$(JsonSources)\XmlObjectSerializerWriteContextComplexJson.cs" />
+    <Compile Include="$(JsonSources)\DataContractToObjectConverter.cs" />
+    <Compile Include="$(JsonSources)\ObjectToDataContractConverterHelper.cs" />
+    <Compile Include="$(JsonSources)\JavaScriptObjectDeserializer.cs" />
+    <Compile Include="$(JsonSources)\JavascriptSerializer.cs" />
+    <Compile Include="$(JsonSources)\JavascriptDeSerializer.cs" />
+    <Compile Include="$(JsonSources)\JavaScriptString.cs" />
+    <Compile Include="$(JsonSources)\DateTimeFormat.cs" />
+    <Compile Include="$(JsonSources)\EmitTypeInformation.cs" />
+    <Compile Include="$(JsonSources)\DataContractJsonSerializerSettings.cs" />
+  </ItemGroup>
+  <ItemGroup>
+	<ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">
+      <Project>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</Project>
+      <Name>System.Runtime.Serialization.Primitives</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
