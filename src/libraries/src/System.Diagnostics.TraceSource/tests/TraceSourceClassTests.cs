@@ -13,7 +13,7 @@ namespace System.Diagnostics.TraceSourceTests
         public void DefaultListener()
         {
             var trace = new TraceSource("TestTraceSource");
-            Assert.True(trace.Listeners.Count == 1);
+            Assert.Equal(1, trace.Listeners.Count);
             Assert.IsType<DefaultTraceListener>(trace.Listeners[0]);
         }
 
@@ -21,7 +21,7 @@ namespace System.Diagnostics.TraceSourceTests
         public void DefaultLevel()
         {
             var trace = new TraceSource("TestTraceSource");
-            Assert.True(trace.Switch.Level == SourceLevels.Off);
+            Assert.Equal(SourceLevels.Off, trace.Switch.Level);
         }
 
         [Theory]
@@ -58,6 +58,10 @@ namespace System.Diagnostics.TraceSourceTests
             trace.Listeners.Add(listener);
             trace.TraceEvent(TraceEventType.Verbose, 0);
             Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+            trace.TraceEvent(TraceEventType.Verbose, 0, "Message");
+            Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
+            trace.TraceEvent(TraceEventType.Verbose, 0, "Format {0}", "arg0", 1);
+            Assert.Equal(3, listener.GetCallCount(Method.TraceEvent));
         }
 
         [Fact]
@@ -68,6 +72,8 @@ namespace System.Diagnostics.TraceSourceTests
             trace.Listeners.Add(listener);
             trace.TraceData(TraceEventType.Verbose, 0, null);
             Assert.Equal(1, listener.GetCallCount(Method.TraceData));
+            trace.TraceData(TraceEventType.Verbose, 0, "Data1", 2);
+            Assert.Equal(2, listener.GetCallCount(Method.TraceData));
         }
 
         [Fact]

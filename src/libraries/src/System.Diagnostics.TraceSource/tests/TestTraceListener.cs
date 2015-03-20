@@ -13,9 +13,17 @@ namespace System.Diagnostics.TraceSourceTests
             Dispose,
             Write,
             WriteLine,
+            //NOTE: update MethodEnumCount if values are added
+        }
+                
+        const int MethodEnumCount = 5;
+
+        public TestTraceListener()
+        {
+            _calls = new int[MethodEnumCount];
         }
 
-        int[] _calls;
+        private int[] _calls;
 
         /// <summary>
         /// Gets the number of times any of the public methods on this instance were called.
@@ -27,11 +35,6 @@ namespace System.Diagnostics.TraceSourceTests
         private void Call(Method method)
         {
             _calls[(int)method]++;
-        }
-        
-        public TestTraceListener()
-        {
-            _calls = new int[5];
         }
 
         protected override void Dispose(bool disposing)
