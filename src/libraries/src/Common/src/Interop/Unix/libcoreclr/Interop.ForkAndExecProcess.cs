@@ -8,27 +8,35 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class libc
+    internal static partial class libcoreclr
     {
-        internal static unsafe int execve(string filename, string[] argv, string[] envp)
+        internal static unsafe int ForkAndExecProcess(
+            string filename, string[] argv, string[] envp, string cwd,
+            bool redirectStdin, bool redirectStdout, bool redirectStderr,
+            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd)
         {
             byte** argvPtr = null, envpPtr = null;
             try
             {
                 AllocNullTerminatedArray(argv, ref argvPtr);
                 AllocNullTerminatedArray(envp, ref envpPtr);
-                return execve(filename, argvPtr, envpPtr);
+                return ForkAndExecProcess(
+                    filename, argvPtr, envpPtr, cwd,
+                    redirectStdin ? 1 : 0, redirectStdout ? 1 : 0, redirectStderr ? 1 :0,
+                    out lpChildPid, out stdinFd, out stdoutFd, out stderrFd);
             }
             finally
             {
-                // Should only execute if execve fails
                 FreeArray(envpPtr, envp.Length);
                 FreeArray(argvPtr, argv.Length);
             }
         }
 
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        private static extern unsafe int execve(string filename, byte** argv, byte** envp);
+        [DllImport(Libraries.LibCoreClr, SetLastError = true)]
+        private static extern unsafe int ForkAndExecProcess(
+            string filename, byte** argv, byte** envp, string cwd,
+            int redirectStdin, int redirectStdout, int redirectStderr,
+            out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd);
 
         private static unsafe void AllocNullTerminatedArray(string[] arr, ref byte** arrPtr)
         {
