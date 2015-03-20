@@ -225,17 +225,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
       <Link>Common\Interop\Unix\Interop.close.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.dup2.cs">
-      <Link>Common\Interop\Unix\Interop.dup2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.execve.cs">
-      <Link>Common\Interop\Unix\Interop.execve.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.FileDescriptors.cs">
       <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fork.cs">
-      <Link>Common\Interop\Unix\Interop.fork.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gethostname.cs">
       <Link>Common\Interop\Unix\Interop.gethostname.cs</Link>
@@ -266,6 +257,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.waitpid.cs">
       <Link>Common\Interop\Unix\Interop.waitpid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.ForkAndExecProcess.cs">
+      <Link>Common\Interop\Unix\Interop.ForkAndExecProcess.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
