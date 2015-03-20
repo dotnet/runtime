@@ -15,7 +15,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TestMocks.cs" />
+    <Compile Include="TestTraceListener.cs" />
     <Compile Include="TraceClassTests.cs" />
     <Compile Include="TraceSourceClassTests.cs" />
   </ItemGroup>

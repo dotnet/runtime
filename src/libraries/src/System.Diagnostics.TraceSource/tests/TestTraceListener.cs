@@ -27,7 +27,6 @@ namespace System.Diagnostics.TraceSourceTests
         private void Call(Method method)
         {
             _calls[(int)method]++;
-
         }
         
         public TestTraceListener()
