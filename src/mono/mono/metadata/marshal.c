@@ -8142,7 +8142,7 @@ mono_marshal_get_isinst_with_cache (void)
 	mono_mb_emit_ldloc (mb, 1);
 	mono_mb_emit_byte (mb, CEE_LDC_I4);
 	mono_mb_emit_i4 (mb, ~0x1);
-	mono_mb_emit_byte (mb, CEE_CONV_U);
+	mono_mb_emit_byte (mb, CEE_CONV_I);
 	mono_mb_emit_byte (mb, CEE_AND);
 	mono_mb_emit_ldloc (mb, 0);
 	/*if ((cached_vtable & ~0x1)== obj_vtable)*/
