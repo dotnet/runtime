@@ -4246,6 +4246,14 @@ emit_castclass_with_cache (MonoCompile *cfg, MonoClass *klass, MonoInst **args, 
 	return res;
 }
 
+static int
+get_castclass_cache_idx (MonoCompile *cfg)
+{
+	/* Each CASTCLASS_CACHE patch needs a unique index which identifies the call site */
+	cfg->castclass_cache_index ++;
+	return (cfg->method_index << 16) | cfg->castclass_cache_index;
+}
+
 static MonoInst*
 emit_castclass_with_cache_nonshared (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, MonoBasicBlock **out_bblock)
 {
@@ -4260,9 +4268,7 @@ emit_castclass_with_cache_nonshared (MonoCompile *cfg, MonoInst *obj, MonoClass 
 
 	/* inline cache*/
 	if (cfg->compile_aot) {
-		/* Each CASTCLASS_CACHE patch needs a unique index which identifies the call site */
-		cfg->castclass_cache_index ++;
-		idx = (cfg->method_index << 16) | cfg->castclass_cache_index;
+		idx = get_castclass_cache_idx (cfg);
 		EMIT_NEW_AOTCONST (cfg, args [2], MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
 	} else {
 		EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
@@ -10562,6 +10568,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
 				MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
 				MonoInst *args [3];
+				int idx;
 
 				/* obj */
 				args [0] = *sp;
@@ -10570,10 +10577,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_CLASSCONST (cfg, args [1], klass);
 
 				/* inline cache*/
-				if (cfg->compile_aot)
-					EMIT_NEW_AOTCONST (cfg, args [2], MONO_PATCH_INFO_CASTCLASS_CACHE, NULL);
-				else
+				if (cfg->compile_aot) {
+					idx = get_castclass_cache_idx (cfg);
+					EMIT_NEW_AOTCONST (cfg, args [2], MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
+				} else {
 					EMIT_NEW_PCONST (cfg, args [2], mono_domain_alloc0 (cfg->domain, sizeof (gpointer)));
+				}
 
 				*sp++ = mono_emit_method_call (cfg, mono_isinst, args, NULL);
 				ip += 5;
