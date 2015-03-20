@@ -174,17 +174,6 @@ STDAPI CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid, HMODULE hmodTar
 //*****************************************************************************
 BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
-#if defined(_DEBUG)
-    static int BreakOnDILoad = -1;
-    if (BreakOnDILoad == -1)
-        BreakOnDILoad = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnDILoad);
-
-    if (BreakOnDILoad)
-    {
-        _ASSERTE(!"DI Loaded");
-    }
-#endif
-
     // Save off the instance handle for later use.
     switch (dwReason)
     {
@@ -192,6 +181,25 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
         case DLL_PROCESS_ATTACH:
         {
             g_hInst = hInstance;
+
+#ifdef FEATURE_PAL
+            int err = PAL_InitializeDLL();
+            if(err != 0)
+            {
+                return FALSE;
+            }
+#endif
+
+#if defined(_DEBUG)
+            static int BreakOnDILoad = -1;
+            if (BreakOnDILoad == -1)
+                BreakOnDILoad = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnDILoad);
+
+            if (BreakOnDILoad)
+            {
+                _ASSERTE(!"DI Loaded");
+            }
+#endif
 
 #if defined(LOGGING)
             {
