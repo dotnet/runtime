@@ -3729,7 +3729,14 @@ VOID ETW::TypeSystemLog::DeleteTypeHashNoLock(AllLoggedTypes **ppAllLoggedTypes)
 // static
 VOID ETW::TypeSystemLog::FlushObjectAllocationEvents()
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
 
     // If logging is not enabled, then we don't need to do any work.
     if (!(s_fHeapAllocLowEventEnabledNow || s_fHeapAllocHighEventEnabledNow))
