@@ -15,8 +15,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Mac_Debug|AnyCPU' " />
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Mac_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
@@ -196,13 +196,11 @@
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
   </ItemGroup>
+
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
-    <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Unix.cs" />
-    <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Unix.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Unix.cs" />
@@ -215,12 +213,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
-      <Link>Common\Interop\Linux\Interop.ProcFsStat.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sched_getsetaffinity.cs">
-      <Link>Common\Interop\Linux\Interop.sched_getsetaffinity.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.close.cs">
       <Link>Common\Interop\Unix\Interop.close.cs</Link>
@@ -268,6 +260,28 @@
       <Link>Common\Interop\Unix\Interop.waitpid.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="System\Diagnostics\Process.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
+    <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
+      <Link>Common\Interop\Linux\Interop.ProcFsStat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.sched_getsetaffinity.cs">
+      <Link>Common\Interop\Linux\Interop.sched_getsetaffinity.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="System\Diagnostics\Process.OSX.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.OSX.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.OSX.cs" /> 
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>   
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>

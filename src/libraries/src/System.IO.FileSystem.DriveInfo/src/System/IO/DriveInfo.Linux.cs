@@ -12,17 +12,6 @@ namespace System.IO
 {
     public sealed partial class DriveInfo
     {
-        private string _fileSystemType;
-        private string _fileSystemName;
-
-        private DriveInfo(string mountPath, string fileSystemType, string fileSystemName) : this(mountPath)
-        {
-            Debug.Assert(fileSystemType != null);
-            Debug.Assert(fileSystemName != null);
-            _fileSystemType = fileSystemType;
-            _fileSystemName = fileSystemName;
-        }
-
         private static string NormalizeDriveName(string driveName)
         {
             if (driveName.Contains("\0"))
@@ -95,40 +84,6 @@ namespace System.IO
             set { throw new PlatformNotSupportedException(); }
         }
 
-        /// <summary>Loads file system stats for the mounted path.</summary>
-        /// <returns>The loaded stats.</returns>
-        private Interop.libc.structStatvfs GetStats()
-        {
-            Interop.libc.structStatvfs stats;
-            if (Interop.libc.statvfs(Name, out stats) != 0)
-            {
-                int errno = Marshal.GetLastWin32Error();
-                if (errno == Interop.Errors.ENOENT)
-                {
-                    throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, Name)); // match Win32 exception
-                }
-                throw Interop.GetExceptionForIoErrno(errno, Name, isDirectory: true);
-            }
-            return stats;
-        }
-
-        /// <summary>Lazily populates _fileSystemType and _fileSystemName if they weren't already filled in.</summary>
-        private void LazyPopulateFileSystemTypeAndName()
-        {
-            Debug.Assert(_fileSystemName == null && _fileSystemType == null);
-            foreach (DriveInfo drive in GetDrives()) // fill in the info by enumerating drives and copying over the associated data
-            {
-                if (drive.Name == this.Name)
-                {
-                    _fileSystemType = drive._fileSystemType;
-                    _fileSystemName = drive._fileSystemName;
-                    return;
-                }
-            }
-            _fileSystemType = string.Empty;
-            _fileSystemName = string.Empty;
-        }
-
         public static unsafe DriveInfo[] GetDrives()
         {
             const int StringBufferLength = 8192; // there's no defined max size nor an indication through the API when you supply too small a buffer; choosing something that seems reasonable
@@ -160,6 +115,55 @@ namespace System.IO
                 int result = Interop.libc.endmntent(fp);
                 Debug.Assert(result == 1); // documented to always return 1
             }
+        }
+
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        private string _fileSystemType;
+        private string _fileSystemName;
+
+        private DriveInfo(string mountPath, string fileSystemType, string fileSystemName) : this(mountPath)
+        {
+            Debug.Assert(fileSystemType != null);
+            Debug.Assert(fileSystemName != null);
+            _fileSystemType = fileSystemType;
+            _fileSystemName = fileSystemName;
+        }
+
+        /// <summary>Lazily populates _fileSystemType and _fileSystemName if they weren't already filled in.</summary>
+        private void LazyPopulateFileSystemTypeAndName()
+        {
+            Debug.Assert(_fileSystemName == null && _fileSystemType == null);
+            foreach (DriveInfo drive in GetDrives()) // fill in the info by enumerating drives and copying over the associated data
+            {
+                if (drive.Name == this.Name)
+                {
+                    _fileSystemType = drive._fileSystemType;
+                    _fileSystemName = drive._fileSystemName;
+                    return;
+                }
+            }
+            _fileSystemType = string.Empty;
+            _fileSystemName = string.Empty;
+        }
+
+        /// <summary>Loads file system stats for the mounted path.</summary>
+        /// <returns>The loaded stats.</returns>
+        private Interop.libc.structStatvfs GetStats()
+        {
+            Interop.libc.structStatvfs stats;
+            if (Interop.libc.statvfs(Name, out stats) != 0)
+            {
+                int errno = Marshal.GetLastWin32Error();
+                if (errno == Interop.Errors.ENOENT)
+                {
+                    throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, Name)); // match Win32 exception
+                }
+                throw Interop.GetExceptionForIoErrno(errno, Name, isDirectory: true);
+            }
+            return stats;
         }
 
         /// <summary>Gets the string starting at the specifying pointer and going until null termination.</summary>
