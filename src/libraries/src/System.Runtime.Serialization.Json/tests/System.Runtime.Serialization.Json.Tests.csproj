@@ -11,7 +11,7 @@
     <AssemblyName>System.Runtime.Serialization.Json.Tests</AssemblyName>
     <SignAssembly>false</SignAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
+    <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
