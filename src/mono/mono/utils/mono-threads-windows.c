@@ -356,7 +356,7 @@ mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 	return OpenThread (THREAD_ALL_ACCESS, TRUE, tid);
 }
 
-#if !defined(__GNUC__)
+#if defined(_MSC_VER)
 const DWORD MS_VC_EXCEPTION=0x406D1388;
 #pragma pack(push,8)
 typedef struct tagTHREADNAME_INFO
@@ -372,7 +372,7 @@ typedef struct tagTHREADNAME_INFO
 void
 mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
 {
-#if !defined(__GNUC__)
+#if defined(_MSC_VER)
 	/* http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx */
 	THREADNAME_INFO info;
 	info.dwType = 0x1000;
