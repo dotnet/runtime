@@ -338,7 +338,7 @@ VOID InternalDeleteCriticalSection(
     if (0 != pPalCriticalSection->LockCount)
     {
         SIZE_T tid;
-        tid = (NULL != pThread ? pThread->GetThreadId() : (SIZE_T)pthread_self());
+        tid = (NULL != pThread ? pThread->GetThreadId() : THREADSilentGetCurrentThreadId());
         int iWaiterCount = (int)PALCS_GETWCOUNT(pPalCriticalSection->LockCount);
 
         if (0 != (PALCS_LOCK_BIT & pPalCriticalSection->LockCount))
@@ -681,11 +681,11 @@ namespace CorUnix
         if(pThread)
         {
             threadId = pThread->GetThreadId();
-            _ASSERTE(threadId == (SIZE_T)pthread_self());            
+            _ASSERTE(threadId == THREADSilentGetCurrentThreadId());            
         }
         else 
         {
-            threadId = (SIZE_T)pthread_self();
+            threadId = THREADSilentGetCurrentThreadId();
             CS_TRACE("Early EnterCriticalSection, no pthread data, getting TID "
                      "internally\n");
         }
@@ -860,11 +860,11 @@ namespace CorUnix
         if(pThread)
         {
             threadId = pThread->GetThreadId();
-            _ASSERTE(threadId == (SIZE_T)pthread_self());            
+            _ASSERTE(threadId == THREADSilentGetCurrentThreadId());            
         }
         else 
         {
-            threadId = (SIZE_T)pthread_self();
+            threadId = THREADSilentGetCurrentThreadId();
             CS_TRACE("Early LeaveCriticalSection, no pthread data, getting TID "
                      "internally\n");
         }
@@ -1028,11 +1028,11 @@ namespace CorUnix
         if(pThread)
         {
             threadId = pThread->GetThreadId();
-            _ASSERTE(threadId == (SIZE_T)pthread_self());            
+            _ASSERTE(threadId == THREADSilentGetCurrentThreadId());            
         }
         else 
         {
-            threadId = (SIZE_T)pthread_self();
+            threadId = THREADSilentGetCurrentThreadId();
             CS_TRACE("Early TryEnterCriticalSection, no pthread data, getting TID "
                      "internally\n");            
         }
@@ -1557,11 +1557,11 @@ namespace CorUnix
         if(pThread)
         {
             threadId = pThread->GetThreadId();
-            _ASSERTE(threadId == (SIZE_T)pthread_self()); 
+            _ASSERTE(threadId == THREADSilentGetCurrentThreadId()); 
         }
         else 
         {
-            threadId = (SIZE_T)pthread_self();
+            threadId = THREADSilentGetCurrentThreadId();
             CS_TRACE("Early EnterCriticalSection, no pthread data, getting TID "
                      "internally\n");
         }
@@ -1619,11 +1619,11 @@ namespace CorUnix
         if(pThread)
         {
             threadId = pThread->GetThreadId();
-            _ASSERTE(threadId == (SIZE_T)pthread_self());            
+            _ASSERTE(threadId == THREADSilentGetCurrentThreadId());            
         }
         else 
         {
-            threadId = (SIZE_T)pthread_self();
+            threadId = THREADSilentGetCurrentThreadId();
             CS_TRACE("Early LeaveCriticalSection, no pthread data, getting TID "
                      "internally\n");
         }
@@ -1683,11 +1683,11 @@ namespace CorUnix
         if(pThread)
         {
             threadId = pThread->GetThreadId();
-            _ASSERTE(threadId == (SIZE_T)pthread_self());            
+            _ASSERTE(threadId == THREADSilentGetCurrentThreadId());            
         }
         else 
         {
-            threadId = (SIZE_T)pthread_self();
+            threadId = THREADSilentGetCurrentThreadId();
             CS_TRACE("Early EnterCriticalSection, no pthread data, getting TID "
                      "internally\n");
         }

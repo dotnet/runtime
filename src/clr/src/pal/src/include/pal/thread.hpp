@@ -318,6 +318,7 @@ namespace CorUnix
 
         SIZE_T m_threadId;
         DWORD m_dwLwpId;
+        pthread_t m_pthreadSelf;        
 
         //
         // Start info
@@ -401,6 +402,7 @@ namespace CorUnix
             m_pThreadObject(NULL),
             m_threadId(0),
             m_dwLwpId(0),
+            m_pthreadSelf(0),
             m_lpStartAddress(NULL),
             m_lpStartParameter(NULL),
             m_bCreateSuspended(FALSE),
@@ -543,6 +545,14 @@ namespace CorUnix
             )
         {
             return m_dwLwpId;
+        };
+
+        pthread_t
+        GetPThreadSelf(
+            void
+            )
+        {
+            return m_pthreadSelf;
         };
 
         LPTHREAD_START_ROUTINE

@@ -28,6 +28,7 @@ extern "C"
 #endif // __cplusplus
 
 #include <signal.h>
+#include <pthread.h>
 
 #if !HAVE_MACH_EXCEPTIONS
 /* A type to wrap the native context type, which is ucontext_t on some
@@ -78,11 +79,7 @@ Return value :
 BOOL
 CONTEXT_SetThreadContext(
     DWORD dwProcessId,
-#if !defined(_AMD64_)
-    DWORD dwThreadId,
-#else // defined(_AMD64_)
-    DWORD64 dwThreadId,
-#endif // !defined(_AMD64_)
+    pthread_t self,
     DWORD dwLwpId,
     CONST CONTEXT *lpContext
     );
@@ -104,11 +101,7 @@ Return value :
 BOOL
 CONTEXT_GetThreadContext(
          DWORD dwProcessId,
-#if !defined(_AMD64_)
-         DWORD dwThreadId,
-#else // defined(_AMD64_)
-         DWORD64 dwThreadId,
-#endif // !defined(_AMD64_)
+         pthread_t self,
          DWORD dwLwpId,
          LPCONTEXT lpContext);
 
