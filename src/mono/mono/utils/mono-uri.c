@@ -19,7 +19,7 @@ mono_escape_uri_string (const gchar *string)
 	while ((c = (guchar) *string) != 0){
 		if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '-' && c <= ':') || (c >= '&' && c <= '*'))
 			g_string_append_c (str, c);
-		else if (c == '!' || c == '=' || c == '?' || c == '?' || c == '_' || c == '_' || c == '~')
+		else if (c == '!' || c == '=' || c == '?' || c == '_' || c == '~')
 			g_string_append_c (str, c);
 		else {
 			g_string_append_c (str, '%');
