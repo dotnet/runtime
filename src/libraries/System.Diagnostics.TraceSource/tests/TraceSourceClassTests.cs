@@ -35,10 +35,11 @@ namespace System.Diagnostics.TraceSourceTests
         [InlineData(SourceLevels.Information, TraceEventType.Information, 1)]
         [InlineData(SourceLevels.Information, TraceEventType.Verbose, 0)]
         [InlineData(SourceLevels.Verbose, TraceEventType.Verbose, 1)]
-        // NOTE: test to cover a TraceEventType value that is not in .net Core
-        [InlineData(SourceLevels.Verbose, (TraceEventType)0x20, 0)]
         [InlineData(SourceLevels.All, TraceEventType.Critical, 1)]
         [InlineData(SourceLevels.All, TraceEventType.Verbose, 1)]
+        // NOTE: tests to cover a TraceEventType value that is not in CoreFX (0x20 == TraceEventType.Start in 4.5)
+        [InlineData(SourceLevels.Verbose, (TraceEventType)0x20, 0)]
+        [InlineData(SourceLevels.All, (TraceEventType)0x20, 1)]
         public void SwitchLevel(SourceLevels sourceLevel, TraceEventType messageLevel, int expected)
         {
             var trace = new TraceSource("TestTraceSource");
@@ -58,7 +59,6 @@ namespace System.Diagnostics.TraceSourceTests
             trace.TraceEvent(TraceEventType.Verbose, 0);
             Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
         }
-
 
         [Fact]
         public void TraceData()
