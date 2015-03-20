@@ -3,7 +3,6 @@
 
 using System;
 using System.Text;
-using Xunit;
 
 namespace BigIntTools
 {
@@ -12,12 +11,13 @@ namespace BigIntTools
         public static string BuildRandomNumber(int maxdigits, int seed)
         {
             Random random = new Random(seed);
-            //Ensure that we have at least 1 digit
+
+            // Ensure that we have at least 1 digit
             int numDigits = random.Next() % maxdigits + 1;
-
-
+            
             StringBuilder randNum = new StringBuilder();
-            //We'll make some numbers negative
+            
+            // We'll make some numbers negative
             while (randNum.Length < numDigits)
             {
                 randNum.Append(random.Next().ToString());
@@ -27,7 +27,9 @@ namespace BigIntTools
                 return "-" + randNum.ToString().Substring(0, numDigits);
             }
             else
+            {
                 return randNum.ToString().Substring(0, numDigits);
+            }
         }
     }
 }
