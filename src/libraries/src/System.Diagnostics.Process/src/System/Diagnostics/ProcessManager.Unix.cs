@@ -18,6 +18,16 @@ namespace System.Diagnostics
             return IsProcessRunning(processId);
         }
 
+        /// <summary>Gets whether the process with the specified ID is currently running.</summary>
+        /// <param name="processId">The process ID.</param>
+        /// <returns>true if the process is running; otherwise, false.</returns>
+        public static bool IsProcessRunning(int processId)
+        {
+            // kill with signal==0 means to not actually send a signal.
+            // If we get back 0, the process is still alive.
+            return 0 == Interop.libc.kill(processId, 0);
+        }
+
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
