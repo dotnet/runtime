@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Xml.XmlSerializer</AssemblyName>
+    <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <NoWarn>$(NoWarn);1634;1691;649;1058;436</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);USE_REFEMIT;FEATURE_LEGACYNETCF</DefineConstants>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <FileAlignment>512</FileAlignment>
+    <DebugSymbols>true</DebugSymbols>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ProjectGuid>{D62A6082-5229-4845-8BE9-75753E08C65A}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Xml.XmlSerializer.Forwards.cs" />
+    <Compile Include="system\xml\xmlreservedns.cs" />
+    <Compile Include="system\xml\binhexencoder.cs" />
+    <Compile Include="system\xml\binhexdecoder.cs" />
+    <Compile Include="system\xml\xmlchartype.cs" />
+    <Compile Include="system\xml\schema\xmlschematype.cs" />
+    <Compile Include="system\xml\schema\xmlschemaset.cs" />
+    <Compile Include="system\xml\schema\xmlschemaobject.cs" />
+    <Compile Include="system\xml\Extensions\ExtensionMethods.cs" />
+    <Compile Include="system\CodeDom\Compiler\CodeDomProvider.cs" />
+    <Compile Include="system\CodeDom\Compiler\CodeGenerator.cs" />
+    <Compile Include="system\Collections\ArrayList.cs" />
+    <Compile Include="system\Collections\InternalHashtable.cs" />
+    <Compile Include="system\xml\serialization\codeidentifier.cs" />
+    <Compile Include="system\xml\serialization\codeidentifiers.cs" />
+    <Compile Include="system\xml\serialization\compilation.cs" />
+    <Compile Include="system\xml\serialization\globals.cs" />
+    <Compile Include="system\xml\serialization\mappings.cs" />
+    <Compile Include="system\xml\serialization\models.cs" />
+    <Compile Include="system\xml\serialization\nametable.cs" />
+    <Compile Include="system\xml\serialization\types.cs" />
+    <Compile Include="system\xml\serialization\typecode.cs" />
+    <Compile Include="system\xml\serialization\xmlanyattributeattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlattributeattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlanyelementattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlanyelementattributes.cs" />
+    <Compile Include="system\xml\serialization\xmlarrayattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlarrayitemattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlarrayitemattributes.cs" />
+    <Compile Include="system\xml\serialization\xmlattributeoverrides.cs" />
+    <Compile Include="system\xml\serialization\xmlattributes.cs" />
+    <Compile Include="system\xml\serialization\xmlchoiceidentifierattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlcustomformatter.cs" />
+    <Compile Include="system\xml\serialization\xmlelementattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlelementattributes.cs" />
+    <Compile Include="system\xml\serialization\xmlenumattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlignoreattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlincludeattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlmapping.cs" />
+    <Compile Include="system\xml\serialization\xmlmembermapping.cs" />
+    <Compile Include="system\xml\serialization\xmlmembersmapping.cs" />
+    <Compile Include="system\xml\serialization\xmlnamespacedeclarationsattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlreflectionimporter.cs" />
+    <Compile Include="system\xml\serialization\xmlreflectionmember.cs" />
+    <Compile Include="system\xml\serialization\xmlrootattribute.cs" />
+    <Compile Include="system\xml\serialization\xmlserializationgeneratedcode.cs" />
+    <Compile Include="system\xml\serialization\xmlserializationreader.cs" />
+    <Compile Include="system\xml\serialization\xmlserializationwriter.cs" />
+    <Compile Include="system\xml\serialization\xmlserializer.cs" />
+    <Compile Include="system\xml\serialization\xmlserializernamespaces.cs" />
+    <Compile Include="system\xml\serialization\xmltextattribute.cs" />
+    <Compile Include="system\xml\serialization\xmltypeattribute.cs" />
+    <Compile Include="system\xml\serialization\xmltypemapping.cs" />
+    <Compile Include="system\xml\serialization\PrimitiveXmlSerializers.cs" />
+    <Compile Include="system\xml\serialization\codegenerator.cs" />
+    <Compile Include="system\xml\serialization\XmlSerializationILGen.cs" />
+    <Compile Include="system\xml\serialization\XmlSerializationReaderILGen.cs" />
+    <Compile Include="system\xml\serialization\XmlSerializationWriterILGen.cs" />
+    <Compile Include="system\xml\serialization\sourceinfo.cs" />
+    <Compile Include="system\xml\serialization\XmlSchema.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\AttributeCollection.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\Fetchers.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\Fixups.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\LogicalXmlInfo.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\SerializationHelpers.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\Soap.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\SoapAttributes.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\SoapAttributeOverrides.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\SoapTypeAttribute.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\SoapElementAttribute.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\SoapAttributeAttribute.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\SoapEnumAttribute.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\TypeContainer.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlMapping.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlReflectionImporter.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlSerializationReader.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlSerializationReflector.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlSerializationReflectorExt.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlSerializationWriter.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlSerializer.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\XmlTypeMapping.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\resources.cs" />
+    <Compile Include="system\xml\serialization\legacynetcf\stubs.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
