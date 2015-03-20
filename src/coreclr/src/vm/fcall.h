@@ -1320,8 +1320,10 @@ typedef UINT16 FC_UINT16_RET;
 // Explicitly pass the TypedReferences by reference 
 // UNIXTODO: Remove once the proper managed calling convention for struct is in place
 #define FC_TypedByRef   TypedByRef&
+#define FC_DECIMAL      DECIMAL&
 #else
 #define FC_TypedByRef   TypedByRef
+#define FC_DECIMAL      DECIMAL
 #endif
 
 
