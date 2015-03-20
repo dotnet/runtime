@@ -194,84 +194,50 @@ namespace System.Diagnostics
         private bool StartCore(ProcessStartInfo startInfo)
         {
             // Resolve the path to the specified file name
-            string executablePath = ResolvePath(startInfo.FileName);
+            string filename = ResolvePath(startInfo.FileName);
 
-            // TODO: Fix stream redirection.
-            // If streams are to be redirected, create a pipe for each that is.
-            // int[0] is the read end of the pipe, int[1] is the write end.
-            int[] stdinPipeFds = startInfo.RedirectStandardInput ? CreatePipe() : null;
-            int[] stdoutPipeFds = startInfo.RedirectStandardOutput ? CreatePipe() : null;
-            int[] stderrPipeFds = startInfo.RedirectStandardError ? CreatePipe() : null;
+            // Parse argv, envp, and cwd out of the ProcessStartInfo
+            string[] argv = CreateArgv(startInfo);
+            string[] envp = CreateEnvp(startInfo);
+            string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
-            // Fork the process.  In the child process, pid will be 0.
-            // In the parent process, pid will be the child's process ID.
-            int pid = Interop.libc.fork();
-            if (pid == -1) // fork error
+            // Invoke the runtime's fork/execve routine.  It will create pipes for all requested
+            // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+            // descriptors, and execve to execute the requested process.  The runtime's implementation
+            // is used to fork/execve as executing managed code in a forked process is not safe (only
+            // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
+            int childPid, stdinFd, stdoutFd, stderrFd;
+            if (Interop.libcoreclr.ForkAndExecProcess(
+                filename, argv, envp, cwd,
+                startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                out childPid, 
+                out stdinFd, out stdoutFd, out stderrFd) != 0)
             {
                 throw new Win32Exception();
             }
 
-            if (pid == 0) // child process
-            {
-                // If we're redirecting streams, configure stdin, stdout, stderr
-                if (stdinPipeFds != null)
-                {
-                    Redirect(stdinPipeFds[Interop.libc.ReadEndOfPipe], Interop.libc.FileDescriptors.STDIN_FILENO);
-                    Interop.libc.close(stdinPipeFds[Interop.libc.WriteEndOfPipe]); // close copy of parent's write end
-                }
-                if (stdoutPipeFds != null)
-                {
-                    Redirect(stdoutPipeFds[Interop.libc.WriteEndOfPipe], Interop.libc.FileDescriptors.STDOUT_FILENO);
-                    Interop.libc.close(stdoutPipeFds[Interop.libc.ReadEndOfPipe]); // close copy of parent's read end
-                }
-                if (stderrPipeFds != null)
-                {
-                    Redirect(stderrPipeFds[Interop.libc.WriteEndOfPipe], Interop.libc.FileDescriptors.STDERR_FILENO);
-                    Interop.libc.close(stderrPipeFds[Interop.libc.ReadEndOfPipe]); // close copy of parent's read end
-                }
-
-                // Set the current working directory based on the caller's request
-                if (!string.IsNullOrWhiteSpace(startInfo.WorkingDirectory))
-                    Directory.SetCurrentDirectory(startInfo.WorkingDirectory);
-
-                // Parse the list of arguments and environment variables
-                string[] argv = CreateArgv(startInfo);
-                string[] envp = CreateEnvp(startInfo);
-
-                // Execute. If this succeeds, it won't return.
-                if (Interop.libc.execve(executablePath, argv, envp) != 0)
-                {
-                    throw new Win32Exception();
-                }
-
-                Debug.Fail("execve should never return when successful");
-                return false; 
-            }
-
-            // We're the parent process.  Store the child's information into this Process object.
-            SetProcessHandle(new SafeProcessHandle(pid));
-            SetProcessId(pid);
+            // Store the child's information into this Process object.
+            Debug.Assert(childPid >= 0);
+            SetProcessHandle(new SafeProcessHandle(childPid));
+            SetProcessId(childPid);
 
             // Configure the parent's ends of the redirection streams.
-            if (stdinPipeFds != null)
+            if (startInfo.RedirectStandardInput)
             {
-                Interop.libc.close(stdinPipeFds[Interop.libc.ReadEndOfPipe]); // close copy of child's stdin
-                _standardInput = new StreamWriter(
-                    OpenStream(stdinPipeFds[Interop.libc.WriteEndOfPipe], FileAccess.Write),
+                Debug.Assert(stdinFd >= 0);
+                _standardInput = new StreamWriter(OpenStream(stdinFd, FileAccess.Write), 
                     Encoding.UTF8, StreamBufferSize) { AutoFlush = true };
             }
-            if (stdoutPipeFds != null)
+            if (startInfo.RedirectStandardOutput)
             {
-                Interop.libc.close(stdoutPipeFds[Interop.libc.WriteEndOfPipe]); // close copy of child's stdout
-                _standardOutput = new StreamReader(
-                    OpenStream(stdoutPipeFds[Interop.libc.ReadEndOfPipe], FileAccess.Read),
+                Debug.Assert(stdoutFd >= 0);
+                _standardOutput = new StreamReader(OpenStream(stdoutFd, FileAccess.Read),
                     startInfo.StandardOutputEncoding ?? Encoding.UTF8, true, StreamBufferSize);
             }
-            if (stderrPipeFds != null)
+            if (startInfo.RedirectStandardError)
             {
-                Interop.libc.close(stderrPipeFds[Interop.libc.WriteEndOfPipe]); // close copy of child's stderr
-                _standardError = new StreamReader(
-                    OpenStream(stderrPipeFds[Interop.libc.ReadEndOfPipe], FileAccess.Read),
+                Debug.Assert(stderrFd >= 0);
+                _standardError = new StreamReader(OpenStream(stderrFd, FileAccess.Read),
                     startInfo.StandardErrorEncoding ?? Encoding.UTF8, true, StreamBufferSize);
             }
 
@@ -293,7 +259,7 @@ namespace System.Diagnostics
         /// <returns>The argv array.</returns>
         private static string[] CreateArgv(ProcessStartInfo psi)
         {
-            string argv0 = psi.FileName; // pass filename instead of resolved path as argv[0], to match what caller supplied
+            string argv0 = psi.FileName; // pass filename (instead of resolved path) as argv[0], to match what caller supplied
             if (string.IsNullOrEmpty(psi.Arguments))
             {
                 return new string[] { argv0 };
@@ -399,28 +365,6 @@ namespace System.Diagnostics
             return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
         }
 
-        /// <summary>
-        /// Duplicates <paramref name="pipeToUse"/> on to <paramref name="fdToOverwrite"/>.
-        /// </summary>
-        /// <param name="pipeToUse">The file descriptor to use in place of <paramref name="fdToOverwrite"/>.</param>
-        /// <param name="fdToOverwrite">The file descriptor to be overwritten.</param>
-        private static void Redirect(int pipeToUse, int fdToOverwrite)
-        {
-            Debug.Assert(pipeToUse >= 0 && fdToOverwrite >= 0);
-            Debug.Assert(pipeToUse != fdToOverwrite);
-
-            // Duplicate the file descriptor.  We may need to retry if the I/O is interrupted.
-            int result;
-            while ((result = Interop.libc.dup2(pipeToUse, fdToOverwrite)) != 0)
-            {
-                int errno = Marshal.GetLastWin32Error();
-                if (errno != Interop.Errors.EBUSY && errno != Interop.Errors.EINTR)
-                {
-                    throw new Win32Exception(errno);
-                }
-            }
-        }
-
         /// <summary>Opens a stream around the specified file descriptor and with the specified access.</summary>
         /// <param name="fd">The file descriptor.</param>
         /// <param name="access">The access mode.</param>
@@ -431,22 +375,6 @@ namespace System.Diagnostics
             return new FileStream(
                 new SafeFileHandle((IntPtr)fd, ownsHandle: true), 
                 access, StreamBufferSize, isAsync: false);
-        }
-
-        /// <summary>Creates an anonymous pipe, returning the file descriptors for the two ends of the pipe.</summary>
-        /// <returns>An array containing the read end (int[0]) and the write end (int[1]) of the pipe.</returns>
-        private static unsafe int[] CreatePipe()
-        {
-            var fds = new int[2];
-            fixed (int* fdsptr = fds)
-            {
-                if (Interop.libc.pipe(fdsptr) != 0)
-                {
-                    throw new Win32Exception();
-                }
-            }
-            Debug.Assert(fds[0] >= 0 && fds[1] >= 0 && fds[0] != fds[1]);
-            return fds;
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
