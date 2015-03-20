@@ -2416,7 +2416,7 @@ ParseSection:
 #pragma warning(pop)
 #endif
 
-FCIMPL3_VII(Object*, COMNumber::FormatDecimal, DECIMAL value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE)
+FCIMPL3_VII(Object*, COMNumber::FormatDecimal, FC_DECIMAL value, StringObject* formatUNSAFE, NumberFormatInfo* numfmtUNSAFE)
 {
     FCALL_CONTRACT;
 
