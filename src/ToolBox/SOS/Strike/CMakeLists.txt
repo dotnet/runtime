@@ -81,6 +81,7 @@ else(WIN32)
     exts.cpp
     gcroot.cpp
     metadata.cpp
+    stressLogDump.cpp
     strike.cpp
     sos.cpp
     util.cpp
