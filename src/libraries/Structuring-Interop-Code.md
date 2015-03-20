@@ -94,7 +94,7 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 			 
 - .csproj project files then include the interop code they need, e.g.
 ```XML
-<ItemGroup Condition=" '$(PlatformUnix)' == 'true' ">
+<ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="Interop\Unix\libc\Interop.strerror.cs" />
     <Compile Include="Interop\Unix\libc\Interop.getenv.cs" />
