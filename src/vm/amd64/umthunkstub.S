@@ -11,7 +11,7 @@
 //
 // METHODDESC_REGISTER: UMEntryThunk*
 //
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UMEntryPrestubUnwindFrameChainHandler
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     PUSH_ARGUMENT_REGISTERS
     // +8 for alignment
     alloc_stack (SIZEOF_MAX_FP_ARG_SPILL + 8)
@@ -33,7 +33,7 @@ NESTED_END TheUMEntryPrestub, _TEXT
 //
 // METHODDESC_REGISTER: UMEntryThunk*
 //
-NESTED_ENTRY UMThunkStub, _TEXT, UMThunkStubUnwindFrameChainHandler
+NESTED_ENTRY UMThunkStub, _TEXT, UnhandledExceptionHandlerUnix
 #define UMThunkStubAMD64_FIXED_STACK_ALLOC_SIZE (SIZEOF_MAX_INT_ARG_SPILL + SIZEOF_MAX_FP_ARG_SPILL + 0x8)
 #define UMThunkStubAMD64_XMM_SAVE_OFFSET 0x0
 #define UMThunkStubAMD64_INT_ARG_OFFSET (SIZEOF_MAX_FP_ARG_SPILL + 0x8)
