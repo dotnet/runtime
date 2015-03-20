@@ -9,14 +9,6 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
-        /// <summary>Gets whether the process with the specified ID is currently running.</summary>
-        /// <param name="processId">The process ID.</param>
-        /// <returns>true if the process is running; otherwise, false.</returns>
-        public static bool IsProcessRunning(int processId)
-        {
-            return File.Exists(Interop.procfs.GetStatFilePathForProcess(processId));
-        }
-
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()
         {
@@ -108,6 +100,10 @@ namespace System.Diagnostics
             // Finally return what we've built up
             return pi;
         }
+
+        // ----------------------------------
+        // ---- Unix PAL layer ends here ----
+        // ----------------------------------
 
         /// <summary>Gets a ThreadState to represent the value returned from the status field of /proc/pid/stat.</summary>
         /// <param name="c">The status field value.</param>
