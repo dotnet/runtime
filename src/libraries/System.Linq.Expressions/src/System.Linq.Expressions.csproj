@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{AEF718E9-D4FC-418F-A7AE-ED6B2C7B3787}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Linq.Expressions</AssemblyName>
+    <RootNamespace>System.Linq.Expressions</RootNamespace>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CacheDict.cs">
+      <Link>Common\System\Dynamic\Utils\CacheDict.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.AddFirst.cs">
+      <Link>Common\System\Dynamic\Utils\CollectionExtensions.AddFirst.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.cs">
+      <Link>Common\System\Dynamic\Utils\CollectionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.Map.cs">
+      <Link>Common\System\Dynamic\Utils\CollectionExtensions.Map.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ContractUtils.cs">
+      <Link>Common\System\Dynamic\Utils\ContractUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs">
+      <Link>Common\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\EmptyReadOnlyCollection.cs">
+      <Link>Common\System\Dynamic\Utils\EmptyReadOnlyCollection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\Error.cs">
+      <Link>Common\System\Dynamic\Utils\Error.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ExpressionUtils.cs">
+      <Link>Common\System\Dynamic\Utils\ExpressionUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ExpressionVisitorUtils.cs">
+      <Link>Common\System\Dynamic\Utils\ExpressionVisitorUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ListArgumentProvider.cs">
+      <Link>Common\System\Dynamic\Utils\ListArgumentProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\Strings.cs">
+      <Link>Common\System\Dynamic\Utils\Strings.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\TypeExtensions.cs">
+      <Link>Common\System\Dynamic\Utils\TypeExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\TypeUtils.cs">
+      <Link>Common\System\Dynamic\Utils\TypeUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
+      <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\DelegateHelpers.cs">
+      <Link>Common\System\Linq\Expressions\Compiler\DelegateHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs">
+      <Link>Common\System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs">
+      <Link>Common\System\Runtime\CompilerServices\ReadOnlyCollectionBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs">
+      <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
+    </Compile>
+    <Compile Include="System\Dynamic\Utils\CollectionExtensions.cs" />
+    <Compile Include="System\Dynamic\Utils\Helpers.cs" />
+    <Compile Include="System\Dynamic\Utils\ReferenceEqualityComparer.cs" />
+    <Compile Include="System\Dynamic\Utils\TypeExtensions.cs" />
+    <Compile Include="System\Dynamic\Utils\TypeUtils.cs" />
+    <Compile Include="System\Linq\Expressions\BinaryExpression.cs" />
+    <Compile Include="System\Linq\Expressions\BlockExpression.cs" />
+    <Compile Include="System\Linq\Expressions\CatchBlock.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\AnalyzedTree.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\BoundConstants.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\CompilerScope.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\CompilerScope.Storage.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\ConstantCheck.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\DelegateHelpers.Generated.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\HoistedLocals.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\ILGen.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\KeyedQueue.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LabelInfo.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Address.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Binary.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.ControlFlow.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Expressions.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Generated.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Lambda.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Logical.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Statements.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Unary.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Bindings.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Generated.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\StackSpiller.Temps.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\VariableBinder.cs" />
+    <Compile Include="System\Linq\Expressions\ConditionalExpression.cs" />
+    <Compile Include="System\Linq\Expressions\ConstantExpression.cs" />
+    <Compile Include="System\Linq\Expressions\DebugInfoExpression.cs" />
+    <Compile Include="System\Linq\Expressions\DebugViewWriter.cs" />
+    <Compile Include="System\Linq\Expressions\DefaultExpression.cs" />
+    <Compile Include="System\Linq\Expressions\ElementInit.cs" />
+    <Compile Include="System\Linq\Expressions\Error.cs" />
+    <Compile Include="System\Linq\Expressions\Expression.cs" />
+    <Compile Include="System\Linq\Expressions\Expression.DebuggerProxy.cs" />
+    <Compile Include="System\Linq\Expressions\ExpressionStringBuilder.cs" />
+    <Compile Include="System\Linq\Expressions\ExpressionType.cs" />
+    <Compile Include="System\Linq\Expressions\ExpressionVisitor.cs" />
+    <Compile Include="System\Linq\Expressions\GotoExpression.cs" />
+    <Compile Include="System\Linq\Expressions\IArgumentProvider.cs" />
+    <Compile Include="System\Linq\Expressions\IDynamicExpression.cs" />
+    <Compile Include="System\Linq\Expressions\IndexExpression.cs" />
+    <Compile Include="System\Linq\Expressions\InvocationExpression.cs" />
+    <Compile Include="System\Linq\Expressions\LabelExpression.cs" />
+    <Compile Include="System\Linq\Expressions\LabelTarget.cs" />
+    <Compile Include="System\Linq\Expressions\LambdaExpression.cs" />
+    <Compile Include="System\Linq\Expressions\ListInitExpression.cs" />
+    <Compile Include="System\Linq\Expressions\LoopExpression.cs" />
+    <Compile Include="System\Linq\Expressions\MemberAssignment.cs" />
+    <Compile Include="System\Linq\Expressions\MemberBinding.cs" />
+    <Compile Include="System\Linq\Expressions\MemberExpression.cs" />
+    <Compile Include="System\Linq\Expressions\MemberInitExpression.cs" />
+    <Compile Include="System\Linq\Expressions\MemberListBinding.cs" />
+    <Compile Include="System\Linq\Expressions\MemberMemberBinding.cs" />
+    <Compile Include="System\Linq\Expressions\MethodCallExpression.cs" />
+    <Compile Include="System\Linq\Expressions\NewArrayExpression.cs" />
+    <Compile Include="System\Linq\Expressions\NewExpression.cs" />
+    <Compile Include="System\Linq\Expressions\ParameterExpression.cs" />
+    <Compile Include="System\Linq\Expressions\RuntimeVariablesExpression.cs" />
+    <Compile Include="System\Linq\Expressions\Set.cs" />
+    <Compile Include="System\Linq\Expressions\Strings.cs" />
+    <Compile Include="System\Linq\Expressions\SwitchCase.cs" />
+    <Compile Include="System\Linq\Expressions\SwitchExpression.cs" />
+    <Compile Include="System\Linq\Expressions\SymbolDocumentInfo.cs" />
+    <Compile Include="System\Linq\Expressions\TryExpression.cs" />
+    <Compile Include="System\Linq\Expressions\TypeBinaryExpression.cs" />
+    <Compile Include="System\Linq\Expressions\UnaryExpression.cs" />
+    <Compile Include="System\Linq\IQueryable.cs" />
+    <Compile Include="System\Runtime\CompilerServices\Closure.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IRuntimeVariables.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeOps.ExpressionQuoter.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeOps.RuntimeVariableList.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
