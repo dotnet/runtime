@@ -66,7 +66,7 @@ int MTXEnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
     DWORD thread_id;
     int retcode = 0;
 	
-    thread_id = (DWORD)pthread_self();
+    thread_id = (DWORD)THREADSilentGetCurrentThreadId();
 
     /* check if the current thread already owns the criticalSection */
     if (lpCriticalSection->OwningThread == (HANDLE)thread_id)

@@ -60,8 +60,6 @@ Abstract:
 #include <dirent.h>
 #include <unistd.h>
 
-#define THREADSilentGetCurrentThreadId() (DWORD) pthread_self()
-
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif  //End of PLATFORM_UNIX
 

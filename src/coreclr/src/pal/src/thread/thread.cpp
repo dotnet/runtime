@@ -380,8 +380,7 @@ GetCurrentThreadId(
     // cache faster on average than pthread_self?)
     //
     
-    SIZE_T threadId = THREADSilentGetCurrentThreadId();
-    dwThreadId = threadId;
+    dwThreadId = (DWORD)THREADSilentGetCurrentThreadId();
     
     LOGEXIT("GetCurrentThreadId returns DWORD %#x\n", dwThreadId);    
     PERF_EXIT(GetCurrentThreadId);
@@ -1207,7 +1206,7 @@ CorUnix::InternalSetThreadPriority(
     /* get the previous thread schedule parameters.  We need to know the 
        scheduling policy to determine the priority range */
     if (pthread_getschedparam(
-            (pthread_t) pTargetThread->GetThreadId(),
+            pTargetThread->GetPThreadSelf(),
             &policy, 
             &schedParam
             ) != 0)
@@ -1272,7 +1271,7 @@ CorUnix::InternalSetThreadPriority(
 
     /* Finally, set the new priority into place */
     if (pthread_setschedparam(
-            (pthread_t) pTargetThread->GetThreadId(),
+            pTargetThread->GetPThreadSelf(),
             policy,
             &schedParam
             ) != 0)
@@ -1362,7 +1361,7 @@ GetThreadTimes(
     pthrTarget->Lock(pthrCurrent);
 	
     mach_port_t mhThread;
-    mhThread = pthread_mach_thread_np((pthread_t)pthrTarget->GetThreadId());
+    mhThread = pthread_mach_thread_np(pthrTarget->GetPThreadSelf());
 	
 	kern_return_t status;
 	status = thread_info(
@@ -1462,7 +1461,8 @@ CPalThread::ThreadEntry(
         DebugBreak();
 #endif // FEATURE_PAL_SXS && _DEBUG
 
-    pThread->m_threadId = (SIZE_T) pthread_self();
+    pThread->m_threadId = THREADSilentGetCurrentThreadId();
+    pThread->m_pthreadSelf = pthread_self();
 #if HAVE_THREAD_SELF
     pThread->m_dwLwpId = (DWORD) thread_self();
 #elif HAVE__LWP_SELF
@@ -1635,7 +1635,8 @@ CorUnix::CreateThreadData(
     
     pThread->SetLastError(StartupLastError);
 
-    pThread->m_threadId = (SIZE_T) pthread_self();
+    pThread->m_threadId = THREADSilentGetCurrentThreadId();
+    pThread->m_pthreadSelf = pthread_self();
 #if HAVE_THREAD_SELF
     pThread->m_dwLwpId = (DWORD) thread_self();
 #elif HAVE__LWP_SELF

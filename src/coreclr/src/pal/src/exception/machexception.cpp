@@ -238,7 +238,7 @@ PAL_ERROR CorUnix::CPalThread::EnableMachExceptions()
         
         NONPAL_TRACE("Enabling %s handlers for thread %08X\n",
                      hExceptionPort == s_TopExceptionPort ? "top" : "bottom",
-                     pthread_mach_thread_np((pthread_t)GetThreadId()));
+                     pthread_mach_thread_np(GetPThreadSelf()));
 
         // Swap current handlers into temporary storage first. That's because it's possible (even likely) that
         // some or all of the handlers might still be ours. In those cases we don't want to overwrite the
