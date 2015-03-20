@@ -64,6 +64,9 @@ if not exist "%__BinDir%" md "%__BinDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%" md "%__LogsDir%"
 
+:: CMake isn't a requirement when building unixmscorlib
+if defined __UnixMscorlibOnly goto CheckVS
+
 :CheckPrereqs
 :: Check prerequisites
 echo Checking pre-requisites...
