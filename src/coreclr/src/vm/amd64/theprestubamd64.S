@@ -7,7 +7,7 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-NESTED_ENTRY ThePreStub, _TEXT, ProcessCLRException
+NESTED_ENTRY ThePreStub, _TEXT, NoHandler
         PROLOG_WITH_TRANSITION_BLOCK 0, 0, 0, 0, 0
 
         //

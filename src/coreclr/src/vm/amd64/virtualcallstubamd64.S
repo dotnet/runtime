@@ -90,7 +90,7 @@ Fail_RWCLAS:
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 
 #ifdef FEATURE_PREJIT
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, ProcessCLRException
+NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK 0, 0, 0, 0, 0
         
