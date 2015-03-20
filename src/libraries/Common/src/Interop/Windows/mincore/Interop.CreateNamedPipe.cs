@@ -9,7 +9,6 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-
         [DllImport(Libraries.Pipe, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateNamedPipeW")]
         internal static extern SafePipeHandle CreateNamedPipe(
             string pipeName,

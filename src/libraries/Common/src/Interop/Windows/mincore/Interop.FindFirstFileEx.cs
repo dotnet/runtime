@@ -10,7 +10,7 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.CoreFile_L1, EntryPoint = "FindFirstFileExW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal static extern SafeFindHandle FindFirstFileEx(string lpFileName, FINDEX_INFO_LEVELS fInfoLevelId, ref WIN32_FIND_DATA lpFindFileData, FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
+        private static extern SafeFindHandle FindFirstFileEx(string lpFileName, FINDEX_INFO_LEVELS fInfoLevelId, ref WIN32_FIND_DATA lpFindFileData, FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
 
         internal static SafeFindHandle FindFirstFile(string fileName, ref WIN32_FIND_DATA data)
         {

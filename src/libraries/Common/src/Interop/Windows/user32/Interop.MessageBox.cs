@@ -17,10 +17,10 @@ internal partial class Interop
         internal const int IDCANCEL = 2;
         internal const int IDOK = 1;
 
-        [DllImport(Interop.Libraries.User32, CharSet = CharSet.Unicode, EntryPoint = "MessageBoxW", ExactSpelling = true, SetLastError = true)]
+        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, EntryPoint = "MessageBoxW", ExactSpelling = true, SetLastError = true)]
         private static extern int MessageBoxSystem(IntPtr hWnd, string text, string caption, int type);
 
-        public static int MessageBox(IntPtr hWnd, string text, string caption, int type)
+        internal static int MessageBox(IntPtr hWnd, string text, string caption, int type)
         {
             try
             {
