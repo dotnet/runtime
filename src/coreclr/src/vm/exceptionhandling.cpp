@@ -4608,24 +4608,27 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
 
 VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 {
-    // Create frame necessary for the exception handling
-    FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(WIN64EXCEPTIONS)
-    *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // WIN64EXCEPTIONS
-    GCX_COOP();
-    fef.InitAndLink(&ex->ContextRecord);
-
-    // A hardware exception is handled only if it happened in a jitted code or 
-    // in one of the JIT helper functions (JIT_MemSet, ...)
-    PCODE controlPc = GetIP(&ex->ContextRecord);
-    if (ExecutionManager::IsManagedCode(controlPc) || IsIPInMarkedJitHelper(controlPc))
+    if (ex->ExceptionRecord.ExceptionCode != STATUS_BREAKPOINT)
     {
-        DispatchManagedException(*ex);
-        UNREACHABLE();
-    }
+        // A hardware exception is handled only if it happened in a jitted code or 
+        // in one of the JIT helper functions (JIT_MemSet, ...)
+        PCODE controlPc = GetIP(&ex->ContextRecord);
+        if (ExecutionManager::IsManagedCode(controlPc) || IsIPInMarkedJitHelper(controlPc))
+        {
+            // Create frame necessary for the exception handling
+            FrameWithCookie<FaultingExceptionFrame> fef;
+#if defined(WIN64EXCEPTIONS)
+            *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
+#endif // WIN64EXCEPTIONS
+            GCX_COOP();
+            fef.InitAndLink(&ex->ContextRecord);
 
-    _ASSERTE(!"HandleHardwareException: Hardware exception happened out of managed code");
+            DispatchManagedException(*ex);
+            UNREACHABLE();
+        }
+
+        _ASSERTE(!"HandleHardwareException: Hardware exception happened out of managed code");
+    }
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
 
@@ -5168,6 +5171,31 @@ void CleanUpForSecondPass(Thread* pThread, bool fIsSO, LPVOID MemoryStackFpForFr
     }
 }
 
+#ifdef FEATURE_PAL
+
+// This is a personality routine for TheUMEntryPrestub and UMThunkStub Unix asm stubs.
+// An exception propagating through these stubs is an unhandled exception.
+// This function dumps managed stack trace and terminates the current process.
+EXTERN_C _Unwind_Reason_Code
+UnhandledExceptionHandlerUnix(
+                IN int version, 
+                IN _Unwind_Action action, 
+                IN uint64_t exceptionClass, 
+                IN struct _Unwind_Exception *exception,
+                IN struct _Unwind_Context *context            
+              )
+{
+    // Unhandled exception happened, so dump the managed stack trace and terminate the process
+
+    DefaultCatchHandler(NULL /*pExceptionInfo*/, NULL /*Throwable*/, TRUE /*useLastThrownObject*/,
+        TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
+    
+    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    return _URC_FATAL_PHASE1_ERROR;
+}
+
+#else // FEATURE_PAL
+
 EXTERN_C EXCEPTION_DISPOSITION
 UMThunkUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionRecord
                      WIN64_ARG(IN     ULONG64             MemoryStackFp)
@@ -5350,6 +5378,8 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
 
     return retVal;
 }
+
+#endif // FEATURE_PAL
 
 #ifdef FEATURE_COMINTEROP
 EXTERN_C EXCEPTION_DISPOSITION
