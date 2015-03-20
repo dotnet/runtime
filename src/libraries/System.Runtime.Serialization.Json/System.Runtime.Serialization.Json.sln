@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Json.Tests", "tests\System.Runtime.Serialization.Json.Tests.csproj", "{30CAB353-089E-4294-B23B-F2DD1D945654}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Json.Tests", "tests\System.Runtime.Serialization.Json.Tests.csproj", "{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{30CAB353-089E-4294-B23B-F2DD1D945654}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{30CAB353-089E-4294-B23B-F2DD1D945654}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{701CB3BC-00DC-435D-BDE4-C5FC29A708A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
