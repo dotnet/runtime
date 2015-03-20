@@ -194,45 +194,12 @@ public class ConvertToStringTests
     public static void FromDateTime()
     {
         DateTime[] testValues = { new DateTime(2000, 8, 15, 16, 59, 59), new DateTime(1, 1, 1, 1, 1, 1) };
-        String[] expectedValues = new String[testValues.Length];
-        DateTimeFormatInfo formatInfo = DateTimeFormatInfo.CurrentInfo;
-
-        if (CultureInfo.CurrentCulture.Name.Equals("ja-JP"))
-        {
-            if (CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern.Equals("yy/MM/dd"))
-            {
-                expectedValues[0] = "00/08/15 16:59:59";
-                expectedValues[1] = "01/01/01 1:01:01";
-            }
-            else
-            {
-                expectedValues[0] = "2000/08/15 16:59:59";
-                expectedValues[1] = "0001/01/01 1:01:01";
-            }
-        }
-        else if (CultureInfo.CurrentCulture.Name.Equals("en-US"))
-        {
-            if (CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern.Equals("M/d/yy"))
-            {
-                expectedValues[0] = "8/15/00 4:59:59 PM";
-                expectedValues[1] = "1/1/01 1:01:01 AM";
-            }
-            else
-            {
-                expectedValues[0] = "8/15/2000 4:59:59 PM";
-                expectedValues[1] = "1/1/0001 1:01:01 AM";
-            }
-        }
-        else
-        {
-            expectedValues[0] = "08/15/2000 16:59:59";
-            expectedValues[1] = "01/01/0001 01:01:01";
-            formatInfo = DateTimeFormatInfo.InvariantInfo;
-        }
+        string[] expectedValues = { "08/15/2000 16:59:59", "01/01/0001 01:01:01" };
 
         for (int i = 0; i < testValues.Length; i++)
         {
-            Assert.Equal(expectedValues[i], Convert.ToString(testValues[i], formatInfo));
+            Assert.Equal(testValues[i].ToString(), Convert.ToString(testValues[i]));
+            Assert.Equal(expectedValues[i], Convert.ToString(testValues[i], DateTimeFormatInfo.InvariantInfo));
         }
     }
 
