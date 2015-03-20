@@ -337,11 +337,7 @@ See MSDN doc.
 BOOL
 CONTEXT_GetThreadContext(
          DWORD dwProcessId,
-#if !defined(_AMD64_)
-         DWORD dwThreadId,
-#else // defined(_AMD64_)
-         DWORD64 dwThreadId,
-#endif // !defined(_AMD64_)
+         pthread_t self,
          DWORD dwLwpId,
          LPCONTEXT lpContext)
 {    
@@ -363,7 +359,7 @@ CONTEXT_GetThreadContext(
 
     if (dwProcessId == GetCurrentProcessId())
     {
-        if (dwThreadId != THREADSilentGetCurrentThreadId())
+        if (self != pthread_self())
         {
             DWORD flags;
             // There aren't any APIs for this. We can potentially get the
@@ -1052,11 +1048,7 @@ See MSDN doc.
 BOOL
 CONTEXT_GetThreadContext(
          DWORD dwProcessId,
-#if !defined(_AMD64_)
-         DWORD dwThreadId,
-#else // defined(_AMD64_)
-         DWORD64 dwThreadId,
-#endif // !defined(_AMD64_)
+         pthread_t self,
          DWORD dwLwpId,
          LPCONTEXT lpContext)
 {
@@ -1076,7 +1068,7 @@ CONTEXT_GetThreadContext(
             // the target thread is in the current process, but isn't 
             // the current one: extract the CONTEXT from the Mach thread.            
             mach_port_t mptPort;
-            mptPort = pthread_mach_thread_np((pthread_t)dwThreadId);
+            mptPort = pthread_mach_thread_np(self);
    
             ret = (CONTEXT_GetThreadContextFromPort(mptPort, lpContext) == KERN_SUCCESS);
         }
@@ -1289,11 +1281,7 @@ See MSDN doc.
 BOOL
 CONTEXT_SetThreadContext(
            DWORD dwProcessId,
-#if !defined(_AMD64_)
-           DWORD dwThreadId,
-#else // defined(_AMD64_)
-           DWORD64 dwThreadId,
-#endif // !defined(_AMD64_)
+           pthread_t self,
            DWORD dwLwpId,
            CONST CONTEXT *lpContext)
 {
@@ -1314,14 +1302,14 @@ CONTEXT_SetThreadContext(
         goto EXIT;
     }
 
-    if (dwThreadId != THREADSilentGetCurrentThreadId())
+    if (self != pthread_self())
     {
         // hThread is in the current process, but isn't the current
         // thread.  Extract the CONTEXT from the Mach thread.
 
         mach_port_t mptPort;
 
-        mptPort = pthread_mach_thread_np((pthread_t)dwThreadId);
+        mptPort = pthread_mach_thread_np(self);
     
         ret = (CONTEXT_SetThreadContextOnPort(mptPort, lpContext) == KERN_SUCCESS);
     } 
