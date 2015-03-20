@@ -1107,6 +1107,9 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
 
+    // TODO: VirtualQuery from PAL doesn't seem to provide correct result for DAC globals on Linux.
+    // We need to look into it, but for now I just disable these checks on Unix
+#ifndef FEATURE_PAL
     do 
     {
         // Find the attributes of the largest set of pages with common attributes starting from our base address.
@@ -1146,6 +1149,7 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
         }
     }
     while (cbBuffer > 0);
+#endif
 
     // The specified region has passed all of our checks.
     return S_OK;

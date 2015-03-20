@@ -4,11 +4,20 @@
 //
 #include "windefs.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <limits.h>
 
 
 void *GetDynamicLibraryAddressInProcess(DWORD pid, const char *libraryName)
 {
-#ifdef HAVE_PROCFS_CTL
+
+// We don't have proper API detection in debug-pal
+// that's why so far we'll just assume that we run on OS with ProcFS (which is not true on OS)
+#define HAVE_PROCFS_CTL 
+#ifdef HAVE_PROCFS_CTL 
+
     // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says 
     // about a library we are looking for. This file looks something like this:
     //
@@ -77,5 +86,5 @@ void *GetDynamicLibraryAddressInProcess(DWORD pid, const char *libraryName)
 #else
     _ASSERTE(!"Not implemented on this platform");
     return NULL;
-#endif    
+#endif
 }

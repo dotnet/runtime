@@ -1871,9 +1871,16 @@ DWORD ShimProcess::ResolveHostName(ICorDebugRemoteTarget * pRemoteTarget)
 
 HMODULE ShimProcess::GetDacModule()
 {
-    WCHAR wszAccessDllPath[MAX_PATH];
+    
     HModuleHolder hDacDll;
 
+#ifdef FEATURE_PAL
+    // For now on Unix we'll just search for DAC in the default location.
+    // Debugger can always control it by setting LD_LIBRARY_PATH env var.
+    WCHAR wszAccessDllPath[MAX_PATH] = MAKEDLLNAME_W(W("mscordaccore"));
+
+#else    
+    WCHAR wszAccessDllPath[MAX_PATH];
     //
     // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
     //
@@ -1908,6 +1915,7 @@ HMODULE ShimProcess::GetDacModule()
     {
         ThrowHR(E_INVALIDARG);
     }
+#endif //!FEATURE_PAL  
 
     hDacDll.Assign(WszLoadLibrary(wszAccessDllPath));
     if (!hDacDll)
