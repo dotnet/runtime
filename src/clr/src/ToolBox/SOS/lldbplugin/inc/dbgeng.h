@@ -191,6 +191,13 @@ public:
     virtual HRESULT GetSymbolOptions(
         PULONG options) = 0;
 
+    virtual HRESULT GetNameByOffset(
+        ULONG64 offset,
+        PSTR nameBuffer,
+        ULONG nameBufferSize,
+        PULONG nameSize,
+        PULONG64 displacement) = 0;
+
     // Enumerates the engines list of modules
     // loaded for the current process.  This may
     // or may not match the system module list
