@@ -39,10 +39,10 @@ public:
     static FCDECL1(void, DoTruncate, DECIMAL * d);
     static FCDECL1(void, DoFloor, DECIMAL * d);
 
-    static FCDECL1(double, ToDouble, DECIMAL d);
-    static FCDECL1(float, ToSingle, DECIMAL d);
-    static FCDECL1(INT32, ToInt32, DECIMAL d);	
-    static FCDECL1(Object*, ToString, DECIMAL d);
+    static FCDECL1(double, ToDouble, FC_DECIMAL d);
+    static FCDECL1(float, ToSingle, FC_DECIMAL d);
+    static FCDECL1(INT32, ToInt32, FC_DECIMAL d);	
+    static FCDECL1(Object*, ToString, FC_DECIMAL d);
     
     static void DecimalToNumber(DECIMAL* value, NUMBER* number);
     static int NumberToDecimal(NUMBER* number, DECIMAL* value);
