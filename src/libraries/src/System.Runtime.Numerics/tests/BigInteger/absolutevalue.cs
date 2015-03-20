@@ -28,7 +28,7 @@ namespace System.Numerics.Tests
             // AbsoluteValue Method - Small BigIntegers
             for (int i = 0; i < s_samples; i++)
             {
-                byteArray = GetRandomByteArray(s_random, 2);
+                byteArray = MyBigIntImp.GetRandomByteArray(s_random, 2);
                 VerifyAbsoluteValueString(Print(byteArray) + "uAbs");
             }
 
@@ -89,32 +89,12 @@ namespace System.Numerics.Tests
 
         private static Byte[] GetRandomByteArray(Random random)
         {
-            return GetRandomByteArray(random, random.Next(0, 1024));
-        }
-
-        private static Byte[] GetRandomByteArray(Random random, int size)
-        {
-            byte[] value = new byte[size];
-
-            for (int i = 0; i < value.Length; ++i)
-            {
-                value[i] = (byte)random.Next(0, 256);
-            }
-
-            return value;
+            return MyBigIntImp.GetRandomByteArray(random, random.Next(0, 1024));
         }
 
         private static String Print(byte[] bytes)
         {
-            String ret = "make ";
-
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                ret += bytes[i] + " ";
-            }
-            ret += "endmake ";
-
-            return ret;
+            return MyBigIntImp.Print(bytes);
         }
     }
 }
