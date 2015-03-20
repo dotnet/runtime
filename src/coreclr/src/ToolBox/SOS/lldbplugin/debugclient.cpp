@@ -6,6 +6,7 @@
 #include "sosplugin.h"
 #include <string.h>
 #include <dbgtargetcontext.h>
+#include <string>
 
 DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject) :
     m_debugger(debugger),
