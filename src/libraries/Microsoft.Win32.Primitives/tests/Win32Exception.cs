@@ -56,11 +56,14 @@ namespace Microsoft.Win32.Primitives.Tests
             // and we can revise it accordingly.
 
             Win32Exception ex = new Win32Exception(0x268);
-            Assert.NotEqual("Unknown error (0x268)", ex.Message);
-            Assert.True(ex.Message.Length > 256);
+            if (ex.Message.Length > 256) // Message length for 0x268 is not > 256 characters in all cultures.
+            {
+                Assert.NotEqual("Unknown error (0x268)", ex.Message);
+                Assert.True(ex.Message.Length > 256);
 
-            ex = new Win32Exception(0x23);
-            Assert.Equal(expected: "Unknown error (0x23)", actual: ex.Message);
+                ex = new Win32Exception(0x23);
+                Assert.Equal(expected: "Unknown error (0x23)", actual: ex.Message);
+            }
         }
 
     }
