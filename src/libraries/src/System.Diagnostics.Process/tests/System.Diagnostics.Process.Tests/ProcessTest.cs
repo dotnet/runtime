@@ -672,12 +672,6 @@ namespace System.Diagnostics.ProcessTests
                 Process process = Process.GetCurrentProcess();
                 Assert.Throws<System.InvalidOperationException>(() => process.StartInfo);
             }
-
-            {
-                Process process = Process.Start(ProcessName);
-                process.Start();
-                Assert.Equal(ProcessName, process.StartInfo.FileName);
-            }
         }
     }
 }
