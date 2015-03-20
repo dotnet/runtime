@@ -62,10 +62,21 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   a linked list dictionary, a bit vector, and collections that contain only strings. These collections exist in 
   .NET Core primarily for backwards compatibility and generally should be avoided when writing new code.
 
-* **System.ComponentModel**. Provides types used to implement the run-time and design-time behavior of components 
-  and controls.
+* **System.ComponentModel**. Provides interfaces for the editing and change tracking of objects used as data sources.
 
-* **System.Console**. Provides the Console class, which enables access to the standard input, 
+* **System.ComponentModel.Annotations**. Provides attributes that are used to define metadata for objects used as data sources.
+
+* **System.ComponentModel.EventBasedAsync**. Provides support classes and delegates for the event-based asynchronous pattern. 
+  This pattern and these supporting types exist in .NET Core primarily for backwards compatibility and generally should be
+  avoided when writing new code.
+  
+* **System.ComponentModel.Primitives**. Provides interfaces that are used to implement the run-time and design-time behavior 
+  of components.
+
+* **System.ComponentModel.TypeConverter**. Provides the System.ComponentModel.TypeConverter class, which represents a unified 
+  way of converting types of values to other types.
+
+* **System.Console**. Provides the Console class, which enables access to the standard input,
   output, and error streams for console-based applications.
 
 * **System.Diagnostics.Debug**. Provides a class to interact with the debugger as well as methods for performing runtime assertions.
@@ -76,16 +87,21 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Diagnostics.Process**. Provides access to local and remote processes, and enables the starting and
   stopping of local system processes.
 
-* **System.Diagnostics.TextWriterTraceListener**. Provides trace listeners for directing tracing output to a text writer, such as System.IO.StreamWriter.
+* **System.Diagnostics.TextWriterTraceListener**. Provides trace listeners for directing tracing output to a text writer, 
+  such as System.IO.StreamWriter.
 
 * **System.Diagnostics.TraceSource**. Provides classes that help you trace the execution of your code.
 
-* **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string comparisons and support the use of non-ASCII characters for Internet domain names.
+* **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string 
+  comparisons and support the use of non-ASCII characters for Internet domain names.
 
 * **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
   file system objects and for reading and writing files via streams.
 
-* **System.IO.FileSystem.DriveInfo**. Provides the System.IO.DriveInfo class, which enables developers to query local drive    information.
+* **System.IO.FileSystem.DriveInfo**. Provides the System.IO.DriveInfo class, which enables developers to query 
+  local drive information.
+
+* **System.IO.FileSystem.Primitives**. Provides common enumerations and exceptions for path-based I/O libraries.
 
 * **System.IO.FileSystem.Watcher**. Provides the System.IO.Watcher class, which listens to the system directory change 
   notifications and raises events when a directory or file within a directory changes.
@@ -99,14 +115,28 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.IO.UnmanagedMemoryStream**. Provides a stream for accessing unmanaged memory as represented by a pointer, 
   as well as an accessor for reading and writing primitive types from unmanaged memory.
 
+* **System.Linq**. Provides the foundation of Language-Integrated Query (LINQ), including LINQ standard query operators 
+  that operate on objects that implement ```IEnumerable<T>```.
+
+* **System.Linq.Expressions**. Provides classes, interfaces, and enumerations that enable language-level code expressions
+  to be represented as objects in the form of expression trees.
+
 * **System.Linq.Parallel**.  Provides a parallelized implementation of LINQ to Objects. "Parallel LINQ" (PLINQ) 
   implements the full set of LINQ standard query operators as well as additional operators specific to parallel operations.
+
+* **System.Linq.Queryable**. Provides LINQ standard query operators that operate on objects that implement ```IQueryable<T>```.
 
 * **System.Numerics.Vectors**. Provides a set of basic vector types that leverage single instruction, 
   multiple data (SIMD) CPU instructions. See our [recent][simd-post-1] [announcements][simd-post-2] for more details.
 
+* **System.ObjectModel**. Provides types and interfaces that enable the creation of observable types that provide
+  notifications to clients when changes are made.
+
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
+
+* **System.Resources.ResourceWriter**. Provides the System.Resources.ResourceWriter class, which writes resources in the 
+  system-default format to an output stream.
 
 * **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
 
@@ -114,6 +144,15 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   such as System.Convert and System.IO.Path.
  
 * **System.Runtime.Numerics**. Provides two useful numeric structures, BigInteger and Complex.
+
+* **System.Runtime.Serialization.Json**. Provides classes for serializing objects to the JavaScript Object 
+  Notation (JSON) and for deserializing JSON data to objects.
+
+* **System.Runtime.Serialization.Primitives**. Provides common types, including System.Runtime.Serialization.DataContractAttribute, 
+  for libraries that support data contract serialization.
+
+* **System.Runtime.Serialization.Xml**. Provides classes for serializing objects to the Extensible Markup Language (XML) 
+  and deserializing XML data to objects.
 
 * **System.ServiceProcess.ServiceController**. Provides the ServiceController class that represents a Windows service
   and allows you to connect to a running or stopped service, manipulate it, or get information about it.
@@ -125,15 +164,27 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   functionality for running common operations using regular expressions.
 
 * **System.Threading.Tasks.Dataflow**.  Provides a set of types that support actor/agent-oriented designs through 
-  primitives for in-process message passing, dataflow, and pipelining. "TPL Dataflow" builds 
-  upon the APIs and scheduling infrastructure provided by the Task Parallel Library
-  (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
-  
+  primitives for in-process message passing, dataflow, and pipelining.
+    
 * **System.Threading.Tasks.Parallel**.  Provides library-based data parallel replacements for common
   operations such as for loops, for each loops, and execution of a set of statements.
 
-* **System.Xml**. Provides low level XML types such as `XmlReader` and `XmlWriter` and also DOM APIs such as the `XDocument` and `XmlDocument`
-  types, XLinq, and the corresponding XPath extension methods.
+* **System.Xml.ReaderWriter**. Provides types for reading and writing streams of XML.
+
+* **System.Xml.XDocument**. Provides XML-related types for querying XML documents using LINQ.
+
+* **System.Xml.XPath**.  Provides classes that define a cursor model for navigating and editing XML information items 
+  as instances of the XQuery 1.0 and XPath 2.0 Data Model.
+
+* **System.Xml.XPath.XDocument**. Provides extension methods that add System.Xml.XPath support to the System.Xml.XDocument package.
+
+* **System.Xml.XPath.XmlDocument**. Provides extension methods that add System.Xml.XPath support to the System.Xml.XmlDocument package.
+
+* **System.Xml.XmlDocument**.  Provides types for manipulating an XML Document Object Model (DOM).
+
+* **System.Xml.XmlSerializer**. Provides classes for serializing objects to XML and for deserializing XML data to objects.
+
+* **Microsoft.CSharp**. Provides support for compilation and code generation, including dynamic, using the C# language.
 
 * **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
 
