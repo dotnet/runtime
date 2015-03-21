@@ -27,19 +27,19 @@
 static void
 mono_class_unregister_image_generic_subclasses (MonoImage *image, gpointer user_data);
 
-static gboolean partial_supported = TRUE;
+static gboolean partial_supported = FALSE;
 
 static inline gboolean
 partial_sharing_supported (void)
 {
 	if (!ALLOW_PARTIAL_SHARING)
 		return FALSE;
-	/* Disable this when AOT compiling or running in full-aot mode */
+	/* Enable this when AOT compiling or running in full-aot mode */
 	if (mono_aot_only)
-		return FALSE;
-	if (!partial_supported)
-		return FALSE;
-	return TRUE;
+		return TRUE;
+	if (partial_supported)
+		return TRUE;
+	return FALSE;
 }
 
 static int
