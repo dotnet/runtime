@@ -1593,6 +1593,11 @@ HRESULT CorHost2::_CreateAppDomain(
     {
         pDomain->SetAllowLoadFile();
     }
+
+    if (dwFlags & APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT)
+    {
+        pDomain->DisableTransparencyEnforcement();
+    }
 #endif // FEATURE_CORECLR
 
     if (dwFlags & APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE)    

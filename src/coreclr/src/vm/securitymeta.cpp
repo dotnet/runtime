@@ -644,9 +644,9 @@ void MethodSecurityDescriptor::InvokeInheritanceChecks(MethodDesc *pChildMD)
         PRECONDITION(CheckPointer(pChildMD));
     }
     CONTRACTL_END;
-   
+
     const SecurityTransparencyBehavior *pTransparencyBehavior = pChildMD->GetAssembly()->GetSecurityTransparencyBehavior();
-    if (pTransparencyBehavior->AreInheritanceRulesEnforced())
+    if (pTransparencyBehavior->AreInheritanceRulesEnforced() && Security::IsTransparencyEnforcementEnabled())
     {
         // The profiler may want to suppress these checks if it's currently running on the child type
         if (Security::BypassSecurityChecksForProfiler(pChildMD))
@@ -692,11 +692,8 @@ void MethodSecurityDescriptor::InvokeInheritanceChecks(MethodDesc *pChildMD)
                     {
                         SecurityTransparent::LogTransparencyError(pChildMD, "Critical method overriding a SafeCritical base method", m_pMD);
                     }
-                    if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-                    {
-                        SecurityTransparent::ThrowTypeLoadException(pChildMD);
-                    }
+                    SecurityTransparent::ThrowTypeLoadException(pChildMD);
                 }
             }
             else
@@ -711,11 +708,8 @@ void MethodSecurityDescriptor::InvokeInheritanceChecks(MethodDesc *pChildMD)
                     {
                         SecurityTransparent::LogTransparencyError(pChildMD, "Transparent method overriding a critical base method", m_pMD);
                     }
-                    if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-                    {
-                        SecurityTransparent::ThrowTypeLoadException(pChildMD);
-                    }
+                    SecurityTransparent::ThrowTypeLoadException(pChildMD);
                 }
                 else if (methSecurityDescriptor.IsTreatAsSafe() && !methSecurityDescriptor.IsOpportunisticallyCritical())
                 {
@@ -726,11 +720,8 @@ void MethodSecurityDescriptor::InvokeInheritanceChecks(MethodDesc *pChildMD)
                     {
                         SecurityTransparent::LogTransparencyError(pChildMD, "Safe critical method overriding a SafeCritical base method", m_pMD);
                     }
-                    if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-                    {
-                        SecurityTransparent::ThrowTypeLoadException(pChildMD);
-                    }
+                    SecurityTransparent::ThrowTypeLoadException(pChildMD);
                 }
             }
         }
@@ -744,14 +735,12 @@ void MethodSecurityDescriptor::InvokeInheritanceChecks(MethodDesc *pChildMD)
                 {
                     SecurityTransparent::LogTransparencyError(pChildMD, "Critical method overriding a transparent base method", m_pMD);
                 }
-                if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-                {
-                    SecurityTransparent::ThrowTypeLoadException(pChildMD);
-                }
+                SecurityTransparent::ThrowTypeLoadException(pChildMD);
             }
         }
     }
+
 #ifndef FEATURE_CORECLR
     // Check CAS Inheritance
 
@@ -1395,7 +1384,7 @@ void TypeSecurityDescriptor::InvokeInheritanceChecks(MethodTable* pChildMT)
     CONTRACTL_END;
 
     const SecurityTransparencyBehavior *pChildTransparencyBehavior = pChildMT->GetAssembly()->GetSecurityTransparencyBehavior();
-    if (pChildTransparencyBehavior->AreInheritanceRulesEnforced())
+    if (pChildTransparencyBehavior->AreInheritanceRulesEnforced() && Security::IsTransparencyEnforcementEnabled())
     {
         // We compare the child class with the most critical base class in the type hierarchy.
         //
@@ -1476,12 +1465,9 @@ void TypeSecurityDescriptor::InvokeInheritanceChecks(MethodTable* pChildMT)
                 {
                     SecurityTransparent::LogTransparencyError(pChildMT, "Transparent or safe critical type deriving from a critical base type");
                 }
-                if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-                {
-                    // The parent class is critical, but the child class is not
-                    SecurityTransparent::ThrowTypeLoadException(pChildMT);
-                }
+                // The parent class is critical, but the child class is not
+                SecurityTransparent::ThrowTypeLoadException(pChildMT);
             }
         }
         else if (fFoundSafeCriticalParent)
@@ -1493,17 +1479,14 @@ void TypeSecurityDescriptor::InvokeInheritanceChecks(MethodTable* pChildMT)
                 {
                     SecurityTransparent::LogTransparencyError(pChildMT, "Transparent type deriving from a safe critical base type");
                 }
-                if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-                {
-                    // The parent class is safe critical, but the child class is transparent
-                    SecurityTransparent::ThrowTypeLoadException(pChildMT);
-                }
+                // The parent class is safe critical, but the child class is transparent
+                SecurityTransparent::ThrowTypeLoadException(pChildMT);
             }
         }
     }
-#ifndef FEATURE_CORECLR
 
+#ifndef FEATURE_CORECLR
     // Fast path check
     if (SecurityDeclarative::FullTrustCheckForLinkOrInheritanceDemand(pChildMT->GetAssembly()))
     {
