@@ -15,12 +15,12 @@ internal partial class Interop
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private unsafe struct CPINFOEXW
         {
-            public uint MaxCharSize;
-            public fixed byte DefaultChar[2];
-            public fixed byte LeadByte[12];
-            public char UnicodeDefaultChar;
-            public uint CodePage;
-            public fixed byte CodePageName[260];
+            internal uint MaxCharSize;
+            internal fixed byte DefaultChar[2];
+            internal fixed byte LeadByte[12];
+            internal char UnicodeDefaultChar;
+            internal uint CodePage;
+            internal fixed byte CodePageName[260];
         }
 
         internal static bool TryGetACPCodePage(out int codePage)

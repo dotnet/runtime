@@ -53,7 +53,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetConsoleOutputCP.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleOutputCP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileType.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetFileType_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetStdHandle.cs">
@@ -62,7 +62,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.ReadFile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsole.cs">
@@ -71,7 +71,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleTextAttribute.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleTextAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteConsole.cs">

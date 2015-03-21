@@ -86,12 +86,12 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         public Win32FileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent) : base(parent)
         {
-            Interop.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
+            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
             Init(path, mode, access, share, bufferSize, options, secAttrs);
         }
 
         [System.Security.SecuritySafeCritical]
-        private void Init(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, Interop.SECURITY_ATTRIBUTES secAttrs)
+        private void Init(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, Interop.mincore.SECURITY_ATTRIBUTES secAttrs)
         {
             _exposedHandle = false;
 
@@ -123,13 +123,13 @@ namespace System.IO
             // For mitigating local elevation of privilege attack through named pipes
             // make sure we always call CreateFile with SECURITY_ANONYMOUS so that the
             // named pipe server can't impersonate a high privileged client security context
-            flagsAndAttributes |= (Interop.SECURITY_SQOS_PRESENT | Interop.SECURITY_ANONYMOUS);
+            flagsAndAttributes |= (Interop.mincore.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.mincore.SecurityOptions.SECURITY_ANONYMOUS);
 
             // Don't pop up a dialog for reading from an empty floppy drive
-            uint oldMode = Interop.mincore.SetErrorMode(Interop.SEM_FAILCRITICALERRORS);
+            uint oldMode = Interop.mincore.SetErrorMode(Interop.mincore.SEM_FAILCRITICALERRORS);
             try
             {
-                _handle = Interop.mincore.SafeCreateFile(path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                _handle = Helpers.SafeCreateFile(path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
 #if USE_OVERLAPPED
                 _handle.IsAsync = _isAsync;
 #endif
@@ -143,8 +143,8 @@ namespace System.IO
                     // probably be consistent w/ every other directory.
                     int errorCode = Marshal.GetLastWin32Error();
 
-                    if (errorCode == Interop.ERROR_PATH_NOT_FOUND && path.Equals(Directory.InternalGetDirectoryRoot(path)))
-                        errorCode = Interop.ERROR_ACCESS_DENIED;
+                    if (errorCode == Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && path.Equals(Directory.InternalGetDirectoryRoot(path)))
+                        errorCode = Interop.mincore.Errors.ERROR_ACCESS_DENIED;
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileName);
                 }
@@ -159,7 +159,7 @@ namespace System.IO
             // CreateFile themselves then use the constructor that takes an 
             // IntPtr.  Disallows "con:", "com1:", "lpt1:", etc.
             int fileType = Interop.mincore.GetFileType(_handle);
-            if (fileType != Interop.FILE_TYPE_DISK)
+            if (fileType != Interop.mincore.FileTypes.FILE_TYPE_DISK)
             {
                 _handle.Dispose();
                 throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);
@@ -256,20 +256,20 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException("bufferSize", SR.ArgumentOutOfRange_NeedPosNum);
 
             int handleType = Interop.mincore.GetFileType(_handle);
-            Debug.Assert(handleType == Interop.FILE_TYPE_DISK || handleType == Interop.FILE_TYPE_PIPE || handleType == Interop.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
+            Debug.Assert(handleType == Interop.mincore.FileTypes.FILE_TYPE_DISK || handleType == Interop.mincore.FileTypes.FILE_TYPE_PIPE || handleType == Interop.mincore.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
 
 #if USE_OVERLAPPED
             _isAsync = isAsync;
 #endif
             _canRead = 0 != (access & FileAccess.Read);
             _canWrite = 0 != (access & FileAccess.Write);
-            _canSeek = handleType == Interop.FILE_TYPE_DISK;
+            _canSeek = handleType == Interop.mincore.FileTypes.FILE_TYPE_DISK;
             _bufferSize = bufferSize;
             _readPos = 0;
             _readLen = 0;
             _writePos = 0;
             _fileName = null;
-            _isPipe = handleType == Interop.FILE_TYPE_PIPE;
+            _isPipe = handleType == Interop.mincore.FileTypes.FILE_TYPE_PIPE;
 
 #if USE_OVERLAPPED
             // This is necessary for async IO using IO Completion ports via our 
@@ -305,7 +305,7 @@ namespace System.IO
             else if (!_isAsync)
 #endif
             {
-                if (handleType != Interop.FILE_TYPE_PIPE)
+                if (handleType != Interop.mincore.FileTypes.FILE_TYPE_PIPE)
                     VerifyHandleIsSync();
             }
 
@@ -337,12 +337,12 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        private static Interop.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
+        private static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
         {
-            Interop.SECURITY_ATTRIBUTES secAttrs = default(Interop.SECURITY_ATTRIBUTES);
+            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
             if ((share & FileShare.Inheritable) != 0)
             {
-                secAttrs = new Interop.SECURITY_ATTRIBUTES();
+                secAttrs = new Interop.mincore.SECURITY_ATTRIBUTES();
                 secAttrs.nLength = (uint)Marshal.SizeOf(secAttrs);
 
                 secAttrs.bInheritHandle = true;
@@ -391,7 +391,7 @@ namespace System.IO
 
             if (errorCode == ERROR_INVALID_PARAMETER)
                 throw new ArgumentException(SR.Arg_HandleNotSync);
-            if (errorCode == Interop.ERROR_INVALID_HANDLE)
+            if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, "<OS handle>");
         }
 
@@ -433,9 +433,9 @@ namespace System.IO
             {
                 if (_handle.IsClosed) throw __Error.GetFileNotOpen();
                 if (!_parent.CanSeek) throw __Error.GetSeekNotSupported();
-                Interop.FILE_STANDARD_INFO info = new Interop.FILE_STANDARD_INFO();
+                Interop.mincore.FILE_STANDARD_INFO info = new Interop.mincore.FILE_STANDARD_INFO();
 
-                if (!Interop.mincore.GetFileInformationByHandleEx(_handle, Interop.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.FILE_STANDARD_INFO>()))
+                if (!Interop.mincore.GetFileInformationByHandleEx(_handle, Interop.mincore.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)Marshal.SizeOf<Interop.mincore.FILE_STANDARD_INFO>()))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 long len = info.EndOfFile;
                 // If we're writing near the end of the file, we must include our
@@ -680,7 +680,7 @@ namespace System.IO
             if (!Interop.mincore.SetEndOfFile(_handle))
             {
                 int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.ERROR_INVALID_PARAMETER)
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_FileLengthTooBig);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
@@ -941,7 +941,7 @@ namespace System.IO
                 // Note that _parent.Dispose doesn't throw so we don't need to special case. 
                 // SetHandleAsInvalid only sets _closed field to true (without 
                 // actually closing handle) so we don't need to call that as well.
-                if (errorCode == Interop.ERROR_INVALID_HANDLE)
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
                     _handle.Dispose();
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
@@ -1711,7 +1711,7 @@ namespace System.IO
                 // We must make sure that BeginReadCore won't return an 
                 // IAsyncResult that will cause EndRead to block, since the OS 
                 // won't call AsyncFSCallback for us.  
-                if (errorCode == ERROR_BROKEN_PIPE || errorCode == Interop.ERROR_PIPE_NOT_CONNECTED)
+                if (errorCode == ERROR_BROKEN_PIPE || errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED)
                 {
                     // This handle was a pipe, and it's done. Not an error, but EOF.
                     // However, the OS will not call AsyncFSCallback!
@@ -1721,7 +1721,7 @@ namespace System.IO
                 }
 
                 // See code:#errorInvalidHandle in "private long SeekCore(long offset, SeekOrigin origin)".
-                if (errorCode == Interop.ERROR_INVALID_HANDLE)
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
                     _handle.Dispose();
 
                 return -1;
@@ -1792,7 +1792,7 @@ namespace System.IO
                 }
 
                 // See code:#errorInvalidHandle in "private long SeekCore(long offset, SeekOrigin origin)".
-                if (errorCode == Interop.ERROR_INVALID_HANDLE)
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
                     _handle.Dispose();
 
                 return -1;
@@ -1942,7 +1942,7 @@ namespace System.IO
                     asyncState._registration.Dispose();
                 }
 
-                if (asyncResult.ErrorCode == Interop.ERROR_OPERATION_ABORTED)
+                if (asyncResult.ErrorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
                 {
                     var cancellationToken = asyncState._cancellationToken;
                     Debug.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");
@@ -1978,7 +1978,7 @@ namespace System.IO
                     asyncState._registration.Dispose();
                 }
 
-                if (asyncResult.ErrorCode == Interop.ERROR_OPERATION_ABORTED)
+                if (asyncResult.ErrorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
                 {
                     var cancellationToken = asyncState._cancellationToken;
                     Debug.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");

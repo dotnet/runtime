@@ -33,8 +33,8 @@ namespace System.IO.MemoryMappedFiles
 
             // if request is >= than total virtual, then MapViewOfFile will fail with meaningless error message 
             // "the parameter is incorrect"; this provides better error message in advance
-            Interop.MEMORYSTATUSEX memStatus;
-            memStatus.dwLength = (uint)sizeof(Interop.MEMORYSTATUSEX);
+            Interop.mincore.MEMORYSTATUSEX memStatus;
+            memStatus.dwLength = (uint)sizeof(Interop.mincore.MEMORYSTATUSEX);
             Interop.mincore.GlobalMemoryStatusEx(out memStatus);
             ulong totalVirtual = memStatus.ullTotalVirtual;
             if (nativeSize >= totalVirtual)
@@ -55,7 +55,7 @@ namespace System.IO.MemoryMappedFiles
             }
 
             // Query the view for its size and allocation type
-            Interop.MEMORY_BASIC_INFORMATION viewInfo = new Interop.MEMORY_BASIC_INFORMATION();
+            Interop.mincore.MEMORY_BASIC_INFORMATION viewInfo = new Interop.mincore.MEMORY_BASIC_INFORMATION();
             Interop.mincore.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)Marshal.SizeOf(viewInfo));
             ulong viewSize = (ulong)viewInfo.RegionSize;
 
@@ -69,9 +69,9 @@ namespace System.IO.MemoryMappedFiles
             // This is because, VirtualQuery function(that internally invokes VirtualQueryEx function) returns the attributes 
             // and size of the region of pages with matching attributes starting from base address.
             // VirtualQueryEx: http://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
-            if (((viewInfo.State & Interop.MEM_RESERVE) != 0) || (viewSize < nativeSize))
+            if (((viewInfo.State & Interop.mincore.MemOptions.MEM_RESERVE) != 0) || (viewSize < nativeSize))
             {
-                IntPtr tempHandle = Interop.mincore.VirtualAlloc(viewHandle, (UIntPtr)nativeSize, Interop.MEM_COMMIT,
+                IntPtr tempHandle = Interop.mincore.VirtualAlloc(viewHandle, (UIntPtr)nativeSize, Interop.mincore.MemOptions.MEM_COMMIT,
                                                         MemoryMappedFile.GetPageAccess(access));
                 int lastError = Marshal.GetLastWin32Error();
                 if (viewHandle.IsInvalid)
@@ -79,7 +79,7 @@ namespace System.IO.MemoryMappedFiles
                     throw Win32Marshal.GetExceptionForWin32Error(lastError);
                 }
                 // again query the view for its new size
-                viewInfo = new Interop.MEMORY_BASIC_INFORMATION();
+                viewInfo = new Interop.mincore.MEMORY_BASIC_INFORMATION();
                 Interop.mincore.VirtualQuery(viewHandle, ref viewInfo, (UIntPtr)Marshal.SizeOf(viewInfo));
                 viewSize = (ulong)viewInfo.RegionSize;
             }
@@ -127,7 +127,7 @@ namespace System.IO.MemoryMappedFiles
                         // this strategy successfully flushed the view after no more than 3 retries.
 
                         int error = Marshal.GetLastWin32Error();
-                        bool canRetry = (!success && error == Interop.ERROR_LOCK_VIOLATION);
+                        bool canRetry = (!success && error == Interop.mincore.Errors.ERROR_LOCK_VIOLATION);
 
                         SpinWait spinWait = new SpinWait();
                         for (int w = 0; canRetry && w < MaxFlushWaits; w++)
@@ -144,7 +144,7 @@ namespace System.IO.MemoryMappedFiles
                                 spinWait.SpinOnce();
 
                                 error = Marshal.GetLastWin32Error();
-                                canRetry = (error == Interop.ERROR_LOCK_VIOLATION);
+                                canRetry = (error == Interop.mincore.Errors.ERROR_LOCK_VIOLATION);
                             }
                         }
 
@@ -169,7 +169,7 @@ namespace System.IO.MemoryMappedFiles
         [SecurityCritical]
         private static int GetSystemPageAllocationGranularity()
         {
-            Interop.SYSTEM_INFO info;
+            Interop.mincore.SYSTEM_INFO info;
             Interop.mincore.GetSystemInfo(out info);
 
             return (int)info.dwAllocationGranularity;

@@ -1,14 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.CoreFile, SetLastError = true)]
-        internal extern static uint GetFileType(IntPtr hFile);
+        [DllImport(Libraries.CoreFile_L1, EntryPoint = "DeleteVolumeMountPointW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
+        internal static extern bool DeleteVolumeMountPoint(string mountPoint);
     }
 }
