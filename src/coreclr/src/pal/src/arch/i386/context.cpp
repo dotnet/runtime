@@ -351,7 +351,7 @@ CONTEXT_GetThreadContext(
         goto EXIT;
     }
     
-    /* How to consider the case when dwThreadId is different from the current
+    /* How to consider the case when self is different from the current
        thread of its owner process. Machine registers values could be retreived
        by a ptrace(pid, ...) call or from the "/proc/%pid/reg" file content. 
        Unfortunately, these two methods only depend on process ID, not on 
@@ -408,11 +408,7 @@ See MSDN doc.
 BOOL
 CONTEXT_SetThreadContext(
            DWORD dwProcessId,
-#if !defined(_AMD64_)
-           DWORD dwThreadId,
-#else // defined(_AMD64_)
-           DWORD64 dwThreadId,
-#endif // !defined(_AMD64_)
+           pthread_t self,
            DWORD dwLwpId,
            CONST CONTEXT *lpContext)
 {
@@ -431,7 +427,7 @@ CONTEXT_SetThreadContext(
         goto EXIT;
     }
     
-    /* How to consider the case when dwThreadId is different from the current
+    /* How to consider the case when self is different from the current
        thread of its owner process. Machine registers values could be retreived
        by a ptrace(pid, ...) call or from the "/proc/%pid/reg" file content. 
        Unfortunately, these two methods only depend on process ID, not on 
@@ -1063,7 +1059,7 @@ CONTEXT_GetThreadContext(
     
     if (GetCurrentProcessId() == dwProcessId)
     {
-        if (dwThreadId != THREADSilentGetCurrentThreadId())
+        if (self != pthread_self())
         {
             // the target thread is in the current process, but isn't 
             // the current one: extract the CONTEXT from the Mach thread.            
