@@ -48,6 +48,7 @@ namespace System.Globalization
             sSpecificCulture = "";
             sName = "";
             bNeutral = false;
+            sNegativeSign = "-";
 
             return true;
         }
@@ -228,7 +229,7 @@ namespace System.Globalization
         private static string GetRegionDisplayName(string isoCountryCode)
         {
             // TODO: Implement this fully.
-            throw new NotImplementedException();
+            return "";
         }
 
         private static CultureInfo GetUserDefaultCulture()
@@ -239,8 +240,8 @@ namespace System.Globalization
 
         private static bool IsCustomCultureId(int cultureId)
         {
-           // TODO: Implement this fully.
-            throw new NotImplementedException();
+            // TODO: Implement this fully.
+            return false;
         }
 
         // PAL methods end here.

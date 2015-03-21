@@ -5213,14 +5213,6 @@ ReportEventW (
 #endif // !UNICODE
 
 
-/******************* CoreFX Entrypoints *******************************/
-
-PALIMPORT
-DWORD
-PALAPI
-EnsureOpenSslInitialized();
-
-
 /******************* C Runtime Entrypoints *******************************/
 
 #ifdef PLATFORM_UNIX

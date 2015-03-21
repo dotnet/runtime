@@ -11,7 +11,7 @@
 //============================================================================================
 // EXTERN_C VOID __stdcall ExternalMethodFixupStub()
 
-NESTED_ENTRY ExternalMethodFixupStub, _TEXT, ProcessCLRException
+NESTED_ENTRY ExternalMethodFixupStub, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK 0, 8, rdx, 0, 0
 
@@ -32,7 +32,7 @@ NESTED_END ExternalMethodFixupStub, _TEXT
 //============================================================================================
 // EXTERN_C VOID __stdcall VirtualMethodFixupStub()
 
-NESTED_ENTRY VirtualMethodFixupStub, _TEXT, ProcessCLRException
+NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK 0, 8, rdx, 0, 0
 
