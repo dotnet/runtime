@@ -172,10 +172,10 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            TraceEventCache manager = new TraceEventCache();
-
             if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
             {
+                TraceEventCache manager = new TraceEventCache();
+
                 if (TraceInternal.UseGlobalLock)
                 {
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
@@ -217,10 +217,10 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            TraceEventCache manager = new TraceEventCache();
-
             if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
             {
+                TraceEventCache manager = new TraceEventCache();
+
                 if (TraceInternal.UseGlobalLock)
                 {
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
@@ -261,11 +261,11 @@ namespace System.Diagnostics
         public void TraceEvent(TraceEventType eventType, int id, string format, params object[] args)
         {
             Initialize();
-
-            TraceEventCache manager = new TraceEventCache();
-
+            
             if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
             {
+                TraceEventCache manager = new TraceEventCache();
+
                 if (TraceInternal.UseGlobalLock)
                 {
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
@@ -307,10 +307,10 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            TraceEventCache manager = new TraceEventCache();
-
             if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
             {
+                TraceEventCache manager = new TraceEventCache();
+
                 if (TraceInternal.UseGlobalLock)
                 {
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
@@ -352,10 +352,10 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            TraceEventCache manager = new TraceEventCache();
-
             if (_internalSwitch.ShouldTrace(eventType) && _listeners != null)
             {
+                TraceEventCache manager = new TraceEventCache();
+
                 if (TraceInternal.UseGlobalLock)
                 {
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
