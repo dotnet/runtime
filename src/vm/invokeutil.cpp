@@ -1667,14 +1667,16 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
         if (pMeth->IsNDirect() ||
             (pMeth->IsComPlusCall() && !pMeth->IsInterface()))
         {
-            MethodDesc* pmdCaller = pSCtx->GetCallerMethod();
-
-            if (pmdCaller != NULL &&
-                Security::IsMethodTransparent(pmdCaller))
+            if (Security::IsTransparencyEnforcementEnabled())
             {
-                ThrowMethodAccessException(pSCtx, pMeth, IDS_E_TRANSPARENT_CALL_NATIVE);
-            }
+                MethodDesc* pmdCaller = pSCtx->GetCallerMethod();
 
+                if (pmdCaller != NULL &&
+                    Security::IsMethodTransparent(pmdCaller))
+                {
+                    ThrowMethodAccessException(pSCtx, pMeth, IDS_E_TRANSPARENT_CALL_NATIVE);
+                }
+            }
         }
 
 #else  // FEATURE_CORECLR
@@ -1706,21 +1708,21 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
     //checkSkipVer is set only when the user tries to invoke a constructor on a existing object.
     if (checkSkipVer)
     {
-        MethodDesc *pCallerMD = pSCtx->GetCallerMethod();
-
-        // Interop (NULL) caller should be able to skip verification
-        if (pCallerMD != NULL &&
-            Security::IsMethodTransparent(pCallerMD) &&
-            !pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeSkipVerification())
+        if (Security::IsTransparencyEnforcementEnabled())
         {
+            MethodDesc *pCallerMD = pSCtx->GetCallerMethod();
+
+            // Interop (NULL) caller should be able to skip verification
+            if (pCallerMD != NULL &&
+                Security::IsMethodTransparent(pCallerMD) &&
+                !pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeSkipVerification())
+            {
 #ifdef _DEBUG
-            if (g_pConfig->LogTransparencyErrors())
-            {
-                SecurityTransparent::LogTransparencyError(pMeth, "Attempt by a transparent method to use unverifiable code");
-            }
-            if (!g_pConfig->DisableTransparencyEnforcement())
+                if (g_pConfig->LogTransparencyErrors())
+                {
+                    SecurityTransparent::LogTransparencyError(pMeth, "Attempt by a transparent method to use unverifiable code");
+                }
 #endif // _DEBUG
-            {
                 ThrowMethodAccessException(pCallerMD, pMeth, FALSE, IDS_E_TRANSPARENT_REFLECTION);
             }
         }
