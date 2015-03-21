@@ -348,7 +348,15 @@ done:
     return success ? 0 : -1;
 }
 
-void CopyStatToFileInfo(struct fileinfo* dst, const struct stat* src)
+#if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+typedef struct stat64 stat_native;
+#elif HAVE_STAT
+typedef struct stat stat_native;
+#else
+#error need an alias for stat_native to stat struct for platform
+#endif
+
+void CopyStatNativeToFileInfo(struct fileinfo* dst, const stat_native* src)
 {
     dst->flags = FILEINFO_FLAGS_NONE;
     dst->mode = src->st_mode;
@@ -359,7 +367,7 @@ void CopyStatToFileInfo(struct fileinfo* dst, const struct stat* src)
     dst->mtime = src->st_mtime;
     dst->ctime = src->st_ctime;
 
-    #if __APPLE__
+    #if HAVE_STAT_BIRTHTIME
     dst->btime = src->st_birthtime;
     dst->flags |= FILEINFO_FLAGS_HAS_BTIME;
     #endif
@@ -377,13 +385,20 @@ GetFileInformationFromPath(
           buf);
 
     int success = FALSE;
-    struct stat result;
+    stat_native result;
+    int ret;
 
-    int ret = stat(path, &result);
+    #if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+    ret = stat64(path, &result);
+    #elif HAVE_STAT
+    ret = stat(path, &result);
+    #else
+    #error need implemetation of stat/stat64
+    #endif
 
     if (ret == 0)
     {
-        CopyStatToFileInfo(buf, &result);
+        CopyStatNativeToFileInfo(buf, &result);
         success = TRUE;
     }
 
@@ -404,13 +419,20 @@ GetFileInformationFromFd(
           fd, buf);
 
     int success = FALSE;
-    struct stat result;
+    stat_native result;
+    int ret;
 
-    int ret = fstat(fd, &result);
+    #if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+    ret = fstat64(fd, &result);
+    #elif HAVE_STAT
+    ret = fstat(fd, &result);
+    #else
+    #error need implemetation of fstat/fstat64
+    #endif
 
     if (ret == 0)
     {
-        CopyStatToFileInfo(buf, &result);
+        CopyStatNativeToFileInfo(buf, &result);
         success = TRUE;
     }
 
