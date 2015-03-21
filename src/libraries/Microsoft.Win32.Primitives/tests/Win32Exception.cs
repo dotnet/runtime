@@ -3,12 +3,47 @@
 
 using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace Microsoft.Win32.Primitives.Tests
 {
     public static class Win32ExceptionTestType
     {
+
+        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
+        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
+        private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
+        private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
+
+        [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
+        private static extern int FormatMessage(
+            int dwFlags,
+            IntPtr lpSource_mustBeNull,
+            uint dwMessageId,
+            int dwLanguageId,
+            StringBuilder lpBuffer,
+            int nSize,
+            IntPtr[] arguments);
+
+        private static bool IsLongExceptionMessage(int errorCode)
+        {
+            StringBuilder sb = new StringBuilder(256); // Buffer length in the first pass in the implementation.
+
+            int result = FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
+                                       FORMAT_MESSAGE_FROM_SYSTEM |
+                                       FORMAT_MESSAGE_ARGUMENT_ARRAY,
+                                       IntPtr.Zero, (uint)errorCode, 0, sb, sb.Capacity,
+                                       null);
+            if (result == 0)
+            {
+                return (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER);
+            }
+
+            return false;
+        }
+
         [Fact]
         public static void InstantiateException()
         {
@@ -47,17 +82,14 @@ namespace Microsoft.Win32.Primitives.Tests
         {
             // This test checks that Win32Exception supports error strings greater than 256 characters.
             // Since we will have to rely on a message associated with an error code,
-            // we try to reduce the flakiness by testing the following 3 scenarios:
-            // 1. Validating the positive case, that an errorCode with a message string greater than 256 characters is supported.
-            // 2. Validating that the message string retrieved is actually greater than 256 characters.
-            // 3. Validating that the default error string is what we assume it is, by checking against an error code 
-            //    that does not exist today.
-            // If the corresponding errors or error strings in Windows change and invalidate these cases, this test will break,
-            // and we can revise it accordingly.
-
-            Win32Exception ex = new Win32Exception(0x268);
-            if (ex.Message.Length > 256) // Message length for 0x268 is not > 256 characters in all cultures.
+            // we try to reduce the flakiness by doing the following.
+            // 1. Call FormatMessage to check whether the exception resource length >256 chars.
+            // 2. If true, we validate that Win32Exception class can retrieve the complete resource string.
+            // 3. If not we skip testing.
+            int errorCode = 0x268;
+            if (IsLongExceptionMessage(errorCode)) // Localized error string for 0x268 is not guaranteed to be >256 chars. 
             {
+                Win32Exception ex = new Win32Exception(errorCode);
                 Assert.NotEqual("Unknown error (0x268)", ex.Message);
                 Assert.True(ex.Message.Length > 256);
 
