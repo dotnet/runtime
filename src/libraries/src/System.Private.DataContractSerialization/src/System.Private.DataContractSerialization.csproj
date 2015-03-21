@@ -17,7 +17,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
-    <JsonSources>System\Runtime\Serialization\JSON</JsonSources>
+    <JsonSources>System\Runtime\Serialization\Json</JsonSources>
     <XmlSources>System\Xml</XmlSources>
     <TextSources>System\Text</TextSources>
   </PropertyGroup>
@@ -97,8 +97,8 @@
     <Compile Include="$(JsonSources)\DataContractToObjectConverter.cs" />
     <Compile Include="$(JsonSources)\ObjectToDataContractConverterHelper.cs" />
     <Compile Include="$(JsonSources)\JavaScriptObjectDeserializer.cs" />
-    <Compile Include="$(JsonSources)\JavascriptSerializer.cs" />
-    <Compile Include="$(JsonSources)\JavascriptDeSerializer.cs" />
+    <Compile Include="$(JsonSources)\JavaScriptSerializer.cs" />
+    <Compile Include="$(JsonSources)\JavaScriptDeserializer.cs" />
     <Compile Include="$(JsonSources)\JavaScriptString.cs" />
     <Compile Include="$(JsonSources)\DateTimeFormat.cs" />
     <Compile Include="$(JsonSources)\EmitTypeInformation.cs" />
