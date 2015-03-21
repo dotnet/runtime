@@ -13,23 +13,35 @@ namespace System.Diagnostics.TraceSourceTests
             Dispose,
             Write,
             WriteLine,
+            Flush,
             //NOTE: update MethodEnumCount if values are added
         }
-                
-        const int MethodEnumCount = 5;
 
-        public TestTraceListener()
+        const int MethodEnumCount = 6;
+
+        public TestTraceListener(bool threadSafe = false)
         {
+            _threadSafe = threadSafe;
             _calls = new int[MethodEnumCount];
         }
 
+        private bool _threadSafe;
         private int[] _calls;
+
+        public override bool IsThreadSafe
+        {
+            get
+            {
+                return _threadSafe;
+            }
+        }
 
         /// <summary>
         /// Gets the number of times any of the public methods on this instance were called.
         /// </summary>
-        public int GetCallCount(Method group) {
-            return _calls[(int) group]; 
+        public int GetCallCount(Method group)
+        {
+            return _calls[(int)group];
         }
 
         private void Call(Method method)
@@ -40,6 +52,11 @@ namespace System.Diagnostics.TraceSourceTests
         protected override void Dispose(bool disposing)
         {
             Call(Method.Dispose);
+        }
+
+        public override void Flush()
+        {
+            Call(Method.Flush);
         }
 
         public override void TraceEvent(TraceEventCache eventCache, string source, TraceEventType eventType, int id)
