@@ -210,7 +210,7 @@ FCIMPL2_IV(void, COMDecimal::DoToCurrency, CY * result, DECIMAL d)
 }
 FCIMPLEND
 
-FCIMPL1(double, COMDecimal::ToDouble, DECIMAL d)
+FCIMPL1(double, COMDecimal::ToDouble, FC_DECIMAL d)
 {
     FCALL_CONTRACT;
 
@@ -223,12 +223,7 @@ FCIMPL1(double, COMDecimal::ToDouble, DECIMAL d)
 }
 FCIMPLEND
 
-#ifdef _MSC_VER
-// C4702: unreachable code on IA64 retail
-#pragma warning(push)
-#pragma warning(disable:4702)
-#endif
-FCIMPL1(INT32, COMDecimal::ToInt32, DECIMAL d)
+FCIMPL1(INT32, COMDecimal::ToInt32, FC_DECIMAL d)
 {
     FCALL_CONTRACT;
 
@@ -259,11 +254,8 @@ FCIMPL1(INT32, COMDecimal::ToInt32, DECIMAL d)
     FCThrowRes(kOverflowException, W("Overflow_Int32"));    
 }
 FCIMPLEND
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
-FCIMPL1(float, COMDecimal::ToSingle, DECIMAL d)
+FCIMPL1(float, COMDecimal::ToSingle, FC_DECIMAL d)
 {
     FCALL_CONTRACT;
 
