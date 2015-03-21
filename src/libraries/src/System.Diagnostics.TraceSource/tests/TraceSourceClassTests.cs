@@ -87,54 +87,6 @@ namespace System.Diagnostics.TraceSourceTests
             trace.TraceInformation("format", "arg1", "arg2");
             Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
         }
-    }
-
-    public sealed class TraceSourceTestsNoGlobalLock : TraceSourceTestsBase
-    {
-    }
-
-    public sealed class TraceSourceTestsGlobalLock : TraceSourceTestsBase
-    {
-        internal override void Init()
-        {
-            TraceInternal.UseGlobalLock = true;
-        }
-    }
-
-    public sealed class TraceSourceTestsNoGlobalLockThreadSafeListener : TraceSourceTestsBase
-    {
-        internal override TestTraceListener GetTraceListener()
-        {
-            return new TestTraceListener(true);
-        }
-    }
-
-    public abstract class TraceSourceTestsBase
-    {
-        public TraceSourceTestsBase()
-        {
-            Init();
-        }
-
-        internal virtual void Init()
-        {
-            TraceInternal.UseGlobalLock = false;
-        }
-
-        internal virtual TestTraceListener GetTraceListener()
-        {
-            return new TestTraceListener(false);
-        }
-
-        [Fact]
-        public void Flush()
-        {
-            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
-            var listener = GetTraceListener();
-            trace.Listeners.Add(listener);
-            trace.Flush();
-            Assert.Equal(1, listener.GetCallCount(Method.Flush));
-        }
 
         [Theory]
         [InlineData(SourceLevels.Off, TraceEventType.Critical, 0)]
@@ -155,37 +107,171 @@ namespace System.Diagnostics.TraceSourceTests
         public void SwitchLevel(SourceLevels sourceLevel, TraceEventType messageLevel, int expected)
         {
             var trace = new TraceSource("TestTraceSource");
-            var listener = GetTraceListener();
+            var listener = new TestTraceListener();
             trace.Listeners.Add(listener);
             trace.Switch.Level = sourceLevel;
             trace.TraceEvent(messageLevel, 0);
             Assert.Equal(expected, listener.GetCallCount(Method.TraceEvent));
         }
+    }
+
+    public sealed class TraceSourceTests_Default : TraceSourceTestsBase
+    {
+        // default mode: GlobalLock = true, AutoFlush = false, ThreadSafeListener = false
+    }
+
+    public sealed class TraceSourceTests_AutoFlush : TraceSourceTestsBase
+    {
+        internal override bool AutoFlush
+        {
+            get { return true; }
+        }
+    }
+
+    public sealed class TraceSourceTests_NoGlobalLock : TraceSourceTestsBase
+    {
+        internal override bool UseGlobalLock
+        {
+            get { return false; }
+        }
+    }
+
+    public sealed class TraceSourceTests_NoGlobalLock_AutoFlush : TraceSourceTestsBase
+    {
+        internal override bool UseGlobalLock
+        {
+            get { return false; }
+        }
+
+        internal override bool AutoFlush
+        {
+            get { return true; }
+        }
+    }
+
+    public sealed class TraceSourceTests_ThreadSafeListener : TraceSourceTestsBase
+    {
+        internal override bool ThreadSafeListener
+        {
+            get { return true; }
+        }
+    }
+
+    public sealed class TraceSourceTests_ThreadSafeListener_AutoFlush : TraceSourceTestsBase
+    {
+        internal override bool ThreadSafeListener
+        {
+            get { return true; }
+        }
+
+        internal override bool AutoFlush
+        {
+            get { return true; }
+        }
+    }
+
+    // Defines abstract tests that will be executed in different modes via the above concrete classes.
+    public abstract class TraceSourceTestsBase
+    {
+        public TraceSourceTestsBase()
+        {
+            TraceInternal.UseGlobalLock = UseGlobalLock;
+            TraceInternal.AutoFlush = AutoFlush;
+        }
+
+
+        // properties are overridden to define different "modes" of execution
+        internal virtual bool UseGlobalLock
+        {
+            get
+            {
+                // ThreadSafeListener is only meaningful when not using a global lock, 
+                // so UseGlobalLock will be auto-disabled in that mode.
+                return true && !ThreadSafeListener;
+            }
+        }
+
+        internal virtual bool AutoFlush
+        {
+            get { return false; }
+        }
+
+        internal virtual bool ThreadSafeListener
+        {
+            get { return false; }
+        }
+
+        private TestTraceListener GetTraceListener()
+        {
+            return new TestTraceListener(ThreadSafeListener);
+        }
 
         [Fact]
-        public void TraceEvent()
+        public void Flush()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.Flush();
+            Assert.Equal(1, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceEvent1()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
             trace.Listeners.Add(listener);
             trace.TraceEvent(TraceEventType.Verbose, 0);
             Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
-            trace.TraceEvent(TraceEventType.Verbose, 0, "Message");
-            Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
-            trace.TraceEvent(TraceEventType.Verbose, 0, "Format {0}", "arg0", 1);
-            Assert.Equal(3, listener.GetCallCount(Method.TraceEvent));
         }
 
         [Fact]
-        public void TraceData()
+        public void TraceEvent2()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceEvent(TraceEventType.Verbose, 0, "Message");
+            Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceEvent3()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceEvent(TraceEventType.Verbose, 0, "Format", "Arg1", "Arg2");
+            Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceData1()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
             trace.Listeners.Add(listener);
             trace.TraceData(TraceEventType.Verbose, 0, new Object());
             Assert.Equal(1, listener.GetCallCount(Method.TraceData));
-            trace.TraceData(TraceEventType.Verbose, 0, "Data1", 2);
-            Assert.Equal(2, listener.GetCallCount(Method.TraceData));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceData2()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceData(TraceEventType.Verbose, 0, new Object[0]);
+            Assert.Equal(1, listener.GetCallCount(Method.TraceData));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
         }
     }
 }
