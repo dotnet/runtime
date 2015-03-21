@@ -30,7 +30,6 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="System\IO\__Error.cs" />
     <Compile Include="System\IO\DriveInfo.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -42,6 +41,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetVolumeInformation.cs">
       <Link>Common\Interop\Windows\Interop.GetVolumeInformation.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLogicalDrive.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetDiskFreeSpaceEx.cs">
       <Link>Common\Interop\Windows\Interop.GetDiskFreeSpaceEx.cs</Link>
     </Compile>
@@ -50,9 +52,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetErrorMode.cs">
       <Link>Common\Interop\Windows\Interop.SetErrorMode.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
