@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
-    <RootNamespace>System.Diagnostics.TraceSource.Tests</RootNamespace>
+    <RootNamespace>System.Diagnostics.TraceSourceTests</RootNamespace>
     <AssemblyName>System.Diagnostics.TraceSource.Tests</AssemblyName>
     <ProjectGuid>{7B32D24D-969A-4F7F-8461-B43E15E5D553}</ProjectGuid>
   </PropertyGroup>
@@ -15,6 +15,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BooleanSwitchClassTests.cs" />
     <Compile Include="TestTraceListener.cs" />
     <Compile Include="TraceClassTests.cs" />
     <Compile Include="TraceSourceClassTests.cs" />
