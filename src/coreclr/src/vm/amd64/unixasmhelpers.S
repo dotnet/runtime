@@ -63,21 +63,19 @@ DoRestore:
         // So, if m_pReg points into the MachState, we need to update
         // the register here.  That's what this macro does.
         //
-#define RestoreReg(reg) \
-        lea     rax, [rdi + OFFSETOF__MachState__m_Capture##reg]; \
-        mov     rdx, [rdi + OFFSETOF__MachState__m_p##reg]; \
+#define RestoreReg(reg, regnum) \
+        lea     rax, [rdi + OFFSETOF__MachState__m_Capture + 8 * regnum]; \
+        mov     rdx, [rdi + OFFSETOF__MachState__m_Ptrs + 8 * regnum]; \
         cmp     rax, rdx; \
         cmove   reg, [rax];
 // .endm
 
-        //RestoreReg(Rdi)
-        //RestoreReg(Rsi)
-        RestoreReg(Rbx)
-        RestoreReg(Rbp)
-        RestoreReg(R12)
-        RestoreReg(R13)
-        RestoreReg(R14)
-        RestoreReg(R15)
+        RestoreReg(R12, 0)
+        RestoreReg(R13, 1)
+        RestoreReg(R14, 2)
+        RestoreReg(R15, 3)
+        RestoreReg(Rbx, 4)
+        RestoreReg(Rbp, 5)
 
         xor     eax, eax
         ret

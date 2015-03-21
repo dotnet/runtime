@@ -1823,7 +1823,19 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
         _ASSERTE( GC_FRAMEREG_REL == spBase );
         _ASSERTE( NO_STACK_BASE_REGISTER != m_StackBaseRegister );
 
-        pObjRef = (OBJECTREF*)((*((SIZE_T*)(GetRegisterSlot( m_StackBaseRegister, pRD )))) + spOffset);
+        SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
+
+#ifdef FEATURE_PAL
+        // On PAL, we don't always have the context pointers available due to
+        // a limitation of an unwinding library. In such case, the context
+        // pointers for some nonvolatile registers are NULL.
+        if (pFrameReg == NULL)
+        {
+            pFrameReg = (SIZE_T*) GetCapturedRegister(m_StackBaseRegister, pRD);
+        }
+#endif // FEATURE_PAL
+
+        pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
     }
 
     return pObjRef;
