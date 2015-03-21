@@ -16,7 +16,7 @@
     <ProjectGuid>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include=".\**\*.cs" Exclude=".\Resources\SR.cs"/>
+    <Compile Include=".\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
