@@ -6,19 +6,20 @@ root = true
 
 # Default settings:
 # A newline ending every file
-# Use 2 spaces as indentation
-# Trim trailing whitespace
+# Use 4 spaces as indentation
 [*]
 insert_final_newline = true
 indent_style = space
-indent_size = 2
-trim_trailing_whitespace = true
-
-[*.cs]
 indent_size = 4
 
-[*.csproj]
+# Xml project files
+[*.{csproj,vcxproj,vcxproj.filters,proj,nativeproj,locproj}]
 indent_size = 2
 
-[*.nuspec]
+# Xml files
+[*.{xml,stylecop,resx,ruleset}]
+indent_size = 2
+
+# Xml config files
+[*.{props,targets,config,nuspec}]
 indent_size = 2
