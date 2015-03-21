@@ -15,6 +15,7 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include <pal_corefx.h>
 #include <dlfcn.h>
 
 typedef void* (*CRYPTO_get_locking_callback)();

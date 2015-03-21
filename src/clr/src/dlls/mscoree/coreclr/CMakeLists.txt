@@ -22,7 +22,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
+
+# These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+    set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive) 
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+# These options are used to force every object to be included even if it's unused.
+    set(START_WHOLE_ARCHIVE -force_load)
+    set(END_WHOLE_ARCHIVE )
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 endif (WIN32)
 
@@ -84,7 +94,9 @@ if(WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
+        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available 
         CoreClrPal
+        ${END_WHOLE_ARCHIVE}
         palrt
     )
 endif(WIN32)

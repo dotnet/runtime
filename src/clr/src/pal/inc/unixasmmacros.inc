@@ -183,8 +183,8 @@ C_FUNC(\Name\()_End):
 
         push_argument_register r9
         push_argument_register r8
-        push_argument_register rdx
         push_argument_register rcx
+        push_argument_register rdx
         push_argument_register rsi
         push_argument_register rdi
 
@@ -203,8 +203,8 @@ C_FUNC(\Name\()_End):
 
         pop_argument_register rdi
         pop_argument_register rsi
-        pop_argument_register rcx
         pop_argument_register rdx
+        pop_argument_register rcx
         pop_argument_register r8
         pop_argument_register r9
 
