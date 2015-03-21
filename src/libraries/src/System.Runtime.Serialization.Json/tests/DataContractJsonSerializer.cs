@@ -1,0 +1,1315 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Xunit;
+using SerializationTypes;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Xml;
+using System.Xml.Linq;
+
+
+public static class DataContractJsonSerializerTests
+{
+    [Fact]
+    public static void DCJS_BoolAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<bool>(true, "true"), true);
+        Assert.StrictEqual(SerializeAndDeserialize<bool>(false, "false"), false);
+    }
+
+    [Fact]
+    public static void DCJS_ByteArrayAsRoot()
+    {
+        Assert.Null(SerializeAndDeserialize<byte[]>(null, "null"));
+        byte[] x = new byte[] { 1, 2 };
+        byte[] y = SerializeAndDeserialize<byte[]>(x, "[1,2]");
+        Assert.Equal(x, y);
+    }
+
+    [Fact]
+    public static void DCJS_CharAsRoot()
+    {
+        // Special characters
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2f, "\"\\/\""), (char)0x2f); // Expected output string is: \/
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x5c, "\"\\\\\""), (char)0x5c); // \\
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x27, "\"\'\""), (char)0x27); // '
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x22, "\"\\\"\""), (char)0x22); // \"
+
+        // There are 5 ranges of characters that have output in the form of "\u<code>".
+        // The following tests the start and end character and at least one character in each range
+        // and also in between the ranges.
+
+        // #1. 0x0000 - 0x001F
+        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue, "\"\\u0000\""), char.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x10, "\"\\u0010\""), (char)0x10);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x1f, "\"\\u001f\""), (char)0x1f);
+
+        // Between #1 and #2
+        Assert.StrictEqual(SerializeAndDeserialize<char>('a', "\"a\""), 'a'); // 0x0061
+
+        // #2. 0x0085
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x85, "\"\\u0085\""), (char)0x85);
+
+        // Between #2 and #3
+        Assert.StrictEqual(SerializeAndDeserialize<char>('ñ', "\"ñ\""), 'ñ'); // 0x00F1
+
+        // #3. 0x2028 - 0x2029
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2028, "\"\\u2028\""), (char)0x2028);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0x2029, "\"\\u2029\""), (char)0x2029);
+
+        // Between #3 and #4
+        Assert.StrictEqual(SerializeAndDeserialize<char>('?', "\"?\""), '?'); // 0x6F22
+
+        // #4. 0xD800 - 0xDFFF
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xd800, "\"\\ud800\""), (char)0xd800);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdabc, "\"\\udabc\""), (char)0xdabc);
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xdfff, "\"\\udfff\""), (char)0xdfff);
+
+        // Between #4 and #5
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xeabc, "\"\""), (char)0xeabc);
+
+        // #5. 0xFFFE - 0xFFFF
+        Assert.StrictEqual(SerializeAndDeserialize<char>((char)0xfffe, "\"\\ufffe\""), (char)0xfffe);
+        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue, "\"\\uffff\""), char.MaxValue);
+    }
+
+    [Fact]
+    public static void DCJS_ByteAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<byte>(10, "10"), 10);
+        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MinValue, "0"), byte.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MaxValue, "255"), byte.MaxValue);
+    }
+
+    [Fact]
+    public static void DCJS_DateTimeAsRoot()
+    {
+        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357084800000{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2).AddMinutes(offsetMinutes));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357095845006{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Local).AddMinutes(offsetMinutes));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified).AddMinutes(offsetMinutes), string.Format("\"\\/Date(1357095845006{0})\\/\"", timeZoneString)), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Unspecified).AddMinutes(offsetMinutes));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc), "\"\\/Date(1357095845006)\\/\""), new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc));
+        Assert.StrictEqual(SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc), "\"\\/Date(-62135596800000)\\/\""), DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
+        SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc), "\"\\/Date(253402300799999)\\/\"");
+    }
+
+    [Fact]
+    public static void DCJS_DecimalAsRoot()
+    {
+        foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_DoubleAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<double>(-1.2, "-1.2"), -1.2);
+        Assert.StrictEqual(SerializeAndDeserialize<double>(0, "0"), 0);
+        Assert.StrictEqual(SerializeAndDeserialize<double>(2.3, "2.3"), 2.3);
+        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MinValue, "-1.7976931348623157E+308"), double.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MaxValue, "1.7976931348623157E+308"), double.MaxValue);
+    }
+
+    [Fact]
+    public static void DCJS_FloatAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<float>((float)-1.2, "-1.2"), (float)-1.2);
+        Assert.StrictEqual(SerializeAndDeserialize<float>((float)0, "0"), (float)0);
+        Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3, "2.3"), (float)2.3);
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue, "-3.40282347E+38"), float.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue, "3.40282347E+38"), float.MaxValue);
+    }
+
+    [Fact]
+    public static void DCJS_GuidAsRoot()
+    {
+        foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<Guid>(value, string.Format("\"{0}\"", value.ToString())), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_IntAsRoot()
+    {
+        foreach (int value in new int[] { -1, 0, 2, int.MinValue, int.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<int>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_LongAsRoot()
+    {
+        foreach (long value in new long[] { (long)-1, (long)0, (long)2, long.MinValue, long.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<long>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_ObjectAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<object>(1, "1"), 1);
+        Assert.StrictEqual(SerializeAndDeserialize<object>(true, "true"), true);
+        Assert.StrictEqual(SerializeAndDeserialize<object>(null, "null"), null);
+        Assert.StrictEqual(SerializeAndDeserialize<object>("abc", "\"abc\""), "abc");
+    }
+
+    [Fact]
+    public static void DCJS_XmlQualifiedNameAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"), "\"abc:def\""), new XmlQualifiedName("abc", "def"));
+        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty, "\"\""), XmlQualifiedName.Empty);
+    }
+
+    [Fact]
+    public static void DCJS_ShortAsRoot()
+    {
+        foreach (short value in new short[] { (short)-1.2, (short)0, (short)2.3, short.MinValue, short.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<short>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_SbyteAsRoot()
+    {
+        foreach (sbyte value in new sbyte[] { (sbyte)3, (sbyte)0, sbyte.MinValue, sbyte.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<sbyte>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_StringAsRoot()
+    {
+        foreach (string value in new string[] { "abc", "  a b  ", null, "", " ", "Hello World! 漢 ñ" })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<string>(value, value == null ? "null" : string.Format("\"{0}\"", value.ToString())), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_TimeSpanAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3), "\"PT1H2M3S\""), new TimeSpan(1, 2, 3));
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.Zero, "\"PT0S\""), TimeSpan.Zero);
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.MinValue, "\"-P10675199DT2H48M5.4775808S\""), TimeSpan.MinValue);
+        Assert.StrictEqual(SerializeAndDeserialize<TimeSpan>(TimeSpan.MaxValue, "\"P10675199DT2H48M5.4775807S\""), TimeSpan.MaxValue);
+    }
+
+    [Fact]
+    public static void DCJS_UintAsRoot()
+    {
+        foreach (uint value in new uint[] { (uint)3, (uint)0, uint.MinValue, uint.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<uint>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_UlongAsRoot()
+    {
+        foreach (ulong value in new ulong[] { (ulong)3, (ulong)0, ulong.MinValue, ulong.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<ulong>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_UshortAsRoot()
+    {
+        foreach (ushort value in new ushort[] { (ushort)3, (ushort)0, ushort.MinValue, ushort.MaxValue })
+        {
+            Assert.StrictEqual(SerializeAndDeserialize<ushort>(value, value.ToString()), value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_UriAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<Uri>(new Uri("http://abc/"), "\"http:\\/\\/abc\\/\""), new Uri("http://abc/"));
+        Assert.StrictEqual(SerializeAndDeserialize<Uri>(new Uri("http://abc/def/x.aspx?p1=12&p2=34"), "\"http:\\/\\/abc\\/def\\/x.aspx?p1=12&p2=34\""), new Uri("http://abc/def/x.aspx?p1=12&p2=34"));
+    }
+
+    [Fact]
+    public static void DCJS_ArrayAsRoot()
+    {
+        SimpleType[] x = new SimpleType[] { new SimpleType { P1 = "abc", P2 = 11 }, new SimpleType { P1 = "def", P2 = 12 } };
+        SimpleType[] y = SerializeAndDeserialize<SimpleType[]>(x, "[{\"P1\":\"abc\",\"P2\":11},{\"P1\":\"def\",\"P2\":12}]");
+
+        Utils.Equal(x, y, (a, b) => { return SimpleType.AreEqual(a, b); });
+    }
+
+    [Fact]
+    public static void DCJS_ArrayAsGetSet()
+    {
+        TypeWithGetSetArrayMembers x = new TypeWithGetSetArrayMembers
+        {
+            F1 = new SimpleType[] { new SimpleType { P1 = "ab", P2 = 1 }, new SimpleType { P1 = "cd", P2 = 2 } },
+            F2 = new int[] { -1, 3 },
+            P1 = new SimpleType[] { new SimpleType { P1 = "ef", P2 = 5 }, new SimpleType { P1 = "gh", P2 = 7 } },
+            P2 = new int[] { 11, 12 }
+        };
+        TypeWithGetSetArrayMembers y = SerializeAndDeserialize<TypeWithGetSetArrayMembers>(x, "{\"F1\":[{\"P1\":\"ab\",\"P2\":1},{\"P1\":\"cd\",\"P2\":2}],\"F2\":[-1,3],\"P1\":[{\"P1\":\"ef\",\"P2\":5},{\"P1\":\"gh\",\"P2\":7}],\"P2\":[11,12]}");
+
+        Assert.NotNull(y);
+        Utils.Equal(x.F1, y.F1, (a, b) => { return SimpleType.AreEqual(a, b); });
+        Assert.Equal(x.F2, y.F2);
+        Utils.Equal(x.P1, y.P1, (a, b) => { return SimpleType.AreEqual(a, b); });
+        Assert.Equal(x.P2, y.P2);
+    }
+
+    [Fact]
+    public static void DCJS_ArrayAsGetOnly()
+    {
+        TypeWithGetOnlyArrayProperties x = new TypeWithGetOnlyArrayProperties();
+        x.P1[0] = new SimpleType { P1 = "ab", P2 = 1 };
+        x.P1[1] = new SimpleType { P1 = "cd", P2 = 2 };
+        x.P2[0] = -1;
+        x.P2[1] = 3;
+
+        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x, "{\"P1\":[{\"P1\":\"ab\",\"P2\":1},{\"P1\":\"cd\",\"P2\":2}],\"P2\":[-1,3]}");
+
+        Assert.NotNull(y);
+        Utils.Equal(x.P1, y.P1, (a, b) => { return SimpleType.AreEqual(a, b); });
+        Assert.Equal(x.P2, y.P2);
+    }
+
+    [Fact]
+    public static void DCJS_DictionaryGenericRoot()
+    {
+        Dictionary<string, int> x = new Dictionary<string, int>();
+        x.Add("one", 1);
+        x.Add("two", 2);
+
+        Dictionary<string, int> y = SerializeAndDeserialize<Dictionary<string, int>>(x, "[{\"Key\":\"one\",\"Value\":1},{\"Key\":\"two\",\"Value\":2}]");
+
+        Assert.NotNull(y);
+        Assert.Equal(y.Count, 2);
+        Assert.Equal(y["one"], 1);
+        Assert.Equal(y["two"], 2);
+    }
+
+    [Fact]
+    public static void DCJS_DictionaryGenericMembers()
+    {
+        TypeWithDictionaryGenericMembers x = new TypeWithDictionaryGenericMembers
+        {
+            F1 = new Dictionary<string, int>(),
+            F2 = new Dictionary<string, int>(),
+            P1 = new Dictionary<string, int>(),
+            P2 = new Dictionary<string, int>()
+        };
+        x.F1.Add("ab", 12);
+        x.F1.Add("cd", 15);
+        x.F2.Add("ef", 17);
+        x.F2.Add("gh", 19);
+        x.P1.Add("12", 120);
+        x.P1.Add("13", 130);
+        x.P2.Add("14", 140);
+        x.P2.Add("15", 150);
+
+        x.RO1.Add(true, 't');
+        x.RO1.Add(false, 'f');
+
+        x.RO2.Add(true, 'a');
+        x.RO2.Add(false, 'b');
+
+        TypeWithDictionaryGenericMembers y = SerializeAndDeserialize<TypeWithDictionaryGenericMembers>(x, "{\"F1\":[{\"Key\":\"ab\",\"Value\":12},{\"Key\":\"cd\",\"Value\":15}],\"F2\":[{\"Key\":\"ef\",\"Value\":17},{\"Key\":\"gh\",\"Value\":19}],\"P1\":[{\"Key\":\"12\",\"Value\":120},{\"Key\":\"13\",\"Value\":130}],\"P2\":[{\"Key\":\"14\",\"Value\":140},{\"Key\":\"15\",\"Value\":150}],\"RO1\":[{\"Key\":true,\"Value\":\"t\"},{\"Key\":false,\"Value\":\"f\"}],\"RO2\":[{\"Key\":true,\"Value\":\"a\"},{\"Key\":false,\"Value\":\"b\"}]}");
+        Assert.NotNull(y);
+
+        Assert.NotNull(y.F1);
+        Assert.True(y.F1.Count == 2);
+        Assert.True(y.F1["ab"] == 12);
+        Assert.True(y.F1["cd"] == 15);
+
+        Assert.NotNull(y.F2);
+        Assert.True(y.F2.Count == 2);
+        Assert.True(y.F2["ef"] == 17);
+        Assert.True(y.F2["gh"] == 19);
+
+        Assert.NotNull(y.P1);
+        Assert.True(y.P1.Count == 2);
+        Assert.True(y.P1["12"] == 120);
+        Assert.True(y.P1["13"] == 130);
+
+        Assert.NotNull(y.P2);
+        Assert.True(y.P2.Count == 2);
+        Assert.True(y.P2["14"] == 140);
+        Assert.True(y.P2["15"] == 150);
+
+        Assert.NotNull(y.RO1);
+        Assert.True(y.RO1.Count == 2);
+        Assert.True(y.RO1[true] == 't');
+        Assert.True(y.RO1[false] == 'f');
+
+        Assert.NotNull(y.RO2);
+        Assert.True(y.RO2.Count == 2);
+        Assert.True(y.RO2[true] == 'a');
+        Assert.True(y.RO2[false] == 'b');
+    }
+
+    [Fact]
+    public static void DCJS_DictionaryRoot()
+    {
+        MyDictionary x = new MyDictionary();
+        x.Add(1, "one");
+        x.Add(2, "two");
+
+        MyDictionary y = SerializeAndDeserialize<MyDictionary>(x, "[{\"Key\":1,\"Value\":\"one\"},{\"Key\":2,\"Value\":\"two\"}]");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 2);
+        Assert.True((string)y[1] == "one");
+        Assert.True((string)y[2] == "two");
+    }
+
+    [Fact]
+    public static void DCJS_DictionaryMembers()
+    {
+        TypeWithDictionaryMembers x = new TypeWithDictionaryMembers();
+
+        x.F1 = new MyDictionary();
+        x.F1.Add("ab", 12);
+        x.F1.Add("cd", 15);
+
+        x.F2 = new MyDictionary();
+        x.F2.Add("ef", 17);
+        x.F2.Add("gh", 19);
+
+        x.P1 = new MyDictionary();
+        x.P1.Add("12", 120);
+        x.P1.Add("13", 130);
+
+        x.P2 = new MyDictionary();
+        x.P2.Add("14", 140);
+        x.P2.Add("15", 150);
+
+        x.RO1.Add(true, 't');
+        x.RO1.Add(false, 'f');
+
+        x.RO2.Add(true, 'a');
+        x.RO2.Add(false, 'b');
+
+        TypeWithDictionaryMembers y = SerializeAndDeserialize<TypeWithDictionaryMembers>(x, "{\"F1\":[{\"Key\":\"ab\",\"Value\":12},{\"Key\":\"cd\",\"Value\":15}],\"F2\":[{\"Key\":\"ef\",\"Value\":17},{\"Key\":\"gh\",\"Value\":19}],\"P1\":[{\"Key\":\"12\",\"Value\":120},{\"Key\":\"13\",\"Value\":130}],\"P2\":[{\"Key\":\"14\",\"Value\":140},{\"Key\":\"15\",\"Value\":150}],\"RO1\":[{\"Key\":true,\"Value\":\"t\"},{\"Key\":false,\"Value\":\"f\"}],\"RO2\":[{\"Key\":true,\"Value\":\"a\"},{\"Key\":false,\"Value\":\"b\"}]}");
+        Assert.NotNull(y);
+
+        Assert.NotNull(y.F1);
+        Assert.True(y.F1.Count == 2);
+        Assert.True((int)y.F1["ab"] == 12);
+        Assert.True((int)y.F1["cd"] == 15);
+
+        Assert.NotNull(y.F2);
+        Assert.True(y.F2.Count == 2);
+        Assert.True((int)y.F2["ef"] == 17);
+        Assert.True((int)y.F2["gh"] == 19);
+
+        Assert.NotNull(y.P1);
+        Assert.True(y.P1.Count == 2);
+        Assert.True((int)y.P1["12"] == 120);
+        Assert.True((int)y.P1["13"] == 130);
+
+        Assert.NotNull(y.P2);
+        Assert.True(y.P2.Count == 2);
+        Assert.True((int)y.P2["14"] == 140);
+        Assert.True((int)y.P2["15"] == 150);
+
+        Assert.NotNull(y.RO1);
+        Assert.True(y.RO1.Count == 2);
+        Assert.True((string)y.RO1[true] == "t");
+        Assert.True((string)y.RO1[false] == "f");
+
+        Assert.NotNull(y.RO2);
+        Assert.True(y.RO2.Count == 2);
+        Assert.True((string)y.RO2[true] == "a");
+        Assert.True((string)y.RO2[false] == "b");
+    }
+
+    [Fact]
+    public static void DCJS_ListGenericRoot()
+    {
+        List<string> x = new List<string>();
+        x.Add("zero");
+        x.Add("one");
+
+        List<string> y = SerializeAndDeserialize<List<string>>(x, "[\"zero\",\"one\"]");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 2);
+        Assert.True(y[0] == "zero");
+        Assert.True(y[1] == "one");
+    }
+
+    [Fact]
+    public static void DCJS_ListGenericMembers()
+    {
+        TypeWithListGenericMembers x = new TypeWithListGenericMembers();
+
+        x.F1 = new List<string>();
+        x.F1.Add("zero");
+        x.F1.Add("one");
+
+        x.F2 = new List<string>();
+        x.F2.Add("abc");
+        x.F2.Add("def");
+
+        x.P1 = new List<int>();
+        x.P1.Add(10);
+        x.P1.Add(20);
+
+        x.P2 = new List<int>();
+        x.P2.Add(12);
+        x.P2.Add(34);
+
+        x.RO1.Add('a');
+        x.RO1.Add('b');
+
+        x.RO2.Add('c');
+        x.RO2.Add('d');
+
+        TypeWithListGenericMembers y = SerializeAndDeserialize<TypeWithListGenericMembers>(x, "{\"F1\":[\"zero\",\"one\"],\"F2\":[\"abc\",\"def\"],\"P1\":[10,20],\"P2\":[12,34],\"RO1\":[\"a\",\"b\"],\"RO2\":[\"c\",\"d\"]}");
+        Assert.NotNull(y);
+
+        Assert.NotNull(y.F1);
+        Assert.True(y.F1.Count == 2);
+        Assert.True(y.F1[0] == "zero");
+        Assert.True(y.F1[1] == "one");
+
+        Assert.NotNull(y.F2);
+        Assert.True(y.F2.Count == 2);
+        Assert.True(y.F2[0] == "abc");
+        Assert.True(y.F2[1] == "def");
+
+        Assert.NotNull(y.P1);
+        Assert.True(y.P1.Count == 2);
+        Assert.True(y.P1[0] == 10);
+        Assert.True(y.P1[1] == 20);
+
+        Assert.NotNull(y.P2);
+        Assert.True(y.P2.Count == 2);
+        Assert.True(y.P2[0] == 12);
+        Assert.True(y.P2[1] == 34);
+
+        Assert.NotNull(y.RO1);
+        Assert.True(y.RO1.Count == 2);
+        Assert.True(y.RO1[0] == 'a');
+        Assert.True(y.RO1[1] == 'b');
+
+        Assert.NotNull(y.RO2);
+        Assert.True(y.RO2.Count == 2);
+        Assert.True(y.RO2[0] == 'c');
+        Assert.True(y.RO2[1] == 'd');
+    }
+
+    [Fact]
+    public static void DCJS_CollectionGenericRoot()
+    {
+        MyCollection<string> x = new MyCollection<string>("a1", "a2");
+        MyCollection<string> y = SerializeAndDeserialize<MyCollection<string>>(x, "[\"a1\",\"a2\"]");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 2);
+
+        foreach (var item in x)
+        {
+            Assert.True(y.Contains(item));
+        }
+    }
+
+    [Fact]
+    public static void DCJS_CollectionGenericMembers()
+    {
+        TypeWithCollectionGenericMembers x = new TypeWithCollectionGenericMembers
+        {
+            F1 = new MyCollection<string>("a1", "a2"),
+            F2 = new MyCollection<string>("b1", "b2"),
+            P1 = new MyCollection<string>("c1", "c2"),
+            P2 = new MyCollection<string>("d1", "d2"),
+        };
+        x.RO1.Add("abc");
+        x.RO2.Add("xyz");
+
+        TypeWithCollectionGenericMembers y = SerializeAndDeserialize<TypeWithCollectionGenericMembers>(x, "{\"F1\":[\"a1\",\"a2\"],\"F2\":[\"b1\",\"b2\"],\"P1\":[\"c1\",\"c2\"],\"P2\":[\"d1\",\"d2\"],\"RO1\":[\"abc\"],\"RO2\":[\"xyz\"]}");
+        Assert.NotNull(y);
+        Assert.True(y.F1.Count == 2, getCheckFailureMsg("F1"));
+        Assert.True(y.F2.Count == 2, getCheckFailureMsg("F2"));
+        Assert.True(y.P1.Count == 2, getCheckFailureMsg("P1"));
+        Assert.True(y.P2.Count == 2, getCheckFailureMsg("P2"));
+        Assert.True(y.RO1.Count == 1, getCheckFailureMsg("RO1"));
+        Assert.True(y.RO2.Count == 1, getCheckFailureMsg("RO2"));
+
+
+
+        foreach (var item in x.F1)
+        {
+            Assert.True(y.F1.Contains(item), getCheckFailureMsg("F1"));
+        }
+        foreach (var item in x.F2)
+        {
+            Assert.True(y.F2.Contains(item), getCheckFailureMsg("F2"));
+        }
+        foreach (var item in x.P1)
+        {
+            Assert.True(y.P1.Contains(item), getCheckFailureMsg("P1"));
+        }
+        foreach (var item in x.P2)
+        {
+            Assert.True(y.P2.Contains(item), getCheckFailureMsg("P2"));
+        }
+        foreach (var item in x.RO1)
+        {
+            Assert.True(y.RO1.Contains(item), getCheckFailureMsg("RO1"));
+        }
+        foreach (var item in x.RO2)
+        {
+            Assert.True(y.RO2.Contains(item), getCheckFailureMsg("RO2"));
+        }
+    }
+
+    [Fact]
+    public static void DCJS_ListRoot()
+    {
+        MyList x = new MyList("a1", "a2");
+        MyList y = SerializeAndDeserialize<MyList>(x, "[\"a1\",\"a2\"]");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 2);
+        foreach (var item in x)
+        {
+            Assert.True(y.Contains(item));
+        }
+    }
+
+    [Fact]
+    public static void DCJS_ListMembers()
+    {
+        TypeWithListMembers x = new TypeWithListMembers
+        {
+            F1 = new MyList("a1", "a2"),
+            F2 = new MyList("b1", "b2"),
+            P1 = new MyList("c1", "c2"),
+            P2 = new MyList("d1", "d2"),
+        };
+        x.RO1.Add("abc");
+        x.RO2.Add("xyz");
+
+        TypeWithListMembers y = SerializeAndDeserialize<TypeWithListMembers>(x, "{\"F1\":[\"a1\",\"a2\"],\"F2\":[\"b1\",\"b2\"],\"P1\":[\"c1\",\"c2\"],\"P2\":[\"d1\",\"d2\"],\"RO1\":[\"abc\"],\"RO2\":[\"xyz\"]}");
+        Assert.NotNull(y);
+        Assert.True(y.F1.Count == 2, getCheckFailureMsg("F1"));
+        Assert.True(y.F2.Count == 2, getCheckFailureMsg("F2"));
+        Assert.True(y.P1.Count == 2, getCheckFailureMsg("P1"));
+        Assert.True(y.P2.Count == 2, getCheckFailureMsg("P2"));
+        Assert.True(y.RO1.Count == 1, getCheckFailureMsg("RO1"));
+        Assert.True(y.RO2.Count == 1, getCheckFailureMsg("RO2"));
+
+        Assert.True((string)x.F1[0] == (string)y.F1[0], getCheckFailureMsg("F1"));
+        Assert.True((string)x.F1[1] == (string)y.F1[1], getCheckFailureMsg("F1"));
+        Assert.True((string)x.F2[0] == (string)y.F2[0], getCheckFailureMsg("F2"));
+        Assert.True((string)x.F2[1] == (string)y.F2[1], getCheckFailureMsg("F2"));
+        Assert.True((string)x.P1[0] == (string)y.P1[0], getCheckFailureMsg("P1"));
+        Assert.True((string)x.P1[1] == (string)y.P1[1], getCheckFailureMsg("P1"));
+        Assert.True((string)x.P2[0] == (string)y.P2[0], getCheckFailureMsg("P2"));
+        Assert.True((string)x.P2[1] == (string)y.P2[1], getCheckFailureMsg("P2"));
+        Assert.True((string)x.RO1[0] == (string)y.RO1[0], getCheckFailureMsg("RO1"));
+        Assert.True((string)x.RO2[0] == (string)y.RO2[0], getCheckFailureMsg("RO2"));
+    }
+
+    [Fact]
+    public static void DCJS_EnumerableGenericRoot()
+    {
+        MyEnumerable<string> x = new MyEnumerable<string>("a1", "a2");
+        MyEnumerable<string> y = SerializeAndDeserialize<MyEnumerable<string>>(x, "[\"a1\",\"a2\"]");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 2);
+
+        string actual = string.Join("", y);
+        Assert.StrictEqual(actual, "a1a2");
+    }
+
+    [Fact]
+    public static void DCJS_EnumerableGenericMembers()
+    {
+        TypeWithEnumerableGenericMembers x = new TypeWithEnumerableGenericMembers
+        {
+            F1 = new MyEnumerable<string>("a1", "a2"),
+            F2 = new MyEnumerable<string>("b1", "b2"),
+            P1 = new MyEnumerable<string>("c1", "c2"),
+            P2 = new MyEnumerable<string>("d1", "d2")
+        };
+        x.RO1.Add("abc");
+
+        TypeWithEnumerableGenericMembers y = SerializeAndDeserialize<TypeWithEnumerableGenericMembers>(x, "{\"F1\":[\"a1\",\"a2\"],\"F2\":[\"b1\",\"b2\"],\"P1\":[\"c1\",\"c2\"],\"P2\":[\"d1\",\"d2\"],\"RO1\":[\"abc\"]}");
+
+        Assert.NotNull(y);
+        Assert.True(y.F1.Count == 2);
+        Assert.True(((string[])y.F2).Length == 2);
+        Assert.True(y.P1.Count == 2);
+        Assert.True(((string[])y.P2).Length == 2);
+        Assert.True(y.RO1.Count == 1);
+    }
+
+    [Fact]
+    public static void DCJS_CollectionRoot()
+    {
+        MyCollection x = new MyCollection('a', 45);
+        MyCollection y = SerializeAndDeserialize<MyCollection>(x, "[\"a\",45]");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 2);
+        Assert.True((string)y[0] == "a");
+        Assert.True((int)y[1] == 45);
+    }
+
+    [Fact]
+    public static void DCJS_CollectionMembers()
+    {
+        TypeWithCollectionMembers x = new TypeWithCollectionMembers
+        {
+            F1 = new MyCollection('a', 45),
+            F2 = new MyCollection("ab", true),
+            P1 = new MyCollection("x", "y"),
+            P2 = new MyCollection(false, true)
+        };
+        x.RO1.Add("abc");
+
+        TypeWithCollectionMembers y = SerializeAndDeserialize<TypeWithCollectionMembers>(x, "{\"F1\":[\"a\",45],\"F2\":[\"ab\",true],\"P1\":[\"x\",\"y\"],\"P2\":[false,true],\"RO1\":[\"abc\"]}");
+        Assert.NotNull(y);
+
+        Assert.NotNull(y.F1);
+        Assert.True(y.F1.Count == 2);
+        Assert.True((string)y.F1[0] == "a");
+        Assert.True((int)y.F1[1] == 45);
+
+        Assert.NotNull(y.F2);
+        Assert.True(((object[])y.F2).Length == 2);
+        Assert.True((string)((object[])y.F2)[0] == "ab");
+        Assert.True((bool)((object[])y.F2)[1] == true);
+
+        Assert.True(y.P1.Count == 2);
+        Assert.True((string)y.P1[0] == "x");
+        Assert.True((string)y.P1[1] == "y");
+
+        Assert.True(((object[])y.P2).Length == 2);
+        Assert.True((bool)((object[])y.P2)[0] == false);
+        Assert.True((bool)((object[])y.P2)[1] == true);
+
+        Assert.True(y.RO1.Count == 1);
+        Assert.True((string)y.RO1[0] == "abc");
+    }
+
+    [Fact]
+    public static void DCJS_EnumerableRoot()
+    {
+        MyEnumerable x = new MyEnumerable("abc", 3);
+        MyEnumerable y = SerializeAndDeserialize<MyEnumerable>(x, "[\"abc\",3]");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 2);
+        Assert.True((string)y[0] == "abc");
+        Assert.True((int)y[1] == 3);
+    }
+
+    [Fact]
+    public static void DCJS_EnumerableMembers()
+    {
+        TypeWithEnumerableMembers x = new TypeWithEnumerableMembers
+        {
+            F1 = new MyEnumerable('a', 45),
+            F2 = new MyEnumerable("ab", true),
+            P1 = new MyEnumerable("x", "y"),
+            P2 = new MyEnumerable(false, true)
+        };
+        x.RO1.Add('x');
+
+        TypeWithEnumerableMembers y = SerializeAndDeserialize<TypeWithEnumerableMembers>(x, "{\"F1\":[\"a\",45],\"F2\":[\"ab\",true],\"P1\":[\"x\",\"y\"],\"P2\":[false,true],\"RO1\":[\"x\"]}");
+        Assert.NotNull(y);
+
+        Assert.True(y.F1.Count == 2);
+        Assert.True((string)y.F1[0] == "a");
+        Assert.True((int)y.F1[1] == 45);
+
+        Assert.True(((object[])y.F2).Length == 2);
+        Assert.True((string)((object[])y.F2)[0] == "ab");
+        Assert.True((bool)((object[])y.F2)[1] == true);
+
+        Assert.True(y.P1.Count == 2);
+        Assert.True((string)y.P1[0] == "x");
+        Assert.True((string)y.P1[1] == "y");
+
+        Assert.True(((object[])y.P2).Length == 2);
+        Assert.True((bool)((object[])y.P2)[0] == false);
+        Assert.True((bool)((object[])y.P2)[1] == true);
+
+        Assert.True(y.RO1.Count == 1);
+        Assert.True((string)y.RO1[0] == "x");
+    }
+
+    [Fact]
+    public static void DCJS_CustomType()
+    {
+        MyTypeA x = new MyTypeA
+        {
+            PropX = new MyTypeC { PropC = 'a', PropB = true },
+            PropY = 45,
+        };
+        MyTypeA y = SerializeAndDeserialize<MyTypeA>(x, "{\"P_Col_Array\":null,\"PropX\":{\"__type\":\"MyTypeC:#SerializationTypes\",\"PropA\":null,\"PropC\":\"a\",\"PropB\":true},\"PropY\":45}");
+
+        Assert.NotNull(y);
+        Assert.NotNull(y.PropX);
+        Assert.StrictEqual(x.PropX.PropC, y.PropX.PropC);
+        Assert.StrictEqual(((MyTypeC)x.PropX).PropB, ((MyTypeC)y.PropX).PropB);
+        Assert.StrictEqual(x.PropY, y.PropY);
+    }
+
+    [Fact]
+    public static void DCJS_DataContractAttribute()
+    {
+        SerializeAndDeserialize<DCA_1>(new DCA_1 { P1 = "xyz" }, "{}");
+        SerializeAndDeserialize<DCA_2>(new DCA_2 { P1 = "xyz" }, "{}");
+        SerializeAndDeserialize<DCA_3>(new DCA_3 { P1 = "xyz" }, "{}");
+        SerializeAndDeserialize<DCA_5>(new DCA_5 { P1 = "xyz" }, "{}");
+    }
+
+    [Fact]
+    public static void DCJS_DataMemberAttribute()
+    {
+        SerializeAndDeserialize<DMA_1>(new DMA_1 { P1 = "abc", P2 = 12, P3 = true, P4 = 'a', P5 = 10, MyDataMemberInAnotherNamespace = new MyDataContractClass04_1() { MyDataMember = "Test" }, Order100 = true, OrderMaxValue = false }, "{\"MyDataMemberInAnotherNamespace\":{\"MyDataMember\":\"Test\"},\"P1\":\"abc\",\"P4\":\"a\",\"P5\":10,\"xyz\":12,\"P3\":true,\"Order100\":true,\"OrderMaxValue\":false}");
+    }
+
+    [Fact]
+    public static void DCJS_IgnoreDataMemberAttribute()
+    {
+        IDMA_1 x = new IDMA_1 { MyDataMember = "MyDataMember", MyIgnoreDataMember = "MyIgnoreDataMember", MyUnsetDataMember = "MyUnsetDataMember" };
+        IDMA_1 y = SerializeAndDeserialize<IDMA_1>(x, "{\"MyDataMember\":\"MyDataMember\"}");
+        Assert.NotNull(y);
+        Assert.StrictEqual(x.MyDataMember, y.MyDataMember);
+        Assert.Null(y.MyIgnoreDataMember);
+        Assert.Null(y.MyUnsetDataMember);
+    }
+
+    [Fact]
+    public static void DCJS_EnumAsRoot()
+    {
+        Assert.StrictEqual(SerializeAndDeserialize<MyEnum>(MyEnum.Two, "1"), MyEnum.Two);
+        Assert.StrictEqual(SerializeAndDeserialize<ByteEnum>(ByteEnum.Option1, "1"), ByteEnum.Option1);
+        Assert.StrictEqual(SerializeAndDeserialize<SByteEnum>(SByteEnum.Option1, "1"), SByteEnum.Option1);
+        Assert.StrictEqual(SerializeAndDeserialize<ShortEnum>(ShortEnum.Option1, "1"), ShortEnum.Option1);
+        Assert.StrictEqual(SerializeAndDeserialize<IntEnum>(IntEnum.Option1, "1"), IntEnum.Option1);
+        Assert.StrictEqual(SerializeAndDeserialize<UIntEnum>(UIntEnum.Option1, "1"), UIntEnum.Option1);
+        Assert.StrictEqual(SerializeAndDeserialize<LongEnum>(LongEnum.Option1, "1"), LongEnum.Option1);
+        Assert.StrictEqual(SerializeAndDeserialize<ULongEnum>(ULongEnum.Option1, "1"), ULongEnum.Option1);
+    }
+
+    [Fact]
+    public static void DCJS_EnumAsMember()
+    {
+        TypeWithEnumMembers x = new TypeWithEnumMembers { F1 = MyEnum.Three, P1 = MyEnum.Two };
+        TypeWithEnumMembers y = SerializeAndDeserialize<TypeWithEnumMembers>(x, "{\"F1\":2,\"P1\":1}");
+
+        Assert.NotNull(y);
+        Assert.StrictEqual(x.F1, y.F1);
+        Assert.StrictEqual(x.P1, y.P1);
+    }
+
+    [Fact]
+    public static void DCJS_DCClassWithEnumAndStruct()
+    {
+        var x = new DCClassWithEnumAndStruct(true);
+        var y = SerializeAndDeserialize<DCClassWithEnumAndStruct>(x, "{\"MyEnum1\":0,\"MyStruct\":{\"Data\":\"Data\"}}");
+
+        Assert.StrictEqual<DCStruct>(x.MyStruct, y.MyStruct);
+        Assert.StrictEqual(x.MyEnum1, y.MyEnum1);
+    }
+
+    [Fact]
+    public static void DCJS_SuspensionManager()
+    {
+        var dict2 = new Dictionary<string, object> {{"Key2-0", "Value2-0"}};
+        var dict1 = new Dictionary<string, object> {{"Key1-0", "Value1-0"}, {"Key1-1", dict2}};
+        var dict0 = new Dictionary<string, object> {{"Key0", dict1}};
+
+        var y = SerializeAndDeserialize<Dictionary<string, object>>(dict0, "[{\"Key\":\"Key0\",\"Value\":[{\"__type\":\"KeyValuePairOfstringanyType:#System.Collections.Generic\",\"key\":\"Key1-0\",\"value\":\"Value1-0\"},{\"__type\":\"KeyValuePairOfstringanyType:#System.Collections.Generic\",\"key\":\"Key1-1\",\"value\":[{\"__type\":\"KeyValuePairOfstringanyType:#System.Collections.Generic\",\"key\":\"Key2-0\",\"value\":\"Value2-0\"}]}]}]");
+        Assert.NotNull(y);
+        Assert.StrictEqual(y.Count, 1);
+        Assert.True(y["Key0"] is object[]);
+        Assert.StrictEqual(((KeyValuePair<string, object>)((object[])y["Key0"])[0]).Key, "Key1-0");
+        Assert.StrictEqual(((KeyValuePair<string, object>)((object[])y["Key0"])[0]).Value, "Value1-0");
+        Assert.True(((KeyValuePair<string, object>)((object[])y["Key0"])[1]).Value is object[]);
+        Assert.StrictEqual(((KeyValuePair<string, object>)((object[])((KeyValuePair<string, object>)((object[])y["Key0"])[1]).Value)[0]).Value, "Value2-0");
+    }
+
+    [Fact]
+    public static void DCJS_BuiltInTypes()
+    {
+        BuiltInTypes x = new BuiltInTypes
+        {
+            ByteArray = new byte[] { 1, 2 }
+        };
+        BuiltInTypes y = SerializeAndDeserialize<BuiltInTypes>(x, "{\"ByteArray\":[1,2]}");
+
+        Assert.NotNull(y);
+        Assert.Equal<byte>(x.ByteArray, y.ByteArray);
+    }
+
+    [Fact]
+    public static void DCJS_DictionaryWithVariousKeyValueTypes()
+    {
+        var x = new DictionaryWithVariousKeyValueTypes(true);
+        var y = SerializeAndDeserialize<DictionaryWithVariousKeyValueTypes>(x, "{\"WithEnums\":[{\"Key\":1,\"Value\":2},{\"Key\":0,\"Value\":0}],\"WithNullables\":[{\"Key\":-32768,\"Value\":true},{\"Key\":0,\"Value\":false},{\"Key\":32767,\"Value\":null}],\"WithStructs\":[{\"Key\":{\"value\":10},\"Value\":{\"value\":12}},{\"Key\":{\"value\":2147483647},\"Value\":{\"value\":-2147483648}}]}");
+
+        Assert.StrictEqual(y.WithEnums[MyEnum.Two], MyEnum.Three);
+        Assert.StrictEqual(y.WithEnums[MyEnum.One], MyEnum.One);
+        Assert.StrictEqual<StructNotSerializable>(y.WithStructs[new StructNotSerializable() { value = 10 }], new StructNotSerializable() { value = 12 });
+        Assert.StrictEqual<StructNotSerializable>(y.WithStructs[new StructNotSerializable() { value = int.MaxValue }], new StructNotSerializable() { value = int.MinValue });
+        Assert.StrictEqual(y.WithNullables[Int16.MinValue], true);
+        Assert.StrictEqual(y.WithNullables[0], false);
+        Assert.StrictEqual(y.WithNullables[Int16.MaxValue], null);
+    }
+
+    [Fact]
+    public static void DCJS_TypesWithArrayOfOtherTypes()
+    {
+        var x = new TypeHasArrayOfASerializedAsB(true);
+
+        var y = SerializeAndDeserialize<TypeHasArrayOfASerializedAsB>(x, "{\"Items\":[{\"Name\":\"typeAValue\"},{\"Name\":\"typeBValue\"}]}");
+        Assert.StrictEqual(x.Items[0].Name, y.Items[0].Name);
+        Assert.StrictEqual(x.Items[1].Name, y.Items[1].Name);
+    }
+
+    [Fact]
+    public static void DCJS_WithDuplicateNames()
+    {
+        var x = new WithDuplicateNames(true);
+        var y = SerializeAndDeserialize<WithDuplicateNames>(x, "{\"ClassA1\":{\"Name\":\"Hello World! 漢 ñ\"},\"ClassA2\":{\"Nombre\":\"\"},\"EnumA1\":1,\"EnumA2\":1,\"StructA1\":{\"Text\":\"\"},\"StructA2\":{\"Texto\":\"\"}}");
+
+        Assert.StrictEqual(x.ClassA1.Name, y.ClassA1.Name);
+        Assert.StrictEqual(x.StructA1, y.StructA1);
+        Assert.StrictEqual(x.EnumA1, y.EnumA1);
+        Assert.StrictEqual(x.EnumA2, y.EnumA2);
+        Assert.StrictEqual(x.StructA2, y.StructA2);
+    }
+
+    [Fact]
+    public static void DCS_XElementAsRoot()
+    {
+        var original = new XElement("ElementName1");
+        original.SetAttributeValue(XName.Get("Attribute1"), "AttributeValue1");
+        original.SetValue("Value1");
+        var actual = SerializeAndDeserialize<XElement>(original, "\"<ElementName1 Attribute1=\\\"AttributeValue1\\\">Value1<\\/ElementName1>\"");
+
+        VerifyXElementObject(original, actual);
+    }
+
+    [Fact]
+    public static void DCJS_WithXElement()
+    {
+        var original = new WithXElement(true);
+        var actual = SerializeAndDeserialize<WithXElement>(original, "{\"e\":\"<ElementName1 Attribute1=\\\"AttributeValue1\\\">Value1<\\/ElementName1>\"}",
+            skipStringCompare: true);
+
+        VerifyXElementObject(original.e, actual.e);
+    }
+
+    private static void VerifyXElementObject(XElement x1, XElement x2, bool checkFirstAttribute = true)
+    {
+        Assert.StrictEqual(x1.Value, x2.Value);
+        Assert.StrictEqual(x1.Name, x2.Name);
+        if (checkFirstAttribute)
+        {
+            Assert.StrictEqual(x1.FirstAttribute.Name, x2.FirstAttribute.Name);
+            Assert.StrictEqual(x1.FirstAttribute.Value, x2.FirstAttribute.Value);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_WithXElementWithNestedXElement()
+    {
+        var original = new WithXElementWithNestedXElement(true);
+        var actual = SerializeAndDeserialize<WithXElementWithNestedXElement>(original, "{\"e1\":\"<ElementName1 Attribute1=\\\"AttributeValue1\\\"><ElementName2 Attribute2=\\\"AttributeValue2\\\">Value2<\\/ElementName2><\\/ElementName1>\"}");
+
+        VerifyXElementObject(original.e1, actual.e1);
+        VerifyXElementObject((XElement)original.e1.FirstNode, (XElement)actual.e1.FirstNode);
+    }
+
+    [Fact]
+    public static void DCJS_WithArrayOfXElement()
+    {
+        var original = new WithArrayOfXElement(true);
+        var actual = SerializeAndDeserialize<WithArrayOfXElement>(original, "{\"a\":[\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item0<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item1<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item2<\\/item>\"]}");
+
+        Assert.StrictEqual(original.a.Length, actual.a.Length);
+        VerifyXElementObject(original.a[0], actual.a[0], checkFirstAttribute: false);
+        VerifyXElementObject(original.a[1], actual.a[1], checkFirstAttribute: false);
+        VerifyXElementObject(original.a[2], actual.a[2], checkFirstAttribute: false);
+    }
+
+    [Fact]
+    public static void DCJS_WithListOfXElement()
+    {
+        var original = new WithListOfXElement(true);
+        var actual = SerializeAndDeserialize<WithListOfXElement>(original, "{\"list\":[\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item0<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item1<\\/item>\",\"<item xmlns=\\\"http:\\/\\/p.com\\/\\\">item2<\\/item>\"]}");
+
+        Assert.StrictEqual(original.list.Count, actual.list.Count);
+        VerifyXElementObject(original.list[0], actual.list[0], checkFirstAttribute: false);
+        VerifyXElementObject(original.list[1], actual.list[1], checkFirstAttribute: false);
+        VerifyXElementObject(original.list[2], actual.list[2], checkFirstAttribute: false);
+    }
+
+    [Fact]
+    public static void DCJS_TypeNamesWithSpecialCharacters()
+    {
+        var x = new __TypeNameWithSpecialCharacters漢ñ() { PropertyNameWithSpecialCharacters漢ñ = "Test" };
+        var y = SerializeAndDeserialize<__TypeNameWithSpecialCharacters漢ñ>(x, "{\"PropertyNameWithSpecialCharacters漢ñ\":\"Test\"}");
+
+        Assert.StrictEqual(x.PropertyNameWithSpecialCharacters漢ñ, y.PropertyNameWithSpecialCharacters漢ñ);
+    }
+
+    [Fact]
+    public static void DCJS_JaggedArrayAsRoot()
+    {
+        int[][] jaggedIntegerArray = new int[][] { new int[] { 1, 3, 5, 7, 9 }, new int[] { 0, 2, 4, 6 }, new int[] { 11, 22 } };
+        var actualJaggedIntegerArray = SerializeAndDeserialize<int[][]>(jaggedIntegerArray, "[[1,3,5,7,9],[0,2,4,6],[11,22]]");
+
+        Assert.Equal(jaggedIntegerArray[0], actualJaggedIntegerArray[0]);
+        Assert.Equal(jaggedIntegerArray[1], actualJaggedIntegerArray[1]);
+        Assert.Equal(jaggedIntegerArray[2], actualJaggedIntegerArray[2]);
+
+
+        string[][] jaggedStringArray = new string[][] { new string[] { "1", "3", "5", "7", "9" }, new string[] { "0", "2", "4", "6" }, new string[] { "11", "22" } };
+        var actualJaggedStringArray = SerializeAndDeserialize<string[][]>(jaggedStringArray, "[[\"1\",\"3\",\"5\",\"7\",\"9\"],[\"0\",\"2\",\"4\",\"6\"],[\"11\",\"22\"]]");
+
+        Assert.Equal(jaggedStringArray[0], actualJaggedStringArray[0]);
+        Assert.Equal(jaggedStringArray[1], actualJaggedStringArray[1]);
+        Assert.Equal(jaggedStringArray[2], actualJaggedStringArray[2]);
+
+        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
+        object[] objectArray = new object[] { 1, 1.0F, 1.0, "string", Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"), new DateTime(2013, 1, 2).AddMinutes(offsetMinutes) };
+        var actualObjectArray = SerializeAndDeserialize<object[]>(objectArray, string.Format("[1,1,1,\"string\",\"2054fd3e-e118-476a-9962-1a882be51860\",\"\\/Date(1357084800000{0})\\/\"]", timeZoneString));
+
+        Assert.StrictEqual(1, actualObjectArray[0]);
+        Assert.StrictEqual(1, actualObjectArray[1]);
+        Assert.StrictEqual(1, actualObjectArray[2]);
+        Assert.StrictEqual("string", actualObjectArray[3]);
+        Assert.StrictEqual(Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"), Guid.Parse(actualObjectArray[4].ToString()));
+        Assert.StrictEqual(string.Format("/Date(1357084800000{0})/", timeZoneString), actualObjectArray[5].ToString());
+
+        int[][][] jaggedIntegerArray2 = new int[][][] { new int[][] { new int[] { 1 }, new int[] { 3 } }, new int[][] { new int[] { 0 } }, new int[][] { new int[] { } } };
+        var actualJaggedIntegerArray2 = SerializeAndDeserialize<int[][][]>(jaggedIntegerArray2, "[[[1],[3]],[[0]],[[]]]");
+
+        Assert.True(actualJaggedIntegerArray2.Length == 3);
+        Assert.True(actualJaggedIntegerArray2[0][0][0] == 1);
+        Assert.True(actualJaggedIntegerArray2[0][1][0] == 3);
+        Assert.True(actualJaggedIntegerArray2[1][0][0] == 0);
+        Assert.True(actualJaggedIntegerArray2[2][0].Length == 0);
+    }
+
+    [Fact]
+    public static void DCJS_EnumerableStruct()
+    {
+        var original = new EnumerableStruct();
+        original.Add("a");
+        original.Add("b");
+        var actual = SerializeAndDeserialize<EnumerableStruct>(original, "[\"a\",\"b\"]");
+
+        Assert.Equal((IEnumerable<string>)actual, (IEnumerable<string>)original);
+    }
+
+    [Fact]
+    public static void DCJS_EnumerableCollection()
+    {
+        var offsetMinutes = (int)TimeZoneInfo.Local.BaseUtcOffset.TotalMinutes;
+        var timeZoneString = string.Format("{0:+;-}{1}", offsetMinutes, new TimeSpan(0, offsetMinutes, 0).ToString(@"hhmm"));
+        var original = new EnumerableCollection();
+        original.Add(new DateTime(2000, 1, 1).AddMinutes(offsetMinutes));
+        original.Add(new DateTime(2000, 1, 2).AddMinutes(offsetMinutes));
+        original.Add(new DateTime(2000, 1, 3).AddMinutes(offsetMinutes));
+        var actual = SerializeAndDeserialize<EnumerableCollection>(original, string.Format("[\"\\/Date(946684800000{0})\\/\",\"\\/Date(946771200000{0})\\/\",\"\\/Date(946857600000{0})\\/\"]", timeZoneString));
+
+        Assert.Equal((IEnumerable<DateTime>)actual, (IEnumerable<DateTime>)original);
+    }
+
+    [Fact]
+    public static void DCJS_ContainsLinkedList()
+    {
+        var original = new ContainsLinkedList(true);
+        var actual = SerializeAndDeserialize<ContainsLinkedList>(original, "{\"Data\":[{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}}]}");
+
+        var actualEnumerator = actual.Data.GetEnumerator();
+        var originalEnumerator = original.Data.GetEnumerator();
+
+        while (originalEnumerator.MoveNext() && actualEnumerator.MoveNext())
+        {
+            var orininalElement = originalEnumerator.Current;
+            var actualElement = actualEnumerator.Current;
+
+            Assert.StrictEqual(orininalElement.Data.Data, actualElement.Data.Data);
+            Assert.StrictEqual(orininalElement.RefData.Data, actualElement.RefData.Data);
+        }
+    }
+
+    [Fact]
+    public static void DCJS_SimpleCollectionDataContract()
+    {
+        var original = new SimpleCDC(true);
+        var actual = SerializeAndDeserialize<SimpleCDC>(original, "[\"One\",\"Two\",\"Three\"]");
+
+        Assert.Equal((IEnumerable<string>)actual, (IEnumerable<string>)original);
+    }
+
+    [Fact]
+    public static void DCJS_EnumFlags()
+    {
+        EnumFlags original = EnumFlags.One | EnumFlags.Four;
+        var actual = SerializeAndDeserialize<EnumFlags>(original, "9");
+        Assert.StrictEqual(original, actual);
+    }
+
+
+
+    [Fact]
+    public static void DCJS_Nullables()
+    {
+        // Arrange
+        var baseline = @"{""Optional"":1,""OptionalInt"":42,""Optionull"":null,""OptionullInt"":null,""Struct1"":{""A"":1,""B"":2},""Struct2"":null}";
+        var item = new WithNullables()
+        {
+            Optional = IntEnum.Option1,
+            OptionalInt = 42,
+            Struct1 = new SomeStruct { A = 1, B = 2 }
+        };
+
+        // Act
+        var actual = SerializeAndDeserialize(item, baseline);
+
+        // Assert
+        Assert.StrictEqual(item.OptionalInt, actual.OptionalInt);
+        Assert.StrictEqual(item.Optional, actual.Optional);
+        Assert.StrictEqual(item.Optionull, actual.Optionull);
+        Assert.StrictEqual(item.OptionullInt, actual.OptionullInt);
+        Assert.Null(actual.Struct2);
+        Assert.StrictEqual(item.Struct1.Value.A, actual.Struct1.Value.A);
+        Assert.StrictEqual(item.Struct1.Value.B, actual.Struct1.Value.B);
+    }
+
+    [Fact]
+    public static void DCJS_InternalTypeSerialization()
+    {
+        var value = new InternalType() { InternalProperty = 12 };
+        var deserializedValue = SerializeAndDeserialize<InternalType>(value, "{\"InternalProperty\":12,\"PrivateProperty\":100}");
+        Assert.StrictEqual(deserializedValue.InternalProperty, value.InternalProperty);
+        Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
+    }
+
+    [Fact]
+    public static void DCJS_PrivateTypeSerialization()
+    {
+        var value = new PrivateType();
+        var deserializedValue = SerializeAndDeserialize<PrivateType>(value, "{\"InternalProperty\":1,\"PrivateProperty\":2}");
+        Assert.StrictEqual(deserializedValue.GetInternalPropertyValue(), value.GetInternalPropertyValue());
+        Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
+    }
+
+    [Fact]
+    public static void DCJS_KnownTypesThroughConstructor()
+    {
+        //Constructor # 3
+        var value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
+        var actual = SerializeAndDeserialize<KnownTypesThroughConstructor>(value,
+        "{\"EnumValue\":0,\"SimpleTypeValue\":{\"__type\":\"SimpleKnownTypeValue:#SerializationTypes\",\"StrProperty\":\"PropertyValue\"}}",
+        null, () => { return new DataContractJsonSerializer(typeof(KnownTypesThroughConstructor), new Type[] { typeof(MyEnum), typeof(SimpleKnownTypeValue) }); });
+
+        Assert.StrictEqual((MyEnum)value.EnumValue, (MyEnum)actual.EnumValue);
+        Assert.True(actual.SimpleTypeValue is SimpleKnownTypeValue);
+        Assert.StrictEqual(((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty, "PropertyValue");
+    }
+
+    #region private type has to be in with in the class
+    [DataContract]
+    private class PrivateType
+    {
+        public PrivateType()
+        {
+            InternalProperty = 1;
+            PrivateProperty = 2;
+        }
+
+        [DataMember]
+        internal int InternalProperty { get; set; }
+
+        [DataMember]
+        private int PrivateProperty { get; set; }
+
+        public int GetInternalPropertyValue()
+        {
+            return InternalProperty;
+        }
+
+        public int GetPrivatePropertyValue()
+        {
+            return PrivateProperty;
+        }
+    }
+    #endregion
+
+    [Fact]
+    public static void DCJS_ClassWithDatetimeOffsetTypeProperty()
+    {
+        var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
+        var actual = SerializeAndDeserialize(value, "{\"ModifiedTime\":{\"DateTime\":\"\\/Date(1357095845006)\\/\",\"OffsetMinutes\":0}}");
+        Assert.StrictEqual<DateTimeOffset>(value.ModifiedTime, actual.ModifiedTime);
+    }
+
+
+    [Fact]
+    public static void DCJS_GenericTypeWithPrivateSetter()
+    {
+        var value = new GenericTypeWithPrivateSetter<string>("PropertyWithPrivateSetter's value");
+        var actual = SerializeAndDeserialize(value, "{\"PropertyWithPrivateSetter\":\"PropertyWithPrivateSetter's value\"}");
+        Assert.StrictEqual(value.PropertyWithPrivateSetter, actual.PropertyWithPrivateSetter);
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithDateTimeStringProperty()
+    {
+        DataContractJsonSerializer dcjs = new DataContractJsonSerializer(typeof(TypeWithDateTimeStringProperty));
+        var obj = new TypeWithDateTimeStringProperty()
+        {
+            DateTimeString = @"\/Date(1411072352108-0700)\/",
+            CurrentDateTime = new DateTime(2015, 1, 1)
+        };
+
+        // Serialization-deserialization
+        using (MemoryStream stream = new MemoryStream())
+        {
+            dcjs.WriteObject(stream, obj);
+            stream.Position = 0;
+            var serializedStr = new StreamReader(stream).ReadToEnd();
+            Console.WriteLine("Serialized string is: {0}", serializedStr);
+
+            stream.Position = 0;
+            var obj2 = (TypeWithDateTimeStringProperty)dcjs.ReadObject(stream);
+            Assert.StrictEqual(obj.DateTimeString, obj2.DateTimeString);
+            Assert.StrictEqual(obj.CurrentDateTime, obj2.CurrentDateTime);
+        }
+
+        // Deserialization only. The provided string of DateTimeString is in different format than the serialized string.
+        // The serialized string is: {"DateTimeString":"\\\/Date(1411072352108-0700)\\\/"}
+        using (MemoryStream ms = new MemoryStream())
+        {
+            StreamWriter sw = new StreamWriter(ms);
+            sw.WriteLine(@"{""DateTimeString"":""\/Date(1411072352108-0700)\/""}");
+            sw.Flush();
+            ms.Seek(0, SeekOrigin.Begin);
+            var result = (TypeWithDateTimeStringProperty)dcjs.ReadObject(ms);
+            Assert.StrictEqual(result.DateTimeString, @"/Date(1411072352108-0700)/");
+        }
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithGenericDictionaryAsKnownType()
+    {
+        TypeWithGenericDictionaryAsKnownType value = new TypeWithGenericDictionaryAsKnownType { };
+        value.Foo.Add(10, new Level() { Name = "Foo", LevelNo = 1 });
+        value.Foo.Add(20, new Level() { Name = "Bar", LevelNo = 2 });
+        var deserializedValue = SerializeAndDeserialize<TypeWithGenericDictionaryAsKnownType>(value, "{\"Foo\":[{\"Key\":10,\"Value\":{\"LevelNo\":1,\"Name\":\"Foo\"}},{\"Key\":20,\"Value\":{\"LevelNo\":2,\"Name\":\"Bar\"}}]}");
+
+        Assert.StrictEqual(2, deserializedValue.Foo.Count);
+        Assert.StrictEqual("Foo", deserializedValue.Foo[10].Name);
+        Assert.StrictEqual(1, deserializedValue.Foo[10].LevelNo);
+        Assert.StrictEqual("Bar", deserializedValue.Foo[20].Name);
+        Assert.StrictEqual(2, deserializedValue.Foo[20].LevelNo);
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithKnownTypeAttributeAndInterfaceMember()
+    {
+        TypeWithKnownTypeAttributeAndInterfaceMember value = new TypeWithKnownTypeAttributeAndInterfaceMember();
+        value.HeadLine = new NewsArticle() { Title = "Foo News" };
+        var deserializedValue = SerializeAndDeserialize<TypeWithKnownTypeAttributeAndInterfaceMember>(value, "{\"HeadLine\":{\"__type\":\"NewsArticle:#SerializationTypes\",\"Category\":\"News\",\"Title\":\"Foo News\"}}");
+
+        Assert.StrictEqual("News", deserializedValue.HeadLine.Category);
+        Assert.StrictEqual("Foo News", deserializedValue.HeadLine.Title);
+    }
+
+    [Fact]
+    public static void DCJS_TypeWithKnownTypeAttributeAndListOfInterfaceMember()
+    {
+        TypeWithKnownTypeAttributeAndListOfInterfaceMember value = new TypeWithKnownTypeAttributeAndListOfInterfaceMember();
+        value.Articles = new List<IArticle>() { new SummaryArticle() { Title = "Bar Summary" } };
+        var deserializedValue = SerializeAndDeserialize<TypeWithKnownTypeAttributeAndListOfInterfaceMember>(value, "{\"Articles\":[{\"__type\":\"SummaryArticle:#SerializationTypes\",\"Category\":\"Summary\",\"Title\":\"Bar Summary\"}]}");
+
+        Assert.StrictEqual(1, deserializedValue.Articles.Count);
+        Assert.StrictEqual("Summary", deserializedValue.Articles[0].Category);
+        Assert.StrictEqual("Bar Summary", deserializedValue.Articles[0].Title);
+    }
+
+    private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
+    {
+        DataContractJsonSerializer dcjs;
+        if (serializerFactory != null)
+        {
+            dcjs = serializerFactory();
+        }
+        else
+        {
+            dcjs = (settings != null) ? new DataContractJsonSerializer(typeof(T), settings) : new DataContractJsonSerializer(typeof(T));
+        }
+
+        Console.WriteLine("Testing input value : {0}", value);
+
+        using (MemoryStream ms = new MemoryStream())
+        {
+            try
+            {
+                dcjs.WriteObject(ms, value);
+                ms.Position = 0;
+            }
+            catch
+            {
+                Console.WriteLine("Error while serializing value");
+                throw;
+            }
+
+            string actualOutput = new StreamReader(ms).ReadToEnd();
+            ms.Position = 0;
+            Utils.CompareResult result = Utils.Compare(baseline, actualOutput, false);
+
+            if (!result.Equal && !skipStringCompare)
+            {
+                Console.WriteLine(result.ErrorMessage);
+                throw new Exception(string.Format("Test failed for input : {0}", value));
+            }
+
+            ms.Position = 0;
+            T deserialized;
+            try
+            {
+                deserialized = (T)dcjs.ReadObject(ms);
+            }
+            catch
+            {
+                Console.WriteLine("Error deserializing value. the serialized string was:\r\n" + actualOutput);
+                throw;
+            }
+
+            return deserialized;
+        }
+    }
+
+    private static string s_errorMsg = "The field/property {0} value of deserialized object is wrong";
+    private static string getCheckFailureMsg(string propertyName)
+    {
+        return string.Format(s_errorMsg, propertyName);
+    }
+}

@@ -317,7 +317,7 @@ namespace System.IO
 
                     // ERROR_NOT_FOUND is returned if CancelIoEx cannot find the request to cancel.
                     // This probably means that the IO operation has completed.
-                    if (errorCode != Interop.ERROR_NOT_FOUND)
+                    if (errorCode != Interop.mincore.Errors.ERROR_NOT_FOUND)
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
             }

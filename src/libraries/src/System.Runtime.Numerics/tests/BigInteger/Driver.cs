@@ -326,42 +326,27 @@ namespace System.Numerics.Tests
             results[31][25] = MyBigIntImp.DoTertanaryOperatorMine(b3, (b3 < 0 ? -b3 : b3), b2, "tModPow");
             results[31][26] = MyBigIntImp.DoTertanaryOperatorMine(b3, (b3 < 0 ? -b3 : b3), b3, "tModPow");
 
-
             for (int i = 0; i < cycles; i++)
             {
-                Worker worker = new Worker();
-                worker.id = i;
-                worker.random = new Random(s_random.Next());
+                Worker worker = new Worker(new Random(s_random.Next()), i);
                 worker.DoWork();
-                Assert.True(worker.ret, " Verification Failed");
+                Assert.True(worker.Valid, "Verification Failed");
             }
         }
 
-        private static Byte[] GetRandomByteArray(Random random)
+        private static byte[] GetRandomByteArray(Random random)
         {
-            return GetRandomByteArray(random, random.Next(1, 18));
+            return MyBigIntImp.GetNonZeroRandomByteArray(random, random.Next(1, 18));
         }
-        private static Byte[] GetRandomByteArray(Random random, int size)
-        {
-            byte[] value = new byte[size];
-            bool zero = true;
 
-            while (zero)
-            {
-                for (int i = 0; i < value.Length; ++i)
-                {
-                    value[i] = (byte)random.Next(0, 256);
-                    if (value[i] != 0) zero = false;
-                }
-            }
-
-            return value;
-        }
         private static int Makeint(BigInteger input)
         {
             int output;
 
-            if (input < 0) input = -input;
+            if (input < 0)
+            {
+                input = -input;
+            }
             input = input + int.MaxValue;
 
             byte[] temp = input.ToByteArray();
@@ -370,7 +355,10 @@ namespace System.Numerics.Tests
             temp[3] = 0;
 
             output = BitConverter.ToInt32(temp, 0);
-            if (output == 0) output = 1;
+            if (output == 0)
+            {
+                output = 1;
+            }
 
             return output;
         }
@@ -378,965 +366,162 @@ namespace System.Numerics.Tests
 
     public class Worker
     {
-        public Random random;
-        public int id;
-        public bool ret = true;
-        public bool done = false;
+        private Random random;
+        private int id;
+
+        public bool Valid
+        {
+            get;
+            set;
+        }
+
+        public Worker(Random r, int i)
+        {
+            random = r;
+            id = i;
+        }
 
         public void DoWork()
         {
-            bool corrupt = false;
+            Valid = true;
+
             BigInteger b1 = Driver.b1;
             BigInteger b2 = Driver.b2;
             BigInteger b3 = Driver.b3;
             BigInteger[][] results = Driver.results;
+            
+            var threeOrderOperations = new Action<BigInteger, BigInteger>[] { 
+                new Action<BigInteger, BigInteger>((a, expected) => { Sign(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Op_Not(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Log10(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Log(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Abs(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Op_Decrement(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Op_Increment(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Negate(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Op_Negate(a, expected); }),
+                new Action<BigInteger, BigInteger>((a, expected) => { Op_Plus(a, expected); })
+            };
+
+            var nineOrderOperations = new Action<BigInteger, BigInteger, BigInteger>[] { 
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Min(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Max(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_RightShift(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_LeftShift(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_Xor(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_Or(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_And(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Log(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { GCD(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Pow(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { DivRem(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Remainder(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_Modulus(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Divide(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_Divide(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Multiply(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_Multiply(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Subtract(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_Subtract(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Add(a, b, expected); }),
+                new Action<BigInteger, BigInteger, BigInteger>((a, b, expected) => { Op_Add(a, b, expected); })
+            };
 
             Stopwatch stopWatch = new Stopwatch();
             stopWatch.Start();
 
             while (stopWatch.ElapsedMilliseconds < 10000)
             {
-                int op = random.Next(0, 32);
+                // Remove the Pow operation for performance reasons
+                int op;
+                do
+                {
+                    op = random.Next(0, 32);
+                }
+                while (op == 19);
 
-                //remove trouble cases (Pow for perf)
-                while (op == 19) op = random.Next(0, 32);
 
                 int order = random.Next(0, 27);
                 switch (op)
                 {
-                    case 0:
+                    case 0: // Sign
+                    case 1: // Op_Not
+                    case 2: // Log10
+                    case 3: // Log
+                    case 4: // Abs
+                    case 5: // Op_Decrement
+                    case 6: // Op_Increment
+                    case 7: // Negate
+                    case 8: // Op_Negate
+                    case 9: // Op_Plus
                         switch (order % 3)
                         {
                             case 0:
-                                Assert.True(Sign(b1, results[0][0]), " Verification Failed");
+                                threeOrderOperations[op](b1, results[op][0]);
                                 break;
                             case 1:
-                                Assert.True(Sign(b2, results[0][1]), " Verification Failed");
+                                threeOrderOperations[op](b2, results[op][1]);
                                 break;
                             case 2:
-                                Assert.True(Sign(b3, results[0][2]), " Verification Failed");
+                                threeOrderOperations[op](b3, results[op][2]);
                                 break;
                             default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
+                                Valid = false;
                                 break;
                         }
                         break;
-                    case 1:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Op_Not(b1, results[1][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Not(b2, results[1][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Not(b3, results[1][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 2:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Log10(b1, results[2][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Log10(b2, results[2][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Log10(b3, results[2][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 3:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Log(b1, results[3][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Log(b2, results[3][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Log(b3, results[3][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 4:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Abs(b1, results[4][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Abs(b2, results[4][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Abs(b3, results[4][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 5:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Op_Decrement(b1, results[5][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Decrement(b2, results[5][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Decrement(b3, results[5][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 6:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Op_Increment(b1, results[6][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Increment(b2, results[6][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Increment(b3, results[6][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 7:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Negate(b1, results[7][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Negate(b2, results[7][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Negate(b3, results[7][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 8:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Op_Negate(b1, results[8][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Negate(b2, results[8][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Negate(b3, results[8][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 9:
-                        switch (order % 3)
-                        {
-                            case 0:
-                                Assert.True(Op_Plus(b1, results[9][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Plus(b2, results[9][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Plus(b3, results[9][2]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 10:
+                    case 10: // Min
+                    case 11: // Max
+                    case 12: // Op_RightShift
+                    case 13: // Op_LeftShift
+                    case 14: // Op_Xor
+                    case 15: // Op_Or
+                    case 16: // Op_And
+                    case 17: // Log
+                    case 18: // GCD
+                    case 19: // Pow
+                    case 20: // DivRem
+                    case 21: // Remainder
+                    case 22: // Op_Modulus
+                    case 23: // Divide
+                    case 24: // Op_Divide
+                    case 25: // Multiply
+                    case 26: // Op_Multiply
+                    case 27: // Subtract
+                    case 28: // Op_Subtract
+                    case 29: // Add
+                    case 30: // Op_Add
                         switch (order % 9)
                         {
                             case 0:
-                                Assert.True(Min(b1, b1, results[10][0]), " Verification Failed");
+                                nineOrderOperations[op-10](b1, b1, results[op][0]);
                                 break;
                             case 1:
-                                Assert.True(Min(b1, b2, results[10][1]), " Verification Failed");
+                                nineOrderOperations[op-10](b1, b2, results[op][1]);
                                 break;
                             case 2:
-                                Assert.True(Min(b1, b3, results[10][2]), " Verification Failed");
+                                nineOrderOperations[op-10](b1, b3, results[op][2]);
                                 break;
                             case 3:
-                                Assert.True(Min(b2, b1, results[10][3]), " Verification Failed");
+                                nineOrderOperations[op-10](b2, b1, results[op][3]);
                                 break;
                             case 4:
-                                Assert.True(Min(b2, b2, results[10][4]), " Verification Failed");
+                                nineOrderOperations[op-10](b2, b2, results[op][4]);
                                 break;
                             case 5:
-                                Assert.True(Min(b2, b3, results[10][5]), " Verification Failed");
+                                nineOrderOperations[op-10](b2, b3, results[op][5]);
                                 break;
                             case 6:
-                                Assert.True(Min(b3, b1, results[10][6]), " Verification Failed");
+                                nineOrderOperations[op-10](b3, b1, results[op][6]);
                                 break;
                             case 7:
-                                Assert.True(Min(b3, b2, results[10][7]), " Verification Failed");
+                                nineOrderOperations[op-10](b3, b2, results[op][7]);
                                 break;
                             case 8:
-                                Assert.True(Min(b3, b3, results[10][8]), " Verification Failed");
+                                nineOrderOperations[op-10](b3, b3, results[op][8]);
                                 break;
                             default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 11:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Max(b1, b1, results[11][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Max(b1, b2, results[11][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Max(b1, b3, results[11][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Max(b2, b1, results[11][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Max(b2, b2, results[11][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Max(b2, b3, results[11][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Max(b3, b1, results[11][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Max(b3, b2, results[11][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Max(b3, b3, results[11][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 12:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_RightShift(b1, b1, results[12][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_RightShift(b1, b2, results[12][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_RightShift(b1, b3, results[12][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_RightShift(b2, b1, results[12][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_RightShift(b2, b2, results[12][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_RightShift(b2, b3, results[12][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_RightShift(b3, b1, results[12][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_RightShift(b3, b2, results[12][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_RightShift(b3, b3, results[12][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 13:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_LeftShift(b1, b1, results[13][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_LeftShift(b1, b2, results[13][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_LeftShift(b1, b3, results[13][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_LeftShift(b2, b1, results[13][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_LeftShift(b2, b2, results[13][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_LeftShift(b2, b3, results[13][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_LeftShift(b3, b1, results[13][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_LeftShift(b3, b2, results[13][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_LeftShift(b3, b3, results[13][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 14:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_Xor(b1, b1, results[14][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Xor(b1, b2, results[14][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Xor(b1, b3, results[14][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_Xor(b2, b1, results[14][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_Xor(b2, b2, results[14][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_Xor(b2, b3, results[14][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_Xor(b3, b1, results[14][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_Xor(b3, b2, results[14][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_Xor(b3, b3, results[14][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 15:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_Or(b1, b1, results[15][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Or(b1, b2, results[15][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Or(b1, b3, results[15][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_Or(b2, b1, results[15][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_Or(b2, b2, results[15][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_Or(b2, b3, results[15][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_Or(b3, b1, results[15][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_Or(b3, b2, results[15][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_Or(b3, b3, results[15][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 16:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_And(b1, b1, results[16][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_And(b1, b2, results[16][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_And(b1, b3, results[16][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_And(b2, b1, results[16][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_And(b2, b2, results[16][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_And(b2, b3, results[16][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_And(b3, b1, results[16][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_And(b3, b2, results[16][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_And(b3, b3, results[16][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 17:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Log(b1, b1, results[17][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Log(b1, b2, results[17][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Log(b1, b3, results[17][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Log(b2, b1, results[17][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Log(b2, b2, results[17][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Log(b2, b3, results[17][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Log(b3, b1, results[17][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Log(b3, b2, results[17][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Log(b3, b3, results[17][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 18:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(GCD(b1, b1, results[18][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(GCD(b1, b2, results[18][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(GCD(b1, b3, results[18][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(GCD(b2, b1, results[18][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(GCD(b2, b2, results[18][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(GCD(b2, b3, results[18][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(GCD(b3, b1, results[18][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(GCD(b3, b2, results[18][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(GCD(b3, b3, results[18][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 19:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Pow(b1, b1, results[19][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Pow(b1, b2, results[19][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Pow(b1, b3, results[19][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Pow(b2, b1, results[19][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Pow(b2, b2, results[19][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Pow(b2, b3, results[19][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Pow(b3, b1, results[19][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Pow(b3, b2, results[19][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Pow(b3, b3, results[19][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 20:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(DivRem(b1, b1, results[20][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(DivRem(b1, b2, results[20][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(DivRem(b1, b3, results[20][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(DivRem(b2, b1, results[20][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(DivRem(b2, b2, results[20][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(DivRem(b2, b3, results[20][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(DivRem(b3, b1, results[20][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(DivRem(b3, b2, results[20][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(DivRem(b3, b3, results[20][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 21:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Remainder(b1, b1, results[21][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Remainder(b1, b2, results[21][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Remainder(b1, b3, results[21][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Remainder(b2, b1, results[21][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Remainder(b2, b2, results[21][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Remainder(b2, b3, results[21][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Remainder(b3, b1, results[21][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Remainder(b3, b2, results[21][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Remainder(b3, b3, results[21][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 22:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_Modulus(b1, b1, results[22][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Modulus(b1, b2, results[22][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Modulus(b1, b3, results[22][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_Modulus(b2, b1, results[22][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_Modulus(b2, b2, results[22][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_Modulus(b2, b3, results[22][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_Modulus(b3, b1, results[22][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_Modulus(b3, b2, results[22][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_Modulus(b3, b3, results[22][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 23:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Divide(b1, b1, results[23][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Divide(b1, b2, results[23][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Divide(b1, b3, results[23][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Divide(b2, b1, results[23][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Divide(b2, b2, results[23][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Divide(b2, b3, results[23][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Divide(b3, b1, results[23][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Divide(b3, b2, results[23][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Divide(b3, b3, results[23][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 24:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_Divide(b1, b1, results[24][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Divide(b1, b2, results[24][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Divide(b1, b3, results[24][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_Divide(b2, b1, results[24][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_Divide(b2, b2, results[24][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_Divide(b2, b3, results[24][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_Divide(b3, b1, results[24][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_Divide(b3, b2, results[24][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_Divide(b3, b3, results[24][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 25:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Multiply(b1, b1, results[25][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Multiply(b1, b2, results[25][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Multiply(b1, b3, results[25][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Multiply(b2, b1, results[25][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Multiply(b2, b2, results[25][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Multiply(b2, b3, results[25][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Multiply(b3, b1, results[25][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Multiply(b3, b2, results[25][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Multiply(b3, b3, results[25][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 26:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_Multiply(b1, b1, results[26][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Multiply(b1, b2, results[26][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Multiply(b1, b3, results[26][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_Multiply(b2, b1, results[26][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_Multiply(b2, b2, results[26][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_Multiply(b2, b3, results[26][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_Multiply(b3, b1, results[26][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_Multiply(b3, b2, results[26][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_Multiply(b3, b3, results[26][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 27:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Subtract(b1, b1, results[27][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Subtract(b1, b2, results[27][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Subtract(b1, b3, results[27][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Subtract(b2, b1, results[27][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Subtract(b2, b2, results[27][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Subtract(b2, b3, results[27][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Subtract(b3, b1, results[27][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Subtract(b3, b2, results[27][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Subtract(b3, b3, results[27][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 28:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_Subtract(b1, b1, results[28][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Subtract(b1, b2, results[28][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Subtract(b1, b3, results[28][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_Subtract(b2, b1, results[28][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_Subtract(b2, b2, results[28][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_Subtract(b2, b3, results[28][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_Subtract(b3, b1, results[28][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_Subtract(b3, b2, results[28][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_Subtract(b3, b3, results[28][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 29:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Add(b1, b1, results[29][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Add(b1, b2, results[29][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Add(b1, b3, results[29][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Add(b2, b1, results[29][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Add(b2, b2, results[29][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Add(b2, b3, results[29][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Add(b3, b1, results[29][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Add(b3, b2, results[29][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Add(b3, b3, results[29][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
-                                break;
-                        }
-                        break;
-                    case 30:
-                        switch (order % 9)
-                        {
-                            case 0:
-                                Assert.True(Op_Add(b1, b1, results[30][0]), " Verification Failed");
-                                break;
-                            case 1:
-                                Assert.True(Op_Add(b1, b2, results[30][1]), " Verification Failed");
-                                break;
-                            case 2:
-                                Assert.True(Op_Add(b1, b3, results[30][2]), " Verification Failed");
-                                break;
-                            case 3:
-                                Assert.True(Op_Add(b2, b1, results[30][3]), " Verification Failed");
-                                break;
-                            case 4:
-                                Assert.True(Op_Add(b2, b2, results[30][4]), " Verification Failed");
-                                break;
-                            case 5:
-                                Assert.True(Op_Add(b2, b3, results[30][5]), " Verification Failed");
-                                break;
-                            case 6:
-                                Assert.True(Op_Add(b3, b1, results[30][6]), " Verification Failed");
-                                break;
-                            case 7:
-                                Assert.True(Op_Add(b3, b2, results[30][7]), " Verification Failed");
-                                break;
-                            case 8:
-                                Assert.True(Op_Add(b3, b3, results[30][8]), " Verification Failed");
-                                break;
-                            default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
+                                Valid = false;
                                 break;
                         }
                         break;
@@ -1344,246 +529,278 @@ namespace System.Numerics.Tests
                         switch (order % 27)
                         {
                             case 0:
-                                Assert.True(ModPow(b1, b1, b1, results[31][0]), " Verification Failed");
+                                ModPow(b1, b1, b1, results[31][0]);
                                 break;
                             case 1:
-                                Assert.True(ModPow(b1, b1, b2, results[31][1]), " Verification Failed");
+                                ModPow(b1, b1, b2, results[31][1]);
                                 break;
                             case 2:
-                                Assert.True(ModPow(b1, b1, b3, results[31][2]), " Verification Failed");
+                                ModPow(b1, b1, b3, results[31][2]);
                                 break;
                             case 3:
-                                Assert.True(ModPow(b1, b2, b1, results[31][3]), " Verification Failed");
+                                ModPow(b1, b2, b1, results[31][3]);
                                 break;
                             case 4:
-                                Assert.True(ModPow(b1, b2, b2, results[31][4]), " Verification Failed");
+                                ModPow(b1, b2, b2, results[31][4]);
                                 break;
                             case 5:
-                                Assert.True(ModPow(b1, b2, b3, results[31][5]), " Verification Failed");
+                                ModPow(b1, b2, b3, results[31][5]);
                                 break;
                             case 6:
-                                Assert.True(ModPow(b1, b3, b1, results[31][6]), " Verification Failed");
+                                ModPow(b1, b3, b1, results[31][6]);
                                 break;
                             case 7:
-                                Assert.True(ModPow(b1, b3, b2, results[31][7]), " Verification Failed");
+                                ModPow(b1, b3, b2, results[31][7]);
                                 break;
                             case 8:
-                                Assert.True(ModPow(b1, b3, b3, results[31][8]), " Verification Failed");
+                                ModPow(b1, b3, b3, results[31][8]);
                                 break;
                             case 9:
-                                Assert.True(ModPow(b2, b1, b1, results[31][9]), " Verification Failed");
+                                ModPow(b2, b1, b1, results[31][9]);
                                 break;
                             case 10:
-                                Assert.True(ModPow(b2, b1, b2, results[31][10]), " Verification Failed");
+                                ModPow(b2, b1, b2, results[31][10]);
                                 break;
                             case 11:
-                                Assert.True(ModPow(b2, b1, b3, results[31][11]), " Verification Failed");
+                                ModPow(b2, b1, b3, results[31][11]);
                                 break;
                             case 12:
-                                Assert.True(ModPow(b2, b2, b1, results[31][12]), " Verification Failed");
+                                ModPow(b2, b2, b1, results[31][12]);
                                 break;
                             case 13:
-                                Assert.True(ModPow(b2, b2, b2, results[31][13]), " Verification Failed");
+                                ModPow(b2, b2, b2, results[31][13]);
                                 break;
                             case 14:
-                                Assert.True(ModPow(b2, b2, b3, results[31][14]), " Verification Failed");
+                                ModPow(b2, b2, b3, results[31][14]);
                                 break;
                             case 15:
-                                Assert.True(ModPow(b2, b3, b1, results[31][15]), " Verification Failed");
+                                ModPow(b2, b3, b1, results[31][15]);
                                 break;
                             case 16:
-                                Assert.True(ModPow(b2, b3, b2, results[31][16]), " Verification Failed");
+                                ModPow(b2, b3, b2, results[31][16]);
                                 break;
                             case 17:
-                                Assert.True(ModPow(b2, b3, b3, results[31][17]), " Verification Failed");
+                                ModPow(b2, b3, b3, results[31][17]);
                                 break;
                             case 18:
-                                Assert.True(ModPow(b3, b1, b1, results[31][18]), " Verification Failed");
+                                ModPow(b3, b1, b1, results[31][18]);
                                 break;
                             case 19:
-                                Assert.True(ModPow(b3, b1, b2, results[31][19]), " Verification Failed");
+                                ModPow(b3, b1, b2, results[31][19]);
                                 break;
                             case 20:
-                                Assert.True(ModPow(b3, b1, b3, results[31][20]), " Verification Failed");
+                                ModPow(b3, b1, b3, results[31][20]);
                                 break;
                             case 21:
-                                Assert.True(ModPow(b3, b2, b1, results[31][21]), " Verification Failed");
+                                ModPow(b3, b2, b1, results[31][21]);
                                 break;
                             case 22:
-                                Assert.True(ModPow(b3, b2, b2, results[31][22]), " Verification Failed");
+                                ModPow(b3, b2, b2, results[31][22]);
                                 break;
                             case 23:
-                                Assert.True(ModPow(b3, b2, b3, results[31][23]), " Verification Failed");
+                                ModPow(b3, b2, b3, results[31][23]);
                                 break;
                             case 24:
-                                Assert.True(ModPow(b3, b3, b1, results[31][24]), " Verification Failed");
+                                ModPow(b3, b3, b1, results[31][24]);
                                 break;
                             case 25:
-                                Assert.True(ModPow(b3, b3, b2, results[31][25]), " Verification Failed");
+                                ModPow(b3, b3, b2, results[31][25]);
                                 break;
                             case 26:
-                                Assert.True(ModPow(b3, b3, b3, results[31][26]), " Verification Failed");
+                                ModPow(b3, b3, b3, results[31][26]);
                                 break;
                             default:
-                                Console.WriteLine("Invalid bigInt selected");
-                                ret = false;
+                                Valid = false;
                                 break;
                         }
                         break;
                     default:
-                        Console.WriteLine("Invalid operation selected");
-                        ret = false;
+                        Valid = false;
                         break;
                 }
-                if (!corrupt & !ret)
-                {
-                    Console.WriteLine("ERROR::: Cycle {0} corrupted with operation {1} on order {2}", id, op, order);
-                    corrupt = true;
-                    break;
-                }
+
+                Assert.True(Valid, String.Format("Cycle {0} corrupted with operation {1} on order {2}", id, op, order));
             }
-
-            done = true;
         }
 
-        public bool Sign(BigInteger a, BigInteger expected)
+        private void Sign(BigInteger a, BigInteger expected)
         {
-            return (a.Sign == expected);
+            Assert.Equal(a.Sign, expected);
         }
-        public bool Op_Not(BigInteger a, BigInteger expected)
+
+        private void Op_Not(BigInteger a, BigInteger expected)
         {
-            return (~a == expected);
+            Assert.Equal(~a, expected);
         }
-        public bool Log10(BigInteger a, BigInteger expected)
+
+        private void Log10(BigInteger a, BigInteger expected)
         {
-            return (MyBigIntImp.ApproximateBigInteger(BigInteger.Log10(a)) == expected);
+            Assert.Equal(MyBigIntImp.ApproximateBigInteger(BigInteger.Log10(a)), expected);
         }
-        public bool Log(BigInteger a, BigInteger expected)
+
+        private void Log(BigInteger a, BigInteger expected)
         {
-            return (MyBigIntImp.ApproximateBigInteger(BigInteger.Log(a)) == expected);
+            Assert.Equal(MyBigIntImp.ApproximateBigInteger(BigInteger.Log(a)), expected);
         }
-        public bool Abs(BigInteger a, BigInteger expected)
+
+        private void Abs(BigInteger a, BigInteger expected)
         {
-            return (BigInteger.Abs(a) == expected);
+            Assert.Equal(BigInteger.Abs(a), expected);
         }
-        public bool Op_Decrement(BigInteger a, BigInteger expected)
+
+        private void Op_Decrement(BigInteger a, BigInteger expected)
         {
-            return (--a == expected);
+            Assert.Equal(--a, expected);
         }
-        public bool Op_Increment(BigInteger a, BigInteger expected)
+
+        private void Op_Increment(BigInteger a, BigInteger expected)
         {
-            return (++a == expected);
+            Assert.Equal(++a, expected);
         }
-        public bool Negate(BigInteger a, BigInteger expected)
+
+        private void Negate(BigInteger a, BigInteger expected)
         {
-            return (BigInteger.Negate(a) == expected);
+            Assert.Equal(BigInteger.Negate(a), expected);
         }
-        public bool Op_Negate(BigInteger a, BigInteger expected)
+
+        private void Op_Negate(BigInteger a, BigInteger expected)
         {
-            return (-a == expected);
+            Assert.Equal(-a, expected);
         }
-        public bool Op_Plus(BigInteger a, BigInteger expected)
+
+        private void Op_Plus(BigInteger a, BigInteger expected)
         {
-            return (+a == expected);
+            Assert.Equal(+a, expected);
         }
-        public bool Min(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Min(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.Min(a, b) == expected);
+            Assert.Equal(BigInteger.Min(a, b), expected);
         }
-        public bool Max(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Max(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.Max(a, b) == expected);
+            Assert.Equal(BigInteger.Max(a, b), expected);
         }
-        public bool Op_RightShift(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_RightShift(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a >> Makeint(b)) == expected);
+            Assert.Equal((a >> MakeInt32(b)), expected);
         }
-        public bool Op_LeftShift(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_LeftShift(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a << Makeint(b)) == expected);
+            Assert.Equal((a << MakeInt32(b)), expected);
         }
-        public bool Op_Xor(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_Xor(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a ^ b) == expected);
+            Assert.Equal((a ^ b), expected);
         }
-        public bool Op_Or(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_Or(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a | b) == expected);
+            Assert.Equal((a | b), expected);
         }
-        public bool Op_And(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_And(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a & b) == expected);
+            Assert.Equal((a & b), expected);
         }
-        public bool Log(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Log(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (MyBigIntImp.ApproximateBigInteger(BigInteger.Log(a, (double)b)) == expected);
+            Assert.Equal(MyBigIntImp.ApproximateBigInteger(BigInteger.Log(a, (double)b)), expected);
         }
-        public bool GCD(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void GCD(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.GreatestCommonDivisor(a, b) == expected);
+            Assert.Equal(BigInteger.GreatestCommonDivisor(a, b), expected);
         }
+
         public bool Pow(BigInteger a, BigInteger b, BigInteger expected)
         {
-            b = Makeint(b);
-            if (b < 0) b = -b;
+            b = MakeInt32(b);
+            if (b < 0)
+            {
+                b = -b;
+            }
             return (BigInteger.Pow(a, (int)b) == expected);
         }
+
         public bool DivRem(BigInteger a, BigInteger b, BigInteger expected)
         {
             BigInteger c = 0;
             return (BigInteger.DivRem(a, b, out c) == expected);
         }
-        public bool Remainder(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Remainder(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.Remainder(a, b) == expected);
+            Assert.Equal(BigInteger.Remainder(a, b), expected);
         }
-        public bool Op_Modulus(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_Modulus(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a % b) == expected);
+            Assert.Equal((a % b), expected);
         }
-        public bool Divide(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Divide(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.Divide(a, b) == expected);
+            Assert.Equal(BigInteger.Divide(a, b), expected);
         }
-        public bool Op_Divide(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_Divide(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a / b) == expected);
+            Assert.Equal((a / b), expected);
         }
-        public bool Multiply(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Multiply(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.Multiply(a, b) == expected);
+            Assert.Equal(BigInteger.Multiply(a, b), expected);
         }
-        public bool Op_Multiply(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_Multiply(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a * b) == expected);
+            Assert.Equal((a * b), expected);
         }
-        public bool Subtract(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Subtract(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.Subtract(a, b) == expected);
+            Assert.Equal(BigInteger.Subtract(a, b), expected);
         }
-        public bool Op_Subtract(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_Subtract(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a - b) == expected);
+            Assert.Equal((a - b), expected);
         }
-        public bool Add(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Add(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return (BigInteger.Add(a, b) == expected);
+            Assert.Equal(BigInteger.Add(a, b), expected);
         }
-        public bool Op_Add(BigInteger a, BigInteger b, BigInteger expected)
+
+        private void Op_Add(BigInteger a, BigInteger b, BigInteger expected)
         {
-            return ((a + b) == expected);
+            Assert.Equal((a + b), expected);
         }
+
         public bool ModPow(BigInteger a, BigInteger b, BigInteger c, BigInteger expected)
         {
-            if (b < 0) b = -b;
+            if (b < 0)
+            {
+                b = -b;
+            }
             return (BigInteger.ModPow(a, b, c) == expected);
         }
 
-        private int Makeint(BigInteger input)
+        private int MakeInt32(BigInteger input)
         {
             int output;
 
-            if (input < 0) input = -input;
+            if (input < 0)
+            {
+                input = -input;
+            }
             input = input + int.MaxValue;
 
             byte[] temp = input.ToByteArray();
@@ -1592,7 +809,10 @@ namespace System.Numerics.Tests
             temp[3] = 0;
 
             output = BitConverter.ToInt32(temp, 0);
-            if (output == 0) output = 1;
+            if (output == 0)
+            {
+                output = 1;
+            }
 
             return output;
         }
