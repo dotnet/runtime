@@ -173,27 +173,7 @@ typedef INT64 StackElemType;
 // This represents some of the TransitionFrame fields that are
 // stored at negative offsets.
 //--------------------------------------------------------------------
-typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
-struct CalleeSavedRegisters {
-#ifndef UNIX_AMD64_ABI
-    INT_PTR     rdi;
-    INT_PTR     rsi;
-    INT_PTR     rbx;
-    INT_PTR     rbp;
-#endif
-    INT_PTR     r12;
-    INT_PTR     r13;
-    INT_PTR     r14;
-    INT_PTR     r15;
-#ifdef UNIX_AMD64_ABI
-    INT_PTR     rbx;
-    INT_PTR     rbp;
-#endif
-};
-
 struct REGDISPLAY;
-
-void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs);
 
 //--------------------------------------------------------------------
 // This represents the arguments that are stored in volatile registers.
@@ -215,6 +195,16 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 
 #define NUM_ARGUMENT_REGISTERS 6
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(R12) \
+    CALLEE_SAVED_REGISTER(R13) \
+    CALLEE_SAVED_REGISTER(R14) \
+    CALLEE_SAVED_REGISTER(R15) \
+    CALLEE_SAVED_REGISTER(Rbx) \
+    CALLEE_SAVED_REGISTER(Rbp)
+
+#define NUM_CALLEE_SAVED_REGISTERS 8
+
 #else // UNIX_AMD64_ABI
 
 #define ENUM_ARGUMENT_REGISTERS() \
@@ -225,6 +215,18 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 
 #define NUM_ARGUMENT_REGISTERS 4
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Rdi) \
+    CALLEE_SAVED_REGISTER(Rsi) \
+    CALLEE_SAVED_REGISTER(Rbx) \
+    CALLEE_SAVED_REGISTER(Rbp) \
+    CALLEE_SAVED_REGISTER(R12) \
+    CALLEE_SAVED_REGISTER(R13) \
+    CALLEE_SAVED_REGISTER(R14) \
+    CALLEE_SAVED_REGISTER(R15)
+
+#define NUM_CALLEE_SAVED_REGISTERS 8
+
 #endif // UNIX_AMD64_ABI
 
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
@@ -232,6 +234,13 @@ struct ArgumentRegisters {
     #define ARGUMENT_REGISTER(regname) INT_PTR regname;
     ENUM_ARGUMENT_REGISTERS();
     #undef ARGUMENT_REGISTER
+};
+
+typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
+struct CalleeSavedRegisters {
+    #define CALLEE_SAVED_REGISTER(regname) INT_PTR regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+    #undef CALLEE_SAVED_REGISTER
 };
 
 #define SCRATCH_REGISTER_X86REG kRAX
@@ -252,6 +261,9 @@ struct FloatArgumentRegisters {
 };
 
 #endif
+
+
+void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs);
 
 
 // Sufficient context for Try/Catch restoration.
