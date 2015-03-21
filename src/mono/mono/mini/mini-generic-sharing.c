@@ -2745,9 +2745,11 @@ mini_is_gsharedvt_variable_klass (MonoCompile *cfg, MonoClass *klass)
 static char*
 get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 {
-	if (constraint == MONO_TYPE_VALUETYPE)
+	if (constraint == MONO_TYPE_VALUETYPE) {
 		return g_strdup_printf ("%s_GSHAREDVT", name);
-	else {
+	} else if (constraint == MONO_TYPE_OBJECT) {
+		return g_strdup_printf ("%s_REF", name);
+	} else {
 		MonoType t;
 		char *tname, *tname2, *res;
 
@@ -2848,13 +2850,14 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 
 	type_argv = g_new0 (MonoType*, inst->type_argc);
 	for (i = 0; i < inst->type_argc; ++i) {
-		if (!all_vt && (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)) {
-			type_argv [i] = shared_inst->type_argv [i];
-		} else if (!all_vt && partial) {
+		if (all_vt) {
+			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
+		} else if ((MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)) {
+			g_assert (shared_inst);
+			type_argv [i] = get_shared_gparam (shared_inst->type_argv [i], MONO_TYPE_OBJECT);
+		} else if (partial) {
 			/* These types match the ones in generic_inst_is_sharable () */
 			type_argv [i] = get_shared_type (shared_inst->type_argv [i], inst->type_argv [i]);
-		} else if (all_vt) {
-			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else if (gsharedvt) {
 			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else {
@@ -2884,6 +2887,8 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 	gboolean partial = FALSE;
 	gboolean gsharedvt = FALSE;
 	MonoGenericContainer *class_container, *method_container = NULL;
+	MonoGenericContext *context = mono_method_get_context (method);
+	MonoGenericInst *inst;
 
 	if (method->is_generic || (method->klass->generic_container && !method->is_inflated)) {
 		declaring_method = method;
@@ -2891,53 +2896,41 @@ mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gs
 		declaring_method = mono_method_get_declaring_generic_method (method);
 	}
 
+	/* shared_context is the context containing type variables. */
 	if (declaring_method->is_generic)
 		shared_context = mono_method_get_generic_container (declaring_method)->context;
 	else
 		shared_context = declaring_method->klass->generic_container->context;
 
-	/* Handle gsharedvt/partial sharing */
-	if ((method != declaring_method && method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) ||
-		is_gsharedvt || mini_is_gsharedvt_sharable_method (method)) {
-		MonoGenericContext *context = mono_method_get_context (method);
-		MonoGenericInst *inst;
+	if (!is_gsharedvt)
+		partial = mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE);
 
-		if (!is_gsharedvt)
-			partial = mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE);
+	gsharedvt = is_gsharedvt || (!partial && mini_is_gsharedvt_sharable_method (method));
 
-		gsharedvt = is_gsharedvt || (!partial && mini_is_gsharedvt_sharable_method (method));
+	class_container = declaring_method->klass->generic_container;
+	method_container = mono_method_get_generic_container (declaring_method);
 
-		class_container = declaring_method->klass->generic_container;
-		method_container = mono_method_get_generic_container (declaring_method);
+	/*
+	 * Create the shared context by replacing the ref type arguments with
+	 * type parameters, and keeping the rest.
+	 */
+	if (context)
+		inst = context->class_inst;
+	else
+		inst = shared_context.class_inst;
+	if (inst)
+		shared_context.class_inst = get_shared_inst (inst, shared_context.class_inst, class_container, all_vt, gsharedvt, partial);
 
-		/*
-		 * Create the shared context by replacing the ref type arguments with
-		 * type parameters, and keeping the rest.
-		 */
-		if (context)
-			inst = context->class_inst;
-		else
-			inst = shared_context.class_inst;
-		if (inst)
-			shared_context.class_inst = get_shared_inst (inst, shared_context.class_inst, class_container, all_vt, gsharedvt, partial);
+	if (context)
+		inst = context->method_inst;
+	else
+		inst = shared_context.method_inst;
+	if (inst)
+		shared_context.method_inst = get_shared_inst (inst, shared_context.method_inst, method_container, all_vt, gsharedvt, partial);
 
-		if (context)
-			inst = context->method_inst;
-		else
-			inst = shared_context.method_inst;
-		if (inst)
-			shared_context.method_inst = get_shared_inst (inst, shared_context.method_inst, method_container, all_vt, gsharedvt, partial);
-
-		partial = TRUE;
-	}
-
-    res = mono_class_inflate_generic_method_checked (declaring_method, &shared_context, &error);
+	res = mono_class_inflate_generic_method_checked (declaring_method, &shared_context, &error);
 	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
 
-	if (!partial) {
-		/* The result should be an inflated method whose parent is not inflated */
-		g_assert (!res->klass->is_inflated);
-	}
 	return res;
 }
 

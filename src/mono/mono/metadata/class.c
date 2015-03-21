@@ -1090,6 +1090,9 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 		else if (iresult->declaring->klass->generic_class)
 			iresult->context.class_inst = iresult->declaring->klass->generic_class->context.class_inst;
 	}
+	/* This can happen with some callers like mono_object_get_virtual_method () */
+	if (!iresult->declaring->klass->generic_container && !iresult->declaring->klass->generic_class)
+		iresult->context.class_inst = NULL;
 
 	cached = mono_method_inflated_lookup (iresult, FALSE);
 	if (cached) {
@@ -1763,7 +1766,8 @@ MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && !type->data.generic_param->gshared_constraint)
+	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
+		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint == MONO_TYPE_OBJECT))
 		return &mono_defaults.object_class->byval_arg;
 	return type;
 }
