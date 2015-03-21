@@ -44,10 +44,69 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateFileMapping.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFileMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EventLogErrors.cs">
+      <Link>Common\Interop\Windows\Interop.EventLogErrors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileAttributes.cs">
+      <Link>Common\Interop\Windows\Interop.FileAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileOperations.cs">
+      <Link>Common\Interop\Windows\Interop.FileOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FileShareMode.cs">
+      <Link>Common\Interop\Windows\Interop.FileShareMode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FlushViewOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.FlushViewOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetSystemInfo.cs">
+      <Link>Common\Interop\Windows\Interop.GetSystemInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GlobalMemoryStatusEx.cs">
+      <Link>Common\Interop\Windows\Interop.GlobalMemoryStatusEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleOptions.cs">
+      <Link>Common\Interop\Windows\Interop.HandleOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MEMORY_BASIC_INFO.cs">
+      <Link>Common\Interop\Windows\Interop.MEMORY_BASIC_INFO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MapViewOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.MapViewOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.MemOptions.cs">
+      <Link>Common\Interop\Windows\Interop.MemOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenFileMapping.cs">
+      <Link>Common\Interop\Windows\Interop.OpenFileMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.PipeOptions.cs">
+      <Link>Common\Interop\Windows\Interop.PipeOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SecurityOptions.cs">
+      <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.UnmapViewOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.UnmapViewOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.VirtualAlloc.cs">
+      <Link>Common\Interop\Windows\Interop.VirtualAlloc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.VirtualQuery.cs">
+      <Link>Common\Interop\Windows\Interop.VirtualQuery.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
-    <Compile Include="Interop\Interop.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Windows.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Windows.cs" />

@@ -29,7 +29,7 @@ namespace System.IO.Pipes
         internal static void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             // Check that this handle is infact a handle to a pipe.
-            if (Interop.mincore.GetFileType(safePipeHandle) != Interop.FILE_TYPE_PIPE)
+            if (Interop.mincore.GetFileType(safePipeHandle) != Interop.mincore.FileTypes.FILE_TYPE_PIPE)
             {
                 throw new IOException(SR.IO_InvalidPipeHandle);
             }
@@ -69,8 +69,8 @@ namespace System.IO.Pipes
             if (r == -1)
             {
                 // If the other side has broken the connection, set state to Broken and return 0
-                if (errorCode == Interop.ERROR_BROKEN_PIPE ||
-                    errorCode == Interop.ERROR_PIPE_NOT_CONNECTED)
+                if (errorCode == Interop.mincore.Errors.ERROR_BROKEN_PIPE ||
+                    errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED)
                 {
                     State = PipeState.Broken;
                     r = 0;
@@ -80,7 +80,7 @@ namespace System.IO.Pipes
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, String.Empty);
                 }
             }
-            _isMessageComplete = (errorCode != Interop.ERROR_MORE_DATA);
+            _isMessageComplete = (errorCode != Interop.mincore.Errors.ERROR_MORE_DATA);
 
             Debug.Assert(r >= 0, "PipeStream's ReadCore is likely broken.");
 
@@ -145,12 +145,12 @@ namespace System.IO.Pipes
                 if (_isFromExistingHandle)
                 {
                     int pipeFlags;
-                    if (!Interop.mincore.GetNamedPipeInfo(_handle, out pipeFlags, Interop.NULL, Interop.NULL,
-                            Interop.NULL))
+                    if (!Interop.mincore.GetNamedPipeInfo(_handle, out pipeFlags, IntPtr.Zero, IntPtr.Zero,
+                            IntPtr.Zero))
                     {
                         WinIOError(Marshal.GetLastWin32Error());
                     }
-                    if ((pipeFlags & Interop.PIPE_TYPE_MESSAGE) != 0)
+                    if ((pipeFlags & Interop.mincore.PipeOptions.PIPE_TYPE_MESSAGE) != 0)
                     {
                         return PipeTransmissionMode.Message;
                     }
@@ -181,7 +181,7 @@ namespace System.IO.Pipes
                 }
 
                 int inBufferSize;
-                if (!Interop.mincore.GetNamedPipeInfo(_handle, Interop.NULL, Interop.NULL, out inBufferSize, Interop.NULL))
+                if (!Interop.mincore.GetNamedPipeInfo(_handle, IntPtr.Zero, IntPtr.Zero, out inBufferSize, IntPtr.Zero))
                 {
                     WinIOError(Marshal.GetLastWin32Error());
                 }
@@ -213,8 +213,8 @@ namespace System.IO.Pipes
                 {
                     outBufferSize = _outBufferSize;
                 }
-                else if (!Interop.mincore.GetNamedPipeInfo(_handle, Interop.NULL, out outBufferSize,
-                    Interop.NULL, Interop.NULL))
+                else if (!Interop.mincore.GetNamedPipeInfo(_handle, IntPtr.Zero, out outBufferSize,
+                    IntPtr.Zero, IntPtr.Zero))
                 {
                     WinIOError(Marshal.GetLastWin32Error());
                 }
@@ -253,7 +253,7 @@ namespace System.IO.Pipes
                 unsafe
                 {
                     int pipeReadType = (int)value << 1;
-                    if (!Interop.mincore.SetNamedPipeHandleState(_handle, &pipeReadType, Interop.NULL, Interop.NULL))
+                    if (!Interop.mincore.SetNamedPipeHandleState(_handle, &pipeReadType, IntPtr.Zero, IntPtr.Zero))
                     {
                         WinIOError(Marshal.GetLastWin32Error());
                     }
@@ -389,7 +389,7 @@ namespace System.IO.Pipes
                 // call when using overlapped structures!  You must not pass in a non-null 
                 // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design 
                 // NT behavior.
-                if (r == -1 && errorCode != Interop.ERROR_IO_PENDING)
+                if (r == -1 && errorCode != Interop.mincore.Errors.ERROR_IO_PENDING)
                 {
                     // Clean up
                     if (intOverlapped != null) Overlapped.Free(intOverlapped);
@@ -474,7 +474,7 @@ namespace System.IO.Pipes
             // Now check for any error during the write.
             if (afsar._errorCode != 0)
             {
-                if (afsar._errorCode == Interop.ERROR_OPERATION_ABORTED)
+                if (afsar._errorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
                 {
                     if (cancellationHelper != null)
                     {
@@ -591,7 +591,7 @@ namespace System.IO.Pipes
                 errorCode = Marshal.GetLastWin32Error();
 
                 // In message mode, the ReadFile can inform us that there is more data to come.
-                if (errorCode == Interop.ERROR_MORE_DATA)
+                if (errorCode == Interop.mincore.Errors.ERROR_MORE_DATA)
                 {
                     return numBytesRead;
                 }
@@ -776,8 +776,8 @@ namespace System.IO.Pipes
                 {
                     // One side has closed its handle or server disconnected. Set the state to Broken 
                     // and do some cleanup work
-                    if (errorCode == Interop.ERROR_BROKEN_PIPE ||
-                        errorCode == Interop.ERROR_PIPE_NOT_CONNECTED)
+                    if (errorCode == Interop.mincore.Errors.ERROR_BROKEN_PIPE ||
+                        errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED)
                     {
                         State = PipeState.Broken;
 
@@ -788,7 +788,7 @@ namespace System.IO.Pipes
                         // EndRead will free the Overlapped struct
                         asyncResult.CallUserCallback();
                     }
-                    else if (errorCode != Interop.ERROR_IO_PENDING)
+                    else if (errorCode != Interop.mincore.Errors.ERROR_IO_PENDING)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
@@ -873,7 +873,7 @@ namespace System.IO.Pipes
             // Now check for any error during the read.
             if (afsar._errorCode != 0)
             {
-                if (afsar._errorCode == Interop.ERROR_OPERATION_ABORTED)
+                if (afsar._errorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
                 {
                     if (cancellationHelper != null)
                     {
@@ -892,12 +892,12 @@ namespace System.IO.Pipes
         }
 
         [SecurityCritical]
-        internal static Interop.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
+        internal static Interop.mincore.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
-            Interop.SECURITY_ATTRIBUTES secAttrs = default(Interop.SECURITY_ATTRIBUTES);
+            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
             if ((inheritability & HandleInheritability.Inheritable) != 0)
             {
-                secAttrs = new Interop.SECURITY_ATTRIBUTES();
+                secAttrs = new Interop.mincore.SECURITY_ATTRIBUTES();
                 secAttrs.nLength = (uint)Marshal.SizeOf(secAttrs);
                 secAttrs.bInheritHandle = true;
             }
@@ -921,9 +921,9 @@ namespace System.IO.Pipes
             // Allow async read to finish
             if (!asyncResult._isWrite)
             {
-                if (errorCode == Interop.ERROR_BROKEN_PIPE ||
-                    errorCode == Interop.ERROR_PIPE_NOT_CONNECTED ||
-                    errorCode == Interop.ERROR_NO_DATA)
+                if (errorCode == Interop.mincore.Errors.ERROR_BROKEN_PIPE ||
+                    errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED ||
+                    errorCode == Interop.mincore.Errors.ERROR_NO_DATA)
                 {
                     errorCode = 0;
                     numBytes = 0;
@@ -931,7 +931,7 @@ namespace System.IO.Pipes
             }
 
             // For message type buffer.
-            if (errorCode == Interop.ERROR_MORE_DATA)
+            if (errorCode == Interop.mincore.Errors.ERROR_MORE_DATA)
             {
                 errorCode = 0;
                 asyncResult._isMessageComplete = false;
@@ -980,13 +980,13 @@ namespace System.IO.Pipes
         private void UpdateReadMode()
         {
             int flags;
-            if (!Interop.mincore.GetNamedPipeHandleState(SafePipeHandle, out flags, Interop.NULL, Interop.NULL,
-                    Interop.NULL, Interop.NULL, 0))
+            if (!Interop.mincore.GetNamedPipeHandleState(SafePipeHandle, out flags, IntPtr.Zero, IntPtr.Zero,
+                    IntPtr.Zero, IntPtr.Zero, 0))
             {
                 WinIOError(Marshal.GetLastWin32Error());
             }
 
-            if ((flags & Interop.PIPE_READMODE_MESSAGE) != 0)
+            if ((flags & Interop.mincore.PipeOptions.PIPE_READMODE_MESSAGE) != 0)
             {
                 _readMode = PipeTransmissionMode.Message;
             }
@@ -1003,16 +1003,16 @@ namespace System.IO.Pipes
         [SecurityCritical]
         internal void WinIOError(int errorCode)
         {
-            if (errorCode == Interop.ERROR_BROKEN_PIPE ||
-                errorCode == Interop.ERROR_PIPE_NOT_CONNECTED ||
-                errorCode == Interop.ERROR_NO_DATA
+            if (errorCode == Interop.mincore.Errors.ERROR_BROKEN_PIPE ||
+                errorCode == Interop.mincore.Errors.ERROR_PIPE_NOT_CONNECTED ||
+                errorCode == Interop.mincore.Errors.ERROR_NO_DATA
                 )
             {
                 // Other side has broken the connection
                 _state = PipeState.Broken;
                 throw new IOException(SR.IO_PipeBroken, Win32Marshal.MakeHRFromErrorCode(errorCode));
             }
-            else if (errorCode == Interop.ERROR_HANDLE_EOF)
+            else if (errorCode == Interop.mincore.Errors.ERROR_HANDLE_EOF)
             {
                 throw __Error.GetEndOfFile();
             }
@@ -1021,7 +1021,7 @@ namespace System.IO.Pipes
                 // For invalid handles, detect the error and mark our handle
                 // as invalid to give slightly better error messages.  Also
                 // help ensure we avoid handle recycling bugs.
-                if (errorCode == Interop.ERROR_INVALID_HANDLE)
+                if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
                 {
                     _handle.SetHandleAsInvalid();
                     _state = PipeState.Broken;

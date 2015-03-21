@@ -183,7 +183,7 @@ namespace System.IO
         public override long Seek(long offset, SeekOrigin origin)
         {
             if (origin == SeekOrigin.Begin && offset < 0)
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.ERROR_NEGATIVE_SEEK);
+                throw Win32Marshal.GetExceptionForWin32Error(Interop.mincore.Errors.ERROR_NEGATIVE_SEEK);
 
             return _innerStream.Seek(offset, origin);
         }

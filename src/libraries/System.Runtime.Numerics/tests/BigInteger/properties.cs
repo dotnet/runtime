@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
 using System.Globalization;
+using Tools;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -44,7 +44,7 @@ namespace System.Numerics.Tests
                     BigInteger tempBigInteger = bigInteger / BigInteger.Zero;
                 });
 
-                if (!IsZero(tempByteArray))
+                if (!MyBigIntImp.IsZero(tempByteArray))
                 {
                     Assert.Equal(BigInteger.Zero, BigInteger.Zero / bigInteger);
                 }
@@ -82,11 +82,12 @@ namespace System.Numerics.Tests
         {
             BigInteger bigInteger;
             byte[] tempByteArray;
-            // BigInteger.MinusOne == -1
 
+            // BigInteger.MinusOne == -1
             Assert.Equal(
                 CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + "1",
-                BigInteger.MinusOne.ToString());
+                BigInteger.MinusOne.ToString()
+            );
             Assert.Equal(new BigInteger((Int64)(-1)), BigInteger.MinusOne);
             Assert.Equal(new BigInteger((Double)(-1)), BigInteger.MinusOne);
             Assert.Equal(new BigInteger(new byte[] { 0xff, 0xff, 0xff, 0xff }), BigInteger.MinusOne);
@@ -102,62 +103,19 @@ namespace System.Numerics.Tests
 
                 Assert.Equal(
                      BigInteger.Negate(new BigInteger(tempByteArray)),
-                     BigInteger.MinusOne * bigInteger);
+                     BigInteger.MinusOne * bigInteger
+                );
 
                 Assert.Equal(
                     BigInteger.Negate(new BigInteger(tempByteArray)),
-                    bigInteger / BigInteger.MinusOne);
+                    bigInteger / BigInteger.MinusOne
+                );
             }
         }
 
-        private static Byte[] GetRandomByteArray(Random random)
+        private static byte[] GetRandomByteArray(Random random)
         {
-            return GetRandomByteArray(random, random.Next(0, 1024));
-        }
-        private static Byte[] GetRandomByteArray(Random random, int size)
-        {
-            byte[] value = new byte[size];
-
-            for (int i = 0; i < value.Length; ++i)
-            {
-                value[i] = (byte)random.Next(0, 256);
-            }
-
-            return value;
-        }
-        private static bool IsZero(byte[] value)
-        {
-            for (int i = 0; i < value.Length; ++i)
-            {
-                if (0 != value[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        public static bool Eval<T>(T expected, T actual, String errorMsg)
-        {
-            bool retValue = expected == null ? actual == null : expected.Equals(actual);
-
-            if (!retValue)
-                return Eval(retValue, errorMsg +
-                " Expected:" + (null == expected ? "<null>" : expected.ToString()) +
-                " Actual:" + (null == actual ? "<null>" : actual.ToString()));
-
-            return true;
-        }
-
-        public static bool Eval(bool expression, string message)
-        {
-            if (!expression)
-            {
-                Console.WriteLine(message);
-            }
-
-            return expression;
+            return MyBigIntImp.GetRandomByteArray(random, random.Next(0, 1024));
         }
     }
 }

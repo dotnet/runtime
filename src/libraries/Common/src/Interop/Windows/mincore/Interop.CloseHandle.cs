@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security;
 
 internal partial class Interop
 {
@@ -11,7 +10,6 @@ internal partial class Interop
     {
         [DllImport(Libraries.Handle, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        [SecurityCritical]
         internal static extern bool CloseHandle(IntPtr handle);
     }
 }

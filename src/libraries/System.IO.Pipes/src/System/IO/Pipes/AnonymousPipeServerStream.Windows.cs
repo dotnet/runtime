@@ -25,7 +25,7 @@ namespace System.IO.Pipes
             SafePipeHandle newServerHandle;
 
             // Create the two pipe handles that make up the anonymous pipe.
-            Interop.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
+            Interop.mincore.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
             if (direction == PipeDirection.In)
             {
                 bSuccess = Interop.mincore.CreatePipe(out serverHandle, out _clientHandle, ref secAttrs, bufferSize);
@@ -45,7 +45,7 @@ namespace System.IO.Pipes
             // OS wouldn't be able to inform the child that the server has closed its handle because it will see
             // that there is still one server handle that is open.  
             bSuccess = Interop.mincore.DuplicateHandle(Interop.mincore.GetCurrentProcess(), serverHandle, Interop.mincore.GetCurrentProcess(),
-                out newServerHandle, 0, false, Interop.DUPLICATE_SAME_ACCESS);
+                out newServerHandle, 0, false, Interop.mincore.HandleOptions.DUPLICATE_SAME_ACCESS);
 
             if (!bSuccess)
             {

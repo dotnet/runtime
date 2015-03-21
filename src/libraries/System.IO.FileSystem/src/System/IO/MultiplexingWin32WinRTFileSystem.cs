@@ -12,7 +12,7 @@ namespace System.IO
         private readonly FileSystem _win32FileSystem = new Win32FileSystem();
         private readonly FileSystem _winRTFileSystem = new WinRTFileSystem();
 
-        public override int MaxPath { get { return Interop.MAX_PATH; } }
+        public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
         public override int MaxDirectoryPath { get { return Interop.MAX_DIRECTORY_PATH; } }
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
@@ -156,12 +156,12 @@ namespace System.IO
             do
             {
                 // first use GetFileAttributesEx as it is faster than FindFirstFile and requires minimum permissions
-                Interop.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.WIN32_FILE_ATTRIBUTE_DATA();
+                Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
                 if (Interop.mincore.GetFileAttributesEx(fullPath, Interop.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
                     // got the attributes
-                    if ((data.fileAttributes & Interop.FILE_ATTRIBUTE_DIRECTORY) != 0 ||
-                        (data.fileAttributes & Interop.FILE_ATTRIBUTE_REPARSE_POINT) == 0)
+                    if ((data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0 ||
+                        (data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) == 0)
                     {
                         // we have a directory or a file that is not a reparse point
                         // useWinRt = false;
@@ -170,17 +170,17 @@ namespace System.IO
                     else
                     {
                         // we need to get the find data to determine if it is a placeholder file
-                        Interop.WIN32_FIND_DATA findData = new Interop.WIN32_FIND_DATA();
+                        Interop.mincore.WIN32_FIND_DATA findData = new Interop.mincore.WIN32_FIND_DATA();
                         using (SafeFindHandle handle = Interop.mincore.FindFirstFile(fullPath, ref findData))
                         {
                             if (!handle.IsInvalid)
                             {
                                 // got the find data, use WinRT for placeholder files
 
-                                Debug.Assert((findData.dwFileAttributes & Interop.FILE_ATTRIBUTE_DIRECTORY) == 0);
-                                Debug.Assert((findData.dwFileAttributes & Interop.FILE_ATTRIBUTE_REPARSE_POINT) != 0);
+                                Debug.Assert((findData.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
+                                Debug.Assert((findData.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0);
 
-                                useWinRt = findData.dwReserved0 == Interop.IO_REPARSE_TAG_FILE_PLACEHOLDER;
+                                useWinRt = findData.dwReserved0 == Interop.mincore.IOReparseOptions.IO_REPARSE_TTAG_FILE_PLACEHOLDER;
                                 break;
                             }
                         }
@@ -188,15 +188,15 @@ namespace System.IO
                 }
 
                 int error = Marshal.GetLastWin32Error();
-                Debug.Assert(error != Interop.ERROR_SUCCESS);
+                Debug.Assert(error != Interop.mincore.Errors.ERROR_SUCCESS);
 
-                if (error == Interop.ERROR_ACCESS_DENIED)
+                if (error == Interop.mincore.Errors.ERROR_ACCESS_DENIED)
                 {
                     // The path was not accessible with Win32, so try WinRT
                     useWinRt = true;
                     break;
                 }
-                else if (error != Interop.ERROR_PATH_NOT_FOUND && error != Interop.ERROR_FILE_NOT_FOUND)
+                else if (error != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND && error != Interop.mincore.Errors.ERROR_FILE_NOT_FOUND)
                 {
                     // We hit some error other than ACCESS_DENIED or NOT_FOUND,
                     // Default to Win32 to provide most accurate error behavior
