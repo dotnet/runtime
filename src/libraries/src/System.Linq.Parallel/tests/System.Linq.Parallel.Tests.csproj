@@ -71,6 +71,7 @@
     <ProjectReference Include="..\src\System.Linq.Parallel.csproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Linq.Parallel</Name>
+      <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
   <!-- Automatically added by VS -->
