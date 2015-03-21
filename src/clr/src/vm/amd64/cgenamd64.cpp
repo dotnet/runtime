@@ -31,27 +31,14 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     LIMITED_METHOD_CONTRACT;
 
     T_CONTEXT * pContext = pRD->pCurrentContext;
-    pContext->Rbp = pRegs->rbp;
-#ifndef UNIX_AMD64_ABI
-    pContext->Rsi = pRegs->rsi;
-    pContext->Rdi = pRegs->rdi;
-#endif
-    pContext->R12 = pRegs->r12;
-    pContext->R13 = pRegs->r13;
-    pContext->R14 = pRegs->r14;
-    pContext->R15 = pRegs->r15;
+#define CALLEE_SAVED_REGISTER(regname) pContext->regname = pRegs->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
 
     KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
-    pContextPointers->Rbx = (PULONG64)&pRegs->rbx;
-#ifndef UNIX_AMD64_ABI
-    pContextPointers->Rsi = (PULONG64)&pRegs->rsi;
-    pContextPointers->Rdi = (PULONG64)&pRegs->rdi;
-#endif
-    pContextPointers->Rbp = (PULONG64)&pRegs->rbp;
-    pContextPointers->R12 = (PULONG64)&pRegs->r12;
-    pContextPointers->R13 = (PULONG64)&pRegs->r13;
-    pContextPointers->R14 = (PULONG64)&pRegs->r14;
-    pContextPointers->R15 = (PULONG64)&pRegs->r15;
+#define CALLEE_SAVED_REGISTER(regname) pContextPointers->regname = (PULONG64)&pRegs->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
 }
 
 void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
@@ -96,16 +83,10 @@ void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef UNIX_AMD64_ABI
-    m_calleeSavedRegisters.rdi = pContext->Rdi;
-    m_calleeSavedRegisters.rsi = pContext->Rsi;
-#endif
-    m_calleeSavedRegisters.rbx = pContext->Rbx;
-    m_calleeSavedRegisters.rbp = pContext->Rbp;
-    m_calleeSavedRegisters.r12 = pContext->R12;
-    m_calleeSavedRegisters.r13 = pContext->R13;
-    m_calleeSavedRegisters.r14 = pContext->R14;
-    m_calleeSavedRegisters.r15 = pContext->R15;
+#define CALLEE_SAVED_REGISTER(regname) m_calleeSavedRegisters.regname = pContext->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
     m_pGCLayout = 0;
     m_ReturnAddress = pContext->Rip;
 }
@@ -160,16 +141,11 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
-    pRD->pCurrentContextPointers->Rbx = NULL;
-#ifndef UNIX_AMD64_ABI
-    pRD->pCurrentContextPointers->Rsi = NULL;
-    pRD->pCurrentContextPointers->Rdi = NULL;
-#endif
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
     pRD->pCurrentContextPointers->Rbp = (DWORD64 *)&m_pCalleeSavedFP;
-    pRD->pCurrentContextPointers->R12 = NULL;
-    pRD->pCurrentContextPointers->R13 = NULL;
-    pRD->pCurrentContextPointers->R14 = NULL;
-    pRD->pCurrentContextPointers->R15 = NULL;
 
     SyncRegDisplayToCurrentContext(pRD);
 
@@ -210,62 +186,35 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         pRD->pCurrentContext->Rip = pRD->ControlPC = pUnwoundState->m_Rip;
         pRD->pCurrentContext->Rsp = pRD->SP        = pUnwoundState->m_Rsp;
 
-#ifndef UNIX_AMD64_ABI
-        pRD->pCurrentContext->Rdi = pUnwoundState->m_CaptureRdi;
-        pRD->pCurrentContext->Rsi = pUnwoundState->m_CaptureRsi;
-#endif
-        pRD->pCurrentContext->Rbx = pUnwoundState->m_CaptureRbx;
-        pRD->pCurrentContext->Rbp = pUnwoundState->m_CaptureRbp;
-        pRD->pCurrentContext->R12 = pUnwoundState->m_CaptureR12;
-        pRD->pCurrentContext->R13 = pUnwoundState->m_CaptureR13;
-        pRD->pCurrentContext->R14 = pUnwoundState->m_CaptureR14;
-        pRD->pCurrentContext->R15 = pUnwoundState->m_CaptureR15;
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = pUnwoundState->m_Capture.regname;
+        ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
 
         return;
     }
 #endif // DACCESS_COMPILE
 
     pRD->pCurrentContext->Rip = pRD->ControlPC = m_MachState.m_Rip;
-    pRD->pCurrentContext->Rsp = pRD->SP        = m_MachState.m_Rsp;
+    pRD->pCurrentContext->Rsp = pRD->SP = m_MachState.m_Rsp;
 
-#ifndef UNIX_AMD64_ABI
-    pRD->pCurrentContext->Rdi = *m_MachState.m_pRdi;
-    pRD->pCurrentContext->Rsi = *m_MachState.m_pRsi;
-#endif
-    if (m_MachState.m_pRbx != NULL) 
-    {
-        pRD->pCurrentContext->Rbx = *m_MachState.m_pRbx;
-    }
-    if (m_MachState.m_pRbp != NULL)
-    {
-        pRD->pCurrentContext->Rbp = *m_MachState.m_pRbp;
-    }
-    if (m_MachState.m_pR12 != NULL)
-    {
-        pRD->pCurrentContext->R12 = *m_MachState.m_pR12;
-    }
-    if (m_MachState.m_pR13 != NULL)
-    {
-        pRD->pCurrentContext->R13 = *m_MachState.m_pR13;
-    }
-    if (m_MachState.m_pR14 != NULL)
-    {
-        pRD->pCurrentContext->R14 = *m_MachState.m_pR14;
-    }
-    if (m_MachState.m_pR15 != NULL)
-    {
-        pRD->pCurrentContext->R15 = *m_MachState.m_pR15;
-    }
-#ifndef UNIX_AMD64_ABI
-    pRD->pCurrentContextPointers->Rdi = m_MachState.m_pRdi;
-    pRD->pCurrentContextPointers->Rsi = m_MachState.m_pRsi;
-#endif
-    pRD->pCurrentContextPointers->Rbx = m_MachState.m_pRbx;
-    pRD->pCurrentContextPointers->Rbp = m_MachState.m_pRbp;
-    pRD->pCurrentContextPointers->R12 = m_MachState.m_pR12;
-    pRD->pCurrentContextPointers->R13 = m_MachState.m_pR13;
-    pRD->pCurrentContextPointers->R14 = m_MachState.m_pR14;
-    pRD->pCurrentContextPointers->R15 = m_MachState.m_pR15;
+#ifdef FEATURE_PAL
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = (m_MachState.m_Ptrs.p##regname != NULL) ? \
+        *m_MachState.m_Ptrs.p##regname : m_MachState.m_Unwound.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#else // FEATURE_PAL
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *m_MachState.m_Ptrs.p##regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#endif // FEATURE_PAL
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_MachState.m_Ptrs.p##regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
 
     //
     // Clear all knowledge of scratch registers.  We're skipping to any
