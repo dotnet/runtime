@@ -16,8 +16,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BooleanSwitchClassTests.cs" />
+    <Compile Include="DefaultTraceListenerClassTests.cs" />
+    <Compile Include="EventTypeFilterClassTests.cs" />
+    <Compile Include="SourceFilterClassTests.cs" />
     <Compile Include="TestTraceListener.cs" />
     <Compile Include="TraceClassTests.cs" />
+    <Compile Include="TraceEventCacheClassTests.cs" />
+    <Compile Include="TraceFilterClassTests.cs" />
+    <Compile Include="TraceInternalClassTests.cs" />
     <Compile Include="TraceSourceClassTests.cs" />
   </ItemGroup>
   <ItemGroup>
