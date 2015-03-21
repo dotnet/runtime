@@ -2044,7 +2044,7 @@ CorUnix::InternalWriteFile(
     pLocalDataLock = NULL;
     pLocalData = NULL;
 
-#ifdef WRITE_0_BYTES_HANGS_TTY
+#if WRITE_0_BYTES_HANGS_TTY
     if( nNumberOfBytesToWrite == 0 && isatty(ifd) )
     {
         res = 0;
