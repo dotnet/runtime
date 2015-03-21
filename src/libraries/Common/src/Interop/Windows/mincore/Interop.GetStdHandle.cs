@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.ProcessEnviornment, SetLastError = true)]
+        [DllImport(Libraries.ProcessEnvironment, SetLastError = true)]
         internal static extern IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
     }
 }

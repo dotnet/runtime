@@ -68,7 +68,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.TerminateProcess.cs">
       <Link>Common\Interop\Windows\Interop.TerminateProcess.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_SafeProcessHandle.cs">
       <Link>Common\Interop\Windows\Interop.GetCurrentProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenProcess.cs">
@@ -140,7 +140,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Ntdll\Interop.NtQuerySystemInformation.cs">
       <Link>Common\Interop\Windows\Interop.NtQuerySystemInformation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateHandle.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateHandle_SafeProcessHandle.cs">
       <Link>Common\Interop\Windows\Interop.DuplicateHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenProcessToken.cs">
@@ -173,7 +173,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LUID.cs">
       <Link>Common\Interop\Windows\Interop.LUID.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreatePipe.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreatePipe_SafeFileHandle.cs">
       <Link>Common\Interop\Windows\Interop.CreatePipe.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
@@ -184,6 +184,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleTypes.cs">
       <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ProcessOptions.cs">
+      <Link>Common\Interop\Windows\Interop.ProcessOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.HandleOptions.cs">
+      <Link>Common\Interop\Windows\Interop.ProcessOptions.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />

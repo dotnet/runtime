@@ -3,16 +3,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+
 internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.CoreFile, SetLastError = true)]
-        internal static unsafe extern int WriteFile(
-            IntPtr handle,
-            byte* bytes,
-            int numBytesToWrite,
-            out int numBytesWritten,
-            IntPtr mustBeZero);
+        [DllImport(Libraries.CoreFile_L1, SetLastError = true)]
+        internal extern static uint GetFileType(IntPtr hFile);
     }
 }
