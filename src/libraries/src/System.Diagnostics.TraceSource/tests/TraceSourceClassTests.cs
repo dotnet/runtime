@@ -73,6 +73,20 @@ namespace System.Diagnostics.TraceSourceTests
             TraceSource.RefreshAll();
             Assert.False(traceRef.IsAlive);
         }
+
+        [Fact]
+        public void TraceInformation()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = new TestTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceInformation("message");
+            Assert.Equal(0, listener.GetCallCount(Method.TraceData));
+            Assert.Equal(0, listener.GetCallCount(Method.Write));
+            Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+            trace.TraceInformation("format", "arg1", "arg2");
+            Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
+        }
     }
 
     public sealed class TraceSourceTestsNoGlobalLock : TraceSourceTestsBase
@@ -83,7 +97,7 @@ namespace System.Diagnostics.TraceSourceTests
     {
         internal override void Init()
         {
-            TraceInternal.UseGlobalLock = true;            
+            TraceInternal.UseGlobalLock = true;
         }
     }
 
@@ -93,11 +107,12 @@ namespace System.Diagnostics.TraceSourceTests
         {
             return new TestTraceListener(true);
         }
-    } 
+    }
 
     public abstract class TraceSourceTestsBase
     {
-        public TraceSourceTestsBase() {
+        public TraceSourceTestsBase()
+        {
             Init();
         }
 
@@ -109,8 +124,8 @@ namespace System.Diagnostics.TraceSourceTests
         internal virtual TestTraceListener GetTraceListener()
         {
             return new TestTraceListener(false);
-        }        
-        
+        }
+
         [Fact]
         public void Flush()
         {
@@ -119,7 +134,7 @@ namespace System.Diagnostics.TraceSourceTests
             trace.Listeners.Add(listener);
             trace.Flush();
             Assert.Equal(1, listener.GetCallCount(Method.Flush));
-        }        
+        }
 
         [Theory]
         [InlineData(SourceLevels.Off, TraceEventType.Critical, 0)]
@@ -172,19 +187,5 @@ namespace System.Diagnostics.TraceSourceTests
             trace.TraceData(TraceEventType.Verbose, 0, "Data1", 2);
             Assert.Equal(2, listener.GetCallCount(Method.TraceData));
         }
-
-        [Fact]
-        public void TraceInformation()
-        {
-            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
-            var listener = GetTraceListener();
-            trace.Listeners.Add(listener);
-            trace.TraceInformation("message");
-            Assert.Equal(0, listener.GetCallCount(Method.TraceData));
-            Assert.Equal(0, listener.GetCallCount(Method.Write));
-            Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
-            trace.TraceInformation("format", "arg1", "arg2");
-            Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
-        }      
     }
 }
