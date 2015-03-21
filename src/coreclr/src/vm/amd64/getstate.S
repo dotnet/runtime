@@ -29,14 +29,12 @@ LEAF_ENTRY LazyMachStateCaptureState, _TEXT
 
         mov     rdx, [rsp]      // get the return address
         
-        mov     [rdi + OFFSETOF__MachState__m_CaptureRdi], rdi
-        mov     [rdi + OFFSETOF__MachState__m_CaptureRsi], rsi
-        mov     [rdi + OFFSETOF__MachState__m_CaptureRbx], rbx
-        mov     [rdi + OFFSETOF__MachState__m_CaptureRbp], rbp
-        mov     [rdi + OFFSETOF__MachState__m_CaptureR12], r12
-        mov     [rdi + OFFSETOF__MachState__m_CaptureR13], r13
-        mov     [rdi + OFFSETOF__MachState__m_CaptureR14], r14
-        mov     [rdi + OFFSETOF__MachState__m_CaptureR15], r15
+        mov     [rdi + OFFSETOF__MachState__m_Capture + 0*8], r12
+        mov     [rdi + OFFSETOF__MachState__m_Capture + 1*8], r13
+        mov     [rdi + OFFSETOF__MachState__m_Capture + 2*8], r14
+        mov     [rdi + OFFSETOF__MachState__m_Capture + 3*8], r15
+        mov     [rdi + OFFSETOF__MachState__m_Capture + 4*8], rbx
+        mov     [rdi + OFFSETOF__MachState__m_Capture + 5*8], rbp
 
         mov     qword ptr [rdi + OFFSETOF__MachState___pRetAddr], 0
 
