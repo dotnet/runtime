@@ -16,6 +16,7 @@ namespace Microsoft.Win32.Primitives.Tests
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
+        private const int FirstPassBufferSize = 256;
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
         private static extern int FormatMessage(
@@ -27,9 +28,9 @@ namespace Microsoft.Win32.Primitives.Tests
             int nSize,
             IntPtr[] arguments);
 
-        private static bool IsLongExceptionMessage(int errorCode)
+        private static bool IsExceptionMessageLong(int errorCode)
         {
-            StringBuilder sb = new StringBuilder(256); // Buffer length in the first pass in the implementation.
+            StringBuilder sb = new StringBuilder(FirstPassBufferSize); // Buffer length in the first pass in the implementation.
 
             int result = FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
                                        FORMAT_MESSAGE_FROM_SYSTEM |
@@ -87,11 +88,11 @@ namespace Microsoft.Win32.Primitives.Tests
             // 2. If true, we validate that Win32Exception class can retrieve the complete resource string.
             // 3. If not we skip testing.
             int errorCode = 0x268;
-            if (IsLongExceptionMessage(errorCode)) // Localized error string for 0x268 is not guaranteed to be >256 chars. 
+            if (IsExceptionMessageLong(errorCode)) // Localized error string for 0x268 is not guaranteed to be >256 chars. 
             {
                 Win32Exception ex = new Win32Exception(errorCode);
                 Assert.NotEqual("Unknown error (0x268)", ex.Message);
-                Assert.True(ex.Message.Length > 256);
+                Assert.True(ex.Message.Length > FirstPassBufferSize);
 
                 ex = new Win32Exception(0x23);
                 Assert.Equal(expected: "Unknown error (0x23)", actual: ex.Message);
