@@ -13,33 +13,33 @@ namespace System.Globalization
         private bool LoadCalendarDataFromSystem(String localeName, CalendarId calendarId)
         {
             // TODO: Implement this.
-            throw new NotImplementedException();            
+            return false;
         }
 
         // Get native two digit year max
         internal static int GetTwoDigitYearMax(CalendarId calendarId)
         {
             // TODO: Implement this.
-            throw new NotImplementedException();            
+            return -1;
         }
 
         internal static CalendarData GetCalendarData(CalendarId calendarId)
         {
             // TODO: Implement this.
-            throw new NotImplementedException();            
+            return new CalendarData("", calendarId, false);
         }
 
         // Call native side to figure out which calendars are allowed
         internal static int GetCalendars(String localeName, bool useUserOverride, CalendarId[] calendars)
         {
             // TODO: Implement this.
-            throw new NotImplementedException();            
+            return 0;
         }
 
         private static bool SystemSupportsTaiwaneseCalendar()
         {
             // TODO: Implement this.
-            throw new NotImplementedException();            
+            return false;
         }
 
         // PAL Layer ends here
