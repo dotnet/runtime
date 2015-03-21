@@ -7,8 +7,6 @@
 //
 // Implementation for transparent code feature
 //
-
-
 //--------------------------------------------------------------------------
 
 
@@ -703,7 +701,7 @@ CorInfoIsAccessAllowedResult SecurityTransparent::RequiresTransparentCodeChecks(
 	// check if the caller assembly is transparent and NOT an interception stub (e.g. marshalling)
 	bool doChecks = !pCallerMD->IsILStub() && IsMethodTransparent(pCallerMD);
 
-    if (doChecks) 
+    if (doChecks && Security::IsTransparencyEnforcementEnabled())
     {
         if (!IsTransparentCallerAllowed(pCallerMD, pCalleeMD, pError))
         {
@@ -808,6 +806,11 @@ static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCa
 
     if (!pCalleeMD->RequiresLinktimeCheck() ||
         pCalleeMD->RequiresLinkTimeCheckHostProtectionOnly()) 
+    {
+        return;
+    }
+
+    if (!Security::IsTransparencyEnforcementEnabled())
     {
         return;
     }
@@ -925,34 +928,32 @@ static void ConvertLinkDemandToFullDemand(MethodDesc* pCallerMD, MethodDesc* pCa
         {
             SecurityTransparent::LogTransparencyError(pCallerMD, "Transparent method calling unmanaged code");
         }
-        if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
+
+        if (pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallUnmanagedCode())
         {
-            if (pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeCallUnmanagedCode())
-            {
 #ifdef FEATURE_APTCA
-                if (fCallerIsAPTCA)
-                {
-                    // if the caller assembly is APTCA, then only inject this demand, for NON-APTCA we will allow
-                    // calls to native code
-                    // NOTE: the JIT would have already performed the LinkDemand for this anyways
-                    Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);        
-                }
-#endif // FEATURE_APTCA
-            }
-            else
+            if (fCallerIsAPTCA)
             {
+                // if the caller assembly is APTCA, then only inject this demand, for NON-APTCA we will allow
+                // calls to native code
+                // NOTE: the JIT would have already performed the LinkDemand for this anyways
+                Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);        
+            }
+#endif // FEATURE_APTCA
+        }
+        else
+        {
 #if defined(FEATURE_CORECLR_COVERAGE_BUILD) && defined(FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
-                // For code coverage builds we have an issue where the inserted types/methods are not annotated.
-                // In patricular, there may be p/invokes from transparent code. Allow that on cov builds for platform assemblies.
-                // Paranoia: allow this only on non shp builds - all builds except the SHP type will have
-                // FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED defined. So we can use that to figure out if this is a SHP build
-                // type that someone is trying to relax that constraint on and not allow that.
-                if (!pCalleeMD->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly())
+            // For code coverage builds we have an issue where the inserted types/methods are not annotated.
+            // In patricular, there may be p/invokes from transparent code. Allow that on cov builds for platform assemblies.
+            // Paranoia: allow this only on non shp builds - all builds except the SHP type will have
+            // FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED defined. So we can use that to figure out if this is a SHP build
+            // type that someone is trying to relax that constraint on and not allow that.
+            if (!pCalleeMD->GetModule()->GetFile()->GetAssembly()->IsProfileAssembly())
 #endif // defined(FEATURE_CORECLR_COVERAGE_BUILD) && defined(FEATURE_STRONGNAME_DELAY_SIGNING_ALLOWED)
-                {
-                    ::ThrowMethodAccessException(pCallerMD, pCalleeMD, FALSE, IDS_E_TRANSPARENT_CALL_NATIVE);
-                }
+            {
+                ::ThrowMethodAccessException(pCallerMD, pCalleeMD, FALSE, IDS_E_TRANSPARENT_CALL_NATIVE);
             }
         }
     }
@@ -974,6 +975,11 @@ VOID SecurityTransparent::EnforceTransparentAssemblyChecks(MethodDesc* pCallerMD
 	    INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
+
+    if (!Security::IsTransparencyEnforcementEnabled())
+    {
+        return;
+    }
 
     // Profilers may wish to suppress transparency checks for methods they're profiling
     if (Security::BypassSecurityChecksForProfiler(pCallerMD))
@@ -1005,11 +1011,8 @@ VOID SecurityTransparent::EnforceTransparentAssemblyChecks(MethodDesc* pCallerMD
             {
                 LogTransparencyError(pCallerMD, "Transparent method accessing a critical method", pCalleeMD);
             }
-            if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-            {
-                ::ThrowMethodAccessException(pCallerMD, pCalleeMD, TRUE, IDS_E_CRITICAL_METHOD_ACCESS_DENIED);
-            }
+            ::ThrowMethodAccessException(pCallerMD, pCalleeMD, TRUE, IDS_E_CRITICAL_METHOD_ACCESS_DENIED);
         }
     }
 

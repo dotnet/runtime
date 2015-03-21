@@ -176,7 +176,8 @@ HRESULT ExecuteAssembly(
         // - Prevents the application from being torn down if a managed exception is unhandled
         //
         APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS |
-        APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP,
+        APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP |
+        APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT,
         NULL,                    // Name of the assembly that contains the AppDomainManager implementation
         NULL,                    // The AppDomainManager implementation type name
         propertyCount,
