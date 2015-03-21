@@ -26,9 +26,7 @@ namespace System.Globalization
 
             source = source.Substring(startIndex, count);
 
-            if (value.Length > source.Length) return -1;
-
-            for (int i = 0; i < source.Length; i++)
+            for (int i = 0; i + value.Length <= source.Length; i++)
             {
                 for (int j = 0; j < value.Length; j++) {
                    if (source[i + j] != value[j]) {
