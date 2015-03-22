@@ -335,7 +335,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     if (bDoGcHist)
     {
 #ifdef FEATURE_PAL
-        ExtOut ("GC history not support\n");
+        ExtOut ("GC history not supported\n");
         return S_FALSE;
 #else
         GcHistClear();
