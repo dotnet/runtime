@@ -8,14 +8,14 @@ namespace System.Diagnostics.TraceSourceTests
     public class SourceFilterClassTests
     {
         [Fact]
-        public void Constructor()
+        public void ConstructorTest()
         {
             var filter = new SourceFilter("TestSource");
             Assert.Equal("TestSource", filter.Source);
         }
 
         [Fact]
-        public void ShouldTrace()
+        public void ShouldTraceTest()
         {
             var sourceName = "TestSource";
             var cache = new TraceEventCache();
@@ -26,12 +26,13 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void EventType()
+        public void SourceTest()
         {
             var filter = new SourceFilter("TestSource");
             Assert.Equal("TestSource", filter.Source);
             filter.Source = "Default";
             Assert.Equal("Default", filter.Source);
+            Assert.Throws<ArgumentNullException>(() => filter.Source = null);
         }
     }
 }

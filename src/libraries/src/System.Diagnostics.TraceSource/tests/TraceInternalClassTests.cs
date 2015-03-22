@@ -112,7 +112,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Flush()
+        public void FlushTest()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -121,7 +121,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceEvent1()
+        public void TraceEvent1Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -130,7 +130,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceEvent2()
+        public void TraceEvent2Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -141,7 +141,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceEvent3()
+        public void TraceEvent3Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -157,7 +157,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteObject()
+        public void WriteObjectTest()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -168,7 +168,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Write()
+        public void WriteTest()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -179,7 +179,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Write2()
+        public void Write2Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -190,7 +190,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteObject2()
+        public void WriteObject2Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -201,7 +201,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLine()
+        public void WriteLineTest()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -212,7 +212,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLineObject()
+        public void WriteLineObjectTest()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -223,7 +223,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLine2()
+        public void WriteLine2Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -234,7 +234,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLineObject2()
+        public void WriteLineObject2Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -245,7 +245,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Fail()
+        public void FailTest()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);
@@ -256,7 +256,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Fail2()
+        public void Fail2Test()
         {
             var listener = GetTraceListener();
             TraceInternal.Listeners.Add(listener);

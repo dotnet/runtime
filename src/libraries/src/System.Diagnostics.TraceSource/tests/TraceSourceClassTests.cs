@@ -10,14 +10,14 @@ namespace System.Diagnostics.TraceSourceTests
     public sealed class TraceSourceClassTests
     {
         [Fact]
-        public void ConstrutorArguments()
+        public void ConstrutorExceptionTest()
         {
             Assert.Throws<ArgumentNullException>(() => new TraceSource(null));
             Assert.Throws<ArgumentException>(() => new TraceSource(""));
         }
 
         [Fact]
-        public void DefaultListener()
+        public void DefaultListenerTest()
         {
             var trace = new TraceSource("TestTraceSource");
             Assert.Equal(1, trace.Listeners.Count);
@@ -25,14 +25,14 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void SetSourceSwitchException()
+        public void SetSourceSwitchExceptionTest()
         {
             var trace = new TraceSource("TestTraceSource");
             Assert.Throws<ArgumentNullException>(() => trace.Switch = null);
         }
 
         [Fact]
-        public void SetSourceSwitch()
+        public void SetSourceSwitchTest()
         {
             var trace = new TraceSource("TestTraceSource");
             var @switch = new SourceSwitch("TestTraceSwitch");
@@ -41,14 +41,14 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void DefaultLevel()
+        public void DefaultLevelTest()
         {
             var trace = new TraceSource("TestTraceSource");
             Assert.Equal(SourceLevels.Off, trace.Switch.Level);
         }
 
         [Fact]
-        public void Close()
+        public void CloseTest()
         {
             var trace = new TraceSource("T1", SourceLevels.All);
             trace.Listeners.Clear();
@@ -64,7 +64,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Prune()
+        public void PruneTest()
         {
             var strongTrace = new TraceSource("TestTraceSource");
             var traceRef = new WeakReference(new TraceSource("TestTraceSource"));
@@ -72,10 +72,12 @@ namespace System.Diagnostics.TraceSourceTests
             GC.Collect(2);
             TraceSource.RefreshAll();
             Assert.False(traceRef.IsAlive);
+            GC.Collect(2);
+            TraceSource.RefreshAll();
         }
 
         [Fact]
-        public void TraceInformation()
+        public void TraceInformationTest()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = new TestTraceListener();
@@ -104,7 +106,7 @@ namespace System.Diagnostics.TraceSourceTests
         // NOTE: tests to cover a TraceEventType value that is not in CoreFX (0x20 == TraceEventType.Start in 4.5)
         [InlineData(SourceLevels.Verbose, (TraceEventType)0x20, 0)]
         [InlineData(SourceLevels.All, (TraceEventType)0x20, 1)]
-        public void SwitchLevel(SourceLevels sourceLevel, TraceEventType messageLevel, int expected)
+        public void SwitchLevelTest(SourceLevels sourceLevel, TraceEventType messageLevel, int expected)
         {
             var trace = new TraceSource("TestTraceSource");
             var listener = new TestTraceListener();
@@ -207,7 +209,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Flush()
+        public void FlushTest()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
@@ -217,7 +219,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceEvent1()
+        public void TraceEvent1Test()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
@@ -227,7 +229,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceEvent2()
+        public void TraceEvent2Test()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
@@ -239,7 +241,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceEvent3()
+        public void TraceEvent3Test()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
@@ -251,7 +253,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceData1()
+        public void TraceData1Test()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
@@ -263,7 +265,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void TraceData2()
+        public void TraceData2Test()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
             var listener = GetTraceListener();
