@@ -68,7 +68,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void AddTest()
+        public void AddListenerTest()
         {
             var list = Create();
             var item = CreateListener();
@@ -121,7 +121,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void CopyToTest()
+        public void CopyToListenerTest()
         {
             var list = Create(2);
             var arr = new TraceListener[4];
@@ -133,7 +133,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void IndexOfTest()
+        public void IndexOfListenerTest()
         {
             var list = Create(2);
             var item = CreateListener();
@@ -150,7 +150,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void InsertTest()
+        public void InsertListenerTest()
         {
             var list = Create(2);
             var item = CreateListener();
@@ -161,7 +161,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void RemoveTest()
+        public void RemoveListenerTest()
         {
             var list = Create();
             var item = new TestTraceListener("Test1");

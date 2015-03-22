@@ -80,9 +80,9 @@ namespace System.Diagnostics.TraceSourceTests
     {
         public TraceInternalTestsBase()
         {
-            TraceInternal.Listeners.Clear();
-            TraceInternal.UseGlobalLock = UseGlobalLock;
-            TraceInternal.AutoFlush = AutoFlush;
+            TraceTestHelper.ResetState();
+            Trace.AutoFlush = AutoFlush;
+            Trace.UseGlobalLock = UseGlobalLock;
         }
 
         // properties are overridden to define different "modes" of execution
