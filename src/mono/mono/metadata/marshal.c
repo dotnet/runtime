@@ -10345,11 +10345,16 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal (void *ptr)
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 {
+	void *res;
+
 #ifdef HOST_WIN32
-	return CoTaskMemAlloc (size);
+	res = CoTaskMemAlloc (size);
 #else
-	return g_try_malloc ((gulong)size);
+	res = g_try_malloc ((gulong)size);
 #endif
+	if (!res)
+		mono_gc_out_of_memory ((gulong)size);
+	return res;
 }
 
 void
@@ -10365,11 +10370,16 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem (void *ptr)
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr, int size)
 {
+	void *res;
+
 #ifdef HOST_WIN32
-	return CoTaskMemRealloc (ptr, size);
+	res = CoTaskMemRealloc (ptr, size);
 #else
-	return g_try_realloc (ptr, (gulong)size);
+	res = g_try_realloc (ptr, (gulong)size);
 #endif
+	if (!res)
+		mono_gc_out_of_memory ((gulong)size);
+	return res;
 }
 
 void*
