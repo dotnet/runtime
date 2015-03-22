@@ -20,6 +20,13 @@
   <ItemGroup>
     <Compile Include="CachedEnumerator.cs" />
     <Compile Include="EmptyEnumerable.cs" />
+    <Compile Include="Performance\CastPerf.cs" />
+    <Compile Include="Performance\LinqPerformanceCore.cs" />
+    <Compile Include="Performance\OrderByThenByPerf.cs" />
+    <Compile Include="Performance\RangeRepeatPerf.cs" />
+    <Compile Include="Performance\ReversePerf.cs" />
+    <Compile Include="Performance\WhereSelectPerf.cs" />
+    <Compile Include="Performance\ToArrayToListToDictionaryPerf.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.csproj">
