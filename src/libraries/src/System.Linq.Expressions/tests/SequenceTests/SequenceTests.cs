@@ -2793,11 +2793,6 @@ namespace Tests
         [Fact]
         public static void NullGuidConstant()
         {
-            Expression<Func<Guid, bool>> f = g => g != null;
-            var d = f.Compile();
-            Assert.True(d(Guid.NewGuid()));
-            Assert.True(d(default(Guid))); // default(Guid) is not really null
-
             Expression<Func<Guid?, bool>> f2 = g2 => g2 != null;
             var d2 = f2.Compile();
             Assert.True(d2(Guid.NewGuid()));
