@@ -24,6 +24,7 @@
     <Compile Include="TraceEventCacheClassTests.cs" />
     <Compile Include="TraceFilterClassTests.cs" />
     <Compile Include="TraceInternalClassTests.cs" />
+    <Compile Include="TraceListenerCollectionClassTests.cs" />
     <Compile Include="TraceSourceClassTests.cs" />
   </ItemGroup>
   <ItemGroup>
