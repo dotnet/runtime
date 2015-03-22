@@ -19,13 +19,18 @@
     <Compile Include="DefaultTraceListenerClassTests.cs" />
     <Compile Include="EventTypeFilterClassTests.cs" />
     <Compile Include="SourceFilterClassTests.cs" />
+    <Compile Include="SwitchClassTests.cs" />
+    <Compile Include="TestTextTraceListener.cs" />
+    <Compile Include="TestTraceFilter.cs" />
     <Compile Include="TestTraceListener.cs" />
     <Compile Include="TraceClassTests.cs" />
     <Compile Include="TraceEventCacheClassTests.cs" />
     <Compile Include="TraceFilterClassTests.cs" />
     <Compile Include="TraceInternalClassTests.cs" />
+    <Compile Include="TraceListenerClassTests.cs" />
     <Compile Include="TraceListenerCollectionClassTests.cs" />
     <Compile Include="TraceSourceClassTests.cs" />
+    <Compile Include="TraceSwitchClassTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

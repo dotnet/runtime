@@ -8,7 +8,7 @@ namespace System.Diagnostics.TraceSourceTests
     public class TraceEventCacheClassTests
     {
         [Fact]
-        public void DateTimeProperty()
+        public void DateTimePropertyTest()
         {
             var cache = new TraceEventCache();
             var begin = DateTime.UtcNow;
@@ -21,7 +21,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void ProcessId()
+        public void ProcessIdTest()
         {
             var cache = new TraceEventCache();
             var id = cache.ProcessId;
@@ -30,7 +30,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void ThreadId()
+        public void ThreadIdTest()
         {
             var cache = new TraceEventCache();
             var id = cache.ThreadId;
@@ -39,7 +39,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Timestamp()
+        public void TimestampTest()
         {
             var cache = new TraceEventCache();
             var dt1 = cache.Timestamp;

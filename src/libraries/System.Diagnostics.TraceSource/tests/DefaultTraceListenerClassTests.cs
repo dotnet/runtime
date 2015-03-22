@@ -28,7 +28,6 @@ namespace System.Diagnostics.TraceSourceTests
             }
         }
 
-
         [Fact]
         public void Constructor()
         {

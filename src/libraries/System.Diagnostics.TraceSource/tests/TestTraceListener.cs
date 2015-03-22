@@ -5,45 +5,6 @@ using System.IO;
 
 namespace System.Diagnostics.TraceSourceTests
 {
-
-    // TraceListener that can be used to inspect the trace output in tests
-    internal class TestTextTraceListener : TraceListener
-    {
-        private StringWriter _writer;
-        private StringWriter _output;
-
-        public TestTextTraceListener()
-        {
-            _writer = new StringWriter();
-            _output = new StringWriter();
-        }
-
-        public String Output
-        {
-            get { return _output.ToString(); }
-        }
-
-        public override void Flush()
-        {
-            _output.Write(_writer.ToString());
-            _writer.GetStringBuilder().Clear();
-        }
-
-        public override void Write(string message)
-        {
-            if (NeedIndent) WriteIndent();
-            _writer.Write(message);
-        }
-
-        public override void WriteLine(string message)
-        {
-            if (NeedIndent) WriteIndent();
-            Write(message);
-            _writer.WriteLine();
-            NeedIndent = true;
-        }
-    }
-
     // mock TraceListener to make assertions against TraceSource behavior
     internal class TestTraceListener : TraceListener
     {
@@ -59,9 +20,15 @@ namespace System.Diagnostics.TraceSourceTests
             //NOTE: update MethodEnumCount if values are added
         }
 
-        const int MethodEnumCount = 7;
+        private const int MethodEnumCount = 7;
 
         public TestTraceListener(bool threadSafe = false)
+            : this(null, threadSafe)
+        {
+        }
+
+        public TestTraceListener(String name, bool threadSafe = false)
+            : base(name)
         {
             _threadSafe = threadSafe;
             _calls = new int[MethodEnumCount];

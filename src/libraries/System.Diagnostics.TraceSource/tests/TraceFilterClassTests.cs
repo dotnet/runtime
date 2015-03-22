@@ -7,23 +7,8 @@ namespace System.Diagnostics.TraceSourceTests
 {
     public class TraceFilterClassTests
     {
-        class TestTraceFilter : TraceFilter
-        {
-            private bool _shouldTrace;
-
-            public TestTraceFilter(bool shouldTrace)
-            {
-                _shouldTrace = shouldTrace;
-            }
-
-            public override bool ShouldTrace(TraceEventCache cache, string source, TraceEventType eventType, int id, string formatOrMessage, object[] args, object data1, object[] data)
-            {
-                return _shouldTrace;
-            }
-        }
-
         [Fact]
-        public void ShouldTrace()
+        public void ShouldTraceTest()
         {
             var cache = new TraceEventCache();
             var filter = new TestTraceFilter(true);

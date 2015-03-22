@@ -21,7 +21,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void AutoFlush()
+        public void AutoFlushTest()
         {
             Trace.AutoFlush = false;
             Assert.False(Trace.AutoFlush);
@@ -30,7 +30,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void UseGlobalLock()
+        public void UseGlobalLockTest()
         {
             Trace.UseGlobalLock = true;
             Assert.True(Trace.UseGlobalLock);
@@ -38,11 +38,21 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.False(Trace.UseGlobalLock);
         }
 
+        [Fact]
+        public void RefreshTest()
+        {
+            Trace.UseGlobalLock = true;
+            Assert.True(Trace.UseGlobalLock);
+            // NOTE: Refresh does not reset to default config values
+            Trace.Refresh();
+            Assert.True(Trace.UseGlobalLock);
+        }
+
         [Theory]
         [InlineData(1, 1)]
         [InlineData(2, 2)]
         [InlineData(-2, 0)]
-        public void IndentLevel(int indent, int expected)
+        public void IndentLevelTest(int indent, int expected)
         {
             Trace.Listeners.Clear();
             Trace.Listeners.Add(new DefaultTraceListener());
@@ -58,7 +68,7 @@ namespace System.Diagnostics.TraceSourceTests
         [InlineData(1, 1)]
         [InlineData(2, 2)]
         [InlineData(-2, 0)]
-        public void IndentSize(int indent, int expected)
+        public void IndentSizeTest(int indent, int expected)
         {
             Trace.Listeners.Clear();
             Trace.Listeners.Add(new DefaultTraceListener());
@@ -71,7 +81,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Flush()
+        public void FlushTest()
         {
             var listener = new TestTextTraceListener();
             Trace.Listeners.Clear();
@@ -84,7 +94,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Close()
+        public void CloseTest()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -93,7 +103,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Assert1()
+        public void Assert1Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -106,7 +116,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Assert2()
+        public void Assert2Test()
         {
             var listener = new TestTraceListener();
             var text = new TestTextTraceListener();
@@ -125,7 +135,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Assert3()
+        public void Assert3Test()
         {
             var listener = new TestTraceListener();
             var text = new TestTextTraceListener();
@@ -144,9 +154,8 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Contains("Detail", text.Output);
         }
 
-
         [Fact]
-        public void Write()
+        public void WriteTest()
         {
             var listener = new TestTextTraceListener();
             Trace.Listeners.Add(listener);
@@ -156,7 +165,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteObject1()
+        public void WriteObject1Test()
         {
             var listener = new TestTextTraceListener();
             Trace.Listeners.Add(listener);
@@ -166,7 +175,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteObject2()
+        public void WriteObject2Test()
         {
             var listener = new TestTextTraceListener();
             Trace.Listeners.Add(listener);
@@ -176,7 +185,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLineObject()
+        public void WriteLineObjectTest()
         {
             var listener = new TestTextTraceListener();
             Trace.Listeners.Add(listener);
@@ -186,7 +195,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLine1()
+        public void WriteLine1Test()
         {
             var listener = new TestTextTraceListener();
             Trace.Listeners.Add(listener);
@@ -196,7 +205,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLine2()
+        public void WriteLine2Test()
         {
             var listener = new TestTextTraceListener();
             Trace.Listeners.Add(listener);
@@ -206,7 +215,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteIf1()
+        public void WriteIf1Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -217,7 +226,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteIf2()
+        public void WriteIf2Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -228,7 +237,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteIf3()
+        public void WriteIf3Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -239,7 +248,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteIf4()
+        public void WriteIf4Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -249,9 +258,8 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(1, listener.GetCallCount(Method.Write));
         }
 
-
         [Fact]
-        public void WriteLineIf1()
+        public void WriteLineIf1Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -262,7 +270,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLineIf2()
+        public void WriteLineIf2Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -273,7 +281,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLineIf3()
+        public void WriteLineIf3Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -284,7 +292,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void WriteLineIf4()
+        public void WriteLineIf4Test()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -295,7 +303,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void Fail()
+        public void FailTest()
         {
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
@@ -308,81 +316,58 @@ namespace System.Diagnostics.TraceSourceTests
         [Fact]
         public void TraceTest01()
         {
-            Refresh();
-            try
-            {
-                var textTL = new TestTextTraceListener();
-                Trace.Listeners.Add(textTL);
-                Trace.IndentLevel = 0;
-                Trace.WriteLine("Message start.");
-                Trace.IndentSize = 2;
-                Trace.IndentLevel = 2;
-                Trace.Write("This message should be indented.");
-                Trace.TraceError("This error not be indented.");
-                Trace.TraceError("{0}", "This error is indendented");
-                Trace.TraceWarning("This warning is indented");
-                Trace.TraceWarning("{0}", "This warning is also indented");
-                Trace.TraceInformation("This information in indented");
-                Trace.TraceInformation("{0}", "This information is also indented");
-                Trace.IndentSize = 0;
-                Trace.IndentLevel = 0;
-                Trace.WriteLine("Message end.");
-                textTL.Flush();
-                var expected =
-                    String.Format(
-                        "Message start.\r\n    This message should be indented.{0} Error: 0 : This error not be indented.\r\n    {0} Error: 0 : This error is indendented\r\n    {0} Warning: 0 : This warning is indented\r\n    {0} Warning: 0 : This warning is also indented\r\n    {0} Information: 0 : This information in indented\r\n    {0} Information: 0 : This information is also indented\r\nMessage end.\r\n",
-                        "DEFAULT_APPNAME" //DEFAULT_APPNAME this a bug which needs to be fixed.
-                    );
+            var textTL = new TestTextTraceListener();
+            Trace.Listeners.Add(textTL);
+            Trace.IndentLevel = 0;
+            Trace.WriteLine("Message start.");
+            Trace.IndentSize = 2;
+            Trace.IndentLevel = 2;
+            Trace.Write("This message should be indented.");
+            Trace.TraceError("This error not be indented.");
+            Trace.TraceError("{0}", "This error is indendented");
+            Trace.TraceWarning("This warning is indented");
+            Trace.TraceWarning("{0}", "This warning is also indented");
+            Trace.TraceInformation("This information in indented");
+            Trace.TraceInformation("{0}", "This information is also indented");
+            Trace.IndentSize = 0;
+            Trace.IndentLevel = 0;
+            Trace.WriteLine("Message end.");
+            textTL.Flush();
+            var expected =
+                String.Format(
+                    "Message start.\r\n    This message should be indented.{0} Error: 0 : This error not be indented.\r\n    {0} Error: 0 : This error is indendented\r\n    {0} Warning: 0 : This warning is indented\r\n    {0} Warning: 0 : This warning is also indented\r\n    {0} Information: 0 : This information in indented\r\n    {0} Information: 0 : This information is also indented\r\nMessage end.\r\n",
+                    "DEFAULT_APPNAME" //DEFAULT_APPNAME this a bug which needs to be fixed.
+                );
 
-                Assert.Equal(expected, textTL.Output);
-            }
-            finally
-            {
-                Refresh();
-            }
+            Assert.Equal(expected, textTL.Output);
         }
 
         [Fact]
         public void TraceTest02()
         {
-            //Check the same using Indent() and Unindent() message.
-            Refresh();
-            try
-            {
-                var textTL = new TestTextTraceListener();
-                Trace.Listeners.Add(textTL);
-                Trace.IndentLevel = 0;
-                Trace.IndentSize = 2;
-                Trace.WriteLineIf(true, "Message start.");
-                Trace.Indent();
-                Trace.Indent();
-                Trace.WriteIf(true, "This message should be indented.");
-                Trace.WriteIf(false, "This message should be ignored.");
-                Trace.Indent();
-                Trace.WriteLine("This should not be indented.");
-                Trace.WriteLineIf(false, "This message will be ignored");
-                Trace.Fail("This failure is reported", "with a detailed message");
-                Trace.Assert(false);
-                Trace.Assert(false, "This assert is reported");
-                Trace.Assert(true, "This assert is not reported");
-                Trace.Unindent();
-                Trace.Unindent();
-                Trace.Unindent();
-                Trace.WriteLine("Message end.");
-                textTL.Flush();
-                var expected = "Message start.\r\n    This message should be indented.This should not be indented.\r\n      Fail: This failure is reported with a detailed message\r\n      Fail: \r\n      Fail: This assert is reported\r\nMessage end.\r\n";
-                Assert.Equal(expected, textTL.Output);
-            }
-            finally
-            {
-                Refresh();
-            }
-        }
-
-        private static void Refresh()
-        {
-            Trace.Refresh();
-            Trace.Listeners.RemoveAt(0);
+            var textTL = new TestTextTraceListener();
+            Trace.Listeners.Add(textTL);
+            Trace.IndentLevel = 0;
+            Trace.IndentSize = 2;
+            Trace.WriteLineIf(true, "Message start.");
+            Trace.Indent();
+            Trace.Indent();
+            Trace.WriteIf(true, "This message should be indented.");
+            Trace.WriteIf(false, "This message should be ignored.");
+            Trace.Indent();
+            Trace.WriteLine("This should not be indented.");
+            Trace.WriteLineIf(false, "This message will be ignored");
+            Trace.Fail("This failure is reported", "with a detailed message");
+            Trace.Assert(false);
+            Trace.Assert(false, "This assert is reported");
+            Trace.Assert(true, "This assert is not reported");
+            Trace.Unindent();
+            Trace.Unindent();
+            Trace.Unindent();
+            Trace.WriteLine("Message end.");
+            textTL.Flush();
+            var expected = "Message start.\r\n    This message should be indented.This should not be indented.\r\n      Fail: This failure is reported with a detailed message\r\n      Fail: \r\n      Fail: This assert is reported\r\nMessage end.\r\n";
+            Assert.Equal(expected, textTL.Output);
         }
     }
 }
