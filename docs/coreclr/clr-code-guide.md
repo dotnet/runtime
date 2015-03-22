@@ -863,7 +863,7 @@ CRST_UNSAFE_ANYMODE
 
 If you pass this flag, your Crst can be taken in either Cooperative or Preemptive mode. The thread's mode will not change as a result of taking the lock, however, it will be placed in a GCNoTrigger state. We have a set of assertions to try to ensure that you don't cause problems with the GC due to this freedom. These assertions are the famous "Deadlock situation" messages from our V1 code base. However, it's important to realize that these assertions do not provide full safety, because they rely on code coverage to catch your mistakes.
 
-Note that CRST_UNSAFE_COOPGC and CRST_UNSAFE_ANYMORE are mutually exclusive despite being defined as "or'able" bits.
+Note that CRST_UNSAFE_COOPGC and CRST_UNSAFE_ANYMODE are mutually exclusive despite being defined as "or'able" bits.
 
 CRST_UNSAFE_SAMELEVEL
 
@@ -881,7 +881,7 @@ Under no circumstances may you use CRST_UNSAFE_SAMELEVEL for a non-host-breakabl
 
 CrstUnordered (used in rules inside CrstTypes.def) is a special level that says that the lock does not participate in any of the leveling required for deadlock avoidance. This is the most heinous of the ways you can construct a Crst. Though there are still some uses of this in the CLR, it should be avoided by any means possible.
 
-### So what _are _the prerequisites and side-effects of entering a Crst?
+### So what _are_ the prerequisites and side-effects of entering a Crst?
 
 The following matrix lists the effective contract and side-effects of entering a crst for all combinations of CRST_HOST_BREAKABLE and CRST_UNSAFE_\* flags. The SAMELEVEL flag has no effect on any of these parameters.
 
