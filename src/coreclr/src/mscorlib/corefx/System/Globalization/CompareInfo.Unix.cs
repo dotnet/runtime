@@ -185,11 +185,11 @@ namespace System.Globalization
                     char c1 = ignoreCase ? TextInfo.ChangeCaseAscii(s1[i]) : s1[i];
                     char c2 = ignoreCase ? TextInfo.ChangeCaseAscii(s2[i]) : s2[i];
 
-                    if (TextInfo.ChangeCaseAscii(s1[i]) < TextInfo.ChangeCaseAscii(s2[i]))
+                    if (c1 < c2)
                     {
                         return -1;
                     }
-                    else if (TextInfo.ChangeCaseAscii(s1[i]) > TextInfo.ChangeCaseAscii(s2[i]))
+                    else if (c1 > c2)
                     {
                         return 1;
                     }
