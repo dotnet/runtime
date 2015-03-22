@@ -31,7 +31,7 @@ namespace System.Globalization
                 sb.Append(ChangeCaseAscii(s[i], toUpper));
             }
 
-            return s.ToString();
+            return sb.ToString();
         }
 
         private unsafe char ChangeCase(char c, bool toUpper)
