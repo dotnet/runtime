@@ -49,6 +49,8 @@ namespace System.Globalization
             sName = "";
             bNeutral = false;
             sNegativeSign = "-";
+            sThousandSeparator = ",";
+            sDecimalSeparator = ".";
 
             return true;
         }
