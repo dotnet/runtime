@@ -191,7 +191,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Listeners.Add(listener);
             Trace.WriteLine((Object)"Text");
             listener.Flush();
-            Assert.Equal("Text\r\n", listener.Output);
+            Assert.Equal("Text" + TraceTestHelper.NewLine, listener.Output);
         }
 
         [Fact]
@@ -201,7 +201,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Listeners.Add(listener);
             Trace.WriteLine("Message", "Category");
             listener.Flush();
-            Assert.Equal("Category: Message\r\n", listener.Output);
+            Assert.Equal("Category: Message" + TraceTestHelper.NewLine, listener.Output);
         }
 
         [Fact]
@@ -211,7 +211,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Listeners.Add(listener);
             Trace.WriteLine((Object)"Message", "Category");
             listener.Flush();
-            Assert.Equal("Category: Message\r\n", listener.Output);
+            Assert.Equal("Category: Message" + TraceTestHelper.NewLine, listener.Output);
         }
 
         [Fact]
@@ -333,9 +333,10 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.IndentLevel = 0;
             Trace.WriteLine("Message end.");
             textTL.Flush();
+            String newLine = TraceTestHelper.NewLine;
             var expected =
                 String.Format(
-                    "Message start.\r\n    This message should be indented.{0} Error: 0 : This error not be indented.\r\n    {0} Error: 0 : This error is indendented\r\n    {0} Warning: 0 : This warning is indented\r\n    {0} Warning: 0 : This warning is also indented\r\n    {0} Information: 0 : This information in indented\r\n    {0} Information: 0 : This information is also indented\r\nMessage end.\r\n",
+                    "Message start." + newLine + "    This message should be indented.{0} Error: 0 : This error not be indented." + newLine + "    {0} Error: 0 : This error is indendented" + newLine + "    {0} Warning: 0 : This warning is indented" + newLine + "    {0} Warning: 0 : This warning is also indented" + newLine + "    {0} Information: 0 : This information in indented" + newLine + "    {0} Information: 0 : This information is also indented" + newLine + "Message end." + newLine + "",
                     "DEFAULT_APPNAME" //DEFAULT_APPNAME this a bug which needs to be fixed.
                 );
 
@@ -366,7 +367,8 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Unindent();
             Trace.WriteLine("Message end.");
             textTL.Flush();
-            var expected = "Message start.\r\n    This message should be indented.This should not be indented.\r\n      Fail: This failure is reported with a detailed message\r\n      Fail: \r\n      Fail: This assert is reported\r\nMessage end.\r\n";
+            String newLine = TraceTestHelper.NewLine;
+            var expected = "Message start." + newLine + "    This message should be indented.This should not be indented." + newLine + "      Fail: This failure is reported with a detailed message" + newLine + "      Fail: " + newLine + "      Fail: This assert is reported" + newLine + "Message end." + newLine;
             Assert.Equal(expected, textTL.Output);
         }
     }
