@@ -44,7 +44,10 @@ namespace System.Diagnostics.ProcessTests
             p.ErrorDataReceived += (s, e) => { sb.Append(e.Data); };
             p.Start();
             p.BeginErrorReadLine();
-            p.WaitForExit(WaitInMS);
+
+            if (p.WaitForExit(WaitInMS))
+                p.WaitForExit(); // This ensures async event handlers are finished processing.
+            
             Assert.Equal("ProcessTest_ConsoleApp.exe error stream", sb.ToString());
         }
 
@@ -69,7 +72,9 @@ namespace System.Diagnostics.ProcessTests
                 p.OutputDataReceived += (s, e) => sb.Append(e.Data);
                 p.Start();
                 p.BeginOutputReadLine();
-                p.WaitForExit(WaitInMS);
+                if (p.WaitForExit(WaitInMS))
+                    p.WaitForExit(); // This ensures async event handlers are finished processing.
+
                 Assert.Equal(sb.ToString(), "ProcessTest_ConsoleApp.exe startedProcessTest_ConsoleApp.exe closed");
             }
 
@@ -81,7 +86,9 @@ namespace System.Diagnostics.ProcessTests
                 p.OutputDataReceived += (s, e) => { sb.Append(e.Data); ((Process)s).CancelOutputRead(); };
                 p.Start();
                 p.BeginOutputReadLine();
-                p.WaitForExit(WaitInMS);
+                if (p.WaitForExit(WaitInMS))
+                    p.WaitForExit(); // This ensures async event handlers are finished processing.
+
                 Assert.Equal(sb.ToString(), "ProcessTest_ConsoleApp.exe started");
             }
         }
