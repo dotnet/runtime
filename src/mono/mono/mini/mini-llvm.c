@@ -36,6 +36,10 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
 
 #endif
 
+#if LLVM_API_VERSION < 4
+#error "The version of the mono llvm repository is too old."
+#endif
+
  /*
   * Information associated by mono with LLVM modules.
   */
@@ -1516,12 +1520,6 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	return lcall;
 }
 
-#if LLVM_API_VERSION >= 4
-#define EXTRA_MONO_LOAD_STORE_ARGS 1
-#else
-#define EXTRA_MONO_LOAD_STORE_ARGS 0
-#endif
-
 static LLVMValueRef
 emit_load_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, int size, LLVMValueRef addr, const char *name, gboolean is_faulting, BarrierKind barrier)
 {
@@ -1530,7 +1528,6 @@ emit_load_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder
 	LLVMTypeRef addr_type;
 
 	if (is_faulting && bb->region != -1) {
-#if LLVM_API_VERSION >= 4
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {
@@ -1547,7 +1544,6 @@ emit_load_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder
 			g_assert_not_reached ();
 			break;
 		}
-#endif
 
 		/*
 		 * We handle loads which can fault by calling a mono specific intrinsic
@@ -1579,10 +1575,8 @@ emit_load_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder
 		args [0] = addr;
 		args [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 		args [2] = LLVMConstInt (LLVMInt1Type (), TRUE, FALSE);
-#if LLVM_API_VERSION >= 4
 		args [3] = LLVMConstInt (LLVMInt32Type (), ordering, FALSE);
-#endif
-		res = emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 3 + EXTRA_MONO_LOAD_STORE_ARGS);
+		res = emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 4);
 
 		if (addr_type == LLVMPointerType (LLVMDoubleType (), 0))
 			res = LLVMBuildBitCast (*builder_ref, res, LLVMDoubleType (), "");
@@ -1623,7 +1617,6 @@ emit_store_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builde
 	LLVMValueRef args [16];
 
 	if (is_faulting && bb->region != -1) {
-#if LLVM_API_VERSION >= 4
 		LLVMAtomicOrdering ordering;
 
 		switch (barrier) {
@@ -1640,7 +1633,6 @@ emit_store_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builde
 			g_assert_not_reached ();
 			break;
 		}
-#endif
 
 		switch (size) {
 		case 1:
@@ -1668,10 +1660,8 @@ emit_store_general (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builde
 		args [1] = addr;
 		args [2] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 		args [3] = LLVMConstInt (LLVMInt1Type (), TRUE, FALSE);
-#if LLVM_API_VERSION >= 4
 		args [4] = LLVMConstInt (LLVMInt32Type (), ordering, FALSE);
-#endif
-		emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 4 + EXTRA_MONO_LOAD_STORE_ARGS);
+		emit_call (ctx, bb, builder_ref, LLVMGetNamedFunction (ctx->module, intrins_name), args, 5);
 	} else {
 		mono_llvm_build_store (*builder_ref, value, addr, is_faulting, barrier);
 	}
@@ -3757,12 +3747,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			/* new value */
 			args [2] = convert (ctx, values [ins->sreg2], t);
 			val = mono_llvm_build_cmpxchg (builder, args [0], args [1], args [2]);
-#if LLVM_API_VERSION >= 1
 			/* cmpxchg returns a pair */
 			values [ins->dreg] = LLVMBuildExtractValue (builder, val, 0, "");
-#else
-			values [ins->dreg] = val;
-#endif
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
@@ -3780,7 +3766,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_LOAD_R4:
 		case OP_ATOMIC_LOAD_R8: {
 			LLVM_FAILURE (ctx, "atomic mono.load intrinsic");
-#if LLVM_API_VERSION >= 4
+
 			int size;
 			gboolean sext, zext;
 			LLVMTypeRef t;
@@ -3808,9 +3794,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
 			else if (zext)
 				values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
-#else
-			LLVM_FAILURE (ctx, "atomic mono.load intrinsic");
-#endif
 			break;
 		}
 		case OP_ATOMIC_STORE_I1:
@@ -3824,7 +3807,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_ATOMIC_STORE_R4:
 		case OP_ATOMIC_STORE_R8: {
 			LLVM_FAILURE (ctx, "atomic mono.load intrinsic");
-#if LLVM_API_VERSION >= 4
+
 			int size;
 			gboolean sext, zext;
 			LLVMTypeRef t;
@@ -3842,10 +3825,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			value = convert (ctx, values [ins->sreg1], t);
 
 			emit_store_general (ctx, bb, &builder, size, value, addr, is_volatile, barrier);
-			break;
-#else
-			LLVM_FAILURE (ctx, "atomic mono.store intrinsic");
-#endif
 			break;
 		}
 		case OP_RELAXED_NOP: {
@@ -4880,10 +4859,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	if (cfg->compile_aot) {
 		LLVMSetLinkage (method, LLVMInternalLinkage);
-#if LLVM_API_VERSION == 0
-		/* This causes an assertion in later LLVM versions */
-		LLVMSetVisibility (method, LLVMHiddenVisibility);
-#endif
 		if (ctx->lmodule->external_symbols) {
 			LLVMSetLinkage (method, LLVMExternalLinkage);
 			LLVMSetVisibility (method, LLVMHiddenVisibility);
@@ -5671,21 +5646,17 @@ add_intrinsics (LLVMModuleRef module)
 			arg_types [0] = LLVMPointerType (LLVMIntType (i * 8), 0);
 			arg_types [1] = LLVMInt32Type ();
 			arg_types [2] = LLVMInt1Type ();
-#if LLVM_API_VERSION >= 4
 			arg_types [3] = LLVMInt32Type ();
-#endif
 			sprintf (name, "llvm.mono.load.i%d.p0i%d", i * 8, i * 8);
-			LLVMAddFunction (module, name, LLVMFunctionType (LLVMIntType (i * 8), arg_types, 3 + EXTRA_MONO_LOAD_STORE_ARGS, FALSE));
+			LLVMAddFunction (module, name, LLVMFunctionType (LLVMIntType (i * 8), arg_types, 4, FALSE));
 
 			arg_types [0] = LLVMIntType (i * 8);
 			arg_types [1] = LLVMPointerType (LLVMIntType (i * 8), 0);
 			arg_types [2] = LLVMInt32Type ();
 			arg_types [3] = LLVMInt1Type ();
-#if LLVM_API_VERSION >= 4
 			arg_types [4] = LLVMInt32Type ();
-#endif
 			sprintf (name, "llvm.mono.store.i%d.p0i%d", i * 8, i * 8);
-			LLVMAddFunction (module, name, LLVMFunctionType (LLVMVoidType (), arg_types, 4 + EXTRA_MONO_LOAD_STORE_ARGS, FALSE));
+			LLVMAddFunction (module, name, LLVMFunctionType (LLVMVoidType (), arg_types, 5, FALSE));
 		}
 	}
 }

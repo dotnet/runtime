@@ -9248,11 +9248,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			 * Emit all LLVM code into a separate assembly/object file and link with it
 			 * normally.
 			 */
-#if LLVM_API_VERSION >= 3
 			acfg->llvm_separate = TRUE;
 			if (!acfg->aot_opts.asm_only)
 				acfg->llvm_owriter = TRUE;
-#endif
 		}
 		if (acfg->aot_opts.llvm_outfile && !acfg->llvm_separate) {
 			aot_printerrf (acfg, "The llvm-outputfile= option is not supported on this platform.\n");
