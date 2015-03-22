@@ -6181,9 +6181,9 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 
 /*
   AOT SUPPORT:
-  Emit LLVM bytecode into a .bc file, compile it using llc into a .s file, then 
-  append the AOT data structures to that file. For methods which cannot be
-  handled by LLVM, the normal JIT compiled versions are used.
+  Emit LLVM bytecode into a .bc file, compile it using llc into a .s file, then link
+  it with the file containing the methods emitted by the JIT and the AOT data
+  structures.
 */
 
 /* FIXME: Normalize some aspects of the mono IR to allow easier translation, like:
