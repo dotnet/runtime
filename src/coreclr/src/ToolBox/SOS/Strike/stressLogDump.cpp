@@ -21,24 +21,28 @@
 #include "stresslog.h"
 
 
+#ifndef FEATURE_PAL
 void GcHistClear();
 void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
+#endif
 
 
 /*********************************************************************************/
 static const WCHAR* getTime(const FILETIME* time, __out_ecount (buffLen) WCHAR* buff, int buffLen) 
 {
     SYSTEMTIME systemTime;
-    static const WCHAR badTime[] = L"BAD TIME";
-    static const WCHAR format[] = L"HH:mm:ss";
+    static const WCHAR badTime[] = W("BAD TIME");
     
     if (!FileTimeToSystemTime(time, &systemTime))
         return badTime;
 
 #ifdef FEATURE_PAL
-    if (0 == PAL_FormatDateW(NULL, format, FALSE, FALSE, 0, &systemTime, buff, buffLen))
+    int length = _snwprintf(buff, buffLen, W("%02d:%02d:%02d"), systemTime.wHour, systemTime.wMinute, systemTime.wSecond);
+    if (length <= 0)
         return badTime;
 #else // FEATURE_PAL
+    static const WCHAR format[] = W("HH:mm:ss");
+
     SYSTEMTIME localTime;
     SystemTimeToTzSpecificLocalTime(NULL, &systemTime, &localTime);
 
@@ -177,7 +181,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, __in FILE* file, __inout
                                     static WCHAR wszNameBuffer[1024]; // should be large enough
                                     if (g_sos->GetMethodDescName(arg, 1024, wszNameBuffer, NULL) != S_OK)
                                     {
-                                        wcscpy_s(wszNameBuffer, _countof(wszNameBuffer),L"UNKNOWN METHODDESC");
+                                        wcscpy_s(wszNameBuffer, _countof(wszNameBuffer), W("UNKNOWN METHODDESC"));
                                     }
 
                                     wcscpy_s(buff, capacity_buff, wszNameBuffer);
@@ -274,7 +278,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, __in FILE* file, __inout
                 hr = memCallBack->ReadVirtual(TO_CDADDR((char* )args[iArgCount]), wstrBuf, cbWstrBuf, 0);
                 if (hr != S_OK)
                 {
-                    wcscpy_s(wstrBuf, cbWstrBuf/sizeof(WCHAR), L"(#Could not read address of string#)");
+                    wcscpy_s(wstrBuf, cbWstrBuf/sizeof(WCHAR), W("(#Could not read address of string#)"));
                 }
 
                 args[iArgCount] = wstrBuf;
@@ -330,13 +334,18 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
 
     if (bDoGcHist)
     {
+#ifdef FEATURE_PAL
+        ExtOut ("GC history not supported\n");
+        return S_FALSE;
+#else
         GcHistClear();
+#endif
     }
     else
     {
-    ExtOut("Writing to file: %s\n", fileName);
-    ExtOut("Stress log in module 0x%p\n", SOS_PTR(g_hThisInst));
-    ExtOut("Stress log address = 0x%p\n", SOS_PTR(outProcLog));
+        ExtOut("Writing to file: %s\n", fileName);
+        ExtOut("Stress log in module 0x%p\n", SOS_PTR(g_hThisInst));
+        ExtOut("Stress log address = 0x%p\n", SOS_PTR(outProcLog));
     }
     // Fetch the circular buffers for each thread into the 'logs' list
     ThreadStressLog* logs = 0;
@@ -486,11 +495,13 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             double deltaTime = ((double) (latestMsg->timeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
             if (bDoGcHist)
             {
+#ifndef FEATURE_PAL
                 if (strcmp(format, ThreadStressLog::TaskSwitchMsg()) == 0)
                 {
                     latestLog->threadId = (unsigned)(size_t)latestMsg->args[0];
                 }
                 GcHistAddLog(format, latestMsg);                                
+#endif // FEATURE_PAL
             }
             else
             {
