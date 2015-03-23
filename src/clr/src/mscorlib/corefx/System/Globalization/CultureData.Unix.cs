@@ -51,6 +51,9 @@ namespace System.Globalization
             sNegativeSign = "-";
             sThousandSeparator = ",";
             sDecimalSeparator = ".";
+            sCurrency = "\u00A4";
+            sMonetaryDecimal = ".";
+            sMonetaryThousand = ",";
 
             return true;
         }
