@@ -199,7 +199,7 @@ namespace System.IO.FileSystem.Tests
 
         private void ValidateNoopSeeks(Stream stream)
         {
-            // validate that seeks that don't change position
+            // validate seeks that don't change position
             long position = stream.Position;
 
             Assert.Equal(position, stream.Seek(position, SeekOrigin.Begin));
