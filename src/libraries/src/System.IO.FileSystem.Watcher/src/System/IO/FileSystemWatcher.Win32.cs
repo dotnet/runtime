@@ -92,8 +92,6 @@ namespace System.IO
             }
         }
 
-        internal const bool CaseSensitive = false;
-
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
