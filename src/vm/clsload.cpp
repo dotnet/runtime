@@ -5,12 +5,6 @@
 //
 // File: clsload.cpp
 //
-
-
-
-//
-
-//
 // ============================================================================
 
 #include "common.h"
@@ -4880,7 +4874,7 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         _ASSERTE(GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted() ||
                  m_accessCheckType == kRestrictedMemberAccess);
 
-        if (visibilityCheck)
+        if (visibilityCheck && Security::IsTransparencyEnforcementEnabled())
         {
             // In CoreCLR RMA means visibility checks always succeed if the target is user code.
             if ((m_accessCheckType == kRestrictedMemberAccess || m_accessCheckType == kRestrictedMemberAccessNoTransparency) &&
@@ -5530,6 +5524,9 @@ static BOOL CheckTransparentAccessToCriticalCode(
     }
     CONTRACTL_END;
 
+    if (!Security::IsTransparencyEnforcementEnabled())
+        return TRUE;
+
     // At most one of these should be non-NULL
     _ASSERTE(1 >= ((pOptionalTargetMethod ? 1 : 0) +
                    (pOptionalTargetField ? 1 : 0) +
@@ -5561,11 +5558,8 @@ static BOOL CheckTransparentAccessToCriticalCode(
         {
             SecurityTransparent::LogTransparencyError(pContext->GetCallerMethod(), "Transparent code accessing a critical type, method, or field", pOptionalTargetMethod);
         }
-        if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-        {
-            return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetMT, FALSE /*visibilityCheck*/);
-        }
+        return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetMT, FALSE /*visibilityCheck*/);
     }
 
     return TRUE;

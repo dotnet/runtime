@@ -1423,19 +1423,16 @@ void SecurityDeclarative::EnsureAssertAllowed(MethodDesc *pMeth, MethodSecurityD
     }
 
     // Check if the Method is allowed to assert based on transparent/critical classification
-    if (!SecurityTransparent::IsAllowedToAssert(pMeth))
+    if (!SecurityTransparent::IsAllowedToAssert(pMeth) && Security::IsTransparencyEnforcementEnabled())
     {
 #ifdef _DEBUG
         if (g_pConfig->LogTransparencyErrors())
         {
             SecurityTransparent::LogTransparencyError(pMeth, "Transparent method using a security assert");
         }
-        if (!g_pConfig->DisableTransparencyEnforcement())
 #endif // _DEBUG
-        {
-            // if assembly is transparent fail the ASSERT operations
-            COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssertTransparentCode"));
-        }
+        // if assembly is transparent fail the ASSERT operations
+        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_AssertTransparentCode"));
     }
 
     return;
