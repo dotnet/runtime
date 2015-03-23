@@ -555,7 +555,6 @@ ICALL(MEMBERI_1, "get_MetadataToken", mono_reflection_get_token)
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 ICALL(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod)
 ICALL(MBASE_2, "GetMethodBodyInternal", ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal)
-ICALL(MBASE_3, "GetMethodFromHandleInternal", ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternal)
 ICALL(MBASE_4, "GetMethodFromHandleInternalType", ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType)
 
 ICALL_TYPE(MODULE, "System.Reflection.Module", MODULE_1)
