@@ -53,7 +53,7 @@ DacGlobals g_dacTable;
 // DAC global pointer table initialization
 void DacGlobals::Initialize()
 {
-    TADDR baseAddress = PTR_TO_TADDR(PAL_GetCoreClrModuleBase());
+    TADDR baseAddress = PTR_TO_TADDR(PAL_GetPalModuleBase());
     g_dacTable.InitializeEntries(baseAddress);
 #ifdef FEATURE_SVR_GC
     g_dacTable.InitializeSVREntries(baseAddress);
