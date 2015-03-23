@@ -139,7 +139,7 @@ i8const: dest:i len:20
 icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:18
 iconst: dest:i len:40
-jmp: len:46
+jmp: len:50
 label: len:0
 lcall: dest:o len:22 clob:c
 lcall_membase: dest:o src1:b len:12 clob:c

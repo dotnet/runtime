@@ -2242,9 +2242,9 @@ mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 	}
 
 	//
-	// Signs are different.  Used signed byte compares
+	// Signs are different.  Use signed byte comparison
 	//
-	if ((char)left_sign > (char)right_sign)
+	if ((signed char)left_sign > (signed char)right_sign)
 		return MONO_DECIMAL_CMP_GT;
 	return MONO_DECIMAL_CMP_LT;
 }
