@@ -73,17 +73,19 @@
 
 typedef struct _MSBlockInfo MSBlockInfo;
 struct _MSBlockInfo {
-	int obj_size;
-	int obj_size_index;
+	guint16 obj_size;
+	/*
+	 * FIXME: Do we even need this? It's only used during sweep and might be worth
+	 * recalculating to save the space.
+	 */
+	guint16 obj_size_index;
 	unsigned int pinned : 1;
 	unsigned int has_references : 1;
 	unsigned int has_pinned : 1;	/* means cannot evacuate */
 	unsigned int is_to_space : 1;
 	unsigned int swept : 1;
-	void **free_list;
-	MSBlockInfo *next_free;
-	size_t pin_queue_first_entry;
-	size_t pin_queue_last_entry;
+	void ** volatile free_list;
+	MSBlockInfo * volatile next_free;
 	guint8 *cardtable_mod_union;
 	mword mark_words [MS_NUM_MARK_WORDS];
 };
@@ -143,7 +145,7 @@ static float concurrent_evacuation_threshold = 0.666f;
 static gboolean want_evacuation = FALSE;
 
 static gboolean lazy_sweep = TRUE;
-static gboolean have_swept;
+static gboolean have_swept = TRUE;
 
 static gboolean concurrent_mark;
 
@@ -307,6 +309,10 @@ ms_get_empty_block (void)
 	return block;
 }
 
+/*
+ * This doesn't actually free a block immediately, but enqueues it into the `empty_blocks`
+ * list, where it will either be freed later on, or reused in nursery collections.
+ */
 static void
 ms_free_block (void *block)
 {
@@ -983,18 +989,18 @@ major_copy_or_mark_object_concurrent_canonical (void **ptr, SgenGrayQueue *queue
 }
 
 static void
-mark_pinned_objects_in_block (MSBlockInfo *block, SgenGrayQueue *queue)
+mark_pinned_objects_in_block (MSBlockInfo *block, size_t first_entry, size_t last_entry, SgenGrayQueue *queue)
 {
 	void **entry, **end;
 	int last_index = -1;
 
-	if (block->pin_queue_first_entry == block->pin_queue_last_entry)
+	if (first_entry == last_entry)
 		return;
 
 	block->has_pinned = TRUE;
 
-	entry = sgen_pinning_get_entry (block->pin_queue_first_entry);
-	end = sgen_pinning_get_entry (block->pin_queue_last_entry);
+	entry = sgen_pinning_get_entry (first_entry);
+	end = sgen_pinning_get_entry (last_entry);
 
 	for (; entry < end; ++entry) {
 		int index = MS_BLOCK_OBJ_INDEX (*entry, block);
@@ -1107,7 +1113,7 @@ bitcount (mword d)
 }
 
 static void
-ms_sweep (void)
+major_sweep (void)
 {
 	int i;
 	MSBlockInfo *block;
@@ -1226,10 +1232,10 @@ ms_sweep (void)
 	have_swept = TRUE;
 }
 
-static void
-major_sweep (void)
+static gboolean
+major_have_finished_sweeping (void)
 {
-	ms_sweep ();
+	return have_swept;
 }
 
 static int count_pinned_ref;
@@ -1283,12 +1289,26 @@ count_ref_nonref_objs (void)
 static int
 ms_calculate_block_obj_sizes (double factor, int *arr)
 {
-	double target_size = sizeof (MonoObject);
+	double target_size;
 	int num_sizes = 0;
 	int last_size = 0;
 
+	/*
+	 * Have every possible slot size starting with the minimal
+	 * object size up to and including four times that size.  Then
+	 * proceed by increasing geometrically with the given factor.
+	 */
+
+	for (int size = sizeof (MonoObject); size <= 4 * sizeof (MonoObject); size += SGEN_ALLOC_ALIGN) {
+		if (arr)
+			arr [num_sizes] = size;
+		++num_sizes;
+		last_size = size;
+	}
+	target_size = (double)last_size;
+
 	do {
-		int target_count = (int)ceil (MS_BLOCK_FREE / target_size);
+		int target_count = (int)floor (MS_BLOCK_FREE / target_size);
 		int size = MIN ((MS_BLOCK_FREE / target_count) & ~(SGEN_ALLOC_ALIGN - 1), SGEN_MAX_SMALL_OBJ_SIZE);
 
 		if (size != last_size) {
@@ -1352,6 +1372,9 @@ major_start_major_collection (void)
 
 		MONO_GC_SWEEP_END (GENERATION_OLD, TRUE);
 	}
+
+	SGEN_ASSERT (0, have_swept, "Cannot start major collection without having finished sweeping");
+	have_swept = FALSE;
 }
 
 static void
@@ -1382,7 +1405,7 @@ compare_pointers (const void *va, const void *vb) {
 #endif
 
 static void
-major_have_computer_minor_collection_allowance (void)
+major_free_swept_blocks (void)
 {
 	size_t section_reserve = sgen_get_minor_collection_allowance () / MS_BLOCK_SIZE;
 
@@ -1536,23 +1559,16 @@ major_have_computer_minor_collection_allowance (void)
 }
 
 static void
-major_find_pin_queue_start_ends (SgenGrayQueue *queue)
-{
-	MSBlockInfo *block;
-
-	FOREACH_BLOCK (block) {
-		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
-				&block->pin_queue_first_entry, &block->pin_queue_last_entry);
-	} END_FOREACH_BLOCK;
-}
-
-static void
 major_pin_objects (SgenGrayQueue *queue)
 {
 	MSBlockInfo *block;
 
 	FOREACH_BLOCK (block) {
-		mark_pinned_objects_in_block (block, queue);
+		size_t first_entry, last_entry;
+		SGEN_ASSERT (0, block->swept, "All blocks must be swept when we're pinning.");
+		sgen_find_optimized_pin_queue_area (MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SKIP, MS_BLOCK_FOR_BLOCK_INFO (block) + MS_BLOCK_SIZE,
+				&first_entry, &last_entry);
+		mark_pinned_objects_in_block (block, first_entry, last_entry, queue);
 	} END_FOREACH_BLOCK;
 }
 
@@ -1951,8 +1967,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->get_and_reset_num_major_objects_marked = major_get_and_reset_num_major_objects_marked;
 	collector->supports_cardtable = TRUE;
 
-	collector->have_swept = &have_swept;
-
 	collector->alloc_heap = major_alloc_heap;
 	collector->is_object_live = major_is_object_live;
 	collector->alloc_small_pinned_obj = major_alloc_small_pinned_obj;
@@ -1962,7 +1976,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;
-	collector->find_pin_queue_start_ends = major_find_pin_queue_start_ends;
 	collector->pin_objects = major_pin_objects;
 	collector->pin_major_object = pin_major_object;
 	collector->scan_card_table = major_scan_card_table;
@@ -1973,6 +1986,8 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	}
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
+	collector->have_finished_sweeping = major_have_finished_sweeping;
+	collector->free_swept_blocks = major_free_swept_blocks;
 	collector->check_scan_starts = major_check_scan_starts;
 	collector->dump_heap = major_dump_heap;
 	collector->get_used_size = major_get_used_size;
@@ -1980,7 +1995,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->finish_nursery_collection = major_finish_nursery_collection;
 	collector->start_major_collection = major_start_major_collection;
 	collector->finish_major_collection = major_finish_major_collection;
-	collector->have_computed_minor_collection_allowance = major_have_computer_minor_collection_allowance;
 	collector->ptr_is_in_non_pinned_space = major_ptr_is_in_non_pinned_space;
 	collector->obj_is_from_pinned_alloc = obj_is_from_pinned_alloc;
 	collector->report_pinned_memory_usage = major_report_pinned_memory_usage;

@@ -1104,4 +1104,43 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 	return TRUE;
 }
 
+static char *found_obj;
+
+static void
+find_object_for_ptr_callback (char *obj, size_t size, void *user_data)
+{
+	char *ptr = user_data;
+
+	if (ptr >= obj && ptr < obj + size) {
+		g_assert (!found_obj);
+		found_obj = obj;
+	}
+}
+
+/* for use in the debugger */
+char*
+sgen_find_object_for_ptr (char *ptr)
+{
+	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
+		found_obj = NULL;
+		sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+				find_object_for_ptr_callback, ptr, TRUE);
+		if (found_obj)
+			return found_obj;
+	}
+
+	found_obj = NULL;
+	sgen_los_iterate_objects (find_object_for_ptr_callback, ptr);
+	if (found_obj)
+		return found_obj;
+
+	/*
+	 * Very inefficient, but this is debugging code, supposed to
+	 * be called from gdb, so we don't care.
+	 */
+	found_obj = NULL;
+	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, find_object_for_ptr_callback, ptr);
+	return found_obj;
+}
+
 #endif /*HAVE_SGEN_GC*/

@@ -553,6 +553,9 @@ sgen_los_scan_card_table (gboolean mod_union, SgenGrayQueue *queue)
 			continue;
 
 		if (mod_union) {
+			if (!sgen_los_object_is_pinned (obj->data))
+				continue;
+
 			cards = obj->cardtable_mod_union;
 			g_assert (cards);
 		} else {

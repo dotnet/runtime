@@ -87,7 +87,7 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 	if (!need_calculate_minor_collection_allowance)
 		return;
 
-	if (!*major_collector.have_swept) {
+	if (!major_collector.have_finished_sweeping ()) {
 		if (overwrite)
 			minor_collection_allowance = MIN_MINOR_COLLECTION_ALLOWANCE;
 		return;
@@ -123,8 +123,8 @@ sgen_memgov_try_calculate_minor_collection_allowance (gboolean overwrite)
 		SGEN_LOG (1, "Allowance: %ld bytes", (long)minor_collection_allowance);
 	}
 
-	if (major_collector.have_computed_minor_collection_allowance)
-		major_collector.have_computed_minor_collection_allowance ();
+	if (major_collector.free_swept_blocks)
+		major_collector.free_swept_blocks ();
 
 	need_calculate_minor_collection_allowance = FALSE;
 }

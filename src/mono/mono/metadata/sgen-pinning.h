@@ -54,8 +54,6 @@ void sgen_pin_stats_reset (void);
 
 void sgen_cement_init (gboolean enabled);
 void sgen_cement_reset (void);
-void sgen_cement_concurrent_start (void);
-void sgen_cement_concurrent_finish (void);
 gboolean sgen_cement_lookup (char *obj);
 gboolean sgen_cement_lookup_or_register (char *obj);
 void sgen_pin_cemented_objects (void);

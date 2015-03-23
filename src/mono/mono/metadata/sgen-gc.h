@@ -666,11 +666,6 @@ struct _SgenMajorCollector {
 	gboolean sweeps_lazily;
 
 	/*
-	 * This is set to TRUE if the sweep for the last major
-	 * collection has been completed.
-	 */
-	gboolean *have_swept;
-	/*
 	 * This is set to TRUE by the sweep if the next major
 	 * collection should be synchronous (for evacuation).  For
 	 * non-concurrent collectors, this should be NULL.
@@ -689,7 +684,6 @@ struct _SgenMajorCollector {
 	void (*free_pinned_object) (char *obj, size_t size);
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 	void (*free_non_pinned_object) (char *obj, size_t size);
-	void (*find_pin_queue_start_ends) (SgenGrayQueue *queue);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (gboolean mod_union, SgenGrayQueue *queue);
@@ -697,6 +691,8 @@ struct _SgenMajorCollector {
 	void (*update_cardtable_mod_union) (void);
 	void (*init_to_space) (void);
 	void (*sweep) (void);
+	gboolean (*have_finished_sweeping) (void);
+	void (*free_swept_blocks) (void);
 	void (*check_scan_starts) (void);
 	void (*dump_heap) (FILE *heap_dump_file);
 	gint64 (*get_used_size) (void);
@@ -705,7 +701,6 @@ struct _SgenMajorCollector {
 	void (*start_major_collection) (void);
 	void (*finish_major_collection) (ScannedObjectCounts *counts);
 	gboolean (*drain_gray_stack) (ScanCopyContext ctx);
-	void (*have_computed_minor_collection_allowance) (void);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);
 	gboolean (*obj_is_from_pinned_alloc) (char *obj);
 	void (*report_pinned_memory_usage) (void);
@@ -734,7 +729,7 @@ void sgen_marksweep_conc_init (SgenMajorCollector *collector);
 SgenMajorCollector* sgen_get_major_collector (void);
 
 
-typedef struct _SgenRemeberedSet {
+typedef struct _SgenRememberedSet {
 	void (*wbarrier_set_field) (MonoObject *obj, gpointer field_ptr, MonoObject* value);
 	void (*wbarrier_set_arrayref) (MonoArray *arr, gpointer slot_ptr, MonoObject* value);
 	void (*wbarrier_arrayref_copy) (gpointer dest_ptr, gpointer src_ptr, int count);
@@ -743,16 +738,16 @@ typedef struct _SgenRemeberedSet {
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
 
-	void (*finish_scan_remsets) (void *start_nursery, void *end_nursery, SgenGrayQueue *queue);
+	void (*scan_remsets) (SgenGrayQueue *queue);
 
-	void (*prepare_for_major_collection) (void);
+	void (*clear_cards) (void);
 
 	void (*finish_minor_collection) (void);
 	gboolean (*find_address) (char *addr);
 	gboolean (*find_address_with_cards) (char *cards_start, guint8 *cards, char *addr);
-} SgenRemeberedSet;
+} SgenRememberedSet;
 
-SgenRemeberedSet *sgen_get_remset (void);
+SgenRememberedSet *sgen_get_remset (void);
 
 static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
 slow_object_get_size (MonoVTable *vtable, MonoObject* o)
@@ -953,7 +948,6 @@ enum {
 };
 
 void sgen_pin_object (void *object, SgenGrayQueue *queue);
-void sgen_parallel_pin_or_update (void **ptr, void *obj, MonoVTable *vt, SgenGrayQueue *queue);
 void sgen_set_pinned_from_failed_allocation (mword objsize);
 
 void sgen_ensure_free_space (size_t size);
@@ -1165,6 +1159,7 @@ void sgen_check_heap_marked (gboolean nursery_must_be_pinned);
 void sgen_check_nursery_objects_pinned (gboolean pinned);
 void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type);
 void sgen_check_for_xdomain_refs (void);
+char* sgen_find_object_for_ptr (char *ptr);
 
 void mono_gc_scan_for_specific_ref (MonoObject *key, gboolean precise);
 
