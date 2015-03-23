@@ -61,11 +61,6 @@
     <OSGroup Condition="'$(OSGroup)'==''">$(OS)</OSGroup>
   </PropertyGroup>
 
-  <!-- While we transition away from OS=Unix to OS=Linux/OS=OSX, treat OS=Unix as OS=Linux -->
-  <PropertyGroup>
-    <OSGroup Condition="'$(OS)' == 'Unix'">Linux</OSGroup>
-  </PropertyGroup>
-  
   <!-- Setup Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
@@ -112,7 +107,7 @@
   <!-- Setup common target properties that we use to conditionally include sources -->
   <PropertyGroup>
     <TargetsWindows Condition="'$(OS)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsLinux Condition="'$(OS)' == 'Linux' or '$(OS)' == 'Unix'">true</TargetsLinux>  <!-- While we transition away from OS=Unix to OS=Linux/OS=OSX, treat OS=Unix as OS=Linux -->
+    <TargetsLinux Condition="'$(OS)' == 'Linux'">true</TargetsLinux>
     <TargetsOSX Condition="'$(OS)' == 'OSX'">true</TargetsOSX>
 
     <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
