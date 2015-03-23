@@ -1,6 +1,6 @@
 //
 // Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information. 
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
 /*++
@@ -20,8 +20,10 @@ Abstract:
 #include "pal/module.h"
 #include <pal_corefx.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <dlfcn.h>
 
 #ifdef __APPLE__
@@ -187,7 +189,7 @@ Used by System.Diagnostics.Process.Start to fork/exec a new process.
 
 This function takes the place of directly using fork and execve from managed code,
 in order to avoid executing managed code in the child process in the window between
-fork and execve, which is not safe.  
+fork and execve, which is not safe.
 
 As would have been the case with fork/execve, a return value of 0 is success and -1
 is failure; if failure, error information is provided in errno.
@@ -226,7 +228,7 @@ ForkAndExecProcess(
     ENTRY("ForkAndExecProcess(filename=%p (%s), argv=%p, envp=%p, cwd=%p (%s), "
            "redirectStdin=%d, redirectStdout=%d, redirectStderr=%d, "
            "childPid=%p, stdinFd=%p, stdoutFd=%p, stderrFd=%p)\n",
-           filename, filename ? filename : "NULL", 
+           filename, filename ? filename : "NULL",
            argv, envp,
            cwd, cwd ? cwd : "NULL",
            redirectStdin, redirectStdout, redirectStderr,
@@ -237,19 +239,19 @@ ForkAndExecProcess(
         NULL == stdinFd || NULL == stdoutFd || NULL == stderrFd ||
         NULL == childPid)
     {
-        ASSERT("%s should not be NULL\n", 
-            filename == NULL ? "filename" : 
-            argv == NULL ? "argv" : 
+        ASSERT("%s should not be NULL\n",
+            filename == NULL ? "filename" :
+            argv == NULL ? "argv" :
             envp == NULL ? "envp" :
-            stdinFd == NULL ? "stdinFd" : 
-            stdoutFd == NULL ? "stdoutFd" : 
+            stdinFd == NULL ? "stdinFd" :
+            stdoutFd == NULL ? "stdoutFd" :
             stderrFd == NULL ? "stderrFd" :
             "childPid");
         errno = EINVAL;
         success = FALSE;
         goto done;
     }
-    if ((redirectStdin  & ~1) != 0 || 
+    if ((redirectStdin  & ~1) != 0 ||
         (redirectStdout & ~1) != 0 ||
         (redirectStderr & ~1) != 0)
     {
@@ -279,8 +281,8 @@ ForkAndExecProcess(
         goto done;
     }
 
-    /* From the time the child process (processId == 0) begins running from fork to when 
-     * it reaches execve, the child process must not touch anything in the PAL.  Doing so 
+    /* From the time the child process (processId == 0) begins running from fork to when
+     * it reaches execve, the child process must not touch anything in the PAL.  Doing so
      * is not safe. The parent process (processId >= 0) may continue to use the PAL.
      */
 
@@ -346,3 +348,96 @@ done:
     return success ? 0 : -1;
 }
 
+#if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+typedef struct stat64 stat_native;
+#elif HAVE_STAT
+typedef struct stat stat_native;
+#else
+#error need an alias for stat_native to stat struct for platform
+#endif
+
+void CopyStatNativeToFileInfo(struct fileinfo* dst, const stat_native* src)
+{
+    dst->flags = FILEINFO_FLAGS_NONE;
+    dst->mode = src->st_mode;
+    dst->uid = src->st_uid;
+    dst->gid = src->st_gid;
+    dst->size = src->st_size;
+    dst->atime = src->st_atime;
+    dst->mtime = src->st_mtime;
+    dst->ctime = src->st_ctime;
+
+    #if HAVE_STAT_BIRTHTIME
+    dst->btime = src->st_birthtime;
+    dst->flags |= FILEINFO_FLAGS_HAS_BTIME;
+    #endif
+}
+
+int
+PALAPI
+GetFileInformationFromPath(
+    const char* path,
+    struct fileinfo* buf)
+{
+    PERF_ENTRY(GetFileInformationFromPath);
+    ENTRY("GetFileInformationFromPath(path=%p (%s), buf=%p\n",
+          path, path ? path : "NULL",
+          buf);
+
+    int success = FALSE;
+    stat_native result;
+    int ret;
+
+    #if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+    ret = stat64(path, &result);
+    #elif HAVE_STAT
+    ret = stat(path, &result);
+    #else
+    #error need implemetation of stat/stat64
+    #endif
+
+    if (ret == 0)
+    {
+        CopyStatNativeToFileInfo(buf, &result);
+        success = TRUE;
+    }
+
+    LOGEXIT("GetFileInformationFromPath returns BOOL %d with error %d\n", success, success ? 0 : errno);
+    PERF_EXIT(GetFileInformationFromPath);
+
+    return success ? 0 : -1;
+}
+
+int
+PALAPI
+GetFileInformationFromFd(
+    int fd,
+    struct fileinfo* buf)
+{
+    PERF_ENTRY(GetFileInformationFromFd);
+    ENTRY("GetFileInformationFromFd(fd=%d, buf=%p\n",
+          fd, buf);
+
+    int success = FALSE;
+    stat_native result;
+    int ret;
+
+    #if HAVE_STAT64 && !(defined(__APPLE__) && defined(_AMD64_))
+    ret = fstat64(fd, &result);
+    #elif HAVE_STAT
+    ret = fstat(fd, &result);
+    #else
+    #error need implemetation of fstat/fstat64
+    #endif
+
+    if (ret == 0)
+    {
+        CopyStatNativeToFileInfo(buf, &result);
+        success = TRUE;
+    }
+
+    LOGEXIT("GetFileInformationFromFd returns BOOL %d with error %d\n", success, success ? 0 : errno);
+    PERF_EXIT(GetFileInformationFromFd);
+
+    return success ? 0 : -1;
+}
