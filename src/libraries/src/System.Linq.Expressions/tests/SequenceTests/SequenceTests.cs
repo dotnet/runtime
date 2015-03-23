@@ -1066,14 +1066,12 @@ namespace Tests
 
         public static void AssertIsOp(BinaryExpression b, string opName)
         {
-            Console.WriteLine("{0}: {1}, {2}", b.NodeType, b.Left.Type, b.Right.Type);
             Assert.NotNull(b.Method);
             Assert.Equal(opName, b.Method.Name);
         }
 
         public static void AssertIsOp(UnaryExpression u, string opName)
         {
-            Console.WriteLine("{0}: {1}", u.NodeType, u.Operand.Type);
             Assert.NotNull(u.Method);
             Assert.Equal(opName, u.Method.Name);
         }
@@ -1117,7 +1115,6 @@ namespace Tests
 
         public static void AssertIsCoercion(UnaryExpression u, string opName, Type expected)
         {
-            Console.WriteLine("Convert: {0} -> {1}", u.Operand.Type, u.Type);
             Assert.NotNull(u.Method);
             Assert.Equal(opName, u.Method.Name);
             Assert.Equal(expected, u.Type);
@@ -1402,8 +1399,9 @@ namespace Tests
                     ),
                     new ParameterExpression[] { i }
                   );
-            foreach (var x in e.Compile()(new[] { 1, 2, 3 }))
-                Console.WriteLine(x);
+
+            int[] input = new[] { 1, 2, 3 };
+            Assert.Equal(input, e.Compile()(input));
         }
 
         [Fact(Skip = "870811")]
@@ -1761,16 +1759,7 @@ namespace Tests
                      "LeftJoin"
                  }
                 ).ToList();
-
-            if (list.Count > 0)
-            {
-                Console.WriteLine("Enumerable methods not defined by Queryable\n");
-                foreach (MethodInfo m in list)
-                {
-                    Console.WriteLine(m);
-                }
-                Console.WriteLine();
-            }
+            Assert.Equal(0, list.Count);
 
             List<MethodInfo> list2 = GetMissingExtensionMethods(
                 typeof(System.Linq.Queryable),
@@ -1779,17 +1768,7 @@ namespace Tests
                      "AsQueryable"
                  }
                 ).ToList();
-
-            if (list2.Count > 0)
-            {
-                Console.WriteLine("Queryable methods not defined by Enumerable\n");
-                foreach (MethodInfo m in list2)
-                {
-                    Console.WriteLine(m);
-                }
-            }
-
-            Assert.True(list.Count == 0 && list2.Count == 0);
+            Assert.Equal(0, list2.Count);
         }
 
         private static IEnumerable<MethodInfo> GetMissingExtensionMethods(Type a, Type b, string[] excludedMethods)
@@ -2125,37 +2104,32 @@ namespace Tests
         {
             ConstantExpression ce = Expression.Constant((UInt16)10);
 
-            try
+            UnaryExpression result = Expression.UnaryPlus(ce);
+            Assert.Throws<InvalidOperationException>(() =>
             {
-                UnaryExpression result = Expression.UnaryPlus(ce);
-
                 //unaru Plus Operator
                 byte val = 10;
                 Expression<Func<byte>> e =
-             Expression.Lambda<Func<byte>>(
-                 Expression.UnaryPlus(Expression.Constant(val, typeof(byte))),
-                 Enumerable.Empty<ParameterExpression>());
+                Expression.Lambda<Func<byte>>(
+                    Expression.UnaryPlus(Expression.Constant(val, typeof(byte))),
+                    Enumerable.Empty<ParameterExpression>());
                 Func<byte> f = e.Compile();
-                Assert.Equal(f(), (val));
+            });
 
-                //Userdefined objects
-                Complex comp = new Complex(10, 20);
-                Expression<Func<Complex>> e1 =
-             Expression.Lambda<Func<Complex>>(
-                 Expression.UnaryPlus(Expression.Constant(comp, typeof(Complex))),
-                 Enumerable.Empty<ParameterExpression>());
-                Func<Complex> f1 = e1.Compile();
-                Complex comp1 = f1();
-                Assert.True((comp1.x == comp.x + 1 && comp1.y == comp.y + 1));
+            //Userdefined objects
 
-                Expression<Func<Complex, Complex>> testExpr = (x) => +x;
-                Assert.Equal(testExpr.ToString(), "x => +x");
-                var v = testExpr.Compile();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.Message);
-            }
+            Complex comp = new Complex(10, 20);
+            Expression<Func<Complex>> e1 =
+            Expression.Lambda<Func<Complex>>(
+                Expression.UnaryPlus(Expression.Constant(comp, typeof(Complex))),
+                Enumerable.Empty<ParameterExpression>());
+            Func<Complex> f1 = e1.Compile();
+            Complex comp1 = f1();
+            Assert.True((comp1.x == comp.x + 1 && comp1.y == comp.y + 1));
+
+            Expression<Func<Complex, Complex>> testExpr = (x) => +x;
+            Assert.Equal(testExpr.ToString(), "x => +x");
+            var v = testExpr.Compile();
         }
 
         private struct S
@@ -2766,16 +2740,12 @@ namespace Tests
         [Fact]
         public static void ConvertNullToInt()
         {
-            try
+            Assert.Throws<NullReferenceException>(() =>
             {
                 Expression<Func<ValueType, int>> e = v => (int)v;
                 Func<ValueType, int> f = e.Compile();
-                Console.WriteLine(f(null));
-                Assert.False(true);
-            }
-            catch (NullReferenceException)
-            {
-            }
+                f(null);
+            });
         }
 
         [Fact]
@@ -2817,17 +2787,12 @@ namespace Tests
         {
             Expression<Func<decimal, int?, decimal?>> e = (d, i) => d + i;
             var f = e.Compile();
-            Console.WriteLine(f(1.0m, 4));
+            Assert.Equal(5.0m, f(1.0m, 4));
         }
 
         [Fact]
         public static void NullGuidConstant()
         {
-            Expression<Func<Guid, bool>> f = g => g != null;
-            var d = f.Compile();
-            Assert.True(d(Guid.NewGuid()));
-            Assert.True(d(default(Guid))); // default(Guid) is not really null
-
             Expression<Func<Guid?, bool>> f2 = g2 => g2 != null;
             var d2 = f2.Compile();
             Assert.True(d2(Guid.NewGuid()));
@@ -2842,8 +2807,7 @@ namespace Tests
                     Expression.Constant(null, typeof(int?)),
                     Expression.Constant(1, typeof(int?))
                     ));
-
-            Console.WriteLine(f.Compile()());
+            Assert.False(f.Compile()().HasValue);
         }
 
         [Fact]
@@ -2888,7 +2852,6 @@ namespace Tests
         {
             Expression<Func<DateTime?, TimeSpan, DateTime?>> f = (x, y) => x + y;
             Assert.Equal(ExpressionType.Add, f.Body.NodeType);
-            Console.WriteLine(f);
             Func<DateTime?, TimeSpan, DateTime?> d = f.Compile();
             DateTime? dt = DateTime.Now;
             TimeSpan ts = new TimeSpan(3, 2, 1);
@@ -2902,7 +2865,6 @@ namespace Tests
         {
             Expression<Func<DateTime?, TimeSpan?, DateTime?>> f = (x, y) => x + y;
             Assert.Equal(ExpressionType.Add, f.Body.NodeType);
-            Console.WriteLine(f);
             Func<DateTime?, TimeSpan?, DateTime?> d = f.Compile();
             DateTime? dt = DateTime.Now;
             TimeSpan? ts = new TimeSpan(3, 2, 1);
@@ -2918,7 +2880,6 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, TimeSpan?>> f = (x, y) => x - y;
             Assert.Equal(ExpressionType.Subtract, f.Body.NodeType);
-            Console.WriteLine(f);
             Func<DateTime?, DateTime?, TimeSpan?> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2934,7 +2895,6 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x == y;
             Assert.Equal(ExpressionType.Equal, f.Body.NodeType);
-            Console.WriteLine(f);
             Func<DateTime?, DateTime?, bool> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2950,7 +2910,6 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x != y;
             Assert.Equal(ExpressionType.NotEqual, f.Body.NodeType);
-            Console.WriteLine(f);
             Func<DateTime?, DateTime?, bool> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2966,7 +2925,6 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x < y;
             Assert.Equal(ExpressionType.LessThan, f.Body.NodeType);
-            Console.WriteLine(f);
             Func<DateTime?, DateTime?, bool> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2982,7 +2940,6 @@ namespace Tests
         {
             Expression<Func<DateTime, DateTime, bool>> f = (x, y) => x < y;
             Assert.Equal(ExpressionType.LessThan, f.Body.NodeType);
-            Console.WriteLine(f);
             Func<DateTime, DateTime, bool> d = f.Compile();
             DateTime dt1 = DateTime.Now;
             DateTime dt2 = new DateTime(2006, 5, 1);
@@ -3591,7 +3548,7 @@ namespace Tests
         [Fact]
         public static void ShiftULong()
         {
-            try
+            Assert.Throws<InvalidOperationException>(() =>
             {
                 Expression<Func<ulong>> e =
                   Expression.Lambda<Func<ulong>>(
@@ -3600,49 +3557,37 @@ namespace Tests
                         Expression.Constant((ulong)1, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
                 Func<ulong> f = e.Compile();
-                Console.WriteLine(f());
-                Assert.False(true);
-            }
-            catch (InvalidOperationException)
-            {
-            }
+                f();
+            });
         }
 
         [Fact]
         public static void MultiplyMinInt()
         {
-            try
+            Func<long> f = Expression.Lambda<Func<long>>(
+              Expression.MultiplyChecked(
+                Expression.Constant((long)-1, typeof(long)),
+                Expression.Constant(long.MinValue, typeof(long))),
+                Enumerable.Empty<ParameterExpression>()
+                ).Compile();
+            Assert.Throws<OverflowException>(() =>
             {
-                Func<long> f = Expression.Lambda<Func<long>>(
-                  Expression.MultiplyChecked(
-                    Expression.Constant((long)-1, typeof(long)),
-                    Expression.Constant(long.MinValue, typeof(long))),
-                    Enumerable.Empty<ParameterExpression>()
-                    ).Compile();
-                Console.WriteLine(f());
-                Assert.False(true);
-            }
-            catch (OverflowException)
-            {
-            }
+                f();
+            });
         }
 
         [Fact]
         public static void MultiplyMinInt2()
         {
-            try
+            Func<long> f = Expression.Lambda<Func<long>>(
+              Expression.MultiplyChecked(
+                Expression.Constant(long.MinValue, typeof(long)),
+                Expression.Constant((long)-1, typeof(long))),
+              Enumerable.Empty<ParameterExpression>()).Compile();
+            Assert.Throws<OverflowException>(() =>
             {
-                Func<long> f = Expression.Lambda<Func<long>>(
-                  Expression.MultiplyChecked(
-                    Expression.Constant(long.MinValue, typeof(long)),
-                    Expression.Constant((long)-1, typeof(long))),
-                  Enumerable.Empty<ParameterExpression>()).Compile();
-                Console.WriteLine(f());
-                Assert.False(true);
-            }
-            catch (OverflowException)
-            {
-            }
+                f();
+            });
         }
 
         [Fact]
