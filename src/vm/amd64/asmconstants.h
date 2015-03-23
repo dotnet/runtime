@@ -374,87 +374,35 @@ ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM
 
 // MachState offsets (AMD64\gmscpu.h)
 
-#define               OFFSETOF__MachState__m_Rip             0x00
+#define               OFFSETOF__MachState__m_Rip            0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rip
                     == offsetof(MachState, m_Rip));
 
-#define               OFFSETOF__MachState__m_Rsp             0x08
+#define               OFFSETOF__MachState__m_Rsp            0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rsp
                     == offsetof(MachState, m_Rsp));
 
-#define               OFFSETOF__MachState__m_CaptureRdi      0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureRdi
-                    == offsetof(MachState, m_CaptureRdi));
+#define               OFFSETOF__MachState__m_Capture        0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Capture
+                    == offsetof(MachState, m_Capture));
 
-#define               OFFSETOF__MachState__m_CaptureRsi      0x18
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureRsi
-                    == offsetof(MachState, m_CaptureRsi));
-
-#define               OFFSETOF__MachState__m_CaptureRbx      0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureRbx
-                    == offsetof(MachState, m_CaptureRbx));
-
-#define               OFFSETOF__MachState__m_CaptureRbp      0x28
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureRbp
-                    == offsetof(MachState, m_CaptureRbp));
-
-#define               OFFSETOF__MachState__m_CaptureR12      0x30
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureR12
-                    == offsetof(MachState, m_CaptureR12));
-
-#define               OFFSETOF__MachState__m_CaptureR13      0x38
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureR13
-                    == offsetof(MachState, m_CaptureR13));
-
-#define               OFFSETOF__MachState__m_CaptureR14      0x40
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureR14
-                    == offsetof(MachState, m_CaptureR14));
-
-#define               OFFSETOF__MachState__m_CaptureR15      0x48
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_CaptureR15
-                    == offsetof(MachState, m_CaptureR15));
-
-#define               OFFSETOF__MachState__m_pRdi     0x50
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pRdi
-                    == offsetof(MachState, m_pRdi));
-
-#define               OFFSETOF__MachState__m_pRsi     0x58
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pRsi
-                    == offsetof(MachState, m_pRsi));
-
-#define               OFFSETOF__MachState__m_pRbx     0x60
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pRbx
-                    == offsetof(MachState, m_pRbx));
-
-#define               OFFSETOF__MachState__m_pRbp     0x68
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pRbp
-                    == offsetof(MachState, m_pRbp));
-
-#define               OFFSETOF__MachState__m_pR12     0x70
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pR12
-                    == offsetof(MachState, m_pR12));
-
-#define               OFFSETOF__MachState__m_pR13     0x78
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pR13
-                    == offsetof(MachState, m_pR13));
-
-#define               OFFSETOF__MachState__m_pR14     0x80
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pR14
-                    == offsetof(MachState, m_pR14));
-
-#define               OFFSETOF__MachState__m_pR15     0x88
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_pR15
-                    == offsetof(MachState, m_pR15));
-
-#define               OFFSETOF__MachState___pRetAddr  0x90
+#ifdef UNIX_AMD64_ABI
+#define               OFFSETOF__MachState__m_Ptrs           0x40
+#define               OFFSETOF__MachState___pRetAddr        0x70
+#define               OFFSETOF__LazyMachState__m_CaptureRip 0xA8
+#define               OFFSETOF__LazyMachState__m_CaptureRsp 0xB0
+#else
+#define               OFFSETOF__MachState__m_Ptrs           0x50
+#define               OFFSETOF__MachState___pRetAddr        0x90
+#define               OFFSETOF__LazyMachState__m_CaptureRip 0x98
+#define               OFFSETOF__LazyMachState__m_CaptureRsp 0xA0
+#endif
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Ptrs
+                    == offsetof(MachState, m_Ptrs));
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState___pRetAddr
                     == offsetof(MachState, _pRetAddr));
-
-#define               OFFSETOF__LazyMachState__m_CaptureRip      0x98
 ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRip
                     == offsetof(LazyMachState, m_CaptureRip));
-
-#define               OFFSETOF__LazyMachState__m_CaptureRsp      0xA0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRsp
                     == offsetof(LazyMachState, m_CaptureRsp));
 
