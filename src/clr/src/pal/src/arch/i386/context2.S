@@ -84,6 +84,11 @@
 //  RDI: Context*
 //
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
+    // Save processor flags before calling any of the following 'test' instructions
+    // because they will modify state of some flags
+    push_eflags
+    END_PROLOGUE
+
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_INTEGER
     je      0f
     mov     [rdi + CONTEXT_Rdi], rdi
@@ -108,16 +113,16 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
     je      2f
     
-    // Return address is @ RSP
-    mov     rdx, [rsp]
+    // Return address is @ (RSP + 8)
+    mov     rdx, [rsp + 8]
     mov     [rdi + CONTEXT_Rip], rdx
 .att_syntax 
     mov     %cs, CONTEXT_SegCs(%rdi)
 .intel_syntax noprefix
-    push_eflags
-    pop_register rdx
+    // Get the value of EFlags that was pushed on stack at the beginning of the function
+    mov     rdx, [rsp]
     mov     [rdi + CONTEXT_EFlags], edx
-    lea     rdx, [rsp + 8]
+    lea     rdx, [rsp + 16]
     mov     [rdi + CONTEXT_Rsp], rdx
 .att_syntax 
     mov     %ss, CONTEXT_SegSs(%rdi)
@@ -145,6 +150,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     mov     rdx, dr7
     mov     [rdi + CONTEXT_Dr7], rdx
 4:
+    free_stack 8
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT
 
