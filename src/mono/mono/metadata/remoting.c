@@ -467,14 +467,6 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 		break;
 	}
 
-	if (mono_object_class (src) == mono_defaults.stringbuilder_class) {
-		MonoStringBuilder *src_sb = (MonoStringBuilder *) src;
-		MonoStringBuilder *dst_sb = (MonoStringBuilder *) dst;
-	
-		MONO_OBJECT_SETREF (dst_sb, str, mono_string_new_utf16 (mono_object_domain (dst), mono_string_chars (src_sb->str), mono_string_length (src_sb->str)));
-		dst_sb->cached_str = NULL;
-		dst_sb->length = src_sb->length;
-	}
 }
 
 
@@ -2001,13 +1993,5 @@ mono_marshal_xdomain_copy_value (MonoObject *val)
 		break;
 	}
 
-	if (mono_object_class (val) == mono_defaults.stringbuilder_class) {
-		MonoStringBuilder *oldsb = (MonoStringBuilder *) val;
-		MonoStringBuilder *newsb = (MonoStringBuilder *) mono_object_new (domain, mono_defaults.stringbuilder_class);
-		MONO_OBJECT_SETREF (newsb, str, mono_string_new_utf16 (domain, mono_string_chars (oldsb->str), mono_string_length (oldsb->str)));
-		newsb->length = oldsb->length;
-		newsb->max_capacity = (gint32)0x7fffffff;
-		return (MonoObject *) newsb;
-	}
 	return NULL;
 }

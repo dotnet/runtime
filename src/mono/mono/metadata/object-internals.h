@@ -87,8 +87,8 @@
 		return retval;										  \
        };				}G_STMT_END
 
-/* 16 == default capacity */
-#define mono_stringbuilder_capacity(sb) ((sb)->str ? ((sb)->str->length) : 16)
+#define mono_string_builder_length(sb) sb->chunkOffset + sb->chunkChars->max_length
+#define mono_string_builder_string_length(sb) sb->chunkOffset + sb->chunkLength
 
 /* 
  * Macros which cache the results of lookups locally.
@@ -210,13 +210,16 @@ struct _MonoAppDomain {
 	MonoDomain *data;
 };
 
-typedef struct {
+typedef struct _MonoStringBuilder MonoStringBuilder;
+
+struct _MonoStringBuilder {
 	MonoObject object;
-	gint32 length;
-	MonoString *str;
-	MonoString *cached_str;
-	gint32 max_capacity;
-} MonoStringBuilder;
+	MonoArray  *chunkChars;
+	MonoStringBuilder* chunkPrevious;      // Link to the block logically before this block
+	int chunkLength;                  // The index in ChunkChars that represent the end of the block
+	int chunkOffset;                  // The logial offset (sum of all characters in previous blocks)
+	int maxCapacity;
+};
 
 typedef struct {
 	MonoType *type;
