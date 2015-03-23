@@ -3335,10 +3335,11 @@ GetModuleFileNameW(
 #define GetModuleFileName GetModuleFileNameA
 #endif
 
-// Get base address of the coreclr module
+// Get base address of the module containing this function 
 PALAPI
 LPCVOID
-PAL_GetCoreClrModuleBase();
+PAL_GetPalModuleBase();
+
 
 PALIMPORT
 LPVOID
