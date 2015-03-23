@@ -68,11 +68,7 @@ protected:
     CalleeSavedRegisters m_Capture;
     
     // context pointers for preserved registers
-    struct {
-#define CALLEE_SAVED_REGISTER(regname) PTR_TADDR p##regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-    } m_Ptrs;
+    CalleeSavedRegistersPointers m_Ptrs;
 
     PTR_TADDR _pRetAddr;
 
