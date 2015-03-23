@@ -1906,53 +1906,7 @@ BOOL LOADInitCoreCLRModules()
     return g_pRuntimeDllMain((HMODULE)&pal_module, DLL_PROCESS_ATTACH, NULL);
 }
 
-// Get base address of the coreclr module
-PALAPI
-LPCVOID
-PAL_GetCoreClrModuleBase()
-{
-    LPCVOID retval = NULL;
-
-    PERF_ENTRY(PAL_GetCoreClrModuleBase);
-    ENTRY("PAL_GetCoreClrModuleBase\n");
-
-    if(pal_module.dl_handle != NULL)
-    {
-        // To lookup module base address, we need an address inside of the module.
-        // The coreclr.so contains the DllMain function, so we use it here.
-        void* dllMain = dlsym(pal_module.dl_handle, "DllMain");
-        if (dllMain != NULL)
-        {
-            Dl_info info;
-            if (dladdr(dllMain, &info) != 0)
-            {
-                retval = info.dli_fbase;
-            }
-            else 
-            {
-                TRACE("Can't get base address of the libcoreclr.so\n");
-                SetLastError(ERROR_INVALID_DATA);
-            }
-        }
-        else
-        {
-            TRACE("Can't find DllMain in libcoreclr.so\n");
-            SetLastError(ERROR_INVALID_DATA);
-        }
-    }
-    else 
-    {
-        TRACE("Can't get libcoreclr.so base - the pal_module is not initialized\n");
-        SetLastError(ERROR_MOD_NOT_FOUND);
-    }
-
-    LOGEXIT("PAL_GetCoreClrModuleBase returns %p\n", retval);
-    PERF_EXIT(PAL_GetCoreClrModuleBase);
-    return retval;
-}
-
 // Get base address of the module containing this function 
-// (in case of CoreCLR process PAL_GetPalModuleBase() == PAL_GetCoreClrModuleBase())
 PALAPI
 LPCVOID
 PAL_GetPalModuleBase()
