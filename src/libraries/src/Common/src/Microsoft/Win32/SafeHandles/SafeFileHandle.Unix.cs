@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
             try { } finally
             {
                 int fd;
-                while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode))) ;
+                while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode), path)) ;
                 Debug.Assert(fd >= 0);
                 handle.SetHandle((IntPtr)fd);
             }
@@ -57,7 +57,11 @@ namespace Microsoft.Win32.SafeHandles
         public override bool IsInvalid
         {
             [System.Security.SecurityCritical]
-            get { return (int)handle < 0; }
+            get
+            {
+                long h = (long)handle;
+                return h < 0 || h > int.MaxValue;
+            }
         }
     }
 }

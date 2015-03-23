@@ -58,13 +58,6 @@ internal static partial class Interop
     {
         switch (errno)
         {
-            case Errors.EINVAL:
-                throw new ArgumentException();
-
-            case Errors.EISDIR:
-                isDirectory = true;
-                goto case Errors.ENOENT;
-
             case Errors.ENOENT:
                 if (isDirectory)
                 {
@@ -80,6 +73,8 @@ internal static partial class Interop
                 }
 
             case Errors.EACCES:
+            case Errors.EBADF:
+            case Errors.EISDIR:
                 return !string.IsNullOrEmpty(path) ?
                     new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path)) :
                     new UnauthorizedAccessException(SR.UnauthorizedAccess_IODenied_NoPathName);

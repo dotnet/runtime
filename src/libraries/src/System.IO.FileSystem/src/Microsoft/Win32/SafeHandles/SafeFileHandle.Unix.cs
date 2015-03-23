@@ -13,11 +13,6 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : this(ownsHandle)
         {
-            long longHandle = (long)preexistingHandle;
-            if (longHandle < 0 || longHandle > Int32.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException("preexistingHandle", SR.ArgumentOutOfRange_NeedNonNegInt32Range);
-            }
             SetHandle(preexistingHandle);
         }
 

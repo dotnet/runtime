@@ -39,7 +39,6 @@
     <Compile Include="FileStream\SafeFileHandle.cs" />
     <Compile Include="FileStream\IsAsync.cs" />
     <Compile Include="FileStream\CanTimeout.cs" />
-    <Compile Include="FileStream\CanSeek.Windows.cs" />
     <Compile Include="FileStream\CanSeek.cs" />
     <Compile Include="FileStream\Name.cs" />
     <Compile Include="FileStream\CanWrite.cs" />
