@@ -78,6 +78,8 @@ namespace Security
     inline bool CanLoadFromRemoteSources();
 #endif // FEATURE_CAS_POLICY
 
+    BOOL IsTransparencyEnforcementEnabled();
+
     BOOL BypassSecurityChecksForProfiler(MethodDesc *pMD);
     inline BOOL CanCallUnmanagedCode(Module *pModule);
     inline BOOL CanAssert(Module *pModule);

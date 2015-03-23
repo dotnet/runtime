@@ -44,6 +44,23 @@ IPEFileSecurityDescriptor* Security::CreatePEFileSecurityDescriptor(AppDomain* p
 }
 #endif
 
+BOOL Security::IsTransparencyEnforcementEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_CORECLR
+    if (GetAppDomain()->IsTransparencyEnforcementDisabled())
+        return FALSE;
+#endif
+
+#ifdef _DEBUG
+    if (g_pConfig->DisableTransparencyEnforcement())
+        return FALSE;
+#endif
+
+    return TRUE;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // Determine if security checks should be bypassed for a method because the method is
