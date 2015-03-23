@@ -2936,7 +2936,21 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         return (m_dwFlags & ENABLE_ASSEMBLY_LOADFILE);
-     }
+    }
+
+    void DisableTransparencyEnforcement()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_dwFlags |= DISABLE_TRANSPARENCY_ENFORCEMENT;
+    }
+
+    BOOL IsTransparencyEnforcementDisabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (m_dwFlags & DISABLE_TRANSPARENCY_ENFORCEMENT);
+    }
 #endif // defined(FEATURE_CORECLR)
 
     void SetPassiveDomain()
@@ -3997,6 +4011,7 @@ public:
 #ifdef FEATURE_CORECLR
         ENABLE_SKIP_PLAT_CHECKS         = 0x200000, // Skip various assembly checks (like platform check)
         ENABLE_ASSEMBLY_LOADFILE        = 0x400000, // Allow Assembly.LoadFile in CoreCLR
+        DISABLE_TRANSPARENCY_ENFORCEMENT= 0x800000, // Disable enforcement of security transparency rules
 #endif        
     };
 

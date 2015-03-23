@@ -12441,6 +12441,9 @@ void MethodTableBuilder::VerifyInheritanceSecurity()
     if (IsInterface())
         return;
 
+    if (!Security::IsTransparencyEnforcementEnabled())
+        return;
+
     // If we have a non-interface class, then do inheritance security
     // checks on it. The check starts by checking for inheritance
     // permission demands on the current class. If these first checks
