@@ -65,26 +65,19 @@ protected:
     // because the context pointers below may point up to these 
     // fields.
     //
-    ULONG64 m_CaptureRdi;
-    ULONG64 m_CaptureRsi;
-    ULONG64 m_CaptureRbx;
-    ULONG64 m_CaptureRbp;
-    ULONG64 m_CaptureR12;
-    ULONG64 m_CaptureR13;
-    ULONG64 m_CaptureR14;
-    ULONG64 m_CaptureR15;
+    CalleeSavedRegisters m_Capture;
     
     // context pointers for preserved registers
-    PTR_ULONG64 m_pRdi;
-    PTR_ULONG64 m_pRsi;
-    PTR_ULONG64 m_pRbx;
-    PTR_ULONG64 m_pRbp;
-    PTR_ULONG64 m_pR12;
-    PTR_ULONG64 m_pR13;
-    PTR_ULONG64 m_pR14;
-    PTR_ULONG64 m_pR15;
+    CalleeSavedRegistersPointers m_Ptrs;
 
     PTR_TADDR _pRetAddr;
+
+#ifdef FEATURE_PAL
+    // On PAL, we don't always have the context pointers available due to
+    // a limitation of an unwinding library. In such case, preserve
+    // the unwound values.
+    CalleeSavedRegisters m_Unwound;
+#endif
 };
 
 /********************************************************************/
@@ -126,9 +119,6 @@ struct LazyMachState : public MachState
     ULONG64 m_CaptureRsp;
 };
 
-// rdi, rsi, rbx, rbp, r12, r13, r14, r15 
-#define NUM_NONVOLATILE_CONTEXT_POINTERS 8 
-
 inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 {
     LIMITED_METHOD_CONTRACT;
@@ -142,31 +132,26 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
     this->m_Rip = copy->m_Rip;
     this->m_Rsp = copy->m_Rsp;
 
+#ifdef FEATURE_PAL
+    this->m_Unwound = copy->m_Unwound;
+#endif
+
     // Capture* has already been set, so there is no need to touch it
 
-    // loop over the nonvolatile context pointers for 
-    // rdi, rsi, rbx, rbp, r12, r13, r14, r15 and make
+    // loop over the nonvolatile context pointers and make 
     // sure to properly copy interior pointers into the 
     // new struct
     
-    PULONG64* pSrc = &copy->m_pRdi;
-    PULONG64* pDst = &this->m_pRdi;
+    PULONG64* pSrc = (PULONG64 *)&copy->m_Ptrs;
+    PULONG64* pDst = (PULONG64 *)&this->m_Ptrs;
 
     const PULONG64 LowerBoundDst = (PULONG64) this;
     const PULONG64 LowerBoundSrc = (PULONG64) copy;
 
-    const PULONG64 UpperBoundSrc = (PULONG64) (((BYTE*)LowerBoundSrc) + sizeof(*copy) - sizeof(_pRetAddr));
+    const PULONG64 UpperBoundSrc = (PULONG64) ((BYTE*)LowerBoundSrc + sizeof(*copy));
 
-#ifdef _DEBUG
-    int count = 0;
-#endif // _DEBUG
-
-    while (((PULONG64)pSrc) < UpperBoundSrc)
+    for (int i = 0; i < NUM_CALLEE_SAVED_REGISTERS; i++)
     {
-#ifdef _DEBUG
-        count++;
-#endif // _DEBUG
-        
         PULONG64 valueSrc = *pSrc++;
 
         if ((LowerBoundSrc <= valueSrc) && (valueSrc < UpperBoundSrc))
@@ -177,8 +162,6 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 
         *pDst++ = valueSrc;
     }
-
-    CONSISTENCY_CHECK_MSGF(count == NUM_NONVOLATILE_CONTEXT_POINTERS, ("count != NUM_NONVOLATILE_CONTEXT_POINTERS, actually = %d", count));
 
     // this has to be last because we depend on write ordering to 
     // synchronize the race implicit in updating this struct
