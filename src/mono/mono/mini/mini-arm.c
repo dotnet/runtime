@@ -4313,6 +4313,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			case OP_ATOMIC_LOAD_R4:
 				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
+				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
 				ARM_FLDS (code, vfp_scratch1, ARMREG_LR, 0);
 				ARM_CVTS (code, ins->dreg, vfp_scratch1);
 				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
