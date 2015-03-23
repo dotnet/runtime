@@ -8288,6 +8288,8 @@ DECLARE_API(u)
     return Status;
 }
 
+#endif // FEATURE_PAL
+
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -8340,9 +8342,14 @@ DECLARE_API(DumpLog)
     {
         if (g_bDacBroken)
         {
+#ifdef FEATURE_PAL
+            ExtOut("No stress log address. DAC is broken; can't get it\n");
+            return E_FAIL;
+#else
             // Try to find stress log symbols
             DWORD_PTR dwAddr = GetValueFromExpression(MAIN_CLR_MODULE_NAME_A "!StressLog::theLog");
             StressLogAddress = dwAddr;        
+#endif
         }
         else if (g_sos->GetStressLogAddress(&StressLogAddress) != S_OK)
         {
@@ -8938,7 +8945,6 @@ DECLARE_API(Token2EE)
     return Status;
 }
 
-
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -9065,6 +9071,8 @@ DECLARE_API(Name2EE)
  
     return Status;
 }
+
+#ifndef FEATURE_PAL
 
 #ifndef FEATURE_PAL
 DECLARE_API(PathTo)

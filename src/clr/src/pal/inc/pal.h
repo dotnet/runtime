@@ -4328,20 +4328,6 @@ PAL_NormalizeStringExW(
     OUT LPWSTR lpDestStr,
     IN int     cchDest);
 
-
-PALIMPORT
-int
-PALAPI
-PAL_FormatDateW(
-    IN LPCWSTR   lpLocaleName,
-    IN LPCWSTR   lpFormat,
-    IN BOOL fUseUTC,
-    IN BOOL fUseCustomTz,
-    IN int tzOffsetSeconds,
-    IN LPSYSTEMTIME lpTime,    
-    OUT LPWSTR lpDestStr,
-    IN int     cchDest);
-
 PALIMPORT
 int
 PALAPI

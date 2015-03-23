@@ -74,6 +74,13 @@ public:
     HRESULT GetSymbolOptions(
         PULONG options);
 
+    HRESULT GetNameByOffset(
+        ULONG64 offset,
+        PSTR nameBuffer,
+        ULONG nameBufferSize,
+        PULONG nameSize,
+        PULONG64 displacement);
+
     HRESULT GetNumberModules(
         PULONG loaded,
         PULONG unloaded);

@@ -252,6 +252,72 @@ DebugClient::GetSymbolOptions(
 }
 
 HRESULT 
+DebugClient::GetNameByOffset(
+    ULONG64 offset,
+    PSTR nameBuffer,
+    ULONG nameBufferSize,
+    PULONG nameSize,
+    PULONG64 displacement)
+{
+    HRESULT hr = E_FAIL;
+    ULONG64 disp = 0;
+    std::string str;
+
+    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    if (target.IsValid())
+    {
+        lldb::SBAddress address = target.ResolveLoadAddress(offset);
+        if (address.IsValid())
+        {
+            lldb::SBModule module = address.GetModule();
+            if (module.IsValid())
+            {
+                hr = S_OK;
+
+                lldb::SBFileSpec file = module.GetFileSpec();
+                if (file.IsValid())
+                {
+                    str.append(file.GetFilename());
+                }
+
+                lldb::SBSymbol symbol = address.GetSymbol();
+                if (symbol.IsValid())
+                {
+                    lldb::SBAddress startAddress = symbol.GetStartAddress();
+                    disp = address.GetOffset() - startAddress.GetOffset();
+
+                    const char *name = symbol.GetName();
+                    if (name)
+                    {
+                        if (file.IsValid())
+                        {
+                            str.append("!");
+                        }
+                        str.append(name);
+                    }
+                }
+
+                str.append(1, '\0');
+            }
+        }
+    }
+
+    if (nameSize)
+    {
+        *nameSize = str.length();
+    }
+    if (nameBuffer)
+    {
+        str.copy(nameBuffer, nameBufferSize);
+    }
+    if (displacement)
+    {
+        *displacement = disp;
+    }
+    return hr;
+}
+
+HRESULT 
 DebugClient::GetNumberModules(
 PULONG loaded,
 PULONG unloaded)
@@ -698,13 +764,17 @@ DebugClient::GetExpression(
     {
         return E_FAIL;
     }
-    HRESULT hr = GetExpression(frame, exp, result);
+    // To be compatible with windbg/dbgeng, we need to emulate the default
+    // hex radix (because sos prints addresses and other hex values without
+    // the 0x) by first prepending 0x and if that fails use the actual
+    // undecorated expression.
+    std::string str;
+    str.append("0x");
+    str.append(exp);
+    HRESULT hr = GetExpression(frame, str.c_str(), result);
     if (hr != S_OK)
     {
-        std::string str;
-        str.append("0x");
-        str.append(exp);
-        hr = GetExpression(frame, str.c_str(), result);
+        hr = GetExpression(frame, exp, result);
     }
     return hr;
 }
