@@ -134,21 +134,22 @@ endif
         ; So, if m_pReg points into the MachState, we need to update
         ; the register here.  That's what this macro does.
         ;
-RestoreReg macro reg
-        lea     rax, [rcx + OFFSETOF__MachState__m_Capture&reg]
-        mov     rdx, [rcx + OFFSETOF__MachState__m_p&reg]
+RestoreReg macro reg, regnum
+        lea     rax, [rcx + OFFSETOF__MachState__m_Capture + 8 * regnum]
+        mov     rdx, [rcx + OFFSETOF__MachState__m_Ptrs + 8 * regnum]
         cmp     rax, rdx
         cmove   reg, [rax]
         endm
 
-        RestoreReg Rdi
-        RestoreReg Rsi
-        RestoreReg Rbx
-        RestoreReg Rbp
-        RestoreReg R12
-        RestoreReg R13
-        RestoreReg R14
-        RestoreReg R15
+        ; regnum has to match ENUM_CALLEE_SAVED_REGISTERS macro
+        RestoreReg Rdi, 0
+        RestoreReg Rsi, 1
+        RestoreReg Rbx, 2
+        RestoreReg Rbp, 3
+        RestoreReg R12, 4
+        RestoreReg R13, 5
+        RestoreReg R14, 6
+        RestoreReg R15, 7
 
         xor     eax, eax
         ret

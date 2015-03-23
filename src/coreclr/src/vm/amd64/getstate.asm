@@ -64,14 +64,14 @@ LEAF_ENTRY LazyMachStateCaptureState, _TEXT
 
         mov     rdx, [rsp]      ; get the return address
         
-        mov     [rcx + OFFSETOF__MachState__m_CaptureRdi], rdi
-        mov     [rcx + OFFSETOF__MachState__m_CaptureRsi], rsi
-        mov     [rcx + OFFSETOF__MachState__m_CaptureRbx], rbx
-        mov     [rcx + OFFSETOF__MachState__m_CaptureRbp], rbp
-        mov     [rcx + OFFSETOF__MachState__m_CaptureR12], r12
-        mov     [rcx + OFFSETOF__MachState__m_CaptureR13], r13
-        mov     [rcx + OFFSETOF__MachState__m_CaptureR14], r14
-        mov     [rcx + OFFSETOF__MachState__m_CaptureR15], r15
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 0*8], rdi
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 1*8], rsi
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 2*8], rbx
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 3*8], rbp
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 4*8], r12
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 5*8], r13
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 6*8], r14
+        mov     [rcx + OFFSETOF__MachState__m_Capture + 7*8], r15
 
         mov     qword ptr [rcx + OFFSETOF__MachState___pRetAddr], 0
 
