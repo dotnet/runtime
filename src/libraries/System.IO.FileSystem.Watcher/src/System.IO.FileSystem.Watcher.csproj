@@ -63,6 +63,15 @@
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreServices.cs" >
+      <Link>Common\Interop\OSX\Interop.CoreServices.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs" >
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
