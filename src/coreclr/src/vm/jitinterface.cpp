@@ -3145,10 +3145,13 @@ MethodDesc * CEEInfo::GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle)
         return m_pMethodForSecurity_Value;
     }
 
+    MethodDesc * pCallerMethod = (MethodDesc *)callerHandle;
+
     //If the caller is generic, load the open type and then load the field again,  This allows us to
     //differentiate between BadGeneric<T> containing a memberRef for a field of type InaccessibleClass and
     //GoodGeneric<T> containing a memberRef for a field of type T instantiated over InaccessibleClass.
-    MethodDesc * pMethodForSecurity = ((MethodDesc *)callerHandle)->LoadTypicalMethodDefinition();
+    MethodDesc * pMethodForSecurity = pCallerMethod->IsILStub() ? 
+        pCallerMethod : pCallerMethod->LoadTypicalMethodDefinition();
 
     m_hMethodForSecurity_Key = callerHandle;
     m_pMethodForSecurity_Value = pMethodForSecurity;
