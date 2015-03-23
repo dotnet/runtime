@@ -7,6 +7,7 @@ using System.Diagnostics;
 namespace System.Linq.Tests.Performance
 {
     // This is not a UnitTests 
+    [Trait("Perf", "true")]
     public class ToArrayToListToDictionaryPerf
     {
         //[Fact]
@@ -16,16 +17,16 @@ namespace System.Linq.Tests.Performance
 
             TimeSpan time = TimeSpan.Zero;
 
-            time = LinqPerformanceCore.MeasureMaterialization<int>(array, 1000);
+            time = LinqPerformanceCore.MeasureMaterializationToArray<int>(array, 1000);
             LinqPerformanceCore.WriteLine("ToArray_OnRawArray_Performance: {0}ms", time.TotalMilliseconds);
 
-            time = LinqPerformanceCore.MeasureMaterialization<int>(new LinqPerformanceCore.EnumerableWrapper<int>(array), 1000);
+            time = LinqPerformanceCore.MeasureMaterializationToArray<int>(new LinqPerformanceCore.EnumerableWrapper<int>(array), 1000);
             LinqPerformanceCore.WriteLine("ToArray_OnEnumerable_Performance: {0}ms", time.TotalMilliseconds);
 
-            time = LinqPerformanceCore.MeasureMaterialization<int>(new LinqPerformanceCore.ReadOnlyCollectionWrapper<int>(array), 1000);
+            time = LinqPerformanceCore.MeasureMaterializationToArray<int>(new LinqPerformanceCore.ReadOnlyCollectionWrapper<int>(array), 1000);
             LinqPerformanceCore.WriteLine("ToArray_OnReadOnlyCollection_Performance: {0}ms", time.TotalMilliseconds);
 
-            time = LinqPerformanceCore.MeasureMaterialization<int>(new LinqPerformanceCore.CollectionWrapper<int>(array), 1000);
+            time = LinqPerformanceCore.MeasureMaterializationToArray<int>(new LinqPerformanceCore.CollectionWrapper<int>(array), 1000);
             LinqPerformanceCore.WriteLine("ToArray_OnCollection_Performance: {0}ms", time.TotalMilliseconds);
         }
 

@@ -7,6 +7,7 @@ using System.Diagnostics;
 namespace System.Linq.Tests.Performance
 {
     // This is not a UnitTests 
+    [Trait("Perf", "true")]
     public class CastPerf
     {
         private class BaseClass
