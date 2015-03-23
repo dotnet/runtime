@@ -46,10 +46,7 @@ namespace System.Linq.Parallel
                 double sum = 0.0;
                 while (enumerator.MoveNext())
                 {
-                    checked
-                    {
-                        sum += enumerator.Current;
-                    }
+                    sum += enumerator.Current;
                 }
 
                 return sum;

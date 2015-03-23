@@ -45,6 +45,14 @@ namespace Test
             }
         }
 
+        [Fact]
+        public static void FloatLimitationTest()
+        {
+            float[] elements = new[] { 16777220F, 1F, 1F, 1F, 1F, 1F, 1F, };
+            Assert.Equal(16777226F, elements.AsParallel().Sum());
+            Assert.Equal((float?)16777226F, elements.AsParallel().Sum(x => (float?)x));
+        }
+
         private static void RunSumTest1<T>(int count)
         {
             if (typeof(T) == typeof(int))
