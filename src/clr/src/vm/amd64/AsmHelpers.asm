@@ -141,6 +141,7 @@ RestoreReg macro reg, regnum
         cmove   reg, [rax]
         endm
 
+        ; regnum has to match ENUM_CALLEE_SAVED_REGISTERS macro
         RestoreReg Rdi, 0
         RestoreReg Rsi, 1
         RestoreReg Rbx, 2

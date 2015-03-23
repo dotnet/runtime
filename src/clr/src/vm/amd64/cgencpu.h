@@ -195,6 +195,8 @@ struct REGDISPLAY;
 
 #define NUM_ARGUMENT_REGISTERS 6
 
+// The order of registers in this macro is hardcoded in assembly code
+// at number of places
 #define ENUM_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(R12) \
     CALLEE_SAVED_REGISTER(R13) \
@@ -203,7 +205,7 @@ struct REGDISPLAY;
     CALLEE_SAVED_REGISTER(Rbx) \
     CALLEE_SAVED_REGISTER(Rbp)
 
-#define NUM_CALLEE_SAVED_REGISTERS 8
+#define NUM_CALLEE_SAVED_REGISTERS 6
 
 #else // UNIX_AMD64_ABI
 
@@ -215,6 +217,8 @@ struct REGDISPLAY;
 
 #define NUM_ARGUMENT_REGISTERS 4
 
+// The order of registers in this macro is hardcoded in assembly code
+// at number of places
 #define ENUM_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(Rdi) \
     CALLEE_SAVED_REGISTER(Rsi) \
@@ -239,6 +243,12 @@ struct ArgumentRegisters {
 typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
 struct CalleeSavedRegisters {
     #define CALLEE_SAVED_REGISTER(regname) INT_PTR regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+    #undef CALLEE_SAVED_REGISTER
+};
+
+struct CalleeSavedRegistersPointers {
+    #define CALLEE_SAVED_REGISTER(regname) PTR_TADDR p##regname;
     ENUM_CALLEE_SAVED_REGISTERS();
     #undef CALLEE_SAVED_REGISTER
 };

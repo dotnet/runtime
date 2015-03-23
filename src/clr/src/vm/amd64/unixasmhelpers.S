@@ -68,8 +68,8 @@ DoRestore:
         mov     rdx, [rdi + OFFSETOF__MachState__m_Ptrs + 8 * regnum]; \
         cmp     rax, rdx; \
         cmove   reg, [rax];
-// .endm
 
+        // regnum has to match ENUM_CALLEE_SAVED_REGISTERS macro
         RestoreReg(R12, 0)
         RestoreReg(R13, 1)
         RestoreReg(R14, 2)
