@@ -4592,12 +4592,6 @@ ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternalType (MonoMeth
 	return mono_method_get_object (mono_domain_get (), method, klass);
 }
 
-ICALL_EXPORT MonoReflectionMethod*
-ves_icall_System_Reflection_MethodBase_GetMethodFromHandleInternal (MonoMethod *method)
-{
-	return mono_method_get_object (mono_domain_get (), method, NULL);
-}
-
 ICALL_EXPORT MonoReflectionMethodBody*
 ves_icall_System_Reflection_MethodBase_GetMethodBodyInternal (MonoMethod *method)
 {
