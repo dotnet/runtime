@@ -282,9 +282,9 @@ namespace System.IO
                 // Get the length of the file as reported by the OS
                 long length = SysCall<int, int>((fd, _, __) =>
                 {
-                    Interop.libc.structStat stat;
-                    int result = Interop.libc.fstat(fd, out stat);
-                    return result >= 0 ? stat.st_size : result;
+                    Interop.libcoreclr.fileinfo fileinfo;
+                    int result = Interop.libcoreclr.GetFileInformationFromFd(fd, out fileinfo);
+                    return result >= 0 ? fileinfo.size : result;
                 });
 
                 // But we may have buffered some data to be written that puts our length
