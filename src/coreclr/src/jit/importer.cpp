@@ -8178,7 +8178,7 @@ GenTreePtr Compiler::impCastClassOrIsInstToTree(GenTreePtr op1, GenTreePtr op2, 
     //             op1Copy CNS_INT
     //                      null
     //                      
-    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewIconNode(0, TYP_REF));
+    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewIconNode(0, TYP_I_IMPL));  
 
     //
     // expand the true and false trees for the condMT
@@ -9374,8 +9374,8 @@ RET:
                     {
                         Verify(tiRetVal.IsType(arrayElemTi.GetType()), "bad array");
                     }
-                    tiRetVal.NormaliseForStack();
                 }
+                tiRetVal.NormaliseForStack();
             }
 ARR_LD_POST_VERIFY:
    
