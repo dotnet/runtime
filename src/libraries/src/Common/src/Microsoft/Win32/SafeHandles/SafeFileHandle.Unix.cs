@@ -16,7 +16,6 @@ namespace Microsoft.Win32.SafeHandles
         private SafeFileHandle(bool ownsHandle)
             : base(s_invalidHandle, ownsHandle)
         {
-            handle = s_invalidHandle; // TODO: remove this once base implementation correctly sets it
         }
 
         /// <summary>Opens the specified file with the requested flags and mode.</summary>
