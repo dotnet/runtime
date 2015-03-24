@@ -131,14 +131,12 @@ namespace System.Linq.Tests
             var originalList = original.ToList();
             var distinctList = originalList.Distinct().ToList();
 
-            // Ensure the result doesn't contain duplicates; sort it first to make this easier.
-            // Notice that we assume the correctness of OrderBy() here, which is tested
-            // in another unit.
-            distinctList = distinctList.OrderBy(t => t).ToList();
-            for (var i = 0; i < distinctList.Count - 1; i++)
+            // Ensure the result doesn't contain duplicates.
+            var hashSet = new HashSet<T>();
+            foreach (var i in distinctList)
             {
-                Assert.False(distinctList[i].Equals(distinctList[i + 1]),
-                    "There are some duplicates in the result of Distinct().");
+                Assert.False(hashSet.Contains(i), "Found a duplicate in the result of Distinct(): " + i);
+                hashSet.Add(i);
             }
 
             // Ensure that every element in 'originalList' exists in 'distinctList'.
