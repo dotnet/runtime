@@ -18,7 +18,7 @@
 #ifdef HOST_WIN32
 #include <windows.h>
 #include <process.h>
-#include <Winbase.h>
+#include <winbase.h>
 #endif
 
 #if defined(_POSIX_VERSION)
