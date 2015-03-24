@@ -649,7 +649,7 @@ namespace System.Diagnostics.ProcessTests
                 Assert.Equal(ProcessName, process.StartInfo.FileName);
 
                 process.Kill();
-                process.WaitForExit(WaitInMS);
+                Assert.True(process.WaitForExit(WaitInMS));
             }
 
             {
@@ -659,7 +659,7 @@ namespace System.Diagnostics.ProcessTests
                 Assert.Throws<System.InvalidOperationException>(() => (process.StartInfo = new ProcessStartInfo()));
 
                 process.Kill();
-                process.WaitForExit(WaitInMS);
+                Assert.True(process.WaitForExit(WaitInMS));
             }
 
             {
