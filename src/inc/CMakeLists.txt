@@ -63,4 +63,10 @@ add_library(corguids ${CORGUIDS_SOURCES})
 
 # Binplace the inc files for packaging later.
 
-install (FILES cor.h corhdr.h corinfo.h corjit.h DESTINATION inc)
+install (FILES cor.h
+               corhdr.h
+               corinfo.h
+               corjit.h
+               opcode.def
+               openum.h
+               DESTINATION inc)
