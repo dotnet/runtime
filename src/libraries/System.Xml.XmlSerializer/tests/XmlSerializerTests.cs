@@ -158,6 +158,7 @@ public class XmlSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<string>("  a b  ", "<?xml version=\"1.0\"?>\r\n<string>  a b  </string>"), "  a b  ");
         Assert.StrictEqual(SerializeAndDeserialize<string>(null, "<?xml version=\"1.0\"?>\r\n<string d1p1:nil=\"true\" xmlns:d1p1=\"http://www.w3.org/2001/XMLSchema-instance\" />"), null);
         Assert.StrictEqual(SerializeAndDeserialize<string>("", "<?xml version=\"1.0\"?>\r\n<string />"), "");
+        Assert.StrictEqual(SerializeAndDeserialize<string>(" ", "<?xml version=\"1.0\"?>\r\n<string> </string>"), "");
         Assert.StrictEqual(SerializeAndDeserialize<string>("Hello World! 漢 ñ", "<?xml version=\"1.0\"?>\r\n<string>Hello World! 漢 ñ</string>"), "Hello World! 漢 ñ");
     }
 
