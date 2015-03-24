@@ -4354,8 +4354,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			case OP_ATOMIC_STORE_R4:
 				code = mono_arm_emit_vfp_scratch_save (cfg, code, vfp_scratch1);
+				ARM_ADD_REG_REG (code, ARMREG_LR, ins->inst_basereg, ARMREG_LR);
 				ARM_CVTD (code, vfp_scratch1, ins->sreg1);
-				ARM_FSTS (code, vfp_scratch1, ins->inst_destbasereg, ins->inst_offset);
+				ARM_FSTS (code, vfp_scratch1, ARMREG_LR, 0);
 				code = mono_arm_emit_vfp_scratch_restore (cfg, code, vfp_scratch1);
 				break;
 			case OP_ATOMIC_STORE_R8:
