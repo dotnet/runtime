@@ -1,7 +1,8 @@
 These instructions will lead you through building CoreCLR and running "Hello World" on OS X.
 
-Dependencies
-============
+Environment
+===========
+These instructions assume OS X Yosemite.
 
 CoreCLR has a dependency on CMake for the build. You can download it from [CMake downloads](http://www.cmake.org/download/).
 
