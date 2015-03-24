@@ -29,7 +29,7 @@ namespace System.Diagnostics.ProcessTests
         public void Dispose()
         {
             _process.Kill();
-            _process.WaitForExit(WaitInMS);
+            Assert.True(_process.WaitForExit(WaitInMS));
 
             // Also ensure that there are no open processes with the same name as ProcessName
             foreach (Process p in Process.GetProcessesByName(ProcessName))
@@ -37,7 +37,7 @@ namespace System.Diagnostics.ProcessTests
                 if (!p.HasExited)
                 {
                     p.Kill();
-                    p.WaitForExit(WaitInMS);
+                    Assert.True(p.WaitForExit(WaitInMS));
                 }
             }
         }
@@ -105,7 +105,7 @@ namespace System.Diagnostics.ProcessTests
             p.Start();
             Sleep();
             p.Kill();
-            p.WaitForExit(WaitInMS);
+            Assert.True(p.WaitForExit(WaitInMS));
         }
 
         [Fact]
@@ -151,7 +151,7 @@ namespace System.Diagnostics.ProcessTests
             {
                 Process p = CreateProcess();
                 p.Start();
-                p.WaitForExit(WaitInMS);
+                Assert.True(p.WaitForExit(WaitInMS));
                 Assert.Equal(p.ExitCode, 100);
             }
 
@@ -184,7 +184,7 @@ namespace System.Diagnostics.ProcessTests
             {
                 Process p = CreateProcess();
                 p.Start();
-                p.WaitForExit(WaitInMS);
+                Assert.True(p.WaitForExit(WaitInMS));
                 Assert.True(p.HasExited, "Process_HasExited001 failed");
             }
 
@@ -198,7 +198,7 @@ namespace System.Diagnostics.ProcessTests
                 finally
                 {
                     p.Kill();
-                    p.WaitForExit(WaitInMS);
+                    Assert.True(p.WaitForExit(WaitInMS));
                 }
 
                 Assert.True(p.HasExited, "Process_HasExited003 failed");
