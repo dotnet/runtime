@@ -4,12 +4,62 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.IO.FileSystem.Tests
 {
     public partial class DirectoryInfo_Exists : FileSystemTest
     {
+        [Fact]
+        public void ArgumentExceptionForEmptyPath()
+        {
+            Assert.Throws<ArgumentException>(() => new DirectoryInfo("").Exists);
+        }
+
+        [Fact]
+        public void DotPath()
+        {
+            Assert.True(new DirectoryInfo(Path.Combine(TestDirectory, ".")).Exists);
+        }
+
+        [Fact]
+        public void DotDotPath()
+        {
+            Assert.True(new DirectoryInfo(Path.Combine(TestDirectory, Path.GetRandomFileName(), ".." )).Exists);
+        }
+
+        [Fact]
+        public void NonExistantDirectories()
+        {
+            Assert.False(new DirectoryInfo("Da drar vi til fjells").Exists);
+        }
+
+        [Fact]
+        public void BadDriveLetterFormat()
+        {
+            Assert.Throws<NotSupportedException>(() => new DirectoryInfo("xx:\\"));
+        }
+
+        [Fact]
+        public void PathTooLong()
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 500; i++)
+            {
+                sb.Append(i);
+            }
+
+            Assert.Throws<PathTooLongException>(() => new DirectoryInfo(sb.ToString()));
+        }
+
+        [Fact]
+        public void CaseInsensitivity()
+        {
+            Assert.True(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);
+            Assert.True(new DirectoryInfo(TestDirectory.ToLowerInvariant()).Exists);
+        }
+
         [Fact]
         public void TrueForCreatedDirectory()
         {
