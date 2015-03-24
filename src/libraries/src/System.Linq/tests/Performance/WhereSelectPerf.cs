@@ -35,9 +35,21 @@ namespace System.Linq.Tests.Performance
         }
 
         //[Fact]
+        public void SelectSelect_Performance()
+        {
+            RunTestGroup("SelectSelect", col => col.Select(o => o + 1).Select(o => o - 1));
+        }
+
+        //[Fact]
         public void Where_Performance()
         {
             RunTestGroup("Where", col => col.Where(o => o >= 0));
+        }
+
+        //[Fact]
+        public void WhereWhere_Performance()
+        {
+            RunTestGroup("WhereWhere", col => col.Where(o => o >= 0).Where(o => o >= -1));
         }
 
         //[Fact]
