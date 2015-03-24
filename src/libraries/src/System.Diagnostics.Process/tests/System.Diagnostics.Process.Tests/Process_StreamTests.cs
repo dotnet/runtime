@@ -32,7 +32,7 @@ namespace System.Diagnostics.ProcessTests
             p.StartInfo.RedirectStandardError = true;
             p.Start();
             Assert.Equal(p.StandardError.ReadToEnd(), "ProcessTest_ConsoleApp.exe error stream\r\n");
-            p.WaitForExit(WaitInMS);
+            Assert.True(p.WaitForExit(WaitInMS));
         }
 
         [Fact]
@@ -58,7 +58,7 @@ namespace System.Diagnostics.ProcessTests
             p.StartInfo.RedirectStandardOutput = true;
             p.Start();
             string s = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(WaitInMS);
+            Assert.True(p.WaitForExit(WaitInMS));
             Assert.Equal(s, "ProcessTest_ConsoleApp.exe started\r\nProcessTest_ConsoleApp.exe closed\r\n");
         }
 
@@ -106,6 +106,7 @@ namespace System.Diagnostics.ProcessTests
                 string str = "This string should come as output";
                 writer.WriteLine(str);
             }
+            Assert.True(p.WaitForExit(WaitInMS));
         }
     }
 }
