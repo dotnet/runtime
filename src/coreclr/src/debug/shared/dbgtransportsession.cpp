@@ -1107,8 +1107,9 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
 
-    // TODO: VirtualQuery from PAL doesn't seem to provide correct result for DAC globals on Linux.
-    // We need to look into it, but for now I just disable these checks on Unix
+    // VirtualQuery doesn't know much about memory allocated outside of PAL's VirtualAlloc 
+    // that's why on Unix we can't rely on in to detect invalid memory reads  
+    // TODO: We need to find and use appropriate memory map API on other operating systems. 
 #ifndef FEATURE_PAL
     do 
     {
