@@ -47,6 +47,7 @@
     <ProjectReference Include="..\src\System.Threading.Tasks.Parallel.csproj">
       <Project>{A6BA5DF2-772E-4DA1-BC2D-89FF4A21EE4F}</Project>
       <Name>System.Threading.Tasks.Parallel</Name>
+      <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
   <!-- References are resolved from packages.config -->

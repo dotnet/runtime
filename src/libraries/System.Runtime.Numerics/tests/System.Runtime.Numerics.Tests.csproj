@@ -26,6 +26,7 @@
     <ProjectReference Include="..\src\System.Runtime.Numerics.csproj">
       <Project>{d2c99d27-0bef-4319-adb3-05cbeba8f69b}</Project>
       <Name>System.Runtime.Numerics</Name>
+      <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

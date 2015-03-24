@@ -7,6 +7,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Diagnostics.TraceSource</RootNamespace>
     <AssemblyName>System.Diagnostics.TraceSource</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
     <ProjectGuid>{5380420C-EB1D-4C53-9CFC-916578C18334}</ProjectGuid>
   </PropertyGroup>

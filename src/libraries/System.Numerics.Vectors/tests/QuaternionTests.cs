@@ -967,7 +967,7 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue(1002)]
+        [ActiveIssue("NullReferenceException")]
         public unsafe void QuaternionFieldOffsetTest()
         {
             Quaternion* ptr = (Quaternion*)0;
