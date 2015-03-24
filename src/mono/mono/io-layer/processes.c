@@ -2434,7 +2434,8 @@ mono_processes_cleanup (void)
 {
 	struct MonoProcess *mp;
 	struct MonoProcess *prev = NULL;
-	GSList *finished, *l;
+	GSList *finished = NULL;
+	GSList *l;
 	gpointer unref_handle;
 
 	DEBUG ("%s", __func__);
