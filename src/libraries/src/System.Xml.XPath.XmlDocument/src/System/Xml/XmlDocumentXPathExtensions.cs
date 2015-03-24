@@ -2,10 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Xml.XPath;
 
-namespace System.Xml.XPath
+namespace System.Xml
 {
-    public static class XmlDocumentExtensions
+    public static class XmlDocumentXPathExtensions
     {
         private class XmlDocumentNavigable : IXPathNavigable
         {
