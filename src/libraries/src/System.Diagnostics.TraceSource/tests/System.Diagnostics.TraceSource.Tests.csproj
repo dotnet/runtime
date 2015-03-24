@@ -15,6 +15,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="BooleanSwitchClassTests.cs" />
     <Compile Include="DefaultTraceListenerClassTests.cs" />
     <Compile Include="EventTypeFilterClassTests.cs" />
