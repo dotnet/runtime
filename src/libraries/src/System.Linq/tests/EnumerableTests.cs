@@ -85,11 +85,6 @@ namespace System.Linq.Tests
             Assert.Equal(2, new Stack<int>(two).Average());
             Assert.Equal(4.0/3, new Stack<int>(fourByThree).Average());
             Assert.Equal(1.0/3, new Stack<int>(oneByThree).Average());
-            // 3. Queue
-            Assert.Equal(1, new Queue<int>(one).Average());
-            Assert.Equal(2, new Queue<int>(two).Average());
-            Assert.Equal(4.0/3, new Queue<int>(fourByThree).Average());
-            Assert.Equal(1.0/3, new Queue<int>(oneByThree).Average());
         }
 
         [Fact]
@@ -110,13 +105,12 @@ namespace System.Linq.Tests
             Assert.False(array.Any(i => i > 10));
         }
 
-        private void FindCountAndValidate<T>(IEnumerable<T> enumerable, int expectedCount)
+        private void CountAndValidate<T>(IEnumerable<T> enumerable, int expectedCount)
         {
             Assert.Equal(expectedCount, enumerable.Count());
             Assert.Equal(expectedCount, enumerable.ToList().Count());
             Assert.Equal(expectedCount, enumerable.ToArray().Count());
             Assert.Equal(expectedCount, new Stack<T>(enumerable).Count());
-            Assert.Equal(expectedCount, new Queue<T>(enumerable).Count());
         }
 
         [Fact]
@@ -124,11 +118,11 @@ namespace System.Linq.Tests
         {
             const int count = 100;
             var range = Enumerable.Range(1, count).ToArray();
-            FindCountAndValidate(range, count);
-            FindCountAndValidate(range.Select<int, long>(i => i), count);
-            FindCountAndValidate(range.Select<int, float>(i => i), count);
-            FindCountAndValidate(range.Select<int, double>(i => i), count);
-            FindCountAndValidate(range.Select<int, decimal>(i => i), count);
+            CountAndValidate(range, count);
+            CountAndValidate(range.Select<int, long>(i => i), count);
+            CountAndValidate(range.Select<int, float>(i => i), count);
+            CountAndValidate(range.Select<int, double>(i => i), count);
+            CountAndValidate(range.Select<int, decimal>(i => i), count);
         }
 
         private void FindDistinctAndValidate<T>(IEnumerable<T> original)
@@ -140,35 +134,18 @@ namespace System.Linq.Tests
             // Ensure the result doesn't contain duplicates; sort it first to make this easier.
             // Notice that we assume the correctness of OrderBy() here, which is tested
             // in another unit.
+            distinctList = distinctList.OrderBy(t => t).ToList();
             for (var i = 0; i < distinctList.Count - 1; i++)
             {
                 Assert.False(distinctList[i].Equals(distinctList[i + 1]),
                     "There are some duplicates in the result of Distinct().");
             }
 
-            // Ensure that every element in 'array' exists in 'distinctList'.
-            foreach (var i in originalList)
-            {
-                var correct = false;
-                foreach (var j in distinctList)
-                {
-                    if (i.Equals(j))
-                        correct = true;
-                }
-                Assert.True(correct, "Some elements in the original enumerable are missing in the result of Distinct().");
-            }
+            // Ensure that every element in 'originalList' exists in 'distinctList'.
+            Assert.DoesNotContain(originalList, x => !distinctList.Contains(x));
 
             // Ensure that every element in 'distinctList' exists in 'originalList'.
-            foreach (var i in distinctList)
-            {
-                var correct = false;
-                foreach (var j in originalList)
-                {
-                    if (i.Equals(j))
-                        correct = true;
-                }
-                Assert.True(correct, "Some elements in the result of Distinct() don't xist in the given enumerable.");
-            }
+            Assert.DoesNotContain(distinctList, x => !originalList.Contains(x));
         }
 
         [Fact]
