@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -33,6 +33,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <!-- Rewritten -->
+    <Compile Include="DirectoryInfo\Create.cs" />
+    <Compile Include="DirectoryInfo\CreateSubdirectory_str.cs" />
+    <Compile Include="DirectoryInfo\ctor_str.cs" />
+    <Compile Include="DirectoryInfo\Delete.cs" />
+    <Compile Include="DirectoryInfo\Delete_bool.cs" />
     <Compile Include="DirectoryInfo\Exists.cs" />
     <Compile Include="FileStream\Flush.Sharing.cs" />
     <Compile Include="FileStream\Flush_toDisk.cs" />
@@ -72,6 +78,136 @@
     <Compile Include="UnseekableFileStream.cs" />
     <Compile Include="FSAssert.cs" />
     <Compile Include="FileSystemTest.cs" />
+    
+    <!-- Ported -->
+
+    <Compile Include="PortedCommon\CommonUtilities.cs" />
+    <Compile Include="PortedCommon\DllImports.cs" />
+    <Compile Include="PortedCommon\EnumerableUtils.cs" />
+    <Compile Include="PortedCommon\IOInputs.cs" />
+    <Compile Include="PortedCommon\IOServices.cs" />
+    <Compile Include="PortedCommon\PathInfo.cs" />
+    <Compile Include="PortedCommon\ReparsePointUtilities.cs" />
+    <Compile Include="PortedCommon\TemporaryDirectory.cs" />
+    <Compile Include="PortedCommon\TemporaryFile.cs" />
+    <Compile Include="PortedCommon\TemporaryFileSystemItem.cs" />
+    <Compile Include="DirectoryInfo\DirectoryInfo_EnumerableAPIs.cs" />
+    <Compile Include="DirectoryInfo\GetDirectories.cs" />
+    <Compile Include="DirectoryInfo\GetDirectories_str.cs" />
+    <Compile Include="DirectoryInfo\GetDirectories_str_so.cs" />
+    <Compile Include="DirectoryInfo\GetFiles.cs" />
+    <Compile Include="DirectoryInfo\GetFiles_str.cs" />
+    <Compile Include="DirectoryInfo\GetFiles_str_so.cs" />
+    <Compile Include="DirectoryInfo\GetFileSystemInfos.cs" />
+    <Compile Include="DirectoryInfo\GetFileSystemInfos_str.cs" />
+    <Compile Include="DirectoryInfo\Refresh.cs" />
+    <Compile Include="DirectoryInfo\set_Attributes.cs" />
+    <Compile Include="DirectoryInfo\SetCreationTime_dt.cs" />
+    <Compile Include="DirectoryInfo\SetLastAccessTime_dt.cs" />
+    <Compile Include="DirectoryInfo\SetLastWriteTime_dt.cs" />
+    <Compile Include="DirectoryInfo\ToString.cs" />
+    <Compile Include="DirectoryInfo\Extension.cs" />
+    <Compile Include="DirectoryInfo\get_Attributes.cs" />
+    <Compile Include="DirectoryInfo\get_CreationTime.cs" />
+    <Compile Include="DirectoryInfo\get_FullName.cs" />
+    <Compile Include="DirectoryInfo\get_LastAccessTime.cs" />
+    <Compile Include="DirectoryInfo\get_LastWriteTime.cs" />
+    <Compile Include="DirectoryInfo\get_Name.cs" />
+    <Compile Include="DirectoryInfo\get_Parent.cs" />
+    <Compile Include="DirectoryInfo\get_Root.cs" />
+    <Compile Include="DirectoryInfo\GetSetTimes.cs" />
+    <Compile Include="DirectoryInfo\MoveTo_str.cs" />
+    <Compile Include="Directory\GetFiles_str_str_so.cs" />
+    <Compile Include="Directory\GetFileSystemEntries_str.cs" />
+    <Compile Include="Directory\GetFileSystemEntries_str_str.cs" />
+    <Compile Include="Directory\GetLastAccessTime_str.cs" />
+    <Compile Include="Directory\GetLastWriteTime_str.cs" />
+    <Compile Include="Directory\GetSetTimes.cs" />
+    <Compile Include="Directory\IEnumerator_IO_EnumerableAPIs.cs" />
+    <Compile Include="Directory\Modify_FailSafe.cs" />
+    <Compile Include="Directory\Move_str_str.cs" />
+    <Compile Include="Directory\ReparsePoints_MountVolume.cs" />
+    <Compile Include="Directory\SetCreationTime_str_dt.cs" />
+    <Compile Include="Directory\SetCurrentDirectory_dir.cs" />
+    <Compile Include="Directory\SetLastAccessTime_str_dt.cs" />
+    <Compile Include="Directory\SetLastWriteTime_str_dt.cs" />
+    <Compile Include="Directory\Ansichars.cs" />
+    <Compile Include="Directory\CreateDirectory.cs" />
+    <Compile Include="Directory\Delete_MountVolume.cs" />
+    <Compile Include="Directory\Delete_str.cs" />
+    <Compile Include="Directory\Delete_str_bool.cs" />
+    <Compile Include="Directory\Directory_EnumerableAPIs.cs" />
+    <Compile Include="Directory\Exists.cs" />
+    <Compile Include="Directory\GetCreationTime_str.cs" />
+    <Compile Include="Directory\GetCurrentDirectory.cs" />
+    <Compile Include="Directory\GetDirectories_str.cs" />
+    <Compile Include="Directory\GetDirectories_str_str.cs" />
+    <Compile Include="Directory\GetDirectories_str_str_so.cs" />
+    <Compile Include="Directory\GetDirectoryRoot_str.cs" />
+    <Compile Include="Directory\GetFiles_str.cs" />
+    <Compile Include="Directory\GetFiles_str_Str.cs" />
+    <Compile Include="File\Open_str_fm_fa_fs.cs" />
+    <Compile Include="File\OpenRead_str.cs" />
+    <Compile Include="File\OpenText_str.cs" />
+    <Compile Include="File\OpenWrite_str.cs" />
+    <Compile Include="File\ReadAll_all.cs" />
+    <Compile Include="File\ReadAllBytes_Str.cs" />
+    <Compile Include="File\SetAttributes_str_attrs.cs" />
+    <Compile Include="File\SetCreationTime_str_dt.cs" />
+    <Compile Include="File\SetLastAccessTime_str_dt.cs" />
+    <Compile Include="File\SetLastWriteTime_str_dt.cs" />
+    <Compile Include="File\WriteAll_all.cs" />
+    <Compile Include="File\WriteAllBytes_StrBtA.cs" />
+    <Compile Include="File\AppendAll_all.cs" />
+    <Compile Include="File\AppendText_str.cs" />
+    <Compile Include="File\ChangeExtension_str_str.cs" />
+    <Compile Include="File\Copy_str_str.cs" />
+    <Compile Include="File\Copy_str_str_b.cs" />
+    <Compile Include="File\Create_str_i.cs" />
+    <Compile Include="File\CreateText_str.cs" />
+    <Compile Include="File\Delete_str.cs" />
+    <Compile Include="File\Exists_str.cs" />
+    <Compile Include="File\File_EnumerableAPIs.cs" />
+    <Compile Include="File\GetAttributes_str.cs" />
+    <Compile Include="File\GetCreationTime_str.cs" />
+    <Compile Include="File\GetLastAccessTime_str.cs" />
+    <Compile Include="File\GetLastWriteTime_str.cs" />
+    <Compile Include="File\GetSetTimes.cs" />
+    <Compile Include="File\Move_str_str.cs" />
+    <Compile Include="File\Open_str_fm.cs" />
+    <Compile Include="File\Open_str_fm_fa.cs" />
+    <Compile Include="FileInfo\Create.cs" />
+    <Compile Include="FileInfo\Create_str.cs" />
+    <Compile Include="FileInfo\CreateText.cs" />
+    <Compile Include="FileInfo\ctor_str.cs" />
+    <Compile Include="FileInfo\Delete.cs" />
+    <Compile Include="FileInfo\Exists.cs" />
+    <Compile Include="FileInfo\Extension.cs" />
+    <Compile Include="FileInfo\FullName.cs" />
+    <Compile Include="FileInfo\get_Attributes.cs" />
+    <Compile Include="FileInfo\get_CreationTime.cs" />
+    <Compile Include="FileInfo\get_Directory.cs" />
+    <Compile Include="FileInfo\get_DirectoryName.cs" />
+    <Compile Include="FileInfo\get_LastAccessTime.cs" />
+    <Compile Include="FileInfo\get_LastWriteTime.cs" />
+    <Compile Include="FileInfo\get_Length.cs" />
+    <Compile Include="FileInfo\get_Name.cs" />
+    <Compile Include="FileInfo\GetSetTimes.cs" />
+    <Compile Include="FileInfo\MoveTo_str.cs" />
+    <Compile Include="FileInfo\Open_fm.cs" />
+    <Compile Include="FileInfo\Open_fm_fa.cs" />
+    <Compile Include="FileInfo\Open_fm_fa_fs.cs" />
+    <Compile Include="FileInfo\OpenRead.cs" />
+    <Compile Include="FileInfo\OpenText.cs" />
+    <Compile Include="FileInfo\OpenWrite.cs" />
+    <Compile Include="FileInfo\Refresh.cs" />
+    <Compile Include="FileInfo\set_Attributes.cs" />
+    <Compile Include="FileInfo\set_CreationTime_dt.cs" />
+    <Compile Include="FileInfo\ToString.cs" />
+    <Compile Include="FileInfo\AppendText.cs" />
+    <Compile Include="FileInfo\CopyTo_str.cs" />
+    <Compile Include="FileInfo\CopyTo_str_b.cs" />
+    
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Directory\" />
@@ -80,3 +216,4 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
+
