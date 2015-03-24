@@ -127,6 +127,7 @@ namespace System.IO
         {
             Debug.Assert(_eventStream == IntPtr.Zero);
             Debug.Assert(_watcherRunLoop == IntPtr.Zero);
+            Debug.Assert(_callback == null);
 
             // Make sure we only do this if there is a valid directory
             if (String.IsNullOrEmpty(_directory) == false)
@@ -190,6 +191,12 @@ namespace System.IO
             {
                 Interop.CoreFoundation.CFRelease(_eventStream);
                 _eventStream = IntPtr.Zero;
+            }
+
+            // Cleanup the callback
+            if (_callback != null)
+            {
+                _callback = null;
             }
         }
 
