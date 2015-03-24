@@ -12,10 +12,10 @@
 #ifndef _DEBUG_SHIM_
 #define _DEBUG_SHIM_
 
-#include <metahost.h>
 #include "cor.h"
 #include "cordebug.h"
 #include <wchar.h>
+#include <metahost.h>
 
 #define CORECLR_DAC_MODULE_NAME_W W("mscordaccore")
 #define CLR_DAC_MODULE_NAME_W W("mscordacwks")
