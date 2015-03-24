@@ -663,7 +663,7 @@ namespace System.IO
                 //         uint32_t len;
                 //         char     name[]; // length determined by len; at least 1 for required null termination
                 //     };
-                Debug.Assert((_bufferPos + (c_INotifyEventSize + 1)) <= _bufferAvailable);
+                Debug.Assert(_bufferPos + c_INotifyEventSize <= _bufferAvailable);
                 NotifyEvent readEvent;
                 readEvent.wd = BitConverter.ToInt32(_buffer, _bufferPos);
                 readEvent.mask = BitConverter.ToUInt32(_buffer, _bufferPos + 4);       // +4  to get past wd
