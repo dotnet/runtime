@@ -376,6 +376,15 @@ namespace System
                     }
                 }
             }
+
+            public override void Flush()
+            {
+                if (_handle.IsClosed)
+                {
+                    throw __Error.GetFileNotOpen();
+                }
+                base.Flush();
+            }
         }
 
         /// <summary>Provides access to and processing of the terminfo database.</summary>
