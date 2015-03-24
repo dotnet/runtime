@@ -48,7 +48,7 @@ public partial class FileSystemWatcher_4000_Tests
             {
                 File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(i));
             }
-
+            unblockHandler.Set();
             // This time we should not see an error
             Utility.ExpectNoEvent(eventOccured, "error");
         }
