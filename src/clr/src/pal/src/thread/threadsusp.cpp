@@ -282,7 +282,7 @@ CThreadSuspensionInfo::InternalSuspendThreadFromData(
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
                 pthrTarget->suspensionInfo.SetSuspendSignalSent(TRUE);
                 // Send the SIGUSR1 to the target thread and wait for it to post, immediately prior to suspension.
-                nPthreadRet = pthread_kill((pthread_t)pthrTarget->GetThreadId(), SIGUSR1);
+                nPthreadRet = pthread_kill(pthrTarget->GetPThreadSelf(), SIGUSR1);
                 if (nPthreadRet == 0)
                 {
                     if (!fSelfSuspend)
@@ -668,7 +668,7 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
 
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
         pthrTarget->suspensionInfo.SetResumeSignalSent(TRUE);
-        dwPthreadRet = pthread_kill((pthread_t)pthrTarget->GetThreadId(), SIGUSR2);
+        dwPthreadRet = pthread_kill(pthrTarget->GetPThreadSelf(), SIGUSR2);
         if (dwPthreadRet == 0)
         {
             pthrTarget->suspensionInfo.WaitOnResumeSemaphore();
@@ -1763,9 +1763,9 @@ CThreadSuspensionInfo::THREADHandleSuspendNative(CPalThread *pthrTarget)
     }
     
 #if HAVE_PTHREAD_SUSPEND
-    dwPthreadRet = pthread_suspend((pthread_t)pthrTarget->GetThreadId());
+    dwPthreadRet = pthread_suspend(pthrTarget->GetPThreadSelf());
 #elif HAVE_MACH_THREADS
-    dwPthreadRet = thread_suspend(pthread_mach_thread_np((pthread_t)pthrTarget->GetThreadId()));
+    dwPthreadRet = thread_suspend(pthread_mach_thread_np(pthrTarget->GetPThreadSelf()));
 #elif HAVE_PTHREAD_SUSPEND_NP
 #if SELF_SUSPEND_FAILS_WITH_NATIVE_SUSPENSION
     if (pthrTarget->suspensionInfo.GetSelfSusp())
@@ -1775,7 +1775,7 @@ CThreadSuspensionInfo::THREADHandleSuspendNative(CPalThread *pthrTarget)
     else
 #endif // SELF_SUSPEND_FAILS_WITH_NATIVE_SUSPENSION
     {
-        dwPthreadRet = pthread_suspend_np((pthread_t)pthrTarget->GetThreadId());
+        dwPthreadRet = pthread_suspend_np(pthrTarget->GetPThreadSelf());
     }
 #else
     #error "Don't know how to suspend threads on this platform!"
@@ -1839,11 +1839,11 @@ CThreadSuspensionInfo::THREADHandleResumeNative(CPalThread *pthrTarget)
     do
     {
 #if HAVE_PTHREAD_CONTINUE
-        dwPthreadRet = pthread_continue((pthread_t)pthrTarget->GetThreadId());
+        dwPthreadRet = pthread_continue(pthrTarget->GetPThreadSelf());
 #elif HAVE_MACH_THREADS
-        dwPthreadRet = thread_resume(pthread_mach_thread_np((pthread_t)pthrTarget->GetThreadId()));
+        dwPthreadRet = thread_resume(pthread_mach_thread_np(pthrTarget->GetPThreadSelf()));
 #elif HAVE_PTHREAD_CONTINUE_NP
-        dwPthreadRet = pthread_continue_np((pthread_t)pthrTarget->GetThreadId());
+        dwPthreadRet = pthread_continue_np((pthrTarget->GetPThreadSelf());
 #elif HAVE_PTHREAD_RESUME_NP
 #if SELF_SUSPEND_FAILS_WITH_NATIVE_SUSPENSION  
         if (pthrTarget->suspensionInfo.GetSelfSusp())
@@ -1866,7 +1866,7 @@ CThreadSuspensionInfo::THREADHandleResumeNative(CPalThread *pthrTarget)
         else
 #endif // SELF_SUSPEND_FAILS_WITH_NATIVE_SUSPENSION  
         {
-            dwPthreadRet = pthread_resume_np((pthread_t)pthrTarget->GetThreadId());
+            dwPthreadRet = pthread_resume_np(pthrTarget->GetPThreadSelf());
         }
 #else
         #error "Don't know how to resume threads on this platform!"
