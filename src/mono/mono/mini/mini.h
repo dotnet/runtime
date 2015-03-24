@@ -2277,6 +2277,7 @@ gboolean mono_aot_is_pagefault              (void *ptr);
 void     mono_aot_handle_pagefault          (void *ptr);
 void     mono_aot_register_jit_icall        (const char *name, gpointer addr);
 void*    mono_aot_readonly_field_override   (MonoClassField *field);
+guint32  mono_aot_find_method_index         (MonoMethod *method);
 
 /* This is an exported function */
 MONO_API void     mono_aot_register_globals          (gpointer *globals);
