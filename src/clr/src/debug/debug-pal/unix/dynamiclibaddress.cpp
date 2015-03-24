@@ -14,7 +14,8 @@ void *GetDynamicLibraryAddressInProcess(DWORD pid, const char *libraryName)
 {
 
 // We don't have proper API detection in debug-pal
-// that's why so far we'll just assume that we run on OS with ProcFS (which is not true on OS)
+// that's why so far we'll just assume that we run on OS with ProcFS (which is not true on Mac OS)
+// TODO: We need to implement this function for Mac OS
 #define HAVE_PROCFS_CTL 
 #ifdef HAVE_PROCFS_CTL 
 
