@@ -47,7 +47,7 @@ namespace System.Diagnostics.ProcessTests
                     Assert.Equal(p.StandardError.CurrentEncoding.CodePage, Encoding.UTF8.CodePage);
 
                     p.Kill();
-                    p.WaitForExit(WaitInMS);
+                    Assert.True(p.WaitForExit(WaitInMS));
                 }
 
                 {
@@ -67,7 +67,7 @@ namespace System.Diagnostics.ProcessTests
                     Assert.Equal(p.StandardError.CurrentEncoding.CodePage, s_ConsoleEncoding);
 
                     p.Kill();
-                    p.WaitForExit(WaitInMS);
+                    Assert.True(p.WaitForExit(WaitInMS));
                 }
             }
             finally
