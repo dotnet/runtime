@@ -53,9 +53,9 @@ namespace System.IO
             }
 
             // Now copy over relevant read/write/execute permissions from the source to the destination
-            Interop.libc.structStat stat;
-            while (Interop.CheckIo(Interop.libc.stat(sourceFullPath, out stat), sourceFullPath)) ;
-            int newMode = stat.st_mode & (int)Interop.libc.Permissions.Mask;
+            Interop.libcoreclr.fileinfo fileinfo;
+            while (Interop.CheckIo(Interop.libcoreclr.GetFileInformationFromPath(sourceFullPath, out fileinfo), sourceFullPath)) ;
+            int newMode = fileinfo.mode & (int)Interop.libc.Permissions.Mask;
             while (Interop.CheckIo(Interop.libc.chmod(destFullPath, newMode), destFullPath)) ;
         }
 
@@ -318,11 +318,11 @@ namespace System.IO
 
         private bool DirectoryExists(string fullPath, out int errno)
         {
-            Interop.libc.structStat stat;
+            Interop.libcoreclr.fileinfo fileinfo;
             while (true)
             {
                 errno = 0;
-                int result = Interop.libc.stat(fullPath, out stat);
+                int result = Interop.libcoreclr.GetFileInformationFromPath(fullPath, out fileinfo);
                 if (result < 0)
                 {
                     errno = Marshal.GetLastWin32Error();
@@ -332,7 +332,7 @@ namespace System.IO
                     }
                     return false;
                 }
-                return (stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFDIR;
+                return (fileinfo.mode & (int)Interop.libcoreclr.FileTypes.S_IFMT) == (int)Interop.libcoreclr.FileTypes.S_IFDIR;
             }
         }
 
@@ -394,10 +394,10 @@ namespace System.IO
                         string fullNewName = dirPath + "/" + name;
 
                         // Determine whether the entry is a file or a directory and whether it matches the supplied pattern
-                        Interop.libc.structStat stat;
-                        while (Interop.CheckIo(Interop.libc.stat(fullNewName, out stat), fullNewName)) ;
-                        bool isDir = (stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFDIR && !ShouldIgnoreDirectory(name);
-                        bool isFile = (stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFREG;
+                        Interop.libcoreclr.fileinfo fileinfo;
+                        while (Interop.CheckIo(Interop.libcoreclr.GetFileInformationFromPath(fullNewName, out fileinfo), fullNewName)) ;
+                        bool isDir = (fileinfo.mode & (int)Interop.libcoreclr.FileTypes.S_IFMT) == (int)Interop.libcoreclr.FileTypes.S_IFDIR && !ShouldIgnoreDirectory(name);
+                        bool isFile = (fileinfo.mode & (int)Interop.libcoreclr.FileTypes.S_IFMT) == (int)Interop.libcoreclr.FileTypes.S_IFREG;
                         bool matchesSearchPattern = Interop.libc.fnmatch(searchPattern, name, Interop.libc.FnmatchFlags.None) == 0;
 
                         // Yield the result if the user has asked for it.  In the case of directories,
