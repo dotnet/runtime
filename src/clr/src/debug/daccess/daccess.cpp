@@ -57,7 +57,14 @@ DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
     {
         if (g_procInitialized)
         {
-            return FALSE;   // should only get called once
+#ifdef FEATURE_PAL            
+            // Double initialization can happen on Unix 
+            // in case of manual load of DAC shared lib and calling DllMain
+            // not a big deal, we just ignore it. 
+            return TRUE;
+#else
+            return FALSE;            
+#endif            
         }
 
 #ifdef FEATURE_PAL
@@ -5492,16 +5499,26 @@ ClrDataAccess::Initialize(void)
 
     // Determine our platform based on the pre-processor macros set when we were built
 
-#if defined(_TARGET_X86_)
-    CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_X86;
-#elif defined(_TARGET_AMD64_)
-    CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
-#elif defined(_TARGET_ARM_)
-    CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-#elif defined(_TARGET_ARM64_)
-    CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
+#ifdef FEATURE_PAL
+     #if defined(DBG_TARGET_X86)
+         CorDebugPlatform hostPlatform = CORDB_PLATFORM_MAC_X86;
+     #elif defined(DBG_TARGET_AMD64)
+         CorDebugPlatform hostPlatform = CORDB_PLATFORM_MAC_AMD64;
+     #else
+         #error Unknown Processor.
+     #endif
 #else
-#error Unknown processor.
+    #if defined(DBG_TARGET_X86)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_X86;
+    #elif defined(DBG_TARGET_AMD64)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
+    #elif defined(DBG_TARGET_ARM)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM;
+    #elif defined(DBG_TARGET_ARM64)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
+    #else
+        #error Unknown Processor.
+    #endif
 #endif
 
     CorDebugPlatform targetPlatform;
