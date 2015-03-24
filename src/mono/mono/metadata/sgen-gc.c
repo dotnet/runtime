@@ -2730,7 +2730,6 @@ static void
 major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean forced, gboolean scan_whole_nursery)
 {
 	ScannedObjectCounts counts;
-	LOSObject *bigobj, *prevbo;
 	SgenObjectOperations *object_ops;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
@@ -2824,31 +2823,7 @@ major_finish_collection (const char *reason, size_t old_next_pin_slot, gboolean 
 	TV_GETTIME (btv);
 	time_major_fragment_creation += TV_ELAPSED (atv, btv);
 
-
 	MONO_GC_SWEEP_BEGIN (GENERATION_OLD, !major_collector.sweeps_lazily);
-
-	/* sweep the big objects list */
-	prevbo = NULL;
-	for (bigobj = los_object_list; bigobj;) {
-		g_assert (!object_is_pinned (bigobj->data));
-		if (sgen_los_object_is_pinned (bigobj->data)) {
-			sgen_los_unpin_object (bigobj->data);
-			sgen_update_heap_boundaries ((mword)bigobj->data, (mword)bigobj->data + sgen_los_object_size (bigobj));
-		} else {
-			LOSObject *to_free;
-			/* not referenced anywhere, so we can free it */
-			if (prevbo)
-				prevbo->next = bigobj->next;
-			else
-				los_object_list = bigobj->next;
-			to_free = bigobj;
-			bigobj = bigobj->next;
-			sgen_los_free_object (to_free);
-			continue;
-		}
-		prevbo = bigobj;
-		bigobj = bigobj->next;
-	}
 
 	TV_GETTIME (atv);
 	time_major_free_bigobjs += TV_ELAPSED (btv, atv);

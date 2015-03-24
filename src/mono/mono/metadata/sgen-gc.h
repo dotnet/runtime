@@ -1005,7 +1005,6 @@ gboolean mono_sgen_los_describe_pointer (char *ptr);
 LOSObject* sgen_los_header_for_object (char *data);
 mword sgen_los_object_size (LOSObject *obj);
 void sgen_los_pin_object (char *obj);
-void sgen_los_unpin_object (char *obj);
 gboolean sgen_los_object_is_pinned (char *obj);
 void sgen_los_mark_mod_union_card (MonoObject *mono_obj, void **ptr);
 

@@ -292,7 +292,7 @@ static int pagesize;
 void
 sgen_los_free_object (LOSObject *obj)
 {
-	/* FIXME: free cardtable_mod_union */
+	SGEN_ASSERT (0, !obj->cardtable_mod_union, "We should never free a LOS object with a mod-union table.");
 
 #ifndef LOS_DUMMY
 	size_t size = obj->size;
@@ -401,13 +401,46 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	return obj->data;
 }
 
+static void sgen_los_unpin_object (char *data);
+
 void
 sgen_los_sweep (void)
 {
+	LOSObject *bigobj, *prevbo;
 	LOSSection *section, *prev;
 	int i;
 	int num_sections = 0;
 
+	/* sweep the big objects list */
+	prevbo = NULL;
+	for (bigobj = los_object_list; bigobj;) {
+		SGEN_ASSERT (0, !SGEN_OBJECT_IS_PINNED (bigobj->data), "Who pinned a LOS object?");
+
+		if (bigobj->cardtable_mod_union) {
+			sgen_card_table_free_mod_union (bigobj->cardtable_mod_union, bigobj->data, bigobj->size);
+			bigobj->cardtable_mod_union = NULL;
+		}
+
+		if (sgen_los_object_is_pinned (bigobj->data)) {
+			sgen_los_unpin_object (bigobj->data);
+			sgen_update_heap_boundaries ((mword)bigobj->data, (mword)bigobj->data + sgen_los_object_size (bigobj));
+		} else {
+			LOSObject *to_free;
+			/* not referenced anywhere, so we can free it */
+			if (prevbo)
+				prevbo->next = bigobj->next;
+			else
+				los_object_list = bigobj->next;
+			to_free = bigobj;
+			bigobj = bigobj->next;
+			sgen_los_free_object (to_free);
+			continue;
+		}
+		prevbo = bigobj;
+		bigobj = bigobj->next;
+	}
+
+	/* Try to free memory */
 	for (i = 0; i < LOS_NUM_FAST_SIZES; ++i)
 		los_fast_free_lists [i] = NULL;
 
@@ -649,7 +682,7 @@ sgen_los_pin_object (char *data)
 	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size ((MonoObject*)data));
 }
 
-void
+static void
 sgen_los_unpin_object (char *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
