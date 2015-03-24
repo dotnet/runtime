@@ -50,9 +50,11 @@ struct MonoProcess {
 	 * the process has exited, so that the information there isn't lost.
 	 */
 	gpointer handle;
+	gboolean freeable;
 	struct MonoProcess *next;
 };
 
+typedef struct MonoProcess MonoProcess;
 
 /*
  * _WapiHandle_process is a structure containing all the required information
