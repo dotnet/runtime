@@ -873,7 +873,7 @@ void SHMCleanup(void)
     _ASSERT_MSG(header->spinlock != my_pid,
             "SHMCleanup called while the current process still owns the lock "
             "[owner thread=%u, current thread: %u]\n", 
-            locking_thread.Load(), pthread_self());
+            locking_thread.Load(), THREADSilentGetCurrentThreadId());
 
     /* Now for the interprocess stuff. */
     DeleteCriticalSection(&shm_critsec);
