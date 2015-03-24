@@ -19,8 +19,8 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var cache = new TraceEventCache();
             var filter = new EventTypeFilter(SourceLevels.Error);
-            Assert.True(filter.ShouldTrace(cache, null, TraceEventType.Critical, 0, null));
-            Assert.False(filter.ShouldTrace(cache, null, TraceEventType.Warning, 0, null));
+            Assert.True(filter.ShouldTrace(cache, null, TraceEventType.Critical, 0, null, null, null, null));
+            Assert.False(filter.ShouldTrace(cache, null, TraceEventType.Warning, 0, null, null, null, null));
         }
 
         [Fact]

@@ -25,10 +25,8 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var cache = new TraceEventCache();
             var id = cache.ProcessId;
-            // TODO: This was causing a compile error on the linux CI build. 
-            // (I don't have an environment to replicate this in)
-            //var expected = Interop.mincore.GetCurrentProcessId();
-            //Assert.Equal((int)expected, id);
+            var expected = System.Diagnostics.Process.GetCurrentProcess().Id;
+            Assert.Equal((int)expected, id);
         }
 
         [Fact]

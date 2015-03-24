@@ -43,10 +43,10 @@ namespace System.Diagnostics.TraceSourceTests
             var weakSwitch = new WeakReference(new TestSwitch());
             Assert.True(weakSwitch.IsAlive);
             GC.Collect(2);
-            TraceSwitch.RefreshAll();
+            Trace.Refresh();
             Assert.False(weakSwitch.IsAlive);
             GC.Collect(2);
-            TraceSwitch.RefreshAll();
+            Trace.Refresh();
         }
     }
 }
