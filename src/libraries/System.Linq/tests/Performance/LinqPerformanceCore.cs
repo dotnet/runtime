@@ -133,7 +133,7 @@ namespace System.Linq.Tests.Performance
         {
             // WarmUp
             int tmp = 0;
-            MeasureMaterializationToArray(source, 1, out tmp);
+            MeasureIteration(source, 1, out tmp);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
