@@ -20,9 +20,9 @@ namespace System.Diagnostics.TraceSourceTests
             var sourceName = "TestSource";
             var cache = new TraceEventCache();
             var filter = new SourceFilter(sourceName);
-            Assert.True(filter.ShouldTrace(cache, sourceName, TraceEventType.Critical, 0, null));
-            Assert.False(filter.ShouldTrace(cache, "Default", TraceEventType.Warning, 0, null));
-            Assert.Throws<ArgumentNullException>(() => filter.ShouldTrace(cache, null, TraceEventType.Warning, 0, null));
+            Assert.True(filter.ShouldTrace(cache, sourceName, TraceEventType.Critical, 0, null, null, null, null));
+            Assert.False(filter.ShouldTrace(cache, "Default", TraceEventType.Warning, 0, null, null, null, null));
+            Assert.Throws<ArgumentNullException>(() => filter.ShouldTrace(cache, null, TraceEventType.Warning, 0, null, null, null, null));
         }
 
         [Fact]

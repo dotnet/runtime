@@ -7,17 +7,11 @@ namespace System.Diagnostics.TraceSourceTests
 {
     using Method = TestTraceListener.Method;
 
-    public class TraceClassTests
+    public class TraceClassTests : IDisposable
     {
-        public TraceClassTests()
+        void IDisposable.Dispose()
         {
-            // restore Trace static state
-            Trace.IndentLevel = 0;
-            Trace.IndentSize = DiagnosticsConfiguration.IndentSize;
-            Trace.UseGlobalLock = DiagnosticsConfiguration.UseGlobalLock;
-            Trace.AutoFlush = DiagnosticsConfiguration.AutoFlush;
-            Trace.Listeners.Clear();
-            Trace.Listeners.Add(new DefaultTraceListener());
+            TraceTestHelper.ResetState();
         }
 
         [Fact]
@@ -191,7 +185,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Listeners.Add(listener);
             Trace.WriteLine((Object)"Text");
             listener.Flush();
-            Assert.Equal("Text" + TraceTestHelper.NewLine, listener.Output);
+            Assert.Equal("Text" + Environment.NewLine, listener.Output);
         }
 
         [Fact]
@@ -201,7 +195,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Listeners.Add(listener);
             Trace.WriteLine("Message", "Category");
             listener.Flush();
-            Assert.Equal("Category: Message" + TraceTestHelper.NewLine, listener.Output);
+            Assert.Equal("Category: Message" + Environment.NewLine, listener.Output);
         }
 
         [Fact]
@@ -211,7 +205,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Listeners.Add(listener);
             Trace.WriteLine((Object)"Message", "Category");
             listener.Flush();
-            Assert.Equal("Category: Message" + TraceTestHelper.NewLine, listener.Output);
+            Assert.Equal("Category: Message" + Environment.NewLine, listener.Output);
         }
 
         [Fact]
@@ -333,7 +327,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.IndentLevel = 0;
             Trace.WriteLine("Message end.");
             textTL.Flush();
-            String newLine = TraceTestHelper.NewLine;
+            String newLine = Environment.NewLine;
             var expected =
                 String.Format(
                     "Message start." + newLine + "    This message should be indented.{0} Error: 0 : This error not be indented." + newLine + "    {0} Error: 0 : This error is indendented" + newLine + "    {0} Warning: 0 : This warning is indented" + newLine + "    {0} Warning: 0 : This warning is also indented" + newLine + "    {0} Information: 0 : This information in indented" + newLine + "    {0} Information: 0 : This information is also indented" + newLine + "Message end." + newLine + "",
@@ -367,7 +361,7 @@ namespace System.Diagnostics.TraceSourceTests
             Trace.Unindent();
             Trace.WriteLine("Message end.");
             textTL.Flush();
-            String newLine = TraceTestHelper.NewLine;
+            String newLine = Environment.NewLine;
             var expected = "Message start." + newLine + "    This message should be indented.This should not be indented." + newLine + "      Fail: This failure is reported with a detailed message" + newLine + "      Fail: " + newLine + "      Fail: This assert is reported" + newLine + "Message end." + newLine;
             Assert.Equal(expected, textTL.Output);
         }

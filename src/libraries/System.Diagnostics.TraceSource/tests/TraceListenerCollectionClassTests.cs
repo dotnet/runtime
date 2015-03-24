@@ -3,15 +3,20 @@
 
 using System.Collections;
 using Xunit;
+using System.Reflection;
 
 namespace System.Diagnostics.TraceSourceTests
 {
     public sealed class TraceListenerCollectionClassTests
         : ListBaseTests<TraceListenerCollection>
     {
+
         public override TraceListenerCollection Create(int count = 0)
         {
-            var list = new TraceListenerCollection();
+            // TraceListenerCollection has an internal consructor
+            // so we use a TraceSource to create one for us.
+            var list = new TraceSource("Test").Listeners;
+            list.Clear();
             for (int i = 0; i < count; i++)
             {
                 list.Add(CreateListener());
@@ -98,7 +103,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var list = Create();
             Assert.Throws<ArgumentNullException>(() => list.AddRange((TraceListenerCollection)null));
-            var items = new TraceListenerCollection();
+            var items = Create();
             var item0 = CreateListener();
             var item1 = CreateListener();
             items.Add(item0);

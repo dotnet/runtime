@@ -70,10 +70,10 @@ namespace System.Diagnostics.TraceSourceTests
             var traceRef = new WeakReference(new TraceSource("TestTraceSource"));
             Assert.True(traceRef.IsAlive);
             GC.Collect(2);
-            TraceSource.RefreshAll();
+            Trace.Refresh();
             Assert.False(traceRef.IsAlive);
             GC.Collect(2);
-            TraceSource.RefreshAll();
+            Trace.Refresh();
         }
 
         [Fact]
@@ -173,11 +173,16 @@ namespace System.Diagnostics.TraceSourceTests
     }
 
     // Defines abstract tests that will be executed in different modes via the above concrete classes.
-    public abstract class TraceSourceTestsBase
+    public abstract class TraceSourceTestsBase : IDisposable
     {
-        public TraceSourceTestsBase()
+
+        void IDisposable.Dispose()
         {
             TraceTestHelper.ResetState();
+        }
+
+        public TraceSourceTestsBase()
+        {            
             Trace.AutoFlush = AutoFlush;
             Trace.UseGlobalLock = UseGlobalLock;
         }

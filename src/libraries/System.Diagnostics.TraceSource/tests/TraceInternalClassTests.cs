@@ -7,25 +7,25 @@ namespace System.Diagnostics.TraceSourceTests
 {
     using Method = TestTraceListener.Method;
 
-    public sealed class TraceInternalTests
+    public sealed class TraceTests
     {
         [Fact]
         public void Unindent()
         {
-            TraceInternal.IndentLevel = 1;
-            TraceInternal.Unindent();
+            Trace.IndentLevel = 1;
+            Trace.Unindent();
             Assert.Equal(0, Trace.IndentLevel);
-            TraceInternal.Unindent();
+            Trace.Unindent();
             Assert.Equal(0, Trace.IndentLevel);
         }
     }
 
-    public sealed class TraceInternalTests_Default : TraceInternalTestsBase
+    public sealed class TraceTests_Default : TraceTestsBase
     {
         // default mode: GlobalLock = true, AutoFlush = false, ThreadSafeListener = false
     }
 
-    public sealed class TraceInternalTests_AutoFlush : TraceInternalTestsBase
+    public sealed class TraceTests_AutoFlush : TraceTestsBase
     {
         internal override bool AutoFlush
         {
@@ -33,7 +33,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceInternalTests_NoGlobalLock : TraceInternalTestsBase
+    public sealed class TraceTests_NoGlobalLock : TraceTestsBase
     {
         internal override bool UseGlobalLock
         {
@@ -41,7 +41,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceInternalTests_NoGlobalLock_AutoFlush : TraceInternalTestsBase
+    public sealed class TraceTests_NoGlobalLock_AutoFlush : TraceTestsBase
     {
         internal override bool UseGlobalLock
         {
@@ -54,7 +54,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceInternalTests_ThreadSafeListener : TraceInternalTestsBase
+    public sealed class TraceTests_ThreadSafeListener : TraceTestsBase
     {
         internal override bool ThreadSafeListener
         {
@@ -62,7 +62,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceInternalTests_ThreadSafeListener_AutoFlush : TraceInternalTestsBase
+    public sealed class TraceTests_ThreadSafeListener_AutoFlush : TraceTestsBase
     {
         internal override bool ThreadSafeListener
         {
@@ -76,9 +76,9 @@ namespace System.Diagnostics.TraceSourceTests
     }
 
     // Defines abstract tests that will be executed in different modes via the above concrete classes.
-    public abstract class TraceInternalTestsBase
+    public abstract class TraceTestsBase
     {
-        public TraceInternalTestsBase()
+        public TraceTestsBase()
         {
             TraceTestHelper.ResetState();
             Trace.AutoFlush = AutoFlush;
@@ -115,8 +115,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void FlushTest()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.Flush();
+            Trace.Listeners.Add(listener);
+            Trace.Flush();
             Assert.Equal(1, listener.GetCallCount(Method.Flush));
         }
 
@@ -124,8 +124,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void TraceEvent1Test()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.TraceEvent(TraceEventType.Verbose, 0, "Format", new Object[] { "Arg1" });
+            Trace.Listeners.Add(listener);
+            Trace.TraceError("Message");
             Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
         }
 
@@ -133,26 +133,10 @@ namespace System.Diagnostics.TraceSourceTests
         public void TraceEvent2Test()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.TraceEvent(TraceEventType.Verbose, 0, "Message");
+            Trace.Listeners.Add(listener);
+            Trace.TraceError("Message", "Arg1", "Arg2");
             Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
             var flushExpected = AutoFlush ? 1 : 0;
-            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
-        }
-
-        [Fact]
-        public void TraceEvent3Test()
-        {
-            var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.TraceEvent(TraceEventType.Verbose, 0, "Format", "Arg1", "Arg2");
-            Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
-            var flushExpected = AutoFlush ? 1 : 0;
-            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
-
-            TraceInternal.TraceEvent(TraceEventType.Verbose, 0, "Format", (Object[])null);
-            Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
-            flushExpected = AutoFlush ? 2 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
         }
 
@@ -160,8 +144,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteObjectTest()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.Write((object)"Message");
+            Trace.Listeners.Add(listener);
+            Trace.Write((object)"Message");
             Assert.Equal(1, listener.GetCallCount(Method.Write));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -171,8 +155,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteTest()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.Write("Message");
+            Trace.Listeners.Add(listener);
+            Trace.Write("Message");
             Assert.Equal(1, listener.GetCallCount(Method.Write));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -182,8 +166,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void Write2Test()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.Write("Message", "Category");
+            Trace.Listeners.Add(listener);
+            Trace.Write("Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.Write));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -193,8 +177,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteObject2Test()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.Write((Object)"Message", "Category");
+            Trace.Listeners.Add(listener);
+            Trace.Write((Object)"Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.Write));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -204,8 +188,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteLineTest()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.WriteLine("Message");
+            Trace.Listeners.Add(listener);
+            Trace.WriteLine("Message");
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -215,8 +199,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteLineObjectTest()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.WriteLine((Object)"Message");
+            Trace.Listeners.Add(listener);
+            Trace.WriteLine((Object)"Message");
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -226,8 +210,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteLine2Test()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.WriteLine("Message", "Category");
+            Trace.Listeners.Add(listener);
+            Trace.WriteLine("Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -237,8 +221,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void WriteLineObject2Test()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.WriteLine((Object)"Message", "Category");
+            Trace.Listeners.Add(listener);
+            Trace.WriteLine((Object)"Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.WriteLine));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -248,8 +232,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void FailTest()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.Fail("Message");
+            Trace.Listeners.Add(listener);
+            Trace.Fail("Message");
             Assert.Equal(1, listener.GetCallCount(Method.Fail));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
@@ -259,8 +243,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void Fail2Test()
         {
             var listener = GetTraceListener();
-            TraceInternal.Listeners.Add(listener);
-            TraceInternal.Fail("Message", "Category");
+            Trace.Listeners.Add(listener);
+            Trace.Fail("Message", "Category");
             Assert.Equal(1, listener.GetCallCount(Method.Fail));
             var flushExpected = AutoFlush ? 1 : 0;
             Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));

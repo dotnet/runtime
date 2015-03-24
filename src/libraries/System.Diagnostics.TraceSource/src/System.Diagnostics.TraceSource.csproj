@@ -19,7 +19,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
     <Compile Include="System\Diagnostics\DefaultTraceListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
@@ -60,6 +59,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
