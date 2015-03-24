@@ -309,6 +309,13 @@ mono_gc_get_restart_signal (void)
 }
 
 MonoMethod*
+mono_gc_get_specific_write_barrier (gboolean is_concurrent)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+MonoMethod*
 mono_gc_get_write_barrier (void)
 {
 	g_assert_not_reached ();

@@ -1385,11 +1385,7 @@ alloc_nursery (void)
 	/* If there isn't enough space even for the nursery we should simply abort. */
 	g_assert (sgen_memgov_try_alloc_space (alloc_size, SPACE_NURSERY));
 
-#ifdef SGEN_ALIGN_NURSERY
 	data = major_collector.alloc_heap (alloc_size, alloc_size, DEFAULT_NURSERY_BITS);
-#else
-	data = major_collector.alloc_heap (alloc_size, 0, DEFAULT_NURSERY_BITS);
-#endif
 	sgen_update_heap_boundaries ((mword)data, (mword)(data + sgen_nursery_size));
 	SGEN_LOG (4, "Expanding nursery size (%p-%p): %lu, total: %lu", data, data + alloc_size, (unsigned long)sgen_nursery_size, (unsigned long)mono_gc_get_heap_size ());
 	section->data = section->next_data = data;
@@ -1408,11 +1404,7 @@ void*
 mono_gc_get_nursery (int *shift_bits, size_t *size)
 {
 	*size = sgen_nursery_size;
-#ifdef SGEN_ALIGN_NURSERY
 	*shift_bits = DEFAULT_NURSERY_BITS;
-#else
-	*shift_bits = -1;
-#endif
 	return sgen_get_nursery_start ();
 }
 
@@ -4760,7 +4752,6 @@ mono_gc_base_init (void)
 				size_t val;
 				opt = strchr (opt, '=') + 1;
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &val)) {
-#ifdef SGEN_ALIGN_NURSERY
 					if ((val & (val - 1))) {
 						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.", "`nursery-size` must be a power of two.");
 						continue;
@@ -4776,9 +4767,6 @@ mono_gc_base_init (void)
 					sgen_nursery_bits = 0;
 					while (ONE_P << (++ sgen_nursery_bits) != sgen_nursery_size)
 						;
-#else
-					sgen_nursery_size = val;
-#endif
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, "Using default value.", "`nursery-size` must be an integer.");
 					continue;
@@ -5056,97 +5044,67 @@ mono_gc_get_gc_name (void)
 	return "sgen";
 }
 
-static MonoMethod *write_barrier_method;
+static MonoMethod *write_barrier_conc_method;
+static MonoMethod *write_barrier_noconc_method;
 
 gboolean
 sgen_is_critical_method (MonoMethod *method)
 {
-	return (method == write_barrier_method || sgen_is_managed_allocator (method));
+	return (method == write_barrier_conc_method || method == write_barrier_noconc_method || sgen_is_managed_allocator (method));
 }
 
 gboolean
 sgen_has_critical_method (void)
 {
-	return write_barrier_method || sgen_has_managed_allocator ();
+	return write_barrier_conc_method || write_barrier_noconc_method || sgen_has_managed_allocator ();
 }
 
 #ifndef DISABLE_JIT
 
 static void
-emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels)
+emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gboolean is_concurrent)
 {
-	memset (nursery_check_return_labels, 0, sizeof (int) * 3);
-#ifdef SGEN_ALIGN_NURSERY
+	int shifted_nursery_start = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+
+	memset (nursery_check_return_labels, 0, sizeof (int) * 2);
 	// if (ptr_in_nursery (ptr)) return;
 	/*
 	 * Masking out the bits might be faster, but we would have to use 64 bit
 	 * immediates, which might be slower.
 	 */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_START);
+	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
+	mono_mb_emit_byte (mb, CEE_SHR_UN);
+	mono_mb_emit_stloc (mb, shifted_nursery_start);
+
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_ptr (mb, (gpointer)((mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS));
+	mono_mb_emit_ldloc (mb, shifted_nursery_start);
 	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BEQ);
 
-	if (!major_collector.is_concurrent) {
+	if (!is_concurrent) {
 		// if (!ptr_in_nursery (*ptr)) return;
 		mono_mb_emit_ldarg (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
 		mono_mb_emit_icon (mb, DEFAULT_NURSERY_BITS);
 		mono_mb_emit_byte (mb, CEE_SHR_UN);
-		mono_mb_emit_ptr (mb, (gpointer)((mword)sgen_get_nursery_start () >> DEFAULT_NURSERY_BITS));
+		mono_mb_emit_ldloc (mb, shifted_nursery_start);
 		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
 	}
-#else
-	int label_continue1, label_continue2;
-	int dereferenced_var;
-
-	// if (ptr < (sgen_get_nursery_start ())) goto continue;
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_start ());
-	label_continue_1 = mono_mb_emit_branch (mb, CEE_BLT);
-
-	// if (ptr >= sgen_get_nursery_end ())) goto continue;
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_end ());
-	label_continue_2 = mono_mb_emit_branch (mb, CEE_BGE);
-
-	// Otherwise return
-	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BR);
-
-	// continue:
-	mono_mb_patch_branch (mb, label_continue_1);
-	mono_mb_patch_branch (mb, label_continue_2);
-
-	// Dereference and store in local var
-	dereferenced_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, dereferenced_var);
-
-	if (!major_collector.is_concurrent) {
-		// if (*ptr < sgen_get_nursery_start ()) return;
-		mono_mb_emit_ldloc (mb, dereferenced_var);
-		mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_start ());
-		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BLT);
-
-		// if (*ptr >= sgen_get_nursery_end ()) return;
-		mono_mb_emit_ldloc (mb, dereferenced_var);
-		mono_mb_emit_ptr (mb, (gpointer) sgen_get_nursery_end ());
-		nursery_check_return_labels [2] = mono_mb_emit_branch (mb, CEE_BGE);
-	}
-#endif	
 }
 #endif
 
 MonoMethod*
-mono_gc_get_write_barrier (void)
+mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 {
 	MonoMethod *res;
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
+	MonoMethod **write_barrier_method_addr;
 #ifdef MANAGED_WBARRIER
-	int i, nursery_check_labels [3];
+	int i, nursery_check_labels [2];
 
 #ifdef HAVE_KW_THREAD
 	int stack_end_offset = -1;
@@ -5158,19 +5116,27 @@ mono_gc_get_write_barrier (void)
 
 	// FIXME: Maybe create a separate version for ctors (the branch would be
 	// correctly predicted more times)
-	if (write_barrier_method)
-		return write_barrier_method;
+	if (is_concurrent)
+		write_barrier_method_addr = &write_barrier_conc_method;
+	else
+		write_barrier_method_addr = &write_barrier_noconc_method;
+
+	if (*write_barrier_method_addr)
+		return *write_barrier_method_addr;
 
 	/* Create the IL version of mono_gc_barrier_generic_store () */
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
 	sig->ret = &mono_defaults.void_class->byval_arg;
 	sig->params [0] = &mono_defaults.int_class->byval_arg;
 
-	mb = mono_mb_new (mono_defaults.object_class, "wbarrier", MONO_WRAPPER_WRITE_BARRIER);
+	if (is_concurrent)
+		mb = mono_mb_new (mono_defaults.object_class, "wbarrier_conc", MONO_WRAPPER_WRITE_BARRIER);
+	else
+		mb = mono_mb_new (mono_defaults.object_class, "wbarrier_noconc", MONO_WRAPPER_WRITE_BARRIER);
 
 #ifndef DISABLE_JIT
 #ifdef MANAGED_WBARRIER
-	emit_nursery_check (mb, nursery_check_labels);
+	emit_nursery_check (mb, nursery_check_labels, is_concurrent);
 	/*
 	addr = sgen_cardtable + ((address >> CARD_BITS) & CARD_MASK)
 	*addr = 1;
@@ -5190,12 +5156,19 @@ mono_gc_get_write_barrier (void)
 	ldc_i4_1
 	stind_i1
 	*/
-	mono_mb_emit_ptr (mb, sgen_cardtable);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_CARD_TABLE);
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_icon (mb, CARD_BITS);
 	mono_mb_emit_byte (mb, CEE_SHR_UN);
+	mono_mb_emit_byte (mb, CEE_CONV_I);
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-	mono_mb_emit_ptr (mb, (gpointer)CARD_MASK);
+#if SIZEOF_VOID_P == 8
+	mono_mb_emit_icon8 (mb, CARD_MASK);
+#else
+	mono_mb_emit_icon (mb, CARD_MASK);
+#endif
+	mono_mb_emit_byte (mb, CEE_CONV_I);
 	mono_mb_emit_byte (mb, CEE_AND);
 #endif
 	mono_mb_emit_byte (mb, CEE_ADD);
@@ -5203,7 +5176,7 @@ mono_gc_get_write_barrier (void)
 	mono_mb_emit_byte (mb, CEE_STIND_I1);
 
 	// return;
-	for (i = 0; i < 3; ++i) {
+	for (i = 0; i < 2; ++i) {
 		if (nursery_check_labels [i])
 			mono_mb_patch_branch (mb, nursery_check_labels [i]);
 	}
@@ -5218,17 +5191,23 @@ mono_gc_get_write_barrier (void)
 	mono_mb_free (mb);
 
 	LOCK_GC;
-	if (write_barrier_method) {
+	if (*write_barrier_method_addr) {
 		/* Already created */
 		mono_free_method (res);
 	} else {
 		/* double-checked locking */
 		mono_memory_barrier ();
-		write_barrier_method = res;
+		*write_barrier_method_addr = res;
 	}
 	UNLOCK_GC;
 
-	return write_barrier_method;
+	return *write_barrier_method_addr;
+}
+
+MonoMethod*
+mono_gc_get_write_barrier (void)
+{
+	return mono_gc_get_specific_write_barrier (major_collector.is_concurrent);
 }
 
 char*

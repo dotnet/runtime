@@ -312,4 +312,7 @@
 <opcode name="mono_jit_attach" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x11" flow="next" />
 <opcode name="mono_jit_detach" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x12" flow="next" />
 <opcode name="mono_jit_icall_addr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x13" flow="next" />
+<opcode name="mono_ldptr_int_req_flag" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x14" flow="next" />
+<opcode name="mono_ldptr_card_table" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x15" flow="next" />
+<opcode name="mono_ldptr_nursery_start" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x16" flow="next" />
 </opdesc>

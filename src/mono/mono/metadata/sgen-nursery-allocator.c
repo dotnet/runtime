@@ -102,9 +102,7 @@ char *sgen_nursery_end;
 
 #ifdef USER_CONFIG
 size_t sgen_nursery_size = (1 << 22);
-#ifdef SGEN_ALIGN_NURSERY
 int sgen_nursery_bits = 22;
-#endif
 #endif
 
 char *sgen_space_bitmap;

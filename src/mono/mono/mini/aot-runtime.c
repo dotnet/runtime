@@ -2020,14 +2020,18 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 		memset (&ji, 0, sizeof (ji));
 		ji.type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
-
 		amodule->got [2] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+
+		memset (&ji, 0, sizeof (ji));
+		ji.type = MONO_PATCH_INFO_GC_NURSERY_START;
+		amodule->got [3] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
 	}
 
 	if (amodule->llvm_got) {
 		amodule->llvm_got [0] = amodule->got [0];
 		amodule->llvm_got [1] = amodule->got [1];
 		amodule->llvm_got [2] = amodule->got [2];
+		amodule->llvm_got [3] = amodule->got [3];
 	}
 
 	/*
@@ -3317,6 +3321,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+	case MONO_PATCH_INFO_GC_NURSERY_START:
 	case MONO_PATCH_INFO_JIT_TLS_ID:
 		break;
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:

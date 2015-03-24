@@ -3144,7 +3144,7 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 		wbarrier->sreg1 = ptr->dreg;
 		wbarrier->sreg2 = value->dreg;
 		MONO_ADD_INS (cfg->cbb, wbarrier);
-	} else if (card_table) {
+	} else if (card_table && !cfg->compile_aot && !mono_gc_card_table_nursery_check ()) {
 		int offset_reg = alloc_preg (cfg);
 		int card_reg  = alloc_preg (cfg);
 		MonoInst *ins;
@@ -12063,6 +12063,49 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				break;
 			}
+			case CEE_MONO_LDPTR_CARD_TABLE: {
+				int shift_bits;
+				gpointer card_mask;
+				CHECK_STACK_OVF (1);
+
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_card_table (&shift_bits, &card_mask));
+
+				*sp++ = ins;
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
+			case CEE_MONO_LDPTR_NURSERY_START: {
+				int shift_bits;
+				size_t size;
+				CHECK_STACK_OVF (1);
+
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_GC_NURSERY_START, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_gc_get_nursery (&shift_bits, &size));
+
+				*sp++ = ins;
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
+			case CEE_MONO_LDPTR_INT_REQ_FLAG: {
+				CHECK_STACK_OVF (1);
+
+				if (cfg->compile_aot)
+					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
+				else
+					EMIT_NEW_PCONST (cfg, ins, mono_thread_interruption_request_flag ());
+
+				*sp++ = ins;
+				ip += 2;
+				inline_costs += 10 * num_calls++;
+				break;
+			}
 			case CEE_MONO_LDPTR: {
 				gpointer ptr;
 
@@ -12071,13 +12114,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				token = read32 (ip + 2);
 
 				ptr = mono_method_get_wrapper_data (method, token);
-				/* FIXME: Generalize this */
-				if (cfg->compile_aot && ptr == mono_thread_interruption_request_flag ()) {
-					EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
-					*sp++ = ins;
-					ip += 6;
-					break;
-				}
 				EMIT_NEW_PCONST (cfg, ins, ptr);
 				*sp++ = ins;
 				ip += 6;

@@ -1149,6 +1149,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
+	case MONO_PATCH_INFO_GC_NURSERY_START:
 	case MONO_PATCH_INFO_JIT_TLS_ID:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
@@ -1604,6 +1605,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		gpointer card_table_mask;
 
 		target = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
+		break;
+	}
+	case MONO_PATCH_INFO_GC_NURSERY_START: {
+		int shift_bits;
+		size_t size;
+
+		target = mono_gc_get_nursery (&shift_bits, &size);
 		break;
 	}
 	case MONO_PATCH_INFO_CASTCLASS_CACHE: {
