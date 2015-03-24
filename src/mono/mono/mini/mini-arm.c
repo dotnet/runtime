@@ -3111,9 +3111,11 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *n, *last_ins = NULL;
+	MonoInst *ins, *n;
 
 	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins) {
+		MonoInst *last_ins = mono_inst_prev (ins, FILTER_IL_SEQ_POINT);
+
 		switch (ins->opcode) {
 		case OP_MUL_IMM: 
 		case OP_IMUL_IMM: 
@@ -3220,10 +3222,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		last_ins = ins;
-		ins = ins->next;
 	}
-	bb->last_ins = last_ins;
 }
 
 /* 
