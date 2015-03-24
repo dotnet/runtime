@@ -98,7 +98,7 @@ namespace System.Linq.Parallel
                 if (source.MoveNext(ref element, ref keyUnused))
                 {
                     // We just scroll through the enumerator and accumulate the sum.
-                    float tempSum = 0.0f;
+                    double tempSum = 0.0f;
                     int i = 0;
                     do
                     {
@@ -110,7 +110,7 @@ namespace System.Linq.Parallel
                     while (source.MoveNext(ref element, ref keyUnused));
 
                     // The sum has been calculated. Now just return.
-                    currentElement = new double?(tempSum);
+                    currentElement = tempSum;
                     return true;
                 }
 
