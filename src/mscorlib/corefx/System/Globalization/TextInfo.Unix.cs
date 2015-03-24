@@ -17,6 +17,9 @@ namespace System.Globalization
         internal unsafe TextInfo(CultureData cultureData)
         {
             // TODO: Implement this fully.
+            this.m_cultureData = cultureData;
+            this.m_cultureName = this.m_cultureData.CultureName;
+            this.m_textInfoName = this.m_cultureData.STEXTINFO;
         }
 
         private unsafe string ChangeCase(string s, bool toUpper)
