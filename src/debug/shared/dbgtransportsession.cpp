@@ -1107,6 +1107,10 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
         return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
     }
 
+    // VirtualQuery doesn't know much about memory allocated outside of PAL's VirtualAlloc 
+    // that's why on Unix we can't rely on in to detect invalid memory reads  
+    // TODO: We need to find and use appropriate memory map API on other operating systems. 
+#ifndef FEATURE_PAL
     do 
     {
         // Find the attributes of the largest set of pages with common attributes starting from our base address.
@@ -1146,6 +1150,7 @@ HRESULT DbgTransportSession::CheckBufferAccess(__in_ecount(cbBuffer) PBYTE pbBuf
         }
     }
     while (cbBuffer > 0);
+#endif
 
     // The specified region has passed all of our checks.
     return S_OK;
