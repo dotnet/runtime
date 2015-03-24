@@ -20,9 +20,9 @@ inline void RestoreSOToleranceState() {}
 #include <corsym.h>
 #include <clrdata.h>
 #include <palclr.h>
+#include <metahost.h>
 
 #if !defined(FEATURE_PAL)
-#include <metahost.h>
 #include <new>
 #include <dia2.h>
 #endif
@@ -36,7 +36,6 @@ inline void RestoreSOToleranceState() {}
 
 #endif //STRIKE
 
-#include "cor.h"
 #include "cordebug.h"
 #include "static_assert.h"
 
@@ -188,10 +187,8 @@ extern ISOSDacInterface *g_sos;
 
 #include "dacprivate.h"
 
-#ifndef FEATURE_PAL
 interface ICorDebugProcess;
 extern ICorDebugProcess * g_pCorDebugProcess;
-#endif // FEATURE_PAL
 
 // This class is templated for easy modification.  We may need to update the CachedString
 // or related classes to use wchar_t instead of char in the future.
@@ -396,8 +393,8 @@ namespace Output
     *   simpleName - simple name of the managed variable                   *
     *                                                                      *
     \**********************************************************************/
-    CachedString BuildManagedVarValue(__in_z LPWSTR expansionName, ULONG frame, __in_z LPWSTR simpleName, FormatType type);
-    CachedString BuildManagedVarValue(__in_z LPWSTR expansionName, ULONG frame, int indexInArray, FormatType type);    //used for array indices (simpleName = "[<indexInArray>]")
+    CachedString BuildManagedVarValue(__in_z LPCWSTR expansionName, ULONG frame, __in_z LPCWSTR simpleName, FormatType type);
+    CachedString BuildManagedVarValue(__in_z LPCWSTR expansionName, ULONG frame, int indexInArray, FormatType type);    //used for array indices (simpleName = "[<indexInArray>]")
 }
 
 class NoOutputHolder
@@ -1613,9 +1610,9 @@ void DecodeDynamicIL(BYTE *data, ULONG Size, DacpObjectData& tokenArray);
 
 BOOL IsRetailBuild (size_t base);
 EEFLAVOR GetEEFlavor ();
-#ifndef FEATURE_PAL
 HRESULT InitCorDebugInterface();
 VOID UninitCorDebugInterface();
+#ifndef FEATURE_PAL
 BOOL GetEEVersion(VS_FIXEDFILEINFO *pFileInfo);
 BOOL GetSOSVersion(VS_FIXEDFILEINFO *pFileInfo);
 #endif

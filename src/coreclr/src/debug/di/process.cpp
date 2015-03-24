@@ -682,9 +682,7 @@ CordbProcess::CreateDacDbiInterface()
         IDacDbiInterface **);
 
     IDacDbiInterface* pInterfacePtr = NULL;
-    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)
-    GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
-
+    PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
     if (!pfnEntry)
     {
         ThrowLastError();

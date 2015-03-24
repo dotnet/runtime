@@ -13,6 +13,7 @@ private:
     lldb::SBProcess GetCurrentProcess();
     lldb::SBThread GetCurrentThread();
     lldb::SBFrame GetCurrentFrame();
+    HRESULT GetModuleBase(lldb::SBTarget target, lldb::SBModule module, PULONG64 base);
     HRESULT GetExpression(lldb::SBFrame frame, PCSTR exp, PDWORD_PTR result);
     
 public:
@@ -67,6 +68,12 @@ public:
         ULONG bufferSize,
         PULONG bytesRead);
 
+    HRESULT WriteVirtual(
+        ULONG64 offset,
+        PVOID buffer,
+        ULONG bufferSize,
+        PULONG bytesWritten);
+
     //----------------------------------------------------------------------------
     // IDebugSymbols
     //----------------------------------------------------------------------------
@@ -84,6 +91,10 @@ public:
     HRESULT GetNumberModules(
         PULONG loaded,
         PULONG unloaded);
+
+    HRESULT GetModuleByIndex(
+        ULONG index,
+        PULONG64 base);
 
     HRESULT GetModuleByModuleName(
         PCSTR name,

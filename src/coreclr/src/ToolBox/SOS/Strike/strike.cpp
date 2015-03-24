@@ -189,7 +189,7 @@ HMODULE g_hInstance = NULL;
 
 // Size of a fixed array:
 #ifndef ARRAYSIZE
-#define ARRAYSIZE(a)		(sizeof(a)/sizeof((a)[0]))
+#define ARRAYSIZE(a) (sizeof(a)/sizeof((a)[0]))
 #endif // !ARRAYSIZE
 
 
@@ -2073,7 +2073,7 @@ struct StackTraceElement
 #if defined(FEATURE_EXCEPTIONDISPATCHINFO)
     // TRUE if this element represents the last frame of the foreign
     // exception stack trace.
-    BOOL			fIsLastFrameFromForeignStackTrace;
+    BOOL fIsLastFrameFromForeignStackTrace;
 #endif // defined(FEATURE_EXCEPTIONDISPATCHINFO)
 
 };
@@ -10410,19 +10410,7 @@ DECLARE_API(GCHandleLeaks)
 }
 #endif // FEATURE_PAL
 
-#ifdef FEATURE_PAL
-
-class ClrStackImplWithICorDebug
-{
-public:
-    static HRESULT ClrStackFromPublicInterface(BOOL bParams, BOOL bLocals, BOOL bSuppressLines, WCHAR* varToExpand = NULL, int onlyShowFrame = -1)
-    {
-        ExtOut("Not supported on this platform.\n");
-        return S_OK;
-    }
-};
-
-#else // FEATURE_PAL NOT defined below
+#endif // FEATURE_PAL
 
 class ClrStackImplWithICorDebug
 {
@@ -11058,7 +11046,7 @@ private:
     {
         HRESULT Status = S_OK;
 
-	    ULONG cParams = 0;
+        ULONG cParams = 0;
         ToRelease<ICorDebugValueEnum> pParamEnum;
         IfFailRet(pILFrame->EnumerateArguments(&pParamEnum));
         IfFailRet(pParamEnum->GetCount(&cParams));
@@ -11122,20 +11110,21 @@ private:
                     ExtOut("  + (Error 0x%x printing parameter %d)\n", Status, i);
             }
         }
-	    else if (cParams == 0 && bParams)
+        else if (cParams == 0 && bParams)
             ExtOut("\nPARAMETERS: (none)\n");
-    	
+
         ULONG cLocals = 0;
         ToRelease<ICorDebugValueEnum> pLocalsEnum;
         IfFailRet(pILFrame->EnumerateLocalVariables(&pLocalsEnum));
         IfFailRet(pLocalsEnum->GetCount(&cLocals));
         if (cLocals > 0 && bLocals)
         {
+#ifndef FEATURE_PAL
             bool symbolsAvailable = false;
             SymbolReader symReader;
             if(SUCCEEDED(symReader.LoadSymbols(pMD, pModule)))
                 symbolsAvailable = true;
-
+#endif
             ExtOut("\nLOCALS:\n");
             for (ULONG i=0; i < cLocals; i++)
             {
@@ -11143,11 +11132,13 @@ private:
                 WCHAR paramName[mdNameLen] = W("\0");
 
                 ToRelease<ICorDebugValue> pValue;
+#ifndef FEATURE_PAL
                 if(symbolsAvailable)
                 {
                     Status = symReader.GetNamedLocalVariable(pILFrame, i, paramName, mdNameLen, &pValue);
                 }
                 else
+#endif
                 {
                     ULONG cArgsFetched;
                     Status = pLocalsEnum->Next(1, &pValue, &cArgsFetched);
@@ -11188,11 +11179,11 @@ private:
                     ExtOut("  + (Error 0x%x printing local variable %d)\n", Status, i);
             }
         }
-	    else if (cLocals == 0 && bLocals)
+        else if (cLocals == 0 && bLocals)
             ExtOut("\nLOCALS: (none)\n");
 
-	    if(bParams || bLocals)
-		    ExtOut("\n");
+        if(bParams || bLocals)
+            ExtOut("\n");
 
         return S_OK;
     }
@@ -11477,7 +11468,7 @@ public:
                 GetMethodName(methodDef, pMD, &functionName);
 
                 DMLOut(DMLManagedVar(W("-a"), currentFrame, (LPWSTR)functionName.Ptr()));
-			    ExtOut(" (%S)\n", wszModuleName);
+                ExtOut(" (%S)\n", wszModuleName);
 
                 if (SUCCEEDED(hrILFrame) && (bParams || bLocals))
                 {
@@ -11491,10 +11482,6 @@ public:
         return S_OK;
     }
 };
-
-#endif // FEATURE_PAL
-
-#endif // FEATURE_PAL
 
 WString BuildRegisterOutput(const SOSStackRefData &ref, bool printObj)
 {
@@ -12097,9 +12084,7 @@ DECLARE_API(ClrStack)
     BOOL bParams = FALSE;
     BOOL bLocals = FALSE;
     BOOL bSuppressLines = FALSE;
-#ifndef FEATURE_PAL
     BOOL bICorDebug = FALSE;
-#endif
     BOOL bGC = FALSE;
     BOOL dml = FALSE;
     DWORD frameToDumpVariablesFor = -1;
@@ -12120,9 +12105,7 @@ DECLARE_API(ClrStack)
         {"-p", &bParams, COBOOL, FALSE},
         {"-l", &bLocals, COBOOL, FALSE},
         {"-n", &bSuppressLines, COBOOL, FALSE},
-#ifndef FEATURE_PAL
         {"-i", &bICorDebug, COBOOL, FALSE},
-#endif
         {"-gc", &bGC, COBOOL, FALSE},
         {"/d", &dml, COBOOL, FALSE},
     };
@@ -12131,7 +12114,7 @@ DECLARE_API(ClrStack)
         {&cvariableName.data, COSTRING},
         {&frameToDumpVariablesFor, COSIZE_T},
     };
-	if (!GetCMDOption(args, option, _countof(option), arg, _countof(arg), &nArg))
+    if (!GetCMDOption(args, option, _countof(option), arg, _countof(arg), &nArg))
     {
         return Status;
     }
@@ -12148,7 +12131,6 @@ DECLARE_API(ClrStack)
         bParams = bLocals = TRUE;
     }
 
-#ifndef FEATURE_PAL
     if (bICorDebug)
     {
         if(nArg > 0)
@@ -12172,7 +12154,6 @@ DECLARE_API(ClrStack)
         EnableDMLHolder dmlHolder(TRUE);
         return ClrStackImplWithICorDebug::ClrStackFromPublicInterface(bParams, bLocals, FALSE, wvariableName, frameToDumpVariablesFor);
     }
-#endif // FEATURE_PAL
     
     ClrStackImpl::PrintCurrentThread(bParams, bLocals, bSuppressLines, bGC);
     
