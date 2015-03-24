@@ -371,7 +371,7 @@ public partial class FileSystemWatcher_4000_Tests
         watcher.Path = "..";
         Assert.Equal("..", watcher.Path);
 
-        string currentDir = Path.GetFullPath(".").Trim('.', Path.DirectorySeparatorChar);
+        string currentDir = Path.GetFullPath(".").TrimEnd('.', Path.DirectorySeparatorChar);
         watcher.Path = currentDir;
         Assert.Equal(currentDir, watcher.Path);
 
