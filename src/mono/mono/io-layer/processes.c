@@ -2482,9 +2482,10 @@ mono_processes_cleanup (void)
 					prev->next = mp->next;
 				}
 			}
-			prev = mp;
 			finished = g_slist_prepend (finished, mp);
 		}
+		prev = mp;
+		mp = mp->next;
 	}
 
 	mono_memory_barrier ();
