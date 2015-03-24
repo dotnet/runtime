@@ -112,7 +112,6 @@ namespace System.Resources
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             BinaryWriter bw = new BinaryWriter(_output, Encoding.UTF8);
-            List<String> typeNames = new List<String>();
 
             // Write out the ResourceManager header
             // Write out magic number
@@ -194,10 +193,10 @@ namespace System.Resources
 
                 // At this point, the ResourceManager header has been written.
                 // Finish RuntimeResourceSet header
-                //   Write size & contents of class table
-                bw.Write(typeNames.Count);
-                for (int i = 0; i < typeNames.Count; i++)
-                    bw.Write(typeNames[i]);
+                // The reader expects a list of user defined type names 
+                // following the size of the list, write 0 for this 
+                // writer implementation
+                bw.Write((int)0);
 
                 // Write out the name-related items for lookup.
                 //  Note that the hash array and the namePositions array must
