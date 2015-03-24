@@ -81,7 +81,8 @@ seq_point_find_by_il_offset (MonoSeqPointInfo* info, int il_offset, SeqPoint* se
  */
 
 typedef struct {
-	guint32 token;
+	guint32 method_token;
+	guint32 method_index;
 	MonoSeqPointInfo* seq_points;
 	gboolean free_seq_points;
 } SeqPointDataEntry;
@@ -105,12 +106,12 @@ gboolean
 seq_point_data_write (SeqPointData *data, char *path);
 
 void
-seq_point_data_add (SeqPointData *data, guint32 token, MonoSeqPointInfo* info);
+seq_point_data_add (SeqPointData *data, guint32 methodToken, guint32 methodIndex, MonoSeqPointInfo* info);
 
 gboolean
-seq_point_data_get (SeqPointData *data, guint32 token, MonoSeqPointInfo** info);
+seq_point_data_get (SeqPointData *data, guint32 methodToken, guint32 methodIndex, MonoSeqPointInfo** info);
 
 gboolean
-seq_point_data_get_il_offset (char *path, guint32 token, guint32 native_offset, guint32 *il_offset);
+seq_point_data_get_il_offset (char *path, guint32 methodToken, guint32 methodIndex, guint32 native_offset, guint32 *il_offset);
 
 #endif /* __MONO_SEQ_POINTS_DATA_H__ */

@@ -700,6 +700,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		}
 		else
 			MONO_OBJECT_SETREF (sf, method, mono_method_get_object (domain, method, NULL));
+
+		sf->method_index = ji->from_aot ? mono_aot_find_method_index (method) : 0xffffff;
 		sf->method_address = (gsize) ji->code_start;
 		sf->native_offset = (char *)ip - (char *)ji->code_start;
 

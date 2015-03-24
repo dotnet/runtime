@@ -411,7 +411,8 @@ seq_point_data_read (SeqPointData *data, char *path)
 	data->entry_count = entry_count;
 
 	for (i=0; i<entry_count; i++) {
-		data->entries [i].token = decode_var_int (buffer, &buffer);
+		data->entries [i].method_token = decode_var_int (buffer, &buffer);
+		data->entries [i].method_index = decode_var_int (buffer, &buffer);
 		buffer += seq_point_info_read (&data->entries [i].seq_points, buffer, TRUE);
 		data->entries [i].free_seq_points = TRUE;
 	}
@@ -442,7 +443,8 @@ seq_point_data_write (SeqPointData *data, char *path)
 	encode_var_int (buffer, &buffer, data->entry_count);
 
 	for (i=0; i<data->entry_count; i++) {
-		encode_var_int (buffer, &buffer, data->entries [i].token);
+		encode_var_int (buffer, &buffer, data->entries [i].method_token);
+		encode_var_int (buffer, &buffer, data->entries [i].method_index);
 		buffer += seq_point_info_write (data->entries [i].seq_points, buffer);
 	}
 
@@ -453,24 +455,25 @@ seq_point_data_write (SeqPointData *data, char *path)
 }
 
 void
-seq_point_data_add (SeqPointData *data, guint32 token, MonoSeqPointInfo* info)
+seq_point_data_add (SeqPointData *data, guint32 method_token, guint32 method_index, MonoSeqPointInfo* info)
 {
 	int i;
 
 	g_assert (data->entry_count < data->entry_capacity);
 	i = data->entry_count++;
 	data->entries [i].seq_points = info;
-	data->entries [i].token = token;
+	data->entries [i].method_token = method_token;
+	data->entries [i].method_index = method_index;
 	data->entries [i].free_seq_points = FALSE;
 }
 
 gboolean
-seq_point_data_get (SeqPointData *data, guint32 token, MonoSeqPointInfo** info)
+seq_point_data_get (SeqPointData *data, guint32 method_token, guint32 method_index, MonoSeqPointInfo** info)
 {
 	int i;
 
 	for (i=0; i<data->entry_count; i++) {
-		if (data->entries [i].token == token) {
+		if (data->entries [i].method_token == method_token && (method_index == 0xffffff || data->entries [i].method_index == method_index)) {
 			(*info) = data->entries [i].seq_points;
 			return TRUE;
 		}
@@ -479,7 +482,7 @@ seq_point_data_get (SeqPointData *data, guint32 token, MonoSeqPointInfo** info)
 }
 
 gboolean
-seq_point_data_get_il_offset (char *path, guint32 token, guint32 native_offset, guint32 *il_offset)
+seq_point_data_get_il_offset (char *path, guint32 method_token, guint32 method_index, guint32 native_offset, guint32 *il_offset)
 {
 	SeqPointData sp_data;
 	MonoSeqPointInfo *seq_points;
@@ -488,7 +491,7 @@ seq_point_data_get_il_offset (char *path, guint32 token, guint32 native_offset, 
 	if (!seq_point_data_read (&sp_data, path))
 		return FALSE;
 
-	if (!seq_point_data_get (&sp_data, token, &seq_points))
+	if (!seq_point_data_get (&sp_data, method_token, method_index, &seq_points))
 		return FALSE;
 
 	if (!seq_point_find_prev_by_native_offset (seq_points, native_offset, &sp))

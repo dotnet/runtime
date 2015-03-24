@@ -7894,7 +7894,7 @@ emit_exception_info (MonoAotCompile *acfg)
 					seq_point_data_init (&sp_data, acfg->nmethods);
 					seq_points_to_file = TRUE;
 				}
-				seq_point_data_add (&sp_data, cfg->method->token, cfg->seq_point_info);
+				seq_point_data_add (&sp_data, cfg->method->token, cfg->method_index, cfg->seq_point_info);
 			}
 		} else {
 			offsets [i] = 0;

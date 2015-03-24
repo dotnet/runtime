@@ -363,6 +363,7 @@ typedef struct {
 	gint32 il_offset;
 	gint32 native_offset;
 	gint64 method_address;
+	gint32 method_index;
 	MonoReflectionMethod *method;
 	MonoString *filename;
 	gint32 line;
