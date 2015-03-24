@@ -193,9 +193,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Unix\Interop.read.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.stat.cs">
-      <Link>Common\Interop\Unix\Interop.stat.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
     </Compile>
@@ -204,6 +201,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
       <Link>Common\Interop\Unix\Interop.write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
+      <Link>Common\Interop\Unix\Interop.GetInformation.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Resource files -->

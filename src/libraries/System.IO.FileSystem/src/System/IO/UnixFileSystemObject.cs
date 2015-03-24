@@ -18,15 +18,15 @@ namespace System.IO
             private bool _isDirectory;
 
             /// <summary>The last cached stat information about the file.</summary>
-            private Interop.libc.structStat _stat;
+            private Interop.libcoreclr.fileinfo _fileinfo;
 
             /// <summary>
             /// Whether we've successfully cached a stat structure.
-            /// -1 if we need to refresh _stat, 0 if we've successfully cached one,
+            /// -1 if we need to refresh _fileinfo, 0 if we've successfully cached one,
             /// or any other value that serves as an errno error code from the
-            /// last time we tried and failed to refresh _stat.
+            /// last time we tried and failed to refresh _fileinfo.
             /// </summary>
-            private int _statInitialized = -1;
+            private int _fileinfoInitialized = -1;
 
             public UnixFileSystemObject(string fullPath, bool asDirectory)
             {
@@ -73,7 +73,7 @@ namespace System.IO
             {
                 get
                 {
-                    return (_stat.st_mode & (int)Interop.libc.FileTypes.S_IFMT) == (int)Interop.libc.FileTypes.S_IFDIR;
+                    return (_fileinfo.mode & (int)Interop.libcoreclr.FileTypes.S_IFMT) == (int)Interop.libcoreclr.FileTypes.S_IFDIR;
                 }
             }
 
@@ -86,12 +86,12 @@ namespace System.IO
                 get
                 {
                     Interop.libc.Permissions readBit, writeBit;
-                    if (_stat.st_uid == Interop.libc.geteuid())      // does the user effectively own the file?
+                    if (_fileinfo.uid == Interop.libc.geteuid())      // does the user effectively own the file?
                     {
                         readBit = Interop.libc.Permissions.S_IRUSR;
                         writeBit = Interop.libc.Permissions.S_IWUSR;
                     }
-                    else if (_stat.st_gid == Interop.libc.getegid()) // does the user belong to a group that effectively owns the file?
+                    else if (_fileinfo.gid == Interop.libc.getegid()) // does the user belong to a group that effectively owns the file?
                     {
                         readBit = Interop.libc.Permissions.S_IRGRP;
                         writeBit = Interop.libc.Permissions.S_IWGRP;
@@ -103,8 +103,8 @@ namespace System.IO
                     }
 
                     return
-                        (_stat.st_mode & (int)readBit) != 0 && // has read permission
-                        (_stat.st_mode & (int)writeBit) == 0;  // but not write permission
+                        (_fileinfo.mode & (int)readBit) != 0 && // has read permission
+                        (_fileinfo.mode & (int)writeBit) == 0;  // but not write permission
                 }
                 set
                 {
@@ -114,7 +114,7 @@ namespace System.IO
                         return;
                     }
 
-                    int newMode = _stat.st_mode;
+                    int newMode = _fileinfo.mode;
                     if (value) // true if going from writable to readable, false if going from readable to writable
                     {
                         // Take away all write permissions from user/group/everyone
@@ -127,7 +127,7 @@ namespace System.IO
                     }
 
                     // Change the permissions on the file
-                    if (newMode != _stat.st_mode)
+                    if (newMode != _fileinfo.mode)
                     {
                         while (Interop.CheckIo(Interop.libc.chmod(_fullPath, newMode), _fullPath, _isDirectory)) ;
                     }
@@ -138,12 +138,12 @@ namespace System.IO
             {
                 get
                 {
-                    if (_statInitialized == -1)
+                    if (_fileinfoInitialized == -1)
                     {
                         Refresh();
                     }
                     return
-                        _statInitialized == 0 && // avoid throwing if Refresh failed; instead just return false
+                        _fileinfoInitialized == 0 && // avoid throwing if Refresh failed; instead just return false
                         _isDirectory == IsDirectoryAssumesInitialized;
                 }
             }
@@ -160,7 +160,7 @@ namespace System.IO
                 get
                 {
                     EnsureStatInitialized();
-                    return DateTimeOffset.FromUnixTimeSeconds((long)_stat.st_atime);
+                    return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.atime);
                 }
                 set { SetAccessWriteTimes((IntPtr)value.ToUnixTimeSeconds(), null); }
             }
@@ -170,20 +170,20 @@ namespace System.IO
                 get
                 {
                     EnsureStatInitialized();
-                    return DateTimeOffset.FromUnixTimeSeconds((long)_stat.st_mtime);
+                    return DateTimeOffset.FromUnixTimeSeconds(_fileinfo.mtime);
                 }
                 set { SetAccessWriteTimes(null, (IntPtr)value.ToUnixTimeSeconds()); }
             }
 
             private void SetAccessWriteTimes(IntPtr? accessTime, IntPtr? writeTime)
             {
-                _statInitialized = -1; // force a refresh so that we have an up-to-date times for values not being overwritten
+                _fileinfoInitialized = -1; // force a refresh so that we have an up-to-date times for values not being overwritten
                 EnsureStatInitialized();
                 Interop.libc.utimbuf buf;
-                buf.actime = accessTime ?? _stat.st_atime;
-                buf.modtime = writeTime ?? _stat.st_mtime;
+                buf.actime = accessTime ?? new IntPtr(_fileinfo.atime);
+                buf.modtime = writeTime ?? new IntPtr(_fileinfo.mtime);
                 while (Interop.CheckIo(Interop.libc.utime(_fullPath, ref buf), _fullPath, _isDirectory)) ;
-                _statInitialized = -1;
+                _fileinfoInitialized = -1;
             }
 
             public long Length
@@ -191,7 +191,7 @@ namespace System.IO
                 get
                 {
                     EnsureStatInitialized();
-                    return _stat.st_size;
+                    return _fileinfo.size;
                 }
             }
 
@@ -202,10 +202,10 @@ namespace System.IO
                 int result;
                 while (true)
                 {
-                    result = Interop.libc.stat(_fullPath, out _stat);
+                    result = Interop.libcoreclr.GetFileInformationFromPath(_fullPath, out _fileinfo);
                     if (result >= 0)
                     {
-                        _statInitialized = 0;
+                        _fileinfoInitialized = 0;
                     }
                     else
                     {
@@ -214,7 +214,7 @@ namespace System.IO
                         {
                             continue;
                         }
-                        _statInitialized = errno;
+                        _fileinfoInitialized = errno;
                     }
                     break;
                 }
@@ -222,15 +222,15 @@ namespace System.IO
 
             private void EnsureStatInitialized()
             {
-                if (_statInitialized == -1)
+                if (_fileinfoInitialized == -1)
                 {
                     Refresh();
                 }
 
-                if (_statInitialized != 0)
+                if (_fileinfoInitialized != 0)
                 {
-                    int errno = _statInitialized;
-                    _statInitialized = -1;
+                    int errno = _fileinfoInitialized;
+                    _fileinfoInitialized = -1;
                     throw Interop.GetExceptionForIoErrno(errno, _fullPath, _isDirectory);
                 }
             }
