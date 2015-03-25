@@ -168,4 +168,7 @@
   <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
     <value>The process cannot access the file because it is being used by another process.</value>
   </data>
+  <data name="EventStream_FailedToStart" xml:space="preserve">
+    <value>Failed to start the EventStream</value>
+  </data>
 </root>

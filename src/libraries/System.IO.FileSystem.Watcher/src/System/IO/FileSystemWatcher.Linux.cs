@@ -86,8 +86,6 @@ namespace System.IO
             StopRaisingEvents();
         }
 
-        internal const bool CaseSensitive = true;
-
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
@@ -251,6 +249,7 @@ namespace System.IO
                 _includeSubdirectories = includeSubdirectories;
                 _notifyFilters = notifyFilters;
                 _cancellationToken = cancellationToken;
+                FileSystemWatcher.CaseSensitive = true;
 
                 // Add a watch for this starting directory.  We keep track of the watch descriptor => directory information
                 // mapping in a dictionary; this is needed in order to be able to determine the containing directory
@@ -663,7 +662,7 @@ namespace System.IO
                 //         uint32_t len;
                 //         char     name[]; // length determined by len; at least 1 for required null termination
                 //     };
-                Debug.Assert((_bufferPos + (c_INotifyEventSize + 1)) <= _bufferAvailable);
+                Debug.Assert(_bufferPos + c_INotifyEventSize <= _bufferAvailable);
                 NotifyEvent readEvent;
                 readEvent.wd = BitConverter.ToInt32(_buffer, _bufferPos);
                 readEvent.mask = BitConverter.ToUInt32(_buffer, _bufferPos + 4);       // +4  to get past wd

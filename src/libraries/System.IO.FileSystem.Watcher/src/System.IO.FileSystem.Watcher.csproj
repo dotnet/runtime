@@ -9,18 +9,16 @@
     <ProjectGuid>{77E702D9-C6D8-4CE4-9941-D3056C3CCBED}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Mac_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Mac_Release|AnyCPU'" />
-
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link> 
+      <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
     <Compile Include="System\HResults.cs" />
     <Compile Include="System\IO\ErrorEventArgs.cs" />
@@ -40,19 +38,18 @@
     <Compile Include="Microsoft\Win32\UnsafeNativeMethods.cs" />
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.inotify.cs" >
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.inotify.cs">
       <Link>Common\Interop\Linux\Interop.inotify.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Unix\libc\Interop.read.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
-      <Link>Common\src\Interop\Unix\libc\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\libc\Interop.strerror.cs</Link>
@@ -63,9 +60,29 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
+      <Link>Common\src\Interop\Unix\libc\Interop.gnu_get_libc_version.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.EventStream.cs">
+      <Link>Common\Interop\OSX\Interop.EventStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.RunLoop.cs">
+      <Link>Common\Interop\OSX\Interop.RunLoop.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

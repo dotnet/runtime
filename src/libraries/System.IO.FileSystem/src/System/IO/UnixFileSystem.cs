@@ -101,19 +101,6 @@ namespace System.IO
             }
         }
 
-        public override bool FileExists(string fullPath)
-        {
-            while (Interop.libc.access(fullPath, Interop.libc.AccessModes.F_OK) < 0)
-            {
-                if (Marshal.GetLastWin32Error() == Interop.Errors.EINTR)
-                {
-                    continue;
-                }
-                return false;
-            }
-            return true;
-        }
-
         public override void CreateDirectory(string fullPath)
         {
             // NOTE: This logic is primarily just carried forward from Win32FileSystem.CreateDirectory.
@@ -318,6 +305,17 @@ namespace System.IO
 
         private bool DirectoryExists(string fullPath, out int errno)
         {
+            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFDIR, out errno);
+        }
+
+        public override bool FileExists(string fullPath)
+        {
+            int errno;
+            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFREG, out errno);
+        }
+
+        private bool FileExists(string fullPath, int fileType, out int errno)
+        {
             Interop.libcoreclr.fileinfo fileinfo;
             while (true)
             {
@@ -332,7 +330,7 @@ namespace System.IO
                     }
                     return false;
                 }
-                return (fileinfo.mode & (int)Interop.libcoreclr.FileTypes.S_IFMT) == (int)Interop.libcoreclr.FileTypes.S_IFDIR;
+                return (fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == fileType;
             }
         }
 

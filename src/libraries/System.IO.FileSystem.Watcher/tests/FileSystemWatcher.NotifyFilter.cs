@@ -22,7 +22,7 @@ public partial class FileSystemWatcher_4000_Tests
             watcher.EnableRaisingEvents = true;
 
             var attributes = File.GetAttributes(file.Path);
-            attributes |= FileAttributes.Temporary;
+            attributes |= FileAttributes.ReadOnly;
 
             File.SetAttributes(file.Path, attributes);
 
