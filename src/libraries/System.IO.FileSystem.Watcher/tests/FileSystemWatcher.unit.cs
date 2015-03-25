@@ -383,7 +383,11 @@ public partial class FileSystemWatcher_4000_Tests
         Assert.Equal(currentDir, watcher.Path);
 
         // expect a change for same "full-path" but different string path, FSW does not normalize
-        string currentDirRelative = currentDir + @"\.\.\.\.";
+        string currentDirRelative = currentDir +
+            Path.DirectorySeparatorChar + "." +
+            Path.DirectorySeparatorChar + "." +
+            Path.DirectorySeparatorChar + "." +
+            Path.DirectorySeparatorChar + ".";
         watcher.Path = currentDirRelative;
         Assert.Equal(currentDirRelative, watcher.Path);
 
