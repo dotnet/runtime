@@ -1341,7 +1341,8 @@ void                GenTree::CopyFrom(const GenTree* src, Compiler* comp)
     assert((gtFlags & GTF_NODE_LARGE) || GenTree::s_gtNodeSizes[src->gtOper] == TREE_NODE_SZ_SMALL);
     GenTreePtr prev = gtPrev;
     GenTreePtr next = gtNext;
-    memcpy(this, src, src->GetNodeSize());
+    // The VTable pointer is copied intentionally here
+    memcpy((void*)this, (void*)src, src->GetNodeSize());
     this->gtPrev = prev;
     this->gtNext = next;
 #ifdef DEBUG

@@ -161,7 +161,7 @@ public:
     }
 
 void
-RegRecord::init(regNumber reg)
+init(regNumber reg)
 {
 #ifdef _TARGET_ARM64_
     // The Zero register, or the SP
@@ -503,7 +503,7 @@ private:
                                       LSRA_ALWAYS_INSERT_RELOAD         = 0x400,
                                       LSRA_RELOAD_MASK                  = 0x400 };
     LsraReload                  getLsraReload()                 { return (LsraReload) (lsraStressMask & LSRA_RELOAD_MASK); }
-    bool                        alwaysInsertReload()            { return getLsraSpill() == LSRA_ALWAYS_INSERT_RELOAD; }
+    bool                        alwaysInsertReload()            { return getLsraReload() == LSRA_ALWAYS_INSERT_RELOAD; }
 
     // This controls whether we spill everywhere
     enum LsraSpill                  { LSRA_DONT_SPILL_ALWAYS            = 0,
