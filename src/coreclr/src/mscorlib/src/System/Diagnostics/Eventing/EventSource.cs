@@ -2494,6 +2494,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
             if (m_provider == null)     // If we failed to construct
                 return;
+#endif // FEATURE_MANAGED_ETW
 
             m_outOfBandMessageCount = 0;
             bool shouldReport = (commandArgs.perEventSourceSessionId > 0) && (commandArgs.perEventSourceSessionId <= SessionMask.MAX);
@@ -2718,7 +2719,6 @@ namespace System.Diagnostics.Tracing
                 ReportOutOfBandMessage("ERROR: Exception in Command Processing for EventSource " + Name + ": " + e.Message, true);
                 // We never throw when doing a command.  
             }
-#endif // FEATURE_MANAGED_ETW
         }
 
 #if FEATURE_ACTIVITYSAMPLING
