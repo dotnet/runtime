@@ -202,8 +202,13 @@ Given the significant work required to bring all of this infrastructure up, this
 ## Scenarios
 We’ll use the following scenarios when defining priorities:
 
-- Performance analysis of the .NET Core runtime and framework on Linux and Mac.
-- Performance analysis of ASP.NET running on .NET Core on Linux and Mac.
+- P1: Performance analysis in support of bring-up of the .NET Core runtime and framework on Linux and Mac.
+- P2: Performance analysis of ASP.NET running on .NET Core on Linux and Mac.
+
+To support these scenarios, we need the following capabilities:
+
+- P1: Collection and analysis of CPU, threading, syscalls, native memory.  Support for JIT compiled call frame resolution.
+- P2: Collection and analysis of managed memory, managed thread pool, async, causality, JIT events.
 
 We expect that the following assumptions will hold for the majority of developers and applications:
 
