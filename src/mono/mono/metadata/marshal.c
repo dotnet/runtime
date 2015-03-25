@@ -10347,6 +10347,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem (int size)
 #ifdef HOST_WIN32
 	res = CoTaskMemAlloc (size);
 #else
+	if ((gulong)size == 0)
+		/* This returns a valid pointer for size 0 on MS.NET */
+		size = 4;
+
 	res = g_try_malloc ((gulong)size);
 #endif
 	if (!res)
