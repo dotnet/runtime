@@ -277,6 +277,9 @@ HRESULT STDMETHODCALLTYPE
 ShimLocalDataTarget::GetPlatform( 
         CorDebugPlatform *pPlatform)
 {
+#ifdef FEATURE_PAL
+#error ShimLocalDataTarget is not implemented on PAL systems yet
+#endif    
     // Assume that we're running on Windows for now.
 #if defined(DBG_TARGET_X86)
     *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
