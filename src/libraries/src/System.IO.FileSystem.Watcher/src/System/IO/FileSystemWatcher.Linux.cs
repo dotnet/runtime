@@ -86,8 +86,6 @@ namespace System.IO
             StopRaisingEvents();
         }
 
-        internal const bool CaseSensitive = true;
-
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
@@ -251,6 +249,7 @@ namespace System.IO
                 _includeSubdirectories = includeSubdirectories;
                 _notifyFilters = notifyFilters;
                 _cancellationToken = cancellationToken;
+                FileSystemWatcher.CaseSensitive = true;
 
                 // Add a watch for this starting directory.  We keep track of the watch descriptor => directory information
                 // mapping in a dictionary; this is needed in order to be able to determine the containing directory
