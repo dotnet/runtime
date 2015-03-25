@@ -23,16 +23,16 @@ public:
     GenTree* tree;
     BasicBlock* block;
 
-    Location() : block(nullptr), tree(nullptr) {}
+    Location() : tree(nullptr), block(nullptr) {}
 
-    Location(GenTree* t, BasicBlock* b) : block(b), tree(t)
+    Location(GenTree* t, BasicBlock* b) : tree(t), block(b)
     {
         DBEXEC(TRUE, Validate());
     }
 
     // construct a location consisting of the first tree after the start of the given block
     // (and the corresponding block, which may not be the same as the one passed in)
-    Location(BasicBlock* b) : block(b), tree(nullptr)
+    Location(BasicBlock* b) : tree(nullptr), block(b)
     {
         Initialize();
     }
