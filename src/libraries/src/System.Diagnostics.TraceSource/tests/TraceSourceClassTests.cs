@@ -7,10 +7,17 @@ namespace System.Diagnostics.TraceSourceTests
 {
     using Method = TestTraceListener.Method;
 
-    public class TraceSourceTests
+    public sealed class TraceSourceClassTests
     {
         [Fact]
-        public void DefaultListener()
+        public void ConstrutorExceptionTest()
+        {
+            Assert.Throws<ArgumentNullException>(() => new TraceSource(null));
+            Assert.Throws<ArgumentException>(() => new TraceSource(""));
+        }
+
+        [Fact]
+        public void DefaultListenerTest()
         {
             var trace = new TraceSource("TestTraceSource");
             Assert.Equal(1, trace.Listeners.Count);
@@ -18,10 +25,69 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         [Fact]
-        public void DefaultLevel()
+        public void SetSourceSwitchExceptionTest()
+        {
+            var trace = new TraceSource("TestTraceSource");
+            Assert.Throws<ArgumentNullException>(() => trace.Switch = null);
+        }
+
+        [Fact]
+        public void SetSourceSwitchTest()
+        {
+            var trace = new TraceSource("TestTraceSource");
+            var @switch = new SourceSwitch("TestTraceSwitch");
+            trace.Switch = @switch;
+            Assert.Equal(@switch, trace.Switch);
+        }
+
+        [Fact]
+        public void DefaultLevelTest()
         {
             var trace = new TraceSource("TestTraceSource");
             Assert.Equal(SourceLevels.Off, trace.Switch.Level);
+        }
+
+        [Fact]
+        public void CloseTest()
+        {
+            var trace = new TraceSource("T1", SourceLevels.All);
+            trace.Listeners.Clear();
+
+            var listener = new TestTraceListener();
+            trace.Listeners.Add(listener);
+            trace.Close();
+            // NOTE: this assertion fails on .net 4.5
+            // where TraceSource.Close calls TraceListener.Close, not Dispose.
+            Assert.Equal(1, listener.GetCallCount(Method.Dispose));
+            // Assert that writing to a closed TraceSource is not an error.
+            trace.TraceEvent(TraceEventType.Critical, 0);
+        }
+
+        [Fact]
+        public void PruneTest()
+        {
+            var strongTrace = new TraceSource("TestTraceSource");
+            var traceRef = new WeakReference(new TraceSource("TestTraceSource"));
+            Assert.True(traceRef.IsAlive);
+            GC.Collect(2);
+            Trace.Refresh();
+            Assert.False(traceRef.IsAlive);
+            GC.Collect(2);
+            Trace.Refresh();
+        }
+
+        [Fact]
+        public void TraceInformationTest()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = new TestTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceInformation("message");
+            Assert.Equal(0, listener.GetCallCount(Method.TraceData));
+            Assert.Equal(0, listener.GetCallCount(Method.Write));
+            Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+            trace.TraceInformation("format", "arg1", "arg2");
+            Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
         }
 
         [Theory]
@@ -40,7 +106,7 @@ namespace System.Diagnostics.TraceSourceTests
         // NOTE: tests to cover a TraceEventType value that is not in CoreFX (0x20 == TraceEventType.Start in 4.5)
         [InlineData(SourceLevels.Verbose, (TraceEventType)0x20, 0)]
         [InlineData(SourceLevels.All, (TraceEventType)0x20, 1)]
-        public void SwitchLevel(SourceLevels sourceLevel, TraceEventType messageLevel, int expected)
+        public void SwitchLevelTest(SourceLevels sourceLevel, TraceEventType messageLevel, int expected)
         {
             var trace = new TraceSource("TestTraceSource");
             var listener = new TestTraceListener();
@@ -49,59 +115,170 @@ namespace System.Diagnostics.TraceSourceTests
             trace.TraceEvent(messageLevel, 0);
             Assert.Equal(expected, listener.GetCallCount(Method.TraceEvent));
         }
+    }
+
+    public sealed class TraceSourceTests_Default : TraceSourceTestsBase
+    {
+        // default mode: GlobalLock = true, AutoFlush = false, ThreadSafeListener = false
+    }
+
+    public sealed class TraceSourceTests_AutoFlush : TraceSourceTestsBase
+    {
+        internal override bool AutoFlush
+        {
+            get { return true; }
+        }
+    }
+
+    public sealed class TraceSourceTests_NoGlobalLock : TraceSourceTestsBase
+    {
+        internal override bool UseGlobalLock
+        {
+            get { return false; }
+        }
+    }
+
+    public sealed class TraceSourceTests_NoGlobalLock_AutoFlush : TraceSourceTestsBase
+    {
+        internal override bool UseGlobalLock
+        {
+            get { return false; }
+        }
+
+        internal override bool AutoFlush
+        {
+            get { return true; }
+        }
+    }
+
+    public sealed class TraceSourceTests_ThreadSafeListener : TraceSourceTestsBase
+    {
+        internal override bool ThreadSafeListener
+        {
+            get { return true; }
+        }
+    }
+
+    public sealed class TraceSourceTests_ThreadSafeListener_AutoFlush : TraceSourceTestsBase
+    {
+        internal override bool ThreadSafeListener
+        {
+            get { return true; }
+        }
+
+        internal override bool AutoFlush
+        {
+            get { return true; }
+        }
+    }
+
+    // Defines abstract tests that will be executed in different modes via the above concrete classes.
+    public abstract class TraceSourceTestsBase : IDisposable
+    {
+
+        void IDisposable.Dispose()
+        {
+            TraceTestHelper.ResetState();
+        }
+
+        public TraceSourceTestsBase()
+        {            
+            Trace.AutoFlush = AutoFlush;
+            Trace.UseGlobalLock = UseGlobalLock;
+        }
+        
+        // properties are overridden to define different "modes" of execution
+        internal virtual bool UseGlobalLock
+        {
+            get
+            {
+                // ThreadSafeListener is only meaningful when not using a global lock, 
+                // so UseGlobalLock will be auto-disabled in that mode.
+                return true && !ThreadSafeListener;
+            }
+        }
+
+        internal virtual bool AutoFlush
+        {
+            get { return false; }
+        }
+
+        internal virtual bool ThreadSafeListener
+        {
+            get { return false; }
+        }
+
+        private TestTraceListener GetTraceListener()
+        {
+            return new TestTraceListener(ThreadSafeListener);
+        }
 
         [Fact]
-        public void TraceEvent()
+        public void FlushTest()
         {
             var trace = new TraceSource("TestTraceSource", SourceLevels.All);
-            var listener = new TestTraceListener();
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.Flush();
+            Assert.Equal(1, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceEvent1Test()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
             trace.Listeners.Add(listener);
             trace.TraceEvent(TraceEventType.Verbose, 0);
             Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+        }
+
+        [Fact]
+        public void TraceEvent2Test()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
             trace.TraceEvent(TraceEventType.Verbose, 0, "Message");
-            Assert.Equal(2, listener.GetCallCount(Method.TraceEvent));
-            trace.TraceEvent(TraceEventType.Verbose, 0, "Format {0}", "arg0", 1);
-            Assert.Equal(3, listener.GetCallCount(Method.TraceEvent));
-        }
-
-        [Fact]
-        public void TraceData()
-        {
-            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
-            var listener = new TestTraceListener();
-            trace.Listeners.Add(listener);
-            trace.TraceData(TraceEventType.Verbose, 0, null);
-            Assert.Equal(1, listener.GetCallCount(Method.TraceData));
-            trace.TraceData(TraceEventType.Verbose, 0, "Data1", 2);
-            Assert.Equal(2, listener.GetCallCount(Method.TraceData));
-        }
-
-        [Fact]
-        public void TraceInformation()
-        {
-            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
-            var listener = new TestTraceListener();
-            trace.Listeners.Add(listener);
-            trace.TraceInformation(null);
-            Assert.Equal(0, listener.GetCallCount(Method.TraceData));
-            Assert.Equal(0, listener.GetCallCount(Method.Write));
             Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
         }
 
         [Fact]
-        public void Close()
+        public void TraceEvent3Test()
         {
-            var trace = new TraceSource("T1", SourceLevels.All);
-            trace.Listeners.Clear();
-
-            var listener = new TestTraceListener();
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
             trace.Listeners.Add(listener);
-            trace.Close();
-            // NOTE: this assertion fails on .net 4.5
-            // where TraceSource.Close calls TraceListener.Close, not Dispose.
-            Assert.Equal(1, listener.GetCallCount(Method.Dispose));
-            // Assert that writing to a closed TraceSource is not an error.
-            trace.TraceEvent(TraceEventType.Critical, 0);
+            trace.TraceEvent(TraceEventType.Verbose, 0, "Format", "Arg1", "Arg2");
+            Assert.Equal(1, listener.GetCallCount(Method.TraceEvent));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceData1Test()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceData(TraceEventType.Verbose, 0, new Object());
+            Assert.Equal(1, listener.GetCallCount(Method.TraceData));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
+        }
+
+        [Fact]
+        public void TraceData2Test()
+        {
+            var trace = new TraceSource("TestTraceSource", SourceLevels.All);
+            var listener = GetTraceListener();
+            trace.Listeners.Add(listener);
+            trace.TraceData(TraceEventType.Verbose, 0, new Object[0]);
+            Assert.Equal(1, listener.GetCallCount(Method.TraceData));
+            var flushExpected = AutoFlush ? 1 : 0;
+            Assert.Equal(flushExpected, listener.GetCallCount(Method.Flush));
         }
     }
 }

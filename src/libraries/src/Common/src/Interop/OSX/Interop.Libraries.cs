@@ -5,8 +5,7 @@ internal static partial class Interop
 {
     private static partial class Libraries
     {
-        internal const string Libc = "libc";             // C library
-        internal const string LibCoreClr = "libcoreclr"; // CoreCLR runtime
-        internal const string LibCrypto = "libcrypto";   // OpenSSL crypto library
+        internal const string CoreFoundationLibrary = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
+        internal const string CoreServicesLibrary   = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
     }
 }

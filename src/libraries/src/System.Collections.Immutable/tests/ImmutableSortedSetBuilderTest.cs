@@ -105,14 +105,14 @@ namespace System.Collections.Immutable.Test
         [Fact]
         public void GetEnumeratorTest()
         {
-            var builder = ImmutableSortedSet.Create("a", "B").ToBuilder();
+            var builder = ImmutableSortedSet.Create("a", "B").WithComparer(StringComparer.Ordinal).ToBuilder();
             IEnumerable<string> enumerable = builder;
             using (var enumerator = enumerable.GetEnumerator())
             {
                 Assert.True(enumerator.MoveNext());
-                Assert.Equal("a", enumerator.Current);
-                Assert.True(enumerator.MoveNext());
                 Assert.Equal("B", enumerator.Current);
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal("a", enumerator.Current);
                 Assert.False(enumerator.MoveNext());
             }
         }

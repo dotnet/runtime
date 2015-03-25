@@ -349,7 +349,7 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue("NullReferenceException")]
+        [ActiveIssue(1002)]
         public unsafe void PlaneFieldOffsetTest()
         {
             Plane* ptr = (Plane*)0;

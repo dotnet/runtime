@@ -2485,7 +2485,7 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue("NullReferenceException")]
+        [ActiveIssue(1002)]
         public unsafe void Matrix4x4FieldOffsetTest()
         {
             Matrix4x4* ptr = (Matrix4x4*)0;
