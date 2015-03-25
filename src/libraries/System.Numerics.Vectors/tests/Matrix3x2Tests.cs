@@ -1009,7 +1009,7 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue("NullReferenceException")]
+        [ActiveIssue(1002)]
         public unsafe void Matrix3x2FieldOffsetTest()
         {
             Matrix3x2* ptr = (Matrix3x2*)0;
