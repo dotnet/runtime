@@ -18,7 +18,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void InvalidHandleThrows()
         {
-            Assert.Throws<ArgumentException>("handle", () => CreateFileStream(new SafeFileHandle(IntPtr.Zero, true), FileAccess.Read));
+            Assert.Throws<ArgumentException>("handle", () => CreateFileStream(new SafeFileHandle(new IntPtr(-1), true), FileAccess.Read));
         }
 
         [Fact]

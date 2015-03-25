@@ -115,9 +115,11 @@ namespace System.IO.FileSystem.Tests
                 fs.Position = fs.Position;
                 Assert.Equal(fs.Length / 2, fs.Position);
 
-                // Past the end
-                fs.Position = long.MaxValue;
-                Assert.Equal(long.MaxValue, fs.Position);
+                // Past the end, making sure the file length doesn't change by doing so
+                long length = fs.Length;
+                fs.Position = length * 2;
+                Assert.Equal(length, fs.Length);
+                Assert.Equal(length * 2, fs.Position);
             }
         }
 
