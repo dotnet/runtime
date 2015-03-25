@@ -2473,19 +2473,17 @@ mono_processes_cleanup (void)
 			 * This code can run parallel with the sigchld handler, but the
 			 * modifications it makes are safe.
 			 */
-			if (mp == mono_processes) {
+			if (mp == mono_processes)
 				mono_processes = mp->next;
-			} else {
-				if (mp == mono_processes) {
-					mono_processes = mp->next;
-				} else {
-					prev->next = mp->next;
-				}
-			}
+			else
+				prev->next = mp->next;
 			finished = g_slist_prepend (finished, mp);
+
+			mp = mp->next;
+		} else {
+			prev = mp;
+			mp = mp->next;
 		}
-		prev = mp;
-		mp = mp->next;
 	}
 
 	mono_memory_barrier ();
