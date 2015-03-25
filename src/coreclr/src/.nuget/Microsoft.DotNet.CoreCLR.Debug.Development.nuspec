@@ -39,5 +39,7 @@
     <file src="..\inc\corhdr.h" target="inc\corhdr.h" />
     <file src="..\inc\corinfo.h" target="inc\corinfo.h" />
     <file src="..\inc\corjit.h" target="inc\corjit.h" />
+    <file src="..\inc\opcode.def" target="inc\opcode.def" />
+    <file src="..\inc\openum.h" target="inc\openum.h" />
   </files>
 </package>
