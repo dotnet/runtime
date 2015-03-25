@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Memory, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Memory_L1_0, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SafeMemoryMappedFileHandle CreateFileMapping(
             SafeFileHandle hFile,
             ref SECURITY_ATTRIBUTES lpFileMappingAttributes,
@@ -18,7 +18,7 @@ internal partial class Interop
             int dwMaximumSizeLow,
             string lpName);
 
-        [DllImport(Libraries.Memory, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Memory_L1_0, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SafeMemoryMappedFileHandle CreateFileMapping(
             IntPtr hFile,
             ref SECURITY_ATTRIBUTES lpFileMappingAttributes,
