@@ -56,13 +56,14 @@ VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
 }
 
 ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc) 
-    : m_pComp(comp), m_alloc(alloc), m_chunks(alloc, 8), m_nextChunkBase(0),
-    m_intCnsMap(NULL), m_longCnsMap(NULL), m_handleMap(NULL), m_floatCnsMap(NULL), m_doubleCnsMap(NULL), m_byrefCnsMap(NULL),
-    m_VNFunc0Map(NULL), m_VNFunc1Map(NULL), m_VNFunc2Map(NULL), m_VNFunc3Map(NULL), m_VNFunc4Map(NULL),
-    m_fixedPointMapSels(alloc, 8), m_uPtrToLocNotAFieldCount(1)
+    : m_pComp(comp), m_alloc(alloc), 
 #ifdef DEBUG
-    , m_numMapSels(0)
+    m_numMapSels(0),
 #endif
+    m_nextChunkBase(0), m_fixedPointMapSels(alloc, 8), m_chunks(alloc, 8),
+    m_intCnsMap(NULL), m_longCnsMap(NULL), m_handleMap(NULL), m_floatCnsMap(NULL), m_doubleCnsMap(NULL), m_byrefCnsMap(NULL),
+    m_VNFunc0Map(NULL), m_VNFunc1Map(NULL), m_VNFunc2Map(NULL), m_VNFunc3Map(NULL),
+    m_uPtrToLocNotAFieldCount(1)
 {
     // We have no current allocation chunks.
     for (unsigned i = 0; i < TYP_COUNT; i++)
@@ -564,7 +565,7 @@ bool ValueNumStore::IsSharedStatic(ValueNum vn)
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_SharedStatic) != 0;
 }
 
-ValueNumStore::Chunk::Chunk(IAllocator* alloc, ValueNum* pNextBaseVN, var_types typ, ChunkExtraAttribs attribs) : m_baseVN(*pNextBaseVN), m_typ(typ), m_attribs(attribs), m_numUsed(0), m_defs(NULL) 
+ValueNumStore::Chunk::Chunk(IAllocator* alloc, ValueNum* pNextBaseVN, var_types typ, ChunkExtraAttribs attribs) : m_defs(NULL), m_numUsed(0), m_baseVN(*pNextBaseVN), m_typ(typ), m_attribs(attribs)
 {
     // Allocate "m_defs" here, according to the typ/attribs pair.
     switch (attribs)
@@ -2694,12 +2695,12 @@ bool ValueNumStore::IsVNArrLenBound(ValueNum vn)
     {
         return false;
     }
-    if (funcAttr.m_func != GT_LE && funcAttr.m_func != GT_GE &&
-        funcAttr.m_func != GT_LT && funcAttr.m_func != GT_GT)
+    if (funcAttr.m_func != (VNFunc)GT_LE && funcAttr.m_func != (VNFunc)GT_GE &&
+        funcAttr.m_func != (VNFunc)GT_LT && funcAttr.m_func != (VNFunc)GT_GT)
     {
         return false;
     }
-    if (!IsVNArrLen(funcAttr.m_args[0]) && 
+    if (!IsVNArrLen(funcAttr.m_args[0]) &&
         !IsVNArrLen(funcAttr.m_args[1]))
     {
         return false;
@@ -2739,7 +2740,7 @@ bool ValueNumStore::IsVNArrLenArith(ValueNum vn)
     VNFuncApp funcAttr;
 
     return GetVNFunc(vn, &funcAttr) && // vn is a func.
-        (funcAttr.m_func == GT_ADD || funcAttr.m_func == GT_SUB) && // the func is +/-
+        (funcAttr.m_func == (VNFunc)GT_ADD || funcAttr.m_func == (VNFunc)GT_SUB) && // the func is +/-
         (IsVNArrLen(funcAttr.m_args[0]) || IsVNArrLen(funcAttr.m_args[1])); // either op1 or op2 is a.len
 }
 
@@ -2777,8 +2778,8 @@ bool ValueNumStore::IsVNArrLenArithBound(ValueNum vn)
     }
 
     // Suitable comparator.
-    if (funcAttr.m_func != GT_LE && funcAttr.m_func != GT_GE &&
-        funcAttr.m_func != GT_LT && funcAttr.m_func != GT_GT)
+    if (funcAttr.m_func != (VNFunc)GT_LE && funcAttr.m_func != (VNFunc)GT_GE &&
+        funcAttr.m_func != (VNFunc)GT_LT && funcAttr.m_func != (VNFunc)GT_GT)
     {
         return false;
     }
@@ -2821,7 +2822,7 @@ ValueNum ValueNumStore::GetArrForLenVn(ValueNum vn)
     if (vn == NoVN) return NoVN;
 
     VNFuncApp funcAttr;
-    if (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == GT_ARR_LENGTH)
+    if (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == (VNFunc)GT_ARR_LENGTH)
     {
         return funcAttr.m_args[0];
     }
@@ -2854,7 +2855,8 @@ bool ValueNumStore::IsVNArrLen(ValueNum vn)
 {
     if (vn == NoVN) return false;
     VNFuncApp funcAttr;
-    return (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == GT_ARR_LENGTH);
+    return (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == (VNFunc)GT_ARR_LENGTH);
+
 }
 
 ValueNum ValueNumStore::EvalMathFunc(var_types typ, CorInfoIntrinsics gtMathFN, ValueNum arg0VN)
@@ -3527,10 +3529,10 @@ struct ValueNumberState
     }
 
     ValueNumberState(Compiler* comp) : 
-        m_comp(comp), 
-        m_visited(new (comp, CMK_ValueNumber) BYTE[comp->fgBBNumMax + 1]()),
         m_toDoAllPredsDone(comp->getAllocator(), /*minSize*/4),
-        m_toDoNotAllPredsDone(comp->getAllocator(), /*minSize*/4)
+        m_toDoNotAllPredsDone(comp->getAllocator(), /*minSize*/4),
+        m_comp(comp),
+        m_visited(new (comp, CMK_ValueNumber) BYTE[comp->fgBBNumMax + 1]())
     {
     }
 

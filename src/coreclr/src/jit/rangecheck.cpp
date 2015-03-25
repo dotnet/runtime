@@ -16,11 +16,11 @@ static const int MAX_VISIT_BUDGET = 8192;
 
 // RangeCheck constructor.
 RangeCheck::RangeCheck(Compiler* pCompiler)
-    : m_pCompiler(pCompiler)
-    , m_pDefTable(nullptr)
+    : m_pOverflowMap(nullptr)
     , m_pRangeMap(nullptr)
-    , m_pOverflowMap(nullptr)
     , m_fMappedDefs(false)
+    , m_pDefTable(nullptr)
+    , m_pCompiler(pCompiler)
     , m_nVisitBudget(MAX_VISIT_BUDGET)
 {
 }
@@ -1020,8 +1020,8 @@ struct Node
     Range range;
     Node* next;
     Node()
-        : next(NULL)
-        , range(Limit(Limit::keUndef)) {}
+        : range(Limit(Limit::keUndef)),
+          next(NULL) {}
 };
 
 // Compute the range recursively by asking for the range of each variable in the dependency chain.

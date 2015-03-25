@@ -35,8 +35,8 @@ SsaRenameState::SsaRenameState(const jitstd::allocator<int>& alloc, unsigned lva
     , definedLocs(alloc)
     , heapStack(alloc)
     , heapCount(0)
-    , m_alloc(alloc)
     , lvaCount(lvaCount)
+    , m_alloc(alloc)
 {
 }
 
