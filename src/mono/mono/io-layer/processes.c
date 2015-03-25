@@ -148,6 +148,7 @@ static void process_add_sigchld_handler (void);
  * signal handler)
  */
 static struct MonoProcess *mono_processes = NULL;
+static volatile gint32 mono_processes_read_lock = 0;
 static volatile gint32 mono_processes_cleaning_up = 0;
 static mono_mutex_t mono_processes_mutex;
 static void mono_processes_cleanup (void);
@@ -2434,9 +2435,9 @@ mono_processes_cleanup (void)
 {
 	struct MonoProcess *mp;
 	struct MonoProcess *prev = NULL;
-	GSList *finished = NULL;
-	GSList *l;
+	struct MonoProcess *candidate = NULL;
 	gpointer unref_handle;
+	int spin;
 
 	DEBUG ("%s", __func__);
 
@@ -2444,8 +2445,9 @@ mono_processes_cleanup (void)
 	if (InterlockedCompareExchange (&mono_processes_cleaning_up, 1, 0) != 0)
 		return;
 
-	for (mp = mono_processes; mp; mp = mp->next) {
-		if (mp->pid == 0 && mp->handle) {
+	mp = mono_processes;
+	while (mp != NULL) {
+		if (mp->pid == 0 && mp->handle != NULL) {
 			/* This process has exited and we need to remove the artifical ref
 			 * on the handle */
 			mono_mutex_lock (&mono_processes_mutex);
@@ -2454,7 +2456,9 @@ mono_processes_cleanup (void)
 			mono_mutex_unlock (&mono_processes_mutex);
 			if (unref_handle)
 				_wapi_handle_unref (unref_handle);
+			continue;
 		}
+		mp = mp->next;
 	}
 
 	/*
@@ -2463,44 +2467,62 @@ mono_processes_cleanup (void)
 	 * asynchronously. The handler requires that the mono_processes list
 	 * remain valid.
 	 */
-	mono_mutex_lock (&mono_processes_mutex);
-
 	mp = mono_processes;
-	while (mp) {
-		if (mp->handle_count == 0 && mp->freeable) {
+	spin = 0;
+	while (mp != NULL) {
+		if ((mp->handle_count == 0 && mp->pid == 0) || candidate != NULL) {
+			if (spin > 0) {
+				_wapi_handle_spin (spin);
+				spin <<= 1;
+			}
+
+			/* We've found a candidate */
+			mono_mutex_lock (&mono_processes_mutex);
 			/*
-			 * Unlink the entry.
 			 * This code can run parallel with the sigchld handler, but the
 			 * modifications it makes are safe.
 			 */
-			if (mp == mono_processes)
-				mono_processes = mp->next;
-			else
-				prev->next = mp->next;
-			finished = g_slist_prepend (finished, mp);
+			if (candidate == NULL) {
+				/* unlink it */
+				if (mp == mono_processes) {
+					mono_processes = mp->next;
+				} else {
+					prev->next = mp->next;
+				}
+				candidate = mp;
+			}
 
-			mp = mp->next;
-		} else {
-			prev = mp;
-			mp = mp->next;
+			/* It's still safe to traverse the structure.*/
+			mono_memory_barrier ();
+
+			if (mono_processes_read_lock != 0) {
+				/* The sigchld handler is watching us. Spin a bit and try again */
+				if (spin == 0) {
+					spin = 1;
+				} else if (spin >= 8) {
+					/* Just give up for now */
+					mono_mutex_unlock (&mono_processes_mutex);
+					break;
+				}
+			} else {
+				/* We've modified the list of processes, and we know the sigchld handler
+				 * isn't executing, so even if it executes at any moment, it'll see the
+				 * new version of the list. So now we can free the candidate. */
+				DEBUG ("%s: freeing candidate %p", __func__, candidate);
+				mp = candidate->next;
+				MONO_SEM_DESTROY (&candidate->exit_sem);
+				g_free (candidate);
+				candidate = NULL;
+			}
+
+			mono_mutex_unlock (&mono_processes_mutex);
+
+			continue;
 		}
+		spin = 0;
+		prev = mp;
+		mp = mp->next;
 	}
-
-	mono_memory_barrier ();
-
-	for (l = finished; l; l = l->next) {
-		/*
-		 * All the entries in the finished list are unlinked from mono_processes, and
-		 * they have the 'finished' flag set, which means the sigchld handler is done
-		 * accessing them.
-		 */
-		mp = l->data;
-		MONO_SEM_DESTROY (&mp->exit_sem);
-		g_free (mp);
-	}
-	g_slist_free (finished);
-
-	mono_mutex_lock (&mono_processes_mutex);
 
 	DEBUG ("%s done", __func__);
 
@@ -2531,6 +2553,8 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 
 	DEBUG ("SIG CHILD handler for pid: %i\n", info->si_pid);
 
+	InterlockedIncrement (&mono_processes_read_lock);
+
 	do {
 		do {
 			pid = waitpid (-1, &status, WNOHANG);
@@ -2540,24 +2564,19 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 			break;
 
 		DEBUG ("child ended: %i", pid);
-
-		/*
-		 * This can run concurrently with the code in the rest of this module.
-		 */
-		for (p = mono_processes; p; p = p->next) {
+		p = mono_processes;
+		while (p != NULL) {
 			if (p->pid == pid) {
+				p->pid = 0; /* this pid doesn't exist anymore, clear it */
+				p->status = status;
+				MONO_SEM_POST (&p->exit_sem);
 				break;
 			}
-		}
-		if (p) {
-			p->pid = 0; /* this pid doesn't exist anymore, clear it */
-			p->status = status;
-			MONO_SEM_POST (&p->exit_sem);
-			mono_memory_barrier ();
-			/* Mark this as freeable, the pointer becomes invalid afterwards */
-			p->freeable = TRUE;
+			p = p->next;
 		}
 	} while (1);
+
+	InterlockedDecrement (&mono_processes_read_lock);
 
 	DEBUG ("SIG CHILD handler: done looping.");
 }
