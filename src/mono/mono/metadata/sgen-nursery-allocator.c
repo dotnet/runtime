@@ -71,7 +71,7 @@
 //#define NALLOC_DEBUG 1
 
 /* The mutator allocs from here. */
-SgenFragmentAllocator mutator_allocator;
+static SgenFragmentAllocator mutator_allocator;
 
 /* freeelist of fragment structures */
 static SgenFragment *fragment_freelist = NULL;

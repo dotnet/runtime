@@ -169,6 +169,12 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 }
 
 void
+mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
+{
+	mono_gc_wbarrier_set_arrayref ((MonoArray*)obj, field_ptr, value);
+}
+
+void
 mono_gc_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap)
 {
 	sgen_wbarrier_value_copy_bitmap (_dest, _src, size, bitmap);

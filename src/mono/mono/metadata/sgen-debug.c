@@ -54,7 +54,7 @@ void check_object (char *start);
  * ######################################################################
  */
 
-const char*descriptor_types [] = {
+static const char*descriptor_types [] = {
 	"INVALID",
 	"run length",
 	"bitmap",

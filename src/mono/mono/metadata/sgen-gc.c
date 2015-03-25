@@ -271,7 +271,6 @@ guint64 stat_nursery_copy_object_failed_pinned = 0;
 guint64 stat_nursery_copy_object_failed_to_space = 0;
 
 static guint64 stat_wbarrier_add_to_global_remset = 0;
-static guint64 stat_wbarrier_set_field = 0;
 static guint64 stat_wbarrier_set_arrayref = 0;
 static guint64 stat_wbarrier_arrayref_copy = 0;
 static guint64 stat_wbarrier_generic_store = 0;
@@ -325,7 +324,7 @@ mono_gc_flush_info (void)
 #define TV_GETTIME SGEN_TV_GETTIME
 #define TV_ELAPSED SGEN_TV_ELAPSED
 
-SGEN_TV_DECLARE (sgen_init_timestamp);
+static SGEN_TV_DECLARE (sgen_init_timestamp);
 
 NurseryClearPolicy nursery_clear_policy = CLEAR_AT_TLAB_CREATION;
 
@@ -366,7 +365,7 @@ static volatile mword highest_heap_address = 0;
 LOCK_DECLARE (sgen_interruption_mutex);
 
 int current_collection_generation = -1;
-volatile gboolean concurrent_collection_in_progress = FALSE;
+static volatile gboolean concurrent_collection_in_progress = FALSE;
 
 /* objects that are ready to be finalized */
 static SgenPointerQueue fin_ready_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_FINALIZE_READY);
@@ -1295,7 +1294,6 @@ init_stats (void)
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("WBarrier remember pointer", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_add_to_global_remset);
-	mono_counters_register ("WBarrier set field", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_field);
 	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_arrayref);
 	mono_counters_register ("WBarrier arrayref copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_arrayref_copy);
 	mono_counters_register ("WBarrier generic store called", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_generic_store);
@@ -2705,20 +2703,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
  * itself. If a GC interrupts the barrier in the middle, value will be kept alive by
  * the conservative scan, otherwise by the remembered set scan.
  */
-void
-mono_gc_wbarrier_set_field (GCObject *obj, gpointer field_ptr, GCObject* value)
-{
-	HEAVY_STAT (++stat_wbarrier_set_field);
-	if (ptr_in_nursery (field_ptr)) {
-		*(void**)field_ptr = value;
-		return;
-	}
-	SGEN_LOG (8, "Adding remset at %p", field_ptr);
-	if (value)
-		binary_protocol_wbarrier (field_ptr, value, value->vtable);
-
-	remset.wbarrier_set_field (obj, field_ptr, value);
-}
 
 void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)

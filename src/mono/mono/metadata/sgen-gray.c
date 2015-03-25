@@ -246,7 +246,7 @@ invalid_prepare_func (SgenGrayQueue *queue)
 void
 sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
 {
-	sgen_gray_object_queue_init (queue, FALSE);
+	sgen_gray_object_queue_init (queue, NULL);
 	queue->alloc_prepare_func = invalid_prepare_func;
 	queue->alloc_prepare_data = NULL;
 }
