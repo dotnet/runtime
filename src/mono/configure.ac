@@ -2512,10 +2512,10 @@ fi
 
 AC_ARG_ENABLE(bcl-opt, [  --disable-bcl-opt	BCL is compiled with no optimizations (allows accurate BCL debugging)], test_bcl_opt=$enableval, test_bcl_opt=yes)
 
-AC_ARG_ENABLE(perf-events, [  --disable-perf-events Disable using `perf` for profiling on Linux], test_perf_events=$enableval, test_perf_events=yes)
-if test "x$test_perf_events" != "xyes"; then
-	AC_DEFINE(DISABLE_PERF_EVENTS, 1, [Disable using `perf` for profiling on Linux])
-	AC_SUBST(DISABLE_PERF_EVENTS)
+AC_ARG_ENABLE(perf-events, [  --enable-perf-events Enable using `perf` for profiling on Linux], test_perf_events=$enableval, test_perf_events=no)
+if test "x$test_perf_events" == "xyes"; then
+	AC_DEFINE(ENABLE_PERF_EVENTS, 1, [Enable using `perf` for profiling on Linux])
+	AC_SUBST(ENABLE_PERF_EVENTS)
 fi
 
 AC_MSG_CHECKING([if big-arrays are to be enabled])
