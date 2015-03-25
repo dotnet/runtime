@@ -174,9 +174,13 @@ if (WIN32)
   
 elseif (CLR_CMAKE_PLATFORM_UNIX)  
   # Set flag to indicate if this will be a 64bit build
-  if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+  # CMAKE_SYSTEM_PROCESSOR returns the value of `uname -p`.
+  # For the AMD/Intel 64bit architecure two different strings are common.
+  # Linux and Darwin identify it as "x86_64" while FreeBSD uses the
+  # "amd64" string. Accept either of the two here.
+  if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
     set(IS_64BIT_BUILD 1)  
-  endif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+  endif (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
   
   add_definitions(-DFEATURE_IMPLICIT_TLS)
 endif(WIN32)
@@ -336,12 +340,12 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)
   add_definitions(-DFEATURE_PAL_SXS)
 
-  if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+  if(IS_64BIT_BUILD)
     add_definitions(-DBIT64=1)
     add_definitions(-DFEATURE_PAL)
-  else (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+  else (IS_64BIT_BUILD)
     message(FATAL_ERROR "error: Detected non x86_64 target processor. Not supported!")
-  endif(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+  endif(IS_64BIT_BUILD)
 
   if(CLR_CMAKE_PLATFORM_LINUX)
     add_definitions(-D__LINUX__=1)
@@ -352,6 +356,9 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     message("Detected OSX x86_64")
     add_definitions(-D_XOPEN_SOURCE)
   endif(CLR_CMAKE_PLATFORM_DARWIN)
+  if(CLR_CMAKE_PLATFORM_FREEBSD)
+    message("Detected FreeBSD amd64")
+  endif(CLR_CMAKE_PLATFORM_FREEBSD)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 
