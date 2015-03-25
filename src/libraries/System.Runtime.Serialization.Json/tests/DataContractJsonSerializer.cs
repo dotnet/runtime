@@ -5,6 +5,7 @@ using Xunit;
 using SerializationTypes;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
@@ -101,9 +102,9 @@ public static class DataContractJsonSerializerTests
     [Fact]
     public static void DCJS_DecimalAsRoot()
     {
-        foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
+        foreach (decimal value in new decimal[] { -1.2m, 0.0m, 2.3m, decimal.MinValue, decimal.MaxValue })
         {
-            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, value.ToString()), value);
+            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, value.ToString(CultureInfo.InvariantCulture)), value);
         }
     }
 
