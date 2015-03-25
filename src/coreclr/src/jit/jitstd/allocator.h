@@ -38,7 +38,7 @@ public:
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
     typedef void* pointer;
-    typedef const pointer const_pointer;
+    typedef const void* const_pointer;
     typedef void value_type;
 
     template <typename U>
@@ -98,8 +98,8 @@ public:
     typedef ptrdiff_t difference_type;
     typedef T* pointer;
     typedef T& reference;
-    typedef const pointer const_pointer;
-    typedef const reference const_reference;
+    typedef const T* const_pointer;
+    typedef const T& const_reference;
     typedef T value_type;
 
 private:
