@@ -1115,9 +1115,9 @@ public static class DataContractSerializerTests
         Assert.StrictEqual(value.StringProperty, actual.StringProperty);
         Assert.NotNull(actual.ListProperty);
         Assert.True(value.ListProperty.Count == actual.ListProperty.Count);
-        Assert.StrictEqual("one", actual.ListProperty[0]);
-        Assert.StrictEqual("two", actual.ListProperty[1]);
-        Assert.StrictEqual("three", actual.ListProperty[2]);
+        Assert.StrictEqual(value.ListProperty[0], actual.ListProperty[0]);
+        Assert.StrictEqual(value.ListProperty[1], actual.ListProperty[1]);
+        Assert.StrictEqual(value.ListProperty[2], actual.ListProperty[2]);
     }
 
     [Fact]
