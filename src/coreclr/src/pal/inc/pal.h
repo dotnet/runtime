@@ -4446,7 +4446,7 @@ PAL_GetResourceString(
         IN int cchWideChar);
 
 PALIMPORT
-VOID
+BOOL
 PALAPI
 PAL_BindResources(IN LPCSTR lpDomain);
 

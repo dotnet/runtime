@@ -1649,8 +1649,9 @@ Function :
 
 PAL_BindResources - bind the resource domain to the path where the coreclr resides
 
+Returns TRUE if it succeeded, FALSE if it failed due to OOM
 --*/
-VOID
+BOOL
 PALAPI
 PAL_BindResources(IN LPCSTR lpDomain)
 {
@@ -1659,9 +1660,12 @@ PAL_BindResources(IN LPCSTR lpDomain)
 
     DWORD size = FILEGetDirectoryFromFullPathA(g_szCoreCLRPath, MAX_PATH, coreCLRDirectoryPath);
     _ASSERTE(size <= MAX_PATH);
-    bindtextdomain(lpDomain, coreCLRDirectoryPath);
+    LPCSTR boundPath = bindtextdomain(lpDomain, coreCLRDirectoryPath);
+
+    return boundPath != NULL;
 #else // __APPLE__
     // UNIXTODO: Implement for OSX if necessary
+    return TRUE;
 #endif // __APPLE__
 }
 
