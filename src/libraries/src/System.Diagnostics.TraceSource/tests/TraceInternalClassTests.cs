@@ -7,7 +7,7 @@ namespace System.Diagnostics.TraceSourceTests
 {
     using Method = TestTraceListener.Method;
 
-    public sealed class TraceTests
+    public sealed class TraceInternalTests
     {
         [Fact]
         public void Unindent()
@@ -20,12 +20,12 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceTests_Default : TraceTestsBase
+    public sealed class TraceInternalTests_Default : TraceInternalTestsBase
     {
         // default mode: GlobalLock = true, AutoFlush = false, ThreadSafeListener = false
     }
 
-    public sealed class TraceTests_AutoFlush : TraceTestsBase
+    public sealed class TraceInternalTests_AutoFlush : TraceInternalTestsBase
     {
         internal override bool AutoFlush
         {
@@ -33,7 +33,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceTests_NoGlobalLock : TraceTestsBase
+    public sealed class TraceInternalTests_NoGlobalLock : TraceInternalTestsBase
     {
         internal override bool UseGlobalLock
         {
@@ -41,7 +41,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceTests_NoGlobalLock_AutoFlush : TraceTestsBase
+    public sealed class TraceInternalTests_NoGlobalLock_AutoFlush : TraceInternalTestsBase
     {
         internal override bool UseGlobalLock
         {
@@ -54,7 +54,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceTests_ThreadSafeListener : TraceTestsBase
+    public sealed class TraceInternalTests_ThreadSafeListener : TraceInternalTestsBase
     {
         internal override bool ThreadSafeListener
         {
@@ -62,7 +62,7 @@ namespace System.Diagnostics.TraceSourceTests
         }
     }
 
-    public sealed class TraceTests_ThreadSafeListener_AutoFlush : TraceTestsBase
+    public sealed class TraceInternalTests_ThreadSafeListener_AutoFlush : TraceInternalTestsBase
     {
         internal override bool ThreadSafeListener
         {
@@ -76,9 +76,9 @@ namespace System.Diagnostics.TraceSourceTests
     }
 
     // Defines abstract tests that will be executed in different modes via the above concrete classes.
-    public abstract class TraceTestsBase
+    public abstract class TraceInternalTestsBase
     {
-        public TraceTestsBase()
+        public TraceInternalTestsBase()
         {
             TraceTestHelper.ResetState();
             Trace.AutoFlush = AutoFlush;
