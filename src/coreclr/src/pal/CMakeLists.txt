@@ -11,6 +11,5 @@ add_compile_options(-fexceptions)
 add_compile_options(-fstack-protector-all)
 
 add_subdirectory(src)
-add_subdirectory(tools)
 add_subdirectory(tests)
 
