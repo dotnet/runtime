@@ -19,6 +19,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 
     add_definitions(-DFEATURE_PAL)
     add_definitions(-DPAL_IMPLEMENTATION)
+    add_definitions(-D_POSIX_C_SOURCE=200809L)
 
     set(TWO_WAY_PIPE_SOURCES
       unix/twowaypipe.cpp
