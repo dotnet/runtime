@@ -947,11 +947,11 @@ typedef unsigned weight_t;             // Type used to hold block and edge weigh
     GenTree* FirstNonPhiDefOrCatchArgAsg();
 
     BasicBlock() :
+#if ASSERTION_PROP
+        BLOCKSET_INIT_NOCOPY(bbDoms, BlockSetOps::UninitVal()),
+#endif // ASSERTION_PROP
         VARSET_INIT_NOCOPY(bbLiveIn, VarSetOps::UninitVal()),
         VARSET_INIT_NOCOPY(bbLiveOut, VarSetOps::UninitVal())
-#if ASSERTION_PROP
-        , BLOCKSET_INIT_NOCOPY(bbDoms, BlockSetOps::UninitVal())
-#endif // ASSERTION_PROP
     {
     }
 
