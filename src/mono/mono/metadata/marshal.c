@@ -731,20 +731,19 @@ mono_string_builder_new (void)
 }
 
 static void
-mono_string_utf16_to_builder_copy (MonoStringBuilder *sb, gunichar2 *text, size_t len)
+mono_string_utf16_to_builder_copy (MonoStringBuilder *sb, gunichar2 *text, size_t string_len)
 {
 	MonoClass *ac = mono_array_class_get (mono_defaults.char_class, 1);
 	g_assert (ac);
+	int builder_capacity = mono_string_builder_capacity (sb);
 
-	MonoArray* newArray = mono_array_new (mono_domain_get (), mono_defaults.char_class, len);
+	MonoArray* newArray = mono_array_new (mono_domain_get (), mono_defaults.char_class, builder_capacity);
 
 	gunichar2 *charDst = (gunichar2 *)newArray->vector;
 	gunichar2 *charSrc = (gunichar2 *)text;
-	memcpy (charDst, charSrc, sizeof (gunichar2) * len);
+	memcpy (charDst, charSrc, sizeof (gunichar2) * string_len);
 
 	MONO_OBJECT_SETREF (sb, chunkChars, newArray);
-	sb->chunkOffset = 0;
-	sb->chunkLength = len;
 
 	return;
 }
@@ -764,11 +763,12 @@ mono_string_utf16_to_builder2 (gunichar2 *text)
 void
 mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text)
 {
-
 	if (!sb || !text)
 		return;
 
 	int len = strlen (text);
+	if (len > mono_string_builder_capacity (sb))
+		len = mono_string_builder_capacity (sb);
 	GError *error = NULL;
 	gunichar2* ut = g_utf8_to_utf16 (text, len, NULL, NULL, &error);
 
@@ -802,6 +802,9 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 
 	guint32 len;
 	for (len = 0; text [len] != 0; ++len);
+	
+	if (len > mono_string_builder_capacity (sb))
+		len = mono_string_builder_capacity (sb);
 
 	mono_string_utf16_to_builder_copy (sb, text, len);
 }
@@ -837,7 +840,7 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 		mono_raise_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
 		return NULL;
 	} else {
-		guint len = mono_string_builder_length (sb) + 1;
+		guint len = mono_string_builder_capacity (sb) + 1;
 		gchar *res = mono_marshal_alloc (len * sizeof (gchar));
 		g_assert (str_len < len);
 		memcpy (res, tmp, str_len * sizeof (gchar));
@@ -868,7 +871,7 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 
 	g_assert (sb->chunkChars);
 
-	guint len = mono_string_builder_length (sb);
+	guint len = mono_string_builder_capacity (sb);
 
 	if (len == 0)
 		len = 1;

@@ -87,7 +87,7 @@
 		return retval;										  \
        };				}G_STMT_END
 
-#define mono_string_builder_length(sb) sb->chunkOffset + sb->chunkChars->max_length
+#define mono_string_builder_capacity(sb) sb->chunkOffset + sb->chunkChars->max_length
 #define mono_string_builder_string_length(sb) sb->chunkOffset + sb->chunkLength
 
 /* 
