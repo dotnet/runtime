@@ -1,5 +1,5 @@
-Prerequisites
-=============
+Environment
+===========
 
 - Visual Studio must be installed. Supported versions:
     - [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284) - **Free** for Open Source development!
