@@ -7,7 +7,6 @@ using System.IO;
 using System.Collections;
 using System.Diagnostics;
 using System.Text;
-using System.Xml.Linq;
 using OLEDB.Test.ModuleCore;
 
 namespace System.Xml.XmlDiff
@@ -834,26 +833,6 @@ namespace System.Xml.XmlDiff
             }
             return false;
         }
-        public bool MoveToFirstNamespace(XNamespace namespaceScope)
-        {
-            if (_currentNode is XmlDiffElement)
-            {
-                if (((XmlDiffElement)_currentNode).FirstAttribute != null)
-                {
-                    XmlDiffAttribute _attr = ((XmlDiffElement)_currentNode).FirstAttribute;
-                    while (_attr != null && !IsNamespaceNode(_attr))
-                    {
-                        _attr = (XmlDiffAttribute)_attr._next;
-                    }
-                    if (_attr != null)
-                    {
-                        _currentNode = _attr;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
         public bool MoveToId(String id)
         {
             Debug.Assert(false, "MoveToId is NYI");
@@ -894,23 +873,6 @@ namespace System.Xml.XmlDiff
         {
             return attr.LocalName.ToLower() == "xmlns" ||
                    attr.Prefix.ToLower() == "xmlns";
-        }
-        public bool MoveToNextNamespace(XNamespace namespaceScope)
-        {
-            if (_currentNode is XmlDiffAttribute)
-            {
-                XmlDiffAttribute _attr = (XmlDiffAttribute)_currentNode._next;
-                while (_attr != null && !IsNamespaceNode(_attr))
-                {
-                    _attr = (XmlDiffAttribute)_attr._next;
-                }
-                if (_attr != null)
-                {
-                    _currentNode = _attr;
-                    return true;
-                }
-            }
-            return false;
         }
         public bool MoveToParent()
         {
