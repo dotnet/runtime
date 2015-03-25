@@ -5501,9 +5501,9 @@ ClrDataAccess::Initialize(void)
 
 #ifdef FEATURE_PAL
      #if defined(DBG_TARGET_X86)
-         CorDebugPlatform hostPlatform = CORDB_PLATFORM_MAC_X86;
+         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_X86;
      #elif defined(DBG_TARGET_AMD64)
-         CorDebugPlatform hostPlatform = CORDB_PLATFORM_MAC_AMD64;
+         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_AMD64;
      #else
          #error Unknown Processor.
      #endif
