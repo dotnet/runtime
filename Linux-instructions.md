@@ -7,6 +7,8 @@ These instructions are written assuming the Ubuntu 14.04 LTS, since that's the d
 
 There have been reports of issues when using other distros or versions of Ubuntu (e.g. [Issue 95](https://github.com/dotnet/coreclr/issues/95)). If you're on another distribution, consider using docker's ```ubuntu:14.04``` image.
 
+Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([Issue 536](https://github.com/dotnet/coreclr/issues/536)).
+
 Toolchain Setup
 ---------------
 
