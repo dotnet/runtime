@@ -2816,6 +2816,13 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
         return;
     }
 
+    // These nodes are eliminated by the Rationalizer.
+    if (tree->OperGet() == GT_CLS_VAR)
+    {
+        JITDUMP("Unexpected node %s in LSRA.\n", GenTree::NodeName(tree->OperGet()));
+        assert(!"Unexpected node in LSRA.");
+    }
+
     // The set of internal temporary registers used by this node are stored in the
     // gtRsvdRegs register mask. Clear it out.
     tree->gtRsvdRegs = RBM_NONE;
@@ -3158,18 +3165,6 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
 #endif // FEATURE_SIMD
         }
         regMaskTP currCandidates = candidates;
-
-        // A special case for the GT_CLS_VAR update case, or the GT_CLS_VAR
-        // or GT_IND floating point conversion case, where it must produce both
-        // a value (of the type of the node) and an address (of TYP_PTR)
-        // TODO-Cleanup: Split these to avoid this case.  (This may already have been done
-        // by Rationalizer?)
-
-        if ((tree->gtOper == GT_CLS_VAR || tree->gtOper == GT_CLS_VAR) && i == 1)
-        {
-            registerType = TYP_PTR;
-            currCandidates = allRegs(TYP_PTR);
-        }
 
         Interval *interval = varDefInterval;
         if (interval == nullptr)
@@ -7131,18 +7126,6 @@ LinearScan::resolveRegisters()
                         }
                     }
                 }
-                treeNode->gtRsvdRegs |= currentRefPosition->registerAssignment;
-            }
-            else if ((treeNode->gtOper == GT_CLS_VAR || treeNode->OperIsIndir()) &&
-                     !useFloatReg(currentRefPosition->getInterval()->registerType) &&
-                     ((treeNode->gtOper == GT_CLS_VAR && (treeNode->gtFlags & GTF_VAR_DEF)) || treeNode->gtHasReg()))
-            {
-                // If this is the pure-def case, and it's not the floating point value for the
-                // conversion case, or if it's the update case and we've
-                // already recorded the value register, then we record this as an internal
-                // register (it's treated as a regular register because it must stay live
-                // until the call)
-
                 treeNode->gtRsvdRegs |= currentRefPosition->registerAssignment;
             }
             else
