@@ -526,10 +526,10 @@ public:
         ValueNum cmpOp;
         ArrLenArithBoundInfo()
             : vnArray(NoVN)
-            , arrOp(NoVN)
-            , cmpOp(NoVN)
             , arrOper(GT_NONE)
+            , arrOp(NoVN)
             , cmpOper(GT_NONE)
+            , cmpOp(NoVN)
         {
         }
 #ifdef DEBUG
@@ -590,18 +590,6 @@ public:
     // Lang is the language (C++) type for the corresponding vartype_t.
     template <int N>
     struct VarTypConv              { };
-    template <>
-    struct VarTypConv<TYP_INT>     { typedef INT32 Type; typedef int Lang; };
-    template <>
-    struct VarTypConv<TYP_FLOAT>   { typedef INT32 Type; typedef float Lang; };
-    template <> 
-    struct VarTypConv<TYP_LONG>    { typedef INT64 Type; typedef INT64 Lang; };
-    template <>
-    struct VarTypConv<TYP_DOUBLE>  { typedef INT64 Type; typedef double Lang; };
-    template <> 
-    struct VarTypConv<TYP_BYREF>   { typedef INT64 Type; typedef void* Lang; };
-    template <>
-    struct VarTypConv<TYP_REF>     { typedef class Object* Type; typedef class Object* Lang; };
 
 private:
     struct Chunk;
@@ -611,27 +599,7 @@ private:
 
     // Get the actual value and coerce the actual type c->m_typ to the wanted type T.
     template <typename T>
-    T SafeGetConstantValue(Chunk* c, unsigned offset)
-    {
-        switch (c->m_typ)
-        {
-        case TYP_REF:
-            return CoerceTypRefToT<T>(c, offset);
-        case TYP_BYREF:
-            return (T) reinterpret_cast<VarTypConv<TYP_BYREF>::Type*>(c->m_defs)[offset];
-        case TYP_INT: 
-            return (T) reinterpret_cast<VarTypConv<TYP_INT>::Type*>(c->m_defs)[offset];
-        case TYP_LONG:
-            return (T) reinterpret_cast<VarTypConv<TYP_LONG>::Type*>(c->m_defs)[offset];
-        case TYP_FLOAT: 
-            return (T) reinterpret_cast<VarTypConv<TYP_FLOAT>::Lang*>(c->m_defs)[offset];
-        case TYP_DOUBLE: 
-            return (T) reinterpret_cast<VarTypConv<TYP_DOUBLE>::Lang*>(c->m_defs)[offset];
-        default:
-            assert(false);
-            return (T) 0;
-        }
-    }
+    FORCEINLINE T SafeGetConstantValue(Chunk* c, unsigned offset);
 
     template<typename T>
     T ConstantValueInternal(ValueNum vn DEBUGARG(bool coerce))
@@ -1172,6 +1140,43 @@ private:
     static class Object* s_specialRefConsts[SRC_NumSpecialRefConsts];
     static class Object* s_nullConst;
 };
+
+template <>
+struct ValueNumStore::VarTypConv<TYP_INT>     { typedef INT32 Type; typedef int Lang; };
+template <>
+struct ValueNumStore::VarTypConv<TYP_FLOAT>   { typedef INT32 Type; typedef float Lang; };
+template <>
+struct ValueNumStore::VarTypConv<TYP_LONG>    { typedef INT64 Type; typedef INT64 Lang; };
+template <>
+struct ValueNumStore::VarTypConv<TYP_DOUBLE>  { typedef INT64 Type; typedef double Lang; };
+template <>
+struct ValueNumStore::VarTypConv<TYP_BYREF>   { typedef INT64 Type; typedef void* Lang; };
+template <>
+struct ValueNumStore::VarTypConv<TYP_REF>     { typedef class Object* Type; typedef class Object* Lang; };
+
+// Get the actual value and coerce the actual type c->m_typ to the wanted type T.
+template <typename T>
+FORCEINLINE T ValueNumStore::SafeGetConstantValue(Chunk* c, unsigned offset)
+{
+    switch (c->m_typ)
+    {
+    case TYP_REF:
+        return CoerceTypRefToT<T>(c, offset);
+    case TYP_BYREF:
+        return (T) reinterpret_cast<VarTypConv<TYP_BYREF>::Type*>(c->m_defs)[offset];
+    case TYP_INT:
+        return (T) reinterpret_cast<VarTypConv<TYP_INT>::Type*>(c->m_defs)[offset];
+    case TYP_LONG:
+        return (T) reinterpret_cast<VarTypConv<TYP_LONG>::Type*>(c->m_defs)[offset];
+    case TYP_FLOAT:
+        return (T) reinterpret_cast<VarTypConv<TYP_FLOAT>::Lang*>(c->m_defs)[offset];
+    case TYP_DOUBLE:
+        return (T) reinterpret_cast<VarTypConv<TYP_DOUBLE>::Lang*>(c->m_defs)[offset];
+    default:
+        assert(false);
+        return (T)0;
+    }
+}
 
 // Inline functions.
 

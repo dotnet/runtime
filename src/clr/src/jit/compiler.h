@@ -4686,8 +4686,8 @@ protected:
         }
 
         LoopHoistContext(Compiler* comp) :
-            m_hoistedInParentLoops(comp->getAllocatorLoopHoist()),
             m_pHoistedInCurLoop(nullptr),
+            m_hoistedInParentLoops(comp->getAllocatorLoopHoist()),
             m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
             {}
     };

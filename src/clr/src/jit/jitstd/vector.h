@@ -35,8 +35,8 @@ public:
     typedef Allocator allocator_type;
     typedef T* pointer;
     typedef T& reference;
-    typedef const pointer const_pointer;
-    typedef const reference const_reference;
+    typedef const T* const_pointer;
+    typedef const T& const_reference;
 
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
@@ -398,7 +398,7 @@ typename vector<T, Allocator>::reference
 }
 
 template <typename T, typename Allocator>
-typename vector<T, Allocator>::reference
+typename vector<T, Allocator>::const_reference
     vector<T, Allocator>::back() const
 {
     return operator[](m_nSize - 1);

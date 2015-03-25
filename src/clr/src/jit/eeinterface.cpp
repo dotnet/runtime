@@ -34,7 +34,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 *  On Unix compilers don't support SEH.
 */
 
-static struct FilterSuperPMIExceptionsParam_eeinterface
+struct FilterSuperPMIExceptionsParam_eeinterface
 {
     Compiler*                   pThis;
     Compiler::Info*             pJitInfo;

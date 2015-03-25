@@ -35,8 +35,8 @@ public:
     typedef Allocator allocator_type;
     typedef T* pointer;
     typedef T& reference;
-    typedef const pointer const_pointer;
-    typedef const reference const_reference;
+    typedef const T* const_pointer;
+    typedef const T& const_reference;
 
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
@@ -248,9 +248,9 @@ private:
         Node* m_pNext;
         Node* m_pPrev;
         Node(Node* pPrev, Node* pNext, const T& value)
-            : m_pPrev(pPrev)
+            : m_value(value)
             , m_pNext(pNext)
-            , m_value(value)
+            , m_pPrev(pPrev)
         {
         }
     };
