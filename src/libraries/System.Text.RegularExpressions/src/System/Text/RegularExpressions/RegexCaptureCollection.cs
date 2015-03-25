@@ -5,6 +5,7 @@
 // contained in a compiled Regex.
 
 using System.Collections;
+using System.Diagnostics;
 
 namespace System.Text.RegularExpressions
 {
@@ -19,9 +20,9 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public class CaptureCollection : ICollection
     {
-        internal Group _group;
-        internal int _capcount;
-        internal Capture[] _captures;
+        private readonly Group _group;
+        private readonly int _capcount;
+        private Capture[] _captures;
 
         internal CaptureCollection(Group group)
         {
@@ -30,33 +31,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// The object on which to synchronize.
-        /// </summary>
-        Object ICollection.SyncRoot
-        {
-            get
-            {
-                return _group;
-            }
-        }
-
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Returns the number of captures.
         /// </summary>
         public int Count
         {
-            get
-            {
-                return _capcount;
-            }
+            get { return _capcount; }
         }
 
         /// <summary>
@@ -64,25 +43,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public Capture this[int i]
         {
-            get
-            {
-                return GetCapture(i);
-            }
-        }
-
-        /// <summary>
-        /// Copies all the elements of the collection to the given array
-        /// beginning at the given index.
-        /// </summary>
-        void ICollection.CopyTo(Array array, int arrayIndex)
-        {
-            if (array == null)
-                throw new ArgumentNullException("array");
-
-            for (int i = arrayIndex, j = 0; j < Count; i++, j++)
-            {
-                array.SetValue(this[j], i);
-            }
+            get { return GetCapture(i); }
         }
 
         /// <summary>
@@ -90,13 +51,13 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public IEnumerator GetEnumerator()
         {
-            return new CaptureEnumerator(this);
+            return new Enumerator(this);
         }
 
-        /*
-         * Nonpublic code to return set of captures for the group
-         */
-        internal Capture GetCapture(int i)
+        /// <summary>
+        /// Returns the set of captures for the group
+        /// </summary>
+        private Capture GetCapture(int i)
         {
             if (i == _capcount - 1 && i >= 0)
                 return _group;
@@ -116,71 +77,73 @@ namespace System.Text.RegularExpressions
 
             return _captures[i];
         }
-    }
 
-
-    /*
-     * This non-public enumerator lists all the captures
-     * Should it be public?
-     */
-
-    internal class CaptureEnumerator : IEnumerator
-    {
-        internal CaptureCollection _rcc;
-        internal int _curindex;
-
-        /*
-         * Nonpublic constructor
-         */
-        internal CaptureEnumerator(CaptureCollection rcc)
+        bool ICollection.IsSynchronized
         {
-            _curindex = -1;
-            _rcc = rcc;
+            get { return false; }
         }
 
-        /*
-         * As required by IEnumerator
-         */
-        public bool MoveNext()
+        object ICollection.SyncRoot
         {
-            int size = _rcc.Count;
-
-            if (_curindex >= size)
-                return false;
-
-            _curindex++;
-
-            return (_curindex < size);
+            get { return _group; }
         }
 
-        /*
-         * As required by IEnumerator
-         */
-        public Object Current
+        void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            get { return Capture; }
-        }
+            if (array == null)
+                throw new ArgumentNullException("array");
 
-        /*
-         * Returns the current capture
-         */
-        public Capture Capture
-        {
-            get
+            for (int i = arrayIndex, j = 0; j < Count; i++, j++)
             {
-                if (_curindex < 0 || _curindex >= _rcc.Count)
-                    throw new InvalidOperationException(SR.EnumNotStarted);
-
-                return _rcc[_curindex];
+                array.SetValue(this[j], i);
             }
         }
 
-        /*
-         * Reset to before the first item
-         */
-        public void Reset()
+        private class Enumerator : IEnumerator
         {
-            _curindex = -1;
+            private readonly CaptureCollection _collection;
+            private int _index;
+
+            internal Enumerator(CaptureCollection collection)
+            {
+                Debug.Assert(collection != null, "collection cannot be null.");
+
+                _collection = collection;
+                _index = -1;
+            }
+
+            public bool MoveNext()
+            {
+                int size = _collection.Count;
+
+                if (_index >= size)
+                    return false;
+
+                _index++;
+
+                return _index < size;
+            }
+
+            public Capture Current
+            {
+                get
+                {
+                    if (_index < 0 || _index >= _collection.Count)
+                        throw new InvalidOperationException(SR.EnumNotStarted);
+
+                    return _collection[_index];
+                }
+            }
+
+            object IEnumerator.Current
+            {
+                get { return Current; }
+            }
+
+            void IEnumerator.Reset()
+            {
+                _index = -1;
+            }
         }
     }
 }
