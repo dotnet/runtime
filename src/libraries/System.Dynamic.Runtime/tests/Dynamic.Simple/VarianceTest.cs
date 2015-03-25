@@ -1,0 +1,33 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using Xunit;
+
+namespace SampleDynamicTests
+{
+    public class Animal
+    {
+    }
+
+    public class Tiger : Animal
+    {
+    }
+
+    public class VarianceTest
+    {
+        private delegate T Create<out T>();
+
+        [Fact(Skip = "906219")]
+        public static void VarianceTest_RunTest()
+        {
+            dynamic d1 = (Create<Tiger>)(() => new Tiger());
+            Create<Animal> d2 = d1;
+            Animal a1 = d2();
+
+            Create<Tiger> d3 = () => new Tiger();
+            dynamic d4 = (Create<Animal>)d3;
+            Animal a2 = d4();
+        }
+    }
+}
