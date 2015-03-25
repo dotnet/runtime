@@ -37,7 +37,7 @@ public static unsafe class StringTests
     [Fact]
     public static void TestCtorCharPtr()
     {
-        char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
+        char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' };
         fixed (char* pc = c)
         {
             String s = new String(pc);
@@ -52,7 +52,7 @@ public static unsafe class StringTests
     public static void TestCtorCharPtrIntInt()
     {
         String s;
-        char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
+        char[] c = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', '\0' };
         fixed (char* pc = c)
         {
             s = new String(pc, 2, 3);
