@@ -64,7 +64,7 @@ public:
         const char* m_fileName;
         FILE* OpOutputFile;
       public:
-        BitSetOpCounter(const char* fileName) : m_fileName(fileName), TotalOps(0), OpOutputFile(NULL)
+        BitSetOpCounter(const char* fileName) : TotalOps(0), m_fileName(fileName), OpOutputFile(NULL)
         {
             for (unsigned i = 0; i < BSOP_NUMOPS; i++)
             {

@@ -108,8 +108,8 @@ struct Limit
     }
 
     Limit(LimitType type, int cns)
-        : type(type)
-        , cns(cns)
+        : cns(cns),
+          type(type)
     {
         assert(type == keConstant);
     }
@@ -264,14 +264,14 @@ struct Range
     Limit lLimit;
 
     Range(const Limit& limit)
-        : lLimit(limit)
-        , uLimit(limit)
+        : uLimit(limit),
+          lLimit(limit)
     {
     }
 
     Range(const Limit& lLimit, const Limit& uLimit)
-        : lLimit(lLimit)
-        , uLimit(uLimit)
+        : uLimit(uLimit),
+          lLimit(lLimit)
     {
     }
 

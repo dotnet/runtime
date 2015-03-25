@@ -185,10 +185,10 @@ struct LcMdArrayOptInfo : public LcOptInfo
     ArrIndex* index;                    // "index" cached computation in the form of an ArrIndex representation.
 
     LcMdArrayOptInfo(GenTreeArrElem* arrElem, unsigned dim)
-        : arrElem(arrElem)
+        : LcOptInfo(this, LcMdArray)
+        , arrElem(arrElem)
         , dim(dim)
-        , index(nullptr)
-        , LcOptInfo(this, LcMdArray) {}
+        , index(nullptr) {}
 
     ArrIndex* GetArrIndexForDim(IAllocator* alloc)
     {
@@ -219,10 +219,10 @@ struct LcJaggedArrayOptInfo : public LcOptInfo
     GenTreePtr stmt;               // "stmt" where the optimization opportunity occurs.
 
     LcJaggedArrayOptInfo(ArrIndex& arrIndex, unsigned dim, GenTreePtr stmt)
-        : arrIndex(arrIndex)
+        : LcOptInfo(this, LcJaggedArray)
         , dim(dim)
-        , stmt(stmt)
-        , LcOptInfo(this, LcJaggedArray) {}
+        , arrIndex(arrIndex)
+        , stmt(stmt) {}
 };
 
 /**
@@ -265,9 +265,9 @@ struct LC_Array
                             //     Example 1: a[0][1][2] and dim =  2 implies a[0][1].length
                             //     Example 2: a[0][1][2] and dim = -1 implies a[0][1][2].length
     LC_Array() : type(Invalid), dim(-1) {}
-    LC_Array(ArrType type, ArrIndex* arrIndex, int dim, OperType oper) : type(type), arrIndex(arrIndex), dim(dim), oper(oper) {}
+    LC_Array(ArrType type, ArrIndex* arrIndex, int dim, OperType oper) : type(type), arrIndex(arrIndex), oper(oper), dim(dim) {}
 
-    LC_Array(ArrType type, ArrIndex* arrIndex, OperType oper) : type(type), arrIndex(arrIndex), dim(-1), oper(oper) {}
+    LC_Array(ArrType type, ArrIndex* arrIndex, OperType oper) : type(type), arrIndex(arrIndex), oper(oper), dim(-1) {}
 
     // Equality operator
     bool operator==(const LC_Array& that) const
@@ -503,8 +503,8 @@ struct LC_Deref
     unsigned level;
 
     LC_Deref(const LC_Array& array, unsigned level)
-        : children(nullptr)
-        , array(array)
+        : array(array)
+        , children(nullptr)
         , level(level)
     { }
 

@@ -216,7 +216,7 @@ class hashBv
 
  public:
 
-    inline hashBvNode *hashBv::getOrAddNodeForIndex(indexType index)
+    inline hashBvNode *getOrAddNodeForIndex(indexType index)
     {
         hashBvNode *temp = getNodeForIndexHelper(index, true);
         return temp;

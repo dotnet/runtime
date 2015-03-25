@@ -1586,6 +1586,8 @@ public:
 #ifdef DEBUG
   private:
     GenTree& operator=(const GenTree& gt) {
+        _ASSERTE(!"Don't copy");
+        return *this;
     }
 #endif // DEBUG
 
