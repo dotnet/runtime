@@ -328,7 +328,11 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
         _ASSERTE(!"Unsupported resource file");
     }
 
-    PAL_BindResources(m_pResourceDomain);
+    if (!PAL_BindResources(m_pResourceDomain))
+    {
+        // The function can fail only due to OOM
+        return E_OUTOFMEMORY;
+    }
 
 #endif // FEATURE_PAL
 
