@@ -1,18 +1,19 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using SerializationTypes;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
-using System.Xml;
 using System.Text;
-using System.Diagnostics;
-using System.Collections;
-using Xunit;
+using System.Xml;
 using System.Xml.Linq;
 
+using SerializationTypes;
+
+using Xunit;
 
 public static class DataContractSerializerTests
 {
@@ -95,9 +96,10 @@ public static class DataContractSerializerTests
     [Fact]
     public static void DCS_DecimalAsRoot()
     {
-        foreach (decimal value in new decimal[] { (decimal)-1.2, (decimal)0, (decimal)2.3, decimal.MinValue, decimal.MaxValue })
+        foreach (decimal value in new decimal[] { -1.2m, 0.0m, 2.3m, decimal.MinValue, decimal.MaxValue })
         {
-            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, string.Format("<decimal xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/\">{0}</decimal>", value.ToString())), value);
+            var baseline = string.Format("<decimal xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/\">{0}</decimal>", value.ToString(CultureInfo.InvariantCulture));
+            Assert.StrictEqual(SerializeAndDeserialize<decimal>(value, baseline), value);
         }
     }
 
