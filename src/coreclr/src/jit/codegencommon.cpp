@@ -87,9 +87,9 @@ CodeGenInterface *getCodeGenerator(Compiler *comp)
 
 // CodeGen constructor
 CodeGenInterface::CodeGenInterface(Compiler* theCompiler) :
-    compiler(theCompiler),
     gcInfo(theCompiler),
-    regSet(theCompiler, gcInfo)
+    regSet(theCompiler, gcInfo),
+    compiler(theCompiler)
 {
 }
 

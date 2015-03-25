@@ -88,6 +88,8 @@ public:
 
     void                genCalcFrameSize ();
 
+    GCInfo              gcInfo;
+
     RegSet              regSet;
     RegState            intRegState;
     RegState            floatRegState;
@@ -319,7 +321,6 @@ protected:
 #endif // LATE_DISASM
 
 public:
-    GCInfo              gcInfo;
 
 #ifdef DEBUG
     void                setVerbose(bool value)      { verbose = value; }
