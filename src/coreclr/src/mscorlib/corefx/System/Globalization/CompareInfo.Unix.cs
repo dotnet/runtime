@@ -54,18 +54,19 @@ namespace System.Globalization
                 value = value.ToUpper(CultureInfo.InvariantCulture);
             }
 
-            source = source.Substring(startIndex, count);
+            source = source.Substring(startIndex - count + 1, count);
 
             int last = -1;
-            int cur = 0;
 
-            while((cur = IndexOfOrdinal(source, value, 0, source.Length, false)) != -1)
+            int cur = 0;
+            while ((cur = IndexOfOrdinal(source, value, last + 1, source.Length - last - 1, false)) != -1)
             {
                 last = cur;
-                source = source.Substring(last + value.Length);
             }
 
-            return last;
+            return last >= 0 ? 
+                last + startIndex - count + 1 : 
+                -1;
         }
 
         private unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
