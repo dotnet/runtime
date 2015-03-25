@@ -26,6 +26,7 @@ Revision History:
 #include "pal/palinternal.h"
 #include "pal/unicode_data.h"
 #include "pal/dbgmsg.h"
+#include "pal/file.h"
 #include "pal/utf8.h"
 #include "pal/locale.h"
 #include "pal/cruntime.h"
@@ -36,6 +37,9 @@ Revision History:
 
 #include <pthread.h>
 #include <locale.h>
+#ifndef __APPLE__
+#include <libintl.h>
+#endif // __APPLE__
 #include <errno.h>
 #if HAVE_COREFOUNDATION
 #include <corefoundation/corefoundation.h>
@@ -238,6 +242,11 @@ BOOL CODEPAGEInit( void )
 #if !HAVE_COREFOUNDATION
     else
     {
+        // Set the locale for string resources to en_US
+        // UNIXTODO: After we add localized resources, change this to check the current 
+        // locale and set it to en_US only if we don't have resources for the current locale.
+        setlocale(LC_MESSAGES, "en_US.UTF-8");
+
         /* get the systems code page. */
         LPSTR lpCodePage = setlocale( LC_CTYPE, "" );
         // Use the following steps to check if a particular locale works properly:
@@ -1631,4 +1640,73 @@ EXIT:
     LOGEXIT("WideCharToMultiByte returns INT %d\n", retval);
     PERF_EXIT(WideCharToMultiByte);
     return retval;
+}
+
+extern char g_szCoreCLRPath[MAX_PATH];
+
+/*++
+Function :
+
+PAL_BindResources - bind the resource domain to the path where the coreclr resides
+
+Returns TRUE if it succeeded, FALSE if it failed due to OOM
+--*/
+BOOL
+PALAPI
+PAL_BindResources(IN LPCSTR lpDomain)
+{
+#ifndef __APPLE__
+    char coreCLRDirectoryPath[MAX_PATH];
+
+    DWORD size = FILEGetDirectoryFromFullPathA(g_szCoreCLRPath, MAX_PATH, coreCLRDirectoryPath);
+    _ASSERTE(size <= MAX_PATH);
+    LPCSTR boundPath = bindtextdomain(lpDomain, coreCLRDirectoryPath);
+
+    return boundPath != NULL;
+#else // __APPLE__
+    // UNIXTODO: Implement for OSX if necessary
+    return TRUE;
+#endif // __APPLE__
+}
+
+/*++
+Function :
+
+PAL_GetResourceString - get string for a specified resource id
+
+Returns number of characters retrieved, 0 if it failed.
+--*/
+int
+PALAPI
+PAL_GetResourceString(
+        IN LPCSTR lpDomain,
+        IN DWORD dwResourceId,
+        OUT LPWSTR lpWideCharStr,
+        IN int cchWideChar
+      )
+{
+#ifndef __APPLE__
+    CHAR resourceIdStr[9];
+    sprintf(resourceIdStr, "%X", dwResourceId);
+
+    // NOTE: the dgettext returns the resourceIdStr if it fails to locate
+    // the resource.
+    LPCSTR resourceString = dgettext(lpDomain, resourceIdStr);
+    int length = strlen(resourceString);
+
+    return UTF8ToUnicode(resourceString, length + 1, lpWideCharStr, cchWideChar, 0);
+#else // __APPLE__
+    // UNIXTODO: Implement for OSX using the native localization API 
+
+    // This is a temporary solution until we add the real native resource support 
+    int len = _snwprintf(lpWideCharStr, cchWideChar - 1, W("Resource string id=0x%X"), dwResourceId);
+    if ((len < 0) || (len == (cchWideChar - 1)))
+    {
+        // Add string terminator if the result of the _snwprintf didn't fit the buffer.
+        lpWideCharStr[cchWideChar - 1] = W('\0');
+        len = cchWideChar - 1;
+    }
+
+    return len;
+#endif // __APPLE__
 }

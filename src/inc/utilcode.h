@@ -743,6 +743,9 @@ public:
         m_nHashSize = 0;
         m_csMap = NULL;
         m_pResourceFile = NULL;
+#ifdef FEATURE_PAL
+        m_pResourceDomain = NULL;
+#endif // FEATURE_PAL
 
     }// CCompRC
 
@@ -857,6 +860,12 @@ private:
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
+#ifdef FEATURE_PAL
+    // Resource domain is an ANSI string identifying a native resources file
+    static LPCSTR  m_pDefaultResourceDomain;
+    static LPCSTR  m_pFallbackResourceDomain;
+    LPCSTR m_pResourceDomain;
+#endif // FEATURE_PAL
 
     // Main accessors for hash
     HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
