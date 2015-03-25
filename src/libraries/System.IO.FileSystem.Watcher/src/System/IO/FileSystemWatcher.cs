@@ -57,6 +57,8 @@ namespace System.IO
                                                            NotifyFilters.Security |
                                                            NotifyFilters.Size);
 
+        internal static bool CaseSensitive { get; set; }
+
 #if DEBUG
         static FileSystemWatcher()
         {
@@ -79,6 +81,7 @@ namespace System.IO
         {
             _directory = string.Empty;
             _filter = "*.*";
+            CaseSensitive = false;
         }
 
         /// <devdoc>
@@ -107,6 +110,7 @@ namespace System.IO
 
             _directory = path;
             _filter = filter;
+            CaseSensitive = false;
         }
 
         /// <devdoc>
