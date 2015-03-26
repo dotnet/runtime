@@ -92,8 +92,8 @@ public:
 
     // Construct the InstructionBuffer for the given address in the target process
     InstructionBuffer(SIZE_T address)
-      : m_address(address),
-        m_offset(0)
+      : m_offset(0),
+        m_address(address)
     {
         HRESULT hr = Load();
         if (FAILED(hr))

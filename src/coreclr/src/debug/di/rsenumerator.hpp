@@ -71,8 +71,8 @@ CordbEnumerator<ElemType,
                                                 ElemType *items,
                                                 DWORD countItems) :
 CordbBase(pProcess, 0, enumCordbEnumerator),
-m_nextIndex(0),
-m_countItems(countItems)
+m_countItems(countItems),
+m_nextIndex(0)
 {
     m_items = new ElemType[countItems];
     for(UINT i = 0; i < countItems; i++)

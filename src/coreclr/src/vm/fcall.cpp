@@ -28,7 +28,7 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
 
     // side effect the compiler can't remove
     if (FC_NO_TAILCALL != 1)
-        return (LPVOID)(FC_NO_TAILCALL + 1);
+        return (LPVOID)(SIZE_T)(FC_NO_TAILCALL + 1);
 
     FC_CAN_TRIGGER_GC();
     INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));
@@ -72,7 +72,7 @@ NOINLINE LPVOID __FCThrowArgument(LPVOID __me, RuntimeExceptionKind reKind, LPCW
 
     // side effect the compiler can't remove
     if (FC_NO_TAILCALL != 1)
-        return (LPVOID)(FC_NO_TAILCALL + 1);
+        return (LPVOID)(SIZE_T)(FC_NO_TAILCALL + 1);
 
     FC_CAN_TRIGGER_GC();
     INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));

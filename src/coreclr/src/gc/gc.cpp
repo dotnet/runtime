@@ -284,7 +284,7 @@ void GCStatistics::DisplayAndUpdate()
         fflush(logFile);
     }
 
-    memcpy(&g_LastGCStatistics, this, sizeof(g_LastGCStatistics));
+    g_LastGCStatistics = *this;
 
     ngc.Reset();
     fgc.Reset();
@@ -5643,7 +5643,7 @@ void void_allocation (alloc_context* acontext)
 
 void gc_heap::fix_allocation_contexts (BOOL for_gc_p)
 {
-    CNameSpace::GcFixAllocContexts ((void*)for_gc_p, __this);
+    CNameSpace::GcFixAllocContexts ((void*)(size_t)for_gc_p, __this);
     fix_youngest_allocation_area (for_gc_p);
     fix_large_allocation_area (for_gc_p);
 }

@@ -46,8 +46,8 @@ template <typename Key, typename KeyFuncs, typename Value, typename Behavior>
 SimplerHashTable<Key,KeyFuncs,Value,Behavior>::SimplerHashTable(IAllocator* alloc)
   : m_alloc(alloc),
     m_table(NULL),
-    m_tableCount(0),
     m_tableSizeInfo(),
+    m_tableCount(0),
     m_tableMax(0)
 {
     LIMITED_METHOD_CONTRACT;
