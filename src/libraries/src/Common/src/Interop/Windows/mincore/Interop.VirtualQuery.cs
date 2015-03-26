@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Memory, EntryPoint = "VirtualQuery", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Memory_L1_0, EntryPoint = "VirtualQuery", CharSet = CharSet.Unicode, SetLastError = true)]
         internal extern static UIntPtr VirtualQuery(SafeMemoryMappedViewHandle lpAddress, ref MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
     }
 }

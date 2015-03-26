@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Memory, EntryPoint = "OpenFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Memory_L1_0, EntryPoint = "OpenFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SafeMemoryMappedFileHandle OpenFileMapping(int dwDesiredAccess, [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle, string lpName);
     }
 }
