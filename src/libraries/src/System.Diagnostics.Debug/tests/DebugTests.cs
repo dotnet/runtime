@@ -12,15 +12,13 @@ namespace System.Diagnostics.Tests
         {
             VerifyLogged(() => { Debug.Assert(true); }, "");
             VerifyLogged(() => { Debug.Assert(true, "assert passed"); }, "");
-            VerifyLogged(() => { Debug.Assert(true, "assert passed"); }, "");
             VerifyLogged(() => { Debug.Assert(true, "assert passed", "nothing is wrong"); }, "");
             VerifyLogged(() => { Debug.Assert(true, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'); }, "");
 
             VerifyAssert(() => { Debug.Assert(false); }, "");
-            VerifyAssert(() => { Debug.Assert(false, "assert passed"); }, "");
-            VerifyAssert(() => { Debug.Assert(false, "assert passed"); }, "");
-            VerifyAssert(() => { Debug.Assert(false, "assert passed", "nothing is wrong"); }, "");
-            VerifyAssert(() => { Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'); }, "");        
+            VerifyAssert(() => { Debug.Assert(false, "assert passed"); }, "assert passed");
+            VerifyAssert(() => { Debug.Assert(false, "assert passed", "nothing is wrong"); }, "assert passed", "nothing is wrong");
+            VerifyAssert(() => { Debug.Assert(false, "assert passed", "nothing is wrong {0} {1}", 'a', 'b'); }, "assert passed", "nothing is wrong a b");      
         }
 
         [Fact]
