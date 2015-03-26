@@ -9,24 +9,38 @@ namespace System.Globalization {
 
     [Serializable]
     internal class CodePageDataItem
-    {   
+    {
+        // TODO: Implement this fully.
+        private readonly string _webName;
+        private readonly int _uiFamilyCodePage;
+        private readonly string _headerName;
+        private readonly string _bodyName;
+        private readonly uint _flags;
+
         [SecurityCritical]
-        unsafe internal CodePageDataItem() {
+        unsafe internal CodePageDataItem(
+            string webName, int uiFamilyCodePage, string headerName,
+            string bodyName, uint flags) {
             // TODO: Implement this fully.
+            _webName = webName;
+            _uiFamilyCodePage = uiFamilyCodePage;
+            _headerName = headerName;
+            _bodyName = bodyName;
+            _flags = flags;
         }
 
         unsafe public String WebName {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 // TODO: Implement this fully.
-                return "utf-8";
+                return _webName;
             }
         }
     
         public virtual int UIFamilyCodePage {
             get {
                 // TODO: Implement this fully.
-                return 1200;
+                return _uiFamilyCodePage;
             }
         }
     
@@ -34,7 +48,7 @@ namespace System.Globalization {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 // TODO: Implement this fully.
-                return "utf-8";
+                return _headerName;
             }
         }
     
@@ -42,14 +56,14 @@ namespace System.Globalization {
             [System.Security.SecuritySafeCritical]  // auto-generated
             get {
                 // TODO: Implement this fully.
-                return "utf-8";
+                return _bodyName;
             }
         }    
 
         unsafe public uint Flags {
             get {
                 // TODO: Implement this fully.
-                return 771;
+                return _flags;
             }
         }
 
