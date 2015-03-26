@@ -158,8 +158,8 @@ namespace CoreXml.Test.XLinq
                     {
                         doc.Add("");
                         Validate.String(doc.ToString(SaveOptions.DisableFormatting), "");
-                        doc.Add(" \t\r\n");
-                        Validate.String(doc.ToString(SaveOptions.DisableFormatting), " \t\r\n");
+                        doc.Add(" \t" + Environment.NewLine);
+                        Validate.String(doc.ToString(SaveOptions.DisableFormatting), " \t" + Environment.NewLine);
                     }
                     catch (Exception ex)
                     {
