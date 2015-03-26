@@ -411,5 +411,52 @@ namespace System
                 return errorCode;
             }
         }
+
+        internal sealed class ControlCHandlerRegistrar
+        {
+            private bool _handlerRegistered;
+            private Interop.mincore.ConsoleCtrlHandlerRoutine _handler;
+
+            internal ControlCHandlerRegistrar()
+            {
+                _handler = new Interop.mincore.ConsoleCtrlHandlerRoutine(BreakEvent);
+            }
+
+            internal void Register()
+            {
+                Debug.Assert(!_handlerRegistered);
+
+                bool r = Interop.mincore.SetConsoleCtrlHandler(_handler, true);
+                if (!r)
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                }
+
+                _handlerRegistered = true;
+            }
+
+            internal void Unregister()
+            {
+                Debug.Assert(_handlerRegistered);
+
+                bool r = Interop.mincore.SetConsoleCtrlHandler(_handler, false);
+                if (!r)
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                }
+                _handlerRegistered = false;
+            }
+
+            private static bool BreakEvent(int controlType)
+            {
+                if (controlType != Interop.mincore.CTRL_C_EVENT &&
+                    controlType != Interop.mincore.CTRL_BREAK_EVENT)
+                {
+                    return false;
+                }
+
+                return Console.HandleBreakEvent(controlType == Interop.mincore.CTRL_C_EVENT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak);
+            }
+        }
     }
 }
