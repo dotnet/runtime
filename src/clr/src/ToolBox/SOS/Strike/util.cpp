@@ -4491,6 +4491,14 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetPlatform(CorDebugPlatform * pPlatform)
     {
         ULONG platformKind = g_targetMachine->GetPlatform();
+#ifdef FEATURE_PAL        
+        if(platformKind == IMAGE_FILE_MACHINE_I386)
+            *pPlatform = CORDB_PLATFORM_POSIX_X86;
+        else if(platformKind == IMAGE_FILE_MACHINE_AMD64)
+            *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
+        else
+            return E_FAIL;
+#else
         if(platformKind == IMAGE_FILE_MACHINE_I386)
             *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
         else if(platformKind == IMAGE_FILE_MACHINE_AMD64)
@@ -4498,7 +4506,8 @@ public:
         else if(platformKind == IMAGE_FILE_MACHINE_ARMNT)
             *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
         else
-            return E_FAIL;
+            return E_FAIL;        
+#endif        
     
         return S_OK;
     }
