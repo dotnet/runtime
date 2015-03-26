@@ -6973,7 +6973,7 @@ void                Compiler::gtDispNode(GenTreePtr     tree,
         return;
     }
 
-    if  (tree && printFlags)
+    if  (printFlags)
     {
         /* First print the flags associated with the node */
         switch (tree->gtOper)
@@ -9188,7 +9188,9 @@ GenTreePtr                  Compiler::gtFoldExprConst(GenTreePtr tree)
             // If we fold a unary oper, then the folded constant 
             // is considered a ConstantIndexField if op1 was one
             //
-            if (op1->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
+
+            if ((op1->gtIntCon.gtFieldSeq != nullptr) &&
+                 op1->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
             {
                 fieldSeq = op1->gtIntCon.gtFieldSeq;
             }
@@ -9732,12 +9734,14 @@ CHK_OVF:
             // For the very particular case of the "constant array index" pseudo-field, we
             // assume that multiplication is by the field width, and preserves that field.
             // This could obviously be made more robust by a more complicated set of annotations...
-            if (op1->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
+            if ((op1->gtIntCon.gtFieldSeq != nullptr) &&
+                 op1->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
             {
                 assert(op2->gtIntCon.gtFieldSeq == FieldSeqStore::NotAField());
                 fieldSeq = op1->gtIntCon.gtFieldSeq;
             } 
-            else if (op2->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
+            else if ((op2->gtIntCon.gtFieldSeq != nullptr) &&
+                      op2->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
             {
                 assert(op1->gtIntCon.gtFieldSeq == FieldSeqStore::NotAField());
                 fieldSeq = op2->gtIntCon.gtFieldSeq;
@@ -12730,15 +12734,13 @@ CORINFO_FIELD_HANDLE FieldSeqStore::ConstantIndexPseudoField = (CORINFO_FIELD_HA
 
 bool FieldSeqNode::IsFirstElemFieldSeq()
 {
-    if (this == nullptr)
-        return false;
+    // this must be non-null per ISO C++
     return m_fieldHnd == FieldSeqStore::FirstElemPseudoField;
 }
 
 bool FieldSeqNode::IsConstantIndexFieldSeq()
 {
-    if (this == nullptr)
-        return false;
+    // this must be non-null per ISO C++
     return m_fieldHnd == FieldSeqStore::ConstantIndexPseudoField;
 }
 
