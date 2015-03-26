@@ -203,8 +203,8 @@ common_sources = \
 	threadpool.c		\
 	threadpool.h		\
 	threadpool-internals.h	\
-	threadpool-microsoft.c	\
-	threadpool-microsoft.h	\
+	threadpool-ms.c	\
+	threadpool-ms.h	\
 	tpool-poll.c	\
 	verify.c		\
 	verify-internals.h	\
