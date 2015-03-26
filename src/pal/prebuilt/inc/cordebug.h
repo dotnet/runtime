@@ -3,8 +3,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information. 
 //
 
-
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
@@ -1366,7 +1364,11 @@ enum CorDebugPlatform
         CORDB_PLATFORM_MAC_X86	= ( CORDB_PLATFORM_MAC_PPC + 1 ) ,
         CORDB_PLATFORM_WINDOWS_ARM	= ( CORDB_PLATFORM_MAC_X86 + 1 ) ,
         CORDB_PLATFORM_MAC_AMD64	= ( CORDB_PLATFORM_WINDOWS_ARM + 1 ) ,
-        CORDB_PLATFORM_WINDOWS_ARM64	= ( CORDB_PLATFORM_MAC_AMD64 + 1 ) 
+        CORDB_PLATFORM_WINDOWS_ARM64	= ( CORDB_PLATFORM_MAC_AMD64 + 1 ) ,
+        CORDB_PLATFORM_POSIX_AMD64	= ( CORDB_PLATFORM_WINDOWS_ARM64 + 1 ) ,
+        CORDB_PLATFORM_POSIX_X86	= ( CORDB_PLATFORM_POSIX_AMD64 + 1 ) ,
+        CORDB_PLATFORM_POSIX_ARM	= ( CORDB_PLATFORM_POSIX_X86 + 1 ) ,
+        CORDB_PLATFORM_POSIX_ARM64	= ( CORDB_PLATFORM_POSIX_ARM + 1 ) 
     } 	CorDebugPlatform;
 
 
