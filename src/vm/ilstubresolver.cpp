@@ -296,8 +296,8 @@ MethodDesc* ILStubResolver::GetStubMethodDesc()
 
 ILStubResolver::ILStubResolver() : 
     m_pCompileTimeState(dac_cast<PTR_CompileTimeState>(ILNotYetGenerated)),
-    m_pStubMD(dac_cast<PTR_MethodDesc>(NULL)),
-    m_pStubTargetMD(dac_cast<PTR_MethodDesc>(NULL)),
+    m_pStubMD(dac_cast<PTR_MethodDesc>(nullptr)),
+    m_pStubTargetMD(dac_cast<PTR_MethodDesc>(nullptr)),
     m_type(Unassigned),
     m_dwJitFlags(0)
 {

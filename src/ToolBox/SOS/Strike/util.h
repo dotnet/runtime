@@ -820,7 +820,7 @@ namespace Output
                 char buffer[64];
                 if (mFormat == Formats::Default || mFormat == Formats::Pointer)
                 {
-                    sprintf_s(buffer, _countof(buffer), "%p", (int *)mValue);
+                    sprintf_s(buffer, _countof(buffer), "%p", (int *)(SIZE_T)mValue);
                     ConvertToLower(buffer, _countof(buffer));
                 }
                 else

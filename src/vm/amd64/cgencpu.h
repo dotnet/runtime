@@ -439,7 +439,7 @@ inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
 }
 
 #include <pshpack1.h>
-DECLSPEC_ALIGN(8) struct UMEntryThunkCode
+struct DECLSPEC_ALIGN(8) UMEntryThunkCode
 {
     // padding                  // CC CC CC CC
     // mov r10, pUMEntryThunk   // 49 ba xx xx xx xx xx xx xx xx    // METHODDESC_REGISTER

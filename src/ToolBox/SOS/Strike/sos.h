@@ -554,7 +554,7 @@ namespace sos
          */
         inline operator void *() const
         {
-            return (void*)(mCurrHeap == mNumHeaps ? 0 : 1);
+            return (void*)(SIZE_T)(mCurrHeap == mNumHeaps ? 0 : 1);
         }
 
         /* Do not use.
@@ -723,7 +723,7 @@ namespace sos
 
         inline operator void *() const
         {
-            return (void*)(mCurr <= mTotal ? 1 : 0);
+            return (void*)(SIZE_T)(mCurr <= mTotal ? 1 : 0);
         }
 
     private:

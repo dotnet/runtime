@@ -207,7 +207,8 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 
     pMD->m_pResolver = (ILStubResolver*)pamTracker->Track(pCreationHeap->AllocMem(S_SIZE_T(sizeof(ILStubResolver))));
 #ifdef _DEBUG
-    memset(pMD->m_pResolver, 0xCC, sizeof(ILStubResolver));
+    // Poison the ILStubResolver storage
+    memset((void*)pMD->m_pResolver, 0xCC, sizeof(ILStubResolver));
 #endif // _DEBUG
     pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
 
