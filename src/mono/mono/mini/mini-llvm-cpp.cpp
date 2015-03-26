@@ -69,6 +69,7 @@ public:
 	/* Callbacks installed by mono */
 	AllocCodeMemoryCb *alloc_cb;
 	DlSymCb *dlsym_cb;
+	ExceptionTableCb *exception_cb;
 
 	MonoJITMemoryManager ();
 	~MonoJITMemoryManager ();
@@ -232,6 +233,7 @@ MonoJITMemoryManager::endExceptionTable(const Function *F, unsigned char *TableS
 					unsigned char *TableEnd, 
 					unsigned char* FrameRegister)
 {
+	exception_cb (FrameRegister);
 }
 
 #else
@@ -253,20 +255,6 @@ public:
 	virtual void NotifyFunctionEmitted(const Function &F,
 									   void *Code, size_t Size,
 									   const EmittedFunctionDetails &Details) {
-		/*
-		 * X86TargetMachine::setCodeModelForJIT() sets the code model to Large on amd64,
-		 * which means the JIT will generate calls of the form
-		 * mov reg, <imm>
-		 * call *reg
-		 * Our trampoline code can't patch this. Passing CodeModel::Small to createJIT
-		 * doesn't seem to work, we need Default. A discussion is here:
-		 * http://lists.cs.uiuc.edu/pipermail/llvmdev/2009-December/027999.html
-		 * There seems to no way to get the TargeMachine used by an EE either, so we
-		 * install a profiler hook and reset the code model here.
-		 * This should be inside an ifdef, but we can't include our config.h either,
-		 * since its definitions conflict with LLVM's config.h.
-		 * The LLVM mono branch contains a workaround.
-		 */
 		emitted_cb (wrap (&F), Code, (char*)Code + Size);
 	}
 };
@@ -623,6 +611,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   MonoJITMemoryManager *mono_mm = new MonoJITMemoryManager ();
   mono_mm->alloc_cb = alloc_cb;
   mono_mm->dlsym_cb = dlsym_cb;
+  mono_mm->exception_cb = exception_cb;
   mono_ee->mm = mono_mm;
 
   /*
@@ -648,7 +637,6 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
   g_assert (EE);
   mono_ee->EE = EE;
 
-  EE->InstallExceptionTableRegister (exception_cb);
   MonoJITEventListener *listener = new MonoJITEventListener (emitted_cb);
   EE->RegisterJITEventListener (listener);
   mono_ee->listener = listener;
