@@ -358,6 +358,17 @@ typedef struct {
 	guint32	    call_type;
 } MonoMethodMessage;
 
+/* Keep in sync with the System.MonoAsyncCall */
+typedef struct {
+	MonoObject object;
+	MonoMethodMessage *msg;
+	MonoMethod *cb_method;
+	MonoDelegate *cb_target;
+	MonoObject *state;
+	MonoObject *res;
+	MonoArray *out_args;
+} MonoAsyncCall;
+
 typedef struct {
 	MonoObject obj;
 	gint32 il_offset;
@@ -637,6 +648,9 @@ MONO_COLD void mono_set_pending_exception (MonoException *exc);
 MonoAsyncResult *
 mono_async_result_new	    (MonoDomain *domain, HANDLE handle, 
 			     MonoObject *state, gpointer data, MonoObject *object_data);
+
+MonoObject *
+mono_async_result_invoke    (MonoAsyncResult *ares, MonoObject **exc);
 
 MonoWaitHandle *
 mono_wait_handle_new	    (MonoDomain *domain, HANDLE handle);

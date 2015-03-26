@@ -6038,6 +6038,68 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 	return res;
 }
 
+MonoObject *
+mono_async_result_invoke (MonoAsyncResult *ares, MonoObject **exc)
+{
+	MonoAsyncCall *ac;
+	MonoObject *res;
+	MonoInternalThread *thread;
+
+	g_assert (ares);
+	g_assert (ares->async_delegate);
+
+	thread = mono_thread_internal_current ();
+
+	if (!ares->execution_context) {
+		ares->original_context = NULL;
+	} else {
+		/* use captured ExecutionContext (if available) */
+		MONO_OBJECT_SETREF (ares, original_context, mono_thread_get_execution_context ());
+		mono_thread_set_execution_context (ares->execution_context);
+	}
+
+	ac = (MonoAsyncCall*) ares->object_data;
+	if (!ac) {
+		thread->async_invoke_method = ((MonoDelegate*) ares->async_delegate)->method;
+		res = mono_runtime_delegate_invoke (ares->async_delegate, (void**) &ares->async_state, exc);
+		thread->async_invoke_method = NULL;
+	} else {
+		MonoArray *out_args = NULL;
+		gpointer wait_event = NULL;
+
+		ac->msg->exc = NULL;
+		res = mono_message_invoke (ares->async_delegate, ac->msg, exc, &out_args);
+		MONO_OBJECT_SETREF (ac->msg, exc, *exc);
+		MONO_OBJECT_SETREF (ac, res, res);
+		MONO_OBJECT_SETREF (ac, out_args, out_args);
+
+		mono_monitor_enter ((MonoObject*) ares);
+		ares->completed = 1;
+		if (ares->handle)
+			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle*) ares->handle);
+		mono_monitor_exit ((MonoObject*) ares);
+
+		if (wait_event != NULL)
+			SetEvent (wait_event);
+
+		if (!ac->cb_method) {
+			*exc = NULL;
+		} else {
+			thread->async_invoke_method = ac->cb_method;
+			mono_runtime_invoke (ac->cb_method, ac->cb_target, (gpointer*) &ares, exc);
+			thread->async_invoke_method = NULL;
+		}
+	}
+
+	/* restore original thread execution context if flow isn't suppressed, i.e. non null */
+	if (ares->original_context) {
+		mono_thread_set_execution_context (ares->original_context);
+		ares->original_context = NULL;
+	}
+
+	return res;
+}
+
 void
 mono_message_init (MonoDomain *domain,
 		   MonoMethodMessage *this, 

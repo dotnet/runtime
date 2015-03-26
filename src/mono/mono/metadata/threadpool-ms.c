@@ -82,18 +82,6 @@ struct _MonoNativeOverlapped {
 	gpointer event_handle;
 };
 
-/* Keep in sync with the System.MonoAsyncCall class which provides GC tracking */
-typedef struct _MonoAsyncCall MonoAsyncCall;
-struct _MonoAsyncCall {
-	MonoObject object;
-	MonoMethodMessage *msg;
-	MonoMethod *cb_method;
-	MonoDelegate *cb_target;
-	MonoObject *state;
-	MonoObject *res;
-	MonoArray *out_args;
-};
-
 /* Keep in sync with System.Threading.RuntimeWorkItem */
 struct _MonoRuntimeWorkItem {
 	MonoObject object;
