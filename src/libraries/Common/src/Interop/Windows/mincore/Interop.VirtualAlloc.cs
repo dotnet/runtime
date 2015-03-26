@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Memory, EntryPoint = "VirtualAlloc", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Memory_L1_0, EntryPoint = "VirtualAlloc", CharSet = CharSet.Unicode, SetLastError = true)]
         internal extern static IntPtr VirtualAlloc(SafeHandle lpAddress, UIntPtr dwSize, int flAllocationType, int flProtect);
     }
 }

@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Memory, EntryPoint = "MapViewOfFile", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Memory_L1_0, EntryPoint = "MapViewOfFile", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SafeMemoryMappedViewHandle MapViewOfFile(
             SafeMemoryMappedFileHandle hFileMappingObject,
             int dwDesiredAccess,

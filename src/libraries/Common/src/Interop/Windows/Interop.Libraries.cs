@@ -17,7 +17,8 @@ internal static partial class Interop
         internal const string Kernel32_L1 = "api-ms-win-core-kernel32-legacy-l1-1-1.dll";
         internal const string Kernel32_L2 = "api-ms-win-core-kernel32-legacy-l1-1-0.dll";
         internal const string Localization = "api-ms-win-core-localization-l1-2-0.dll";
-        internal const string Memory = "api-ms-win-core-memory-l1-1-1.dll";
+        internal const string Memory_L1_0 = "api-ms-win-core-memory-l1-1-0.dll";
+        internal const string Memory_L1_1 = "api-ms-win-core-memory-l1-1-1.dll";
         internal const string NtDll = "ntdll.dll";
         internal const string Pipe = "api-ms-win-core-namedpipe-l1-1-0.dll";
         internal const string ProcessEnvironment = "api-ms-win-core-processenvironment-l1-1-0.dll";
