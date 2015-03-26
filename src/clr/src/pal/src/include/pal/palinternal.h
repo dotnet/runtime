@@ -553,6 +553,9 @@ function_name() to call the system's implementation
 #undef _WCHAR_T_DEFINED
 
 #define _DONT_USE_CTYPE_INLINE_
+#if defined(__FreeBSD__)
+#include <runetype.h>
+#endif
 #include <ctype.h>
 
 #include <stdio.h>
