@@ -1106,6 +1106,23 @@ public static class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_BaseClassAndDerivedClassWithSameProperty()
+    {
+        var value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
+        value.ListProperty.AddRange(new string[] { "one", "two", "three" });
+        var actual = SerializeAndDeserialize<DerivedClassWithSameProperty>(value, "<DerivedClassWithSameProperty xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><DateTimeProperty>0001-01-01T00:00:00</DateTimeProperty><IntProperty>0</IntProperty><ListProperty i:nil=\"true\" xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><StringProperty i:nil=\"true\"/><DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty><IntProperty>5</IntProperty><ListProperty xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:string>one</a:string><a:string>two</a:string><a:string>three</a:string></ListProperty><StringProperty>TestString</StringProperty></DerivedClassWithSameProperty>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.StrictEqual(value.StringProperty, actual.StringProperty);
+        Assert.NotNull(actual.ListProperty);
+        Assert.True(value.ListProperty.Count == actual.ListProperty.Count);
+        Assert.StrictEqual(value.ListProperty[0], actual.ListProperty[0]);
+        Assert.StrictEqual(value.ListProperty[1], actual.ListProperty[1]);
+        Assert.StrictEqual(value.ListProperty[2], actual.ListProperty[2]);
+    }
+
+    [Fact]
     public static void DCS_ContainsLinkedList()
     {
         var value = new ContainsLinkedList(true);
