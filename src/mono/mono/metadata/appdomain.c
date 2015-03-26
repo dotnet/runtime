@@ -78,7 +78,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 122
+#define MONO_CORLIB_VERSION 123
 
 typedef struct
 {
@@ -163,11 +163,22 @@ create_domain_objects (MonoDomain *domain)
 {
 	MonoDomain *old_domain = mono_domain_get ();
 	MonoString *arg;
+	MonoVTable *string_vt;
+	MonoClassField *string_empty_fld;
 
 	if (domain != old_domain) {
 		mono_thread_push_appdomain_ref (domain);
 		mono_domain_set_internal_with_options (domain, FALSE);
 	}
+
+	/*
+	 * Initialize String.Empty. This enables the removal of
+	 * the static cctor of the String class.
+	 */
+	string_vt = mono_class_vtable (domain, mono_defaults.string_class);
+	string_empty_fld = mono_class_get_field_from_name (mono_defaults.string_class, "Empty");
+	g_assert (string_empty_fld);
+	mono_field_static_set_value (string_vt, string_empty_fld, mono_string_new (domain, ""));
 
 	/*
 	 * Create an instance early since we can't do it when there is no memory.

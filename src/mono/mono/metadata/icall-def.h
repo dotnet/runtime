@@ -36,8 +36,6 @@
  * Remember to change also the first_icall_id argument in the ICALL_TYPE 
  * declaration if you add a new icall at the beginning of a type's icall list.
  */
-ICALL_TYPE(UNORM, "Mono.Globalization.Unicode.Normalization", UNORM_1)
-ICALL(UNORM_1, "load_normalization_resource", load_normalization_resource)
 
 #ifndef DISABLE_COM
 ICALL_TYPE(COMPROX, "Mono.Interop.ComInteropProxy", COMPROX_1)
@@ -824,14 +822,15 @@ ICALL(STRING_5, ".ctor(char[],int,int)", ves_icall_System_String_ctor_RedirectTo
 ICALL(STRING_6, ".ctor(sbyte*)", ves_icall_System_String_ctor_RedirectToCreateString)
 ICALL(STRING_7, ".ctor(sbyte*,int,int)", ves_icall_System_String_ctor_RedirectToCreateString)
 ICALL(STRING_8, ".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_String_ctor_RedirectToCreateString)
-ICALL(STRING_8a, "GetLOSLimit", ves_icall_System_String_GetLOSLimit)
-ICALL(STRING_9, "InternalAllocateStr", ves_icall_System_String_InternalAllocateStr)
+ICALL(STRING_9, "FastAllocateString", ves_icall_System_String_InternalAllocateStr)
 ICALL(STRING_10, "InternalIntern", ves_icall_System_String_InternalIntern)
 ICALL(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInterned)
-ICALL(STRING_12, "InternalSetLength", ves_icall_System_String_InternalSetLength)
 
 ICALL_TYPE(TENC, "System.Text.EncodingHelper", TENC_1)
 ICALL(TENC_1, "InternalCodePage", ves_icall_System_Text_EncodingHelper_InternalCodePage)
+
+ICALL_TYPE(UNORM, "System.Text.Normalization", UNORM_1)
+ICALL(UNORM_1, "load_normalization_resource", load_normalization_resource)
 
 ICALL_TYPE(ILOCK, "System.Threading.Interlocked", ILOCK_1)
 ICALL(ILOCK_1, "Add(int&,int)", ves_icall_System_Threading_Interlocked_Add_Int)

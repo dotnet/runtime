@@ -19,9 +19,15 @@
 //
 // Ported from C++ to C and adjusted to Mono runtime
 
+#include <config.h>
 #include <stdlib.h>
-#include <complex.h>
 #include <math.h>
+
+#ifdef PLATFORM_ANDROID
+#include <../../support/libm/complex.h>
+#else
+#include <complex.h>
+#endif
 
 #include <glib.h>
 

@@ -23,8 +23,12 @@
 #if defined(_POSIX_VERSION)
 #include <sys/errno.h>
 #include <sys/param.h>
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
+#endif
 #include <sys/resource.h>
 #endif
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)

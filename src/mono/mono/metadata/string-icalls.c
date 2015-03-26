@@ -66,9 +66,3 @@ ves_icall_System_String_GetLOSLimit (void)
 	return (limit - 2 - G_STRUCT_OFFSET (MonoString, chars)) / 2;
 }
 
-void
-ves_icall_System_String_InternalSetLength (MonoString *str, gint32 new_length)
-{
-	mono_gc_set_string_length (str, new_length);
-}
-

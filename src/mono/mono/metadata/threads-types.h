@@ -18,6 +18,7 @@
 #include <mono/metadata/object.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-threads.h"
 
 /* This is a copy of System.Threading.ThreadState */
 typedef enum {
@@ -59,7 +60,7 @@ typedef LPTHREAD_START_ROUTINE WapiThreadStart;
 
 typedef struct _MonoInternalThread MonoInternalThread;
 
-typedef void (*MonoThreadCleanupFunc) (MonoInternalThread* thread);
+typedef void (*MonoThreadCleanupFunc) (MonoNativeThreadId tid);
 /* INFO has type MonoThreadInfo* */
 typedef void (*MonoThreadNotifyPendingExcFunc) (gpointer info);
 

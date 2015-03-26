@@ -434,7 +434,7 @@ static void thread_cleanup (MonoInternalThread *thread)
 		}
 		/* This needs to be called even if handle_remove () fails */
 		if (mono_thread_cleanup_fn)
-			mono_thread_cleanup_fn (thread);
+			mono_thread_cleanup_fn (thread->tid);
 		return;
 	}
 	mono_release_type_locks (thread);
@@ -461,7 +461,7 @@ static void thread_cleanup (MonoInternalThread *thread)
 	thread->appdomain_refs = NULL;
 
 	if (mono_thread_cleanup_fn)
-		mono_thread_cleanup_fn (thread);
+		mono_thread_cleanup_fn (thread->tid);
 
 	if (mono_gc_is_moving ()) {
 		MONO_GC_UNREGISTER_ROOT (thread->thread_pinning_ref);

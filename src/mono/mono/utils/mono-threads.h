@@ -119,14 +119,25 @@ and reduce the number of casts drastically.
 /* If this is defined, use the signals backed on Mach. Debug only as signals can't be made usable on OSX. */
 // #define USE_SIGNALS_ON_MACH
 
-#if defined (_POSIX_VERSION) || defined (__native_client__)
+
+#if defined (USE_COOP_GC)
+#define USE_COOP_BACKEND
+#define MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND 1
+
+#elif defined (_POSIX_VERSION) || defined (__native_client__)
+#define MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND 0
+
 #if defined (__MACH__) && !defined (USE_SIGNALS_ON_MACH)
 #define USE_MACH_BACKEND
 #else
 #define USE_POSIX_BACKEND
 #endif
-#endif
 
+#elif HOST_WIN32
+#define MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND 0
+#define USE_WINDOWS_BACKEND
+
+#endif
 
 enum {
 	STATE_STARTING				= 0x00,
@@ -137,9 +148,10 @@ enum {
 	STATE_SELF_SUSPENDED			= 0x04,
 	STATE_ASYNC_SUSPEND_REQUESTED	= 0x05,
 	STATE_SELF_SUSPEND_REQUESTED 	= 0x06,
-	// STATE_SUSPEND_IN_PROGRESS		= 0x07,
-	// STATE_SUSPEND_PROMOTED_TO_ASYNC	= 0x08,
-	STATE_MAX						= 0x06,
+	STATE_BLOCKING					= 0x07,
+	STATE_BLOCKING_AND_SUSPENDED	= 0x8,
+
+	STATE_MAX						= 0x08,
 
 	THREAD_STATE_MASK			= 0x00FF,
 	THREAD_SUSPEND_COUNT_MASK	= 0xFF00,
@@ -176,7 +188,6 @@ typedef struct {
 	MonoSemType suspend_semaphore;
 	int suspend_count;
 
-	// MonoSemType suspend_semaphore;
 	MonoSemType resume_semaphore;
 
 	/* only needed by the posix backend */ 
@@ -229,6 +240,8 @@ typedef struct {
 	 * In the future the signaling should be part of the API, but for now, it's only for massaging the bits.
 	 */
 	volatile gint32 service_requests;
+
+	void *jit_data;
 } MonoThreadInfo;
 
 typedef struct {
@@ -321,6 +334,9 @@ mono_thread_info_is_exiting (void);
 
 THREAD_INFO_TYPE *
 mono_thread_info_current (void);
+
+THREAD_INFO_TYPE*
+mono_thread_info_current_unchecked (void);
 
 int
 mono_thread_info_get_small_id (void);
@@ -549,6 +565,7 @@ typedef enum {
 	ResumeOk,
 	ResumeInitSelfResume,
 	ResumeInitAsyncResume,
+	ResumeInitBlockingResume,
 } MonoResumeResult;
 
 typedef enum {
@@ -563,6 +580,26 @@ typedef enum {
 	AsyncSuspendInitSuspend,
 } MonoRequestAsyncSuspendResult;
 
+typedef enum {
+	DoBlockingContinue, //in blocking mode, continue
+	DoBlockingPollAndRetry, //async suspend raced blocking and won, pool and retry
+} MonoDoBlockingResult;
+
+typedef enum {
+	DoneBlockingAborted, //blocking was aborted and not properly restored, poll the state
+	DoneBlockingOk, //exited blocking fine
+	DoneBlockingWait, //thread should end suspended
+} MonoDoneBlockingResult;
+
+
+typedef enum {
+	AbortBlockingIgnore, //Ignore
+	AbortBlockingIgnoreAndPoll, //Ignore and pool
+	AbortBlockingOk, //Abort worked
+	AbortBlockingOkAndPool, //Abort worked, but pool before
+} MonoAbortBlockingResult;
+
+
 void mono_threads_transition_attach (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_detach (THREAD_INFO_TYPE *info);
 void mono_threads_transition_request_self_suspension (THREAD_INFO_TYPE *info);
@@ -571,6 +608,9 @@ MonoSelfSupendResult mono_threads_transition_state_poll (THREAD_INFO_TYPE *info)
 MonoResumeResult mono_threads_transition_request_resume (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_finish_async_suspend (THREAD_INFO_TYPE* info);
 void mono_threads_transition_async_suspend_compensation (THREAD_INFO_TYPE* info);
+MonoDoBlockingResult mono_threads_transition_do_blocking (THREAD_INFO_TYPE* info);
+MonoDoneBlockingResult mono_threads_transition_done_blocking (THREAD_INFO_TYPE* info);
+MonoAbortBlockingResult mono_threads_transition_abort_blocking (THREAD_INFO_TYPE* info);
 
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 

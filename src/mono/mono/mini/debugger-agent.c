@@ -2640,7 +2640,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 
 				memcpy (&tls->async_state.ctx, &data.ctx, sizeof (MonoContext));
 				tls->async_state.unwind_data [MONO_UNWIND_DATA_LMF] = data.lmf;
-				tls->async_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = tls->thread->jit_data;
+				tls->async_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS] = ((MonoThreadInfo*)tls->thread->thread_info)->jit_data;
 			} else {
 				tls->async_state.valid = FALSE;
 			}
@@ -5435,7 +5435,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 		 */
 
 		/* Find the the jit info for the catch context */
-		res = mono_find_jit_info_ext (tls->catch_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], thread->jit_data, NULL, &tls->catch_state.ctx, &new_ctx, NULL, &lmf, NULL, &frame);
+		res = mono_find_jit_info_ext (tls->catch_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], ((MonoThreadInfo*)thread->thread_info)->jit_data, NULL, &tls->catch_state.ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		g_assert (res);
 		g_assert (frame.type == FRAME_TYPE_MANAGED);
 

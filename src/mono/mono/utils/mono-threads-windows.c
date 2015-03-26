@@ -7,11 +7,10 @@
  * (C) 2011 Novell, Inc
  */
 
-#include "config.h"
-
-#if defined(HOST_WIN32)
-
 #include <mono/utils/mono-threads.h>
+
+#if defined(USE_WINDOWS_BACKEND)
+
 #include <mono/utils/mono-compiler.h>
 #include <limits.h>
 

@@ -78,7 +78,7 @@
 #include <sys/syscall.h>
 #include "perf_event.h"
 
-#ifndef DISABLE_PERF_EVENTS
+#ifdef ENABLE_PERF_EVENTS
 #define USE_PERF_EVENTS 1
 
 static int read_perf_mmap (MonoProfiler* prof, int cpu);
@@ -607,12 +607,13 @@ find_method (MonoDomain *domain, void *user_data)
 
 	MonoJitInfo *ji = mono_get_jit_info_from_method (domain, search->method);
 
-	// It could be AOT'd, so we need to force it to be loaded.
+	// It could be AOT'd, so we need to get it from the AOT runtime's cache.
 	if (!ji) {
-		// Loads the method as a side effect.
-		mono_aot_get_method (domain, search->method);
+		void *ip = mono_aot_get_method (domain, search->method);
 
-		ji = mono_get_jit_info_from_method (domain, search->method);
+		// Avoid a slow path in mono_jit_info_table_find ().
+		if (ip)
+			ji = mono_jit_info_table_find (domain, ip);
 	}
 
 	if (ji)

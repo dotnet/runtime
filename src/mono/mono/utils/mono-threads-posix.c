@@ -287,10 +287,49 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 #else
 	return pthread_kill (mono_thread_info_get_tid (info), signum);
 #endif
-
 }
 
-#if defined (USE_POSIX_BACKEND)
+MonoNativeThreadId
+mono_native_thread_id_get (void)
+{
+	return pthread_self ();
+}
+
+gboolean
+mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
+{
+	return pthread_equal (id1, id2);
+}
+
+/*
+ * mono_native_thread_create:
+ *
+ *   Low level thread creation function without any GC wrappers.
+ */
+gboolean
+mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
+{
+	return pthread_create (tid, NULL, func, arg) == 0;
+}
+
+void
+mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
+{
+#if defined (HAVE_PTHREAD_SETNAME_NP) && !defined (__MACH__)
+	if (!name) {
+		pthread_setname_np (tid, "");
+	} else {
+		char n [16];
+
+		strncpy (n, name, 16);
+		n [15] = '\0';
+		pthread_setname_np (tid, n);
+	}
+#endif
+}
+
+
+#if defined (USE_POSIX_BACKEND) && !defined (USE_COOP_GC)
 
 static int suspend_signal_num;
 static int restart_signal_num;
@@ -591,45 +630,6 @@ mono_threads_platform_register (MonoThreadInfo *info)
 void
 mono_threads_platform_free (MonoThreadInfo *info)
 {
-}
-
-MonoNativeThreadId
-mono_native_thread_id_get (void)
-{
-	return pthread_self ();
-}
-
-gboolean
-mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
-{
-	return pthread_equal (id1, id2);
-}
-
-/*
- * mono_native_thread_create:
- *
- *   Low level thread creation function without any GC wrappers.
- */
-gboolean
-mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
-{
-	return pthread_create (tid, NULL, func, arg) == 0;
-}
-
-void
-mono_threads_core_set_name (MonoNativeThreadId tid, const char *name)
-{
-#if defined (HAVE_PTHREAD_SETNAME_NP) && !defined (__MACH__)
-	if (!name) {
-		pthread_setname_np (tid, "");
-	} else {
-		char n [16];
-
-		strncpy (n, name, 16);
-		n [15] = '\0';
-		pthread_setname_np (tid, n);
-	}
-#endif
 }
 
 #endif /*defined (USE_POSIX_BACKEND)*/

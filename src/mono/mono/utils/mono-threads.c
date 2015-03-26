@@ -98,6 +98,13 @@ resume_async_suspended (MonoThreadInfo *info)
 	g_assert (mono_threads_core_begin_async_resume (info));
 }
 
+static void
+resume_blocking_suspended (MonoThreadInfo* info)
+{
+	THREADS_SUSPEND_DEBUG ("**BEGIN blocking-resume %p\n", mono_thread_info_get_tid (info));
+	MONO_SEM_POST (&info->resume_semaphore);
+}
+
 void
 mono_threads_add_to_pending_operation_set (MonoThreadInfo* info)
 {
@@ -375,7 +382,7 @@ mono_threads_unregister_current_thread (MonoThreadInfo *info)
 	g_assert (result);
 }
 
-static inline MonoThreadInfo*
+MonoThreadInfo*
 mono_thread_info_current_unchecked (void)
 {
 	return (MonoThreadInfo*)mono_native_tls_get_value (thread_info_key);
@@ -531,7 +538,7 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 #endif
 	g_assert (res);
 
-	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL;
+	unified_suspend_enabled = g_getenv ("MONO_ENABLE_UNIFIED_SUSPEND") != NULL || MONO_THREADS_PLATFORM_REQUIRES_UNIFIED_SUSPEND;
 
 	MONO_SEM_INIT (&global_suspend_semaphore, 1);
 	MONO_SEM_INIT (&suspend_semaphore, 0);
@@ -675,6 +682,10 @@ mono_thread_info_core_resume (MonoThreadInfo *info)
 		break;
 	case ResumeInitAsyncResume:
 		resume_async_suspended (info);
+		res = TRUE;
+		break;
+	case ResumeInitBlockingResume:
+		resume_blocking_suspended (info);
 		res = TRUE;
 		break;
 	}
