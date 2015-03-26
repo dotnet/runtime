@@ -52,7 +52,7 @@ namespace System.Threading
 
     public sealed class ExecutionContext : IDisposable
     {
-        public static readonly ExecutionContext Default = new ExecutionContext();
+        private static readonly ExecutionContext Default = new ExecutionContext();
 
         [ThreadStatic]
         [SecurityCritical]
@@ -240,8 +240,7 @@ namespace System.Threading
         [SecurityCritical]
         internal bool IsDefaultFTContext(bool ignoreSyncCtx)
         {
-            ExecutionContext current = t_currentMaybeNull;
-            return current == null || current == Default;
+            return this == Default;
         }
 
         [SecuritySafeCritical]
