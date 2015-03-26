@@ -2836,6 +2836,7 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
     
     bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
     bool requiresOverflowCheck = tree->gtOverflowEx();
+    bool useLeaEncoding = false;
     GenTreePtr memOp = nullptr;
 
     // There are three forms of x86 multiply:
@@ -2882,18 +2883,17 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
             other = op2; 
         }
 
-#if 0   // TODO-XArch-CQ: We want to rewrite this into a LEA
-        if (!requiresOverflowCheck && (imm->gtIconVal == 3 || imm->gtIconVal == 5 || imm->gtIconVal == 9))
+        // CQ: We want to rewrite this into a LEA
+        ssize_t immVal = imm->AsIntConCommon()->IconValue();
+        if (!requiresOverflowCheck && (immVal == 3 || immVal == 5 || immVal == 9))
         {
+            useLeaEncoding = true;
         }
-        else
-#endif
+
+        MakeSrcContained(tree, imm);   // The imm is always contained
+        if (other->isIndir())
         {
-            MakeSrcContained(tree, imm);
-            if (other->isIndir())
-            {
-                memOp = other;
-            }
+            memOp = other;             // memOp may be contained below
         }
     }
     // We allow one operand to be a contained memory operand.
@@ -2906,7 +2906,10 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
         memOp = op2;
     }
 
-    if ((memOp != nullptr) && (memOp->TypeGet() == tree->TypeGet()))
+    // To generate an LEA we need to force memOp into a register
+    // so don't allow memOp to be 'contained'
+    //
+    if ((memOp != nullptr) && !useLeaEncoding && (memOp->TypeGet() == tree->TypeGet()))
     {
         MakeSrcContained(tree, memOp);
     }
