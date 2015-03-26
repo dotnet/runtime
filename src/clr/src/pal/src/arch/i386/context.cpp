@@ -298,11 +298,11 @@ BOOL CONTEXT_GetRegisters(DWORD processId, ucontext_t *registers)
     {
 #if HAVE_PT_REGS
         struct pt_regs ptrace_registers;
+        if (ptrace((__ptrace_request)PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
 #elif HAVE_BSD_REGS_T
         struct reg ptrace_registers;
+        if (ptrace(PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
 #endif
-
-        if (ptrace((__ptrace_request)PT_GETREGS, processId, (caddr_t) &ptrace_registers, 0) == -1)
         {
             ASSERT("Failed ptrace(PT_GETREGS, processId:%d) errno:%d (%s)\n",
                    processId, errno, strerror(errno));
@@ -447,7 +447,11 @@ CONTEXT_SetThreadContext(
     if (lpContext->ContextFlags  & 
         (CONTEXT_CONTROL | CONTEXT_INTEGER))
     {   
+#if HAVE_PT_REGS
         if (ptrace((__ptrace_request)PT_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+#elif HAVE_BSD_REGS_T
+        if (ptrace(PT_GETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+#endif
         {
             ASSERT("Failed ptrace(PT_GETREGS, processId:%d) errno:%d (%s)\n",
                    dwProcessId, errno, strerror(errno));
@@ -469,8 +473,12 @@ CONTEXT_SetThreadContext(
             ASSIGN_INTEGER_REGS
         }
 #undef ASSIGN_REG
-        
+
+#if HAVE_PT_REGS        
         if (ptrace((__ptrace_request)PT_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+#elif HAVE_BSD_REGS_T
+        if (ptrace(PT_SETREGS, dwProcessId, (caddr_t)&ptrace_registers, 0) == -1)
+#endif
         {
             ASSERT("Failed ptrace(PT_SETREGS, processId:%d) errno:%d (%s)\n",
                    dwProcessId, errno, strerror(errno));
