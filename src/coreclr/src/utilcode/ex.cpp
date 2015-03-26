@@ -47,7 +47,7 @@ Exception * Exception::GetOOMException()
         // This avoids race conditions caused by multiple initializations of vtable in the constructor       
 
         OutOfMemoryException local(TRUE);  // Construct a "preallocated" instance.
-        memcpy(&g_OOMExceptionInstance, &local, sizeof(OutOfMemoryException));           
+        memcpy((void*)&g_OOMExceptionInstance, (void*)&local, sizeof(OutOfMemoryException));
 
         g_OOMException = (OutOfMemoryException*)&g_OOMExceptionInstance;
     }

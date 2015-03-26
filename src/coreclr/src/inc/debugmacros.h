@@ -241,13 +241,13 @@ namespace clr
         template < typename T >
         void PoisonMem(T &val)
         {
-            ZeroMemory(&val, sizeof(T));
+            ZeroMemory((void*)&val, sizeof(T));
         }
 
         template < typename T >
         void PoisonMem(T* ptr, size_t len)
         {
-            ZeroMemory(ptr, sizeof(T) * len);
+            ZeroMemory((void*)ptr, sizeof(T)* len);
         }
     }
 }

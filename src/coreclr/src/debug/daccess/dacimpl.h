@@ -1473,9 +1473,9 @@ public:
                                              __out_ecount(cchPath) LPWSTR wszPath,
                                              const DWORD cchPath);
 #if defined(FEATURE_CORESYSTEM)
-    static bool ClrDataAccess::GetILImageNameFromNgenImage(LPCWSTR ilExtension,
-                                                 __out_ecount(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath);
+    static bool GetILImageNameFromNgenImage(LPCWSTR ilExtension,
+                                            __out_ecount(cchFilePath) LPWSTR wszFilePath,
+                                            const DWORD cchFilePath);
 #endif // FEATURE_CORESYSTEM
 };
 

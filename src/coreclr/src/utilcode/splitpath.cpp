@@ -43,7 +43,7 @@
 *******************************************************************************/
 
 void SplitPath(
-        register const WCHAR *path,
+        const WCHAR *path,
         __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
         __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
         __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
@@ -91,7 +91,7 @@ void    SplitPathInterior(
     _ASSERTE(!!pwszFileName == !!pcchFileName);
     _ASSERTE(!!pwszExt == !!pcchExt);
 
-    register WCHAR *p;
+    WCHAR *p;
     LPCWSTR last_slash = NULL, dot = NULL;
 
     /* we assume that the path argument has the following form, where any

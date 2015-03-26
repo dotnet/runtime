@@ -118,7 +118,7 @@ typedef class IDebugControl2* PDEBUG_CONTROL2;
 // IDebugDataSpaces
 //----------------------------------------------------------------------------
 
-class IDebugDataSpaces
+struct IDebugDataSpaces
 {
 public:
     virtual HRESULT ReadVirtual(
@@ -128,7 +128,7 @@ public:
         PULONG bytesRead) = 0;
 };
 
-typedef class IDebugDataSpaces* PDEBUG_DATA_SPACES;
+typedef IDebugDataSpaces* PDEBUG_DATA_SPACES;
 
 //----------------------------------------------------------------------------
 // IDebugSymbols

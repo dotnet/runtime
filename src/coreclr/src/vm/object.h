@@ -370,7 +370,7 @@ class Object
         return (psb && psb->IsAppDomainAgile());
     }
 
-    BOOL Object::IsCheckedForAppDomainAgile()
+    BOOL IsCheckedForAppDomainAgile()
     {
         WRAPPER_NO_CONTRACT;
 
@@ -378,7 +378,7 @@ class Object
         return (psb && psb->IsCheckedForAppDomainAgile());
     }
 
-    void Object::SetIsCheckedForAppDomainAgile()
+    void SetIsCheckedForAppDomainAgile()
     {
         WRAPPER_NO_CONTRACT;
 
