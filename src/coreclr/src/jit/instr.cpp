@@ -3419,14 +3419,8 @@ instruction         CodeGen::ins_Copy(var_types   dstType)
     }
     else if (varTypeIsFloating(dstType))
     {
-        if (dstType == TYP_FLOAT)
-        {
-            return INS_movaps;
-        }
-        else
-        {
-            return INS_movaps;
-        }
+       // Both float and double copy can use movaps
+       return INS_movaps;
     }
     else
     {
