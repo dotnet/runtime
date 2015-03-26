@@ -3868,6 +3868,13 @@ find_aot_method (MonoMethod *method, MonoAotModule **out_amodule)
 	return index;
 }
 
+guint32
+mono_aot_find_method_index (MonoMethod *method)
+{
+	MonoAotModule *out_amodule;
+	return find_aot_method (method, &out_amodule);
+}
+
 /*
  * mono_aot_get_method:
  *
