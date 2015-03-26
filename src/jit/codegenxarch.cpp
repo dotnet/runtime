@@ -1858,8 +1858,6 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             emitAttr    size           = emitTypeSize(treeNode);
             bool isUnsignedMultiply    = ((treeNode->gtFlags & GTF_UNSIGNED) != 0);
             bool requiresOverflowCheck = treeNode->gtOverflowEx();
-
-            // TODO-XArch-CQ: use LEA for mul by imm
     
             GenTree *op1 = treeNode->gtOp.gtOp1;
             GenTree *op2 = treeNode->gtOp.gtOp2;
@@ -1874,7 +1872,7 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             // This matches the 'mul' lowering in Lowering::SetMulOpCounts()
             //
             // immOp :: Only one operand can be an immediate
-            // rmOp  :: Only operand can be a memory op.
+            // rmOp  :: Only one operand can be a memory op.
             // regOp :: A register op (especially the operand that matches 'targetReg')
             //          (can be nullptr when we have both a memory op and an immediate op)
 
@@ -1897,9 +1895,22 @@ CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
                 // This must be a non-floating point operation.
                 assert(!varTypeIsFloating(treeNode));
 
-                // use the 3-op form with immediate
-                ins = getEmitter()->inst3opImulForReg(targetReg);
-                emit->emitInsBinary(ins, size, rmOp, immOp);
+                // CQ: When possible use LEA for mul by imm 3, 5 or 9
+                ssize_t imm = immOp->AsIntConCommon()->IconValue();
+
+                if (!requiresOverflowCheck && !rmOp->isContained() && ((imm == 3) || (imm == 5) || (imm == 9)))
+                {
+                    // We will use the LEA instruction to perform this multiply
+                    // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.  
+                    unsigned int scale = (unsigned int)(imm - 1);
+                    getEmitter()->emitIns_R_ARX(INS_lea, size, targetReg, rmOp->gtRegNum, rmOp->gtRegNum, scale, 0);
+                }
+                else
+                {
+                    // use the 3-op form with immediate
+                    ins = getEmitter()->inst3opImulForReg(targetReg);
+                    emit->emitInsBinary(ins, size, rmOp, immOp);
+                }
             }
             else  // we have no contained immediate operand
             {
