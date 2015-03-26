@@ -973,7 +973,7 @@ mini_thread_cleanup (MonoNativeThreadId tid)
 	 *
 	 * The current offender is mono_thread_manage which cleanup threads from the outside.
 	 */
-	if (mono_thread_info_get_tid (info) == tid) {
+	if (info && mono_thread_info_get_tid (info) == tid) {
 		jit_tls = info->jit_data;
 		info->jit_data = NULL;
 
