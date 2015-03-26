@@ -62,7 +62,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc)
 #endif
     m_nextChunkBase(0), m_fixedPointMapSels(alloc, 8), m_chunks(alloc, 8),
     m_intCnsMap(NULL), m_longCnsMap(NULL), m_handleMap(NULL), m_floatCnsMap(NULL), m_doubleCnsMap(NULL), m_byrefCnsMap(NULL),
-    m_VNFunc0Map(NULL), m_VNFunc1Map(NULL), m_VNFunc2Map(NULL), m_VNFunc3Map(NULL),
+    m_VNFunc0Map(NULL), m_VNFunc1Map(NULL), m_VNFunc2Map(NULL), m_VNFunc3Map(NULL), m_VNFunc4Map(NULL),
     m_uPtrToLocNotAFieldCount(1)
 {
     // We have no current allocation chunks.
