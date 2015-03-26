@@ -2602,6 +2602,10 @@ BOOL DomainAssembly::ShouldLoadDomainNeutralHelper()
 
     case AppDomain::SHARE_POLICY_NEVER:
         return FALSE;
+
+    case AppDomain::SHARE_POLICY_UNSPECIFIED:
+    case AppDomain::SHARE_POLICY_COUNT:
+        break;
     }
     
     return FALSE; // No meaning in doing costly closure walk for CoreCLR.

@@ -164,7 +164,6 @@ extern "C" {
 #endif // CORECLR
 #endif // !_MSC_VER
 
-
 #if defined(_MSC_VER) || defined(__llvm__)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
@@ -744,8 +743,12 @@ GenerateConsoleCtrlEvent(
 
 // From win32.h
 #ifndef _CRTIMP
+#ifdef __llvm__
+#define _CRTIMP
+#else // __llvm__
 #define _CRTIMP __declspec(dllimport)
-#endif
+#endif // __llvm__
+#endif // _CRTIMP
 
 /******************* winbase.h Entrypoints and defines ************************/
 PALIMPORT

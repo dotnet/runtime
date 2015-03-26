@@ -465,11 +465,11 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
 #ifdef FEATURE_CONSERVATIVE_GC
 // Temporary conservative collection, for testing purposes, until we have
 // accurate gc info from the JIT.
-bool EECodeManager::EnumGcRefsConservative(PREGDISPLAY     pRD,
-                                           EECodeInfo     *pCodeInfo,
-                                           unsigned        flags,
-                                           GCEnumCallback  pCallBack,
-                                           LPVOID          hCallBack);
+bool EnumGcRefsConservative(PREGDISPLAY     pRD,
+                            EECodeInfo     *pCodeInfo,
+                            unsigned        flags,
+                            GCEnumCallback  pCallBack,
+                            LPVOID          hCallBack);
 #endif // FEATURE_CONSERVATIVE_GC
 
 /*

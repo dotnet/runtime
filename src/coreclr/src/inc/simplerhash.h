@@ -201,7 +201,7 @@ class SimplerHashTable
   private:
 
     // Forward declaration of the linked-list node class.
-    class Node;
+    struct Node;
 
     // If the table has a mapping for "k", return the node containing
     // that mapping, else "NULL".
@@ -408,7 +408,7 @@ class SimplerHashTable
         Key   m_key;
         Value m_val;
 
-        Node(Key k, Value v, Node* next): m_key(k), m_val(v), m_next(next) {}
+        Node(Key k, Value v, Node* next) : m_next(next), m_key(k), m_val(v) {}
 
         void* operator new(size_t sz, IAllocator* alloc)
         {

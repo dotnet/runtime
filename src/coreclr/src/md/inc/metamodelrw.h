@@ -583,7 +583,7 @@ public:
     VOID OrganizeStringPool(CorProfileData *pProfileData);
     
     // Result of hash search
-    typedef enum HashSearchResult
+    enum HashSearchResult
     {
         Found,      // Item was found.
         NotFound,   // Item not found.
