@@ -18,9 +18,9 @@
 
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(_DEBUG)
 
-extern RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
-extern BOOL gExInfoAvailable = FALSE;
-extern BOOL gExInfoIsServer = TRUE;
+RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
+BOOL gExInfoAvailable = FALSE;
+BOOL gExInfoIsServer = TRUE;
 
 #define NON_SUPPORTED_PLATFORM_MSGBOX_TITLE             W("Platform not supported")
 #define NON_SUPPORTED_PLATFORM_MSGBOX_TEXT              W("The minimum supported platform is Windows 2000")

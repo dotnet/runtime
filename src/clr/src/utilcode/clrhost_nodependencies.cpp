@@ -647,7 +647,7 @@ IExecutionEngine *GetExecutionEngine()
         // Create a local copy on the stack and then copy it over to the static instance.
         // This avoids race conditions caused by multiple initializations of vtable in the constructor
         UtilExecutionEngine local;
-        memcpy(&g_ExecutionEngineInstance, &local, sizeof(UtilExecutionEngine));
+        memcpy((void*)&g_ExecutionEngineInstance, (void*)&local, sizeof(UtilExecutionEngine));
         pExecutionEngine = (IExecutionEngine*)(UtilExecutionEngine*)&g_ExecutionEngineInstance;
 #else
         // statically linked.

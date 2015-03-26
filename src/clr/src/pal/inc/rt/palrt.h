@@ -1089,6 +1089,8 @@ inline int __cdecl _sscanf_unsafe(const char *_Dst, const char *_Format,...)
 
     ret = sscanf(_Dst, _Format, _ArgList);
     va_end(_ArgList);
+
+    return ret;
 }
 
 inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const wchar_t *fileName, const wchar_t *mode)

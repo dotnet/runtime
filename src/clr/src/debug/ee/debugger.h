@@ -3380,7 +3380,7 @@ inline void * __cdecl operator new[](size_t n, const InteropSafe&)
     return result;
 }
 
-inline void * __cdecl operator new(size_t n, const InteropSafe&, const NoThrow&)
+inline void * __cdecl operator new(size_t n, const InteropSafe&, const NoThrow&) throw()
 {
     CONTRACTL
     {
@@ -3399,7 +3399,7 @@ inline void * __cdecl operator new(size_t n, const InteropSafe&, const NoThrow&)
     return result;
 }
 
-inline void * __cdecl operator new[](size_t n, const InteropSafe&, const NoThrow&)
+inline void * __cdecl operator new[](size_t n, const InteropSafe&, const NoThrow&) throw()
 {
     CONTRACTL
     {
@@ -3505,7 +3505,7 @@ inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&)
     return result;
 }
 
-inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&, const NoThrow&)
+inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&, const NoThrow&) throw()
 {
     CONTRACTL
     {

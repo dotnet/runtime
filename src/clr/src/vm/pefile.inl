@@ -320,12 +320,12 @@ inline PTR_PEAssembly PEFile::AsAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (this == NULL)
-        return dac_cast<PTR_PEAssembly>(NULL);
+    if (this == nullptr)
+        return dac_cast<PTR_PEAssembly>(nullptr);
     if (IsAssembly())
         return dac_cast<PTR_PEAssembly>(this);
     else
-        return dac_cast<PTR_PEAssembly>(NULL);
+        return dac_cast<PTR_PEAssembly>(nullptr);
 }
 
 inline BOOL PEFile::IsModule() const
@@ -340,12 +340,12 @@ inline PTR_PEModule PEFile::AsModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (this == NULL)
-        return dac_cast<PTR_PEModule>(NULL);
+    if (this == nullptr)
+        return dac_cast<PTR_PEModule>(nullptr);
     if (IsModule())
         return dac_cast<PTR_PEModule>(this);
     else
-        return dac_cast<PTR_PEModule>(NULL);
+        return dac_cast<PTR_PEModule>(nullptr);
 }
 
 inline BOOL PEFile::IsSystem() const
