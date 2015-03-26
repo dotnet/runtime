@@ -140,7 +140,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     m_pbStrongNameKeyPair(NULL),
     m_pwStrongNameKeyContainer(NULL),
     m_isDynamic(false),
-    m_isDisabledPrivateReflection(0),
 #ifdef FEATURE_COLLECTIBLE_TYPES
     m_isCollectible(fIsCollectible),
 #endif
@@ -148,6 +147,7 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     m_dwDynamicAssemblyAccess(ASSEMBLY_ACCESS_RUN),
     m_nextAvailableModuleIndex(1),
     m_pLoaderAllocator(NULL),
+    m_isDisabledPrivateReflection(0),
 #ifdef FEATURE_COMINTEROP
     m_pITypeLib(NULL),
     m_winMDStatus(WinMDStatus_Unknown),

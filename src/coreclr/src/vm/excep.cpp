@@ -7617,7 +7617,7 @@ bool ShouldHandleManagedFault(
 
 LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo);
 
-typedef enum VEH_ACTION
+enum VEH_ACTION
 {
     VEH_NO_ACTION = 0,
     VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION,

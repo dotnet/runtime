@@ -306,8 +306,8 @@ private :
 
 void * __cdecl operator new(size_t n, StackingAllocator *alloc);
 void * __cdecl operator new[](size_t n, StackingAllocator *alloc);
-void * __cdecl operator new(size_t n, StackingAllocator *alloc, const NoThrow&);
-void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const NoThrow&);
+void * __cdecl operator new(size_t n, StackingAllocator *alloc, const NoThrow&) throw();
+void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const NoThrow&) throw();
 
 #ifdef _MSC_VER
 #pragma warning(pop)

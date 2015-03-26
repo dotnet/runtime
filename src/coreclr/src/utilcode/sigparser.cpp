@@ -32,7 +32,7 @@ HRESULT SigParser::SkipExactlyOne()
         
     if (!CorIsPrimitiveType(typ))
     {
-        switch (typ)
+        switch ((DWORD)typ)
         {
             default:
                 // _ASSERT(!"Illegal or unimplement type in COM+ sig.");

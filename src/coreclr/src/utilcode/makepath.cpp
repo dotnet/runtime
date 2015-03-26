@@ -40,7 +40,7 @@
 *******************************************************************************/
 
 void MakePath (
-        __out_ecount (MAX_PATH) register WCHAR *path,
+        __out_ecount (MAX_PATH) WCHAR *path,
         __in LPCWSTR drive,
         __in LPCWSTR dir,
         __in LPCWSTR fname,
@@ -55,8 +55,8 @@ void MakePath (
         }
         CONTRACTL_END
 
-        register const WCHAR *p;
-        register DWORD count = 0;
+        const WCHAR *p;
+        DWORD count = 0;
 
         /* we assume that the arguments are in the following form (although we
          * do not diagnose invalid arguments or illegal filenames (such as

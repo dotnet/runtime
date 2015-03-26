@@ -1171,7 +1171,7 @@ TypeHandle COMCustomAttribute::GetTypeHandleFromBlob(Assembly *pCtorAssembly,
     TypeHandle nullTH;
     TypeHandle RtnTypeHnd;
 
-    switch (objType) {
+    switch ((DWORD)objType) {
     case SERIALIZATION_TYPE_BOOLEAN:
     case SERIALIZATION_TYPE_I1:
     case SERIALIZATION_TYPE_U1:
@@ -1333,7 +1333,7 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
     
     ARG_SLOT element = 0;
 
-    switch (arrayType) {
+    switch ((DWORD)arrayType) {
     case SERIALIZATION_TYPE_BOOLEAN:
     case SERIALIZATION_TYPE_I1:
     case SERIALIZATION_TYPE_U1:
@@ -1457,7 +1457,7 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
     TypeHandle nullTH;
     TypeHandle typeHnd;
 
-    switch (type) {
+    switch ((DWORD)type) {
 
     case SERIALIZATION_TYPE_BOOLEAN:
     case SERIALIZATION_TYPE_I1:
