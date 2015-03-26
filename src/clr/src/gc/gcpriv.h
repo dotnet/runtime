@@ -1767,7 +1767,7 @@ protected:
     PER_HEAP
     BOOL is_mark_bit_set (BYTE* add);
     PER_HEAP
-    void gc_heap::gmark_array_set_marked (BYTE* add);
+    void gmark_array_set_marked (BYTE* add);
     PER_HEAP
     void set_mark_array_bit (size_t mark_bit);
     PER_HEAP

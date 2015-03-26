@@ -10,11 +10,11 @@
 //
 // This dummy reference to CLRDataCreateInstance prevents the LLVM toolchain from optimizing this important export out.
 //
-void
-DummyReferenceToExportedAPI()
 #ifdef __llvm__
 __attribute__((used))
 #endif // __llvm__
+void
+DummyReferenceToExportedAPI()
 {
     CLRDataCreateInstance(IID_ICLRDataTarget, NULL, NULL);
 }

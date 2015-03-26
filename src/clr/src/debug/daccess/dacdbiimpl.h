@@ -286,9 +286,9 @@ public:
     VMPTR_TypeHandle GetApproxTypeHandle(TypeInfoList * pTypeData);
 
     // Get the exact type handle from type data
-    HRESULT DacDbiInterfaceImpl::GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData * pTypeData,
-                                                    ArgInfoList *   pArgInfo,
-                                                    VMPTR_TypeHandle& vmTypeHandle);
+    HRESULT GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData * pTypeData,
+                               ArgInfoList *   pArgInfo,
+                               VMPTR_TypeHandle& vmTypeHandle);
 
     // Retrieve the generic type params for a given MethodDesc.  This function is specifically 
     // for stackwalking because it requires the generic type token on the stack.

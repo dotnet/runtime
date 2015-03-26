@@ -438,6 +438,8 @@ extern "C" NTSTATUS OutOfProcessFunctionTableCallbackEx(IN  ReadMemoryFunction  
                 pnEntries,
                 ppFunctions);
 #endif // DEBUGSUPPORT_STUBS_HAVE_UNWIND_INFO
+    default:
+        break;
     }
 
     return STATUS_UNSUCCESSFUL;

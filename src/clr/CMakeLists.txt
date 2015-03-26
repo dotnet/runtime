@@ -264,26 +264,19 @@ add_definitions(-DDISABLE_CONTRACTS)
 add_compile_options(-ferror-limit=4096)
 
 # Disabled warnings
-add_compile_options(-Wno-reorder)
-add_compile_options(-Wno-ignored-attributes)
 add_compile_options(-Wno-unknown-pragmas)
 add_compile_options(-Wno-unused-private-field)
-add_compile_options(-Wno-new-returns-null)
 add_compile_options(-Wno-dangling-else)
 add_compile_options(-Wno-implicit-exception-spec-mismatch)
-add_compile_options(-Wno-deprecated-register)
+# Using the result of an assignment as a condition without parentheses
 add_compile_options(-Wno-parentheses)
 add_compile_options(-Wno-overloaded-virtual)
 add_compile_options(-Wno-unused-variable)
-add_compile_options(-Wno-missing-declarations)
+# Enum value is not handled in a switch (and there is no default clause)
+# Remaining cases are in JIT only
 add_compile_options(-Wno-switch)
-add_compile_options(-Wno-extern-initializer)
 add_compile_options(-Wno-microsoft)
-add_compile_options(-Wno-mismatched-tags)
-add_compile_options(-Wno-ignored-qualifiers)
-add_compile_options(-Wno-tautological-constant-out-of-range-compare)
-add_compile_options(-Wno-c++11-compat-deprecated-writable-strings)
-add_compile_options(-Wno-unneeded-internal-declaration)
+# This warning is caused by comparing 'this' to NULL
 add_compile_options(-Wno-tautological-compare)
 add_compile_options(-Wno-constant-logical-operand)
 add_compile_options(-Wno-unused-function)
@@ -296,18 +289,17 @@ add_compile_options(-Wno-unknown-warning-option)
 
 #These seem to indicate real issues
 add_compile_options(-Wno-invalid-offsetof)
-add_compile_options(-Wno-return-type)
-add_compile_options(-Wno-dynamic-class-memaccess)
-add_compile_options(-Wno-int-to-pointer-cast)
 add_compile_options(-Wno-delete-non-virtual-dtor)
-add_compile_options(-Wno-enum-compare)
+# The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied 
+# to a struct or a class that has virtual members or a base class. In that case, clang
+# may not generate the same object layout as MSVC.
+add_compile_options(-Wno-incompatible-ms-struct)
 
 # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
 add_compile_options(-fms-extensions )
 #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
 #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
-# The newer version of clang hits this seemly benign error that this disables.
-add_compile_options(-Wno-incompatible-ms-struct)
+
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(src/debug/debug-pal)

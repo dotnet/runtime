@@ -658,6 +658,18 @@ class BaseWrapper : public BaseHolder<TYPE, BASE, DEFAULTVALUE, IS_NULL, VALIDAT
     {
         return !!(this->m_value != TYPE(value));
     }
+#ifdef __llvm__
+    // This handles the NULL value that is an int and clang
+    // doesn't want to convert int to a pointer
+    FORCEINLINE bool operator==(int value) const
+    {
+        return !!(this->m_value == TYPE((void*)(SIZE_T)value));
+    }
+    FORCEINLINE bool operator!=(int value) const
+    {
+        return !!(this->m_value != TYPE((void*)(SIZE_T)value));
+    }
+#endif // __llvm__
     FORCEINLINE const TYPE &operator->() const
     {
         return this->m_value;
