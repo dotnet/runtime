@@ -6144,12 +6144,16 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
 
             // Check if the caller IP is in mscorwks.  If it is not, then it is an out-of-line finally.
             // Normally, the caller of a finally is ExceptionTracker::CallHandler().
+#ifdef FEATURE_PAL
+            fIsCallerInVM = !ExecutionManager::IsManagedCode(callerIP);
+#else
 #if defined(DACCESS_COMPILE)
             HMODULE_TGT hEE = DacGlobalBase();
 #else  // !DACCESS_COMPILE
             HMODULE_TGT hEE = g_pMSCorEE;
 #endif // !DACCESS_COMPILE
             fIsCallerInVM = IsIPInModule(hEE, callerIP);
+#endif // FEATURE_PAL
 
             if (!fIsCallerInVM)
             {
