@@ -185,7 +185,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 #endif // _DEBUG
 
 #else // !FEATURE_PAL
-    theLog.moduleOffset = (SIZE_T)PAL_GetPalModuleBase();
+    theLog.moduleOffset = (SIZE_T)PAL_GetSymbolModuleBase((void *)StressLog::Initialize);
 #endif // !FEATURE_PAL
 
 #if !defined (STRESS_LOG_READONLY)    
