@@ -1044,7 +1044,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_ContainsLinkedList()
     {
         var original = new ContainsLinkedList(true);
-        var actual = SerializeAndDeserialize<ContainsLinkedList>(original, "{\"Data\":[{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}},{\"Data\":{\"Data\":\"11:59:59 PM\"},\"RefData\":{\"Data\":\"11:59:59 PM\"}}]}");
+        var actual = SerializeAndDeserialize<ContainsLinkedList>(original, "{\"Data\":[{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}},{\"Data\":{\"Data\":\"23:59:59\"},\"RefData\":{\"Data\":\"23:59:59\"}}]}");
 
         var actualEnumerator = actual.Data.GetEnumerator();
         var originalEnumerator = original.Data.GetEnumerator();
