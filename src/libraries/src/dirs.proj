@@ -25,5 +25,6 @@
     <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
   </PropertyGroup>
   <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
+  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets')" />
 
 </Project>
