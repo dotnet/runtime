@@ -63,12 +63,13 @@ namespace System.Diagnostics
                                 }
                             }
 
+                            int totalBytesWritten = 0;
                             while (bufCount > 0)
                             {
                                 int bytesWritten;
-                                while (Interop.CheckIo(bytesWritten = (int)Interop.libc.write((int)fileHandle.DangerousGetHandle(), buf, new IntPtr(bufCount)))) ;
+                                while (Interop.CheckIo(bytesWritten = (int)Interop.libc.write((int)fileHandle.DangerousGetHandle(), buf + totalBytesWritten, new IntPtr(bufCount)))) ;
                                 bufCount -= bytesWritten;
-                                buf += bytesWritten;
+                                totalBytesWritten += bytesWritten;
                             }
                         }
                     }
