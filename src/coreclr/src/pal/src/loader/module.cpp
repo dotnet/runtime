@@ -1906,26 +1906,33 @@ BOOL LOADInitCoreCLRModules()
     return g_pRuntimeDllMain((HMODULE)&pal_module, DLL_PROCESS_ATTACH, NULL);
 }
 
-// Get base address of the module containing this function 
+// Get base address of the module containing a given symbol 
 PALAPI
 LPCVOID
-PAL_GetPalModuleBase()
+PAL_GetSymbolModuleBase(void *symbol)
 {
     LPCVOID retval = NULL;
 
     PERF_ENTRY(PAL_GetPalModuleBase);
     ENTRY("PAL_GetPalModuleBase\n");
 
-    Dl_info info;
-    void *current_func = reinterpret_cast<void *>(PAL_GetPalModuleBase);
-    if (dladdr(current_func, &info) != 0)
+    if (symbol == NULL)
     {
-        retval = info.dli_fbase;
+        TRACE("Can't get base address. Argument symbol == NULL\n");
+        SetLastError(ERROR_INVALID_DATA);
     }
     else 
     {
-        TRACE("Can't get base address of the current module\n");
-        SetLastError(ERROR_INVALID_DATA);
+        Dl_info info;
+        if (dladdr(symbol, &info) != 0)
+        {
+            retval = info.dli_fbase;
+        }
+        else 
+        {
+            TRACE("Can't get base address of the current module\n");
+            SetLastError(ERROR_INVALID_DATA);
+        }        
     }
 
     LOGEXIT("PAL_GetPalModuleBase returns %p\n", retval);
