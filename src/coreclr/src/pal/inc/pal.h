@@ -3050,6 +3050,8 @@ PAL_GetLogicalCpuCountFromOS();
 
 #if defined(__FreeBSD__) && defined(_X86_)
 #define PAL_CS_NATIVE_DATA_SIZE 12
+#elif defined(__FreeBSD__) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 24
 #elif defined(__sun__)
 #define PAL_CS_NATIVE_DATA_SIZE 48
 #elif defined(__hpux__) && (defined(__hppa__) || defined (__ia64__))
