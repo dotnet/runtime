@@ -3340,11 +3340,10 @@ GetModuleFileNameW(
 #define GetModuleFileName GetModuleFileNameA
 #endif
 
-// Get base address of the module containing this function 
+// Get base address of the module containing a given symbol 
 PALAPI
 LPCVOID
-PAL_GetPalModuleBase();
-
+PAL_GetSymbolModuleBase(void *symbol);
 
 PALIMPORT
 LPVOID
