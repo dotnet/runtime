@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -12,9 +13,9 @@ namespace Test
         [Fact]
         public static void EnumeratorTest1()
         {
-            var regex = new Regex("e");
-            var collection = regex.Matches("dotnet");
-            var enumerator = collection.GetEnumerator();
+            Regex regex = new Regex("e");
+            MatchCollection collection = regex.Matches("dotnet");
+            IEnumerator enumerator = collection.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.Current);
             Assert.True(enumerator.MoveNext());
@@ -37,9 +38,9 @@ namespace Test
         [Fact]
         public static void EnumeratorTest2()
         {
-            var regex = new Regex("t");
-            var collection = regex.Matches("dotnet");
-            var enumerator = collection.GetEnumerator();
+            Regex regex = new Regex("t");
+            MatchCollection collection = regex.Matches("dotnet");
+            IEnumerator enumerator = collection.GetEnumerator();
 
             for (int i = 0; i < collection.Count; i++)
             {
