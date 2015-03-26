@@ -23,7 +23,7 @@ class ImportHelper
 {
 public:
     // Options for code:FindMemberRef.
-    typedef enum HashSearchOption
+    enum HashSearchOption
     {
         DoNotCreateHash,    // Do not create hash if it does not exist (faster for isolated calls)
         CreateHash          // Create hash if it does not exist (faster for multiple calls)

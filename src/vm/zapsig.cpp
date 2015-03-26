@@ -66,7 +66,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
     }
     else
     {
-        switch (elemType)
+        switch ((DWORD)elemType)
         {
         case ELEMENT_TYPE_FNPTR:
             {
@@ -365,7 +365,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     CorElementType sigType     = CorSigUncompressElementType(pSig);
     CorElementType handleType  = handle.GetSignatureCorElementType();
 
-    switch (sigType)
+    switch ((DWORD)sigType)
     {
         default:
         {

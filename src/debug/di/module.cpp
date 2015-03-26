@@ -2790,10 +2790,10 @@ BOOL CordbModule::IsWinMD()
 CordbCode::CordbCode(CordbFunction * pFunction, UINT_PTR id, SIZE_T encVersion, BOOL fIsIL)
   : CordbBase(pFunction->GetProcess(), id, enumCordbCode),
     m_fIsIL(fIsIL),
-    m_pFunction(pFunction),
     m_nVersion(encVersion),
     m_rgbCode(NULL),
-    m_continueCounterLastSync(0)
+    m_continueCounterLastSync(0),
+    m_pFunction(pFunction)
 {
     _ASSERTE(pFunction != NULL);
     _ASSERTE(m_nVersion >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);

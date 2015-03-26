@@ -874,7 +874,7 @@ struct DacpJitManagerInfo : ZeroInit<DacpJitManagerInfo>
     CLRDATA_ADDRESS ptrHeapList;    // A HeapList * if IsMiIL(codeType)
 };
 
-typedef enum CodeHeapType {CODEHEAP_LOADER=0,CODEHEAP_HOST,CODEHEAP_UNKNOWN};
+enum CodeHeapType {CODEHEAP_LOADER=0,CODEHEAP_HOST,CODEHEAP_UNKNOWN};
 
 struct DacpJitCodeHeapInfo : ZeroInit<DacpJitCodeHeapInfo>
 {

@@ -156,7 +156,7 @@ public:
     static FCDECL6(INT32, InternalGetCaseInsHash, INT_PTR handle, INT_PTR handleOrigin, StringObject* localeNameUNSAFE, LPVOID strA, CLR_BOOL bForceRandomizedHashing, INT64 additionalEntropy);
     static INT32 QCALLTYPE InternalCompareStringOrdinalIgnoreCase(LPCWSTR string1, INT32 index1, LPCWSTR string2, INT32 index2, INT32 length1, INT32 length2);
 
-    static BOOL QCALLTYPE COMNlsInfo::InternalTryFindStringOrdinalIgnoreCase(
+    static BOOL QCALLTYPE InternalTryFindStringOrdinalIgnoreCase(
         __in                   DWORD       dwFindNLSStringFlags, // mutually exclusive flags: FIND_FROMSTART, FIND_STARTSWITH, FIND_FROMEND, FIND_ENDSWITH
         __in_ecount(cchSource) LPCWSTR     lpStringSource,       // the string we search in
         __in                   int         cchSource,            // number of characters lpStringSource after sourceIndex

@@ -533,7 +533,6 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
     check_pal_initialize(code);
     sigset_t signal_set;
     CONTEXT context;
-    CPalThread *pthrCurrent = InternalGetCurrentThread();
 
     // Fill context record with required information. from pal.h :
     // On non-Win32 platforms, the CONTEXT pointer in the
