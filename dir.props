@@ -24,7 +24,7 @@
     <PackagesDir Condition="'$(__PackagesDir)'==''">$(ProjectDir)\packages\</PackagesDir>
 
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)\binaries\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)\bin\</RootBinDir>
 
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)\Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
@@ -55,7 +55,15 @@
     <NuSpecs Condition="'$(Configuration)'=='Debug'" Include="$(PackagesBinDir)\Microsoft.DotNet.CoreCLR.Debug.Development.nuspec" />
   </ItemGroup>
 
+  <!-- Setup common target properties that we use to conditionally include sources -->
+  <PropertyGroup>
+    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
 
+    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+  </PropertyGroup>
+  
   <!-- Common NuGet properties -->
   <PropertyGroup>
     <NuGetToolPath>$(ToolsDir)NuGet.exe</NuGetToolPath>

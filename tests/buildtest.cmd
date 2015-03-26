@@ -8,15 +8,15 @@ set "__SourceDir=%__ProjectDir%\src"
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
 set "__PackagesDir=%__ProjectDir%\packages"
-set "__RootBinDir=%__ProjectDir%\binaries"
+set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
-if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
+if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
+if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
@@ -27,14 +27,14 @@ goto Usage
 
 
 if not defined __BuildArch set __BuildArch=x64
-if not defined __BuildType set __BuildType=debug
+if not defined __BuildType set __BuildType=Debug
 if not defined __BuildOS set __BuildOS=Windows_NT
 
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 :: We have different managed and native intermediate dirs because the managed bits will include
 :: the configuration information deeper in the intermediates path.
-set "__NativeTestIntermediatesDir=%__RootBinDir%\tests\intermediates\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__ManagedTestIntermediatesDir=%__RootBinDir%\tests\intermediates"
+set "__NativeTestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__ManagedTestIntermediatesDir=%__RootBinDir%\tests\obj"
 set "__TestManagedBuildLog=%__LogsDir%\Tests_Managed_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__TestNativeBuildLog=%__LogsDir%\Tests_Native_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 set "__XunitWrapperBuildLog=%__LogsDir%\Tests_XunitWrapper_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
