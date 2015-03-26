@@ -2418,7 +2418,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	p = amodule->mono_eh_frame;
 
-	/* p points to data emitted by LLVM in DwarfException::EmitMonoEHFrame () */
+	/* p points to data emitted by LLVM in DwarfMonoException::EmitMonoEHFrame () */
 
 	/* Header */
 	version = *p;
