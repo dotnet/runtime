@@ -89,8 +89,7 @@ else(WIN32)
 
   set(SOS_LIBRARY
     corguids
-    CoreClrPal
-    palrt
+    mscordaccore
   )
 endif(WIN32)
 
