@@ -776,7 +776,7 @@
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\UmAlQuraCalendar.cs" />
     <GlobalizationSources Include="$(CoreFxSourcesRoot)\System\Globalization\UnicodeCategory.cs " /> 
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' and '$(OS)' == 'Unix'">
+  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' and '$(TargetsUnix)' == 'true'">
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
     <GlobalizationSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
 
