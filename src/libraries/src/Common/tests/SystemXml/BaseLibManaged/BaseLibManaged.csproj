@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{466D87DF-BDEC-4E6C-BACD-317D79B8EDBE}</ProjectGuid>
+    <ProjectGuid>{42F10363-C2A2-42B5-B7B9-1B5DBB0BC71E}</ProjectGuid>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
     <AssemblyName>BaseLibManaged</AssemblyName>
