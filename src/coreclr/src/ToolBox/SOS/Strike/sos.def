@@ -169,10 +169,6 @@ EXPORTS
     filthint
 #endif
 
-#ifdef FEATURE_PAL
-    SetClrDebugDll
-    UnloadClrDebugDll
-#else
     _EFN_GetManagedExcepStack
     _EFN_GetManagedExcepStackW
     _EFN_GetManagedObjectFieldInfo    
