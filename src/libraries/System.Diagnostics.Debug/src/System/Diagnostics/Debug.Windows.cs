@@ -51,6 +51,8 @@ namespace System.Diagnostics
 
             public void WriteCore(string message)
             {
+                Assert(message != null);
+
                 // really huge messages mess up both VS and dbmon, so we chop it up into 
                 // reasonable chunks if it's too big. This is the number of characters 
                 // that OutputDebugstring chunks at.
@@ -59,7 +61,7 @@ namespace System.Diagnostics
                 // We don't want output from multiple threads to be interleaved.
                 lock (s_ForLock)
                 {
-                    if (message == null || message.Length <= WriteChunkLength)
+                    if (message.Length <= WriteChunkLength)
                     {
                         WriteToDebugger(message);
                     }
@@ -78,7 +80,7 @@ namespace System.Diagnostics
             [System.Security.SecuritySafeCritical]
             private static void WriteToDebugger(string message)
             {
-                Interop.mincore.OutputDebugString(message ?? string.Empty);
+                Interop.mincore.OutputDebugString(message);
             }
 
             private static bool IsRTLResources

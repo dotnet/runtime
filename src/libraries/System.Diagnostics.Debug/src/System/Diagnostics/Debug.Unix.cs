@@ -26,6 +26,8 @@ namespace System.Diagnostics
 
             public void WriteCore(string message)
             {
+                Assert(message != null);
+
                 WriteToSyslog(message);
                 WriteToFile(Interop.Devices.stderr, message);
             }
