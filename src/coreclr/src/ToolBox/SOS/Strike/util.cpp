@@ -4720,7 +4720,7 @@ HRESULT InitCorDebugInterface()
         return hr;
     }
 
-    
+
 
 
     // SOS now has a statically linked version of the loader code that is normally found in mscoree/mscoreei.dll
@@ -4777,33 +4777,6 @@ HRESULT InitCorDebugInterface()
     return E_FAIL;
 }
 
-
-
-
-#ifdef FEATURE_PAL
-// On the Mac, we expect our hosting program to give us the IXCLRDataProcess interface by
-// calling this function.
-extern "C" HRESULT CALLBACK SetClrDebugDll(IXCLRDataProcess *data)
-{
-    UnloadClrDebugDll();
-    g_clrData = data;
-    return g_clrData ? S_OK : E_FAIL;
-}
-
-#endif // FEATURE_PAL
-
-extern "C" void CALLBACK
-UnloadClrDebugDll(void)
-{
-    // On Windows, the Debugger manages the Dac, but on unix we have to do this ourselves.
-#ifdef FEATURE_PAL
-    if (g_clrData)
-    {
-        g_clrData->Release();
-        g_clrData = NULL;
-    }
-#endif
-}
 
 typedef enum
 {
