@@ -109,6 +109,31 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 
 #else // HAVE_GREGSET_T
 
+#ifdef BIT64
+
+// For FreeBSD, as found in x86/ucontext.h
+#define MCREG_Rbp(mc)	    ((mc).mc_rbp)
+#define MCREG_Rip(mc)	    ((mc).mc_rip)
+#define MCREG_Rsp(mc)	    ((mc).mc_rsp)
+#define MCREG_Rsi(mc)       ((mc).mc_rsi)
+#define MCREG_Rdi(mc)	    ((mc).mc_rdi)
+#define MCREG_Rbx(mc)	    ((mc).mc_rbx)
+#define MCREG_Rdx(mc)	    ((mc).mc_rdx)
+#define MCREG_Rcx(mc)	    ((mc).mc_rcx)
+#define MCREG_Rax(mc)	    ((mc).mc_rax)
+#define MCREG_R8(mc)	    ((mc).mc_r8)
+#define MCREG_R9(mc)	    ((mc).mc_r9)
+#define MCREG_R10(mc)	    ((mc).mc_r10)
+#define MCREG_R11(mc)	    ((mc).mc_r11)
+#define MCREG_R12(mc)	    ((mc).mc_r12)
+#define MCREG_R13(mc)	    ((mc).mc_r13)
+#define MCREG_R14(mc)	    ((mc).mc_r14)
+#define MCREG_R15(mc)	    ((mc).mc_r15)
+#define MCREG_EFlags(mc)    ((mc).mc_rflags)
+#define MCREG_SegCs(mc)     ((mc).mc_cs)
+
+#else // BIT64
+
 #define MCREG_Ebx(mc)       ((mc).mc_ebx)
 #define MCREG_Ecx(mc)       ((mc).mc_ecx)
 #define MCREG_Edx(mc)       ((mc).mc_edx)
@@ -121,6 +146,8 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 #define MCREG_EFlags(mc)    ((mc).mc_eflags)
 #define MCREG_Esp(mc)       ((mc).mc_esp)
 #define MCREG_SegSs(mc)     ((mc).mc_ss)
+
+#endif // BIT64
 
 #endif // HAVE_GREGSET_T
 
@@ -170,7 +197,33 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 #endif // HAVE_PT_REGS
 
 
+
 #if HAVE_BSD_REGS_T
+
+#ifdef BIT64
+
+#define BSDREG_Rbx(reg)     ((reg).r_rbx)
+#define BSDREG_Rcx(reg)     ((reg).r_rcx)
+#define BSDREG_Rdx(reg)     ((reg).r_rdx)
+#define BSDREG_Rsi(reg)     ((reg).r_rsi)
+#define BSDREG_Rdi(reg)     ((reg).r_rdi)
+#define BSDREG_Rbp(reg)     ((reg).r_rbp)
+#define BSDREG_Rax(reg)     ((reg).r_rax)
+#define BSDREG_Rip(reg)     ((reg).r_rip)
+#define BSDREG_SegCs(reg)   ((reg).r_cs)
+#define BSDREG_SegSs(reg)   ((reg).r_ss)
+#define BSDREG_Rsp(reg)     ((reg).r_rsp)
+#define BSDREG_R8(reg)      ((reg).r_r8)
+#define BSDREG_R9(reg)      ((reg).r_r9)
+#define BSDREG_R10(reg)     ((reg).r_r10)
+#define BSDREG_R11(reg)     ((reg).r_r11)
+#define BSDREG_R12(reg)     ((reg).r_r12)
+#define BSDREG_R13(reg)     ((reg).r_r13)
+#define BSDREG_R14(reg)     ((reg).r_r14)
+#define BSDREG_R15(reg)     ((reg).r_r15)
+#define BSDREG_EFlags(reg)  ((reg).r_rflags)
+
+#else // BIT64
 
 #define BSDREG_Ebx(reg)     ((reg).r_ebx)
 #define BSDREG_Ecx(reg)     ((reg).r_ecx)
@@ -184,6 +237,8 @@ extern void CONTEXT_CaptureContext(LPCONTEXT lpContext);
 #define BSDREG_EFlags(reg)  ((reg).r_eflags)
 #define BSDREG_Esp(reg)     ((reg).r_esp)
 #define BSDREG_SegSs(reg)   ((reg).r_ss)
+
+#endif // BIT64
 
 #endif // HAVE_BSD_REGS_T
 
