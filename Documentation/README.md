@@ -20,6 +20,7 @@ Book of the Runtime
 
 - [CLR Coding Guide](clr-code-guide.md)
 - [.NET Standards (Ecma)](dotnet-standards.md)
+- [Cross Platform Performance and Eventing Design](cross-platform-performance-and-eventing.md)
 
 Decoder Rings
 =============
