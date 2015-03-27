@@ -1,24 +1,23 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.IO;
-using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
-using System.Text;
 
 namespace System.Diagnostics.ProcessTests
 {
     public partial class ProcessTest : IDisposable
     {
-        private const int WaitInMS = 100 * 1000;
-        private const string ProcessName = "System.Diagnostics.Process.TestConsoleApp.exe";
+        private const int WaitInMS = 100 * 1000; 
+        private const string CoreRunName = "corerun";
+        private const string TestExeName = "System.Diagnostics.Process.TestConsoleApp.exe";
+
         private Process _process;
+        private List<Process> _processes = new List<Process>();
 
         public ProcessTest()
         {
@@ -28,15 +27,17 @@ namespace System.Diagnostics.ProcessTests
 
         public void Dispose()
         {
-            _process.Kill();
-            Assert.True(_process.WaitForExit(WaitInMS));
-
-            // Also ensure that there are no open processes with the same name as ProcessName
-            foreach (Process p in Process.GetProcessesByName(ProcessName))
+            // Ensure that there are no open processes with the same name as ProcessName
+            foreach (Process p in _processes)
             {
                 if (!p.HasExited)
                 {
+                    try
+                    {
                     p.Kill();
+                    }
+                    catch (InvalidOperationException) { } // in case it was never started
+
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
             }
@@ -45,8 +46,12 @@ namespace System.Diagnostics.ProcessTests
         Process CreateProcess(string optionalArgument = ""/*String.Empty is not a constant*/)
         {
             Process p = new Process();
-            p.StartInfo.FileName = ProcessName;
-            p.StartInfo.Arguments = optionalArgument;
+            _processes.Add(p);
+
+            p.StartInfo.FileName = CoreRunName;
+            p.StartInfo.Arguments = string.IsNullOrWhiteSpace(optionalArgument) ? 
+                TestExeName : 
+                TestExeName + " " + optionalArgument;
 
             // Profilers / code coverage tools doing coverage of the test process set environment
             // variables to tell the targeted process what profiler to load.  We don't want the child process 
@@ -218,13 +223,13 @@ namespace System.Diagnostics.ProcessTests
         {
             // Get MainModule property from a Process object
             string moduleName = _process.MainModule.ModuleName;
-            Assert.Equal(ProcessName, moduleName);
+            Assert.Equal(CoreRunName, moduleName);
 
             // Check that the mainModule is present in the modules list.
             bool foundMainModule = false;
             foreach (ProcessModule pModule in _process.Modules)
             {
-                if (String.Equals(moduleName, ProcessName, StringComparison.OrdinalIgnoreCase))
+                if (String.Equals(moduleName, CoreRunName, StringComparison.OrdinalIgnoreCase))
                 {
                     foundMainModule = true;
                     break;
@@ -416,7 +421,7 @@ namespace System.Diagnostics.ProcessTests
         [Fact]
         public void ProcessProcessName()
         {
-            Assert.Equal(_process.ProcessName, Path.ChangeExtension(ProcessName, null));
+            Assert.Equal(_process.ProcessName, CoreRunName, StringComparer.OrdinalIgnoreCase);
         }
 
 
@@ -646,7 +651,7 @@ namespace System.Diagnostics.ProcessTests
                 Process process = CreateProcessInfinite();
                 process.Start();
 
-                Assert.Equal(ProcessName, process.StartInfo.FileName);
+                Assert.Equal(CoreRunName, process.StartInfo.FileName);
 
                 process.Kill();
                 Assert.True(process.WaitForExit(WaitInMS));
@@ -664,8 +669,8 @@ namespace System.Diagnostics.ProcessTests
 
             {
                 Process process = new Process();
-                process.StartInfo = new ProcessStartInfo(ProcessName);
-                Assert.Equal(ProcessName, process.StartInfo.FileName);
+                process.StartInfo = new ProcessStartInfo(TestExeName);
+                Assert.Equal(TestExeName, process.StartInfo.FileName);
             }
 
             {
