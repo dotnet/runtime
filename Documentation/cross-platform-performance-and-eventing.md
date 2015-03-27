@@ -2,7 +2,7 @@
 
 ##Introduction
 
-As we bring up CoreCLR on the Linux and Mac platforms, it’s important that we determine how we’ll measure and analyze performance on these platforms.  On Windows we use an event based model that depends on ETW, and we have a good amount of tooling that builds on this approach.  Ideally, we can extend this model to Linux and Mac and re-use much of the Windows tooling.
+As we bring up CoreCLR on the Linux and OS X platforms, it’s important that we determine how we’ll measure and analyze performance on these platforms.  On Windows we use an event based model that depends on ETW, and we have a good amount of tooling that builds on this approach.  Ideally, we can extend this model to Linux and OS X and re-use much of the Windows tooling.
 
 # Requirements
 
@@ -10,18 +10,19 @@ Ideally, we'd like to have the following functionality on each OS that we bring-
 
 - Collection of machine-wide performance data including CPU sampling, threading information (e.g. context switches), and OS specific events / system call tracing.
 - Collection of CLR-specific events that we have today exposed as ETW events.
-- Collection of EventSource events by a default OS-specific collector as we do today with ETW on Windows.
+- Collection of EventSource events by a default OS-specific collector, as we do today with ETW on Windows.
 - User-mode call stacks for both performance and tracing data.
 - Portability of traces across machines, so that analysis can occur off box.
 - Data viewable on collection OS.
 - Stretch: Data can be understood by TraceEvent, which opens up interesting analysis scenarios.
 	- Using PerfView and existing tooling.
-	- Ability to use CAP on non-Windows data.
+	- Ability to use CAP (Automated analysis) on non-Windows data.
 
-# Scoping to Reality
+# Scoping to the Current Landscape
 
-While it would be nice to have full parity across Windows, Linux, and Mac with respect to collection and analysis of performance and tracing data, this is likely not going to happen.  Given that we’ve built up a rich set of functionality on Windows, much of which depends on ETW and is specific to the OS, we’re going to see some differences across the other operating systems.
-Our goal should be to do the best job that we can to enable data collection and analysis across the supported operating systems by betting on the right technologies, such that as the landscape across these operating systems evolve, .NET is well positioned to take advantage of the changes without needing to change the fundamental technology choices that we’ve made.  While this choice will likely result in some pain now, it is likely to position us better for the future and align us with the OS communities.
+Given that we’ve built up a rich set of functionality on Windows, much of which depends on ETW and is specific to the OS, we’re going to see some differences across the other operating systems.
+
+Our goal should be to do the best job that we can to enable data collection and analysis across the supported operating systems by betting on the right technologies, such that as the landscape across these operating systems evolve, .NET is well positioned to take advantage of the changes without needing to change the fundamental technology choices that we’ve made.  While this choice will likely result in some types of investigations being more difficult due to absent features that we depend upon on Windows, it is likely to position us better for the future and align us with the OS communities.
 
 # Linux
 
@@ -43,7 +44,7 @@ Given that the performance and tracing tool space on Linux is quite fragmented, 
 - Machine-wide or process-wide.  No process attach required.
 - Collection of owned processes without elevated permissions.
 - Provides user-mode stack traces via frame pointers and libunwind.
-- Extensible support for JIT symbol resolution - https://git.kernel.org/cgit/linux/kernel/git/namhyung/linux-perf.git/tree/tools/perf/Documentation/jit-interface.txt
+- Extensible support for [JIT symbol resolution](https://git.kernel.org/cgit/linux/kernel/git/namhyung/linux-perf.git/tree/tools/perf/Documentation/jit-interface.txt).
 - In-tree: Basically available for almost every distro.
 - Data is stored in perf tool file format (perf.data) – can be opened by a viewer such as “perf report”.
 
@@ -90,7 +91,7 @@ Given that the performance and tracing tool space on Linux is quite fragmented, 
 
 #### Pros
 
-- Would allow for tracing code and collection script re-use across Linux and Mac.
+- Would allow for tracing code and collection script re-use across Linux and OS X.
 
 #### Cons
 
@@ -127,7 +128,7 @@ Given that the performance and tracing tool space on Linux is quite fragmented, 
 - Investigate: Determine if clock skew across the trace files will be an issue.
 - Investigate: Are traces portable, or do they have to be opened on collection machine?
 - Investigate: Do we need rundown or can we use /tmp/perf-$pid.map?  How does process/module rundown work?
-- Implement: Enable frame pointers on JIT compiled code and helpers to allow stacks to be walked.  (PR # 468)
+- Implement: Enable frame pointers on JIT compiled code and helpers to allow stacks to be walked.  (PR # [468](https://github.com/dotnet/coreclr/pull/468))
 - Implement: Stack walking using existing stackwalker (libunwind and managed code).
 - Implement: JIT/NGEN call frame resolution - /tmp/perf-$pid.map
 - Implement: Trace collection tool.
@@ -138,13 +139,13 @@ Given that the performance and tracing tool space on Linux is quite fragmented, 
 	- Compress into one archive that can be copied around easily.
 - Implement: Viewing of data in PerfView
 
-# Mac OS
+# OS X
 
 ## Proposed Design
 
-On the Mac, the performance tooling space is much less fragmented than Linux.  However, this also means that there are many fewer options.
+On OS X, the performance tooling space is much less fragmented than Linux.  However, this also means that there are many fewer options.
 
-**For performance data collection and tracing, we’ll use Instruments.**  Instruments is the Apple-built and supported performance tool for Mac OS X.  It has a wide range of collection abilities including CPU sampling, context switching, system call tracing, power consumption, memory leaks, etc.  It also has support for custom static and dynamic tracing using DTrace as a back-end, which we can take advantage of to provide a logging mechanism for CLR events and EventSource.
+**For performance data collection and tracing, we’ll use Instruments.**  Instruments is the Apple-built and supported performance tool for OS X.  It has a wide range of collection abilities including CPU sampling, context switching, system call tracing, power consumption, memory leaks, etc.  It also has support for custom static and dynamic tracing using DTrace as a back-end, which we can take advantage of to provide a logging mechanism for CLR events and EventSource.
 
 Unfortunately, there are some features that Instruments/DTrace do not provide, such as resolution of JIT compiled call frames.  Given the existing tooling choices, and the profiler preferences of the OS X community of developers, it likely makes the most sense to use Instruments as our collection and analysis platform, even though it does not support the full set of features that we would like.  It’s also true that the number of OS X specific performance issues is likely to be much smaller than the set of all performance issues, which means that in many cases, Windows or Linux can be used, which will provide a more complete story for investigating performance issues.
 
@@ -154,7 +155,7 @@ Unfortunately, there are some features that Instruments/DTrace do not provide, s
 
 #### Pros
 
-- Available for all recent versions of Mac OS X.
+- Available for all recent versions of OS X.
 - Provided free by Apple as part of XCode.
 - Wide range of performance collection options, both using a GUI and on the command line.
 - Can be configured to have relatively low overhead at collection time (unfortunately not the default).
@@ -185,34 +186,34 @@ Unfortunately, there are some features that Instruments/DTrace do not provide, s
 
 ## Infrastructure Bring-Up Action Items
 
-- Implement: Enable frame pointers on JIT compiled code and helpers to allow stacks to be walked.  (PR # 468)
+- Implement: Enable frame pointers on JIT compiled code and helpers to allow stacks to be walked.  (PR # [468](https://github.com/dotnet/coreclr/pull/468))
 - Implement: Trace collection tool
 	- NOTE: Use deferred mode to minimize overhead.
 	- Investigate: Using iprofiler to collect data instead of the instruments UI.
 
 # CLR Events
 
-On Windows, the CLR has a number of ETW events that are used for diagnostic and performance purposes.  These events need to be enabled on Linux and Mac so that we can collect and use them for performance investigations.
+On Windows, the CLR has a number of ETW events that are used for diagnostic and performance purposes.  These events need to be enabled on Linux and OS X so that we can collect and use them for performance investigations.
 
 ## Platform Agnostic Action Items
 
 - Implement: Abstract ETW calls to an inline-able platform abstraction layer.
 	- **OPEN ISSUE:** Can / should we re-use PAL?
-- Implement: Stack walker event implementation for x-plat – this is likely the same code for both Linux and Mac.
+- Implement: Stack walker event implementation for x-plat – this is likely the same code for both Linux and OS X.
 
 ## Linux Action Items
 
 - Implement: Build mechanics to translate ETW manifest into LTTng tracepoint definitions.
 - Implement: Generate calls to tracepoints in the PAL (see above).
 
-## Mac Action Items
+## OS X Action Items
 
 - Implement: Build mechanics to translate ETW manifest into DTrace probe definitions.
 - Implement: Generate calls to probes in PAL (see above).
 
 # EventSource Proposal
 
-Ideally, EventSource operates on Linux and Mac just like it does on Windows.  Namely, there is no special registration of any kind that must occur.  When an EventSource is initialized, it does everything necessary to register itself with the appropriate logging system (ETW, LTTng, DTrace), such that its events are stored by the logging system when configured to do so.
+Ideally, EventSource operates on Linux and OS X just like it does on Windows.  Namely, there is no special registration of any kind that must occur.  When an EventSource is initialized, it does everything necessary to register itself with the appropriate logging system (ETW, LTTng, DTrace), such that its events are stored by the logging system when configured to do so.
 
 EventSource should emit events to the appropriate logging system on each operating system.  Ideally, we can support the following functionality on all operating systems:
 
@@ -228,7 +229,7 @@ While doing this work puts us in an ideal place from a performance and logging v
 
 ## Step # 1: Static Event(s) with JSON Payload
 
-As a simple stop-gap solution to get EventSource support on Linux and Mac, we can implement a single EventSource event (or one event per verbosity) that is used to emit all EventSource events regardless of the EventSource that emits them.  The payload will be a JSON string that represents the arguments of the event.
+As a simple stop-gap solution to get EventSource support on Linux and OS X, we can implement a single EventSource event (or one event per verbosity) that is used to emit all EventSource events regardless of the EventSource that emits them.  The payload will be a JSON string that represents the arguments of the event.
 
 ## Step # 2: Static Event Generation with Strongly-Typed Payloads
 
@@ -252,8 +253,8 @@ Given the significant work required to bring all of this infrastructure up, this
 
 We’ll use the following scenarios when defining priorities:
 
-- P1: Performance analysis in support of bring-up of the .NET Core runtime and framework on Linux and Mac.
-- P2: Performance analysis of ASP.NET running on .NET Core on Linux and Mac.
+- P1: Performance analysis in support of bring-up of the .NET Core runtime and framework on Linux and OS X.
+- P2: Performance analysis of ASP.NET running on .NET Core on Linux and OS X.
 
 To support these scenarios, we need the following capabilities:
 
@@ -262,7 +263,7 @@ To support these scenarios, we need the following capabilities:
 
 We expect that the following assumptions will hold for the majority of developers and applications:
 
-- Development occurs on Windows or Mac.
+- Development occurs on Windows or OS X.
 - Application deployment occurs on Windows or Linux.
 
 ## Work Items
@@ -283,5 +284,5 @@ We expect that the following assumptions will hold for the majority of developer
 ### Future:
 
 - Enable Linux traces to be analyzed using PerfView / TraceEvent on Windows.
-- Evaluate options for viewing Linux traces on Mac.
-- Enable more advanced performance data collection for runtime components on Mac via CLR in-box events and EventSource.
+- Evaluate options for viewing Linux traces on OS X.
+- Enable more advanced performance data collection for runtime components on OS X via CLR in-box events and EventSource.
