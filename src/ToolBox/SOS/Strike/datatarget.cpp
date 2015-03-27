@@ -158,7 +158,7 @@ DataTarget::GetThreadContext(
     /* [in] */ ULONG32 contextSize,
     /* [out, size_is(contextSize)] */ PBYTE context)
 {
-    if (g_ExtClient == NULL)
+    if (g_ExtSystem == NULL)
     {
         return E_UNEXPECTED;
     }

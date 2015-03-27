@@ -312,6 +312,7 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
                                      __out_z __inout_ecount(dwDacNameCharCount) WCHAR* pDacName,
                                      DWORD  dwDacNameCharCount)
 {
+#ifndef FEATURE_PAL
     WORD imageFileMachine = 0;
     DWORD resourceSectionRVA = 0;
     HRESULT hr = GetMachineAndResourceSectionRVA(pDataTarget, moduleBaseAddress, &imageFileMachine, &resourceSectionRVA);
@@ -459,6 +460,22 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
     {
         return S_OK;
     }
+#else
+    swprintf_s(pDacName, dwDacNameCharCount, W("%s"), MAKEDLLNAME_W(CORECLR_DAC_MODULE_NAME_W));
+    swprintf_s(pDbiName, dwDbiNameCharCount, W("%s"), MAKEDLLNAME_W(MAIN_DBI_MODULE_NAME_W));
+
+    pVersion->wMajor = 0;
+    pVersion->wMinor = 0;
+    pVersion->wBuild = 0;
+    pVersion->wRevision = 0;
+
+    *pdwDbiTimeStamp = 0;
+    *pdwDbiSizeOfImage = 0;
+    *pdwDacTimeStamp = 0;
+    *pdwDacSizeOfImage = 0;
+
+    return S_OK;
+#endif // FEATURE_PAL
 }
 
 // Formats the long name for DAC
@@ -474,19 +491,19 @@ HRESULT CLRDebuggingImpl::FormatLongDacModuleName(__out_z __inout_ecount(cchBuff
 #endif
 
 #if defined(_HOST_X86_)
-    WCHAR* pHostArch = W("x86");
+    const WCHAR* pHostArch = W("x86");
 #elif defined(_HOST_AMD64_)
-    WCHAR* pHostArch = W("amd64");
+    const WCHAR* pHostArch = W("amd64");
 #elif defined(_HOST_ARM_)
-    WCHAR* pHostArch = W("arm");
+    const WCHAR* pHostArch = W("arm");
 #elif defined(_HOST_ARM64_)
-    WCHAR* pHostArch = W("arm64");
+    const WCHAR* pHostArch = W("arm64");
 #else
     _ASSERTE(!"Unknown host arch");
     return E_NOTIMPL;
 #endif
 
-    WCHAR* pDacBaseName = NULL;
+    const WCHAR* pDacBaseName = NULL;
     if(m_skuId == CLR_ID_V4_DESKTOP)
         pDacBaseName = CLR_DAC_MODULE_NAME_W;
     else if(m_skuId == CLR_ID_CORECLR || m_skuId == CLR_ID_PHONE_CLR || m_skuId == CLR_ID_ONECORE_CLR)
@@ -497,7 +514,7 @@ HRESULT CLRDebuggingImpl::FormatLongDacModuleName(__out_z __inout_ecount(cchBuff
         return E_UNEXPECTED;
     }
 
-    WCHAR* pTargetArch = NULL;
+    const WCHAR* pTargetArch = NULL;
     if(targetImageFileMachine == IMAGE_FILE_MACHINE_I386)
     {
         pTargetArch = W("x86");
@@ -520,7 +537,7 @@ HRESULT CLRDebuggingImpl::FormatLongDacModuleName(__out_z __inout_ecount(cchBuff
         return E_INVALIDARG;
     }
 
-    WCHAR* pBuildFlavor = W("");
+    const WCHAR* pBuildFlavor = W("");
     if(pVersion->dwFileFlags & VS_FF_DEBUG)
     {
         if(pVersion->dwFileFlags & VS_FF_SPECIALBUILD)

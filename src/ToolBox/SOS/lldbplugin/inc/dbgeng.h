@@ -126,6 +126,12 @@ public:
         PVOID buffer,
         ULONG bufferSize,
         PULONG bytesRead) = 0;
+
+    virtual HRESULT WriteVirtual(
+        ULONG64 offset,
+        PVOID buffer,
+        ULONG bufferSize,
+        PULONG bytesWritten) = 0;
 };
 
 typedef IDebugDataSpaces* PDEBUG_DATA_SPACES;
@@ -212,6 +218,10 @@ public:
     virtual HRESULT GetNumberModules(
         PULONG loaded,
         PULONG unloaded) = 0;
+
+    virtual HRESULT GetModuleByIndex(
+        ULONG index,
+        PULONG64 base) = 0;
 
     // The module name may not be unique.
     // This method returns the first match.
