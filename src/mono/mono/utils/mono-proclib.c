@@ -320,7 +320,7 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
  * /proc/pid/stat format:
  * pid (cmdname) S 
  * 	[0] ppid pgid sid tty_nr tty_pgrp flags min_flt cmin_flt maj_flt cmaj_flt
- * 	[10] utime stime cutime cstime prio nice threads 0 start_time vsize rss
+ * 	[10] utime stime cutime cstime prio nice threads 0 start_time vsize
  * 	[20] rss rsslim start_code end_code start_stack esp eip pending blocked sigign
  * 	[30] sigcatch wchan 0 0 exit_signal cpu rt_prio policy
  */
