@@ -330,10 +330,9 @@ namespace System.Text.RegularExpressions
             {
                 result = new int[_caps.Count];
 
-                IDictionaryEnumerator de = _caps.GetEnumerator();
-                while (de.MoveNext())
+                foreach (KeyValuePair<int, int> kvp in _caps)
                 {
-                    result[(int)de.Value] = (int)de.Key;
+                    result[kvp.Value] = kvp.Key;
                 }
             }
 
