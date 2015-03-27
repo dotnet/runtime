@@ -178,7 +178,7 @@ create_domain_objects (MonoDomain *domain)
 	string_vt = mono_class_vtable (domain, mono_defaults.string_class);
 	string_empty_fld = mono_class_get_field_from_name (mono_defaults.string_class, "Empty");
 	g_assert (string_empty_fld);
-	mono_field_static_set_value (string_vt, string_empty_fld, mono_string_new (domain, ""));
+	mono_field_static_set_value (string_vt, string_empty_fld, mono_string_intern (mono_string_new (domain, "")));
 
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
