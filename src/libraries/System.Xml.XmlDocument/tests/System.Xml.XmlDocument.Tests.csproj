@@ -18,6 +18,17 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="XmlAttributeCollectionTests\AppendTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\CollectionInterfaceTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\CopyToTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\IndexerTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\InsertAfterTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\InsertBeforeTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\PrependTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\RemoveAllTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\RemoveAtTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\RemoveTests.cs" />
+    <Compile Include="XmlAttributeCollectionTests\SetNamedItemTests.cs" />
     <Compile Include="XmlAttributeTests\SpecifiedTests.cs" />
     <Compile Include="XmlCharacterDataTests\AppendDataTests.cs" />
     <Compile Include="XmlCharacterDataTests\DataTests.cs" />
