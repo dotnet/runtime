@@ -7,6 +7,9 @@
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ *
+ * This file has been re-licensed under the MIT License:
+ * http://opensource.org/licenses/MIT
  */
 
 #include <config.h>
