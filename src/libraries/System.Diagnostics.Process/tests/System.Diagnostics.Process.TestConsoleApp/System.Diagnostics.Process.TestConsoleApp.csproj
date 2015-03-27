@@ -4,8 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{69E46A6F-9966-45A5-8945-2559FE337827}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ProcessTest_ConsoleApp</RootNamespace>
-    <AssemblyName>ProcessTest_ConsoleApp</AssemblyName>
+    <RootNamespace>System.Diagnostics.ProcessTests</RootNamespace>
+    <AssemblyName>System.Diagnostics.Process.TestConsoleApp</AssemblyName>
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
@@ -19,7 +19,7 @@
     <Reference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ProcessTest_ConsoleApp.cs" />
+    <Compile Include="TestConsoleApp.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

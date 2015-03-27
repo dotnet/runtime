@@ -6,25 +6,25 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axes.Tests", "tests\axes\Axes.Tests.csproj", "{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.Axes.Tests", "tests\axes\System.Xml.XDocument.Axes.Tests.csproj", "{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDocument.Common", "tests\XDocument.Common\XDocument.Common.csproj", "{52666206-B6C9-49FA-A1D7-D0A0C68807B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Events.Tests", "tests\events\Events.Tests.csproj", "{C560E194-5B14-4112-ABC6-3208491E53E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.Events.Tests", "tests\events\System.Xml.XDocument.Events.Tests.csproj", "{C560E194-5B14-4112-ABC6-3208491E53E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDocument.Test.ModuleCore", "tests\XDocument.Test.ModuleCore\XDocument.Test.ModuleCore.csproj", "{979510CE-9042-4F8D-9C74-EE03B89194CC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Misc.Tests", "tests\misc\Misc.Tests.csproj", "{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.Misc.Tests", "tests\misc\System.Xml.XDocument.Misc.Tests.csproj", "{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Properties.Tests", "tests\Properties\Properties.Tests.csproj", "{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.Properties.Tests", "tests\Properties\System.Xml.XDocument.Properties.Tests.csproj", "{D24E2563-7A46-4368-94D4-B3A39E9EF1B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDMSample.Tests", "tests\SDMSample\SDMSample.Tests.csproj", "{F6C73170-9333-4B52-B3FA-A536C5EA6A48}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.SDMSample.Tests", "tests\SDMSample\System.Xml.XDocument.SDMSample.Tests.csproj", "{F6C73170-9333-4B52-B3FA-A536C5EA6A48}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Streaming.Tests", "tests\Streaming\Streaming.Tests.csproj", "{CB11B315-2567-4574-977D-89E3135243C4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.Streaming.Tests", "tests\Streaming\System.Xml.XDocument.Streaming.Tests.csproj", "{CB11B315-2567-4574-977D-89E3135243C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TreeManipulation.Tests", "tests\TreeManipulation\TreeManipulation.Tests.csproj", "{10EFE488-FAB4-43DA-847D-FF057BFF52AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.TreeManipulation.Tests", "tests\TreeManipulation\System.Xml.XDocument.TreeManipulation.Tests.csproj", "{10EFE488-FAB4-43DA-847D-FF057BFF52AC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xNodeReader.Tests", "tests\xNodeReader\xNodeReader.Tests.csproj", "{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.xNodeReader.Tests", "tests\xNodeReader\System.Xml.XDocument.xNodeReader.Tests.csproj", "{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlDiff", "..\Common\tests\SystemXml\XmlDiff\XmlDiff.csproj", "{466D87DF-BDEC-4E6C-BACD-317D79B8EDBE}"
 EndProject
@@ -37,7 +37,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{CF6DAB
 		.nuget\packages.config = .nuget\packages.config
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "xNodeBuilder.Tests", "tests\xNodeBuilder\xNodeBuilder.Tests.csproj", "{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.xNodeBuilder.Tests", "tests\xNodeBuilder\System.Xml.XDocument.xNodeBuilder.Tests.csproj", "{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{2B620568-877B-4A96-919B-F24B0B3E761D}"
 EndProject
