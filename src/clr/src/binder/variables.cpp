@@ -19,6 +19,7 @@
 
 namespace BINDER_SPACE
 {
+#ifdef FEATURE_VERSIONING_LOG
     namespace
     {
         HRESULT CheckFileExistence(LPCWSTR pwzFile, LPDWORD pdwAttrib)
@@ -51,6 +52,7 @@ namespace BINDER_SPACE
             return hr;
         }
     };
+#endif // FEATURE_VERSIONING_LOG
 
     Variables *g_BinderVariables = NULL;
 

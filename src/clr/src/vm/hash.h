@@ -491,7 +491,7 @@ public:
         {
             LIMITED_METHOD_DAC_CONTRACT;
 
-            for (m_pBucket = m_pBucket;m_pBucket < m_pSentinel; m_pBucket++)
+            for (;m_pBucket < m_pSentinel; m_pBucket++)
             {   //loop thru all buckets
                 for (m_id = m_id+1; m_id < 4; m_id++)
                 {   //loop through all slots

@@ -1427,7 +1427,7 @@ DllsName(
 inline
 BOOL IsElementValueType (CorElementType cet)
 {
-    return cet >= ELEMENT_TYPE_BOOLEAN && cet <= ELEMENT_TYPE_R8 
+    return (cet >= ELEMENT_TYPE_BOOLEAN && cet <= ELEMENT_TYPE_R8) 
         || cet == ELEMENT_TYPE_VALUETYPE || cet == ELEMENT_TYPE_I || cet == ELEMENT_TYPE_U;
 }
 

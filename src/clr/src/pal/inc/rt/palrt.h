@@ -1380,7 +1380,7 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 #define PORTABILITY_ASSERT(message)     _ASSERTE(false && message)
 #endif
 
-#define UNREFERENCED_PARAMETER(P)          (P)
+#define UNREFERENCED_PARAMETER(P)          (void)(P)
 
 #ifdef _WIN64
 #define VALPTR(x) VAL64(x)

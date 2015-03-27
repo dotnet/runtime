@@ -1509,7 +1509,7 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
     return res;
 }
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && defined(_MSC_VER)
 // codegen bug on amd64 causes BBT to fail for the following function.  as a
 // workaround I have disabled optimizations for it until we get an updated toolset.
 #pragma optimize( "", off )
@@ -1600,7 +1600,7 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
 
     return res;
 }
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && defined(_MSC_VER)
 // turn optimizations back on
 #pragma optimize( "", on )
 #endif

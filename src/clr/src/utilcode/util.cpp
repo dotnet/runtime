@@ -1980,7 +1980,7 @@ HRESULT validateTokenSig(
             if(i == IMAGE_CEE_CS_CALLCONV_FIELD) return validateOneArg(tk, &sig, NULL, pImport, TRUE);
             
             // EXPLICITTHIS and native call convs are for stand-alone sigs only (for calli)
-            if((i != IMAGE_CEE_CS_CALLCONV_DEFAULT)&&( i != IMAGE_CEE_CS_CALLCONV_VARARG)
+            if(((i != IMAGE_CEE_CS_CALLCONV_DEFAULT)&&( i != IMAGE_CEE_CS_CALLCONV_VARARG))
                 || (ulCallConv & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)) return VLDTR_E_MD_BADCALLINGCONV;
             break;
             
