@@ -83,7 +83,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Write(string message)
         {
-            s_logger.WriteCore(message);
+            s_logger.WriteCore(message ?? string.Empty);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
