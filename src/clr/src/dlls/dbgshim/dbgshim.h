@@ -25,6 +25,11 @@ HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
                                       DWORD cchBuffer,
                                       __out DWORD* pdwLength);
 
+HRESULT CreateDebuggingInterfaceFromVersionEx(
+    int iDebuggerVersion,
+    LPCWSTR szDebuggeeVersion,
+    IUnknown ** ppCordb);
+
 HRESULT CreateDebuggingInterfaceFromVersion(
     LPCWSTR szDebuggeeVersion, 
     IUnknown ** ppCordb);

@@ -3295,22 +3295,22 @@ PALIMPORT
 FARPROC
 PALAPI
 GetProcAddress(
-           IN HMODULE hModule,
-           IN LPCSTR lpProcName);
+    IN HMODULE hModule,
+    IN LPCSTR lpProcName);
 
 PALIMPORT
 BOOL
 PALAPI
 FreeLibrary(
-        IN OUT HMODULE hLibModule);
+    IN OUT HMODULE hLibModule);
 
 PALIMPORT
 PAL_NORETURN
 VOID
 PALAPI
 FreeLibraryAndExitThread(
-             IN HMODULE hLibModule,
-             IN DWORD dwExitCode);
+    IN HMODULE hLibModule,
+    IN DWORD dwExitCode);
 
 PALIMPORT
 BOOL
@@ -3322,17 +3322,17 @@ PALIMPORT
 DWORD
 PALAPI
 GetModuleFileNameA(
-           IN HMODULE hModule,
-           OUT LPSTR lpFileName,
-           IN DWORD nSize);
+    IN HMODULE hModule,
+    OUT LPSTR lpFileName,
+    IN DWORD nSize);
 
 PALIMPORT
 DWORD
 PALAPI
 GetModuleFileNameW(
-           IN HMODULE hModule,
-           OUT LPWSTR lpFileName,
-           IN DWORD nSize);
+    IN HMODULE hModule,
+    OUT LPWSTR lpFileName,
+    IN DWORD nSize);
 
 #ifdef UNICODE
 #define GetModuleFileName GetModuleFileNameW
