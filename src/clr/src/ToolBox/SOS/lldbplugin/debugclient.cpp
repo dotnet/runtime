@@ -218,7 +218,7 @@ DebugClient::ReadVirtual(
     ULONG bufferSize,
     PULONG bytesRead)
 {
-    if (bytesRead != nullptr)
+    if (bytesRead)
     {
         *bytesRead = 0;
     }
@@ -232,11 +232,25 @@ DebugClient::ReadVirtual(
     lldb::SBError error;
     size_t read = process.ReadMemory(offset, buffer, bufferSize, error);
 
-    if (bytesRead != nullptr)
+    if (bytesRead)
     {
         *bytesRead = read;
     }
     return error.Success() ? S_OK : E_FAIL;
+}
+
+HRESULT 
+DebugClient::WriteVirtual(
+    ULONG64 offset,
+    PVOID buffer,
+    ULONG bufferSize,
+    PULONG bytesWritten)
+{
+    if (bytesWritten)
+    {
+        *bytesWritten = 0;
+    }
+    return E_NOTIMPL;
 }
 
 //----------------------------------------------------------------------------
@@ -343,6 +357,53 @@ PULONG unloaded)
 }
 
 HRESULT 
+DebugClient::GetModuleBase(lldb::SBTarget target, lldb::SBModule module, PULONG64 base)
+{
+    if (base)
+    {
+        // Find the first section with an valid base address
+        int numSections = module.GetNumSections();
+        for (int sectionIndex = 0; sectionIndex < numSections; sectionIndex++)
+        {
+            lldb::SBSection section = module.GetSectionAtIndex(sectionIndex);
+            if (section.IsValid())
+            {
+                lldb::addr_t baseAddress = section.GetLoadAddress(target);
+                if (baseAddress != LLDB_INVALID_ADDRESS)
+                {
+                    *base = baseAddress - section.GetFileOffset();
+                    return S_OK;
+                }
+            }
+        }
+        *base = UINT64_MAX;
+        return E_FAIL;
+    }
+    return S_OK;
+}
+
+HRESULT DebugClient::GetModuleByIndex(
+    ULONG index,
+    PULONG64 base)
+{
+    if (base)
+    {
+        *base = UINT64_MAX;
+    }
+    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    if (!target.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBModule module = target.GetModuleAtIndex(index);
+    if (!module.IsValid())
+    {
+        return E_FAIL;
+    }
+    return GetModuleBase(target, module, base);
+}
+
+HRESULT 
 DebugClient::GetModuleByModuleName(
     PCSTR name,
     ULONG startIndex,
@@ -383,29 +444,7 @@ DebugClient::GetModuleByModuleName(
             }
         }
     }
-    if (base)
-    {
-        // Find the first section with an valid base address
-        int numSections = module.GetNumSections();
-        for (int sectionIndex = 0; sectionIndex < numSections; sectionIndex++)
-        {
-            lldb::SBSection section = module.GetSectionAtIndex(sectionIndex);
-            if (section.IsValid())
-            {
-                lldb::addr_t baseAddress = section.GetLoadAddress(target);
-                if (baseAddress != LLDB_INVALID_ADDRESS)
-                {
-                    *base = baseAddress - section.GetFileOffset();
-                    break;
-                }
-            }
-        }
-        if (*base == UINT64_MAX)
-        {
-            return E_FAIL;
-        }
-    }
-    return S_OK;
+    return GetModuleBase(target, module, base);
 }
 
 HRESULT 
@@ -721,6 +760,8 @@ DebugClient::GetThreadContextById(
         return E_FAIL;
     }
     DT_CONTEXT *dtcontext = (DT_CONTEXT*)context;
+    memset(dtcontext, 0, contextSize);
+    dtcontext->ContextFlags = contextFlags;
 
     dtcontext->Rip = frame.GetPC();
     dtcontext->Rsp = frame.GetSP();

@@ -1753,6 +1753,34 @@ EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
 // instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
 #define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
 
+/************** verrsrc.h ************************************/
+
+/* ----- VS_VERSION.dwFileFlags ----- */
+#define VS_FF_DEBUG             0x00000001L
+#define VS_FF_PRERELEASE        0x00000002L
+#define VS_FF_PATCHED           0x00000004L
+#define VS_FF_PRIVATEBUILD      0x00000008L
+#define VS_FF_INFOINFERRED      0x00000010L
+#define VS_FF_SPECIALBUILD      0x00000020L
+
+/* ----- Types and structures ----- */
+typedef struct tagVS_FIXEDFILEINFO
+{
+    DWORD   dwSignature;            /* e.g. 0xfeef04bd */
+    DWORD   dwStrucVersion;         /* e.g. 0x00000042 = "0.42" */
+    DWORD   dwFileVersionMS;        /* e.g. 0x00030075 = "3.75" */
+    DWORD   dwFileVersionLS;        /* e.g. 0x00000031 = "0.31" */
+    DWORD   dwProductVersionMS;     /* e.g. 0x00030010 = "3.10" */
+    DWORD   dwProductVersionLS;     /* e.g. 0x00000031 = "0.31" */
+    DWORD   dwFileFlagsMask;        /* = 0x3F for version "0.42" */
+    DWORD   dwFileFlags;            /* e.g. VFF_DEBUG | VFF_PRERELEASE */
+    DWORD   dwFileOS;               /* e.g. VOS_DOS_WINDOWS16 */
+    DWORD   dwFileType;             /* e.g. VFT_DRIVER */
+    DWORD   dwFileSubtype;          /* e.g. VFT2_DRV_KEYBOARD */
+    DWORD   dwFileDateMS;           /* e.g. 0 */
+    DWORD   dwFileDateLS;           /* e.g. 0 */
+} VS_FIXEDFILEINFO;
+
 /************** Byte swapping & unaligned access ******************/
 
 #include <pal_endian.h>
