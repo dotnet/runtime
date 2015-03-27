@@ -1812,8 +1812,10 @@ namespace System.Text.RegularExpressions
                 _capnumlist = new Int32[_capcount];
                 int i = 0;
 
-                for (IDictionaryEnumerator de = _caps.GetEnumerator(); de.MoveNext();)
-                    _capnumlist[i++] = (int)de.Key;
+                foreach (KeyValuePair<int, int> kvp in _caps)
+                {
+                    _capnumlist[i++] = kvp.Key;
+                }
 
                 System.Array.Sort(_capnumlist, Comparer<Int32>.Default);
             }
