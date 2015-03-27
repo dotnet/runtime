@@ -249,7 +249,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, __in FILE* file, __inout
                     }
                 }
             }
-            else if (*ptr == 's' || *ptr == 'h' && *(ptr+1) == 's' && ++ptr) 
+            else if (*ptr == 's' || (*ptr == 'h' && *(ptr+1) == 's' && ++ptr)) 
             {
                 HRESULT     hr;
 
@@ -266,7 +266,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, __in FILE* file, __inout
 
                 args[iArgCount] = strBuf;                    
             }
-            else if (*ptr == 'S' || *ptr == 'l' && *(ptr+1) == 's' && ++ptr) 
+            else if (*ptr == 'S' || (*ptr == 'l' && *(ptr+1) == 's' && ++ptr)) 
             {
                 HRESULT     hr;
 

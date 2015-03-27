@@ -809,7 +809,7 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
     DWORD tid = GetCurrentThreadId();
 
     DebuggerIPCEventType type = (DebuggerIPCEventType) (event->type & DB_IPCE_TYPE_MASK);
-#endif _DEBUG || !FEATURE_CORESYSTEM
+#endif // _DEBUG || !FEATURE_CORESYSTEM
 
     // We should never AV here. In a debug build, throw up an assert w/ lots of useful (private) info.
 #ifdef _DEBUG

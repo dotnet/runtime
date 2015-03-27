@@ -6226,8 +6226,8 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
 
 lExit: ;
 
-    STRESS_LOG3(LF_EH|LF_GCROOTS, LL_INFO100, "Returning" FMT_ADDR "as the parent stack frame for %s" FMT_ADDR "\n",
-                DBG_ADDR(sfResult.SP), fIsFilterFunclet ? "filter funclet" : "funclet", DBG_ADDR(csfCurrent.SP));
+    STRESS_LOG3(LF_EH|LF_GCROOTS, LL_INFO100, "Returning 0x%p as the parent stack frame for %s 0x%p\n",
+                sfResult.SP, fIsFilterFunclet ? "filter funclet" : "funclet", csfCurrent.SP);
 
     return sfResult;
 }
