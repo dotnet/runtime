@@ -19,9 +19,6 @@
 #include "corerror.h"
 #include "safemath.h"
 
-#ifdef FEATURE_PAL
-#include "datatarget.h"
-#else
 #include <psapi.h>
 #include <cordebug.h>
 #include <xcordebug.h>
@@ -29,7 +26,10 @@
 #include <mscoree.h>
 #include <tchar.h>
 #include "debugshim.h"
-#endif // !FEATURE_PAL
+
+#ifdef FEATURE_PAL
+#include "datatarget.h"
+#endif // FEATURE_PAL
 #include "gcinfo.h"
 
 #ifndef STRESS_LOG
@@ -61,11 +61,10 @@ const char * const CorElementTypeNamespace[ELEMENT_TYPE_MAX]=
 
 IXCLRDataProcess *g_clrData = NULL;
 ISOSDacInterface *g_sos = NULL;
+ICorDebugProcess *g_pCorDebugProcess = NULL;
 
 #ifdef FEATURE_PAL
 PFN_CLRDataCreateInstance g_pCLRDataCreateInstance = NULL;
-#else
-ICorDebugProcess * g_pCorDebugProcess = NULL;
 #endif // FEATURE_PAL
 
 #ifndef IfFailRet
@@ -4269,6 +4268,8 @@ FindFileInPathCallback(
     return FALSE;
 }
 
+#endif // FEATURE_PAL
+
 //---------------------------------------------------------------------------------------
 // Provides a way for the public CLR debugging interface to find the appropriate
 // mscordbi.dll, DAC, etc.
@@ -4333,6 +4334,7 @@ public:
         DWORD dwSizeOfImage,
         HMODULE * phModule)
     {
+#ifndef FEATURE_PAL
         HRESULT hr;
         FindFileCallbackData callbackData = {0};
         callbackData.timestamp = dwTimestamp;
@@ -4426,6 +4428,17 @@ public:
 
         *phModule = callbackData.hModule;
         return hr;
+#else
+        // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path. Ignore the version info for now.
+        *phModule = LoadLibraryW(pwszFileName);
+        if (*phModule == NULL)
+        {
+            HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+            ExtOut("Unable to load '%S'.  HRESULT = 0x%x.\n", pwszFileName, hr);
+            return hr;
+        }
+        return S_OK;
+#endif // FEATURE_PAL
     }
 
 protected:
@@ -4523,10 +4536,13 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetThreadContext(
         DWORD dwThreadOSID,
-        ULONG32 ContextFlags,
+        ULONG32 contextFlags,
         ULONG32 contextSize,
         BYTE * context)
     {
+#ifdef FEATURE_PAL
+        return g_ExtSystem->GetThreadContextById(dwThreadOSID, contextFlags, contextSize, context);
+#else
         ULONG ulThreadIDOrig;
         ULONG ulThreadIDRequested;
         HRESULT hr;
@@ -4552,7 +4568,7 @@ public:
 
         // Prepare context structure
         ZeroMemory(context, contextSize);
-        ((CONTEXT*) context)->ContextFlags = ContextFlags;
+        ((CONTEXT*) context)->ContextFlags = contextFlags;
 
         // Ok, do it!
         hrRet = g_ExtAdvanced3->GetThreadContext((LPVOID) context, contextSize);
@@ -4562,6 +4578,7 @@ public:
         g_ExtSystem->SetCurrentThreadId(ulThreadIDOrig);
 
         return hrRet;
+#endif // FEATURE_PAL
     }
 
     //
@@ -4607,7 +4624,7 @@ HRESULT InitCorDebugInterfaceFromModule(ULONG64 ulBase, ICLRDebugging * pClrDebu
 
     CLR_DEBUGGING_VERSION clrDebuggingVersionActual = {0};
 
-    CLR_DEBUGGING_PROCESS_FLAGS clrDebuggingFlags;
+    CLR_DEBUGGING_PROCESS_FLAGS clrDebuggingFlags = (CLR_DEBUGGING_PROCESS_FLAGS)0;
 
     ToRelease<IUnknown> pUnkProcess;
 
@@ -4759,7 +4776,6 @@ HRESULT InitCorDebugInterface()
     // TODO: Anything useful to return or log here?
     return E_FAIL;
 }
-#endif // FEATURE_PAL
 
 
 
@@ -5428,7 +5444,7 @@ CachedString Output::BuildVCValue(CLRDATA_ADDRESS mt, CLRDATA_ADDRESS addr, Form
     return ret;
 }
 
-CachedString Output::BuildManagedVarValue(__in_z LPWSTR expansionName, ULONG frame, __in_z LPWSTR simpleName, FormatType type)
+CachedString Output::BuildManagedVarValue(__in_z LPCWSTR expansionName, ULONG frame, __in_z LPCWSTR simpleName, FormatType type)
 {
     _ASSERTE(type == DML_ManagedVar);
     CachedString ret;
@@ -5477,7 +5493,7 @@ CachedString Output::BuildManagedVarValue(__in_z LPWSTR expansionName, ULONG fra
     return ret;
 }
 
-CachedString Output::BuildManagedVarValue(__in_z LPWSTR expansionName, ULONG frame, int indexInArray, FormatType type)
+CachedString Output::BuildManagedVarValue(__in_z LPCWSTR expansionName, ULONG frame, int indexInArray, FormatType type)
 {
     WCHAR indexString[24];
     swprintf_s(indexString, _countof(indexString), W("[%d]"), indexInArray);
