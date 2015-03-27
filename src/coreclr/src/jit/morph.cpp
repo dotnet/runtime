@@ -3880,11 +3880,11 @@ void            Compiler::fgSetRngChkTarget(GenTreePtr  tree,
 {
     GenTreeBoundsChk* bndsChk = NULL;
 
-    if ((tree->gtOper == GT_ARR_BOUNDS_CHECK)
 #ifdef FEATURE_SIMD
-        || (tree->gtOper == GT_SIMD_CHK)
+    if ((tree->gtOper == GT_ARR_BOUNDS_CHECK) || (tree->gtOper == GT_SIMD_CHK))
+#else // FEATURE_SIMD
+    if (tree->gtOper == GT_ARR_BOUNDS_CHECK)
 #endif // FEATURE_SIMD
-        )
     {
         bndsChk = tree->AsBoundsChk();
     }

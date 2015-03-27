@@ -189,19 +189,6 @@ namespace BINDER_SPACE
             return NULL;
         }
 
-        BOOL ValidateAndConvertContentType(
-                SString &             ssContentType, 
-                AssemblyContentType * pkContentType)
-        {
-            if (EqualsCaseInsensitive(ssContentType, W("WindowsRuntime")))
-            {
-                *pkContentType = AssemblyContentType_WindowsRuntime;
-                return TRUE;
-            }
-            
-            return FALSE;
-        }
-        
         LPCWSTR ContentTypeToString(AssemblyContentType kContentType)
         {
             _ASSERTE(kContentType != AssemblyContentType_Default);
