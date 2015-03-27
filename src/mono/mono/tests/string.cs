@@ -14,6 +14,8 @@ public class TestString {
 			return 3;
 		if (System.Object.ReferenceEquals(c, String.Concat(b, "a")))
 			return 4;
+		if (!Object.ReferenceEquals (String.Empty, ""))
+			return 5;
 	    	return 0;
 	}
 }
