@@ -67,7 +67,7 @@ check_struct_has_member ("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 
 set(CMAKE_EXTRA_INCLUDE_FILES machine/reg.h)
-check_type_size("struct regs" BSD_REGS_T)
+check_type_size("struct reg" BSD_REGS_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 set(CMAKE_EXTRA_INCLUDE_FILES asm/ptrace.h)
 check_type_size("struct pt_regs" PT_REGS)
