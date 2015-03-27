@@ -71,6 +71,7 @@ if(WIN32)
 else(WIN32)
   include_directories(../lldbplugin/inc)
   include_directories(BEFORE ${VM_DIR})
+  include_directories(${CLR_DIR}/src/debug/shim)
 
   add_compile_options(-fPIC)
 
@@ -90,6 +91,8 @@ else(WIN32)
   set(SOS_LIBRARY
     corguids
     mscordaccore
+    debugshim
+    dbgutil
   )
 endif(WIN32)
 
