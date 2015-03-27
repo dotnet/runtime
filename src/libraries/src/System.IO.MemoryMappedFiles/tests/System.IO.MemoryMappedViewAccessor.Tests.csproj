@@ -6,7 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <AssemblyName>MemoryMappedViewAccessor.Tests</AssemblyName>
+    <AssemblyName>System.IO.MemoryMappedViewAccessor.Tests</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>

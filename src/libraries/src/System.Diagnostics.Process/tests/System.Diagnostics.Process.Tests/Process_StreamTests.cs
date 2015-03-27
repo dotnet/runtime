@@ -9,7 +9,6 @@ namespace System.Diagnostics.ProcessTests
 {
     public partial class ProcessTest
     {
-
         Process CreateProcessError()
         {
             return CreateProcess("error");
@@ -31,7 +30,7 @@ namespace System.Diagnostics.ProcessTests
             Process p = CreateProcessError();
             p.StartInfo.RedirectStandardError = true;
             p.Start();
-            Assert.Equal(p.StandardError.ReadToEnd(), "ProcessTest_ConsoleApp.exe error stream\r\n");
+            Assert.Equal(p.StandardError.ReadToEnd(), ProcessName + " error stream\r\n");
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
@@ -47,8 +46,8 @@ namespace System.Diagnostics.ProcessTests
 
             if (p.WaitForExit(WaitInMS))
                 p.WaitForExit(); // This ensures async event handlers are finished processing.
-            
-            Assert.Equal("ProcessTest_ConsoleApp.exe error stream", sb.ToString());
+
+            Assert.Equal(ProcessName + " error stream", sb.ToString());
         }
 
         [Fact]
@@ -59,7 +58,7 @@ namespace System.Diagnostics.ProcessTests
             p.Start();
             string s = p.StandardOutput.ReadToEnd();
             Assert.True(p.WaitForExit(WaitInMS));
-            Assert.Equal(s, "ProcessTest_ConsoleApp.exe started\r\nProcessTest_ConsoleApp.exe closed\r\n");
+            Assert.Equal(s, ProcessName + " started\r\n" + ProcessName + " closed\r\n");
         }
 
         [Fact]
@@ -75,7 +74,7 @@ namespace System.Diagnostics.ProcessTests
                 if (p.WaitForExit(WaitInMS))
                     p.WaitForExit(); // This ensures async event handlers are finished processing.
 
-                Assert.Equal(sb.ToString(), "ProcessTest_ConsoleApp.exe startedProcessTest_ConsoleApp.exe closed");
+                Assert.Equal(sb.ToString(), ProcessName + " started" + ProcessName + " closed");
             }
 
             {
@@ -89,7 +88,7 @@ namespace System.Diagnostics.ProcessTests
                 if (p.WaitForExit(WaitInMS))
                     p.WaitForExit(); // This ensures async event handlers are finished processing.
 
-                Assert.Equal(sb.ToString(), "ProcessTest_ConsoleApp.exe started");
+                Assert.Equal(sb.ToString(), ProcessName + " started");
             }
         }
 

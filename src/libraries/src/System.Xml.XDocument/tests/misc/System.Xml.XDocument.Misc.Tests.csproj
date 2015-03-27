@@ -4,17 +4,12 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}</ProjectGuid>
+    <ProjectGuid>{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}</ProjectGuid>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <AssemblyName>xNodeBuilder.Tests</AssemblyName>
+    <AssemblyName>System.Xml.XDocument.Misc.Tests</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
-    <!--
-      Disable running tests for this project as most of them are failing because of the infrastructure issue
-      https://github.com/dotnet/corefx/issues/641
-    -->
     <TestCategories>OuterLoop</TestCategories>
-    <RunTestsForProject>False</RunTestsForProject>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -23,16 +18,13 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="CommonTests.cs" />
-    <Compile Include="EndOfLineHandlingTests.cs" />
-    <Compile Include="ErrorConditions.cs" />
+    <Compile Include="Annotation.cs" />
     <Compile Include="FunctionalTests.cs" />
-    <Compile Include="OmitDuplicateNamespaceDecl.cs" />
-    <Compile Include="OmitDuplicatesAnnotation.cs" />
-    <Compile Include="SaveOptions_OmitDuplicateNamespace.cs" />
-    <Compile Include="WriterSettings.cs" />
-    <Compile Include="XmlFactoryWriterTests.cs" />
-    <Compile Include="XmlReaderDiff.cs" />
+    <Compile Include="PrefixNamespaceFixes.cs" />
+    <Compile Include="RegressionTests.cs" />
+    <Compile Include="XHashtable.cs" />
+    <Compile Include="XLinqErrata4.cs" />
+    <Compile Include="XNameAPI.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlCoreTest\XmlCoreTest.csproj">

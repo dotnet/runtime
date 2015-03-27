@@ -16,8 +16,8 @@ namespace System.Diagnostics.ProcessTests
 {
     public partial class ProcessTest : IDisposable
     {
-        private const int WaitInMS = 100 * 1000; 
-        private const string ProcessName = "ProcessTest_ConsoleApp.exe";
+        private const int WaitInMS = 100 * 1000;
+        private const string ProcessName = "System.Diagnostics.Process.TestConsoleApp.exe";
         private Process _process;
 
         public ProcessTest()

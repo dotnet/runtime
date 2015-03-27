@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F6C73170-9333-4B52-B3FA-A536C5EA6A48}</ProjectGuid>
+    <ProjectGuid>{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}</ProjectGuid>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Library</OutputType>
-    <AssemblyName>SDMSample.Tests</AssemblyName>
+    <AssemblyName>System.Xml.XDocument.xNodeReader.Tests</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
     <TestCategories>OuterLoop</TestCategories>
   </PropertyGroup>
@@ -18,20 +18,24 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="ClassStamp.cs" />
+    <Compile Include="CommonTest.cs" />
+    <Compile Include="CXMLGeneralTest.cs" />
+    <Compile Include="CXMLReaderAttrTest.cs" />
+    <Compile Include="CXmlReaderReadEtc.cs" />
+    <Compile Include="ErrorConditions.cs" />
     <Compile Include="FunctionalTests.cs" />
-    <Compile Include="SDMAttribute.cs" />
-    <Compile Include="SDMCData.cs" />
-    <Compile Include="SDMComment.cs" />
-    <Compile Include="SDMContainer.cs" />
-    <Compile Include="SDMDocument.cs" />
-    <Compile Include="SDMElement.cs" />
-    <Compile Include="SDMLoadSave.cs" />
-    <Compile Include="SDMMisc.cs" />
-    <Compile Include="SDMNode.cs" />
-    <Compile Include="SDMPI.cs" />
-    <Compile Include="SDMValidate.cs" />
-    <Compile Include="SDMXMLComparer.cs" />
-    <Compile Include="SDMXName.cs" />
+    <Compile Include="IntegrityTest.cs" />
+    <Compile Include="ReadBase64.cs" />
+    <Compile Include="ReadBinHex.cs" />
+    <Compile Include="ReaderProperty.cs" />
+    <Compile Include="ReadOuterXml.cs" />
+    <Compile Include="ReadSubTree.cs" />
+    <Compile Include="ReadToDescendant.cs" />
+    <Compile Include="ReadToFollowing.cs" />
+    <Compile Include="ReadToNextSibling.cs" />
+    <Compile Include="ReadValue.cs" />
+    <Compile Include="XNodeReaderAPI.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\SystemXml\XmlCoreTest\XmlCoreTest.csproj">
@@ -63,9 +67,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

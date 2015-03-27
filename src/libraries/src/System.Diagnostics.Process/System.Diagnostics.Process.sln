@@ -12,7 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{EFFF9E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Process.Tests", "tests\System.Diagnostics.Process.Tests\System.Diagnostics.Process.Tests.csproj", "{E1114510-844C-4BB2-BBAD-8595BD16E24B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessTest_ConsoleApp", "tests\ProcessTest_ConsoleApp\ProcessTest_ConsoleApp.csproj", "{69E46A6F-9966-45A5-8945-2559FE337827}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Process.TestConsoleApp", "tests\System.Diagnostics.Process.TestConsoleApp\System.Diagnostics.Process.TestConsoleApp.csproj", "{69E46A6F-9966-45A5-8945-2559FE337827}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

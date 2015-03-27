@@ -54,15 +54,16 @@ namespace System.ServiceProcessServiceController.Tests
 
         private void RunServiceExecutable(string action)
         {
+            const string serviceExecutable = "System.ServiceProcess.ServiceController.TestNativeService.exe";
             var process = new Process();
-            process.StartInfo.FileName = "NativeTestService.exe";
+            process.StartInfo.FileName = serviceExecutable;
             process.StartInfo.Arguments = string.Format("\"{0}\" \"{1}\" {2}", TestServiceName, TestServiceDisplayName, action);
             process.Start();
             process.WaitForExit();
             
             if (process.ExitCode != 0)
             {
-                throw new Exception("error: NativeTestService.exe failed with exit code " + process.ExitCode.ToString());
+                throw new Exception("error: " + serviceExecutable + " failed with exit code " + process.ExitCode.ToString());
             }
         }
     }
