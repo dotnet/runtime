@@ -108,6 +108,7 @@ typedef struct {
 	MonoMethodSignature *sig;
 	GSList *builders;
 	GHashTable *region_to_handler;
+	GHashTable *clause_to_handler;
 	LLVMBuilderRef alloca_builder;
 	LLVMValueRef last_alloca;
 	LLVMValueRef rgctx_arg;
@@ -120,6 +121,8 @@ typedef struct {
 	LLVMValueRef dbg_md;
 	MonoDebugMethodInfo *minfo;
 	char temp_name [32];
+	/* For every clause, the clauses it is nested in */
+	GSList **nested_in;
 } EmitContext;
 
 typedef struct {
@@ -1952,7 +1955,7 @@ emit_llvm_used (MonoLLVMModule *lmodule)
 static void
 emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 {
-	int i, pindex;
+	int i, j, pindex;
 	MonoCompile *cfg = ctx->cfg;
 	MonoMethodSignature *sig = ctx->sig;
 	LLVMCallInfo *linfo = ctx->linfo;
@@ -2072,15 +2075,35 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		set_metadata_flag (rgctx_alloc, "mono.this");
 	}
 
+	/* Compute nesting between clauses */
+	ctx->nested_in = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * cfg->header->num_clauses);
+	for (i = 0; i < cfg->header->num_clauses; ++i) {
+		for (j = 0; j < cfg->header->num_clauses; ++j) {
+			MonoExceptionClause *clause1 = &cfg->header->clauses [i];
+			MonoExceptionClause *clause2 = &cfg->header->clauses [j];
+
+			if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset)
+				ctx->nested_in [i] = g_slist_prepend_mempool (cfg->mempool, ctx->nested_in [i], GINT_TO_POINTER (j));
+		}
+	}
+
 	/*
 	 * For finally clauses, create an indicator variable telling OP_ENDFINALLY whenever
 	 * it needs to continue normally, or return back to the exception handling system.
 	 */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		if (bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER))
-			g_hash_table_insert (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)), bb);
-		if (bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER) && bb->in_scount == 0) {
-			char name [128];
+		int clause_index;
+		char name [128];
+
+		if (!(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+			continue;
+
+		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
+
+		g_hash_table_insert (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)), bb);
+		g_hash_table_insert (ctx->clause_to_handler, GINT_TO_POINTER (clause_index), bb);
+
+		if (bb->in_scount == 0) {
 			LLVMValueRef val;
 
 			sprintf (name, "finally_ind_bb%d", bb->block_num);
@@ -2088,15 +2111,15 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			LLVMBuildStore (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), val);
 
 			ctx->bblocks [bb->block_num].finally_ind = val;
-
-			/*
-			 * Create a new bblock which CALL_HANDLER can branch to, because branching to the
-			 * LLVM bblock containing the call to llvm.eh.selector causes problems for the
-			 * LLVM optimizer passes.
-			 */
-			sprintf (name, "BB_%d_CALL_HANDLER_TARGET", bb->block_num);
-			ctx->bblocks [bb->block_num].call_handler_target_bb = LLVMAppendBasicBlock (ctx->lmethod, name);
 		}
+
+		/*
+		 * Create a new bblock which CALL_HANDLER/landing pads can branch to, because branching to the
+		 * LLVM bblock containing a landing pad causes problems for the
+		 * LLVM optimizer passes.
+		 */
+		sprintf (name, "BB_%d_CALL_HANDLER_TARGET", bb->block_num);
+		ctx->bblocks [bb->block_num].call_handler_target_bb = LLVMAppendBasicBlock (ctx->lmethod, name);
 	}
 
  FAILURE:
@@ -2434,6 +2457,110 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 }
 
 static void
+emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder)
+{
+	MonoCompile *cfg = ctx->cfg;
+	LLVMValueRef *values = ctx->values;
+	LLVMModuleRef module = ctx->module;
+	BBInfo *bblocks = ctx->bblocks;
+	LLVMTypeRef i8ptr;
+	LLVMValueRef personality;
+	LLVMBasicBlockRef target_bb;
+	MonoInst *exvar;
+	static gint32 mapping_inited;
+	static int ti_generator;
+	char ti_name [128];
+	MonoClass **ti;
+	LLVMValueRef type_info;
+	int clause_index;
+
+	// <resultval> = landingpad <somety> personality <type> <pers_fn> <clause>+
+
+	if (cfg->compile_aot) {
+		/* Use a dummy personality function */
+		personality = LLVMGetNamedFunction (module, "mono_aot_personality");
+		g_assert (personality);
+	} else {
+		personality = LLVMGetNamedFunction (module, "mono_personality");
+		if (InterlockedCompareExchange (&mapping_inited, 1, 0) == 0)
+			LLVMAddGlobalMapping (ctx->lmodule->ee, personality, mono_personality);
+	}
+
+	i8ptr = LLVMPointerType (LLVMInt8Type (), 0);
+
+	clause_index = (mono_get_block_region_notry (cfg, bb->region) >> 8) - 1;
+
+	/*
+	 * Create the type info
+	 */
+	sprintf (ti_name, "type_info_%d", ti_generator);
+	ti_generator ++;
+
+	if (cfg->compile_aot) {
+		/* decode_eh_frame () in aot-runtime.c will decode this */
+		type_info = LLVMAddGlobal (module, LLVMInt32Type (), ti_name);
+		LLVMSetInitializer (type_info, LLVMConstInt (LLVMInt32Type (), clause_index, FALSE));
+
+		/*
+		 * These symbols are not really used, the clause_index is embedded into the EH tables generated by DwarfMonoException in LLVM.
+		 */
+		LLVMSetLinkage (type_info, LLVMInternalLinkage);
+
+#ifdef TARGET_ARM
+		// test_0_invalid_unbox_arrays () fails
+		LLVM_FAILURE (ctx, "aot+clauses");
+#endif
+	} else {
+		/*
+		 * After the cfg mempool is freed, the type info will point to stale memory,
+		 * but this is not a problem, since we decode it once in exception_cb during
+		 * compilation.
+		 */
+		ti = mono_mempool_alloc (cfg->mempool, sizeof (gint32));
+		*(gint32*)ti = clause_index;
+
+		type_info = LLVMAddGlobal (module, i8ptr, ti_name);
+
+		LLVMAddGlobalMapping (ctx->lmodule->ee, type_info, ti);
+	}
+
+	{
+		LLVMTypeRef members [2], ret_type;
+		LLVMValueRef landing_pad;
+
+		members [0] = i8ptr;
+		members [1] = LLVMInt32Type ();
+		ret_type = LLVMStructType (members, 2, FALSE);
+
+		landing_pad = LLVMBuildLandingPad (builder, ret_type, personality, 1, "");
+		LLVMAddClause (landing_pad, type_info);
+
+		/* Store the exception into the exvar */
+		if (bb->in_scount == 1) {
+			g_assert (bb->in_scount == 1);
+			exvar = bb->in_stack [0];
+
+			// FIXME: This is shared with filter clauses ?
+			g_assert (!values [exvar->dreg]);
+
+			values [exvar->dreg] = LLVMBuildExtractValue (builder, landing_pad, 0, "ex_obj");
+			emit_volatile_store (ctx, exvar->dreg);
+		}
+	}
+
+	/* Start a new bblock which CALL_HANDLER can branch to */
+	target_bb = bblocks [bb->block_num].call_handler_target_bb;
+	if (target_bb) {
+		LLVMBuildBr (builder, target_bb);
+
+		ctx->builder = builder = create_builder (ctx);
+		LLVMPositionBuilderAtEnd (ctx->builder, target_bb);
+
+		ctx->bblocks [bb->block_num].end_bblock = target_bb;
+	}
+}
+
+static void
 process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 {
 	MonoCompile *cfg = ctx->cfg;
@@ -2462,17 +2589,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	CHECK_FAILURE (ctx);
 
 	if (bb->flags & BB_EXCEPTION_HANDLER) {
-		LLVMTypeRef i8ptr;
-		LLVMValueRef personality;
-		LLVMBasicBlockRef target_bb;
-		MonoInst *exvar;
-		static gint32 mapping_inited;
-		static int ti_generator;
-		char ti_name [128];
-		MonoClass **ti;
-		LLVMValueRef type_info;
-		int clause_index;
-
 		if (!bblocks [bb->block_num].invoke_target) {
 			/*
 			 * LLVM asserts if llvm.eh.selector is called from a bblock which
@@ -2482,95 +2598,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVM_FAILURE (ctx, "handler without invokes");
 		}
 
-		// <resultval> = landingpad <somety> personality <type> <pers_fn> <clause>+
-
-		if (cfg->compile_aot) {
-			/* Use a dummy personality function */
-			personality = LLVMGetNamedFunction (module, "mono_aot_personality");
-			g_assert (personality);
-		} else {
-			personality = LLVMGetNamedFunction (module, "mono_personality");
-			if (InterlockedCompareExchange (&mapping_inited, 1, 0) == 0)
-				LLVMAddGlobalMapping (ctx->lmodule->ee, personality, mono_personality);
-		}
-
-		i8ptr = LLVMPointerType (LLVMInt8Type (), 0);
-
-		clause_index = (mono_get_block_region_notry (cfg, bb->region) >> 8) - 1;
-
-		/*
-		 * Create the type info
-		 */
-		sprintf (ti_name, "type_info_%d", ti_generator);
-		ti_generator ++;
-
-		if (cfg->compile_aot) {
-			/* decode_eh_frame () in aot-runtime.c will decode this */
-			type_info = LLVMAddGlobal (module, LLVMInt32Type (), ti_name);
-			LLVMSetInitializer (type_info, LLVMConstInt (LLVMInt32Type (), clause_index, FALSE));
-
-			/*
-			 * These symbols are not really used, the clause_index is embedded into the EH tables generated by DwarfMonoException in LLVM.
-			 */
-			LLVMSetLinkage (type_info, LLVMInternalLinkage);
-
-			/* 
-			 * Enabling this causes llc to crash:
-			 * http://llvm.org/bugs/show_bug.cgi?id=6102
-			 */
-			//LLVM_FAILURE (ctx, "aot+clauses");
-#ifdef TARGET_ARM
-			// test_0_invalid_unbox_arrays () fails
-			LLVM_FAILURE (ctx, "aot+clauses");
-#endif
-		} else {
-			/*
-			 * After the cfg mempool is freed, the type info will point to stale memory,
-			 * but this is not a problem, since we decode it once in exception_cb during
-			 * compilation.
-			 */
-			ti = mono_mempool_alloc (cfg->mempool, sizeof (gint32));
-			*(gint32*)ti = clause_index;
-
-			type_info = LLVMAddGlobal (module, i8ptr, ti_name);
-
-			LLVMAddGlobalMapping (ctx->lmodule->ee, type_info, ti);
-		}
-
-		{
-			LLVMTypeRef members [2], ret_type;
-			LLVMValueRef landing_pad;
-
-			members [0] = i8ptr;
-			members [1] = LLVMInt32Type ();
-			ret_type = LLVMStructType (members, 2, FALSE);
-
-			landing_pad = LLVMBuildLandingPad (builder, ret_type, personality, 1, "");
-			LLVMAddClause (landing_pad, type_info);
-
-			/* Store the exception into the exvar */
-			if (bb->in_scount == 1) {
-				g_assert (bb->in_scount == 1);
-				exvar = bb->in_stack [0];
-
-				// FIXME: This is shared with filter clauses ?
-				g_assert (!values [exvar->dreg]);
-
-				values [exvar->dreg] = LLVMBuildExtractValue (builder, landing_pad, 0, "ex_obj");
-				emit_volatile_store (ctx, exvar->dreg);
-			}
-		}
-
-		/* Start a new bblock which CALL_HANDLER can branch to */
-		target_bb = bblocks [bb->block_num].call_handler_target_bb;
-		if (target_bb) {
-			LLVMBuildBr (builder, target_bb);
-
-			ctx->builder = builder = create_builder (ctx);
-			LLVMPositionBuilderAtEnd (ctx->builder, target_bb);
-
-			ctx->bblocks [bb->block_num].end_bblock = target_bb;
-		}
+		emit_handler_start (ctx, bb, builder);
+		builder = ctx->builder;
 	}
 
 	has_terminator = FALSE;
@@ -4798,6 +4827,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	ctx->values = values;
 	ctx->region_to_handler = g_hash_table_new (NULL, NULL);
+	ctx->clause_to_handler = g_hash_table_new (NULL, NULL);
  
 	if (cfg->compile_aot) {
 		ctx->lmodule = &aot_module;
@@ -5170,6 +5200,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	g_ptr_array_free (phi_values, TRUE);
 	g_free (ctx->bblocks);
 	g_hash_table_destroy (ctx->region_to_handler);
+	g_hash_table_destroy (ctx->clause_to_handler);
 	g_free (method_name);
 	g_ptr_array_free (bblock_list, TRUE);
 
