@@ -6041,7 +6041,7 @@ size_t& gc_heap::bpromoted_bytes(int thread)
 #ifdef MULTIPLE_HEAPS
     return g_bpromoted [thread*16];
 #else //MULTIPLE_HEAPS
-    thread = thread;
+    UNREFERENCED_PARAMETER(thread);
     return g_bpromoted;
 #endif //MULTIPLE_HEAPS
 }
@@ -16269,7 +16269,7 @@ size_t& gc_heap::promoted_bytes(int thread)
 #ifdef MULTIPLE_HEAPS
     return g_promoted [thread*16];
 #else //MULTIPLE_HEAPS
-    thread = thread;
+    UNREFERENCED_PARAMETER(thread);
     return g_promoted;
 #endif //MULTIPLE_HEAPS
 }
@@ -16913,7 +16913,7 @@ __declspec(naked) void __fastcall Prefetch(void* addr)
 #else //PREFETCH
 inline void Prefetch (void* addr)
 {
-    addr = addr;
+    UNREFERENCED_PARAMETER(addr);
 }
 #endif //PREFETCH
 #ifdef MH_SC_MARK
@@ -17856,7 +17856,7 @@ void gc_heap::background_verify_mark (Object*& object, ScanContext* sc, DWORD fl
 
 void gc_heap::background_promote (Object** ppObject, ScanContext* sc, DWORD flags)
 {
-    sc;
+    UNREFERENCED_PARAMETER(sc);
     //in order to save space on the array, mark the object,
     //knowing that it will be visited later
     assert (settings.concurrent);
@@ -21434,7 +21434,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     generation* gen = generation_of (active_new_gen_number);
                     plan_generation_start (gen, consing_gen, 0);
 
-                    if ((demotion_low == MAX_PTR))
+                    if (demotion_low == MAX_PTR)
                     {
                         demotion_low = pplug;
                         dprintf (3, ("end plan: dlow->%Ix", demotion_low));
@@ -25824,7 +25824,7 @@ void gc_heap::background_grow_c_mark_list()
 void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
                                   DWORD flags)
 {
-    sc = sc;
+    UNREFERENCED_PARAMETER(sc);
     //in order to save space on the array, mark the object,
     //knowing that it will be visited later
     assert (settings.concurrent);
@@ -31326,7 +31326,7 @@ void gc_heap::descr_card_table ()
         {
             if (card_set_p (i))
             {
-                if ((min == -1))
+                if (min == -1)
                 {
                     min = i;
                 }
@@ -32415,7 +32415,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
         }
 
         // Are we at the end of the youngest_generation?
-        if ((seg == ephemeral_heap_segment))
+        if (seg == ephemeral_heap_segment)
         {
             if (curr_object >= end_youngest)
             {
@@ -34550,7 +34550,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #endif //!MULTIPLE_HEAPS
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
-    if (!pGenGCHeap->settings.concurrent && pGenGCHeap->settings.found_finalizers || 
+    if ((!pGenGCHeap->settings.concurrent && pGenGCHeap->settings.found_finalizers) || 
         FinalizerThread::HaveExtraWorkForFinalizer())
     {
         FinalizerThread::EnableFinalization();
@@ -34668,7 +34668,7 @@ bool GCHeap::IsThreadUsingAllocationContextHeap(alloc_context* acontext, int thr
 {
 #ifdef MULTIPLE_HEAPS
     return ((acontext->home_heap == GetHeap(thread_number)) ||
-            (acontext->home_heap == 0) && (thread_number == 0));
+            ((acontext->home_heap == 0) && (thread_number == 0)));
 #else
     return true;
 #endif //MULTIPLE_HEAPS

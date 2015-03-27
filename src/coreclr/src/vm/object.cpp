@@ -2176,7 +2176,7 @@ INT32 StringObject::FastCompareStringHelper(DWORD* strAChars, INT32 countA, DWOR
             alignmentA = 0;
         }
 
-        if ((alignmentA == 0))
+        if (alignmentA == 0)
         {
             while (count >= 4)
             {

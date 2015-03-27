@@ -1815,16 +1815,20 @@ Exception *ExThrowWithInnerHelper(Exception *inner)
 
 #ifdef _DEBUG
 
-#pragma warning(disable: 4748)
+#ifdef _MSC_VER
 #pragma optimize("", off)
-#pragma warning(disable: 4748)
-
+#endif // _MSC_VER
 
 void ExThrowTrap(const char *fcn, const char *file, int line, const char *szType, HRESULT hr, const char *args)
 {
     SUPPORTS_DAC;
     return;
 }
+
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif // _MSC_VER
+
 #endif
 
 
