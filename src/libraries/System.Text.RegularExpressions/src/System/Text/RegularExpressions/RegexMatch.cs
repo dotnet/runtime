@@ -433,11 +433,9 @@ namespace System.Text.RegularExpressions
         {
             if (_caps != null)
             {
-                IEnumerator<Int32> e = _caps.Keys.GetEnumerator();
-
-                while (e.MoveNext())
+                foreach (KeyValuePair<int, int> kvp in _caps)
                 {
-                    System.Diagnostics.Debug.WriteLine("Slot " + e.Current.ToString() + " -> " + _caps[(int)e.Current].ToString());
+                    System.Diagnostics.Debug.WriteLine("Slot " + kvp.Key.ToString() + " -> " + kvp.Value.ToString());
                 }
             }
 
