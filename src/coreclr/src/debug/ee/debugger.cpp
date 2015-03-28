@@ -16732,6 +16732,18 @@ void *DebuggerHeap::Alloc(DWORD size)
     ret = pCanary->GetUserAddr();
 #endif
 
+#ifdef FEATURE_PAL
+    // We don't have executable heap in PAL, but we still need to allocate 
+    // executable memory, that's why have change protection level for 
+    // each allocation. 
+    // TODO: We need to look how JIT solves this problem.
+    DWORD unusedFlags;
+    if (!VirtualProtect(ret, size, PAGE_EXECUTE_READWRITE, &unusedFlags))
+    {
+        _ASSERTE(!"VirtualProtect failed to make this memory executable");
+    }
+#endif // FEATURE_PAL
+
     return ret;
 }
 
