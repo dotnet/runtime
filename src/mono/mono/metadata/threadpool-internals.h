@@ -24,9 +24,6 @@ void mono_thread_pool_remove_socket (int sock);
 gboolean mono_thread_pool_is_queue_array (MonoArray *o);
 void mono_internal_thread_unhandled_exception (MonoObject* exc);
 
-//TP implementations
-gpointer tp_poll_init (SocketIOData *data);
-
 //TP internals the impls use
 void check_for_interruption_critical (void);
 void socket_io_cleanup (SocketIOData *data);

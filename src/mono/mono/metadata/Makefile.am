@@ -205,6 +205,8 @@ common_sources = \
 	threadpool-internals.h	\
 	threadpool-ms.c	\
 	threadpool-ms.h	\
+	threadpool-ms-io.c	\
+	threadpool-ms-io.h	\
 	tpool-poll.c	\
 	verify.c		\
 	verify-internals.h	\

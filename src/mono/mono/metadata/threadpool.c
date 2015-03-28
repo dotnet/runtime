@@ -60,7 +60,8 @@
 #endif
 
 #include "threadpool.h"
-#include "threadpool-microsoft.h"
+#include "threadpool-ms.h"
+#include "threadpool-ms-io.h"
 
 static gboolean
 use_ms_threadpool (void)
@@ -79,8 +80,6 @@ use_ms_threadpool (void)
 
 #define THREAD_WANTS_A_BREAK(t) ((t->state & (ThreadState_StopRequested | \
 						ThreadState_SuspendRequested)) != 0)
-
-#define SMALL_STACK (128 * (sizeof (gpointer) / 4) * 1024)
 
 /* DEBUG: prints tp data every 2s */
 #undef DEBUG 
@@ -187,6 +186,8 @@ enum {
 };
 
 // #include <mono/metadata/tpool-poll.c>
+gpointer tp_poll_init (SocketIOData *data);
+
 #ifdef HAVE_EPOLL
 #include <mono/metadata/tpool-epoll.c>
 #elif defined(USE_KQUEUE_FOR_THREADPOOL)
@@ -440,7 +441,9 @@ mono_thread_pool_remove_socket (int sock)
 	MonoObject *ares;
 
 	if (use_ms_threadpool ()) {
-		mono_thread_pool_ms_remove_socket (sock);
+#ifndef DISABLE_SOCKETS
+		mono_threadpool_ms_io_remove_socket (sock);
+#endif
 		return;
 	}
 
@@ -911,7 +914,7 @@ void
 mono_thread_pool_init_tls (void)
 {
 	if (use_ms_threadpool ()) {
-		mono_thread_pool_ms_init_tls ();
+		mono_threadpool_ms_init_tls ();
 		return;
 	}
 
@@ -927,7 +930,7 @@ mono_thread_pool_init (void)
 	int result;
 	
 	if (use_ms_threadpool ()) {
-		mono_thread_pool_ms_init ();
+		mono_threadpool_ms_init ();
 		return;
 	}
 
@@ -1011,6 +1014,14 @@ icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
 	MonoAsyncResult *ares;
 
 	ares = create_simple_asyncresult (target, (MonoObject *) state);
+
+	if (use_ms_threadpool ()) {
+#ifndef DISABLE_SOCKETS
+		mono_threadpool_ms_io_add (ares, state);
+#endif
+		return;
+	}
+
 	socket_io_add (ares, state);
 }
 
@@ -1022,9 +1033,8 @@ mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *
 	MonoAsyncResult *ares;
 	MonoAsyncCall *ac;
 
-	if (use_ms_threadpool ()) {
-		return mono_thread_pool_ms_add (target, msg, async_callback, state);
-	}
+	if (use_ms_threadpool ())
+		return mono_threadpool_ms_add (target, msg, async_callback, state);
 
 	domain = mono_domain_get ();
 
@@ -1057,7 +1067,7 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 	HANDLE wait_event;
 
 	if (use_ms_threadpool ()) {
-		return mono_thread_pool_ms_finish (ares, out_args, exc);
+		return mono_threadpool_ms_finish (ares, out_args, exc);
 	}
 
 	*exc = NULL;
@@ -1112,7 +1122,7 @@ void
 mono_thread_pool_cleanup (void)
 {
 	if (use_ms_threadpool ()) {
-		mono_thread_pool_ms_cleanup ();
+		mono_threadpool_ms_cleanup ();
 		return;
 	}
 
@@ -1324,7 +1334,7 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 	guint32 start_time;
 
 	if (use_ms_threadpool ()) {
-		return mono_thread_pool_ms_remove_domain_jobs (domain, timeout);
+		return mono_threadpool_ms_remove_domain_jobs (domain, timeout);
 	}
 
 	result = TRUE;
@@ -1381,7 +1391,7 @@ gboolean
 mono_thread_pool_is_queue_array (MonoArray *o)
 {
 	if (use_ms_threadpool ()) {
-		return mono_thread_pool_ms_is_queue_array (o);
+		return mono_threadpool_ms_is_queue_array (o);
 	}
 
 	// gpointer obj = o;
@@ -1856,7 +1866,7 @@ void
 mono_thread_pool_suspend (void)
 {
 	if (use_ms_threadpool ()) {
-		mono_thread_pool_ms_suspend ();
+		mono_threadpool_ms_suspend ();
 		return;
 	}
 	suspended = TRUE;
@@ -1869,7 +1879,7 @@ void
 mono_thread_pool_resume (void)
 {
 	if (use_ms_threadpool ()) {
-		mono_thread_pool_ms_resume ();
+		mono_threadpool_ms_resume ();
 		return;
 	}
 	suspended = FALSE;

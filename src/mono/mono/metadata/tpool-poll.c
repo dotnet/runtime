@@ -31,6 +31,8 @@ static void tp_poll_shutdown (gpointer event_data);
 static void tp_poll_modify (gpointer p, int fd, int operation, int events, gboolean is_new);
 static void tp_poll_wait (gpointer p);
 
+gpointer tp_poll_init (SocketIOData *data);
+
 gpointer
 tp_poll_init (SocketIOData *data)
 {

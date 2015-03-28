@@ -1062,6 +1062,7 @@ mono_inflate_generic_signature (MonoMethodSignature *sig, MonoGenericContext *co
 
 typedef struct {
 	MonoImage *corlib;
+	MonoImage *system;
 	MonoClass *object_class;
 	MonoClass *byte_class;
 	MonoClass *void_class;
