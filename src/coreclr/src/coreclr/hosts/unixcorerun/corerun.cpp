@@ -77,11 +77,16 @@ bool GetAbsolutePath(const char* path, std::string& absolutePath)
     return result;
 }
 
-void GetDirectory(const char* path, std::string& directory)
+bool GetDirectory(const char* absolutePath, std::string& directory)
 {
-    directory.assign(path);
+    directory.assign(absolutePath);
     size_t lastSlash = directory.rfind('/');
-    directory.erase(lastSlash);   
+    if (lastSlash != std::string::npos)
+    {
+        directory.erase(lastSlash);
+        return true;
+    }
+    return false;
 }
 
 // Parse the command line arguments 
@@ -408,6 +413,14 @@ int main(const int argc, const char* argv[])
         return -1;
     }
     
+    // Make sure we have a full path for argv[0].
+    std::string argv0AbsolutePath;
+    if (!GetAbsolutePath(argv[0], argv0AbsolutePath))
+    {
+        perror("Could not get full path");
+        return -1;
+    }
+
     // Convert the specified path to CLR files to an absolute path since the libcoreclr.so
     // requires it.
     std::string clrFilesAbsolutePath;
@@ -416,9 +429,13 @@ int main(const int argc, const char* argv[])
     if (clrFilesPath == nullptr)
     {
         // There was no CLR files path specified, use the folder of the corerun
-        GetDirectory(argv[0], clrFilesRelativePath);
+        if (!GetDirectory(argv0AbsolutePath.c_str(), clrFilesRelativePath))
+        {
+            perror("Failed to get directory from argv[0]");
+            return -1;
+        }
         clrFilesPath = clrFilesRelativePath.c_str();
-            
+
         // TODO: consider using an env variable (if defined) as a fall-back.
         // The windows version of the corerun uses core_root env variable
     }
@@ -437,7 +454,7 @@ int main(const int argc, const char* argv[])
     }
     
     int exitCode = ExecuteManagedAssembly(
-                            argv[0],
+                            argv0AbsolutePath.c_str(),
                             clrFilesAbsolutePath.c_str(),
                             managedAssemblyAbsolutePath.c_str(),
                             managedAssemblyArgc,
