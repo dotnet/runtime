@@ -144,6 +144,21 @@ typedef struct
 #define mono_type_initialization_unlock() mono_mutex_unlock (&type_initialization_section)
 static mono_mutex_t type_initialization_section;
 
+
+static void
+mono_type_init_lock (TypeInitializationLock *lock)
+{
+	MONO_PREPARE_BLOCKING
+	mono_mutex_lock (&lock->initialization_section);
+	MONO_FINISH_BLOCKING
+}
+
+static void
+mono_type_init_unlock (TypeInitializationLock *lock)
+{
+	mono_mutex_unlock (&lock->initialization_section);
+}
+
 /* from vtable to lock */
 static GHashTable *type_initialization_hash;
 
@@ -347,7 +362,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			lock->waiting_count = 1;
 			lock->done = FALSE;
 			/* grab the vtable lock while this thread still owns type_initialization_section */
-			mono_mutex_lock (&lock->initialization_section);
+			mono_type_init_lock (lock);
 			g_hash_table_insert (type_initialization_hash, vtable, lock);
 			do_initialization = 1;
 		} else {
@@ -412,11 +427,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, gboolean raise_exception)
 			if (last_domain)
 				mono_domain_set (last_domain, TRUE);
 			lock->done = TRUE;
-			mono_mutex_unlock (&lock->initialization_section);
+			mono_type_init_unlock (lock);
 		} else {
 			/* this just blocks until the initializing thread is done */
-			mono_mutex_lock (&lock->initialization_section);
-			mono_mutex_unlock (&lock->initialization_section);
+			mono_type_init_lock (lock);
+			mono_type_init_unlock (lock);
 		}
 
 		mono_type_initialization_lock ();
@@ -460,7 +475,7 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 		 * and get_type_init_exception_for_class () needs to be aware of this.
 		 */
 		vtable->init_failed = 1;
-		mono_mutex_unlock (&lock->initialization_section);
+		mono_type_init_unlock (lock);
 		--lock->waiting_count;
 		if (lock->waiting_count == 0) {
 			mono_mutex_destroy (&lock->initialization_section);
