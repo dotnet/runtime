@@ -581,7 +581,7 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
 // This is a DEBUG routing to verify that a memory region complies with executable requirements
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
 {
-#if defined(CROSSGEN_COMPILE) 
+#if defined(CROSSGEN_COMPILE) || defined(FEATURE_PAL)
     // No NX support on PAL or for crossgen compilations.
     return TRUE;
 #else // !defined(CROSSGEN_COMPILE) 
