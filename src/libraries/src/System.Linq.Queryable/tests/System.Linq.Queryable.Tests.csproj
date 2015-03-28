@@ -24,6 +24,7 @@
     <ProjectReference Include="..\src\System.Linq.Queryable.csproj">
       <Project>{be12b753-c130-4b68-86e3-877f1aee52c0}</Project>
       <Name>System.Linq.Queryable</Name>
+      <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
