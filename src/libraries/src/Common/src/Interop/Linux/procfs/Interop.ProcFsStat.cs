@@ -90,28 +90,35 @@ internal static partial class Interop
 
         internal static ParsedStat ReadStatFile(int pid)
         {
-            string stat = File.ReadAllText(GetStatFilePathForProcess(pid));
-            return ParseStatFile(stat);
+            return ParseStatFile(GetStatFilePathForProcess(pid));
         }
 
         internal static ParsedStat ReadStatFile(int pid, int tid)
         {
-            string stat = File.ReadAllText(GetStatFilePathForThread(pid, tid));
-            return ParseStatFile(stat);
+            return ParseStatFile(GetStatFilePathForThread(pid, tid));
         }
 
-        private static ParsedStat ParseStatFile(string statFileContents)
+        private static ParsedStat ParseStatFile(string statFilePath)
         {
+            string statFileContents = File.ReadAllText(statFilePath);
+
             var parser = new StringParser(statFileContents, ' ');
             var results = default(ParsedStat);
 
             results.pid = parser.ParseNextInt32();
-            results.comm = parser.ParseRaw<string>((str, startIndex, endIndex) => {
-                if (str[startIndex] != '(' || str[endIndex - 1] != ')')
+            results.comm = parser.ParseRaw(delegate (string str, ref int startIndex, ref int endIndex)
+            {
+                if (str[startIndex] == '(')
                 {
-                    throw new InvalidDataException();
+                    int i;
+                    for (i = endIndex; i < str.Length && str[i - 1] != ')'; i++) ;
+                    if (str[i - 1] == ')')
+                    {
+                        endIndex = i;
+                        return str.Substring(startIndex + 1, i - startIndex - 2);
+                    }
                 }
-                return str.Substring(startIndex + 1, endIndex - startIndex - 2);
+                throw new InvalidDataException();
             });
             results.state = parser.ParseNextChar();
             parser.MoveNextOrFail(); // ppid

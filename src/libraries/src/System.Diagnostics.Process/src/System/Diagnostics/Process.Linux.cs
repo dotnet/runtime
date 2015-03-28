@@ -88,7 +88,7 @@ namespace System.Diagnostics
                 int maxCpu = IntPtr.Size == 4 ? 32 : 64;
                 for (int cpu = 0; cpu < maxCpu; cpu++)
                 {
-                    if ((bits & (cpu << 1)) != 0)
+                    if ((bits & (1u << cpu)) != 0)
                         Interop.libc.CPU_SET(cpu, &set);
                 }
 
