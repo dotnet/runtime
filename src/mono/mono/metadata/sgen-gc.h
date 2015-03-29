@@ -155,8 +155,10 @@ struct _GCMemSection {
    its use in mono_gc_base_init in sgen-gc.c */
 #define LOCK_INIT(name)	mono_mutex_init (&(name))
 #define LOCK_GC do {						\
+		MONO_PREPARE_BLOCKING	\
 		mono_mutex_lock (&gc_mutex);			\
 		MONO_GC_LOCKED ();				\
+		MONO_FINISH_BLOCKING	\
 	} while (0)
 #define UNLOCK_GC do { sgen_gc_unlock (); } while (0)
 
