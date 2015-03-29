@@ -16,8 +16,8 @@ public static class PathTests
     [Fact]
     public static void GetDirectoryName()
     {
-        Assert.Equal("dir", Path.GetDirectoryName(@"dir\baz"));
-        Assert.Equal(null, Path.GetDirectoryName(@"c:\"));
+        Assert.Equal("dir", Path.GetDirectoryName(Path.Combine("dir", "baz")));
+        Assert.Equal(null, Path.GetDirectoryName(Path.GetPathRoot(Directory.GetCurrentDirectory())));
     }
 
     [Fact]
@@ -32,22 +32,23 @@ public static class PathTests
     [Fact]
     public static void GetFileName()
     {
-        Assert.Equal("file.exe", Path.GetFileName(@"c:\bar\baz\file.exe"));
-        Assert.Equal(string.Empty, Path.GetFileName(@"c:\bar\baz\"));
+        Assert.Equal("file.exe", Path.GetFileName(Path.Combine("bar", "baz", "file.exe")));
+        Assert.Equal(string.Empty, Path.GetFileName(Path.Combine("bar", "baz") + Path.DirectorySeparatorChar));
     }
 
     [Fact]
     public static void GetFileNameWithoutExtension()
     {
-        Assert.Equal("file", Path.GetFileNameWithoutExtension(@"c:\bar\baz\file.exe"));
-        Assert.Equal(string.Empty, Path.GetFileNameWithoutExtension(@"c:\bar\baz\"));
+        Assert.Equal("file", Path.GetFileNameWithoutExtension(Path.Combine("bar","baz","file.exe")));
+        Assert.Equal(string.Empty, Path.GetFileNameWithoutExtension(Path.Combine("bar","baz") + Path.DirectorySeparatorChar));
     }
 
     [Fact]
     public static void GetPathRoot()
     {
-        Assert.Equal(@"c:\", Path.GetPathRoot(@"c:\x\y\z\"));
-        Assert.True(Path.IsPathRooted(@"c:\x\y\z\"));
+        string cwd = Directory.GetCurrentDirectory();
+        Assert.Equal(cwd.Substring(0, cwd.IndexOf(Path.DirectorySeparatorChar) + 1), Path.GetPathRoot(cwd));
+        Assert.True(Path.IsPathRooted(cwd));
         Assert.Equal(string.Empty, Path.GetPathRoot(@"file.exe"));
         Assert.False(Path.IsPathRooted("file.exe"));
     }
