@@ -70,6 +70,8 @@ inner_start_thread (void *arg)
 	start_info->handle = handle;
 
 	info = mono_thread_info_attach (&result);
+	MONO_PREPARE_BLOCKING
+
 	info->runtime_thread = TRUE;
 	info->handle = handle;
 
@@ -89,6 +91,7 @@ inner_start_thread (void *arg)
 		MONO_SEM_DESTROY (&info->create_suspended_sem);
 	}
 
+	MONO_FINISH_BLOCKING
 	/* Run the actual main function of the thread */
 	result = start_func (t_arg);
 
