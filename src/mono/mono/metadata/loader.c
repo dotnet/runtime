@@ -2455,7 +2455,10 @@ static gboolean loader_lock_track_ownership = FALSE;
 void
 mono_loader_lock (void)
 {
+	MONO_PREPARE_BLOCKING
 	mono_locks_acquire (&loader_mutex, LoaderLock);
+	MONO_FINISH_BLOCKING
+		
 	if (G_UNLIKELY (loader_lock_track_ownership)) {
 		mono_native_tls_set_value (loader_lock_nest_id, GUINT_TO_POINTER (GPOINTER_TO_UINT (mono_native_tls_get_value (loader_lock_nest_id)) + 1));
 	}

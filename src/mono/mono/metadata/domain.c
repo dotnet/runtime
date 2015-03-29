@@ -1915,3 +1915,17 @@ mono_get_aot_cache_config (void)
 {
 	return &aot_cache_config;
 }
+
+void
+mono_domain_lock (MonoDomain *domain)
+{
+	MONO_PREPARE_BLOCKING
+	mono_locks_acquire (&(domain)->lock, DomainLock);
+	MONO_FINISH_BLOCKING
+}
+
+void
+mono_domain_unlock (MonoDomain *domain)
+{
+	mono_locks_release (&(domain)->lock, DomainLock);
+}

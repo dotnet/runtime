@@ -431,14 +431,15 @@ typedef struct  {
 	const AssemblyVersionSet version_sets [4];
 } MonoRuntimeInfo;
 
-#define mono_domain_lock(domain) mono_locks_acquire(&(domain)->lock, DomainLock)
-#define mono_domain_unlock(domain) mono_locks_release(&(domain)->lock, DomainLock)
 #define mono_domain_assemblies_lock(domain) mono_locks_acquire(&(domain)->assemblies_lock, DomainAssembliesLock)
 #define mono_domain_assemblies_unlock(domain) mono_locks_release(&(domain)->assemblies_lock, DomainAssembliesLock)
 #define mono_domain_jit_code_hash_lock(domain) mono_locks_acquire(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 #define mono_domain_jit_code_hash_unlock(domain) mono_locks_release(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 
 typedef MonoDomain* (*MonoLoadFunc) (const char *filename, const char *runtime_version);
+
+void mono_domain_lock (MonoDomain *domain);
+void mono_domain_unlock (MonoDomain *domain);
 
 void
 mono_install_runtime_load  (MonoLoadFunc func);
