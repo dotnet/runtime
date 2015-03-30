@@ -159,14 +159,16 @@ namespace System.IO
             return result;
         }
 
+        internal delegate T ParseRawFunc<T>(string buffer, ref int startIndex, ref int endIndex);
+
         /// <summary>
         /// Moves to the next component and hands the raw buffer and indexing data to a selector function
         /// that can validate and return the appropriate data from the component.
         /// </summary>
-        internal T ParseRaw<T>(Func<string, int, int, T> selector)
+        internal T ParseRaw<T>(ParseRawFunc<T> selector)
         {
             MoveNextOrFail();
-            return selector(_buffer, _startIndex, _endIndex);
+            return selector(_buffer, ref _startIndex, ref _endIndex);
         }
 
         /// <summary>Throws unconditionally for invalid data.</summary>

@@ -191,7 +191,7 @@ namespace System.Diagnostics
             Debug.Assert(Monitor.IsEntered(_gate));
 
             _exited = true;
-            _exitTime = DateTime.UtcNow; // TODO: Should be DateTime.Now, but that's currently asserting in the JIT in time zone code
+            _exitTime = DateTime.Now;
             if (_exitedEvent != null)
             {
                 _exitedEvent.Set();
@@ -296,6 +296,11 @@ namespace System.Diagnostics
                     if (Interop.libc.WIFEXITED(status))
                     {
                         _exitCode = Interop.libc.WEXITSTATUS(status);
+                    }
+                    else if (Interop.libc.WIFSIGNALED(status))
+                    {
+                        const int ExitCodeSignalOffset = 128;
+                        _exitCode = ExitCodeSignalOffset + Interop.libc.WTERMSIG(status);
                     }
                     SetExited();
                     return;
@@ -509,7 +514,7 @@ namespace System.Diagnostics
         /// <summary>Gets a current time stamp.</summary>
         private static long GetTimestamp()
         {
-            return DateTime.UtcNow.Ticks; // TODO: Change to use Stopwatch.GetTimestamp() once it's available
+            return Stopwatch.GetTimestamp();
         }
 
     }

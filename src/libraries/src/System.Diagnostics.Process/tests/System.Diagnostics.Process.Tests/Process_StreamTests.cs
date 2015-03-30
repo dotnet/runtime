@@ -30,7 +30,7 @@ namespace System.Diagnostics.ProcessTests
             Process p = CreateProcessError();
             p.StartInfo.RedirectStandardError = true;
             p.Start();
-            Assert.Equal(p.StandardError.ReadToEnd(), TestExeName + " error stream\r\n");
+            Assert.Equal(p.StandardError.ReadToEnd(), TestExeName + " error stream" + Environment.NewLine);
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
