@@ -43,17 +43,83 @@ namespace System.Globalization
         private unsafe bool InitCultureData()
         {
             // TODO: Implement this fully.
-            sWindowsName = "";
-            sRealName = "";
-            sSpecificCulture = "";
-            sName = "";
-            bNeutral = false;
-            sNegativeSign = "-";
-            sThousandSeparator = ",";
-            sDecimalSeparator = ".";
-            sCurrency = "\u00A4";
-            sMonetaryDecimal = ".";
-            sMonetaryThousand = ",";
+
+            // For now, just use all of the Invariant's data
+            CultureData invariant = CultureData.Invariant;
+
+            this.sRealName = invariant.sRealName;
+            this.sWindowsName = invariant.sWindowsName;
+
+            // Identity
+            this.sName = invariant.sName;
+            this.sParent = invariant.sParent;
+            this.bNeutral = invariant.bNeutral;
+            this.sEnglishDisplayName = invariant.sEnglishDisplayName;
+            this.sNativeDisplayName = invariant.sNativeDisplayName;
+            this.sSpecificCulture = invariant.sSpecificCulture;
+
+            // Language
+            this.sISO639Language = invariant.sISO639Language;
+            this.sLocalizedLanguage = invariant.sLocalizedLanguage;
+            this.sEnglishLanguage = invariant.sEnglishLanguage;
+            this.sNativeLanguage = invariant.sNativeLanguage;
+
+            // Region
+            this.sRegionName = invariant.sRegionName;
+            this.sEnglishCountry = invariant.sEnglishCountry;
+            this.sNativeCountry = invariant.sNativeCountry;
+            this.sISO3166CountryName = invariant.sISO3166CountryName;
+
+            // Numbers
+            this.sPositiveSign = invariant.sPositiveSign;
+            this.sNegativeSign = invariant.sNegativeSign;
+            this.saNativeDigits = invariant.saNativeDigits;
+            this.iDigits = invariant.iDigits;
+            this.iNegativeNumber = invariant.iNegativeNumber;
+            this.waGrouping = invariant.waGrouping;
+            this.sDecimalSeparator = invariant.sDecimalSeparator;
+            this.sThousandSeparator = invariant.sThousandSeparator;
+            this.sNaN = invariant.sNaN;
+            this.sPositiveInfinity = invariant.sPositiveInfinity;
+            this.sNegativeInfinity = invariant.sNegativeInfinity;
+
+            // Percent
+            this.iNegativePercent = invariant.iNegativePercent;
+            this.iPositivePercent = invariant.iPositivePercent;
+            this.sPercent = invariant.sPercent;
+            this.sPerMille = invariant.sPerMille;
+
+            // Currency
+            this.sCurrency = invariant.sCurrency;
+            this.sIntlMonetarySymbol = invariant.sIntlMonetarySymbol;
+            this.iCurrencyDigits = invariant.iCurrencyDigits;
+            this.iCurrency = invariant.iCurrency;
+            this.iNegativeCurrency = invariant.iNegativeCurrency;
+            this.waMonetaryGrouping = invariant.waMonetaryGrouping;
+            this.sMonetaryDecimal = invariant.sMonetaryDecimal;
+            this.sMonetaryThousand = invariant.sMonetaryThousand;
+
+            // Misc
+            this.iMeasure = invariant.iMeasure;
+            this.sListSeparator = invariant.sListSeparator;
+
+            // Time
+            this.sAM1159 = invariant.sAM1159;
+            this.sPM2359 = invariant.sPM2359;
+            this.saLongTimes = invariant.saLongTimes;
+            this.saShortTimes = invariant.saShortTimes;
+            this.saDurationFormats = invariant.saDurationFormats;
+
+            // Calendar specific data
+            this.iFirstDayOfWeek = invariant.iFirstDayOfWeek;
+            this.iFirstWeekOfYear = invariant.iFirstWeekOfYear;
+            this.waCalendars = invariant.waCalendars;
+
+            // Store for specific data about each calendar
+            this.calendars = invariant.calendars;
+
+            // Text information
+            this.iReadingLayout = invariant.iReadingLayout;
 
             return true;
         }
