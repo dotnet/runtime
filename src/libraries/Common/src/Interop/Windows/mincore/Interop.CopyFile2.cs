@@ -9,7 +9,7 @@ internal partial class Interop
     internal partial class mincore
     {
         [DllImport(Libraries.CoreFile_L2, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal static extern int CopyFile2(string pwszExistingFileName, string pwszNewFileName, ref COPYFILE2_EXTENDED_PARAMETERS pExtendedParameters);
+        private static extern int CopyFile2(string pwszExistingFileName, string pwszNewFileName, ref COPYFILE2_EXTENDED_PARAMETERS pExtendedParameters);
 
         internal struct COPYFILE2_EXTENDED_PARAMETERS
         {

@@ -15,7 +15,7 @@ internal partial class Interop
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
             System.IO.FileMode dwCreationDisposition,
-            [In] ref CREATEFILE2_EXTENDED_PARAMETERS parameters);
+            [In] ref Interop.CREATEFILE2_EXTENDED_PARAMETERS parameters);
 
         internal struct CREATEFILE2_EXTENDED_PARAMETERS
         {
