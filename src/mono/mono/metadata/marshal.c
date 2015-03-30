@@ -714,29 +714,32 @@ mono_string_builder_new (int starting_string_length)
 	if (initial_len < 0)
 		initial_len = 0;
 
-	if (!string_builder_class) {
+	if (!sb_ctor) {
 		MonoMethodDesc *desc;
+		MonoMethod *m;
 
 		string_builder_class = mono_class_from_name (mono_defaults.corlib, "System.Text", "StringBuilder");
 		g_assert (string_builder_class);
 		desc = mono_method_desc_new (":.ctor(int)", FALSE);
-		sb_ctor = mono_method_desc_search_in_class (desc, string_builder_class);
-		g_assert (sb_ctor);
+		m = mono_method_desc_search_in_class (desc, string_builder_class);
+		g_assert (m);
 		mono_method_desc_free (desc);
-
-		// We make a new array in the _to_builder function, so this
-		// array will always be garbage collected.
-		args [0] = &initial_len;
+		mono_memory_barrier ();
+		sb_ctor = m;
 	}
+
+	// We make a new array in the _to_builder function, so this
+	// array will always be garbage collected.
+	args [0] = &initial_len;
 
 	MonoStringBuilder *sb = (MonoStringBuilder*)mono_object_new (mono_domain_get (), string_builder_class);
 	MonoObject *exc;
 	g_assert (sb);
 
 	mono_runtime_invoke (sb_ctor, sb, args, &exc);
+	g_assert (!exc);
 
 	g_assert (sb->chunkChars->max_length >= initial_len);
-	g_assert (!exc);
 
 	return sb;
 }
