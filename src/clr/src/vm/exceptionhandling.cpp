@@ -3518,6 +3518,36 @@ void ExceptionTracker::PopTrackers(
     }
 }
 
+// Save the state of the source exception tracker
+void ExceptionTracker::PartialTrackerState::Save(const ExceptionTracker* pSourceTracker)
+{
+    m_sfResumeStackFrame = pSourceTracker->m_sfResumeStackFrame;
+    m_ScannedStackRange = pSourceTracker->m_ScannedStackRange;
+    m_uCatchToCallPC = pSourceTracker->m_uCatchToCallPC;
+    m_pClauseForCatchToken = pSourceTracker->m_pClauseForCatchToken;
+    m_ClauseForCatch = pSourceTracker->m_ClauseForCatch;
+    m_ExceptionFlags = pSourceTracker->m_ExceptionFlags;
+    m_sfLastUnwoundEstablisherFrame = pSourceTracker->m_sfLastUnwoundEstablisherFrame;
+    m_EHClauseInfo = pSourceTracker->m_EHClauseInfo;
+    m_EnclosingClauseInfo = pSourceTracker->m_EnclosingClauseInfo;
+    m_EnclosingClauseInfoForGCReporting = pSourceTracker->m_EnclosingClauseInfoForGCReporting;
+}
+
+// Restore the state into the target exception tracker
+void ExceptionTracker::PartialTrackerState::Restore(ExceptionTracker* pTargetTracker)
+{
+    pTargetTracker->m_sfResumeStackFrame = m_sfResumeStackFrame;
+    pTargetTracker->m_ScannedStackRange = m_ScannedStackRange;
+    pTargetTracker->m_uCatchToCallPC = m_uCatchToCallPC;
+    pTargetTracker->m_pClauseForCatchToken = m_pClauseForCatchToken;
+    pTargetTracker->m_ClauseForCatch = m_ClauseForCatch;
+    pTargetTracker->m_ExceptionFlags = m_ExceptionFlags;
+    pTargetTracker->m_sfLastUnwoundEstablisherFrame = m_sfLastUnwoundEstablisherFrame;
+    pTargetTracker->m_EHClauseInfo = m_EHClauseInfo;
+    pTargetTracker->m_EnclosingClauseInfo = m_EnclosingClauseInfo;
+    pTargetTracker->m_EnclosingClauseInfoForGCReporting = m_EnclosingClauseInfoForGCReporting;
+}
+
 //
 // static
 ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
@@ -3550,12 +3580,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
     bool fIsInterleavedHandling = false;
     bool fTransitionFromSecondToFirstPass = false;
 
-    StackFrame previousTrackerResumeStackFrame;
-    StackRange previousTrackerScannedStackRange;
-    UINT_PTR previousTrackerCatchToCallPC;
-    PTR_EXCEPTION_CLAUSE_TOKEN previousTrackerClauseForCatchToken;
-    EE_ILEXCEPTION_CLAUSE previousTrackerClauseForCatch;
-    ExceptionFlags previousTrackerExceptionFlags;
+    PartialTrackerState previousTrackerPartialState;
 
     // Initialize the out parameter.
     *pStackTraceState = STS_Append;
@@ -3594,12 +3619,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
                 {
                     // Remember part of the current state that needs to be transferred to
                     // the newly created tracker.
-                    previousTrackerResumeStackFrame = pTracker->m_sfResumeStackFrame;
-                    previousTrackerScannedStackRange = pTracker->m_ScannedStackRange;
-                    previousTrackerCatchToCallPC = pTracker->m_uCatchToCallPC;
-                    previousTrackerClauseForCatchToken = pTracker->m_pClauseForCatchToken;
-                    previousTrackerClauseForCatch = pTracker->m_ClauseForCatch;
-                    previousTrackerExceptionFlags = pTracker->m_ExceptionFlags;
+                    previousTrackerPartialState.Save(pTracker);
 
                     // We just transitioned from 2nd pass to 1st pass when we handle the exception in an interleaved manner
                     EH_LOG((LL_INFO100, ">>continued processing of PREVIOUS exception (interleaved handling)\n"));
@@ -3695,12 +3715,12 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
             // series of first and second passes. When we create a new tracker as a result
             // of switching from the 2nd pass back to the 1st pass, we need to carry over
             // several members that were set when processing one of the previous frames.
-            pNewTracker->m_sfResumeStackFrame = previousTrackerResumeStackFrame;
-            pNewTracker->m_uCatchToCallPC = previousTrackerCatchToCallPC;
-            pNewTracker->m_pClauseForCatchToken = previousTrackerClauseForCatchToken;
-            pNewTracker->m_ClauseForCatch = previousTrackerClauseForCatch;
-            pNewTracker->m_ExceptionFlags = previousTrackerExceptionFlags;
-            pNewTracker->m_ScannedStackRange = previousTrackerScannedStackRange;
+            previousTrackerPartialState.Restore(pNewTracker);
+            // Reset the 'unwind has started' flag to indicate we are in the first pass again
+            pNewTracker->m_ExceptionFlags.ResetUnwindHasStarted();
+            // Remember the current scanned stack range so that we can restore it after
+            // switching to the 2nd pass.
+            pNewTracker->m_secondPassInitialScannedStackRange = pNewTracker->m_ScannedStackRange;
         }
 
         CONSISTENCY_CHECK(pNewTracker->IsValid());
@@ -3853,10 +3873,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
                 // We have to detect this transition because otherwise we break when unmanaged code
                 // catches our exceptions.
                 EH_LOG((LL_INFO100, ">>tracker transitioned to second pass\n"));
-                if (!fIsInterleavedHandling)
-                {
-                    pTracker->m_ScannedStackRange.Reset();
-                }
+                pTracker->m_ScannedStackRange = pTracker->m_secondPassInitialScannedStackRange;
 
                 pTracker->m_ExceptionFlags.SetUnwindHasStarted();
                 if (pTracker->m_ExceptionFlags.UnwindingToFindResumeFrame())
