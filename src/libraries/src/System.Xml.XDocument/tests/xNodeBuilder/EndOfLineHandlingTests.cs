@@ -222,7 +222,7 @@ namespace CoreXml.Test.XLinq
                 {
                     XDocument d = new XDocument();
                     XmlWriter w = CreateWriter(d);
-                    TestLog.Compare(w.Settings.NewLineChars, "\r\n", "Incorect default value for XmlWriter.Settings.NewLineChars");
+                    TestLog.Compare(w.Settings.NewLineChars, Environment.NewLine, "Incorect default value for XmlWriter.Settings.NewLineChars");
                     TestLog.Compare(w.Settings.IndentChars, "  ", "Incorect default value for XmlWriter.Settings.IndentChars");
 
                     w.WriteStartElement("root");

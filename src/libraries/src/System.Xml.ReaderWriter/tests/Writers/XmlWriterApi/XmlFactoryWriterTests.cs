@@ -79,10 +79,10 @@ namespace XmlWriterAPI.Test
         public int default_4()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
-            CError.Equals(wSettings.NewLineChars, "\r\n", "Incorrect default value of NewLineChars");
+            CError.Equals(wSettings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
 
             XmlWriter w = CreateWriter();
-            CError.Equals(w.Settings.NewLineChars, "\r\n", "Incorrect default value of NewLineChars");
+            CError.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
 
             w.Dispose();
             return TEST_PASS;
@@ -205,7 +205,7 @@ namespace XmlWriterAPI.Test
             CError.Equals(wSettings.Encoding, Encoding.UTF8, "Encoding");
             CError.Equals(wSettings.OmitXmlDeclaration, false, "OmitXmlDeclaration");
             CError.Equals(wSettings.NewLineHandling, NewLineHandling.Replace, "NewLineHandling");
-            CError.Equals(wSettings.NewLineChars, "\r\n", "NewLineChars");
+            CError.Equals(wSettings.NewLineChars, Environment.NewLine, "NewLineChars");
             CError.Equals(wSettings.Indent, false, "Indent");
             CError.Equals(wSettings.IndentChars, "  ", "IndentChars");
             CError.Equals(wSettings.NewLineOnAttributes, false, "NewLineOnAttributes");
@@ -646,14 +646,14 @@ namespace XmlWriterAPI.Test
                     w.WriteComment(invalidXML[2].ToString());
                     w.WriteEndElement();
                     w.Dispose();
-                    string exp = IsIndent() ? "<Root>\r\n  <!--\u000B-->\r\n</Root>" : "<Root><!--\u000B--></Root>";
+                    string exp = IsIndent() ? "<Root>" + Environment.NewLine + "  <!--\u000B-->" + Environment.NewLine + "</Root>" : "<Root><!--\u000B--></Root>";
                     return CompareString(exp) ? TEST_PASS : TEST_FAIL;
 
                 case "PI":
                     w.WriteProcessingInstruction("pi", invalidXML[6].ToString());
                     w.WriteEndElement();
                     w.Dispose();
-                    exp = IsIndent() ? "<Root>\r\n  <?pi \uFFFE?>\r\n</Root>" : "<Root><?pi \uFFFE?></Root>";
+                    exp = IsIndent() ? "<Root>" + Environment.NewLine + "  <?pi \uFFFE?>" + Environment.NewLine + "</Root>" : "<Root><?pi \uFFFE?></Root>";
                     return CompareString(exp) ? TEST_PASS : TEST_FAIL;
 
                 case "RawString":

@@ -112,7 +112,7 @@ namespace System.Collections.Concurrent.Tests
             for (int i = 0; i < expectKeys.Count; i++)
             {
                 Assert.True(expectKeys[i].Equals(gotKeys[i]),
-                    String.Format("The set of keys in the dictionary is are not the same as the expected\r\n" +
+                    String.Format("The set of keys in the dictionary is are not the same as the expected" + Environment.NewLine +
                             "TestAdd1(cLevel={0}, initSize={1}, threads={2}, addsPerThread={3})", cLevel, initSize, threads, addsPerThread)
                    );
             }
@@ -185,7 +185,7 @@ namespace System.Collections.Concurrent.Tests
             for (int i = 0; i < expectKeys.Count; i++)
             {
                 Assert.True(expectKeys[i].Equals(gotKeys[i]),
-                   String.Format("The set of keys in the dictionary is are not the same as the expected.\r\n" +
+                   String.Format("The set of keys in the dictionary is are not the same as the expected." + Environment.NewLine +
                            "TestUpdate1(cLevel={0}, threads={1}, updatesPerThread={2})", cLevel, threads, updatesPerThread)
                   );
             }
@@ -494,7 +494,8 @@ namespace System.Collections.Concurrent.Tests
             for (int i = 0; i < expectKeys.Count; i++)
             {
                 Assert.True(expectKeys[i].Equals(gotKeys[i]), 
-                    String.Format("* Test '{4}': Level={0}, initSize={1}, threads={2}, addsPerThread={3})\r\n > FAILED.  The set of keys in the dictionary is are not the same as the expected.", 
+                    String.Format("* Test '{4}': Level={0}, initSize={1}, threads={2}, addsPerThread={3})" + Environment.NewLine + 
+                    "> FAILED.  The set of keys in the dictionary is are not the same as the expected.", 
                     cLevel, initSize, threads, addsPerThread, isAdd ? "GetOrAdd" : "GetOrUpdate"));
             }
 
