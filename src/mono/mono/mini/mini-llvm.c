@@ -2617,6 +2617,10 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 
 		ctx->bblocks [bb->block_num].end_bblock = target_bb;
 	}
+	return;
+
+ FAILURE:
+	return;
 }
 
 static void
