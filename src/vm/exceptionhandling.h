@@ -660,11 +660,44 @@ private: ;
         bool     m_fEnclosingClauseIsFunclet;
     };
 
+    // This class saves partial state of an exception tracker that needs to
+    // be preserved when transitioning from the 2nd to 1st pass during the
+    // interleaved exception handling before processing next segment of
+    // managed stack frames.
+    // The exception tracker is recreated during such transition and
+    // only a subset of the exception tracker state defined by this class
+    // is propagated to the new tracker instance.
+    class PartialTrackerState
+    {
+        StackFrame m_sfResumeStackFrame;
+        StackRange m_ScannedStackRange;
+        UINT_PTR m_uCatchToCallPC;
+        PTR_EXCEPTION_CLAUSE_TOKEN m_pClauseForCatchToken;
+        EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
+        ExceptionFlags m_ExceptionFlags;
+        StackFrame m_sfLastUnwoundEstablisherFrame;
+        EHClauseInfo m_EHClauseInfo;
+        EnclosingClauseInfo m_EnclosingClauseInfo;
+        EnclosingClauseInfo m_EnclosingClauseInfoForGCReporting;
+
+    public:
+        // Save the state of the source exception tracker
+        void Save(const ExceptionTracker* pSourceTracker);
+        // Restore the state into the target exception tracker
+        void Restore(ExceptionTracker* pTargetTracker);
+    };
+
     PTR_ExceptionTracker    m_pPrevNestedInfo;
     Thread*                 m_pThread;          // this is used as an IsValid/IsFree field -- if it's NULL, the allocator can
                                                 // reuse its memory, if it's non-NULL, it better be a valid thread pointer
 
     StackRange              m_ScannedStackRange;
+    // Range used to initialize the m_ScannedStackRange at start of the 2nd pass.
+    // This is: 
+    // 1) null range for non-interleaved exception handling and the very first
+    //    2nd pass of the interleaved handling and
+    // 2) non-null for the other 2nd passes of the interleaved handling.
+    StackRange              m_secondPassInitialScannedStackRange;
     DAC_EXCEPTION_POINTERS  m_ptrs;
     OBJECTHANDLE            m_hThrowable;
     StackTraceInfo          m_StackTraceInfo;
