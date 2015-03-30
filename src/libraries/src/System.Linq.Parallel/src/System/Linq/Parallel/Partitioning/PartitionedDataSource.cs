@@ -86,7 +86,6 @@ namespace System.Linq.Parallel
             if (sourceAsList != null)
             {
                 QueryOperatorEnumerator<T, int>[] partitions = new QueryOperatorEnumerator<T, int>[partitionCount];
-                int listCount = sourceAsList.Count;
 
                 // We use this below to specialize enumerators when possible.
                 T[] sourceAsArray = source as T[];

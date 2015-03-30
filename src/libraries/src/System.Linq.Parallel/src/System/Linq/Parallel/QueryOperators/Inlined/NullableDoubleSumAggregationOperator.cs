@@ -110,7 +110,7 @@ namespace System.Linq.Parallel
                     while (source.MoveNext(ref element, ref keyUnused));
 
                     // The sum has been calculated. Now just return.
-                    currentElement = new double?(tempSum);
+                    currentElement = tempSum;
                     return true;
                 }
 
