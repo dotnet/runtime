@@ -379,9 +379,11 @@ get_filesystem_entries (MonoString *path,
 	g_free (utf8_path);
 	return names;
 fail:
-	for (i = 0; i < names->len; i++)
-		g_free (g_ptr_array_index (names, i));
-	g_ptr_array_free (names, TRUE);
+	if (names) {
+		for (i = 0; i < names->len; i++)
+			g_free (g_ptr_array_index (names, i));
+		g_ptr_array_free (names, TRUE);
+	}
 	g_free (utf8_path);
 	return FALSE;
 }
