@@ -972,6 +972,12 @@ if test x$enable_gsharing = xyes; then
 	AC_DEFINE(ENABLE_GSHAREDVT,1,[Gsharing])
 fi
 
+# A synonym
+AC_ARG_ENABLE(gsharedvt, [  --enable-gsharedvt Enable generic valuetype sharing], enable_gsharedvt=$enableval, enable_gsharedvt=no)
+if test x$enable_gsharedvt = xyes; then
+	AC_DEFINE(ENABLE_GSHAREDVT,1,[Gsharedvt])
+fi
+
 AC_ARG_ENABLE(native-types, [  --enable-native-types Enable native types], enable_native_types=$enableval, enable_native_types=no)
 if test x$enable_native_types = xyes; then
 	AC_DEFINE(MONO_NATIVE_TYPES,1,[native types])
