@@ -13,74 +13,39 @@ namespace XMLTests.ReaderWriter.XmlResolverTests
     public class XmlSystemPathResolverTests
     {
         private const int k_getUniqueFileNameAttempts = 10;
-        private const string k_existingFileName = "Empty.xml";
-
-        [DllImport("api-ms-win-core-file-l1-2-1.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern uint GetCompressedFileSizeW(string lpFileName, out uint lpFileSizeHigh);
-
-        private static bool FileExists(string path)
-        {
-            const uint INVALID_FILE_SIZE = 0xFFFFFFFF;
-            const uint NO_ERROR = 0;
-
-            uint high;
-            uint low = GetCompressedFileSizeW(path, out high);
-
-            if (low == INVALID_FILE_SIZE && Marshal.GetLastWin32Error() != NO_ERROR)
-                return false;
-
-            return true;
-        }
-
-        private static string GetExistingFileName()
-        {
-            // Sanity check: ensure the file that we expect to exist does,
-            // so that it is clear when the test fails due to infrastructure misconfiguration.
-            if (!FileExists(k_existingFileName))
-            {
-                Assert.True(false, string.Format("Test infrastructure error: Failed to find test resource: {0}", k_existingFileName));
-            }
-
-            return k_existingFileName;
-        }
 
         [Fact]
         public static void TestResolveRelativePaths()
         {
-            string path = GetExistingFileName();
-            XmlReader.Create(path).Dispose();
-            XmlReader.Create(Path.Combine("./", path)).Dispose();
-        }
-
-        [DllImport("api-ms-win-core-processenvironment-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern uint GetCurrentDirectoryW(uint nBufferLength, [Out] StringBuilder lpBuffer);
-
-        private static string GetCurrentDirectory()
-        {
-            // The generated interop code assumes that a StringBuilder
-            // parameter for a PInvoke method cannot be null. So we cannot use GetCurrentDirectoryW(0, null)
-            // to determine the actual size of the buffer required for the current directory. In addition,
-            // the documentation for GetCurrentDirectory does not specify an upper bound on the size lpBuffer,
-            // so we assume that MAX_PATH will work for the purposes of this test.
-            // See http://msdn.microsoft.com/en-us/library/windows/desktop/aa364934(v=vs.85).aspx
-            const int MAX_PATH = 260;
-            StringBuilder builder = new StringBuilder(MAX_PATH);
-            uint result = GetCurrentDirectoryW(MAX_PATH, builder);
-
-            if (result == 0)
+            string path = Path.GetRandomFileName();
+            bool shouldDelete = !File.Exists(path);
+            File.Open(path, FileMode.OpenOrCreate).Dispose();
+            try
             {
-                // GetCurrentDirectoryW was unable to write all the necessary characters into builder
-                Assert.True(false, "Test infrastructure error: failed to get the current directory");
+                XmlReader.Create(path).Dispose();
+                XmlReader.Create(Path.Combine(".", path)).Dispose();
             }
-
-            return builder.ToString();
+            finally
+            {
+                if (shouldDelete)
+                {
+                    File.Delete(path);
+                }
+            }
         }
 
         [Fact]
         public static void TestResolveAbsolutePath()
         {
-            string path = Path.Combine(GetCurrentDirectory(), GetExistingFileName());
-            XmlReader.Create(path).Dispose();
+            string path = Path.GetTempFileName();
+            try
+            {
+                XmlReader.Create(path).Dispose();
+            }
+            finally
+            {
+                File.Delete(path);
+            }
         }
 
         private static string GetNonExistentFileName()
@@ -88,7 +53,7 @@ namespace XMLTests.ReaderWriter.XmlResolverTests
             for (int i = 0; i < k_getUniqueFileNameAttempts; ++i)
             {
                 string fileName = Path.GetRandomFileName();
-                if (!FileExists(fileName))
+                if (!File.Exists(fileName))
                     return fileName;
             }
 
@@ -100,7 +65,7 @@ namespace XMLTests.ReaderWriter.XmlResolverTests
         public static void TestResolveNonExistentPath()
         {
             string relativePath = GetNonExistentFileName();
-            string absolutePath = Path.Combine(GetCurrentDirectory(), relativePath);
+            string absolutePath = Path.Combine(Directory.GetCurrentDirectory(), relativePath);
             Assert.Throws<FileNotFoundException>(() => XmlReader.Create(relativePath));
             Assert.Throws<FileNotFoundException>(() => XmlReader.Create(absolutePath));
         }
