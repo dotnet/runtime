@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Xml.Linq;
@@ -1283,7 +1284,7 @@ namespace SerializationTypes
         public SimpleDC() { }
         public SimpleDC(bool init)
         {
-            Data = DateTime.MaxValue.ToString("T");
+            Data = DateTime.MaxValue.ToString("T", CultureInfo.InvariantCulture);
         }
     }
 
