@@ -2587,10 +2587,10 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 			LLVMBuildStore (ctx->builder, convert (ctx, ex_obj, type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
 		}
 	}
+#endif
 
 	target_bb = bblocks [bb->block_num].call_handler_target_bb;
 	g_assert (target_bb);
-#endif
 
 	/*
 	 * Branch to the correct landing pad
