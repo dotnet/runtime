@@ -331,8 +331,10 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		if (!rethrow)
+		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		}
 	}
 	mono_handle_exception (&ctx, exc);
 	mono_restore_context (&ctx);

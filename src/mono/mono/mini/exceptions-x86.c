@@ -463,8 +463,10 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		if (!rethrow)
+		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		}
 	}
 
 	/* adjust eip so that it point into the call instruction */
