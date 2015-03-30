@@ -28,6 +28,10 @@ unix_sources = \
 platform_sources = $(unix_sources)
 endif
 
+if PLATFORM_ANDROID
+platform_sources += ../../support/libm/complex.c
+endif
+
 if SHARED_MONO
 if SUPPORT_BOEHM
 bin_PROGRAMS = pedump
