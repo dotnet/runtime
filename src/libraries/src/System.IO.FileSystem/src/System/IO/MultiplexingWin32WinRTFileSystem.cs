@@ -13,7 +13,7 @@ namespace System.IO
         private readonly FileSystem _winRTFileSystem = new WinRTFileSystem();
 
         public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
-        public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
+        public override int MaxDirectoryPath { get { return Interop.MAX_DIRECTORY_PATH; } }
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
@@ -157,7 +157,7 @@ namespace System.IO
             {
                 // first use GetFileAttributesEx as it is faster than FindFirstFile and requires minimum permissions
                 Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.mincore.WIN32_FILE_ATTRIBUTE_DATA();
-                if (Interop.mincore.GetFileAttributesEx(fullPath, Interop.mincore.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
+                if (Interop.mincore.GetFileAttributesEx(fullPath, Interop.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
                     // got the attributes
                     if ((data.fileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0 ||
@@ -180,7 +180,7 @@ namespace System.IO
                                 Debug.Assert((findData.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
                                 Debug.Assert((findData.dwFileAttributes & Interop.mincore.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0);
 
-                                useWinRt = findData.dwReserved0 == Interop.mincore.IOReparseOptions.IO_REPARSE_TAG_FILE_PLACEHOLDER;
+                                useWinRt = findData.dwReserved0 == Interop.mincore.IOReparseOptions.IO_REPARSE_TTAG_FILE_PLACEHOLDER;
                                 break;
                             }
                         }

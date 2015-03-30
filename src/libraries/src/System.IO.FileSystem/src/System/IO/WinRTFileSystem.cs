@@ -18,7 +18,7 @@ namespace System.IO
     internal sealed partial class WinRTFileSystem : FileSystem
     {
         public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
-        public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
+        public override int MaxDirectoryPath { get { return Interop.MAX_DIRECTORY_PATH; } }
 
         private static System.IO.FileAttributes ConvertFileAttributes(WinRTFileAttributes fileAttributes)
         {
@@ -102,7 +102,7 @@ namespace System.IO
 
         private async Task<StorageFolder> CreateDirectoryAsync(string fullPath, bool failIfExists)
         {
-            if (fullPath.Length >= Interop.mincore.MAX_DIRECTORY_PATH)
+            if (fullPath.Length >= Interop.MAX_DIRECTORY_PATH)
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
             Stack<string> stackDir = new Stack<string>();
