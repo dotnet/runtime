@@ -603,7 +603,9 @@ Use special unicode characters
         Miscellaneous/Regression scenarios
         *********************************************************/
        new RegexTestCase(@"(?<openingtag>1)(?<content>.*?)(?=2)", RegexOptions.Singleline | RegexOptions.ExplicitCapture,
-           "1\r\n<Projecaa DefaultTargets=\"x\"/>\r\n2", new string[] {"1\r\n<Projecaa DefaultTargets=\"x\"/>\r\n", "1", "\r\n<Projecaa DefaultTargets=\"x\"/>\r\n"}),
+           "1" + Environment.NewLine + "<Projecaa DefaultTargets=\"x\"/>" + Environment.NewLine + "2", 
+           new string[] {"1" + Environment.NewLine + "<Projecaa DefaultTargets=\"x\"/>" + Environment.NewLine, "1",
+               Environment.NewLine + "<Projecaa DefaultTargets=\"x\"/>"+ Environment.NewLine }),
 
        new RegexTestCase(@"\G<%#(?<code>.*?)?%>", RegexOptions.Singleline,
            @"<%# DataBinder.Eval(this, ""MyNumber"") %>", new string[] {@"<%# DataBinder.Eval(this, ""MyNumber"") %>", @" DataBinder.Eval(this, ""MyNumber"") "}),

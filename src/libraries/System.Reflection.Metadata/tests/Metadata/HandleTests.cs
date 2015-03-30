@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata.Tests
             assert(MetadataTokens.BlobHandle(1), HandleKind.Blob);
             assert(NamespaceDefinitionHandle.FromIndexOfFullName(1), HandleKind.NamespaceDefinition);
 
-            Assert.True(expectedKinds.Count == 0, "Some handles are missing from this test: " + String.Join(",\r\n", expectedKinds));
+            Assert.True(expectedKinds.Count == 0, "Some handles are missing from this test: " + String.Join("," + Environment.NewLine, expectedKinds));
         }
         [Fact]
         public void HandleKindHidesSpecialStringAndNamespaces()
