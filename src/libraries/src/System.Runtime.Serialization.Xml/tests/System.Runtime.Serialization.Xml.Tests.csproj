@@ -12,6 +12,7 @@
     <SignAssembly>false</SignAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
+    <UnsupportedOperatingSystems>Linux</UnsupportedOperatingSystems>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Utils.cs" />
@@ -28,7 +29,7 @@
       <Project>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</Project>
       <Name>System.Private.DataContractSerialization</Name>
     </ProjectReference>
-	<ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">
+    <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">
       <Project>{CDF0ACB5-1361-4E48-8ECB-22E8022F5F01}</Project>
       <Name>System.Runtime.Serialization.Primitives</Name>
     </ProjectReference>
