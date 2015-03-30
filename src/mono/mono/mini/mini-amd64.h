@@ -233,6 +233,7 @@ typedef struct {
 
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)
+#define MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG(ctx, sel) do { (ctx)->rdx = (gsize)(sel); } while (0)
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 

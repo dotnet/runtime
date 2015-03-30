@@ -2465,6 +2465,7 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 	BBInfo *bblocks = ctx->bblocks;
 	LLVMTypeRef i8ptr;
 	LLVMValueRef personality;
+	LLVMValueRef landing_pad;
 	LLVMBasicBlockRef target_bb;
 	MonoInst *exvar;
 	static gint32 mapping_inited;
@@ -2473,6 +2474,7 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 	MonoClass **ti;
 	LLVMValueRef type_info;
 	int clause_index;
+	GSList *l;
 
 	// <resultval> = landingpad <somety> personality <type> <pers_fn> <clause>+
 
@@ -2526,7 +2528,6 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 
 	{
 		LLVMTypeRef members [2], ret_type;
-		LLVMValueRef landing_pad;
 
 		members [0] = i8ptr;
 		members [1] = LLVMInt32Type ();
@@ -2548,11 +2549,69 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 		}
 	}
 
+#ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
+	/*
+	 * LLVM throw sites are associated with a one landing pad, and LLVM generated
+	 * code expects control to be transferred to this landing pad even in the
+	 * presence of nested clauses. The landing pad needs to branch to the landing
+	 * pads belonging to nested clauses based on the selector value returned by
+	 * the landing pad instruction, which is passed to the landing pad in a
+	 * register by the EH code.
+	 */
+	/* Store the exception object into the eh variable of nested clauses. */
+	for (l = ctx->nested_in [clause_index]; l; l = l->next) {
+		int nesting_clause_index = GPOINTER_TO_INT (l->data);
+		MonoBasicBlock *handler_bb;
+
+		handler_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (nesting_clause_index));
+		g_assert (handler_bb);
+
+		if (handler_bb->in_scount == 1) {
+			LLVMValueRef ex_obj = LLVMBuildExtractValue (builder, landing_pad, 0, "ex_obj");
+			MonoInst *var;
+			int vreg;
+
+			exvar = handler_bb->in_stack [0];
+			vreg = exvar->dreg;
+
+			/*
+			 * Can't assign to exvar directly, because of SSA, so store into
+			 * the location where the (volatile) exvar is stored.
+			 */
+
+			/* From emit_volatile_store () */
+			var = get_vreg_to_inst (ctx->cfg, vreg);
+
+			g_assert (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT));
+			g_assert (ctx->addresses [vreg]);
+			LLVMBuildStore (ctx->builder, convert (ctx, ex_obj, type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
+		}
+	}
+
+	target_bb = bblocks [bb->block_num].call_handler_target_bb;
+	g_assert (target_bb);
+#endif
+
+	/*
+	 * Branch to the correct landing pad
+	 */
+	LLVMValueRef ex_selector = LLVMBuildExtractValue (builder, landing_pad, 1, "ex_selector");
+	LLVMValueRef switch_ins = LLVMBuildSwitch (builder, ex_selector, target_bb, 0);
+
+	for (l = ctx->nested_in [clause_index]; l; l = l->next) {
+		int nesting_clause_index = GPOINTER_TO_INT (l->data);
+		MonoBasicBlock *handler_bb;
+
+		handler_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (nesting_clause_index));
+		g_assert (handler_bb);
+
+		g_assert (ctx->bblocks [handler_bb->block_num].call_handler_target_bb);
+		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), nesting_clause_index, FALSE), ctx->bblocks [handler_bb->block_num].call_handler_target_bb);
+	}
+
 	/* Start a new bblock which CALL_HANDLER can branch to */
 	target_bb = bblocks [bb->block_num].call_handler_target_bb;
 	if (target_bb) {
-		LLVMBuildBr (builder, target_bb);
-
 		ctx->builder = builder = create_builder (ctx);
 		LLVMPositionBuilderAtEnd (ctx->builder, target_bb);
 

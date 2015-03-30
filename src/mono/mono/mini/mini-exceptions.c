@@ -1494,6 +1494,11 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
 					}
 
+#ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
+					if (ji->from_llvm)
+						MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG (ctx, i);
+#endif
+
 					mono_debugger_agent_begin_exception_filter (mono_ex, ctx, &initial_ctx);
 					filtered = call_filter (ctx, ei->data.filter);
 					mono_debugger_agent_end_exception_filter (mono_ex, ctx, &initial_ctx);
@@ -1788,6 +1793,11 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
 					}
 				}
+
+#ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
+				if (ji->from_llvm)
+					MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG (ctx, i);
+#endif
 
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					/* 
