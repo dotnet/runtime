@@ -28,7 +28,13 @@ internal static partial class Interop
         {
             return WTERMSIG(status) == 0;
         }
-        private static int WTERMSIG(int status)
+
+        internal static bool WIFSIGNALED(int status)
+        {
+            return ((sbyte)(((status) & 0x7f) + 1) >> 1) > 0;
+        }
+
+        internal static int WTERMSIG(int status)
         {
             return status & 0x7F;
         }

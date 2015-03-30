@@ -34,7 +34,7 @@ namespace System.Diagnostics.ProcessTests
                 {
                     try
                     {
-                    p.Kill();
+                        p.Kill();
                     }
                     catch (InvalidOperationException) { } // in case it was never started
 
@@ -163,7 +163,7 @@ namespace System.Diagnostics.ProcessTests
             {
                 Process p = CreateProcessInfinite();
                 StartAndKillProcessWithDelay(p);
-                Assert.True(p.ExitCode < 0, String.Format("Process_ExitCode: Unexpected Exit code {0}", p.ExitCode));
+                Assert.NotEqual(0, p.ExitCode);
             }
         }
 
