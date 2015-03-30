@@ -9606,6 +9606,7 @@ CM_ADD_OP:
 
             ssize_t mult = op2->gtIntConCommon.IconValue();
             bool op2IsConstIndex = op2->OperGet() == GT_CNS_INT &&
+                                   op2->gtIntCon.gtFieldSeq != nullptr &&
                                    op2->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq();
 
             assert(!op2IsConstIndex || op2->AsIntCon()->gtFieldSeq->m_next == nullptr);
@@ -9644,6 +9645,7 @@ CM_ADD_OP:
                 // If "op2" is a constant array index, the other multiplicand must be a constant.
                 // Transfer the annotation to the other one.
                 if (op2->OperGet() == GT_CNS_INT &&
+                    op2->gtIntCon.gtFieldSeq != nullptr &&
                     op2->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
                 {
                     assert(op2->gtIntCon.gtFieldSeq->m_next == nullptr);
@@ -10900,7 +10902,9 @@ ASG_OP:
                 // we are reusing the shift amount node here, but the type we want is that of the shift result
                 op2->gtType = op1->gtType;
 
-                if (cns->gtOper == GT_CNS_INT && cns->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
+                if (cns->gtOper == GT_CNS_INT &&
+                    cns->gtIntCon.gtFieldSeq != nullptr &&
+                    cns->gtIntCon.gtFieldSeq->IsConstantIndexFieldSeq())
                 {
                     assert(cns->gtIntCon.gtFieldSeq->m_next == nullptr);
                     op2->gtIntCon.gtFieldSeq = cns->gtIntCon.gtFieldSeq;
