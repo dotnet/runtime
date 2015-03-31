@@ -70,6 +70,7 @@ add_library(corguids ${CORGUIDS_SOURCES})
 
 install (FILES cor.h
                corhdr.h
+               corhost.h
                corinfo.h
                corjit.h
                opcode.def
