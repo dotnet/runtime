@@ -660,6 +660,9 @@ mono_find_block_region (MonoCompile *cfg, int offset)
 			else
 				return ((i + 1) << 8) | MONO_REGION_CATCH | clause->flags;
 		}
+	}
+	for (i = 0; i < header->num_clauses; ++i) {
+		clause = &header->clauses [i];
 
 		if (MONO_OFFSET_IN_CLAUSE (clause, offset))
 			return ((i + 1) << 8) | clause->flags;

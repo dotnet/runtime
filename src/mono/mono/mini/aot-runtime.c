@@ -2536,6 +2536,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		jei->try_start = ei [i].try_start;
 		jei->try_end = ei [i].try_end;
 		jei->handler_start = ei [i].handler_start;
+		jei->clause_index = clause_index;
 
 		/* Make sure we transition to thumb when a handler starts */
 		if (amodule->thumb_end && (guint8*)jei->handler_start < amodule->thumb_end)
@@ -2555,13 +2556,11 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 				gint32 cindex2 = read32 (type_info [j]);
 
 				if (cindex2 == nesting_cindex) {
-					/* 
-					 * The try interval comes from the nested clause, everything else from the
-					 * nesting clause.
-					 */
 					memcpy (&jinfo->clauses [nindex], &jinfo->clauses [j], sizeof (MonoJitExceptionInfo));
 					jinfo->clauses [nindex].try_start = jinfo->clauses [i].try_start;
 					jinfo->clauses [nindex].try_end = jinfo->clauses [i].try_end;
+					jinfo->clauses [nindex].handler_start = jinfo->clauses [i].handler_start;
+					jinfo->clauses [nindex].exvar_offset = jinfo->clauses [i].exvar_offset;
 					nindex ++;
 				}
 			}

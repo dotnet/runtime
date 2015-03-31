@@ -2241,24 +2241,23 @@ class Tests
 		return 2;
 	}
 
-	/* MarshalByRefObject prevents the methods from being inlined */
-	class ThrowClass : MarshalByRefObject {
-		public static void rethrow1 () {
-			throw new Exception ();
-		}
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void rethrow1 () {
+		throw new Exception ();
+	}
 
-		public static void rethrow2 () {
-			rethrow1 ();
-			/* This disables tailcall opts */
-			Console.WriteLine ();
-		}
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void rethrow2 () {
+		rethrow1 ();
+		/* This disables tailcall opts */
+		Console.WriteLine ();
 	}
 
 	public static int test_0_rethrow_stacktrace () {
 		// Check that rethrowing an exception preserves the original stack trace
 		try {
 			try {
-				ThrowClass.rethrow2 ();
+				rethrow2 ();
 			}
 			catch (Exception ex) {
 				// Check that each catch clause has its own exception variable

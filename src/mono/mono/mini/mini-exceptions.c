@@ -1495,8 +1495,14 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 					}
 
 #ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
+					/*
+					 * Pass the original il clause index to the landing pad so it can
+					 * branch to the landing pad associated with the il clause.
+					 * This is needed because llvm compiled code assumes that the EH
+					 * code always branches to the innermost landing pad.
+					 */
 					if (ji->from_llvm)
-						MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG (ctx, i);
+						MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG (ctx, ei->clause_index);
 #endif
 
 					mono_debugger_agent_begin_exception_filter (mono_ex, ctx, &initial_ctx);
@@ -1796,7 +1802,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 
 #ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
 				if (ji->from_llvm)
-					MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG (ctx, i);
+					MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG (ctx, ei->clause_index);
 #endif
 
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {

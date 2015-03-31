@@ -123,6 +123,7 @@ typedef struct {
 	char temp_name [32];
 	/* For every clause, the clauses it is nested in */
 	GSList **nested_in;
+	LLVMValueRef ex_var;
 } EmitContext;
 
 typedef struct {
@@ -2099,7 +2100,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			continue;
 
 		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
-
 		g_hash_table_insert (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)), bb);
 		g_hash_table_insert (ctx->clause_to_handler, GINT_TO_POINTER (clause_index), bb);
 
@@ -2111,6 +2111,10 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			LLVMBuildStore (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), val);
 
 			ctx->bblocks [bb->block_num].finally_ind = val;
+		} else {
+			/* Create a variable to hold the exception var */
+			if (!ctx->ex_var)
+				ctx->ex_var = LLVMBuildAlloca (builder, ObjRefType (), "exvar");
 		}
 
 		/*
@@ -2537,19 +2541,10 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 		LLVMAddClause (landing_pad, type_info);
 
 		/* Store the exception into the exvar */
-		if (bb->in_scount == 1) {
-			g_assert (bb->in_scount == 1);
-			exvar = bb->in_stack [0];
-
-			// FIXME: This is shared with filter clauses ?
-			g_assert (!values [exvar->dreg]);
-
-			values [exvar->dreg] = LLVMBuildExtractValue (builder, landing_pad, 0, "ex_obj");
-			emit_volatile_store (ctx, exvar->dreg);
-		}
+		if (ctx->ex_var)
+			LLVMBuildStore (builder, convert (ctx, LLVMBuildExtractValue (builder, landing_pad, 0, "ex_obj"), ObjRefType ()), ctx->ex_var);
 	}
 
-#ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
 	/*
 	 * LLVM throw sites are associated with a one landing pad, and LLVM generated
 	 * code expects control to be transferred to this landing pad even in the
@@ -2558,37 +2553,6 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 	 * the landing pad instruction, which is passed to the landing pad in a
 	 * register by the EH code.
 	 */
-	/* Store the exception object into the eh variable of nested clauses. */
-	for (l = ctx->nested_in [clause_index]; l; l = l->next) {
-		int nesting_clause_index = GPOINTER_TO_INT (l->data);
-		MonoBasicBlock *handler_bb;
-
-		handler_bb = g_hash_table_lookup (ctx->clause_to_handler, GINT_TO_POINTER (nesting_clause_index));
-		g_assert (handler_bb);
-
-		if (handler_bb->in_scount == 1) {
-			LLVMValueRef ex_obj = LLVMBuildExtractValue (builder, landing_pad, 0, "ex_obj");
-			MonoInst *var;
-			int vreg;
-
-			exvar = handler_bb->in_stack [0];
-			vreg = exvar->dreg;
-
-			/*
-			 * Can't assign to exvar directly, because of SSA, so store into
-			 * the location where the (volatile) exvar is stored.
-			 */
-
-			/* From emit_volatile_store () */
-			var = get_vreg_to_inst (ctx->cfg, vreg);
-
-			g_assert (var && var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT));
-			g_assert (ctx->addresses [vreg]);
-			LLVMBuildStore (ctx->builder, convert (ctx, ex_obj, type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
-		}
-	}
-#endif
-
 	target_bb = bblocks [bb->block_num].call_handler_target_bb;
 	g_assert (target_bb);
 
@@ -2616,11 +2580,20 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 		LLVMPositionBuilderAtEnd (ctx->builder, target_bb);
 
 		ctx->bblocks [bb->block_num].end_bblock = target_bb;
-	}
-	return;
 
- FAILURE:
-	return;
+		/* Store the exception into the IL level exvar */
+		if (bb->in_scount == 1) {
+			g_assert (bb->in_scount == 1);
+			exvar = bb->in_stack [0];
+
+			// FIXME: This is shared with filter clauses ?
+			g_assert (!values [exvar->dreg]);
+
+			g_assert (ctx->ex_var);
+			values [exvar->dreg] = LLVMBuildLoad (builder, ctx->ex_var, "");
+			emit_volatile_store (ctx, exvar->dreg);
+		}
+	}
 }
 
 static void
@@ -4791,9 +4764,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 void
 mono_llvm_check_method_supported (MonoCompile *cfg)
 {
-	MonoMethodHeader *header = cfg->header;
-	MonoExceptionClause *clause;
-	int i;
+	int i, j;
 
 	if (cfg->method->save_lmf) {
 		cfg->exception_message = g_strdup ("lmf");
@@ -4802,22 +4773,27 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 	if (cfg->disable_llvm)
 		return;
 
-#if 1
-	for (i = 0; i < header->num_clauses; ++i) {
-		clause = &header->clauses [i];
+	/*
+	 * Nested clauses where one of the clauses is a finally clause is
+	 * not supported, because LLVM can't figure out the control flow,
+	 * probably because we resume exception handling by calling our
+	 * own function instead of using the 'resume' llvm instruction.
+	 */
+	for (i = 0; i < cfg->header->num_clauses; ++i) {
+		for (j = 0; j < cfg->header->num_clauses; ++j) {
+			MonoExceptionClause *clause1 = &cfg->header->clauses [i];
+			MonoExceptionClause *clause2 = &cfg->header->clauses [j];
 
-		if (i > 0 && clause->try_offset <= header->clauses [i - 1].handler_offset + header->clauses [i - 1].handler_len) {
-			/*
-			 * FIXME: Some tests still fail with nested clauses.
-			 */
-			cfg->exception_message = g_strdup ("nested clauses");
-			cfg->disable_llvm = TRUE;
-			break;
+			if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset &&
+				(clause1->flags == MONO_EXCEPTION_CLAUSE_FINALLY || clause2->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
+				cfg->exception_message = g_strdup ("nested clauses");
+				cfg->disable_llvm = TRUE;
+				break;
+			}
 		}
 	}
 	if (cfg->disable_llvm)
 		return;
-#endif
 
 	/* FIXME: */
 	if (cfg->method->dynamic) {
@@ -5430,13 +5406,15 @@ exception_cb (void *data)
 
 		cfg->llvm_ex_info [i].flags = clause->flags;
 		cfg->llvm_ex_info [i].data.catch_class = clause->data.catch_class;
+		cfg->llvm_ex_info [i].clause_index = clause_index;
 	}
 
 	/*
 	 * For nested clauses, the LLVM produced exception info associates the try interval with
 	 * the innermost handler, while mono expects it to be associated with all nesting clauses.
+	 * So add new clauses which use the IL info (catch class etc.) from the nesting clause,
+	 * and everything else from the nested clause.
 	 */
-	/* FIXME: These should be order with the normal clauses */
 	nindex = ei_len;
 	for (i = 0; i < ei_len; ++i) {
 		for (j = 0; j < ei_len; ++j) {
@@ -5446,13 +5424,11 @@ exception_cb (void *data)
 			MonoExceptionClause *clause2 = &cfg->header->clauses [cindex2];
 
 			if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
-				/* 
-				 * The try interval comes from the nested clause, everything else from the
-				 * nesting clause.
-				 */
 				memcpy (&cfg->llvm_ex_info [nindex], &cfg->llvm_ex_info [j], sizeof (MonoJitExceptionInfo));
 				cfg->llvm_ex_info [nindex].try_start = cfg->llvm_ex_info [i].try_start;
 				cfg->llvm_ex_info [nindex].try_end = cfg->llvm_ex_info [i].try_end;
+				cfg->llvm_ex_info [nindex].handler_start = cfg->llvm_ex_info [i].handler_start;
+				cfg->llvm_ex_info [nindex].exvar_offset = cfg->llvm_ex_info [i].exvar_offset;
 				nindex ++;
 			}
 		}

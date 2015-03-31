@@ -85,6 +85,11 @@ typedef struct {
 	gpointer try_start;
 	gpointer try_end;
 	gpointer handler_start;
+	/*
+	 * For LLVM compiled code, this is the index of the il clause
+	 * associated with this handler.
+	 */
+	int clause_index;
 	union {
 		MonoClass *catch_class;
 		gpointer filter;
