@@ -331,6 +331,7 @@ endif (WIN32)
 if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)
   add_definitions(-DFEATURE_PAL_SXS)
+  add_definitions(-DFEATURE_COREFX_GLOBALIZATION)
 
   if(IS_64BIT_BUILD)
     add_definitions(-DBIT64=1)
