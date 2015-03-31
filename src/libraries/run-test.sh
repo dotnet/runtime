@@ -54,6 +54,7 @@ case $OSName in
         OS=Linux
         ;;
 esac
+LowerOS="$(echo $OS | awk '{print tolower($OS)}')"
 # Misc defaults
 TestHostVersion="0.0.1-prerelease"
 OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$Configuration/TestOverlay/"
@@ -82,7 +83,6 @@ create_test_overlay()
   rm -rf $OverlayDir
   mkdir -p $OverlayDir
   
-  local LowerOS="$(echo $OS | awk '{print tolower($OS)}')"
   local LowerConfiguration="$(echo $Configuration | awk '{print tolower($Configuration)}')"
 
   # First the temporary test host binaries
@@ -157,6 +157,7 @@ runtest()
   fileName="${file##*/}"
   fileNameWithoutExtension="${fileName%.*}"
   testDllName="$fileNameWithoutExtension.dll"
+  xunitOSCategory="non$LowerOStests"
 
   dirName="$CoreFxTestsRoot/tests/Windows_NT.AnyCPU.$Configuration/$fileNameWithoutExtension/aspnetcore50"
 
@@ -173,9 +174,9 @@ runtest()
   pushd $dirName > /dev/null
   echo
   echo "Running tests in $dirName"
-  echo "./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop"
+  echo "./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory"
   echo
-  ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop
+  ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory
   if [ $? ]
   then
     TestsFailed=1
