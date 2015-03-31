@@ -27,6 +27,7 @@ namespace System.Xml.Linq
     ///     <item><see cref="XProcessingInstruction"/></item>
     ///   </list>
     /// </remarks>
+    [XmlSchemaProvider(null, IsAny = true)]
     public class XElement : XContainer, IXmlSerializable
     {
         private static IEnumerable<XElement> s_emptySequence;
