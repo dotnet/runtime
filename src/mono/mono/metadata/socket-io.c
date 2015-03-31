@@ -2385,11 +2385,9 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 		}
 	}
 
-	if (*hostname && mono_get_address_info (hostname, 0, MONO_HINT_CANONICAL_NAME | get_addrinfo_family_hint (), &info)) {
-		g_free (hostname);
+	if (*hostname && mono_get_address_info (hostname, 0, MONO_HINT_CANONICAL_NAME | get_addrinfo_family_hint (), &info))
 		add_info_ok = FALSE;
-	}
-	
+
 	g_free(hostname);
 	MONO_FINISH_BLOCKING
 
