@@ -163,19 +163,8 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 			gboolean disp_32bit = ((((gint64)addr - (gint64)orig_code)) < (1 << 30)) && ((((gint64)addr - (gint64)orig_code)) > -(1 << 30));
 
 			if ((((guint64)(addr)) >> 32) != 0 && !disp_32bit) {
-#ifdef MONO_ARCH_NOMAP32BIT
-				/* Print some diagnostics */
-				MonoJitInfo *ji = mono_jit_info_table_find (mono_domain_get (), (char*)orig_code);
-				if (ji)
-					fprintf (stderr, "At %s, offset 0x%zx\n", mono_method_full_name (jinfo_get_method (ji), TRUE), (guint8*)orig_code - (guint8*)ji->code_start);
-				fprintf (stderr, "Addr: %p\n", addr);
-				ji = mono_jit_info_table_find (mono_domain_get (), (char*)addr);
-				if (ji)
-					fprintf (stderr, "Callee: %s\n", mono_method_full_name (jinfo_get_method (ji), TRUE));
-				g_assert_not_reached ();
-#else
 				/* 
-				 * This might happen when calling AOTed code. Create a thunk.
+				 * This might happen with LLVM or when calling AOTed code. Create a thunk.
 				 */
 				guint8 *thunk_start, *thunk_code;
 
@@ -186,7 +175,6 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 				g_assert ((((guint64)(addr)) >> 32) == 0);
 				mono_arch_flush_icache (thunk_start, thunk_code - thunk_start);
 				mono_profiler_code_buffer_new (thunk_start, thunk_code - thunk_start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
-#endif
 			}
 			if (can_write) {
 				InterlockedExchange ((gint32*)(orig_code - 4), ((gint64)addr - (gint64)orig_code));
