@@ -475,37 +475,34 @@ typedef struct {
 typedef struct 
 {
 	MonoObject obj;
-	MonoBoolean readOnly;
-	MonoString *decimalFormats;
-	MonoString *currencyFormats;
-	MonoString *percentFormats;
-	MonoString *digitPattern;
-	MonoString *zeroPattern;
-	gint32 currencyDecimalDigits;
-	MonoString *currencyDecimalSeparator;
-	MonoString *currencyGroupSeparator;
+	MonoArray *numberGroupSizes;
 	MonoArray *currencyGroupSizes;
-	gint32 currencyNegativePattern;
-	gint32 currencyPositivePattern;
-	MonoString *currencySymbol;
-	MonoString *naNSymbol;
-	MonoString *negativeInfinitySymbol;
+	MonoArray *percentGroupSizes;
+	MonoString *positiveSign;
 	MonoString *negativeSign;
-	guint32 numberDecimalDigits;
 	MonoString *numberDecimalSeparator;
 	MonoString *numberGroupSeparator;
-	MonoArray *numberGroupSizes;
-	gint32 numberNegativePattern;
-	gint32 percentDecimalDigits;
+	MonoString *currencyGroupSeparator;
+	MonoString *currencyDecimalSeparator;
+	MonoString *currencySymbol;
+	MonoString *ansiCurrencySymbol;	/* unused */
+	MonoString *naNSymbol;
+	MonoString *positiveInfinitySymbol;
+	MonoString *negativeInfinitySymbol;
 	MonoString *percentDecimalSeparator;
 	MonoString *percentGroupSeparator;
-	MonoArray *percentGroupSizes;
-	gint32 percentNegativePattern;
-	gint32 percentPositivePattern;
 	MonoString *percentSymbol;
 	MonoString *perMilleSymbol;
-	MonoString *positiveInfinitySymbol;
-	MonoString *positiveSign;
+	MonoString *nativeDigits; /* unused */
+	gint32 dataItem; /* unused */
+	guint32 numberDecimalDigits;
+	gint32 currencyDecimalDigits;
+	gint32 currencyPositivePattern;
+	gint32 currencyNegativePattern;
+	gint32 numberNegativePattern;
+	gint32 percentPositivePattern;
+	gint32 percentNegativePattern;
+	gint32 percentDecimalDigits;
 } MonoNumberFormatInfo;
 
 typedef struct {

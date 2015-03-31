@@ -50,8 +50,6 @@ typedef struct {
 typedef struct {
 	const stridx_t currency_decimal_separator;
 	const stridx_t currency_group_separator;
-	const stridx_t percent_decimal_separator;
-	const stridx_t percent_group_separator;
 	const stridx_t number_decimal_separator;
 	const stridx_t number_group_separator;
 
@@ -72,11 +70,9 @@ typedef struct {
 	const gint8 number_negative_pattern;
 
 	const gint8 currency_decimal_digits;
-	const gint8 percent_decimal_digits;
 	const gint8 number_decimal_digits;
 
 	const gint currency_group_sizes [GROUP_SIZE];
-	const gint percent_group_sizes [GROUP_SIZE];
 	const gint number_group_sizes [GROUP_SIZE];	
 } NumberFormatEntry;
 

@@ -226,22 +226,17 @@ ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureData *t
 }
 
 void
-ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureInfo *this)
+ves_icall_System_Globalization_CultureData_fill_number_data (MonoNumberFormatInfo* number, gint32 number_index)
 {
 	MonoDomain *domain;
-	MonoNumberFormatInfo *number;
 	const NumberFormatEntry *nfe;
 
-	g_assert (this->number_format != 0);
-	if (this->number_index < 0)
-		return;
+	g_assert (number_index != 0);
 
-	number = this->number_format;
-	nfe = &number_format_entries [this->number_index];
+	nfe = &number_format_entries [number_index];
 
 	domain = mono_domain_get ();
 
-	number->readOnly = this->is_read_only;
 	number->currencyDecimalDigits = nfe->currency_decimal_digits;
 	MONO_OBJECT_SETREF (number, currencyDecimalSeparator, mono_string_new (domain,
 			idx2string (nfe->currency_decimal_separator)));
@@ -263,13 +258,6 @@ ves_icall_System_Globalization_CultureInfo_construct_number_format (MonoCultureI
 	MONO_OBJECT_SETREF (number, numberGroupSizes, create_group_sizes_array (nfe->number_group_sizes,
 			GROUP_SIZE));
 	number->numberNegativePattern = nfe->number_negative_pattern;
-	number->percentDecimalDigits = nfe->percent_decimal_digits;
-	MONO_OBJECT_SETREF (number, percentDecimalSeparator, mono_string_new (domain,
-			idx2string (nfe->percent_decimal_separator)));
-	MONO_OBJECT_SETREF (number, percentGroupSeparator, mono_string_new (domain,
-			idx2string (nfe->percent_group_separator)));
-	MONO_OBJECT_SETREF (number, percentGroupSizes, create_group_sizes_array (nfe->percent_group_sizes,
-			GROUP_SIZE));
 	number->percentNegativePattern = nfe->percent_negative_pattern;
 	number->percentPositivePattern = nfe->percent_positive_pattern;
 	MONO_OBJECT_SETREF (number, percentSymbol, mono_string_new (domain, idx2string (nfe->percent_symbol)));

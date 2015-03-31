@@ -280,11 +280,11 @@ ICALL(COMPINF_6, "internal_index(string,int,int,string,System.Globalization.Comp
 
 ICALL_TYPE(CULDATA, "System.Globalization.CultureData", CULDATA_1)
 ICALL(CULDATA_1, "fill_culture_data", ves_icall_System_Globalization_CultureData_fill_culture_data)
+ICALL(CULDATA_2, "fill_number_data", ves_icall_System_Globalization_CultureData_fill_number_data)
 
 ICALL_TYPE(CULINF, "System.Globalization.CultureInfo", CULINF_5)
 ICALL(CULINF_5, "construct_internal_locale_from_lcid", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid)
 ICALL(CULINF_6, "construct_internal_locale_from_name", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name)
-ICALL(CULINF_8, "construct_number_format", ves_icall_System_Globalization_CultureInfo_construct_number_format)
 ICALL(CULINF_7, "get_current_locale_name", ves_icall_System_Globalization_CultureInfo_get_current_locale_name)
 ICALL(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures)
 //ICALL(CULINF_10, "internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral)
