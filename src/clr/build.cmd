@@ -3,7 +3,7 @@ setlocal EnableDelayedExpansion
 
 :: Set the default arguments for build
 set __BuildArch=x64
-set __BuildType=debug
+set __BuildType=Debug
 set __BuildOS=Windows_NT
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
@@ -13,7 +13,7 @@ if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__PackagesDir=%__ProjectDir%\packages"
-set "__RootBinDir=%__ProjectDir%\binaries"
+set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
 
@@ -22,12 +22,13 @@ if "%1" == "" goto ArgsDone
 if /i "%1" == "/?" goto Usage
 if /i "%1" == "x64"    (set __BuildArch=x64&&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
-if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
+if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
+if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
-if /i "%1" == "unixmscorlib" (set __UnixMscorlibOnly=1&set __BuildOS=Unix&shift&goto Arg_Loop)
+if /i "%1" == "linuxmscorlib" (set __MscorlibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
+if /i "%1" == "osxmscorlib" (set __MscorlibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
 
 echo Invalid commandline argument: %1
 goto Usage
@@ -39,7 +40,7 @@ echo.
 
 :: Set the remaining variables based upon the determined build configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\intermediates\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__ToolsDir=%__RootBinDir%\tools"
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
@@ -64,8 +65,8 @@ if not exist "%__BinDir%" md "%__BinDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%" md "%__LogsDir%"
 
-:: CMake isn't a requirement when building unixmscorlib
-if defined __UnixMscorlibOnly goto CheckVS
+:: CMake isn't a requirement when building mscorlib only
+if defined __MscorlibOnly goto CheckVS
 
 :CheckPrereqs
 :: Check prerequisites
@@ -104,7 +105,7 @@ if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see h
 :: All set to commence the build
 
 setlocal
-if defined __UnixMscorlibOnly goto PerformMScorlibBuild
+if defined __MscorlibOnly goto PerformMScorlibBuild
 
 echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
@@ -153,7 +154,7 @@ set __AdditionalMSBuildArgs=
 rem Explicitly set Platform causes conflicts in mscorlib project files. Clear it to allow building from VS x64 Native Tools Command Prompt
 set Platform=
 
-if defined __UnixMscorlibOnly set __AdditionalMSBuildArgs=/p:BuildNugetPackage=false
+if defined __MscorlibOnly set __AdditionalMSBuildArgs=/p:BuildNugetPackage=false
 
 :: Set the environment for the managed build
 call "%VS120COMNTOOLS%\VsDevCmd.bat"
@@ -162,7 +163,7 @@ echo.
 set "__MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__MScorlibBuildLog%" /p:OS=%__BuildOS% %__AdditionalMSBuildArgs%
 IF NOT ERRORLEVEL 1 (
-  if defined __UnixMscorlibOnly goto :eof
+  if defined __MscorlibOnly goto :eof
   goto PerformTestBuild
 )
 
@@ -194,4 +195,6 @@ echo.
 echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
+echo linuxmscorlib - Build mscorlib for Linux
+echo osxmscorlib - Build mscorlib for OS X
 goto :eof
