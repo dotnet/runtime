@@ -125,7 +125,7 @@ namespace System.Diagnostics
                 // On NT, the first module is the main module.
                 EnsureState(State.HaveId | State.IsLocal);
                 ModuleInfo module = NtProcessManager.GetFirstModuleInfo(_processId);
-                return new ProcessModule(module);
+                return (module != null ? new ProcessModule(module) : null);
             }
         }
 
