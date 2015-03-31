@@ -38,6 +38,7 @@
     <Compile Include="ToArrayTests.cs" />
     <Compile Include="ToDictionaryTests.cs" />
     <Compile Include="ToListTests.cs" />
+    <Compile Include="SelectTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.csproj">
