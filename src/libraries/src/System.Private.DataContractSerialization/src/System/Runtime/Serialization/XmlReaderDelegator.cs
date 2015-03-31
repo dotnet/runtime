@@ -384,7 +384,7 @@ namespace System.Runtime.Serialization
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
 
-            return XmlConvert.ToDateTimeOffset(reader.ReadElementContentAsString()).DateTime;
+            return XmlConvert.ToDateTime(reader.ReadElementContentAsString(), XmlDateTimeSerializationMode.RoundtripKind);
         }
 
 
