@@ -307,6 +307,7 @@ BASE_TEST_CS_SRC=		\
 	generic-typedef.2.cs	\
 	generic-marshalbyref.2.cs	\
 	generic-xdomain.2.cs	\
+	dynamic-generic-size.cs	\
 	bug-431413.2.cs	\
 	bug-459285.2.cs	\
 	generic-virtual-invoke.2.cs	\
