@@ -2251,17 +2251,6 @@ void DomainInfo (DacpAppDomainData *pDomain)
     ExtOut("\n");
 }
 
-#ifdef FEATURE_PAL
-
-DWORD_PTR GetExpression(const char *exp)
-{
-    DWORD_PTR result = 0;
-    g_ExtClient->GetExpression(exp, &result);
-    return result;
-}
-
-#endif // FEATURE_PAL
-
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *

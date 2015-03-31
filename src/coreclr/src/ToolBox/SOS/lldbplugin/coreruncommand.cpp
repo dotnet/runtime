@@ -43,6 +43,6 @@ bool
 corerunCommandInitialize(lldb::SBDebugger debugger)
 {
     lldb::SBCommandInterpreter interpreter = debugger.GetCommandInterpreter();
-    interpreter.AddCommand("corerun", new corerunCommand(), "run a managed app inside the debugger");
+    lldb::SBCommand command = interpreter.AddCommand("corerun", new corerunCommand(), "Run a managed app inside the debugger. corerun <exe-path> <managed-program-path> <command-line-args>");
     return true;
 }
