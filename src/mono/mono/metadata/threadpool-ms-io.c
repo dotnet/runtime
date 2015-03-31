@@ -920,7 +920,7 @@ wakeup_pipes_init (void)
 		closesocket (threadpool_io->wakeup_pipes [0]);
 		closesocket (server_sock);
 		g_error ("wakeup_pipes_init: ioctlsocket () failed, error (%d)\n", WSAGetLastError ());
-	}y
+	}
 
 	closesocket (server_sock);
 #endif
