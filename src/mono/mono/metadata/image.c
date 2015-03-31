@@ -1609,6 +1609,9 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	free_hash (image->native_wrapper_cache);
+	free_hash (image->native_wrapper_aot_cache);
+	free_hash (image->native_wrapper_check_cache);
+	free_hash (image->native_wrapper_aot_check_cache);
 	free_hash (image->native_func_wrapper_cache);
 	free_hash (image->managed_wrapper_cache);
 	free_hash (image->delegate_begin_invoke_cache);

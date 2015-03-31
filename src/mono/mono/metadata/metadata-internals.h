@@ -275,6 +275,8 @@ struct _MonoImage {
 	GHashTable *managed_wrapper_cache;
 	GHashTable *native_wrapper_cache;
 	GHashTable *native_wrapper_aot_cache;
+	GHashTable *native_wrapper_check_cache;
+	GHashTable *native_wrapper_aot_check_cache;
 	GHashTable *native_func_wrapper_aot_cache;
 	GHashTable *remoting_invoke_cache;
 	GHashTable *synchronized_cache;
