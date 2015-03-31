@@ -89,8 +89,9 @@ public class Directory_Co5736SetCurrentDirectory_dir
 
             strLoc = "Loc_9t8gt";
 
-            dir = new DirectoryInfo("c:\\");
-            Directory.SetCurrentDirectory("c:\\");
+            string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
+            dir = new DirectoryInfo(root);
+            Directory.SetCurrentDirectory(root);
             iCountTestcases++;
             if (!Directory.GetCurrentDirectory().Equals(dir.FullName))
             {

@@ -66,10 +66,10 @@ public class DirectoryInfo_GetFileSystemInfos
             new FileInfo(dir2.ToString() + "Test.exe");
 
             FileStream[] fs = new FileStream[4];
-            fs[0] = new FileInfo(dir2.FullName + "\\" + "TestFile1").Create();
-            fs[1] = new FileInfo(dir2.FullName + "\\" + "TestFile2").Create();
-            fs[2] = new FileInfo(dir2.FullName + "\\" + "Test.bat").Create();
-            fs[3] = new FileInfo(dir2.FullName + "\\" + "Test.exe").Create();
+            fs[0] = new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            fs[1] = new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
+            fs[2] = new FileInfo(Path.Combine(dir2.FullName, "Test.bat")).Create();
+            fs[3] = new FileInfo(Path.Combine(dir2.FullName, "Test.exe")).Create();
             for (int iLoop = 0; iLoop < 4; iLoop++)
                 fs[iLoop].Dispose();
 

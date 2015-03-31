@@ -170,7 +170,7 @@ public class Directory_GetFiles_str_str
             strLoc = "Loc_4y982";
 
             dir2 = Directory.CreateDirectory(dirName);
-            strArr = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\" + dirName, "*");
+            strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), "*");
             iCountTestcases++;
             if (strArr.Length != 0)
             {
@@ -189,16 +189,16 @@ public class Directory_GetFiles_str_str
             dir2.CreateSubdirectory("TestDir3");
             dir2.CreateSubdirectory("Test1Dir1");
             dir2.CreateSubdirectory("Test1Dir2");
-            new FileInfo(dir2.FullName + "\\" + "TestFile1").Create();
-            new FileInfo(dir2.FullName + "\\" + "TestFile2").Create();
-            new FileInfo(dir2.FullName + "\\" + "TestFile3").Create();
-            new FileInfo(dir2.FullName + "\\" + "Test1File1").Create();
-            new FileInfo(dir2.FullName + "\\" + "Test1File2").Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile3")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "Test1File1")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "Test1File2")).Create();
 
             // [] SearchString ending with '*'
 
             iCountTestcases++;
-            strArr = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\" + dirName, "TestFile*");
+            strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), "TestFile*");
             iCountTestcases++;
             if (strArr.Length != 3)
             {
@@ -209,7 +209,7 @@ public class Directory_GetFiles_str_str
             String[] names = new String[strArr.Length];
             int i = 0;
             foreach (String f in strArr)
-                names[i++] = f.Substring(f.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f);
 
             iCountTestcases++;
             if (Array.IndexOf(names, "TestFile1") < 0)
@@ -234,7 +234,7 @@ public class Directory_GetFiles_str_str
             // Search string is '*'
             strLoc = "Loc_4y7gb";
 
-            strArr = Directory.GetFiles(".\\" + dirName, "*");
+            strArr = Directory.GetFiles(Path.Combine(".", dirName), "*");
             iCountTestcases++;
             if (strArr.Length != 5)
             {
@@ -244,7 +244,7 @@ public class Directory_GetFiles_str_str
             names = new String[strArr.Length];
             i = 0;
             foreach (String f in strArr)
-                names[i++] = f.Substring(f.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f);
 
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1File1") < 0)
@@ -279,7 +279,7 @@ public class Directory_GetFiles_str_str
 
             strLoc = "Loc_4yg7b";
 
-            strArr = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\" + dirName, "*File2");
+            strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), "*File2");
             iCountTestcases++;
             if (strArr.Length != 2)
             {
@@ -289,7 +289,7 @@ public class Directory_GetFiles_str_str
             names = new String[strArr.Length];
             i = 0;
             foreach (String f in strArr)
-                names[i++] = f.Substring(f.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f);
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1File2") < 0)
             {
@@ -308,10 +308,10 @@ public class Directory_GetFiles_str_str
             // [] Search should be case insensitive.
             strLoc = "Loc_767b7";
 
-            new FileInfo(dir2.FullName + "\\" + "AAABB").Create();
-            new FileInfo(dir2.FullName + "\\" + "aaabbcc").Create();
+            new FileInfo(Path.Combine(dir2.FullName, "AAABB")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "aaabbcc")).Create();
 
-            strArr = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\" + dirName, "*BB*");
+            strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), "*BB*");
             iCountTestcases++;
             if (strArr.Length != 2)
             {
@@ -321,7 +321,7 @@ public class Directory_GetFiles_str_str
             names = new String[strArr.Length];
             i = 0;
             foreach (String f in strArr)
-                names[i++] = f.Substring(f.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f);
             iCountTestcases++;
             if (Array.IndexOf(names, "AAABB") < 0)
             {
@@ -339,7 +339,7 @@ public class Directory_GetFiles_str_str
 
             strLoc = "Loc_38yf8";
 
-            strArr = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\" + dirName, "AAABB");
+            strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), "AAABB");
             iCountTestcases++;
             if (strArr.Length != 1)
             {
@@ -357,7 +357,7 @@ public class Directory_GetFiles_str_str
             // [] No match returns zero length array
             strLoc = "Loc_yg78b";
 
-            strArr = Directory.GetFiles(".\\" + dirName, "Directory");
+            strArr = Directory.GetFiles(Path.Combine(".", dirName), "Directory");
             iCountTestcases++;
             if (strArr.Length != 0)
             {
@@ -365,8 +365,8 @@ public class Directory_GetFiles_str_str
                 printerr("Error_209v7! Incorrect number of files==" + strArr.Length);
             }
 
-            new FileInfo(dir2.FullName + "\\" + "TestDir1\\Test.tmp").Create();
-            strArr = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\" + dirName, "TestDir1\\*");
+            new FileInfo(Path.Combine(dir2.FullName, Path.Combine("TestDir1", "Test.tmp"))).Create();
+            strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), Path.Combine("TestDir1", "*"));
             iCountTestcases++;
             if (strArr.Length != 1)
             {

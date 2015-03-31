@@ -42,10 +42,10 @@ public class DirectoryInfo_get_Root
 
             strLoc = "Loc_49b78";
 
-            dir2 = new DirectoryInfo("C:\\").Root;
+            dir2 = new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory())).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("C:\\"))
+            if (!str2.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_69y7b! Unexpected parent==" + dir2.FullName);
@@ -55,10 +55,10 @@ public class DirectoryInfo_get_Root
 
             strLoc = "Loc_98ygg";
 
-            dir2 = new DirectoryInfo("\\Machine\\Test").Root;
+            dir2 = new DirectoryInfo(Path.DirectorySeparatorChar + Path.Combine("Machine", "Test")).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            String root = Directory.GetCurrentDirectory().Substring(0, Directory.GetCurrentDirectory().IndexOf('\\') + 1);
+            String root = Path.GetPathRoot(Directory.GetCurrentDirectory());
             if (!str2.Equals(root))
             {
                 iCountErrors++;
@@ -69,22 +69,22 @@ public class DirectoryInfo_get_Root
 
             strLoc = "Loc_yg7bk";
 
-            dir2 = new DirectoryInfo("\\\\Machine\\Test").Root;
+            dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("\\\\Machine\\Test"))
+            if (!str2.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")))
             {
                 iCountErrors++;
                 printerr("Error_4y7gb! Unexpected parent==" + dir2.FullName);
             }
 
-            // [] get root of subdirectories endning with \
+            // [] get root of subdirectories ending with \
 
             strLoc = "Loc_9876b";
-            dir2 = new DirectoryInfo("X:\\a\\b\\c\\d\\").Root;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "a") + Path.DirectorySeparatorChar).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\"))
+            if (!str2.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_298yg! Unexpected parent==" + str2);
@@ -93,10 +93,10 @@ public class DirectoryInfo_get_Root
             // [] get root of subdirectories
 
             strLoc = "Loc_75y7b";
-            dir2 = new DirectoryInfo("X:\\a\\b\\c").Root;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "a")).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\"))
+            if (!str2.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_9887b! Unexpected parent==" + str2);
@@ -107,10 +107,10 @@ public class DirectoryInfo_get_Root
 
             strLoc = "Loc_y7t98";
 
-            dir2 = new DirectoryInfo("\\\\Machine\\Test1\\Test2\\Test3").Root;
+            dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1", "Test2", "Test3")).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("\\\\Machine\\Test1"))
+            if (!str2.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1")))
             {
                 iCountErrors++;
                 printerr("Error_69929! Unexpected parent==" + str2);
@@ -120,10 +120,10 @@ public class DirectoryInfo_get_Root
 
             strLoc = "Loc_2984y";
 
-            dir2 = new DirectoryInfo("X:\\Test\\..\\.\\Test\\Test").Root;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "Test", "..", ".", "Test", "Test")).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\"))
+            if (!str2.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_20928! Unexpected parent==" + str2);
@@ -134,10 +134,10 @@ public class DirectoryInfo_get_Root
 
             strLoc = "Loc_8y76y";
 
-            dir2 = new DirectoryInfo("X:\\My Samples\\Hello To The World\\Test").Root;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "My Samples", "Hello To The World", "Test")).Root;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\"))
+            if (!str2.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_9019c! Unexpected parent==" + str2);

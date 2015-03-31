@@ -138,11 +138,11 @@ public class Directory_GetFiles_str
             dir2.CreateSubdirectory("Test1Dir1");
             dir2.CreateSubdirectory("Test1Dir2");
 
-            new FileInfo(dir2.FullName + "\\" + "TestFile1").Create();
-            new FileInfo(dir2.FullName + "\\" + "TestFile2").Create();
-            new FileInfo(dir2.FullName + "\\" + "TestFile3").Create();
-            new FileInfo(dir2.FullName + "\\" + "Test1File1").Create();
-            new FileInfo(dir2.FullName + "\\" + "Test1File2").Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile3")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "Test1File1")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "Test1File2")).Create();
 
             // [] Searchstring ending with '*'
 

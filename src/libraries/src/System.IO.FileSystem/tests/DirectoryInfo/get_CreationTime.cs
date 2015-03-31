@@ -82,7 +82,7 @@ public class DirectoryInfo_get_CreationTime
             dir.Delete(true);
 
             //See VSWhidbey # 92050
-            String path = TestInfo.CurrentDirectory + "\\";
+            String path = TestInfo.CurrentDirectory + Path.DirectorySeparatorChar;
             String tempPath;
             int count = 0;
             while (true)

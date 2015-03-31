@@ -190,7 +190,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             // [] SearchString ending with '*'
 
             iCountTestcases++;
-            strArr = Directory.GetDirectories(".\\" + dirName, "TestDir*");
+            strArr = Directory.GetDirectories(Path.Combine(".", dirName), "TestDir*");
             iCountTestcases++;
             if (strArr.Length != 3)
             {
@@ -201,7 +201,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             String[] names = new String[strArr.Length];
             int i = 0;
             foreach (String d in strArr)
-                names[i++] = d.ToString().Substring(d.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(d);
 
             iCountTestcases++;
             if (Array.IndexOf(names, "TestDir1") < 0)
@@ -226,7 +226,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             // [] SearchString is '*'
             strLoc = "Loc_249yv";
 
-            strArr = Directory.GetDirectories(Directory.GetCurrentDirectory() + "\\" + dirName, "*");
+            strArr = Directory.GetDirectories(Path.Combine(Directory.GetCurrentDirectory(), dirName), "*");
             iCountTestcases++;
             if (strArr.Length != 5)
             {
@@ -236,7 +236,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             names = new String[strArr.Length];
             i = 0;
             foreach (String d in strArr)
-                names[i++] = d.ToString().Substring(d.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(d);
 
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1Dir1") < 0)
@@ -272,7 +272,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             // [] SearchString starting with '*'
             strLoc = "Loc_20v99";
 
-            strArr = Directory.GetDirectories(Directory.GetCurrentDirectory() + "\\" + dirName, "*Dir2");
+            strArr = Directory.GetDirectories(Path.Combine(Directory.GetCurrentDirectory(), dirName), "*Dir2");
             iCountTestcases++;
             if (strArr.Length != 2)
             {
@@ -282,7 +282,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             names = new String[strArr.Length];
             i = 0;
             foreach (String d in strArr)
-                names[i++] = d.ToString().Substring(d.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(d);
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1Dir2") < 0)
             {
@@ -302,7 +302,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             dir2.CreateSubdirectory("AAABB");
             dir2.CreateSubdirectory("aaabbcc");
 
-            strArr = Directory.GetDirectories(".\\" + dirName, "*BB*");
+            strArr = Directory.GetDirectories(Path.Combine(".", dirName), "*BB*");
             iCountTestcases++;
             if (strArr.Length != 2)
             {
@@ -312,7 +312,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             names = new String[strArr.Length];
             i = 0;
             foreach (String d in strArr)
-                names[i++] = d.ToString().Substring(d.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(d);
             iCountTestcases++;
             if (Array.IndexOf(names, "AAABB") < 0)
             {
@@ -329,7 +329,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             // [] Should not search on fullpath
             // [] No matches should return empty array
 
-            strArr = Directory.GetDirectories(".\\" + dirName, "Directory");
+            strArr = Directory.GetDirectories(Path.Combine(".", dirName), "Directory");
             iCountTestcases++;
             if (strArr.Length != 0)
             {
@@ -339,7 +339,7 @@ public class Directory_Co5674GetDirectories_Str_Str
 
             //Code coverage
             //Search pattern could have subdirectories
-            strArr = Directory.GetDirectories(".", String.Format("{0}\\TestDir*", dirName));
+            strArr = Directory.GetDirectories(".", Path.Combine(dirName, "TestDir*"));
             if (strArr.Length != 3)
             {
                 iCountErrors++;
@@ -349,7 +349,7 @@ public class Directory_Co5674GetDirectories_Str_Str
             names = new String[strArr.Length];
             i = 0;
             foreach (String d in strArr)
-                names[i++] = d.ToString().Substring(d.ToString().LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(d);
 
             iCountTestcases++;
             if (Array.IndexOf(names, "TestDir1") < 0)

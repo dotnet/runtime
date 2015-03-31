@@ -418,7 +418,7 @@ public class Directory_CreateDirectory
 
             foreach (var component in components)
             {
-                string path = IOServices.AddTrailingSlashIfNeeded(directory.Path + "\\" + component);
+                string path = IOServices.AddTrailingSlashIfNeeded(Path.Combine(directory.Path, component));
 
                 DirectoryInfo result = Directory.CreateDirectory(path);
 
@@ -437,7 +437,7 @@ public class Directory_CreateDirectory
 
             foreach (var component in components)
             {
-                string path = directory.Path + @"\" + component;
+                string path = directory.Path + Path.DirectorySeparatorChar + component;
 
                 DirectoryInfo result = Directory.CreateDirectory(path);
 

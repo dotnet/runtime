@@ -134,7 +134,7 @@ namespace System.IO.FileSystem.Tests
         public void FalseForFile()
         {
             string fileName = GetTestFilePath();
-            File.Create(fileName);
+            File.Create(fileName).Dispose();
             DirectoryInfo di = new DirectoryInfo(fileName);
             Assert.False(di.Exists);
         }

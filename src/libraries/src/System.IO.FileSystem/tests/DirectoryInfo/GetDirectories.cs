@@ -94,8 +94,8 @@ public class DirectoryInfo_GetDirectories
                 printerr("Error_879by! Incorrect name==" + dirArr[2].Name);
             }
 
-            Directory.Delete(dirName + "\\TestDir3");
-            Directory.Delete(dirName + "\\TestDir2");
+            Directory.Delete(Path.Combine(dirName, "TestDir3"));
+            Directory.Delete(Path.Combine(dirName, "TestDir2"));
 
             dirArr = dir2.GetDirectories();
             iCountTestcases++;
@@ -141,7 +141,7 @@ C:\wd\bar\abc
             int dirSuffixNo = 0;
             while (Directory.Exists(String.Format("{0}{1}", rootTempDir, dirSuffixNo++))) ;
             rootTempDir = String.Format("{0}{1}", rootTempDir, (dirSuffixNo - 1));
-            String tempFullName = String.Format(@"{0}\laks1\laks2", rootTempDir);
+            String tempFullName = Path.Combine(rootTempDir, "laks1", "laks2");
             Directory.CreateDirectory(tempFullName);
             DirectoryInfo dir = new DirectoryInfo(rootTempDir);
             AddFolders(dir);

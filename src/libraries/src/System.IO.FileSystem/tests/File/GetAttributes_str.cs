@@ -73,7 +73,7 @@ public class File_GetAttributes_str
             strLoc = "loc_0015";
 
             iCountTestcases++;
-            String[] paths = { @"\Foo8235378\Bar", "Bar2342385", "c:\\this is a invalid testing directory\\test\\test\\" };
+            String[] paths = { Path.Combine("Foo8235378", "Bar"), "Bar2342385", Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "this is a invalid testing directory", "test", "test") };
             foreach (String path in paths)
             {
                 if (Directory.Exists(path))

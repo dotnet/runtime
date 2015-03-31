@@ -98,7 +98,7 @@ public class Directory_Modify_FailSafe
 
 
         // Test DirectoryInfo.Name on something like "c:\bar\"
-        DirectoryInfo subDir = new DirectoryInfo(Path.Combine(di.Name, "bar\\"));
+        DirectoryInfo subDir = new DirectoryInfo(Path.Combine(di.Name, "bar") + Path.DirectorySeparatorChar);
         if (!subDir.Name.Equals("bar"))
             throw new Exception("Subdirectory name was wrong.  Expected bar, Got: " + subDir.Name);
 
@@ -112,14 +112,15 @@ public class Directory_Modify_FailSafe
         if (!rootName.Equals(root.Name))
             throw new Exception(String.Format("Root directory name was wrong!  rootName: {0}  DI.Root.Name: {1}", rootName, root.Name));
 
-        // Test DirectoryInfo behavior for "c:\"
-        DirectoryInfo c = new DirectoryInfo("c:\\");
-        if (!"c:\\".Equals(c.Name))
-            throw new Exception("DirectoryInfo name for c:\\ was wrong!  got: " + c.Name);
-        if (!"c:\\".Equals(c.FullName))
-            throw new Exception("DirectoryInfo FullName for c:\\ was wrong!  got: " + c.FullName);
+        // Test DirectoryInfo behavior for the root
+        string rootPath = root.FullName;
+        DirectoryInfo c = new DirectoryInfo(rootPath);
+        if (!rootPath.Equals(c.Name))
+            throw new Exception("DirectoryInfo name for root was wrong!  got: " + c.Name);
+        if (!rootPath.Equals(c.FullName))
+            throw new Exception("DirectoryInfo FullName for root was wrong!  got: " + c.FullName);
         if (null != c.Parent)
-            throw new Exception("DirectoryInfo::Parent for c:\\ is not null!");
+            throw new Exception("DirectoryInfo::Parent for root is not null!");
 
         FailSafeDirectoryOperations.DeleteDirectoryInfo(di, true);
         di.Refresh();
@@ -228,7 +229,7 @@ public class Directory_Modify_FailSafe
             throw new Exception("Found[0] wasn't files[2] when listing c*!  got: " + found[0]);
 
         // Copy then delete a file to make sure it's gone.
-        File.Copy(dir + "\\" + s_files[0], dir.FullName + "\\newfile.new");
+        File.Copy(Path.Combine(dir.ToString(), s_files[0]), Path.Combine(dir.FullName, "newfile.new"));
         found = dir.GetFiles("new*.new");
         if (found.Length != 1)
             throw new Exception("Didn't find copied file!");
@@ -242,7 +243,7 @@ public class Directory_Modify_FailSafe
         String curDir = Directory.GetCurrentDirectory();
         if (curDir == null)
             throw new Exception("Ack! got null string from get current directory");
-        String newDir = Path.Combine(curDir, dirName); //curDir+'\\'+dirName;
+        String newDir = Path.Combine(curDir, dirName);
         Directory.SetCurrentDirectory(newDir);
         if (!newDir.Equals(Directory.GetCurrentDirectory()))
             throw new Exception("Ack!  new directory didn't equal getcwd!  " + Directory.GetCurrentDirectory());
@@ -408,7 +409,7 @@ public class Directory_Modify_FailSafe
     public static void GetSubdirectoriesTest()
     {
         String testDir = "GetSubdirectoriesTempDir";
-        if (Directory.Exists("." + Path.DirectorySeparatorChar + testDir))
+        if (Directory.Exists(Path.Combine(".", testDir)))
         {
             Console.WriteLine("Test didn't clean up right, trying to delete directory \"" + testDir + "\"");
             try
