@@ -1873,7 +1873,9 @@ size_t switch_alignment_size (BOOL already_padded_p)
 void set_node_aligninfo (BYTE *node, int requiredAlignment, ptrdiff_t pad);
 void clear_node_aligninfo (BYTE *node);
 #else // FEATURE_STRUCTALIGN
+#define node_realigned(node)    (((plug_and_reloc*)(node))[-1].reloc & 1)
 void set_node_realigned (BYTE* node);
+void clear_node_realigned(BYTE* node);
 #endif // FEATURE_STRUCTALIGN
 
 inline
@@ -5858,23 +5860,43 @@ BYTE*& pin_allocation_context_start_region (mark* m)
     return m->allocation_context_start_region;
 }
 
+BYTE* get_plug_start_in_saved (BYTE* old_loc, mark* pinned_plug_entry)
+{
+    BYTE* saved_pre_plug_info = (BYTE*)(pinned_plug_entry->get_pre_plug_reloc_info());
+    BYTE* plug_start_in_saved = saved_pre_plug_info + (old_loc - (pinned_plug (pinned_plug_entry) - sizeof (plug_and_gap)));
+    //dprintf (1, ("detected a very short plug: %Ix before PP %Ix, pad %Ix", 
+    //    old_loc, pinned_plug (pinned_plug_entry), plug_start_in_saved));
+    dprintf (1, ("EP: %Ix(%Ix), %Ix", old_loc, (BYTE)pinned_plug_entry, plug_start_in_saved));
+    return plug_start_in_saved;
+}
+
 inline
 void set_padding_in_expand (BYTE* old_loc, 
-                       BOOL set_padding_on_saved_p,
-                       mark* pinned_plug_entry)
+                            BOOL set_padding_on_saved_p,
+                            mark* pinned_plug_entry)
 {
     if (set_padding_on_saved_p)
     {
-        BYTE* saved_pre_plug_info = (BYTE*)(pinned_plug_entry->get_pre_plug_reloc_info());
-        BYTE* plug_start_in_saved = saved_pre_plug_info + (old_loc - (pinned_plug (pinned_plug_entry) - sizeof (plug_and_gap)));
-        //dprintf (1, ("detected a very short plug: %Ix before PP %Ix, pad %Ix", 
-        //    old_loc, pinned_plug (pinned_plug_entry), plug_start_in_saved));
-        dprintf (1, ("EP: %Ix(%Ix)", old_loc, (BYTE)pinned_plug_entry));
-        set_plug_padded (plug_start_in_saved);
+        set_plug_padded (get_plug_start_in_saved (old_loc, pinned_plug_entry));
     }
     else
     {
         set_plug_padded (old_loc);
+    }
+}
+
+inline
+void clear_padding_in_expand (BYTE* old_loc, 
+                              BOOL set_padding_on_saved_p,
+                              mark* pinned_plug_entry)
+{
+    if (set_padding_on_saved_p)
+    {
+        clear_plug_padded (get_plug_start_in_saved (old_loc, pinned_plug_entry));
+    }
+    else
+    {
+        clear_plug_padded (old_loc);
     }
 }
 #endif //SHORT_PLUGS
@@ -8303,6 +8325,16 @@ public:
                size_t plug_size
                REQD_ALIGN_AND_OFFSET_DCL)
     {
+        if (old_loc)
+        {
+#ifdef SHORT_PLUGS
+            assert (!is_plug_padded (old_loc));
+#endif //SHORT_PLUGS
+            assert (!node_realigned (old_loc));
+        }
+
+        size_t saved_plug_size = plug_size;
+
 #ifdef FEATURE_STRUCTALIGN
         // BARTOKTODO (4841): this code path is disabled (see can_fit_all_blocks_p) until we take alignment requirements into account
         _ASSERTE(requiredAlignment == DATA_ALIGNMENT && false);
@@ -8351,10 +8383,15 @@ retry:
         size_t new_free_space_size = 0;
         BOOL can_fit = FALSE;
         size_t pad = 0;
-        
+
         for (i = 0; i < free_space_count; i++)
         {
             size_t free_space_size = 0;
+            pad = 0;
+#ifdef SHORT_PLUGS
+            BOOL short_plugs_padding_p = FALSE;
+#endif //SHORT_PLUGS
+            BOOL realign_padding_p = FALSE;
 
             if (bucket_free_space[i].is_plug)
             {
@@ -8367,17 +8404,17 @@ retry:
                     ((plug_free_space_start - pin_allocation_context_start_region (m))>=DESIRED_PLUG_LENGTH)))
                 {
                     pad = Align (min_obj_size);
-                    set_padding_in_expand (old_loc, set_padding_on_saved_p, pinned_plug_entry);
+                    short_plugs_padding_p = TRUE;
                 }
 #endif //SHORT_PLUGS
 
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start+pad)))
                 {
-                    pad += switch_alignment_size (FALSE);
-                    set_node_realigned (old_loc);
+                    pad += switch_alignment_size (pad != 0);
+                    realign_padding_p = TRUE;
                 }
 
-                plug_size += pad;
+                plug_size = saved_plug_size + pad;
 
                 free_space_size = pinned_len (m);
                 new_address = pinned_plug (m) - pinned_len (m);
@@ -8388,17 +8425,29 @@ retry:
                     new_free_space_size = free_space_size - plug_size;
                     pinned_len (m) = new_free_space_size;
 #ifdef SIMPLE_DPRINTF
-                    dprintf (SEG_REUSE_LOG_0, ("[%d]free space before pin: [0x%Ix, [0x%Ix (2^%d) -> [0x%Ix, [0x%Ix (2^%d)",
+                    dprintf (SEG_REUSE_LOG_0, ("[%d]FP: 0x%Ix->0x%Ix(%Ix)(%Ix), [0x%Ix (2^%d) -> [0x%Ix (2^%d)",
                                 heap_num, 
-                                new_address, pinned_plug (m), 
+                                old_loc,
+                                new_address, 
+                                (plug_size - pad),
+                                pad,
+                                pinned_plug (m), 
                                 index_of_set_bit (round_down_power2 (free_space_size)),
-                                (pinned_plug (m) - pinned_len (m)), pinned_plug (m),
+                                (pinned_plug (m) - pinned_len (m)), 
                                 index_of_set_bit (round_down_power2 (new_free_space_size))));
 #endif //SIMPLE_DPRINTF
 
-                    if (pad)
+#ifdef SHORT_PLUGS
+                    if (short_plugs_padding_p)
                     {
                         pin_allocation_context_start_region (m) = plug_free_space_start;
+                        set_padding_in_expand (old_loc, set_padding_on_saved_p, pinned_plug_entry);
+                    }
+#endif //SHORT_PLUGS
+
+                    if (realign_padding_p)
+                    {
+                        set_node_realigned (old_loc);
                     }
 
                     can_fit = TRUE;
@@ -8412,10 +8461,10 @@ retry:
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, heap_segment_plan_allocated (seg))))
                 {
                     pad = switch_alignment_size (FALSE);
-                    set_node_realigned (old_loc);
+                    realign_padding_p = TRUE;
                 }
 
-                plug_size += pad;
+                plug_size = saved_plug_size + pad;
 
                 if (free_space_size >= (plug_size + Align (min_obj_size)) ||
                     free_space_size == plug_size)
@@ -8424,13 +8473,19 @@ retry:
                     new_free_space_size = free_space_size - plug_size;
                     heap_segment_plan_allocated (seg) = new_address + plug_size;
 #ifdef SIMPLE_DPRINTF
-                    dprintf (SEG_REUSE_LOG_0, ("[%d]free space at the end of seg 0x%Ix (2^%d) -> 0x%Ix (2^%d)",
+                    dprintf (SEG_REUSE_LOG_0, ("[%d]FS: 0x%Ix-> 0x%Ix(%Ix) (2^%d) -> 0x%Ix (2^%d)",
                                 heap_num, 
+                                old_loc,
                                 new_address, 
+                                (plug_size - pad),
                                 index_of_set_bit (round_down_power2 (free_space_size)),
                                 heap_segment_plan_allocated (seg), 
                                 index_of_set_bit (round_down_power2 (new_free_space_size))));
 #endif //SIMPLE_DPRINTF
+
+                    if (realign_padding_p)
+                        set_node_realigned (old_loc);
+
                     can_fit = TRUE;
                 }
             }
@@ -10242,8 +10297,6 @@ BOOL gc_heap::size_fit_p (size_t size REQD_ALIGN_AND_OFFSET_DCL, BYTE* alloc_poi
     }
 #endif //SHORT_PLUGS
 
-    // TODO: this is incorrect - if we don't pad, we would have a different alignment so
-    // calculating the alignment requirement here is incorrect.
     if (!((old_loc == 0) || same_large_alignment_p (old_loc, alloc_pointer)))
         size = size + switch_alignment_size (already_padded);
 
@@ -19482,8 +19535,6 @@ void set_node_relocation_distance(BYTE* node, ptrdiff_t val)
 #define set_node_left(node) ((plug_and_reloc*)(node))[-1].reloc |= 2;
 
 #ifndef FEATURE_STRUCTALIGN
-#define node_realigned(node)    (((plug_and_reloc*)(node))[-1].reloc & 1)
-
 void set_node_realigned(BYTE* node)
 {
     ((plug_and_reloc*)(node))[-1].reloc |= 1;
@@ -21268,6 +21319,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                         plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
                             (size_t)new_address + ps, ps));
 #endif //SIMPLE_DPRINTF
+
 #ifdef SHORT_PLUGS
                     if (is_plug_padded (plug_start))
                     {
@@ -28269,11 +28321,6 @@ void gc_heap::realloc_plug (size_t last_plug_size, BYTE*& last_plug,
     }
     else if (last_plug >= start_address)
     {
-
-#ifdef SHORT_PLUGS
-        clear_plug_padded (last_plug);
-#endif //SHORT_PLUGS
-
 #ifdef FEATURE_STRUCTALIGN
         int requiredAlignment;
         ptrdiff_t pad;
@@ -28300,11 +28347,10 @@ void gc_heap::realloc_plug (size_t last_plug_size, BYTE*& last_plug,
 
         if (shortened_p)
         {
-            assert (pinned_plug_entry != NULL);
-
             last_plug_size += sizeof (gap_reloc_pair);
 
 #ifdef SHORT_PLUGS
+            assert (pinned_plug_entry != NULL);
             if (last_plug_size <= sizeof (plug_and_gap))
             {
                 set_padding_on_saved_p = TRUE;
@@ -28313,6 +28359,10 @@ void gc_heap::realloc_plug (size_t last_plug_size, BYTE*& last_plug,
 
             dprintf (3, ("ra plug %Ix was shortened, adjusting plug size to %Ix", last_plug_size))
         }
+
+#ifdef SHORT_PLUGS
+        clear_padding_in_expand (last_plug, set_padding_on_saved_p, pinned_plug_entry);
+#endif //SHORT_PLUGS
 
         BYTE* new_address = allocate_in_expanded_heap(gen, last_plug_size, adjacentp, last_plug, 
 #ifdef SHORT_PLUGS
