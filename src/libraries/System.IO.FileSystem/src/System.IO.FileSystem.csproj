@@ -290,9 +290,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Unix\Interop.read.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.readdir.cs">
-      <Link>Common\Interop\Unix\Interop.readdir.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rename.cs">
       <Link>Common\Interop\Unix\Interop.rename.cs</Link>
     </Compile>
@@ -313,6 +310,18 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
       <Link>Common\Interop\Unix\Interop.GetInformation.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Linux -->
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.readdir.cs">
+      <Link>Common\Interop\Linux\Interop.readdir.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- OSX -->
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.readdir.cs">
+      <Link>Common\Interop\OSX\Interop.readdir.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

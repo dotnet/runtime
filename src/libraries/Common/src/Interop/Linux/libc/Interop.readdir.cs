@@ -14,14 +14,37 @@ internal static partial class Interop
         [DllImport(Libraries.Libc, SetLastError = true)]
         internal static extern IntPtr readdir(IntPtr dirp);
 
+        internal static unsafe DType GetDirEntType(IntPtr dirEnt)
+        {
+            return ((dirent*)dirEnt)->d_type;
+        }
+
+        internal static unsafe string GetDirEntName(IntPtr dirEnt)
+        {
+            return Marshal.PtrToStringAnsi((IntPtr)((dirent*)dirEnt)->d_name);
+        }
+
+        internal enum DType : byte
+        {
+            DT_UNKNOWN = 0,
+            DT_FIFO = 1,
+            DT_CHR = 2,
+            DT_DIR = 4,
+            DT_BLK = 6,
+            DT_REG = 8,
+            DT_LNK = 10,
+            DT_SOCK = 12,
+            DT_WHT = 14
+        }
+
         #pragma warning disable 0649 // fields are assigned by P/Invoke call 
-        internal unsafe struct dirent 
+        private unsafe struct dirent 
         { 
             internal ino_t d_ino; 
             internal off_t d_off; 
             internal short d_reclen; 
-            internal byte d_type; 
-            internal fixed byte d_name[256]; 
+            internal DType d_type; 
+            internal fixed byte d_name[256];
         } 
         #pragma warning restore 0649 
     }
