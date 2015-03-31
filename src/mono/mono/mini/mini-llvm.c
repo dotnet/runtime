@@ -4784,8 +4784,7 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 			MonoExceptionClause *clause1 = &cfg->header->clauses [i];
 			MonoExceptionClause *clause2 = &cfg->header->clauses [j];
 
-			if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset &&
-				(clause1->flags == MONO_EXCEPTION_CLAUSE_FINALLY || clause2->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
+			if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
 				cfg->exception_message = g_strdup ("nested clauses");
 				cfg->disable_llvm = TRUE;
 				break;
