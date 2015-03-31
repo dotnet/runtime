@@ -72,7 +72,6 @@ Parameters:
 Return value:
     Does not return
 --*/
-PAL_NORETURN
 VOID 
 SEHProcessException(PEXCEPTION_POINTERS pointers);
 
