@@ -44,7 +44,10 @@ inline void FATAL_GC_ERROR()
                                 //relocation
 #endif //FEATURE_64BIT_ALIGNMENT
 
+#ifndef RESPECT_LARGE_ALIGNMENT
 #define SHORT_PLUGS //used to keep ephemeral plugs short so they fit better into the oldest generation free items
+#endif //!RESPECT_LARGE_ALIGNMENT 
+
 #ifdef SHORT_PLUGS
 #define DESIRED_PLUG_LENGTH (1000)
 #endif //SHORT_PLUGS
