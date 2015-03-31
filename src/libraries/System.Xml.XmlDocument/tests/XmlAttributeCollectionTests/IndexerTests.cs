@@ -88,7 +88,6 @@ namespace XmlDocumentTests.XmlAttributeCollectionTests
             element.Attributes.Append(doc.CreateAttribute(attrName3, attrUri));
 
             XmlAttributeCollection target = element.Attributes;
-            // can find first, middle or last attribute
             Assert.Same(expectedAttr, target[attrName2]);
         }
 

@@ -13,7 +13,7 @@ namespace XmlDocumentTests.XmlAttributeCollectionTests
         }
 
         [Fact]
-        public void RemoteAtWithNegativeIndexReturnsNull()
+        public void RemoveAtWithNegativeIndexReturnsNull()
         {
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
@@ -27,7 +27,7 @@ namespace XmlDocumentTests.XmlAttributeCollectionTests
         }
 
         [Fact]
-        public void RemoteAtWithInvalidIndexReturnsNull()
+        public void RemoveAtWithInvalidIndexReturnsNull()
         {
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
@@ -41,7 +41,7 @@ namespace XmlDocumentTests.XmlAttributeCollectionTests
         }
 
         [Fact]
-        public void RemoteAtDeletesAttr()
+        public void RemoveAtDeletesAttr()
         {
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
@@ -59,7 +59,7 @@ namespace XmlDocumentTests.XmlAttributeCollectionTests
         }
 
         [Fact]
-        public void RemoteAtReturnsDeletedAttr()
+        public void RemoveAtReturnsDeletedAttr()
         {
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
