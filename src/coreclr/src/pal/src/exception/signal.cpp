@@ -106,7 +106,7 @@ void SEHInitializeSignals()
     TRACE("Initializing signal handlers\n");
 
     /* we call handle signal for every possible signal, even
-       if we don't provide a signal handler. 
+       if we don't provide a signal handler.
 
        handle_signal will set SA_RESTART flag for specified signal.
        Therefore, all signals will have SA_RESTART flag set, preventing
@@ -117,7 +117,7 @@ void SEHInitializeSignals()
        to register a handler for them anyway. We don't do that.
 
        see sigaction man page for more details
-    */
+       */
     handle_signal(SIGILL, sigill_handler, &g_previous_sigill);
     handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
     handle_signal(SIGFPE, sigfpe_handler, &g_previous_sigfpe);
@@ -131,8 +131,8 @@ void SEHInitializeSignals()
     /* The default action for SIGPIPE is process termination.
        Since SIGPIPE can be signaled when trying to write on a socket for which
        the connection has been dropped, we need to tell the system we want
-       to ignore this signal. 
-       
+       to ignore this signal.
+
        Instead of terminating the process, the system call which would had
        issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
     */
@@ -159,7 +159,7 @@ void SEHCleanupSignals()
 {
     TRACE("Restoring default signal handlers\n");
 
-   /* Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
+    /* Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
         during cleanup after this function has been called. */
     restore_signal(SIGILL, &g_previous_sigill);
     restore_signal(SIGTRAP, &g_previous_sigtrap);
@@ -177,8 +177,10 @@ void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context)
     check_pal_initialize(code, &g_previous_sigusr1);
 
     CPalThread *pThread = InternalGetCurrentThread();
-    pThread->suspensionInfo.HandleSuspendSignal(pThread);
-
+    if (pThread->suspensionInfo.HandleSuspendSignal(pThread)) 
+    {
+        return;
+    }
     TRACE("SIGUSR1 signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigusr1.sa_sigaction != NULL)
@@ -192,8 +194,10 @@ void CorUnix::resume_handler(int code, siginfo_t *siginfo, void *context)
     check_pal_initialize(code, &g_previous_sigusr2);
 
     CPalThread *pThread = InternalGetCurrentThread();
-    pThread->suspensionInfo.HandleResumeSignal();
-
+    if (pThread->suspensionInfo.HandleResumeSignal()) 
+    {
+        return;
+    }
     TRACE("SIGUSR2 signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigusr2.sa_sigaction != NULL)

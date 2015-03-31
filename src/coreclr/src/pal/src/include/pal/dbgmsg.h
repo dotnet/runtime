@@ -257,7 +257,6 @@ extern Volatile<BOOL> dbg_master_switch ;
 #define ERROR     NOTRACE
 #define ERROR_(x) NOTRACE
 
-#define CHECK_PAL_THREAD
 #define CHECK_STACK_ALIGN
 
 #else /* _NO_DEBUG_MESSAGES_ */
@@ -274,13 +273,6 @@ extern Volatile<BOOL> dbg_master_switch ;
 #define WARN_(x) \
     DBG_PRINTF(DLI_WARN,DCI_##x,TRUE)
 
-#if _DEBUG && defined(FEATURE_PAL_SXS)
-void CheckPalThread();
-#define CHECK_PAL_THREAD CheckPalThread();
-#else // _DEBUG && FEATURE_PAL_SXS
-#define CHECK_PAL_THREAD
-#endif // _DEBUG && FEATURE_PAL_SXS
-
 #if _DEBUG && defined(__APPLE__)
 bool DBG_ShouldCheckStackAlignment();
 #define CHECK_STACK_ALIGN   if (DBG_ShouldCheckStackAlignment()) DBG_CheckStackAlignment()
@@ -293,12 +285,10 @@ bool DBG_ShouldCheckStackAlignment();
     DBG_PRINTF(DLI_ENTRY, defdbgchan,TRUE)
 
 #define ENTRY \
-    CHECK_PAL_THREAD; \
     CHECK_STACK_ALIGN; \
     DBG_PRINTF(DLI_ENTRY, defdbgchan,TRUE)
 
 #define ENTRY_(x) \
-    CHECK_PAL_THREAD; \
     CHECK_STACK_ALIGN; \
     DBG_PRINTF(DLI_ENTRY, DCI_##x,TRUE)
 
