@@ -279,12 +279,6 @@ namespace CorUnix
     private:
 
         CPalThread *m_pNext;
-        
-#ifdef _DEBUG
-        DWORD m_dwGuard;
-        friend CPalThread *InternalGetCurrentThread();
-#endif
-        
         DWORD m_dwExitCode;
         BOOL m_fExitCodeSet;
         CRITICAL_SECTION m_csLock;
@@ -391,9 +385,6 @@ namespace CorUnix
         CPalThread()
             :
             m_pNext(NULL),
-#ifdef _DEBUG
-            m_dwGuard(0),
-#endif
             m_dwExitCode(STILL_ACTIVE),
             m_fExitCodeSet(FALSE),
             m_fLockInitialized(FALSE),
@@ -684,20 +675,25 @@ namespace CorUnix
             return &m_sMachExceptionHandlers;
         }
 #endif // HAVE_MACH_EXCEPTIONS
-        
-#ifdef _DEBUG
-        void CheckGuard();
-#endif // _DEBUG
 #endif // FEATURE_PAL_SXS
-
     };
 
-    inline CPalThread *InternalGetCurrentThread() {
-        CPalThread *pThread = reinterpret_cast<CPalThread*>(pthread_getspecific(thObjKey));
-#if defined(FEATURE_PAL_SXS) && defined(_DEBUG)
-        if (pThread)
-            pThread->CheckGuard();
-#endif // FEATURE_PAL_SXS && _DEBUG
+#if defined(FEATURE_PAL_SXS)
+    extern "C" CPalThread *CreateCurrentThreadData();
+#endif // FEATURE_PAL_SXS
+
+    inline CPalThread *GetCurrentPalThread()
+    {
+        return reinterpret_cast<CPalThread*>(pthread_getspecific(thObjKey));
+    }
+
+    inline CPalThread *InternalGetCurrentThread()
+    {
+        CPalThread *pThread = GetCurrentPalThread();
+#if defined(FEATURE_PAL_SXS)
+        if (pThread == nullptr)
+            pThread = CreateCurrentThreadData();
+#endif // FEATURE_PAL_SXS
         return pThread;
     }
 

@@ -23,40 +23,7 @@ using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(SXS);
 
-#if _DEBUG
-/*++
-Function:
-  CheckPalThread
-
-Abstract:
-  This function is called by the ENTRY macro to validate consistency:
-  Whenever a PAL function is called, that thread must have previously
-  registered the fact that it is currently executing code that depends
-  on this PAL by means of PAL_ReverseEnter or PAL_Enter.
---*/
-extern "C" void CheckPalThread()
-{
-    if (PALIsInitialized())
-    {
-        CPalThread *pThread = InternalGetCurrentThread();
-        if (!pThread)
-        {
-            ASSERT("PAL function called on a thread unknown to this PAL\n");
-        }
-        else if (!pThread->IsInPal())
-        {
-            // There are several outstanding issues where we are not maintaining
-            // correct in- vs. out-of-thePAL state. With the advent of 
-            // single registration of Mach EH handling per thread, there's no
-            // need to actually be in the PAL any more, and so the following
-            // is being made into a warning, and we'll deprecate the 
-            // entire concept later.
-            WARN("PAL function called on a thread external to this PAL\n");
-        }
-    }
-}
-#endif // _DEBUG
-
+PAL_ERROR AllocatePalThread(CPalThread **ppThread);
 
 /*++
 Function:
@@ -104,7 +71,7 @@ PAL_Enter(PAL_Boundary boundary)
     ENTRY_EXTERNAL("PAL_Enter(boundary=%u)\n", boundary);
 
     PAL_ERROR palError = ERROR_SUCCESS;
-    CPalThread *pThread = InternalGetCurrentThread();
+    CPalThread *pThread = GetCurrentPalThread();
     if (pThread != NULL)
     {
         palError = pThread->Enter(boundary);
@@ -117,33 +84,76 @@ PAL_Enter(PAL_Boundary boundary)
         _ASSERT_MSG(PAL_BoundaryTop == boundary, "How are we entering a PAL "
             "thread for the first time not from the top? (boundary=%u)", boundary);
             
-        palError = CreateThreadData(&pThread);
+        palError = AllocatePalThread(&pThread);
         if (NO_ERROR != palError)
         {
-            ERROR("Unable to create thread data: error %d\n", palError);
-            goto EXIT;
+            ERROR("Unable to allocate pal thread: error %d\n", palError);
         }
-
-        HANDLE hThread;
-        palError = CreateThreadObject(pThread, pThread, &hThread);
-        if (NO_ERROR != palError)
-        {
-            ERROR("Unable to create thread object: error %d\n", palError);
-            pthread_setspecific(thObjKey, NULL);
-            pThread->ReleaseThreadReference();
-            goto EXIT;
-        }
-        
-        // Like CreateInitialProcessAndThreadObjects, we do not need this 
-        // thread handle, since we're not returning it to anyone who will 
-        // possibly release it.
-        (void)g_pObjectManager->RevokeHandle(pThread, hThread);
-
-        PROCAddThread(pThread, pThread);
     }
 
 EXIT:
     LOGEXIT("PAL_Enter returns %d\n", palError);
+    return palError;
+}
+
+/*++
+Function:
+  CreateCurrentThreadData
+
+Abstract:
+  This function is called by the InternalGetOrCreateCurrentThread inlined 
+  function to create the thread data when it is null meaning the thread has
+  never been in this PAL. 
+
+Warning:
+  If the allocation fails, this function asserts and exits the process.
+--*/
+extern "C" CPalThread *
+CreateCurrentThreadData()
+{
+    CPalThread *pThread = NULL;
+
+    if (PALIsThreadDataInitialized()) {
+        PAL_ERROR palError = AllocatePalThread(&pThread);
+        if (NO_ERROR != palError)
+        {
+            ASSERT("Unable to allocate pal thread: error %d - aborting\n", palError);
+            abort();
+        }
+    }
+
+    return pThread;
+}
+
+PAL_ERROR
+AllocatePalThread(CPalThread **ppThread)
+{
+    CPalThread *pThread = NULL;
+
+    PAL_ERROR palError = CreateThreadData(&pThread);
+    if (NO_ERROR != palError)
+    {
+        goto exit;
+    }
+
+    HANDLE hThread;
+    palError = CreateThreadObject(pThread, pThread, &hThread);
+    if (NO_ERROR != palError)
+    {
+        pthread_setspecific(thObjKey, NULL);
+        pThread->ReleaseThreadReference();
+        goto exit;
+    }
+    
+    // Like CreateInitialProcessAndThreadObjects, we do not need this 
+    // thread handle, since we're not returning it to anyone who will 
+    // possibly release it.
+    (void)g_pObjectManager->RevokeHandle(pThread, hThread);
+
+    PROCAddThread(pThread, pThread);
+
+exit:
+    *ppThread = pThread;
     return palError;
 }
 
@@ -174,7 +184,7 @@ PAL_Reenter(PAL_Boundary boundary)
 {
     ENTRY_EXTERNAL("PAL_Reenter(boundary=%u)\n", boundary);
 
-    CPalThread *pThread = InternalGetCurrentThread();
+    CPalThread *pThread = GetCurrentPalThread();
     if (pThread == NULL)
     {
         ASSERT("PAL_Reenter called on a thread unknown to this PAL\n");
@@ -201,7 +211,7 @@ PAL_HasEntered()
 {
     ENTRY_EXTERNAL("PAL_HasEntered()\n");
 
-    CPalThread *pThread = InternalGetCurrentThread();
+    CPalThread *pThread = GetCurrentPalThread();
     if (pThread == NULL)
     {
         ASSERT("PAL_Reenter called on a thread unknown to this PAL\n");
@@ -236,7 +246,7 @@ PAL_ReenterForEH()
 
     BOOL fEntered = FALSE;
 
-    CPalThread *pThread = InternalGetCurrentThread();
+    CPalThread *pThread = GetCurrentPalThread();
     if (pThread == NULL)
     {
         ASSERT("PAL_ReenterForEH called on a thread unknown to this PAL\n");
@@ -292,7 +302,7 @@ PAL_Leave(PAL_Boundary boundary)
 {
     ENTRY("PAL_Leave(boundary=%u)\n", boundary);
     
-    CPalThread *pThread = InternalGetCurrentThread();
+    CPalThread *pThread = GetCurrentPalThread();
     // We ignore the return code.  This call should only fail on internal
     // error, and we assert at the actual failure.
     pThread->Leave(boundary);
@@ -331,12 +341,5 @@ PAL_ERROR CPalThread::Leave(PAL_Boundary /* boundary */)
 
     return palError;
 }
-
-#ifdef _DEBUG
-void CPalThread::CheckGuard()
-{
-    _ASSERT_MSG(m_dwGuard == 0, "Guard is 0x%lX.\n", m_dwGuard);
-}
-#endif
 
 #endif // FEATURE_PAL_SXS

@@ -1663,49 +1663,61 @@ PALCIsSuspensionStateSafe(void)
 /*++
 Function:
   HandleSuspendSignal
+
+Returns:
+    true if the signal is expected by this PAL instance; false should 
+    be chained to the next signal handler.
   
 HandleSuspendSignal is called from within the SIGUSR1 handler. The thread
 that invokes this function will suspend itself if it's suspension safe
 or set its pending flag to TRUE and continue executing until it becomes
 suspension safe.
 --*/
-void 
+bool
 CThreadSuspensionInfo::HandleSuspendSignal(
     CPalThread *pthrTarget
     )
 {
-    if (GetSuspendSignalSent())
+    if (!GetSuspendSignalSent())
     {
-        SetSuspendSignalSent(FALSE);
-
-        if (IsSuspensionStateSafe())
-        {
-            SetSuspPending(FALSE);
-            if (!pthrTarget->GetCreateSuspended())
-            {
-                /* Note that we don't call sem_post when CreateSuspended is true. 
-                This is to handle the scenario where a thread suspends itself and 
-                another thread then attempts to suspend that thread. It won't wait 
-                on the semaphore if the self suspending thread already posted 
-                but didn't reach the matching wait. */
-                PostOnSuspendSemaphore();
-            }
-            else 
-            {
-                pthrTarget->SetStartStatus(TRUE);
-            }
-            sigsuspend(&smSuspmask);
-        }
-        else
-        {
-            SetSuspPending(TRUE);
-        }	
+        return false;
     }
+
+    SetSuspendSignalSent(FALSE);
+
+    if (IsSuspensionStateSafe())
+    {
+        SetSuspPending(FALSE);
+        if (!pthrTarget->GetCreateSuspended())
+        {
+            /* Note that we don't call sem_post when CreateSuspended is true. 
+            This is to handle the scenario where a thread suspends itself and 
+            another thread then attempts to suspend that thread. It won't wait 
+            on the semaphore if the self suspending thread already posted 
+            but didn't reach the matching wait. */
+            PostOnSuspendSemaphore();
+        }
+        else 
+        {
+            pthrTarget->SetStartStatus(TRUE);
+        }
+        sigsuspend(&smSuspmask);
+    }
+    else
+    {
+        SetSuspPending(TRUE);
+    }	
+
+    return true;
 }
 
 /*++
 Function:
   HandleResumeSignal
+
+Returns:
+    true if the signal is expected by this PAL instance; false should 
+    be chained to the next signal handler.
   
 HandleResumeSignal is called from within the SIGUSR2 handler. 
 A thread suspended by sigsuspend will enter the SUGUSR2 handler
@@ -1715,28 +1727,32 @@ still has a positive suspend count. After these checks, the resumed
 thread posts on its resume semaphore so the resuming thread can
 continue execution.
 --*/
-void 
+bool
 CThreadSuspensionInfo::HandleResumeSignal()
 {
-    if (GetResumeSignalSent())
+    if (!GetResumeSignalSent())
     {
-        SetResumeSignalSent(FALSE);
-
-        if (GetSuspCount() != 0)
-        {
-            ASSERT("Should not be resuming a thread whose suspension count is %d.\n", GetSuspCount());
-            return;
-        }
-
-        // This thread is no longer suspended - if it self suspended, 
-        // then its self suspension field should now be set to FALSE.
-        if (GetSelfSusp())
-        {
-            SetSelfSusp(FALSE);
-        }
-
-        PostOnResumeSemaphore();
+        return false;
     }
+
+    SetResumeSignalSent(FALSE);
+
+    if (GetSuspCount() != 0)
+    {
+        ASSERT("Should not be resuming a thread whose suspension count is %d.\n", GetSuspCount());
+        return true;
+    }
+
+    // This thread is no longer suspended - if it self suspended, 
+    // then its self suspension field should now be set to FALSE.
+    if (GetSelfSusp())
+    {
+        SetSelfSusp(FALSE);
+    }
+
+    PostOnResumeSemaphore();
+
+    return true;
 }
 #else // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
