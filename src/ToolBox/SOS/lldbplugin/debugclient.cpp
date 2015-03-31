@@ -20,63 +20,6 @@ DebugClient::~DebugClient()
 {
 }
 
-// Internal output string function
-void
-DebugClient::OutputString(
-    ULONG mask,
-    PCSTR str)
-{
-    if (mask & DEBUG_OUTPUT_ERROR)
-    {
-        m_returnObject.SetError(str);
-    }
-    else 
-    {
-        // Can not use AppendMessage or AppendWarning because they add a newline.
-        m_returnObject.Printf("%s", str);
-    }
-}
-
-lldb::SBProcess
-DebugClient::GetCurrentProcess()
-{
-    lldb::SBProcess process;
-
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
-    if (target.IsValid())
-    {
-        process = target.GetProcess();
-    }
-
-    return process;
-}
-
-lldb::SBThread 
-DebugClient::GetCurrentThread()
-{
-    lldb::SBThread thread;
-
-    lldb::SBProcess process = GetCurrentProcess();
-    if (process.IsValid())
-    {
-        thread = process.GetSelectedThread();
-    }
-
-    return thread;
-}
-
-lldb::SBFrame 
-DebugClient::GetCurrentFrame()
-{
-    lldb::SBFrame frame;
-    lldb::SBThread thread = GetCurrentThread();
-    if (thread.IsValid())
-    {
-        frame = thread.GetSelectedFrame();
-    }
-    return frame;
-}
-
 //----------------------------------------------------------------------------
 // IDebugControl2
 //----------------------------------------------------------------------------
@@ -130,7 +73,7 @@ DebugClient::OutputVaList(
     {
         // Our stack buffer wasn't big enough to contain the entire formatted
         // string, so lets let vasprintf create the string for us!
-        char *str_ptr = NULL;
+        char *str_ptr = nullptr;
         length = ::vasprintf(&str_ptr, format, args_copy);
         if (str_ptr)
         {
@@ -209,6 +152,23 @@ DebugClient::GetExecutingProcessorType(
     return S_OK;
 }
 
+// Internal output string function
+void
+DebugClient::OutputString(
+    ULONG mask,
+    PCSTR str)
+{
+    if (mask & DEBUG_OUTPUT_ERROR)
+    {
+        m_returnObject.SetError(str);
+    }
+    else 
+    {
+        // Can not use AppendMessage or AppendWarning because they add a newline.
+        m_returnObject.Printf("%s", str);
+    }
+}
+
 //----------------------------------------------------------------------------
 // IDebugDataSpaces
 //----------------------------------------------------------------------------
@@ -220,20 +180,18 @@ DebugClient::ReadVirtual(
     ULONG bufferSize,
     PULONG bytesRead)
 {
-    if (bytesRead)
-    {
-        *bytesRead = 0;
-    }
+    lldb::SBError error;
+    size_t read = 0;
 
     lldb::SBProcess process = GetCurrentProcess();
     if (!process.IsValid())
     {
-        return E_FAIL;
+        goto exit;
     }
 
-    lldb::SBError error;
-    size_t read = process.ReadMemory(offset, buffer, bufferSize, error);
+    read = process.ReadMemory(offset, buffer, bufferSize, error);
 
+exit:
     if (bytesRead)
     {
         *bytesRead = read;
@@ -277,47 +235,59 @@ DebugClient::GetNameByOffset(
 {
     HRESULT hr = E_FAIL;
     ULONG64 disp = 0;
+
+    lldb::SBTarget target;
+    lldb::SBAddress address;
+    lldb::SBModule module;
+    lldb::SBFileSpec file;
+    lldb::SBSymbol symbol;
     std::string str;
 
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
-    if (target.IsValid())
+    target = m_debugger.GetSelectedTarget();
+    if (!target.IsValid())
     {
-        lldb::SBAddress address = target.ResolveLoadAddress(offset);
-        if (address.IsValid())
+        goto exit;
+    }
+
+    address = target.ResolveLoadAddress(offset);
+    if (!address.IsValid())
+    {
+        goto exit;
+    }
+
+    module = address.GetModule();
+    if (!module.IsValid())
+    {
+        goto exit;
+    }
+
+    file = module.GetFileSpec();
+    if (file.IsValid())
+    {
+        str.append(file.GetFilename());
+    }
+
+    symbol = address.GetSymbol();
+    if (symbol.IsValid())
+    {
+        lldb::SBAddress startAddress = symbol.GetStartAddress();
+        disp = address.GetOffset() - startAddress.GetOffset();
+
+        const char *name = symbol.GetName();
+        if (name)
         {
-            lldb::SBModule module = address.GetModule();
-            if (module.IsValid())
+            if (file.IsValid())
             {
-                hr = S_OK;
-
-                lldb::SBFileSpec file = module.GetFileSpec();
-                if (file.IsValid())
-                {
-                    str.append(file.GetFilename());
-                }
-
-                lldb::SBSymbol symbol = address.GetSymbol();
-                if (symbol.IsValid())
-                {
-                    lldb::SBAddress startAddress = symbol.GetStartAddress();
-                    disp = address.GetOffset() - startAddress.GetOffset();
-
-                    const char *name = symbol.GetName();
-                    if (name)
-                    {
-                        if (file.IsValid())
-                        {
-                            str.append("!");
-                        }
-                        str.append(name);
-                    }
-                }
-
-                str.append(1, '\0');
+                str.append("!");
             }
+            str.append(name);
         }
     }
 
+    str.append(1, '\0');
+    hr = S_OK;
+
+exit:
     if (nameSize)
     {
         *nameSize = str.length();
@@ -335,74 +305,62 @@ DebugClient::GetNameByOffset(
 
 HRESULT 
 DebugClient::GetNumberModules(
-PULONG loaded,
-PULONG unloaded)
+    PULONG loaded,
+    PULONG unloaded)
 {
+    ULONG numModules = 0;
+    HRESULT hr = S_OK;
+
+    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    if (!target.IsValid())
+    {
+        hr = E_FAIL;
+        goto exit;
+    }
+
+    numModules = target.GetNumModules();
+
+exit:
     if (loaded)
     {
-        *loaded = 0;
+        *loaded = numModules;
     }
     if (unloaded)
     {
         *unloaded = 0;
     }
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
-    if (!target.IsValid())
-    {
-        return E_FAIL;
-    }
-    if (loaded)
-    {
-        *loaded = target.GetNumModules();
-    }
-    return S_OK;
-}
-
-HRESULT 
-DebugClient::GetModuleBase(lldb::SBTarget target, lldb::SBModule module, PULONG64 base)
-{
-    if (base)
-    {
-        // Find the first section with an valid base address
-        int numSections = module.GetNumSections();
-        for (int sectionIndex = 0; sectionIndex < numSections; sectionIndex++)
-        {
-            lldb::SBSection section = module.GetSectionAtIndex(sectionIndex);
-            if (section.IsValid())
-            {
-                lldb::addr_t baseAddress = section.GetLoadAddress(target);
-                if (baseAddress != LLDB_INVALID_ADDRESS)
-                {
-                    *base = baseAddress - section.GetFileOffset();
-                    return S_OK;
-                }
-            }
-        }
-        *base = UINT64_MAX;
-        return E_FAIL;
-    }
-    return S_OK;
+    return hr;
 }
 
 HRESULT DebugClient::GetModuleByIndex(
     ULONG index,
     PULONG64 base)
 {
-    if (base)
-    {
-        *base = UINT64_MAX;
-    }
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    ULONG64 moduleBase = UINT64_MAX;
+
+    lldb::SBTarget target;
+    lldb::SBModule module;
+    
+    target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
     {
-        return E_FAIL;
+        goto exit;
     }
-    lldb::SBModule module = target.GetModuleAtIndex(index);
+
+    module = target.GetModuleAtIndex(index);
     if (!module.IsValid())
     {
-        return E_FAIL;
+        goto exit;
     }
-    return GetModuleBase(target, module, base);
+
+    moduleBase = GetModuleBase(target, module);
+
+exit:
+    if (base)
+    {
+        *base = moduleBase;
+    }
+    return moduleBase == UINT64_MAX ? E_FAIL : S_OK;
 }
 
 HRESULT 
@@ -412,41 +370,52 @@ DebugClient::GetModuleByModuleName(
     PULONG index,
     PULONG64 base)
 {
-    if (index)
-    {
-        *index = UINT32_MAX;
-    }
-    if (base)
-    {
-        *base = UINT64_MAX;
-    }
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
-    if (!target.IsValid())
-    {
-        return E_FAIL;
-    }
+    ULONG64 moduleBase = UINT64_MAX;
+    ULONG moduleIndex = UINT32_MAX;
+
+    lldb::SBTarget target;
+    lldb::SBModule module;
     lldb::SBFileSpec fileSpec;
     fileSpec.SetFilename(name);
 
-    lldb::SBModule module = target.FindModule(fileSpec);
+    target = m_debugger.GetSelectedTarget();
+    if (!target.IsValid())
+    {
+        goto exit;
+    }
+
+    module = target.FindModule(fileSpec);
     if (!module.IsValid())
     {
-        return E_FAIL;
+        goto exit;
     }
+
+    moduleBase = GetModuleBase(target, module);
+
     if (index)
     {
         int numModules = target.GetNumModules();
-        for (int moduleIndex = startIndex; moduleIndex < numModules; moduleIndex++)
+        for (int mi = startIndex; mi < numModules; mi++)
         {
-            lldb::SBModule mod = target.GetModuleAtIndex(moduleIndex);
+            lldb::SBModule mod = target.GetModuleAtIndex(mi);
             if (module == mod)
             {
-                *index = moduleIndex;
+                moduleIndex = mi;
                 break;
             }
         }
     }
-    return GetModuleBase(target, module, base);
+
+exit:
+    if (index)
+    {
+        *index = moduleIndex;
+    }
+    if (base)
+    {
+        *base = moduleBase;
+    }
+    return moduleBase == UINT64_MAX ? E_FAIL : S_OK;
 }
 
 HRESULT 
@@ -456,28 +425,27 @@ DebugClient::GetModuleByOffset(
     PULONG index,
     PULONG64 base)
 {
-    if (index)
-    {
-        *index = UINT32_MAX;
-    }
-    if (base)
-    {
-        *base = UINT64_MAX;
-    }
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    ULONG64 moduleBase = UINT64_MAX;
+    ULONG moduleIndex = UINT32_MAX;
+
+    lldb::SBTarget target;
+    int numModules;
+
+    target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
     {
-        return E_FAIL;
+        goto exit;
     }
-    int numModules = target.GetNumModules();
-    for (int moduleIndex = startIndex; moduleIndex < numModules; moduleIndex++)
+
+    numModules = target.GetNumModules();
+    for (int mi = startIndex; mi < numModules; mi++)
     {
-        lldb::SBModule module = target.GetModuleAtIndex(moduleIndex);
+        lldb::SBModule module = target.GetModuleAtIndex(mi);
 
         int numSections = module.GetNumSections();
-        for (int sectionIndex = 0; sectionIndex < numSections; sectionIndex++)
+        for (int si = 0; si < numSections; si++)
         {
-            lldb::SBSection section = module.GetSectionAtIndex(sectionIndex);
+            lldb::SBSection section = module.GetSectionAtIndex(si);
             if (section.IsValid())
             {
                 lldb::addr_t baseAddress = section.GetLoadAddress(target);
@@ -487,15 +455,9 @@ DebugClient::GetModuleByOffset(
                     {
                         if ((offset - baseAddress) < section.GetByteSize())
                         {
-                            if (index)
-                            {
-                                *index = moduleIndex;
-                            }
-                            if (base)
-                            {
-                                *base = baseAddress - section.GetFileOffset();
-                            }
-                            return S_OK;
+                            moduleIndex = mi;
+                            moduleBase = baseAddress - section.GetFileOffset();
+                            goto exit;
                         }
                     }
                 }
@@ -503,7 +465,16 @@ DebugClient::GetModuleByOffset(
         }
     }
 
-    return E_FAIL;
+exit:
+    if (index)
+    {
+        *index = moduleIndex;
+    }
+    if (base)
+    {
+        *base = moduleBase;
+    }
+    return moduleBase == UINT64_MAX ? E_FAIL : S_OK;
 }
 
 HRESULT 
@@ -520,51 +491,50 @@ DebugClient::GetModuleNames(
     ULONG loadedImageNameBufferSize,
     PULONG loadedImageNameSize)
 {
-    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    HRESULT hr = S_OK;
+    lldb::SBTarget target;
+    lldb::SBFileSpec fileSpec;
+
+    target = m_debugger.GetSelectedTarget();
     if (!target.IsValid())
     {
-        return E_FAIL;
+        hr = E_FAIL;
+        goto exit;
     }
-    lldb::SBModule module;
+
     if (index != DEBUG_ANY_ID)
     {
-        module = target.GetModuleAtIndex(index);
+        lldb::SBModule module = target.GetModuleAtIndex(index);
+        if (module.IsValid())
+        {
+            fileSpec = module.GetFileSpec();
+        }
     }
     else
     {
         int numModules = target.GetNumModules();
-        for (int moduleIndex = 0; moduleIndex < numModules; moduleIndex++)
+        for (int mi = 0; mi < numModules; mi++)
         {
-            lldb::SBModule mod = target.GetModuleAtIndex(moduleIndex);
-
-            int numSections = mod.GetNumSections();
-            for (int sectionIndex = 0; sectionIndex < numSections; sectionIndex++)
-            {
-                lldb::SBSection section = mod.GetSectionAtIndex(sectionIndex);
-                if (section.IsValid())
-                {
-                    lldb::addr_t baseAddress = section.GetLoadAddress(target);
-                    if (baseAddress != LLDB_INVALID_ADDRESS)
-                    {
-                        if (base == (baseAddress - section.GetFileOffset()))
-                        {
-                            module = mod;
-                            break;
-                        }
-                    }
-                }
-            }
+            lldb::SBModule module = target.GetModuleAtIndex(mi);
             if (module.IsValid())
             {
-                break;
+                ULONG64 moduleBase = GetModuleBase(target, module);
+                if (base == moduleBase)
+                {
+                    fileSpec = module.GetFileSpec();
+                    break;
+                }
             }
         }
     }
-    if (!module.IsValid())
+
+    if (!fileSpec.IsValid())
     {
-        return E_FAIL;
+        hr = E_FAIL;
+        goto exit;
     }
-    lldb::SBFileSpec fileSpec = module.GetFileSpec();
+
+exit:
     if (imageNameBuffer)
     {
         int size = fileSpec.GetPath(imageNameBuffer, imageNameBufferSize);
@@ -575,10 +545,15 @@ DebugClient::GetModuleNames(
     }
     if (moduleNameBuffer)
     {
-        stpncpy(moduleNameBuffer, fileSpec.GetFilename(), moduleNameBufferSize);
+        const char *fileName = fileSpec.GetFilename();
+        if (fileName == NULL)
+        {
+            fileName = "";
+        }
+        stpncpy(moduleNameBuffer, fileName, moduleNameBufferSize);
         if (moduleNameSize)
         {
-            *moduleNameSize = strlen(moduleNameBuffer);
+            *moduleNameSize = strlen(fileName);
         }
     }
     if (loadedImageNameBuffer)
@@ -589,7 +564,53 @@ DebugClient::GetModuleNames(
             *loadedImageNameSize = size;
         }
     }
-    return S_OK;
+    return hr;
+}
+
+PCSTR
+DebugClient::GetModuleDirectory(
+    PCSTR name)
+{
+    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    if (!target.IsValid())
+    {
+        return NULL;
+    }
+
+    lldb::SBFileSpec fileSpec;
+    fileSpec.SetFilename(name);
+
+    lldb::SBModule module = target.FindModule(fileSpec);
+    if (!module.IsValid())
+    {
+        return NULL;
+    }
+
+    return module.GetFileSpec().GetDirectory();
+}
+
+// Internal function
+ULONG64
+DebugClient::GetModuleBase(
+    lldb::SBTarget target,
+    lldb::SBModule module)
+{
+    // Find the first section with an valid base address
+    int numSections = module.GetNumSections();
+    for (int si = 0; si < numSections; si++)
+    {
+        lldb::SBSection section = module.GetSectionAtIndex(si);
+        if (section.IsValid())
+        {
+            lldb::addr_t baseAddress = section.GetLoadAddress(target);
+            if (baseAddress != LLDB_INVALID_ADDRESS)
+            {
+                return baseAddress - section.GetFileOffset();
+            }
+        }
+    }
+
+    return UINT64_MAX;
 }
 
 //----------------------------------------------------------------------------
@@ -600,11 +621,10 @@ HRESULT
 DebugClient::GetCurrentThreadId(
     PULONG id)
 {
-    *id = 0;
-
     lldb::SBThread thread = GetCurrentThread();
     if (!thread.IsValid())
     {
+        *id = 0;
         return E_FAIL;
     }
 
@@ -621,10 +641,12 @@ DebugClient::SetCurrentThreadId(
     {
         return E_FAIL;
     }
+
     if (!process.SetSelectedThreadByIndexID(id))
     {
         return E_FAIL;
     }
+
     return S_OK;
 }
 
@@ -632,11 +654,10 @@ HRESULT
 DebugClient::GetCurrentThreadSystemId(
     PULONG sysId)
 {
-    *sysId = 0;
-
     lldb::SBThread thread = GetCurrentThread();
     if (!thread.IsValid())
     {
+        *sysId = 0;
         return E_FAIL;
     }
 
@@ -647,23 +668,124 @@ DebugClient::GetCurrentThreadSystemId(
 HRESULT 
 DebugClient::GetThreadIdBySystemId(
     ULONG sysId,
-    PULONG id)
+    PULONG threadId)
 {
-    *id = 0;
+    HRESULT hr = E_FAIL;
+    ULONG id = 0;
 
-    lldb::SBProcess process = GetCurrentProcess();
+    lldb::SBProcess process;
+    lldb::SBThread thread;
+
+    process = GetCurrentProcess();
     if (!process.IsValid())
     {
-        return E_FAIL;
-    }
-    lldb::SBThread thread = process.GetThreadByID(sysId);
-    if (!thread.IsValid())
-    {
-        return E_FAIL;
+        goto exit;
     }
 
-    *id = thread.GetIndexID();
-    return S_OK;
+    thread = process.GetThreadByID(sysId);
+    if (!thread.IsValid())
+    {
+        goto exit;
+    }
+
+    id = thread.GetIndexID();
+    hr = S_OK;
+
+exit:
+    *threadId = id;
+    return hr;
+}
+
+HRESULT 
+DebugClient::GetThreadContextById(
+    /* in */ ULONG32 threadID,
+    /* in */ ULONG32 contextFlags,
+    /* in */ ULONG32 contextSize,
+    /* out */ PBYTE context)
+{
+    lldb::SBProcess process;
+    lldb::SBThread thread;
+    lldb::SBFrame frame;
+    DT_CONTEXT *dtcontext;
+    HRESULT hr = E_FAIL;
+
+    if (contextSize < sizeof(DT_CONTEXT))
+    {
+        goto exit;
+    }
+    memset(context, 0, contextSize);
+
+    process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        goto exit;
+    }
+
+    thread = process.GetThreadByID(threadID);
+    if (!thread.IsValid())
+    {
+        goto exit;
+    }
+
+    frame = thread.GetFrameAtIndex(0);
+    if (!frame.IsValid())
+    {
+        goto exit;
+    }
+
+    dtcontext = (DT_CONTEXT*)context;
+    dtcontext->ContextFlags = contextFlags;
+
+    dtcontext->Rip = frame.GetPC();
+    dtcontext->Rsp = frame.GetSP();
+    dtcontext->Rbp = frame.GetFP();
+    dtcontext->EFlags = GetRegister(frame, "rflags");
+
+    dtcontext->Rax = GetRegister(frame, "rax");
+    dtcontext->Rbx = GetRegister(frame, "rbx");
+    dtcontext->Rcx = GetRegister(frame, "rcx");
+    dtcontext->Rdx = GetRegister(frame, "rdx");
+    dtcontext->Rsi = GetRegister(frame, "rsi");
+    dtcontext->Rdi = GetRegister(frame, "rdi");
+    dtcontext->R8 = GetRegister(frame, "r8");
+    dtcontext->R9 = GetRegister(frame, "r9");
+    dtcontext->R10 = GetRegister(frame, "r10");
+    dtcontext->R11 = GetRegister(frame, "r11");
+    dtcontext->R12 = GetRegister(frame, "r12");
+    dtcontext->R13 = GetRegister(frame, "r13");
+    dtcontext->R14 = GetRegister(frame, "r14");
+    dtcontext->R15 = GetRegister(frame, "r15");
+
+    dtcontext->SegCs = GetRegister(frame, "cs");
+    dtcontext->SegSs = GetRegister(frame, "ss");
+    dtcontext->SegDs = GetRegister(frame, "ds");
+    dtcontext->SegEs = GetRegister(frame, "es");
+    dtcontext->SegFs = GetRegister(frame, "fs");
+    dtcontext->SegGs = GetRegister(frame, "gs");
+
+    hr = S_OK;
+
+exit:
+    return hr;
+}
+
+// Internal function
+DWORD_PTR 
+DebugClient::GetRegister(lldb::SBFrame frame, const char *name)
+{
+    lldb::SBValue regValue = frame.FindRegister(name);
+
+    lldb::SBError error;
+    DWORD_PTR result = regValue.GetValueAsUnsigned(error);
+
+#ifdef _DEBUG
+    if (!regValue.IsValid() || error.Fail())
+    {
+        Output(DEBUG_OUTPUT_ERROR, "Invalid register name '%s'\n", name);
+    }
+#endif
+
+    return result;
 }
 
 //----------------------------------------------------------------------------
@@ -675,17 +797,20 @@ DebugClient::GetValueByName(
     PCSTR name,
     PDWORD_PTR debugValue)
 {
-    *debugValue = 0;
     lldb::SBFrame frame = GetCurrentFrame();
     if (!frame.IsValid())
     {
+        *debugValue = 0;
         return E_FAIL;
     }
+
     lldb::SBValue value = frame.FindRegister(name);
     if (!value.IsValid())
     {
+        *debugValue = 0;
         return E_FAIL;
     }
+
     *debugValue = value.GetValueAsUnsigned();
     return S_OK;
 }
@@ -694,12 +819,14 @@ HRESULT
 DebugClient::GetInstructionOffset(
     PULONG64 offset)
 {
-    *offset = 0;
     lldb::SBFrame frame = GetCurrentFrame();
     if (!frame.IsValid())
     {
+        *offset = 0;
         return E_FAIL;
     }
+
+    *offset = frame.GetPC();
     return S_OK;
 }
 
@@ -707,12 +834,13 @@ HRESULT
 DebugClient::GetStackOffset(
     PULONG64 offset)
 {
-    *offset = 0;
     lldb::SBFrame frame = GetCurrentFrame();
     if (!frame.IsValid())
     {
+        *offset = 0;
         return E_FAIL;
     }
+
     *offset = frame.GetSP();
     return S_OK;
 }
@@ -721,12 +849,13 @@ HRESULT
 DebugClient::GetFrameOffset(
     PULONG64 offset)
 {
-    *offset = 0;
     lldb::SBFrame frame = GetCurrentFrame();
     if (!frame.IsValid())
     {
+        *offset = 0;
         return E_FAIL;
     }
+
     *offset = frame.GetFP();
     return S_OK;
 }
@@ -735,89 +864,101 @@ DebugClient::GetFrameOffset(
 // IDebugClient
 //----------------------------------------------------------------------------
 
-HRESULT 
-DebugClient::GetThreadContextById(
-    /* in */ ULONG32 threadID,
-    /* in */ ULONG32 contextFlags,
-    /* in */ ULONG32 contextSize,
-    /* out */ PBYTE context)
-{
-    if (contextSize < sizeof(DT_CONTEXT))
-    {
-        return E_FAIL;
-    }
-    lldb::SBProcess process = GetCurrentProcess();
-    if (!process.IsValid())
-    {
-        return E_FAIL;
-    }
-    lldb::SBThread thread = process.GetThreadByID(threadID);
-    if (!thread.IsValid())
-    {
-        return E_FAIL;
-    }
-    lldb::SBFrame frame = thread.GetFrameAtIndex(0);
-    if (!frame.IsValid())
-    {
-        return E_FAIL;
-    }
-    DT_CONTEXT *dtcontext = (DT_CONTEXT*)context;
-    memset(dtcontext, 0, contextSize);
-    dtcontext->ContextFlags = contextFlags;
-
-    dtcontext->Rip = frame.GetPC();
-    dtcontext->Rsp = frame.GetSP();
-    dtcontext->Rbp = frame.GetFP();
-
-    return S_OK;
-}
-
-HRESULT
+DWORD_PTR
 DebugClient::GetExpression(
-    lldb::SBFrame frame,
-    PCSTR exp,
-    PDWORD_PTR result)
+    PCSTR exp)
 {
-    lldb::SBValue value = frame.EvaluateExpression(exp, lldb::eNoDynamicValues);
-    if (!value.IsValid())
-    {
-        return E_FAIL;
-    }
-    lldb::SBError error;
-    *result = value.GetValueAsUnsigned(error);
-    if (error.Fail())
-    {
-        return E_FAIL;
-    }
-    return S_OK;
-}
-
-HRESULT
-DebugClient::GetExpression(
-    PCSTR exp,
-    PDWORD_PTR result)
-{
-    *result = 0;
     if (exp == nullptr)
     {
-        return E_FAIL;
+        return 0;
     }
+
     lldb::SBFrame frame = GetCurrentFrame();
     if (!frame.IsValid())
     {
-        return E_FAIL;
+        return 0;
     }
+
+    DWORD_PTR result = 0;
+    lldb::SBError error;
+    std::string str;
+
     // To be compatible with windbg/dbgeng, we need to emulate the default
     // hex radix (because sos prints addresses and other hex values without
     // the 0x) by first prepending 0x and if that fails use the actual
     // undecorated expression.
-    std::string str;
     str.append("0x");
     str.append(exp);
-    HRESULT hr = GetExpression(frame, str.c_str(), result);
-    if (hr != S_OK)
+
+    result = GetExpression(frame, error, str.c_str());
+    if (error.Fail())
     {
-        hr = GetExpression(frame, exp, result);
+        result = GetExpression(frame, error, exp);
     }
-    return hr;
+
+    return result;
+}
+
+// Internal function
+DWORD_PTR 
+DebugClient::GetExpression(
+    lldb::SBFrame frame,
+    lldb::SBError& error,
+    PCSTR exp)
+{
+    DWORD_PTR result = 0;
+
+    lldb::SBValue value = frame.EvaluateExpression(exp, lldb::eNoDynamicValues);
+    if (value.IsValid())
+    {
+        result = value.GetValueAsUnsigned(error);
+    }
+
+    return result;
+}
+
+//----------------------------------------------------------------------------
+// Helper functions
+//----------------------------------------------------------------------------
+
+lldb::SBProcess
+DebugClient::GetCurrentProcess()
+{
+    lldb::SBProcess process;
+
+    lldb::SBTarget target = m_debugger.GetSelectedTarget();
+    if (target.IsValid())
+    {
+        process = target.GetProcess();
+    }
+
+    return process;
+}
+
+lldb::SBThread 
+DebugClient::GetCurrentThread()
+{
+    lldb::SBThread thread;
+
+    lldb::SBProcess process = GetCurrentProcess();
+    if (process.IsValid())
+    {
+        thread = process.GetSelectedThread();
+    }
+
+    return thread;
+}
+
+lldb::SBFrame 
+DebugClient::GetCurrentFrame()
+{
+    lldb::SBFrame frame;
+
+    lldb::SBThread thread = GetCurrentThread();
+    if (thread.IsValid())
+    {
+        frame = thread.GetSelectedFrame();
+    }
+
+    return frame;
 }

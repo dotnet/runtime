@@ -22,32 +22,14 @@ public:
                char** arguments,
                lldb::SBCommandReturnObject &result)
     {
+        DebugClient* client = new DebugClient(debugger, result);
         if (arguments)
         {
-            DebugClient* client = new DebugClient(debugger, result);
-            const char* sosCommand = *arguments++;
-            HRESULT hr = E_FAIL;
-
-            if (m_sosHandle == NULL)
-            {
-                // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path
-                const char* sosLibrary = MAKEDLLNAME_A("sos");
-                m_sosHandle = dlopen(sosLibrary, RTLD_LAZY);
-                if (m_sosHandle == NULL)
-                {
-#ifdef __APPLE__
-                    const char* libraryPathName = "DYLD_LIBRARY_PATH";
-#else
-                    const char* libraryPathName = "LD_LIBRARY_PATH";
-#endif
-                    client->Output(DEBUG_OUTPUT_ERROR, 
-                        "dlopen(%s) failed %s.\nMake sure that the %s environment variable is set to the runtime binaries directory.\n", 
-                        sosLibrary, dlerror(), libraryPathName);
-                }
-            }
+            LoadSos(client);
 
             if (m_sosHandle)
             {
+                const char* sosCommand = *arguments++;
                 CommandFunc commandFunc = (CommandFunc)dlsym(m_sosHandle, sosCommand);
                 if (commandFunc)
                 {
@@ -57,9 +39,9 @@ public:
                         str.append(arg);
                         str.append(" ");
                     }
-                    const char* sosArgs = str.c_str();
 
-                    hr = commandFunc(client, sosArgs);
+                    const char* sosArgs = str.c_str();
+                    HRESULT hr = commandFunc(client, sosArgs);
                     if (hr != S_OK)
                     {
                         client->Output(DEBUG_OUTPUT_ERROR, "%s %s failed", sosCommand, sosArgs);
@@ -70,11 +52,37 @@ public:
                     client->Output(DEBUG_OUTPUT_ERROR, "SOS command '%s' not found %s\n", sosCommand, dlerror());
                 }
             }
-
-            delete client;
         }
 
+        delete client;
         return result.Succeeded();
+    }
+
+    void
+    LoadSos(DebugClient *client)
+    {
+        if (m_sosHandle == NULL)
+        {
+            const char *coreclrModule = MAKEDLLNAME_A("coreclr");
+            const char *directory = client->GetModuleDirectory(coreclrModule);
+            if (directory == NULL)
+            {
+                client->Output(DEBUG_OUTPUT_WARNING, "The %s module is not loaded yet in the target process.\n", coreclrModule);
+            }
+            else 
+            {
+                std::string sosLibrary;
+                sosLibrary.append(directory);
+                sosLibrary.append("/");
+                sosLibrary.append(MAKEDLLNAME_A("sos"));
+
+                m_sosHandle = dlopen(sosLibrary.c_str(), RTLD_NOW);
+                if (m_sosHandle == NULL)
+                {
+                    client->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s.\n", sosLibrary.c_str(), dlerror());
+                }
+            }
+        }
     }
 };
 
@@ -82,6 +90,6 @@ bool
 sosCommandInitialize(lldb::SBDebugger debugger)
 {
     lldb::SBCommandInterpreter interpreter = debugger.GetCommandInterpreter();
-    interpreter.AddCommand("sos", new sosCommand(), "various managed debugging commands");
+    lldb::SBCommand command = interpreter.AddCommand("sos", new sosCommand(), "Various coreclr debugging commands. sos <command-name> <args>");
     return true;
 }

@@ -13,9 +13,10 @@ private:
     lldb::SBProcess GetCurrentProcess();
     lldb::SBThread GetCurrentThread();
     lldb::SBFrame GetCurrentFrame();
-    HRESULT GetModuleBase(lldb::SBTarget target, lldb::SBModule module, PULONG64 base);
-    HRESULT GetExpression(lldb::SBFrame frame, PCSTR exp, PDWORD_PTR result);
-    
+    ULONG64 GetModuleBase(lldb::SBTarget target, lldb::SBModule module);
+    DWORD_PTR GetExpression(lldb::SBFrame frame, lldb::SBError& error, PCSTR exp);
+    DWORD_PTR GetRegister(lldb::SBFrame frame, const char *name);
+
 public:
     DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject);
     ~DebugClient();
@@ -136,7 +137,13 @@ public:
 
     HRESULT GetThreadIdBySystemId(
         ULONG sysId,
-        PULONG id);
+        PULONG threadId);
+
+    HRESULT GetThreadContextById(
+        ULONG32 threadID,
+        ULONG32 contextFlags,
+        ULONG32 contextSize,
+        PBYTE context);
 
     //----------------------------------------------------------------------------
     // IDebugRegisters
@@ -159,13 +166,9 @@ public:
     // IDebugClient
     //----------------------------------------------------------------------------
 
-    HRESULT GetThreadContextById(
-        ULONG32 threadID,
-        ULONG32 contextFlags,
-        ULONG32 contextSize,
-        PBYTE context);
+    DWORD_PTR GetExpression(
+        PCSTR exp);
 
-    HRESULT GetExpression(
-        PCSTR exp,
-        PDWORD_PTR result);
+    PCSTR GetModuleDirectory(
+        PCSTR name);
 };

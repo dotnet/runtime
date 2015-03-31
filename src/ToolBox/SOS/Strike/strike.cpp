@@ -5928,7 +5928,7 @@ DECLARE_API(ThreadState)
     // If we did not find any thread states, print out a message to let the user
     // know that the function is working correctly.
     if (count == 0)
-        ExtOut("    No thread states for '%s'.", args);
+        ExtOut("    No thread states for '%s'\n", args);
 
     return Status;
 }
