@@ -17,10 +17,14 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="ActiveIssueAttribute.cs" />
-    <Compile Include="ActiveIssueDiscoverer.cs" />
-    <Compile Include="OuterLoopAttribute.cs" />
-    <Compile Include="OuterLoopTestsDiscoverer.cs" />
+    <Compile Include="Attributes\ActiveIssueAttribute.cs" />
+    <Compile Include="Category.cs" />
+    <Compile Include="Discoverers\ActiveIssueDiscoverer.cs" />
+    <Compile Include="Attributes\OuterLoopAttribute.cs" />
+    <Compile Include="Discoverers\OuterLoopTestsDiscoverer.cs" />
+    <Compile Include="Discoverers\PlatformSpecificDiscoverer.cs" />
+    <Compile Include="PlatformID.cs" />
+    <Compile Include="Attributes\PlatformSpecificAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
