@@ -1925,12 +1925,11 @@ UNATIVE_OFFSET      emitter::emitInsSizeAM(instrDesc* id, size_t code)
         // Most 16-bit operands will require a size prefix .
         // This refers to 66h size prefix override.
 
-        if  (    (attrSize == EA_2BYTE)
 #if FEATURE_STACK_FP_X87
-              && (ins != INS_fldcw)
-              && (ins != INS_fnstcw)
+        if ((attrSize == EA_2BYTE) && (ins != INS_fldcw) && (ins != INS_fnstcw))
+#else // FEATURE_STACK_FP_X87
+        if (attrSize == EA_2BYTE)
 #endif // FEATURE_STACK_FP_X87
-              )
         {
             size++;
         }

@@ -7802,7 +7802,7 @@ LinearScan::handleOutoingCriticalEdges(BasicBlock*  block)
             // live only at another target), and we can't copy another lclVar into that reg in this block.
             regMaskTP sameToRegMask = genRegMask(sameToReg);
             if (maybeSameLivePaths &&
-                ((sameToRegMask & liveOutRegs) != RBM_NONE) || ((sameToRegMask & sameWriteRegs) != RBM_NONE))
+                (((sameToRegMask & liveOutRegs) != RBM_NONE) || ((sameToRegMask & sameWriteRegs) != RBM_NONE)))
             {
                 sameToReg = REG_NA;
             }
