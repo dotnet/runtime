@@ -44,9 +44,7 @@ inline void FATAL_GC_ERROR()
                                 //relocation
 #endif //FEATURE_64BIT_ALIGNMENT
 
-#ifndef RESPECT_LARGE_ALIGNMENT
 #define SHORT_PLUGS //used to keep ephemeral plugs short so they fit better into the oldest generation free items
-#endif //!RESPECT_LARGE_ALIGNMENT 
 
 #ifdef SHORT_PLUGS
 #define DESIRED_PLUG_LENGTH (1000)
@@ -1851,6 +1849,7 @@ protected:
                                              size_t size,
                                              int from_gen_number,
 #ifdef SHORT_PLUGS
+                                             BOOL* convert_to_pinned_p=NULL,
                                              BYTE* next_pinned_plug=0,
                                              heap_segment* current_seg=0,
 #endif //SHORT_PLUGS
@@ -2113,6 +2112,12 @@ protected:
     void seg_clear_mark_bits (heap_segment* seg);
     PER_HEAP
     void sweep_ro_segments (heap_segment* start_seg);
+    PER_HEAP
+    void convert_to_pinned_plug (BOOL& last_npinned_plug_p, 
+                                 BOOL& last_pinned_plug_p, 
+                                 BOOL& pinned_plug_p,
+                                 size_t ps,
+                                 size_t& artificial_pinned_size);
     PER_HEAP
     void store_plug_gap_info (BYTE* plug_start,
                               BYTE* plug_end,
