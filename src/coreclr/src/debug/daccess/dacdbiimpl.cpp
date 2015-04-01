@@ -1887,7 +1887,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::ReadLoadedTypeArg(TypeHandleReadTy
     return ReadLoadedTypeHandle(kGetExact);
 #else
 
-    if ((retrieveWhich == kGetExact))
+    if (retrieveWhich == kGetExact)
         return ReadLoadedTypeHandle(kGetExact);
 
     // This nasty bit of code works out what the "canonicalization" of a

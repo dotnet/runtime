@@ -70,7 +70,7 @@ namespace ComUtil
         typedef char (&_Yes)[1];
         typedef char (&_No)[2];
 
-        static _No _IsTypeWrapper(...);
+        static inline _No _IsTypeWrapper(...);
 
         template <typename T>
         static _Yes _IsTypeWrapper(T *, typename T::wrapped_type * = nullptr);

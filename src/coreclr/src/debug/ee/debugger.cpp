@@ -8146,7 +8146,7 @@ void Debugger::SendCatchHandlerFound(
 
     LOG((LF_CORDB, LL_INFO10000, "D::FirstChanceManagedExceptionCatcherFound\n"));
 
-    if ((pThread == NULL))
+    if (pThread == NULL)
     {
         _ASSERTE(!"Bad parameter");
         LOG((LF_CORDB, LL_INFO10000, "D::FirstChanceManagedExceptionCatcherFound - Bad parameter.\n"));

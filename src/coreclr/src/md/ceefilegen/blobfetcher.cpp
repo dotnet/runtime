@@ -14,14 +14,6 @@
 #include "log.h"
 
 //-----------------------------------------------------------------------------
-//  round a pointer back down to something aligned
-static inline char* truncateTo(__in char* val, unsigned align) {
-    _ASSERTE((align & (align - 1)) == 0);       // align must be a power of 2
-
-    return((char*) ((UINT_PTR)(val) & ~(((UINT_PTR)align)-1)));
-}
-
-//-----------------------------------------------------------------------------
 //  round up to a certain alignment
 static inline unsigned roundUp(unsigned val, unsigned align) {
     _ASSERTE((align & (align - 1)) == 0);       // align must be a power of 2
