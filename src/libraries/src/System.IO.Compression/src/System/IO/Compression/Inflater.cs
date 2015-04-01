@@ -37,111 +37,111 @@ namespace System.IO.Compression
         // const tables used in decoding:
 
         // Extra bits for length code 257 - 285.  
-        private static readonly byte[] extraLengthBits = {
+        private static readonly byte[] s_extraLengthBits = {
             0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0};
 
         // The base length for length code 257 - 285.
         // The formula to get the real length for a length code is lengthBase[code - 257] + (value stored in extraBits)
-        private static readonly int[] lengthBase = {
+        private static readonly int[] s_lengthBase = {
             3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258};
 
         // The base distance for distance code 0 - 29    
         // The real distance for a distance code is  distanceBasePosition[code] + (value stored in extraBits)
-        private static readonly int[] distanceBasePosition = {
+        private static readonly int[] s_distanceBasePosition = {
             1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,0,0};
 
         // code lengths for code length alphabet is stored in following order
-        private static readonly byte[] codeOrder = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
+        private static readonly byte[] s_codeOrder = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
-        private static readonly byte[] staticDistanceTreeTable = {
+        private static readonly byte[] s_staticDistanceTreeTable = {
             0x00,0x10,0x08,0x18,0x04,0x14,0x0c,0x1c,0x02,0x12,0x0a,0x1a,
             0x06,0x16,0x0e,0x1e,0x01,0x11,0x09,0x19,0x05,0x15,0x0d,0x1d,
             0x03,0x13,0x0b,0x1b,0x07,0x17,0x0f,0x1f,
         };
 
-        private OutputWindow output;
-        private InputBuffer input;
-        HuffmanTree literalLengthTree;
-        HuffmanTree distanceTree;
+        private OutputWindow _output;
+        private InputBuffer _input;
+        private HuffmanTree _literalLengthTree;
+        private HuffmanTree _distanceTree;
 
-        InflaterState state;
-        bool hasFormatReader;
-        int bfinal;
-        BlockType blockType;
+        private InflaterState _state;
+        private bool _hasFormatReader;
+        private int _bfinal;
+        private BlockType _blockType;
 
         // uncompressed block
-        byte[] blockLengthBuffer = new byte[4];
-        int blockLength;
+        private byte[] _blockLengthBuffer = new byte[4];
+        private int _blockLength;
 
         // compressed block
-        private int length;
-        private int distanceCode;
-        private int extraBits;
+        private int _length;
+        private int _distanceCode;
+        private int _extraBits;
 
-        private int loopCounter;
-        private int literalLengthCodeCount;
-        private int distanceCodeCount;
-        private int codeLengthCodeCount;
-        private int codeArraySize;
-        private int lengthCode;
+        private int _loopCounter;
+        private int _literalLengthCodeCount;
+        private int _distanceCodeCount;
+        private int _codeLengthCodeCount;
+        private int _codeArraySize;
+        private int _lengthCode;
 
-        private byte[] codeList;        // temporary array to store the code length for literal/Length and distance
-        private byte[] codeLengthTreeCodeLength;
-        HuffmanTree codeLengthTree;
+        private byte[] _codeList;        // temporary array to store the code length for literal/Length and distance
+        private byte[] _codeLengthTreeCodeLength;
+        private HuffmanTree _codeLengthTree;
 
-        IFileFormatReader formatReader;  // class to decode header and footer (e.g. gzip)
+        private IFileFormatReader _formatReader;  // class to decode header and footer (e.g. gzip)
 
         public Inflater()
         {
-            output = new OutputWindow();
-            input = new InputBuffer();
+            _output = new OutputWindow();
+            _input = new InputBuffer();
 
-            codeList = new byte[HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements];
-            codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
+            _codeList = new byte[HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements];
+            _codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
             Reset();
         }
 
         internal void SetFileFormatReader(IFileFormatReader reader)
         {
-            formatReader = reader;
-            hasFormatReader = true;
+            _formatReader = reader;
+            _hasFormatReader = true;
             Reset();
         }
 
         private void Reset()
         {
-            if (hasFormatReader)
+            if (_hasFormatReader)
             {
-                state = InflaterState.ReadingHeader;     // start by reading Header info
+                _state = InflaterState.ReadingHeader;     // start by reading Header info
             }
             else
             {
-                state = InflaterState.ReadingBFinal;     // start by reading BFinal bit 
+                _state = InflaterState.ReadingBFinal;     // start by reading BFinal bit 
             }
         }
 
         public void SetInput(byte[] inputBytes, int offset, int length)
         {
-            input.SetInput(inputBytes, offset, length);    // append the bytes
+            _input.SetInput(inputBytes, offset, length);    // append the bytes
         }
 
 
         public bool Finished()
         {
-            return (state == InflaterState.Done || state == InflaterState.VerifyingFooter);
+            return (_state == InflaterState.Done || _state == InflaterState.VerifyingFooter);
         }
 
         public int AvailableOutput
         {
             get
             {
-                return output.AvailableBytes;
+                return _output.AvailableBytes;
             }
         }
 
         public bool NeedsInput()
         {
-            return input.NeedsInput();
+            return _input.NeedsInput();
         }
 
         public int Inflate(byte[] bytes, int offset, int length)
@@ -152,12 +152,12 @@ namespace System.IO.Compression
             int count = 0;
             do
             {
-                int copied = output.CopyTo(bytes, offset, length);
+                int copied = _output.CopyTo(bytes, offset, length);
                 if (copied > 0)
                 {
-                    if (hasFormatReader)
+                    if (_hasFormatReader)
                     {
-                        formatReader.UpdateWithBytesRead(bytes, offset, copied);
+                        _formatReader.UpdateWithBytesRead(bytes, offset, copied);
                     }
 
                     offset += copied;
@@ -172,13 +172,13 @@ namespace System.IO.Compression
                 // Decode will return false when more input is needed
             } while (!Finished() && Decode());
 
-            if (state == InflaterState.VerifyingFooter)
+            if (_state == InflaterState.VerifyingFooter)
             {  // finished reading CRC
                 // In this case finished is true and output window has all the data.
                 // But some data in output window might not be copied out.
-                if (output.AvailableBytes == 0)
+                if (_output.AvailableBytes == 0)
                 {
-                    formatReader.Validate();
+                    _formatReader.Validate();
                 }
             }
 
@@ -216,59 +216,59 @@ namespace System.IO.Compression
                 return true;
             }
 
-            if (hasFormatReader)
+            if (_hasFormatReader)
             {
-                if (state == InflaterState.ReadingHeader)
+                if (_state == InflaterState.ReadingHeader)
                 {
-                    if (!formatReader.ReadHeader(input))
+                    if (!_formatReader.ReadHeader(_input))
                     {
                         return false;
                     }
-                    state = InflaterState.ReadingBFinal;
+                    _state = InflaterState.ReadingBFinal;
                 }
-                else if (state == InflaterState.StartReadingFooter || state == InflaterState.ReadingFooter)
+                else if (_state == InflaterState.StartReadingFooter || _state == InflaterState.ReadingFooter)
                 {
-                    if (!formatReader.ReadFooter(input))
+                    if (!_formatReader.ReadFooter(_input))
                         return false;
 
-                    state = InflaterState.VerifyingFooter;
+                    _state = InflaterState.VerifyingFooter;
                     return true;
                 }
             }
 
-            if (state == InflaterState.ReadingBFinal)
+            if (_state == InflaterState.ReadingBFinal)
             {   // reading bfinal bit
                 // Need 1 bit
-                if (!input.EnsureBitsAvailable(1))
+                if (!_input.EnsureBitsAvailable(1))
                     return false;
 
-                bfinal = input.GetBits(1);
-                state = InflaterState.ReadingBType;
+                _bfinal = _input.GetBits(1);
+                _state = InflaterState.ReadingBType;
             }
 
-            if (state == InflaterState.ReadingBType)
+            if (_state == InflaterState.ReadingBType)
             {
                 // Need 2 bits
-                if (!input.EnsureBitsAvailable(2))
+                if (!_input.EnsureBitsAvailable(2))
                 {
-                    state = InflaterState.ReadingBType;
+                    _state = InflaterState.ReadingBType;
                     return false;
                 }
 
-                blockType = (BlockType)input.GetBits(2);
-                if (blockType == BlockType.Dynamic)
+                _blockType = (BlockType)_input.GetBits(2);
+                if (_blockType == BlockType.Dynamic)
                 {
-                    state = InflaterState.ReadingNumLitCodes;
+                    _state = InflaterState.ReadingNumLitCodes;
                 }
-                else if (blockType == BlockType.Static)
+                else if (_blockType == BlockType.Static)
                 {
-                    literalLengthTree = HuffmanTree.StaticLiteralLengthTree;
-                    distanceTree = HuffmanTree.StaticDistanceTree;
-                    state = InflaterState.DecodeTop;
+                    _literalLengthTree = HuffmanTree.StaticLiteralLengthTree;
+                    _distanceTree = HuffmanTree.StaticDistanceTree;
+                    _state = InflaterState.DecodeTop;
                 }
-                else if (blockType == BlockType.Uncompressed)
+                else if (_blockType == BlockType.Uncompressed)
                 {
-                    state = InflaterState.UncompressedAligning;
+                    _state = InflaterState.UncompressedAligning;
                 }
                 else
                 {
@@ -276,9 +276,9 @@ namespace System.IO.Compression
                 }
             }
 
-            if (blockType == BlockType.Dynamic)
+            if (_blockType == BlockType.Dynamic)
             {
-                if (state < InflaterState.DecodeTop)
+                if (_state < InflaterState.DecodeTop)
                 {   // we are reading the header
                     result = DecodeDynamicBlockHeader();
                 }
@@ -287,11 +287,11 @@ namespace System.IO.Compression
                     result = DecodeBlock(out eob);  // this can returns true when output is full
                 }
             }
-            else if (blockType == BlockType.Static)
+            else if (_blockType == BlockType.Static)
             {
                 result = DecodeBlock(out eob);
             }
-            else if (blockType == BlockType.Uncompressed)
+            else if (_blockType == BlockType.Uncompressed)
             {
                 result = DecodeUncompressedBlock(out eob);
             }
@@ -304,12 +304,12 @@ namespace System.IO.Compression
             // If we reached the end of the block and the block we were decoding had
             // bfinal=1 (final block)
             //
-            if (eob && (bfinal != 0))
+            if (eob && (_bfinal != 0))
             {
-                if (hasFormatReader)
-                    state = InflaterState.StartReadingFooter;
+                if (_hasFormatReader)
+                    _state = InflaterState.StartReadingFooter;
                 else
-                    state = InflaterState.Done;
+                    _state = InflaterState.Done;
             }
             return result;
         }
@@ -328,55 +328,55 @@ namespace System.IO.Compression
         // LEN is the number of data bytes in the block.  NLEN is the
         // one's complement of LEN.
 
-        bool DecodeUncompressedBlock(out bool end_of_block)
+        private bool DecodeUncompressedBlock(out bool end_of_block)
         {
             end_of_block = false;
             while (true)
             {
-                switch (state)
+                switch (_state)
                 {
                     case InflaterState.UncompressedAligning: // intial state when calling this function
                                                              // we must skip to a byte boundary
-                        input.SkipToByteBoundary();
-                        state = InflaterState.UncompressedByte1;
+                        _input.SkipToByteBoundary();
+                        _state = InflaterState.UncompressedByte1;
                         goto case InflaterState.UncompressedByte1;
 
                     case InflaterState.UncompressedByte1:   // decoding block length 
                     case InflaterState.UncompressedByte2:
                     case InflaterState.UncompressedByte3:
                     case InflaterState.UncompressedByte4:
-                        int bits = input.GetBits(8);
+                        int bits = _input.GetBits(8);
                         if (bits < 0)
                         {
                             return false;
                         }
 
-                        blockLengthBuffer[state - InflaterState.UncompressedByte1] = (byte)bits;
-                        if (state == InflaterState.UncompressedByte4)
+                        _blockLengthBuffer[_state - InflaterState.UncompressedByte1] = (byte)bits;
+                        if (_state == InflaterState.UncompressedByte4)
                         {
-                            blockLength = blockLengthBuffer[0] + ((int)blockLengthBuffer[1]) * 256;
-                            int blockLengthComplement = blockLengthBuffer[2] + ((int)blockLengthBuffer[3]) * 256;
+                            _blockLength = _blockLengthBuffer[0] + ((int)_blockLengthBuffer[1]) * 256;
+                            int blockLengthComplement = _blockLengthBuffer[2] + ((int)_blockLengthBuffer[3]) * 256;
 
                             // make sure complement matches
-                            if ((ushort)blockLength != (ushort)(~blockLengthComplement))
+                            if ((ushort)_blockLength != (ushort)(~blockLengthComplement))
                             {
                                 throw new InvalidDataException(SR.InvalidBlockLength);
                             }
                         }
 
-                        state += 1;
+                        _state += 1;
                         break;
 
                     case InflaterState.DecodingUncompressed: // copying block data 
 
                         // Directly copy bytes from input to output. 
-                        int bytesCopied = output.CopyFrom(input, blockLength);
-                        blockLength -= bytesCopied;
+                        int bytesCopied = _output.CopyFrom(_input, _blockLength);
+                        _blockLength -= bytesCopied;
 
-                        if (blockLength == 0)
+                        if (_blockLength == 0)
                         {
                             // Done with this block, need to re-init bit buffer for next block
-                            state = InflaterState.ReadingBFinal;
+                            _state = InflaterState.ReadingBFinal;
                             end_of_block = true;
                             return true;
                         }
@@ -384,7 +384,7 @@ namespace System.IO.Compression
                         // We can fail to copy all bytes for two reasons:
                         //    Running out of Input 
                         //    running out of free space in output window
-                        if (output.FreeBytes == 0)
+                        if (_output.FreeBytes == 0)
                         {
                             return true;
                         }
@@ -398,23 +398,23 @@ namespace System.IO.Compression
             }
         }
 
-        bool DecodeBlock(out bool end_of_block_code_seen)
+        private bool DecodeBlock(out bool end_of_block_code_seen)
         {
             end_of_block_code_seen = false;
 
-            int freeBytes = output.FreeBytes;   // it is a little bit faster than frequently accessing the property 
+            int freeBytes = _output.FreeBytes;   // it is a little bit faster than frequently accessing the property 
             while (freeBytes > 258)
             {
                 // 258 means we can safely do decoding since maximum repeat length is 258
 
                 int symbol;
-                switch (state)
+                switch (_state)
                 {
                     case InflaterState.DecodeTop:
                         // decode an element from the literal tree
 
                         // TODO: optimize this!!!
-                        symbol = literalLengthTree.GetNextSymbol(input);
+                        symbol = _literalLengthTree.GetNextSymbol(_input);
                         if (symbol < 0)
                         {          // running out of input
                             return false;
@@ -422,14 +422,14 @@ namespace System.IO.Compression
 
                         if (symbol < 256)
                         {        // literal
-                            output.Write((byte)symbol);
+                            _output.Write((byte)symbol);
                             --freeBytes;
                         }
                         else if (symbol == 256)
                         { // end of block
                             end_of_block_code_seen = true;
                             // Reset state
-                            state = InflaterState.ReadingBFinal;
+                            _state = InflaterState.ReadingBFinal;
                             return true;           // ***********
                         }
                         else
@@ -438,91 +438,91 @@ namespace System.IO.Compression
                             if (symbol < 8)
                             {
                                 symbol += 3;   // match length = 3,4,5,6,7,8,9,10
-                                extraBits = 0;
+                                _extraBits = 0;
                             }
                             else if (symbol == 28)
                             { // extra bits for code 285 is 0 
                                 symbol = 258;             // code 285 means length 258    
-                                extraBits = 0;
+                                _extraBits = 0;
                             }
                             else
                             {
-                                if (symbol < 0 || symbol >= extraLengthBits.Length)
+                                if (symbol < 0 || symbol >= s_extraLengthBits.Length)
                                 {
                                     throw new InvalidDataException(SR.GenericInvalidData);
                                 }
-                                extraBits = extraLengthBits[symbol];
-                                Debug.Assert(extraBits != 0, "We handle other cases seperately!");
+                                _extraBits = s_extraLengthBits[symbol];
+                                Debug.Assert(_extraBits != 0, "We handle other cases seperately!");
                             }
-                            length = symbol;
+                            _length = symbol;
                             goto case InflaterState.HaveInitialLength;
                         }
                         break;
 
                     case InflaterState.HaveInitialLength:
-                        if (extraBits > 0)
+                        if (_extraBits > 0)
                         {
-                            state = InflaterState.HaveInitialLength;
-                            int bits = input.GetBits(extraBits);
+                            _state = InflaterState.HaveInitialLength;
+                            int bits = _input.GetBits(_extraBits);
                             if (bits < 0)
                             {
                                 return false;
                             }
 
-                            if (length < 0 || length >= lengthBase.Length)
+                            if (_length < 0 || _length >= s_lengthBase.Length)
                             {
                                 throw new InvalidDataException(SR.GenericInvalidData);
                             }
-                            length = lengthBase[length] + bits;
+                            _length = s_lengthBase[_length] + bits;
                         }
-                        state = InflaterState.HaveFullLength;
+                        _state = InflaterState.HaveFullLength;
                         goto case InflaterState.HaveFullLength;
 
                     case InflaterState.HaveFullLength:
-                        if (blockType == BlockType.Dynamic)
+                        if (_blockType == BlockType.Dynamic)
                         {
-                            distanceCode = distanceTree.GetNextSymbol(input);
+                            _distanceCode = _distanceTree.GetNextSymbol(_input);
                         }
                         else
                         {   // get distance code directly for static block
-                            distanceCode = input.GetBits(5);
-                            if (distanceCode >= 0)
+                            _distanceCode = _input.GetBits(5);
+                            if (_distanceCode >= 0)
                             {
-                                distanceCode = staticDistanceTreeTable[distanceCode];
+                                _distanceCode = s_staticDistanceTreeTable[_distanceCode];
                             }
                         }
 
-                        if (distanceCode < 0)
+                        if (_distanceCode < 0)
                         { // running out input                    
                             return false;
                         }
 
-                        state = InflaterState.HaveDistCode;
+                        _state = InflaterState.HaveDistCode;
                         goto case InflaterState.HaveDistCode;
 
                     case InflaterState.HaveDistCode:
                         // To avoid a table lookup we note that for distanceCode >= 2,
                         // extra_bits = (distanceCode-2) >> 1
                         int offset;
-                        if (distanceCode > 3)
+                        if (_distanceCode > 3)
                         {
-                            extraBits = (distanceCode - 2) >> 1;
-                            int bits = input.GetBits(extraBits);
+                            _extraBits = (_distanceCode - 2) >> 1;
+                            int bits = _input.GetBits(_extraBits);
                             if (bits < 0)
                             {
                                 return false;
                             }
-                            offset = distanceBasePosition[distanceCode] + bits;
+                            offset = s_distanceBasePosition[_distanceCode] + bits;
                         }
                         else
                         {
-                            offset = distanceCode + 1;
+                            offset = _distanceCode + 1;
                         }
 
                         Debug.Assert(freeBytes >= 258, "following operation is not safe!");
-                        output.WriteLengthDistance(length, offset);
-                        freeBytes -= length;
-                        state = InflaterState.DecodeTop;
+                        _output.WriteLengthDistance(_length, offset);
+                        freeBytes -= _length;
+                        _state = InflaterState.DecodeTop;
                         break;
 
                     default:
@@ -558,73 +558,73 @@ namespace System.IO.Compression
         // The code length repeat codes can cross from HLIT + 257 to the
         // HDIST + 1 code lengths.  In other words, all code lengths form
         // a single sequence of HLIT + HDIST + 258 values.
-        bool DecodeDynamicBlockHeader()
+        private bool DecodeDynamicBlockHeader()
         {
-            switch (state)
+            switch (_state)
             {
                 case InflaterState.ReadingNumLitCodes:
-                    literalLengthCodeCount = input.GetBits(5);
-                    if (literalLengthCodeCount < 0)
+                    _literalLengthCodeCount = _input.GetBits(5);
+                    if (_literalLengthCodeCount < 0)
                     {
                         return false;
                     }
-                    literalLengthCodeCount += 257;
-                    state = InflaterState.ReadingNumDistCodes;
+                    _literalLengthCodeCount += 257;
+                    _state = InflaterState.ReadingNumDistCodes;
                     goto case InflaterState.ReadingNumDistCodes;
 
                 case InflaterState.ReadingNumDistCodes:
-                    distanceCodeCount = input.GetBits(5);
-                    if (distanceCodeCount < 0)
+                    _distanceCodeCount = _input.GetBits(5);
+                    if (_distanceCodeCount < 0)
                     {
                         return false;
                     }
-                    distanceCodeCount += 1;
-                    state = InflaterState.ReadingNumCodeLengthCodes;
+                    _distanceCodeCount += 1;
+                    _state = InflaterState.ReadingNumCodeLengthCodes;
                     goto case InflaterState.ReadingNumCodeLengthCodes;
 
                 case InflaterState.ReadingNumCodeLengthCodes:
-                    codeLengthCodeCount = input.GetBits(4);
-                    if (codeLengthCodeCount < 0)
+                    _codeLengthCodeCount = _input.GetBits(4);
+                    if (_codeLengthCodeCount < 0)
                     {
                         return false;
                     }
-                    codeLengthCodeCount += 4;
-                    loopCounter = 0;
-                    state = InflaterState.ReadingCodeLengthCodes;
+                    _codeLengthCodeCount += 4;
+                    _loopCounter = 0;
+                    _state = InflaterState.ReadingCodeLengthCodes;
                     goto case InflaterState.ReadingCodeLengthCodes;
 
                 case InflaterState.ReadingCodeLengthCodes:
-                    while (loopCounter < codeLengthCodeCount)
+                    while (_loopCounter < _codeLengthCodeCount)
                     {
-                        int bits = input.GetBits(3);
+                        int bits = _input.GetBits(3);
                         if (bits < 0)
                         {
                             return false;
                         }
-                        codeLengthTreeCodeLength[codeOrder[loopCounter]] = (byte)bits;
-                        ++loopCounter;
+                        _codeLengthTreeCodeLength[s_codeOrder[_loopCounter]] = (byte)bits;
+                        ++_loopCounter;
                     }
 
-                    for (int i = codeLengthCodeCount; i < codeOrder.Length; i++)
+                    for (int i = _codeLengthCodeCount; i < s_codeOrder.Length; i++)
                     {
-                        codeLengthTreeCodeLength[codeOrder[i]] = 0;
+                        _codeLengthTreeCodeLength[s_codeOrder[i]] = 0;
                     }
 
                     // create huffman tree for code length
-                    codeLengthTree = new HuffmanTree(codeLengthTreeCodeLength);
-                    codeArraySize = literalLengthCodeCount + distanceCodeCount;
-                    loopCounter = 0;     // reset loop count
+                    _codeLengthTree = new HuffmanTree(_codeLengthTreeCodeLength);
+                    _codeArraySize = _literalLengthCodeCount + _distanceCodeCount;
+                    _loopCounter = 0;     // reset loop count
 
-                    state = InflaterState.ReadingTreeCodesBefore;
+                    _state = InflaterState.ReadingTreeCodesBefore;
                     goto case InflaterState.ReadingTreeCodesBefore;
 
                 case InflaterState.ReadingTreeCodesBefore:
                 case InflaterState.ReadingTreeCodesAfter:
-                    while (loopCounter < codeArraySize)
+                    while (_loopCounter < _codeArraySize)
                     {
-                        if (state == InflaterState.ReadingTreeCodesBefore)
+                        if (_state == InflaterState.ReadingTreeCodesBefore)
                         {
-                            if ((lengthCode = codeLengthTree.GetNextSymbol(input)) < 0)
+                            if ((_lengthCode = _codeLengthTree.GetNextSymbol(_input)) < 0)
                             {
                                 return false;
                             }
@@ -642,69 +642,69 @@ namespace System.IO.Compression
                         //    (3 bits of length)
                         //  18: Repeat a code length of 0 for 11 - 138 times
                         //    (7 bits of length)
-                        if (lengthCode <= 15)
+                        if (_lengthCode <= 15)
                         {
-                            codeList[loopCounter++] = (byte)lengthCode;
+                            _codeList[_loopCounter++] = (byte)_lengthCode;
                         }
                         else
                         {
-                            if (!input.EnsureBitsAvailable(7))
+                            if (!_input.EnsureBitsAvailable(7))
                             { // it doesn't matter if we require more bits here
-                                state = InflaterState.ReadingTreeCodesAfter;
+                                _state = InflaterState.ReadingTreeCodesAfter;
                                 return false;
                             }
 
                             int repeatCount;
-                            if (lengthCode == 16)
+                            if (_lengthCode == 16)
                             {
-                                if (loopCounter == 0)
+                                if (_loopCounter == 0)
                                 {          // can't have "prev code" on first code
                                     throw new InvalidDataException();
                                 }
 
-                                byte previousCode = codeList[loopCounter - 1];
-                                repeatCount = input.GetBits(2) + 3;
+                                byte previousCode = _codeList[_loopCounter - 1];
+                                repeatCount = _input.GetBits(2) + 3;
 
-                                if (loopCounter + repeatCount > codeArraySize)
+                                if (_loopCounter + repeatCount > _codeArraySize)
                                 {
                                     throw new InvalidDataException();
                                 }
 
                                 for (int j = 0; j < repeatCount; j++)
                                 {
-                                    codeList[loopCounter++] = previousCode;
+                                    _codeList[_loopCounter++] = previousCode;
                                 }
                             }
-                            else if (lengthCode == 17)
+                            else if (_lengthCode == 17)
                             {
-                                repeatCount = input.GetBits(3) + 3;
+                                repeatCount = _input.GetBits(3) + 3;
 
-                                if (loopCounter + repeatCount > codeArraySize)
+                                if (_loopCounter + repeatCount > _codeArraySize)
                                 {
                                     throw new InvalidDataException();
                                 }
 
                                 for (int j = 0; j < repeatCount; j++)
                                 {
-                                    codeList[loopCounter++] = 0;
+                                    _codeList[_loopCounter++] = 0;
                                 }
                             }
                             else
                             { // code == 18
-                                repeatCount = input.GetBits(7) + 11;
+                                repeatCount = _input.GetBits(7) + 11;
 
-                                if (loopCounter + repeatCount > codeArraySize)
+                                if (_loopCounter + repeatCount > _codeArraySize)
                                 {
                                     throw new InvalidDataException();
                                 }
 
                                 for (int j = 0; j < repeatCount; j++)
                                 {
-                                    codeList[loopCounter++] = 0;
+                                    _codeList[_loopCounter++] = 0;
                                 }
                             }
                         }
-                        state = InflaterState.ReadingTreeCodesBefore; // we want to read the next code.
+                        _state = InflaterState.ReadingTreeCodesBefore; // we want to read the next code.
                     }
                     break;
 
@@ -717,8 +717,8 @@ namespace System.IO.Compression
             byte[] distanceTreeCodeLength = new byte[HuffmanTree.MaxDistTreeElements];
 
             // Create literal and distance tables
-            Array.Copy(codeList, literalTreeCodeLength, literalLengthCodeCount);
-            Array.Copy(codeList, literalLengthCodeCount, distanceTreeCodeLength, 0, distanceCodeCount);
+            Array.Copy(_codeList, literalTreeCodeLength, _literalLengthCodeCount);
+            Array.Copy(_codeList, _literalLengthCodeCount, distanceTreeCodeLength, 0, _distanceCodeCount);
 
             // Make sure there is an end-of-block code, otherwise how could we ever end?
             if (literalTreeCodeLength[HuffmanTree.EndOfBlockCode] == 0)
@@ -726,9 +726,9 @@ namespace System.IO.Compression
                 throw new InvalidDataException();
             }
 
-            literalLengthTree = new HuffmanTree(literalTreeCodeLength);
-            distanceTree = new HuffmanTree(distanceTreeCodeLength);
-            state = InflaterState.DecodeTop;
+            _literalLengthTree = new HuffmanTree(literalTreeCodeLength);
+            _distanceTree = new HuffmanTree(distanceTreeCodeLength);
+            _state = InflaterState.DecodeTop;
             return true;
         }
     }

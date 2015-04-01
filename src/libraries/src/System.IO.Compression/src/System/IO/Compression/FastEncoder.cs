@@ -9,21 +9,21 @@ namespace System.IO.Compression
 {
     internal class FastEncoder
     {
-        private FastEncoderWindow inputWindow; // input history window
-        private Match currentMatch;            // current match in history window
-        private double lastCompressionRatio;
+        private FastEncoderWindow _inputWindow; // input history window
+        private Match _currentMatch;            // current match in history window
+        private double _lastCompressionRatio;
 
         public FastEncoder()
         {
-            inputWindow = new FastEncoderWindow();
-            currentMatch = new Match();
+            _inputWindow = new FastEncoderWindow();
+            _currentMatch = new Match();
         }
 
         internal int BytesInHistory
         {
             get
             {
-                return inputWindow.BytesAvailable;
+                return _inputWindow.BytesAvailable;
             }
         }
 
@@ -31,18 +31,18 @@ namespace System.IO.Compression
         {
             get
             {
-                return inputWindow.UnprocessedInput;
+                return _inputWindow.UnprocessedInput;
             }
         }
 
         internal void FlushInput()
         {
-            inputWindow.FlushWindow();
+            _inputWindow.FlushWindow();
         }
 
         internal Double LastCompressionRatio
         {
-            get { return lastCompressionRatio; }
+            get { return _lastCompressionRatio; }
         }
 
         // Copy the compressed bytes to output buffer as a block. maxBytesToCopy limits the number of 
@@ -83,8 +83,8 @@ namespace System.IO.Compression
             do
             {
                 // read more input data into the window if there is space available
-                int bytesToCopy = (input.Count < inputWindow.FreeWindowSpace) ?
-                                         input.Count : inputWindow.FreeWindowSpace;
+                int bytesToCopy = (input.Count < _inputWindow.FreeWindowSpace) ?
+                                         input.Count : _inputWindow.FreeWindowSpace;
                 if (maxBytesToCopy >= 1)
                 {
                     bytesToCopy = Math.Min(bytesToCopy, maxBytesToCopy - bytesConsumedFromInput);
@@ -92,7 +92,7 @@ namespace System.IO.Compression
                 if (bytesToCopy > 0)
                 {
                     // copy data into history window
-                    inputWindow.CopyBytes(input.Buffer, input.StartIndex, bytesToCopy);
+                    _inputWindow.CopyBytes(input.Buffer, input.StartIndex, bytesToCopy);
                     input.ConsumeBytes(bytesToCopy);
                     bytesConsumedFromInput += bytesToCopy;
                 }
@@ -107,31 +107,31 @@ namespace System.IO.Compression
             int totalBytesConsumed = inputBytesPre - inputBytesPost;
             if (bytesWritten != 0)
             {
-                lastCompressionRatio = (double)bytesWritten / (double)totalBytesConsumed;
+                _lastCompressionRatio = (double)bytesWritten / (double)totalBytesConsumed;
             }
         }
 
         // compress the bytes in input history window
         private void GetCompressedOutput(OutputBuffer output)
         {
-            while (inputWindow.BytesAvailable > 0 && SafeToWriteTo(output))
+            while (_inputWindow.BytesAvailable > 0 && SafeToWriteTo(output))
             {
                 // Find next match. A match can be a symbol, 
                 // a distance/length pair, a symbol followed by a distance/Length pair
-                inputWindow.GetNextSymbolOrMatch(currentMatch);
+                _inputWindow.GetNextSymbolOrMatch(_currentMatch);
 
-                if (currentMatch.State == MatchState.HasSymbol)
+                if (_currentMatch.State == MatchState.HasSymbol)
                 {
-                    WriteChar(currentMatch.Symbol, output);
+                    WriteChar(_currentMatch.Symbol, output);
                 }
-                else if (currentMatch.State == MatchState.HasMatch)
+                else if (_currentMatch.State == MatchState.HasMatch)
                 {
-                    WriteMatch(currentMatch.Length, currentMatch.Position, output);
+                    WriteMatch(_currentMatch.Length, _currentMatch.Position, output);
                 }
                 else
                 {
-                    WriteChar(currentMatch.Symbol, output);
-                    WriteMatch(currentMatch.Length, currentMatch.Position, output);
+                    WriteChar(_currentMatch.Symbol, output);
+                    WriteMatch(_currentMatch.Length, _currentMatch.Position, output);
                 }
             }
         }

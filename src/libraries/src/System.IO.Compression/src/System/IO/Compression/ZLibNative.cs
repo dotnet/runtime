@@ -252,22 +252,22 @@ namespace System.IO.Compression
 
             public enum State { NotInitialized, InitializedForDeflate, InitializedForInflate, Disposed }
 
-            private ZStream zStream;
+            private ZStream _zStream;
 
             [SecurityCritical]
-            private volatile State initializationState;
+            private volatile State _initializationState;
 
 
             public ZLibStreamHandle()
 
                 : base(new IntPtr(-1), true)
             {
-                this.zStream = new ZStream();
-                this.zStream.zalloc = ZNullPtr;
-                this.zStream.zfree = ZNullPtr;
-                this.zStream.opaque = ZNullPtr;
+                _zStream = new ZStream();
+                _zStream.zalloc = ZNullPtr;
+                _zStream.zfree = ZNullPtr;
+                _zStream.opaque = ZNullPtr;
 
-                this.initializationState = State.NotInitialized;
+                _initializationState = State.NotInitialized;
                 this.SetHandle(IntPtr.Zero);
             }
 
@@ -283,7 +283,7 @@ namespace System.IO.Compression
                 [Pure]
                 [SecurityCritical]
                 get
-                { return initializationState; }
+                { return _initializationState; }
             }
 
 
@@ -310,35 +310,35 @@ namespace System.IO.Compression
 
             public IntPtr NextIn
             {
-                [SecurityCritical] get { return zStream.nextIn; }
-                [SecurityCritical] set { zStream.nextIn = value; }
+                [SecurityCritical] get { return _zStream.nextIn; }
+                [SecurityCritical] set { _zStream.nextIn = value; }
             }
 
             public UInt32 AvailIn
             {
-                [SecurityCritical] get { return zStream.availIn; }
-                [SecurityCritical] set { zStream.availIn = value; }
+                [SecurityCritical] get { return _zStream.availIn; }
+                [SecurityCritical] set { _zStream.availIn = value; }
             }
 
-            public UInt32 TotalIn {[SecurityCritical] get { return zStream.totalIn; } }
+            public UInt32 TotalIn {[SecurityCritical] get { return _zStream.totalIn; } }
 
             public IntPtr NextOut
             {
-                [SecurityCritical] get { return zStream.nextOut; }
-                [SecurityCritical] set { zStream.nextOut = value; }
+                [SecurityCritical] get { return _zStream.nextOut; }
+                [SecurityCritical] set { _zStream.nextOut = value; }
             }
 
             public UInt32 AvailOut
             {
-                [SecurityCritical] get { return zStream.availOut; }
-                [SecurityCritical] set { zStream.availOut = value; }
+                [SecurityCritical] get { return _zStream.availOut; }
+                [SecurityCritical] set { _zStream.availOut = value; }
             }
 
-            public UInt32 TotalOut {[SecurityCritical] get { return zStream.totalOut; } }
+            public UInt32 TotalOut {[SecurityCritical] get { return _zStream.totalOut; } }
 
-            public Int32 DataType {[SecurityCritical] get { return zStream.dataType; } }
+            public Int32 DataType {[SecurityCritical] get { return _zStream.dataType; } }
 
-            public UInt32 Adler {[SecurityCritical] get { return zStream.adler; } }
+            public UInt32 Adler {[SecurityCritical] get { return _zStream.adler; } }
 
             #endregion  // Expose fields on ZStream for use by user / Fx code (add more as required)
 
@@ -374,8 +374,8 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.DeflateInit2_(ref zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy, ZLibVersion);
-                    initializationState = State.InitializedForDeflate;
+                    errC = Interop.clrcompression.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy, ZLibVersion);
+                    _initializationState = State.InitializedForDeflate;
                 }
 
                 return errC;
@@ -387,7 +387,7 @@ namespace System.IO.Compression
             {
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForDeflate);
-                return Interop.clrcompression.Deflate(ref zStream, flush);
+                return Interop.clrcompression.Deflate(ref _zStream, flush);
             }
 
 
@@ -402,8 +402,8 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.DeflateEnd(ref zStream);
-                    initializationState = State.Disposed;
+                    errC = Interop.clrcompression.DeflateEnd(ref _zStream);
+                    _initializationState = State.Disposed;
                 }
                 return errC;
             }
@@ -420,8 +420,8 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.InflateInit2_(ref zStream, windowBits, ZLibVersion);
-                    initializationState = State.InitializedForInflate;
+                    errC = Interop.clrcompression.InflateInit2_(ref _zStream, windowBits, ZLibVersion);
+                    _initializationState = State.InitializedForInflate;
                 }
 
                 return errC;
@@ -433,7 +433,7 @@ namespace System.IO.Compression
             {
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForInflate);
-                return Interop.clrcompression.Inflate(ref zStream, flush);
+                return Interop.clrcompression.Inflate(ref _zStream, flush);
             }
 
 
@@ -448,8 +448,8 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.InflateEnd(ref zStream);
-                    initializationState = State.Disposed;
+                    errC = Interop.clrcompression.InflateEnd(ref _zStream);
+                    _initializationState = State.Disposed;
                 }
 
                 return errC;
@@ -461,13 +461,13 @@ namespace System.IO.Compression
             {
                 // This can work even after XxflateEnd().
 
-                if (ZNullPtr.Equals(zStream.msg))
+                if (ZNullPtr.Equals(_zStream.msg))
                     return String.Empty;
 
                 unsafe
                 {
                     StringBuilder sb = new StringBuilder();
-                    SByte* pMessage = (SByte*)zStream.msg;
+                    SByte* pMessage = (SByte*)_zStream.msg;
                     char c;
                     do
                     {

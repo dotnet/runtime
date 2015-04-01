@@ -7,19 +7,19 @@ namespace System.IO.Compression
 {
     internal class DeflateInput
     {
-        private byte[] buffer;
-        private int count;
-        private int startIndex;
+        private byte[] _buffer;
+        private int _count;
+        private int _startIndex;
 
         internal byte[] Buffer
         {
             get
             {
-                return buffer;
+                return _buffer;
             }
             set
             {
-                buffer = value;
+                _buffer = value;
             }
         }
 
@@ -27,11 +27,11 @@ namespace System.IO.Compression
         {
             get
             {
-                return count;
+                return _count;
             }
             set
             {
-                count = value;
+                _count = value;
             }
         }
 
@@ -39,34 +39,34 @@ namespace System.IO.Compression
         {
             get
             {
-                return startIndex;
+                return _startIndex;
             }
             set
             {
-                startIndex = value;
+                _startIndex = value;
             }
         }
 
         internal void ConsumeBytes(int n)
         {
-            Debug.Assert(n <= count, "Should use more bytes than what we have in the buffer");
-            startIndex += n;
-            count -= n;
-            Debug.Assert(startIndex + count <= buffer.Length, "Input buffer is in invalid state!");
+            Debug.Assert(n <= _count, "Should use more bytes than what we have in the buffer");
+            _startIndex += n;
+            _count -= n;
+            Debug.Assert(_startIndex + _count <= _buffer.Length, "Input buffer is in invalid state!");
         }
 
         internal InputState DumpState()
         {
             InputState savedState;
-            savedState.count = count;
-            savedState.startIndex = startIndex;
+            savedState.count = _count;
+            savedState.startIndex = _startIndex;
             return savedState;
         }
 
         internal void RestoreState(InputState state)
         {
-            count = state.count;
-            startIndex = state.startIndex;
+            _count = state.count;
+            _startIndex = state.startIndex;
         }
 
         internal struct InputState

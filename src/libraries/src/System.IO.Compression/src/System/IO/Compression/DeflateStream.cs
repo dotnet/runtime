@@ -15,18 +15,18 @@ namespace System.IO.Compression
         private Stream _stream;
         private CompressionMode _mode;
         private bool _leaveOpen;
-        private Inflater inflater;
-        private IDeflater deflater;
-        private byte[] buffer;
+        private Inflater _inflater;
+        private IDeflater _deflater;
+        private byte[] _buffer;
 
-        private int asyncOperations;
+        private int _asyncOperations;
 
-        private IFileFormatWriter formatWriter;
-        private bool wroteHeader;
-        private bool wroteBytes;
+        private IFileFormatWriter _formatWriter;
+        private bool _wroteHeader;
+        private bool _wroteBytes;
 
         private enum WorkerType : byte { Managed, ZLib, Unknown };
-        private static volatile WorkerType deflaterType = WorkerType.Unknown;
+        private static volatile WorkerType s_deflaterType = WorkerType.Unknown;
 
 
         public DeflateStream(Stream stream, CompressionMode mode)
@@ -55,7 +55,7 @@ namespace System.IO.Compression
                         throw new ArgumentException(SR.NotReadableStream, "stream");
                     }
 
-                    inflater = new Inflater();
+                    _inflater = new Inflater();
 
                     break;
 
@@ -66,12 +66,12 @@ namespace System.IO.Compression
                         throw new ArgumentException(SR.NotWriteableStream, "stream");
                     }
 
-                    deflater = CreateDeflater(null);
+                    _deflater = CreateDeflater(null);
 
                     break;
             }  // switch (_mode)
 
-            buffer = new byte[DefaultBufferSize];
+            _buffer = new byte[DefaultBufferSize];
         }
 
         // Implies mode = Compress
@@ -99,9 +99,9 @@ namespace System.IO.Compression
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
 
-            deflater = CreateDeflater(compressionLevel);
+            _deflater = CreateDeflater(compressionLevel);
 
-            buffer = new byte[DefaultBufferSize];
+            _buffer = new byte[DefaultBufferSize];
         }
 
         private static IDeflater CreateDeflater(CompressionLevel? compressionLevel)
@@ -132,10 +132,10 @@ namespace System.IO.Compression
             // Yes, we risk initialising the singleton multiple times.
             // However, initialising the singleton multiple times has no bad consequences, and is fairly cheap.
 
-            if (WorkerType.Unknown != deflaterType)
-                return deflaterType;
+            if (WorkerType.Unknown != s_deflaterType)
+                return s_deflaterType;
 
-            return (deflaterType = WorkerType.ZLib);
+            return (s_deflaterType = WorkerType.ZLib);
             //return (deflaterType = WorkerType.Managed);
         }
 
@@ -143,7 +143,7 @@ namespace System.IO.Compression
         {
             if (reader != null)
             {
-                inflater.SetFileFormatReader(reader);
+                _inflater.SetFileFormatReader(reader);
             }
         }
 
@@ -151,7 +151,7 @@ namespace System.IO.Compression
         {
             if (writer != null)
             {
-                formatWriter = writer;
+                _formatWriter = writer;
             }
         }
 
@@ -246,7 +246,7 @@ namespace System.IO.Compression
 
             while (true)
             {
-                bytesRead = inflater.Inflate(array, currentOffset, remainingCount);
+                bytesRead = _inflater.Inflate(array, currentOffset, remainingCount);
                 currentOffset += bytesRead;
                 remainingCount -= bytesRead;
 
@@ -255,22 +255,22 @@ namespace System.IO.Compression
                     break;
                 }
 
-                if (inflater.Finished())
+                if (_inflater.Finished())
                 {
                     // if we finished decompressing, we can't have anything left in the outputwindow.
-                    Debug.Assert(inflater.AvailableOutput == 0, "We should have copied all stuff out!");
+                    Debug.Assert(_inflater.AvailableOutput == 0, "We should have copied all stuff out!");
                     break;
                 }
 
-                Debug.Assert(inflater.NeedsInput(), "We can only run into this case if we are short of input");
+                Debug.Assert(_inflater.NeedsInput(), "We can only run into this case if we are short of input");
 
-                int bytes = _stream.Read(buffer, 0, buffer.Length);
+                int bytes = _stream.Read(_buffer, 0, _buffer.Length);
                 if (bytes == 0)
                 {
                     break;      //Do we want to throw an exception here?
                 }
 
-                inflater.SetInput(buffer, 0, bytes);
+                _inflater.SetInput(_buffer, 0, bytes);
             }
 
             return count - remainingCount;
@@ -314,7 +314,7 @@ namespace System.IO.Compression
             EnsureDecompressionMode();
 
             // We use this checking order for compat to earlier versions:
-            if (asyncOperations != 0)
+            if (_asyncOperations != 0)
                 throw new InvalidOperationException(SR.InvalidBeginCall);
 
             ValidateParameters(array, offset, count);
@@ -325,20 +325,20 @@ namespace System.IO.Compression
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            Interlocked.Increment(ref asyncOperations);
+            Interlocked.Increment(ref _asyncOperations);
             Task<int> readTask = null;
 
             try
             {
                 // Try to read decompressed data in output buffer
-                int bytesRead = inflater.Inflate(array, offset, count);
+                int bytesRead = _inflater.Inflate(array, offset, count);
                 if (bytesRead != 0)
                 {
                     // If decompression output buffer is not empty, return immediately.
                     return Task.FromResult(bytesRead);
                 }
 
-                if (inflater.Finished())
+                if (_inflater.Finished())
                 {
                     // end of compression stream
                     return Task.FromResult(0);
@@ -346,7 +346,7 @@ namespace System.IO.Compression
 
                 // If there is no data on the output buffer and we are not at 
                 // the end of the stream, we need to get more data from the base stream
-                readTask = _stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                 if (readTask == null)
                 {
                     throw new InvalidOperationException(SR.NotReadableStream);
@@ -368,7 +368,7 @@ namespace System.IO.Compression
                 // if we haven't started any async work, decrement the counter to end the transaction
                 if (readTask == null)
                 {
-                    Interlocked.Decrement(ref asyncOperations);
+                    Interlocked.Decrement(ref _asyncOperations);
                 }
             }
         }
@@ -409,14 +409,14 @@ namespace System.IO.Compression
                 }
 
                 // Feed the data from base stream into decompression engine
-                inflater.SetInput(buffer, 0, bytesRead);
-                bytesRead = inflater.Inflate(array, offset, count);
+                _inflater.SetInput(_buffer, 0, bytesRead);
+                bytesRead = _inflater.Inflate(array, offset, count);
 
-                if (bytesRead == 0 && !inflater.Finished())
+                if (bytesRead == 0 && !_inflater.Finished())
                 {
                     // We could have read in head information and didn't get any data.
                     // Read from the base stream again.   
-                    readTask = _stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                    readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
                     if (readTask == null)
                     {
                         throw new InvalidOperationException(SR.NotReadableStream);
@@ -442,7 +442,7 @@ namespace System.IO.Compression
                 // if we haven't started any new async work, decrement the counter to end the transaction
                 if (readTask == null)
                 {
-                    Interlocked.Decrement(ref asyncOperations);
+                    Interlocked.Decrement(ref _asyncOperations);
                 }
             }
         }
@@ -466,18 +466,18 @@ namespace System.IO.Compression
 
             // Pass new bytes through deflater and write them too:
 
-            deflater.SetInput(array, offset, count);
+            _deflater.SetInput(array, offset, count);
             WriteDeflaterOutput();
         }
 
 
         private void WriteDeflaterOutput()
         {
-            while (!deflater.NeedsInput())
+            while (!_deflater.NeedsInput())
             {
-                int compressedBytes = deflater.GetDeflateOutput(buffer);
+                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
                 if (compressedBytes > 0)
-                    DoWrite(buffer, 0, compressedBytes);
+                    DoWrite(_buffer, 0, compressedBytes);
             }
         }
 
@@ -498,22 +498,22 @@ namespace System.IO.Compression
                 return;
 
             // Note that stream contains more than zero data bytes:
-            wroteBytes = true;
+            _wroteBytes = true;
 
             // If no header/footer formatter present, nothing else to do:
-            if (formatWriter == null)
+            if (_formatWriter == null)
                 return;
 
             // If formatter has not yet written a header, do it now:
-            if (!wroteHeader)
+            if (!_wroteHeader)
             {
-                byte[] b = formatWriter.GetHeader();
+                byte[] b = _formatWriter.GetHeader();
                 _stream.Write(b, 0, b.Length);
-                wroteHeader = true;
+                _wroteHeader = true;
             }
 
             // Inform formatter of the data bytes written:
-            formatWriter.UpdateWithBytesRead(array, offset, count);
+            _formatWriter.UpdateWithBytesRead(array, offset, count);
         }
 
         // This is called by Dispose:
@@ -535,7 +535,7 @@ namespace System.IO.Compression
             // always wrote zero output for zero input and upstack code (e.g. GZipStream)
             // took dependencies on it. Thus, make sure to only "flush" when we actually had
             // some input:
-            if (wroteBytes)
+            if (_wroteBytes)
             {
                 // Compress any bytes left:                        
                 WriteDeflaterOutput();
@@ -545,10 +545,10 @@ namespace System.IO.Compression
                 do
                 {
                     int compressedBytes;
-                    finished = deflater.Finish(buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out compressedBytes);
 
                     if (compressedBytes > 0)
-                        DoWrite(buffer, 0, compressedBytes);
+                        DoWrite(_buffer, 0, compressedBytes);
                 } while (!finished);
             }
             else
@@ -562,14 +562,14 @@ namespace System.IO.Compression
                 do
                 {
                     int compressedBytes;
-                    finished = deflater.Finish(buffer, out compressedBytes);
+                    finished = _deflater.Finish(_buffer, out compressedBytes);
                 } while (!finished);
             }
 
             // Write format footer:
-            if (formatWriter != null && wroteHeader)
+            if (_formatWriter != null && _wroteHeader)
             {
-                byte[] b = formatWriter.GetFooter();
+                byte[] b = _formatWriter.GetFooter();
                 _stream.Write(b, 0, b.Length);
             }
         }
@@ -596,12 +596,12 @@ namespace System.IO.Compression
 
                     try
                     {
-                        if (deflater != null)
-                            deflater.Dispose();
+                        if (_deflater != null)
+                            _deflater.Dispose();
                     }
                     finally
                     {
-                        deflater = null;
+                        _deflater = null;
                         base.Dispose(disposing);
                     }
                 }  // finally
@@ -613,7 +613,7 @@ namespace System.IO.Compression
             EnsureCompressionMode();
 
             // We use this checking order for compat to earlier versions:
-            if (asyncOperations != 0)
+            if (_asyncOperations != 0)
                 throw new InvalidOperationException(SR.InvalidBeginCall);
 
             ValidateParameters(array, offset, count);
@@ -622,12 +622,12 @@ namespace System.IO.Compression
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
 
-            Interlocked.Increment(ref asyncOperations);
+            Interlocked.Increment(ref _asyncOperations);
 
             try
             {
                 return base.WriteAsync(array, offset, count, cancellationToken).ContinueWith(
-                        (t) => Interlocked.Decrement(ref asyncOperations),
+                        (t) => Interlocked.Decrement(ref _asyncOperations),
                         cancellationToken,
                         TaskContinuationOptions.ExecuteSynchronously,
                         TaskScheduler.Default
@@ -635,7 +635,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                Interlocked.Decrement(ref asyncOperations);
+                Interlocked.Decrement(ref _asyncOperations);
                 throw;
             }
         }

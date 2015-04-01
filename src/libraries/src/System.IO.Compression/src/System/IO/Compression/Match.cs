@@ -6,33 +6,33 @@ namespace System.IO.Compression
     // This class represents a match in the history window
     internal class Match
     {
-        private MatchState state;
-        private int pos;
-        private int len;
-        private byte symbol;
+        private MatchState _state;
+        private int _pos;
+        private int _len;
+        private byte _symbol;
 
         internal MatchState State
         {
-            get { return state; }
-            set { state = value; }
+            get { return _state; }
+            set { _state = value; }
         }
 
         internal int Position
         {
-            get { return pos; }
-            set { pos = value; }
+            get { return _pos; }
+            set { _pos = value; }
         }
 
         internal int Length
         {
-            get { return len; }
-            set { len = value; }
+            get { return _len; }
+            set { _len = value; }
         }
 
         internal byte Symbol
         {
-            get { return symbol; }
-            set { symbol = value; }
+            get { return _symbol; }
+            set { _symbol = value; }
         }
     }
 }

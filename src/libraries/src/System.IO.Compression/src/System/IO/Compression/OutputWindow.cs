@@ -18,35 +18,35 @@ namespace System.IO.Compression
         private const int WindowSize = 32768;
         private const int WindowMask = 32767;
 
-        private byte[] window = new byte[WindowSize]; //The window is 2^15 bytes
-        private int end;       // this is the position to where we should write next byte 
-        private int bytesUsed; // The number of bytes in the output window which is not consumed.
+        private byte[] _window = new byte[WindowSize]; //The window is 2^15 bytes
+        private int _end;       // this is the position to where we should write next byte 
+        private int _bytesUsed; // The number of bytes in the output window which is not consumed.
 
         // Add a byte to output window
         public void Write(byte b)
         {
-            Debug.Assert(bytesUsed < WindowSize, "Can't add byte when window is full!");
-            window[end++] = b;
-            end &= WindowMask;
-            ++bytesUsed;
+            Debug.Assert(_bytesUsed < WindowSize, "Can't add byte when window is full!");
+            _window[_end++] = b;
+            _end &= WindowMask;
+            ++_bytesUsed;
         }
 
         public void WriteLengthDistance(int length, int distance)
         {
-            Debug.Assert((bytesUsed + length) <= WindowSize, "No Enough space");
+            Debug.Assert((_bytesUsed + length) <= WindowSize, "No Enough space");
 
             // move backwards distance bytes in the output stream, 
             // and copy length bytes from this position to the output stream.
-            bytesUsed += length;
-            int copyStart = (end - distance) & WindowMask;  // start position for coping.
+            _bytesUsed += length;
+            int copyStart = (_end - distance) & WindowMask;  // start position for coping.
 
             int border = WindowSize - length;
-            if (copyStart <= border && end < border)
+            if (copyStart <= border && _end < border)
             {
                 if (length <= distance)
                 {
-                    System.Array.Copy(window, copyStart, window, end, length);
-                    end += length;
+                    System.Array.Copy(_window, copyStart, _window, _end, length);
+                    _end += length;
                 }
                 else
                 {
@@ -56,7 +56,7 @@ namespace System.IO.Compression
                     // adds X,Y,X,Y,X to the output stream.
                     while (length-- > 0)
                     {
-                        window[end++] = window[copyStart++];
+                        _window[_end++] = _window[copyStart++];
                     }
                 }
             }
@@ -64,8 +64,8 @@ namespace System.IO.Compression
             { // copy byte by byte
                 while (length-- > 0)
                 {
-                    window[end++] = window[copyStart++];
-                    end &= WindowMask;
+                    _window[_end++] = _window[copyStart++];
+                    _end &= WindowMask;
                     copyStart &= WindowMask;
                 }
             }
@@ -75,29 +75,29 @@ namespace System.IO.Compression
         // This is used for uncompressed block.
         public int CopyFrom(InputBuffer input, int length)
         {
-            length = Math.Min(Math.Min(length, WindowSize - bytesUsed), input.AvailableBytes);
+            length = Math.Min(Math.Min(length, WindowSize - _bytesUsed), input.AvailableBytes);
             int copied;
 
             // We might need wrap around to copy all bytes.
-            int tailLen = WindowSize - end;
+            int tailLen = WindowSize - _end;
             if (length > tailLen)
             {
                 // copy the first part     
-                copied = input.CopyTo(window, end, tailLen);
+                copied = input.CopyTo(_window, _end, tailLen);
                 if (copied == tailLen)
                 {
                     // only try to copy the second part if we have enough bytes in input
-                    copied += input.CopyTo(window, 0, length - tailLen);
+                    copied += input.CopyTo(_window, 0, length - tailLen);
                 }
             }
             else
             {
                 // only one copy is needed if there is no wrap around.
-                copied = input.CopyTo(window, end, length);
+                copied = input.CopyTo(_window, _end, length);
             }
 
-            end = (end + copied) & WindowMask;
-            bytesUsed += copied;
+            _end = (_end + copied) & WindowMask;
+            _bytesUsed += copied;
             return copied;
         }
 
@@ -106,7 +106,7 @@ namespace System.IO.Compression
         {
             get
             {
-                return WindowSize - bytesUsed;
+                return WindowSize - _bytesUsed;
             }
         }
 
@@ -115,7 +115,7 @@ namespace System.IO.Compression
         {
             get
             {
-                return bytesUsed;
+                return _bytesUsed;
             }
         }
 
@@ -124,14 +124,14 @@ namespace System.IO.Compression
         {
             int copy_end;
 
-            if (length > bytesUsed)
+            if (length > _bytesUsed)
             {   // we can copy all the decompressed bytes out
-                copy_end = end;
-                length = bytesUsed;
+                copy_end = _end;
+                length = _bytesUsed;
             }
             else
             {
-                copy_end = (end - bytesUsed + length) & WindowMask;  // copy length of bytes
+                copy_end = (_end - _bytesUsed + length) & WindowMask;  // copy length of bytes
             }
 
             int copied = length;
@@ -140,14 +140,14 @@ namespace System.IO.Compression
             if (tailLen > 0)
             {    // this means we need to copy two parts seperately
                 // copy tailLen bytes from the end of output window
-                System.Array.Copy(window, WindowSize - tailLen,
+                System.Array.Copy(_window, WindowSize - tailLen,
                                   output, offset, tailLen);
                 offset += tailLen;
                 length = copy_end;
             }
-            System.Array.Copy(window, copy_end - length, output, offset, length);
-            bytesUsed -= copied;
-            Debug.Assert(bytesUsed >= 0, "check this function and find why we copied more bytes than we have");
+            System.Array.Copy(_window, copy_end - length, output, offset, length);
+            _bytesUsed -= copied;
+            Debug.Assert(_bytesUsed >= 0, "check this function and find why we copied more bytes than we have");
             return copied;
         }
     }

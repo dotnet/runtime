@@ -16,7 +16,7 @@ namespace System.IO.Compression
         internal const Int32 ValidZipDate_YearMin = 1980;
         internal const Int32 ValidZipDate_YearMax = 2107;
 
-        private static readonly DateTime InvalidDateIndicator = new DateTime(ValidZipDate_YearMin, 1, 1, 0, 0, 0);
+        private static readonly DateTime s_invalidDateIndicator = new DateTime(ValidZipDate_YearMin, 1, 1, 0, 0, 0);
 
 
         internal static Boolean EndsWithDirChar(String test)
@@ -80,11 +80,11 @@ namespace System.IO.Compression
             }
             catch (ArgumentOutOfRangeException)
             {
-                return InvalidDateIndicator;
+                return s_invalidDateIndicator;
             }
             catch (ArgumentException)
             {
-                return InvalidDateIndicator;
+                return s_invalidDateIndicator;
             }
         }
 

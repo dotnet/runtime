@@ -12,9 +12,9 @@ namespace System.IO.Compression
     /// </summary>
     internal class ZLibException : IOException
     {
-        private string zlibErrorContext = null;
-        private string zlibErrorMessage = null;
-        private ZErrorCode zlibErrorCode = ZErrorCode.Ok;
+        private string _zlibErrorContext = null;
+        private string _zlibErrorMessage = null;
+        private ZErrorCode _zlibErrorCode = ZErrorCode.Ok;
 
 
 
@@ -78,9 +78,9 @@ namespace System.IO.Compression
 
         private void Init(string zlibErrorContext, ZErrorCode zlibErrorCode, string zlibErrorMessage)
         {
-            this.zlibErrorContext = zlibErrorContext;
-            this.zlibErrorCode = zlibErrorCode;
-            this.zlibErrorMessage = zlibErrorMessage;
+            _zlibErrorContext = zlibErrorContext;
+            _zlibErrorCode = zlibErrorCode;
+            _zlibErrorMessage = zlibErrorMessage;
         }
 
 
@@ -88,21 +88,21 @@ namespace System.IO.Compression
         {
             [SecurityCritical]
             get
-            { return zlibErrorContext; }
+            { return _zlibErrorContext; }
         }
 
         public int ZLibErrorCode
         {
             [SecurityCritical]
             get
-            { return (int)zlibErrorCode; }
+            { return (int)_zlibErrorCode; }
         }
 
         public string ZLibErrorMessage
         {
             [SecurityCritical]
             get
-            { return zlibErrorMessage; }
+            { return _zlibErrorMessage; }
         }
     } // internal class ZLibException
 } // namespace System.IO.Compression

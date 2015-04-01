@@ -51,7 +51,7 @@ namespace System.IO.Compression
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
 
-            this._compressionLevel = compressionLevel;
+            _compressionLevel = compressionLevel;
         }
 
         //Initializes, attaches it to archive
@@ -99,7 +99,7 @@ namespace System.IO.Compression
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pugable component that completely encapsulates the meaning of compressionLevel.
 
-            this._compressionLevel = compressionLevel;
+            _compressionLevel = compressionLevel;
         }
 
         //Initializes new entry
