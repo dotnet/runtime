@@ -65,7 +65,6 @@ int __cdecl main(int argc, char *argv[])
 
     DoTest(0);
     DoTest(CP_ACP);
-    DoTest(0x4E4);
 
     PAL_Terminate();
 
