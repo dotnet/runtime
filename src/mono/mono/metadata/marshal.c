@@ -281,6 +281,9 @@ mono_marshal_unlock_internal (void)
 	mono_marshal_unlock ();
 }
 
+/*
+ * Returns NULL and sets the pending exception on failure.
+ */
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
 {
@@ -306,7 +309,8 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 		ftnptr = mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 		if (!ftnptr) {
 			g_assert (exc_class);
-			mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
+			mono_set_pending_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
+			return NULL;
 		}
 		return ftnptr;
 	}
@@ -423,6 +427,9 @@ parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piin
 	}
 }
 
+/*
+ * Returns NULL and sets the pending exception on failure.
+ */
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
@@ -484,8 +491,10 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		mono_delegate_ctor_with_method ((MonoObject*)d, this, mono_compile_method (wrapper), wrapper);
 	}
 
-	if (d->object.vtable->domain != mono_domain_get ())
-		mono_raise_exception (mono_get_exception_not_supported ("Delegates cannot be marshalled from native code into a domain other than their home domain"));
+	if (d->object.vtable->domain != mono_domain_get ()) {
+		mono_set_pending_exception (mono_get_exception_not_supported ("Delegates cannot be marshalled from native code into a domain other than their home domain"));
+		return NULL;
+	}
 
 	return d;
 }
@@ -674,6 +683,9 @@ mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnu
 	mono_byvalarray_to_array (arr, native_arr, mono_defaults.byte_class, elnum);
 }
 
+/*
+ * Sets the pending exception on failure.
+ */
 static void
 mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclass, guint32 elnum)
 {
@@ -687,7 +699,8 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 		if (error) {
 			MonoException *exc = mono_get_exception_argument ("string", error->message);
 			g_error_free (error);
-			mono_raise_exception (exc);
+			mono_set_pending_exception (exc);
+			return;
 		}
 
 		memcpy (native_arr, as, MIN (strlen (as), elnum));
@@ -832,6 +845,8 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
  * Returns: a utf8 string with the contents of the StringBuilder.
  *
  * The return value must be released with g_free.
+ *
+ * Returns NULL and sets the pending exception on failure.
  */
 gchar*
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
@@ -841,17 +856,14 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 	if (!sb)
 		return NULL;
 
-
 	gunichar2 *str_utf16 = mono_string_builder_to_utf16 (sb);
-
 	guint str_len = mono_string_builder_string_length (sb);
-
 	gchar *tmp = g_utf16_to_utf8 (str_utf16, str_len, NULL, NULL, &error);
 
 	if (error) {
 		g_error_free (error);
 		g_free (str_utf16);
-		mono_raise_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
+		mono_set_pending_exception (mono_get_exception_execution_engine ("Failed to convert StringBuilder from utf16 to utf8"));
 		return NULL;
 	} else {
 		guint len = mono_string_builder_capacity (sb) + 1;
@@ -916,6 +928,9 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 	return str;
 }
 
+/*
+ * Returns NULL and sets the pending exception on failure.
+ */
 static gpointer
 mono_string_to_lpstr (MonoString *s)
 {
@@ -937,7 +952,7 @@ mono_string_to_lpstr (MonoString *s)
 	if (error) {
 		MonoException *exc = mono_get_exception_argument ("string", error->message);
 		g_error_free (error);
-		mono_raise_exception(exc);
+		mono_set_pending_exception(exc);
 		return NULL;
 	} else {
 		as = CoTaskMemAlloc (len + 1);
@@ -2052,6 +2067,9 @@ mono_marshal_emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
 
 #endif /* DISABLE_JIT */
 
+/*
+ * Returns NULL and sets the pending exception on failure.
+ */
 static MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 {
@@ -2065,15 +2083,16 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 
 	g_assert (delegate);
 	mcast_delegate = (MonoMulticastDelegate *) delegate;
-	if (mcast_delegate->prev != NULL)
-		mono_raise_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
+	if (mcast_delegate->prev != NULL) {
+		mono_set_pending_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
+		return NULL;
+	}
 
 #ifndef DISABLE_REMOTING
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
-
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
-		if (!mono_class_is_contextbound (tp->remote_class->proxy_class) || tp->rp->context != (MonoObject *) mono_context_get ()) {
 
+		if (!mono_class_is_contextbound (tp->remote_class->proxy_class) || tp->rp->context != (MonoObject *) mono_context_get ()) {
 			/* If the target is a proxy, make a direct call. Is proxy's work
 			// to make the call asynchronous.
 			*/
@@ -2091,8 +2110,10 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 
 			exc = NULL;
 			mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
-			if (exc)
-				mono_raise_exception ((MonoException *) exc);
+			if (exc) {
+				mono_set_pending_exception ((MonoException *) exc);
+				return NULL;
+			}
 			return ares;
 		}
 	}
@@ -2770,6 +2791,9 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	return res;
 }
 
+/*
+ * Returns NULL and sets the pending exception on failure.
+ */
 static MonoObject *
 mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 {
@@ -2803,12 +2827,12 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 
 	ares = mono_array_get (msg->args, gpointer, sig->param_count - 1);
 	if (ares == NULL) {
-		mono_raise_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingException", "The async result object is null or of an unexpected type."));
+		mono_set_pending_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingException", "The async result object is null or of an unexpected type."));
 		return NULL;
 	}
 
 	if (ares->async_delegate != (MonoObject*)delegate) {
-		mono_raise_exception (mono_get_exception_invalid_operation (
+		mono_set_pending_exception (mono_get_exception_invalid_operation (
 			"The IAsyncResult object provided does not match this delegate."));
 		return NULL;
 	}
@@ -2836,7 +2860,8 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 			MONO_OBJECT_SETREF (((MonoException*)exc), stack_trace, mono_string_new (domain, tmp));
 			g_free (tmp);
 		}
-		mono_raise_exception ((MonoException*)exc);
+		mono_set_pending_exception ((MonoException*)exc);
+		return NULL;
 	}
 
 	mono_method_return_message_restore (method, params, out_args);
