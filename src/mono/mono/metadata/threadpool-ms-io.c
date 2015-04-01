@@ -806,7 +806,7 @@ polling_thread (gpointer data)
 		}
 
 		mono_mutex_lock (&threadpool_io->states_lock);
-		for (i = 0; i < max; ++i) {
+		for (i = 0; i < max && ready > 0; ++i) {
 			MonoMList *list;
 			gboolean created;
 			gint fd;
@@ -830,6 +830,7 @@ polling_thread (gpointer data)
 
 			if (fd == threadpool_io->wakeup_pipes [0]) {
 				polling_thread_drain_wakeup_pipes ();
+				ready -= 1;
 				continue;
 			}
 
@@ -860,8 +861,7 @@ polling_thread (gpointer data)
 			else
 				mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
 
-			if (-- ready == 0)
-				break;
+			ready -= 1;
 		}
 		mono_mutex_unlock (&threadpool_io->states_lock);
 	}
