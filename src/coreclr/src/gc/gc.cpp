@@ -13581,6 +13581,7 @@ BYTE* gc_heap::allocate_in_condemned_generations (generation* gen,
                                                   size_t size,
                                                   int from_gen_number,
 #ifdef SHORT_PLUGS
+                                                  BOOL* convert_to_pinned_p,
                                                   BYTE* next_pinned_plug,
                                                   heap_segment* current_seg,
 #endif //SHORT_PLUGS
@@ -13792,8 +13793,17 @@ retry:
 
             if ((dist_to_next_pin >= 0) && (dist_to_next_pin < (ptrdiff_t)Align (min_obj_size)))
             {
+                dprintf (3, ("%Ix->(%Ix,%Ix),%Ix(%Ix)(%Ix),NP->PP", 
+                    old_loc, 
+                    generation_allocation_pointer (gen),
+                    generation_allocation_limit (gen),
+                    next_pinned_plug,
+                    size, 
+                    dist_to_next_pin));
                 clear_plug_padded (old_loc);
                 pad = 0;
+                *convert_to_pinned_p = TRUE;
+                return 0;
             }
         }
 #endif //SHORT_PLUGS
@@ -19686,7 +19696,6 @@ void gc_heap::plan_generation_start (generation* gen, generation* consing_gen, B
         allocate_in_condemned_generations (consing_gen, Align (min_obj_size), -1);
     generation_plan_allocation_start_size (gen) = Align (min_obj_size);
     size_t allocation_left = (size_t)(generation_allocation_limit (consing_gen) - generation_allocation_pointer (consing_gen));
-#ifdef RESPECT_LARGE_ALIGNMENT
     if (next_plug_to_allocate)
     {
         size_t dist_to_next_plug = (size_t)(next_plug_to_allocate - generation_allocation_pointer (consing_gen));
@@ -19695,16 +19704,17 @@ void gc_heap::plan_generation_start (generation* gen, generation* consing_gen, B
             allocation_left = dist_to_next_plug;
         }
     }
-#endif //RESPECT_LARGE_ALIGNMENT
     if (allocation_left < Align (min_obj_size))
     {
         generation_plan_allocation_start_size (gen) += allocation_left;
         generation_allocation_pointer (consing_gen) += allocation_left;
     }
 
-    dprintf (1, ("plan alloc gen%d start at %Ix (ptr: %Ix, limit: %Ix)", gen->gen_num, 
+    dprintf (1, ("plan alloc gen%d(%Ix) start at %Ix (ptr: %Ix, limit: %Ix, next: %Ix)", gen->gen_num, 
         generation_plan_allocation_start (gen),
-        generation_allocation_pointer (consing_gen), generation_allocation_limit (consing_gen))); 
+        generation_plan_allocation_start_size (gen),
+        generation_allocation_pointer (consing_gen), generation_allocation_limit (consing_gen),
+        next_plug_to_allocate));
 }
 
 void gc_heap::realloc_plan_generation_start (generation* gen, generation* consing_gen)
@@ -20645,6 +20655,18 @@ BOOL gc_heap::loh_object_p (BYTE* o)
 }
 #endif //FEATURE_LOH_COMPACTION
 
+void gc_heap::convert_to_pinned_plug (BOOL& last_npinned_plug_p, 
+                                      BOOL& last_pinned_plug_p, 
+                                      BOOL& pinned_plug_p,
+                                      size_t ps,
+                                      size_t& artificial_pinned_size)
+{
+    last_npinned_plug_p = FALSE;
+    last_pinned_plug_p = TRUE;
+    pinned_plug_p = TRUE;
+    artificial_pinned_size = ps;
+}
+
 // Because we have the artifical pinning, we can't gaurantee that pinned and npinned
 // plugs are always interleaved.
 void gc_heap::store_plug_gap_info (BYTE* plug_start,
@@ -21203,32 +21225,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
                             last_pinned_plug = plug_start;
                         }
 
-                        last_pinned_plug_p = TRUE;
-                        last_npinned_plug_p = FALSE;
-                        pinned_plug_p = TRUE;
-                        artificial_pinned_size = ps;
+                        convert_to_pinned_plug (last_npinned_plug_p, last_pinned_plug_p, pinned_plug_p,
+                                                ps, artificial_pinned_size);
                     }
                 }
-            }
-
-            if (pinned_plug_p)
-            {
-                if (fire_pinned_plug_events_p)
-                    FireEtwPinPlugAtGCTime(plug_start, plug_end, 
-                                           (merge_with_last_pin_p ? 0 : (BYTE*)node_gap_size (plug_start)), 
-                                           GetClrInstanceId());
-
-                if (merge_with_last_pin_p)
-                {
-                    merge_with_last_pinned_plug (last_pinned_plug, ps);
-                }
-                else
-                {
-                    assert (last_pinned_plug == plug_start);
-                    set_pinned_info (plug_start, ps, consing_gen);
-                }
-
-                new_address = plug_start;
             }
 
             if (allocate_first_generation_start)
@@ -21251,6 +21251,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
             dynamic_data* dd_active_old = dynamic_data_of (active_old_gen_number);
             dd_survived_size (dd_active_old) += ps;
 
+            BOOL convert_to_pinned_p = FALSE;
+
             if (!pinned_plug_p)
             {
 #if defined (RESPECT_LARGE_ALIGNMENT) || defined (FEATURE_STRUCTALIGN)
@@ -21268,6 +21270,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                                            ps,
                                                            active_old_gen_number,
 #ifdef SHORT_PLUGS
+                                                           &convert_to_pinned_p,
                                                            (npin_before_pin_p ? plug_end : 0),
                                                            seg1,
 #endif //SHORT_PLUGS
@@ -21293,6 +21296,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                         allocate_in_condemned = TRUE;
                         new_address = allocate_in_condemned_generations (consing_gen, ps, active_old_gen_number, 
 #ifdef SHORT_PLUGS
+                                                                         &convert_to_pinned_p,
                                                                          (npin_before_pin_p ? plug_end : 0),
                                                                          seg1,
 #endif //SHORT_PLUGS
@@ -21300,40 +21304,72 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     }
                 }
 
-                if (!new_address)
+                if (convert_to_pinned_p)
                 {
-                    //verify that we are at then end of the ephemeral segment
-                    assert (generation_allocation_segment (consing_gen) ==
-                            ephemeral_heap_segment);
-                    //verify that we are near the end
-                    assert ((generation_allocation_pointer (consing_gen) + Align (ps)) <
-                            heap_segment_allocated (ephemeral_heap_segment));
-                    assert ((generation_allocation_pointer (consing_gen) + Align (ps)) >
-                            (heap_segment_allocated (ephemeral_heap_segment) + Align (min_obj_size)));
+                    assert (last_npinned_plug_p == TRUE);
+                    assert (last_pinned_plug_p == FALSE);
+                    convert_to_pinned_plug (last_npinned_plug_p, last_pinned_plug_p, pinned_plug_p,
+                                            ps, artificial_pinned_size);
+                    enque_pinned_plug (plug_start, FALSE, 0);
+                    last_pinned_plug = plug_start;
                 }
                 else
                 {
+                    if (!new_address)
+                    {
+                        //verify that we are at then end of the ephemeral segment
+                        assert (generation_allocation_segment (consing_gen) ==
+                                ephemeral_heap_segment);
+                        //verify that we are near the end
+                        assert ((generation_allocation_pointer (consing_gen) + Align (ps)) <
+                                heap_segment_allocated (ephemeral_heap_segment));
+                        assert ((generation_allocation_pointer (consing_gen) + Align (ps)) >
+                                (heap_segment_allocated (ephemeral_heap_segment) + Align (min_obj_size)));
+                    }
+                    else
+                    {
 #ifdef SIMPLE_DPRINTF
-                    dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix",
-                        (size_t)(node_gap_size (plug_start)), 
-                        plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
-                            (size_t)new_address + ps, ps));
+                        dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix",
+                            (size_t)(node_gap_size (plug_start)), 
+                            plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
+                                (size_t)new_address + ps, ps));
 #endif //SIMPLE_DPRINTF
 
 #ifdef SHORT_PLUGS
-                    if (is_plug_padded (plug_start))
-                    {
-                        dprintf (3, ("%Ix was padded", plug_start));
-                        dd_padding_size (dd_active_old) += Align (min_obj_size);
-                    }
+                        if (is_plug_padded (plug_start))
+                        {
+                            dprintf (3, ("%Ix was padded", plug_start));
+                            dd_padding_size (dd_active_old) += Align (min_obj_size);
+                        }
 #endif //SHORT_PLUGS
+                    }
                 }
             }
-            else
+
+            if (pinned_plug_p)
             {
-                dprintf (3, ( "(%Ix)PP: [%Ix, %Ix[%Ix]",
+                if (fire_pinned_plug_events_p)
+                    FireEtwPinPlugAtGCTime(plug_start, plug_end, 
+                                           (merge_with_last_pin_p ? 0 : (BYTE*)node_gap_size (plug_start)), 
+                                           GetClrInstanceId());
+
+                if (merge_with_last_pin_p)
+                {
+                    merge_with_last_pinned_plug (last_pinned_plug, ps);
+                }
+                else
+                {
+                    assert (last_pinned_plug == plug_start);
+                    set_pinned_info (plug_start, ps, consing_gen);
+                }
+
+                new_address = plug_start;
+
+                dprintf (3, ( "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)",
                             (size_t)(node_gap_size (plug_start)), (size_t)plug_start,
-                            (size_t)plug_end, ps));
+                            (size_t)plug_end, ps,
+                            (merge_with_last_pin_p ? 1 : 0)));
+
                 dprintf (3, ("adding %Id to gen%d pinned surv", plug_end - plug_start, active_old_gen_number));
                 dd_pinned_survived_size (dd_active_old) += plug_end - plug_start;
                 dd_added_pinned_size (dd_active_old) += added_pinning_size;
