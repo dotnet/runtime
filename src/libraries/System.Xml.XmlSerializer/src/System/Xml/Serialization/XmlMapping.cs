@@ -33,15 +33,6 @@ namespace System.Xml.Serialization
         private bool _shallow = false;
         private XmlMappingAccess _access;
 
-#if FEATURE_LEGACYNETCF
-        internal System.Xml.Serialization.LegacyNetCF.XmlMapping legacyNetCFMapping;
-
-        internal XmlMapping(System.Xml.Serialization.LegacyNetCF.XmlMapping legacyNetCFMapping)
-        {
-            this.legacyNetCFMapping = legacyNetCFMapping;
-        }
-#endif
-
         internal XmlMapping(TypeScope scope, ElementAccessor accessor) : this(scope, accessor, XmlMappingAccess.Read | XmlMappingAccess.Write)
         {
         }
@@ -72,10 +63,6 @@ namespace System.Xml.Serialization
         {
             get
             {
-#if FEATURE_LEGACYNETCF
-                if (legacyNetCFMapping != null)
-                    return legacyNetCFMapping.ElementName;
-#endif
                 return System.Xml.Serialization.Accessor.UnescapeName(Accessor.Name);
             }
         }
@@ -88,10 +75,6 @@ namespace System.Xml.Serialization
         {
             get
             {
-#if FEATURE_LEGACYNETCF
-                if (legacyNetCFMapping != null)
-                    return legacyNetCFMapping.XsdElementName;
-#endif
                 return Accessor.Name;
             }
         }
@@ -104,10 +87,6 @@ namespace System.Xml.Serialization
         {
             get
             {
-#if FEATURE_LEGACYNETCF
-                if (legacyNetCFMapping != null)
-                    return legacyNetCFMapping.Namespace;
-#endif
                 return _accessor.Namespace;
             }
         }
@@ -137,13 +116,6 @@ namespace System.Xml.Serialization
         ///<internalonly/>
         public void SetKey(string key)
         {
-#if FEATURE_LEGACYNETCF
-            if (legacyNetCFMapping != null)
-            {
-                legacyNetCFMapping.SetKey(key);
-                return;
-            }
-#endif
             SetKeyInternal(key);
         }
 
