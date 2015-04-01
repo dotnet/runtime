@@ -137,5 +137,5 @@ echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
 echo TestEnv- Optional parameter - this will run a custom script to set custom test envirommnent settings.
 echo CORE_ROOT The path to the runtime  
-goto :eof
+exit /b 1
 
