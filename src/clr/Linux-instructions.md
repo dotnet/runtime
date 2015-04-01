@@ -51,7 +51,7 @@ To build the runtime on Linux, run build.sh from the root of the coreclr reposit
 ellismg@linux:~/git/coreclr$ ./build.sh
 ```
 
-After the build is completed, there should some files placed in ```binaries/Product/linux.x64.debug```.  The ones we are interested in are:
+After the build is completed, there should some files placed in ```bin/Product/Linux.x64.Debug```.  The ones we are interested in are:
 
 * ```corerun```: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
 * ```libcoreclr.so```: The CoreCLR runtime itself.
@@ -60,8 +60,8 @@ In order to keep everything tidy, let's create a new directory for the runtime a
 
 ```
 ellismg@linux:~/git/coreclr$ mkdir -p ~/coreclr-demo/runtime
-ellismg@linux:~/git/coreclr$ cp binaries/Product/linux.x64.debug/corerun ~/coreclr-demo/runtime
-ellismg@linux:~/git/coreclr$ cp binaries/Product/linux.x64.debug/libcoreclr.so ~/coreclr-demo/runtime
+ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/corerun ~/coreclr-demo/runtime
+ellismg@linux:~/git/coreclr$ cp bin/Product/Linux.x64.Debug/libcoreclr.so ~/coreclr-demo/runtime
 ```
 
 Build the Framework 
@@ -72,10 +72,10 @@ We don't _yet_ have support for building managed code on Linux, so you'll need a
 You will build ```mscorlib.dll``` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For mscorlib (from a regular command prompt window) run:
 
 ```
-D:\git\coreclr> build.cmd unixmscorlib
+D:\git\coreclr> build.cmd linuxmscorlib
 ```
 
-The output is placed in ```binaries\intermediates\Unix.x64.Debug\mscorlib.dll```.  You'll want to copy this to the runtime folder on your Linux machine. (e.g. ```~/coreclr-demo/runtime```)
+The output is placed in ```bin\obj\Unix.x64.Debug\mscorlib.dll```.  You'll want to copy this to the runtime folder on your Linux machine. (e.g. ```~/coreclr-demo/runtime```)
 
 For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
