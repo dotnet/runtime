@@ -39,12 +39,6 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 	CloseHandle (handle);
 }
 
-void
-mono_threads_core_interrupt (MonoThreadInfo *info)
-{
-	mono_threads_core_abort_syscall (info);
-}
-
 gboolean
 mono_threads_core_needs_abort_syscall (void)
 {
@@ -157,6 +151,10 @@ void
 mono_threads_platform_free (MonoThreadInfo *info)
 {
 }
+
+#endif
+
+#if defined (HOST_WIN32)
 
 typedef struct {
 	LPTHREAD_START_ROUTINE start_routine;
