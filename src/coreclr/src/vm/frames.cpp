@@ -490,7 +490,7 @@ Frame::~Frame()
         Pop(pThread);
     }
 }
-#endif FEATURE_PAL
+#endif // FEATURE_PAL
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE

@@ -186,7 +186,7 @@ VarDecFromR4(float fltIn, DECIMAL FAR* pdecOut)
     //
     ulMant = (LONG)dbl;
     dbl -= (double)ulMant;  // difference between input & integer
-    if ( dbl > 0.5 || dbl == 0.5 && (ulMant & 1) )
+    if ( dbl > 0.5 || (dbl == 0.5 && (ulMant & 1)) )
       ulMant++;
 
     if (ulMant == 0)
@@ -333,7 +333,7 @@ VarDecFromR8(double dblIn, DECIMAL FAR* pdecOut)
     //
     sdlMant.int64 = (LONGLONG)dbl;
     dbl -= (double)(LONGLONG)sdlMant.int64;  // dif between input & integer
-    if ( dbl > 0.5 || dbl == 0.5 && (sdlMant.u.Lo & 1) )
+    if ( dbl > 0.5 || (dbl == 0.5 && (sdlMant.u.Lo & 1)) )
       sdlMant.int64++;
 
     if (sdlMant.int64 == 0)
@@ -529,7 +529,7 @@ STDAPI VarCyFromDec(DECIMAL FAR* pdecIn, CY FAR* pcyOut)
       // Round result based on remainder in sdlTmp1.Hi.
       //
       ulPwr >>= 1;  // compare to power/2 (power always even)
-      if (sdlTmp1.u.Hi > ulPwr || sdlTmp1.u.Hi == ulPwr && (sdlTmp.u.Lo & 1))
+      if (sdlTmp1.u.Hi > ulPwr || (sdlTmp1.u.Hi == ulPwr && (sdlTmp.u.Lo & 1)))
         sdlTmp.int64++;
     }
     else {
@@ -584,8 +584,8 @@ STDAPI VarCyFromDec(DECIMAL FAR* pdecIn, CY FAR* pcyOut)
       // Current result is in sdlTmp.
       //
       ulPwr >>= 1;  // compare to power/2 (power always even)
-      if (sdlTmp1.u.Lo > ulPwr || sdlTmp1.u.Lo == ulPwr &&
-	  		((sdlTmp.u.Lo & 1) || sdlTmp1.u.Hi != 0))
+      if (sdlTmp1.u.Lo > ulPwr || (sdlTmp1.u.Lo == ulPwr &&
+	  		((sdlTmp.u.Lo & 1) || sdlTmp1.u.Hi != 0)))
         sdlTmp.int64++;
     }
 
