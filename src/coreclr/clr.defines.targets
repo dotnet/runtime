@@ -219,6 +219,6 @@
         <DefineConstants Condition="'$(FeatureWinDbAppCompat)' == 'true'">$(DefineConstants);FEATURE_WIN_DB_APPCOMPAT</DefineConstants>
         <DefineConstants Condition="'$(FeatureReadyToRun)' == 'true'">$(DefineConstants);FEATURE_READYTORUN</DefineConstants>
 
-        <DefineConstants Condition="'$(OS)' == 'Unix'">$(DefineConstants);PLATFORM_UNIX</DefineConstants>
+        <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);PLATFORM_UNIX</DefineConstants>
     </PropertyGroup>
 </Project>

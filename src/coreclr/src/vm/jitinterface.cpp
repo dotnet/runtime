@@ -4050,7 +4050,7 @@ DWORD CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->ContainsStackPtr())
                 ret |= CORINFO_FLG_CONTAINS_STACK_PTR;
 
-            if (pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize()) ||
+            if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
                 pMT == g_TypedReferenceMT ||
                 VMClsHnd.IsNativeValueType())
             {

@@ -327,25 +327,6 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     return SWA_CONTINUE;
 }
 
-static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInfo, LPARAM lp1, LPARAM lp2)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Checking referent of Weak-", pObjRef, "to ", *pObjRef)));
-
-    Object **pRef = (Object **)pObjRef;
-    if (!GCHeap::GetGCHeap()->IsPromoted(*pRef))
-    {
-        LOG((LF_GC, LL_INFO100, LOG_HANDLE_OBJECT_CLASS("Severing Weak-", pObjRef, "to unreachable ", *pObjRef)));
-
-        *pRef = NULL;
-    }
-    else
-    {
-        LOG((LF_GC, LL_INFO1000000, "reachable " LOG_OBJECT_CLASS(*pObjRef)));
-    }
-}
-
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2)
 {
     CONTRACTL

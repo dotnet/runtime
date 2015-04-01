@@ -1001,10 +1001,10 @@ HaveScale64:
             rgulRem[1] = (rgulRem[1] << 1) + ulTmp;
             rgulRem[2] = (rgulRem[2] << 1) + ulTmp1;
 
-            if (rgulRem[2] > rgulDivisor[2] || rgulRem[2] == rgulDivisor[2] &&
-                (rgulRem[1] > rgulDivisor[1] || rgulRem[1] == rgulDivisor[1] &&
-                (rgulRem[0] > rgulDivisor[0] || rgulRem[0] == rgulDivisor[0] &&
-                (rgulQuo[0] & 1))))
+            if (rgulRem[2] > rgulDivisor[2] || (rgulRem[2] == rgulDivisor[2] &&
+                (rgulRem[1] > rgulDivisor[1] || (rgulRem[1] == rgulDivisor[1] &&
+                (rgulRem[0] > rgulDivisor[0] || (rgulRem[0] == rgulDivisor[0] &&
+                (rgulQuo[0] & 1)))))))
               goto RoundUp;
             break;
           }

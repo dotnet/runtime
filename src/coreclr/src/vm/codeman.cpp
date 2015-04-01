@@ -2393,7 +2393,7 @@ EEJitManager::DomainCodeHeapList *EEJitManager::GetCodeHeapList(MethodDesc *pMD,
     for (int i=0; i < count; i++)
     {
         if (ppList[i]->m_pAllocator == pAllocator ||
-            !fCanUnload && !ppList[i]->m_pAllocator->CanUnload())
+            (!fCanUnload && !ppList[i]->m_pAllocator->CanUnload()))
         {
             pList = ppList[i];
             break;

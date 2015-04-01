@@ -1046,7 +1046,7 @@ wchar ParseFormatSpecifier(STRINGREF str, int* digits)
         _ASSERTE(p != NULL);
         wchar ch = *p;
         if (ch != 0) {
-            if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z') {
+            if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
                 p++;
                 int n = -1;
                 if (*p >= '0' && *p <= '9') {

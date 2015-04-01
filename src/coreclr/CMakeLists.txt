@@ -264,26 +264,23 @@ add_definitions(-DDISABLE_CONTRACTS)
 add_compile_options(-ferror-limit=4096)
 
 # Disabled warnings
-add_compile_options(-Wno-unknown-pragmas)
 add_compile_options(-Wno-unused-private-field)
 add_compile_options(-Wno-dangling-else)
 add_compile_options(-Wno-implicit-exception-spec-mismatch)
-# Using the result of an assignment as a condition without parentheses
-add_compile_options(-Wno-parentheses)
+# A derived class defines a virtual method with the same name as its base
+# class, but different set of parameters.
 add_compile_options(-Wno-overloaded-virtual)
 add_compile_options(-Wno-unused-variable)
 # Enum value is not handled in a switch (and there is no default clause)
 # Remaining cases are in JIT only
 add_compile_options(-Wno-switch)
+# Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
 add_compile_options(-Wno-microsoft)
 # This warning is caused by comparing 'this' to NULL
 add_compile_options(-Wno-tautological-compare)
+# There are constants of type BOOL used in a condition. But BOOL is defined as int
+# and so the compiler thinks that there is a mistake.
 add_compile_options(-Wno-constant-logical-operand)
-add_compile_options(-Wno-unused-function)
-add_compile_options(-Wno-extra-tokens)
-add_compile_options(-Wno-self-assign)
-add_compile_options(-Wno-bitfield-constant-conversion)
-add_compile_options(-Wno-unused-value)
 
 add_compile_options(-Wno-unknown-warning-option)
 
@@ -331,6 +328,7 @@ endif (WIN32)
 if (CLR_CMAKE_PLATFORM_UNIX)
   add_definitions(-DPLATFORM_UNIX=1)
   add_definitions(-DFEATURE_PAL_SXS)
+  add_definitions(-DFEATURE_COREFX_GLOBALIZATION)
 
   if(IS_64BIT_BUILD)
     add_definitions(-DBIT64=1)
