@@ -61,14 +61,14 @@ To Build CoreCLR, run build.sh from the root of the coreclr repo.
 
     [Lots of stuff before this]
     Repo successfully built.
-	Product binaries are available at /Users/richlander/git/coreclr/binaries/Product/mac.x64.debug
+	Product binaries are available at /Users/richlander/git/coreclr/bin/Product/mac.x64.debug
 
 
 Type `./build.sh -?` to see the full set of build options.
 
 Check the build output.
 
-    dotnet-mbp:coreclr richlander$ ls binaries/Product/mac.x64.debug/
+    dotnet-mbp:coreclr richlander$ ls bin/Product/mac.x64.debug/
 
 You will see several files. The interesting ones are:
 
@@ -77,8 +77,8 @@ You will see several files. The interesting ones are:
 
 Copy the runtime and corerun into the demo directory.
 
-    dotnet-mbp:coreclr richlander$ cp binaries/Product/mac.x64.debug/corerun ~/coreclr-demo/runtime/
-    dotnet-mbp:coreclr richlander$ cp binaries/Product/mac.x64.debug/libcoreclr.dylib ~/coreclr-demo/runtime/
+    dotnet-mbp:coreclr richlander$ cp bin/Product/mac.x64.debug/corerun ~/coreclr-demo/runtime/
+    dotnet-mbp:coreclr richlander$ cp bin/Product/mac.x64.debug/libcoreclr.dylib ~/coreclr-demo/runtime/
 
 Build the Framework
 ===================
@@ -94,11 +94,11 @@ Build mscorlb
 
 Build mscorlib.dll out of the coreclr repository:
 
-    C:\git\coreclr>build.cmd unixmscorlib
+    C:\git\coreclr>build.cmd osxmscorlib
 
-The output is placed in `binaries\intermediates\Unix.x64.Debug`. Copy to the demo folder. 
+The output is placed in `bin\obj\Unix.x64.Debug`. Copy to the demo folder. 
 
-    C:\git\coreclr>copy binaries\intermediates\Unix.x64.Debug\mscorlib.dll \coreclr-demo
+    C:\git\coreclr>copy bin\obj\Unix.x64.Debug\mscorlib.dll \coreclr-demo
 
 Build CoreFX
 ------------
