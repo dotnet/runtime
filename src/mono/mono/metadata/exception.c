@@ -878,12 +878,15 @@ ves_icall_Mono_Runtime_GetNativeStackTrace (MonoException *exc)
 	return res;
 }
 
-/*
-Raises the exception of @error.
-Does nothing if @error has a success error code.
-Aborts in case of a double fault. This happens when it can't recover from an error caused by trying
-to construct the first exception object.
-The error object @error is cleaned up.
+/**
+ * mono_error_raise_exception:
+ * @target_error: the exception to raise
+ *
+ * Raises the exception of @target_error.
+ * Does nothing if @target_error has a success error code.
+ * Aborts in case of a double fault. This happens when it can't recover from an error caused by trying
+ * to construct the first exception object.
+ * The error object @target_error is cleaned up.
 */
 void
 mono_error_raise_exception (MonoError *target_error)
