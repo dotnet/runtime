@@ -139,7 +139,7 @@ runtest()
 
   # Check here to see whether we should run this project
 
-  if grep "UnsupportedOperatingSystems.*$OS.*" $1
+  if grep "UnsupportedPlatforms.*$OS.*" $1
   then
     echo "Test project file $1 indicates this test is not supported on $OS, skipping"
     return
