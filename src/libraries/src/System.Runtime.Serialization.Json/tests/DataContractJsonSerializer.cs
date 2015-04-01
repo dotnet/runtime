@@ -1300,7 +1300,7 @@ public static class DataContractJsonSerializerTests
             }
             catch
             {
-                Console.WriteLine("Error deserializing value. the serialized string was:\r\n" + actualOutput);
+                Console.WriteLine("Error deserializing value. the serialized string was:" + Environment.NewLine + actualOutput);
                 throw;
             }
 

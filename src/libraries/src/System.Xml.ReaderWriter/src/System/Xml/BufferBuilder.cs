@@ -93,7 +93,9 @@ namespace System.Xml
 #if BUFFER_BUILDER_TRACING
             if (s_TraceOutput != null)
             {
-                s_TraceOutput.WriteLine("----------------------------\r\nnew BufferBuilder()\r\n----------------------------");
+                s_TraceOutput.WriteLine("----------------------------" + Environment.NewLine + 
+                "new BufferBuilder()" + Environment.NewLine + 
+                "----------------------------");
             }
 #endif
         }

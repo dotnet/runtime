@@ -23,7 +23,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
-                    TestLog.Equals(w.Settings.NewLineChars, "\r\n", "Incorrect default value of NewLineChars");
+                    TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
                     TestLog.Equals(w.Settings.Indent, false, "Incorrect default value of Indent");
                     TestLog.Equals(w.Settings.IndentChars, "  ", "Incorrect default value of IndentChars");
                     TestLog.Equals(w.Settings.NewLineOnAttributes, false, "Incorrect default value of NewLineOnAttributes");
@@ -42,7 +42,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
-                    TestLog.Equals(w.Settings.NewLineChars, "\r\n", "Incorrect default value of NewLineChars");
+                    TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
                     TestLog.Equals(w.Settings.Indent, false, "Incorrect default value of Indent");
                     TestLog.Equals(w.Settings.IndentChars, "  ", "Incorrect default value of IndentChars");
                     TestLog.Equals(w.Settings.NewLineOnAttributes, false, "Incorrect default value of NewLineOnAttributes");
@@ -61,7 +61,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
-                    TestLog.Equals(w.Settings.NewLineChars, "\r\n", "Incorrect default value of NewLineChars");
+                    TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
                     TestLog.Equals(w.Settings.Indent, false, "Incorrect default value of Indent");
                     TestLog.Equals(w.Settings.IndentChars, "  ", "Incorrect default value of IndentChars");
                     TestLog.Equals(w.Settings.NewLineOnAttributes, false, "Incorrect default value of NewLineOnAttributes");
@@ -79,7 +79,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Equals(w.Settings.Encoding.ToString(), "System.Text.UTF8Encoding", "Incorrect default value of Encoding");
                     TestLog.Equals(w.Settings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
                     TestLog.Equals(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
-                    TestLog.Equals(w.Settings.NewLineChars, "\r\n", "Incorrect default value of NewLineChars");
+                    TestLog.Equals(w.Settings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
                     TestLog.Equals(w.Settings.Indent, false, "Incorrect default value of Indent");
                     TestLog.Equals(w.Settings.IndentChars, "  ", "Incorrect default value of IndentChars");
                     TestLog.Equals(w.Settings.NewLineOnAttributes, false, "Incorrect default value of NewLineOnAttributes");
