@@ -728,6 +728,10 @@ STDAPI LoadStringRCEx(
 
 #if defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
 
+extern HINSTANCE            g_pMSCorEE;
+
+#ifndef FEATURE_PAL
+
 //
 // Returns path name from a file name. The path name will be (null-terminated, incl. the last '\' if present).
 // Example: For input "C:\Windows\System.dll" returns "C:\Windows\".
@@ -787,10 +791,6 @@ HRESULT CopySystemDirectory(__in WCHAR *pFileName,
     }
     return hr;
 }
-
-extern HINSTANCE            g_pMSCorEE;
-
-#ifndef FEATURE_PAL
 
 BOOL PAL_GetPALDirectory(__out_ecount(cchBuffer) LPWSTR pbuffer, 
                          DWORD  cchBuffer)

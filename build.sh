@@ -3,8 +3,8 @@
 usage()
 {
     echo "Usage: $0 [BuildArch] [BuildType] [clean]"
-    echo "BuildArch can be: amd64"
-    echo "BuildType can be: debug, release"
+    echo "BuildArch can be: x64"
+    echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
 
     exit 1
@@ -96,35 +96,35 @@ __BuildArch=x64
 OSName=$(uname -s)
 case $OSName in
     Linux)
-        __BuildOS=linux
+        __BuildOS=Linux
         ;;
 
     Darwin)
-        __BuildOS=mac
+        __BuildOS=OSX
         ;;
 
     FreeBSD)
-        __BuildOS=freebsd
+        __BuildOS=FreeBSD
         ;;
 
     OpenBSD)
-        __BuildOS=openbsd
+        __BuildOS=OpenBSD
         ;;
 
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        __BuildOS=linux
+        __BuildOS=Linux
         ;;
 esac
 __MSBuildBuildArch=x64
-__BuildType=debug
+__BuildType=Debug
 __CMakeArgs=DEBUG
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
 __SourceDir="$__ProjectDir/src"
 __PackagesDir="$__ProjectDir/packages"
-__RootBinDir="$__ProjectDir/binaries"
+__RootBinDir="$__ProjectDir/bin"
 __LogsDir="$__RootBinDir/Logs"
 __UnprocessedBuildArgs=
 __MSBCleanBuildArgs=
@@ -143,10 +143,10 @@ for i in "$@"
         __MSBuildBuildArch=x64
         ;;
         debug)
-        __BuildType=debug
+        __BuildType=Debug
         ;;
         release)
-        __BuildType=release
+        __BuildType=Release
         __CMakeArgs=RELEASE
         ;;
         clean)
@@ -162,7 +162,7 @@ __BinDir="$__RootBinDir/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
 __ToolsDir="$__RootBinDir/tools"
 __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/intermediates/$__BuildOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
