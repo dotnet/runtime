@@ -711,7 +711,7 @@ FormatMessageW(
 
                     if ( !bIsVaList )
                     {
-                        lpInsertString = (LPWSTR)Arguments[ Index - 1 ];
+                        lpInsertString = ((LPWSTR*)Arguments)[ Index - 1 ];
                     }
                     else
                     {
@@ -791,7 +791,7 @@ FormatMessageW(
 
                     if ( !bIsVaList )
                     {
-                         lpInsert = (LPWSTR)Arguments[ Index - 1 ];
+                        lpInsert = ((LPWSTR*)Arguments)[Index - 1];
                     }
                     else
                     {
