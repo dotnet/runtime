@@ -23,7 +23,7 @@ namespace System.IO.Compression
 
     internal class GZipFormatter : IFileFormatWriter
     {
-        private byte[] headerBytes = new byte[] {
+        private byte[] _headerBytes = new byte[] {
                 GZipConstants.ID1,      // ID1
                 GZipConstants.ID2,      // ID2
                 GZipConstants.Deflate,  // CM = deflate
@@ -53,13 +53,13 @@ namespace System.IO.Compression
         {
             if (compressionLevel == GZipConstants.CompressionLevel_10)
             {
-                headerBytes[GZipConstants.Xfl_HeaderPos] = GZipConstants.Xfl_MaxCompressionSlowestAlgorithm;
+                _headerBytes[GZipConstants.Xfl_HeaderPos] = GZipConstants.Xfl_MaxCompressionSlowestAlgorithm;
             }
         }
 
         public byte[] GetHeader()
         {
-            return headerBytes;
+            return _headerBytes;
         }
 
         public void UpdateWithBytesRead(byte[] buffer, int offset, int bytesToCopy)

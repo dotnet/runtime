@@ -18,18 +18,18 @@ namespace System.IO.Compression
 
     internal class InputBuffer
     {
-        private byte[] buffer;           // byte array to store input
-        private int start;               // start poisition of the buffer
-        private int end;                 // end position of the buffer
-        private uint bitBuffer = 0;      // store the bits here, we can quickly shift in this buffer
-        private int bitsInBuffer = 0;    // number of bits available in bitBuffer
+        private byte[] _buffer;           // byte array to store input
+        private int _start;               // start poisition of the buffer
+        private int _end;                 // end position of the buffer
+        private uint _bitBuffer = 0;      // store the bits here, we can quickly shift in this buffer
+        private int _bitsInBuffer = 0;    // number of bits available in bitBuffer
 
         // Total bits available in the input buffer
         public int AvailableBits
         {
             get
             {
-                return bitsInBuffer;
+                return _bitsInBuffer;
             }
         }
 
@@ -38,7 +38,7 @@ namespace System.IO.Compression
         {
             get
             {
-                return (end - start) + (bitsInBuffer / 8);
+                return (_end - _start) + (_bitsInBuffer / 8);
             }
         }
 
@@ -50,25 +50,25 @@ namespace System.IO.Compression
             Debug.Assert(0 < count && count <= 16, "count is invalid.");
 
             // manual inlining to improve perf
-            if (bitsInBuffer < count)
+            if (_bitsInBuffer < count)
             {
                 if (NeedsInput())
                 {
                     return false;
                 }
                 // insert a byte to bitbuffer
-                bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
-                bitsInBuffer += 8;
+                _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                _bitsInBuffer += 8;
 
-                if (bitsInBuffer < count)
+                if (_bitsInBuffer < count)
                 {
                     if (NeedsInput())
                     {
                         return false;
                     }
                     // insert a byte to bitbuffer
-                    bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
-                    bitsInBuffer += 8;
+                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitsInBuffer += 8;
                 }
             }
 
@@ -82,30 +82,30 @@ namespace System.IO.Compression
         // see how many bits are available. 
         public uint TryLoad16Bits()
         {
-            if (bitsInBuffer < 8)
+            if (_bitsInBuffer < 8)
             {
-                if (start < end)
+                if (_start < _end)
                 {
-                    bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
-                    bitsInBuffer += 8;
+                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitsInBuffer += 8;
                 }
 
-                if (start < end)
+                if (_start < _end)
                 {
-                    bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
-                    bitsInBuffer += 8;
+                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitsInBuffer += 8;
                 }
             }
-            else if (bitsInBuffer < 16)
+            else if (_bitsInBuffer < 16)
             {
-                if (start < end)
+                if (_start < _end)
                 {
-                    bitBuffer |= (uint)buffer[start++] << bitsInBuffer;
-                    bitsInBuffer += 8;
+                    _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
+                    _bitsInBuffer += 8;
                 }
             }
 
-            return bitBuffer;
+            return _bitBuffer;
         }
 
         private uint GetBitMask(int count)
@@ -123,9 +123,9 @@ namespace System.IO.Compression
                 return -1;
             }
 
-            int result = (int)(bitBuffer & GetBitMask(count));
-            bitBuffer >>= count;
-            bitsInBuffer -= count;
+            int result = (int)(_bitBuffer & GetBitMask(count));
+            _bitBuffer >>= count;
+            _bitsInBuffer -= count;
             return result;
         }
 
@@ -140,15 +140,15 @@ namespace System.IO.Compression
             Debug.Assert(offset >= 0, "");
             Debug.Assert(length >= 0, "");
             Debug.Assert(offset <= output.Length - length, "");
-            Debug.Assert((bitsInBuffer % 8) == 0, "");
+            Debug.Assert((_bitsInBuffer % 8) == 0, "");
 
             // Copy the bytes in bitBuffer first.
             int bytesFromBitBuffer = 0;
-            while (bitsInBuffer > 0 && length > 0)
+            while (_bitsInBuffer > 0 && length > 0)
             {
-                output[offset++] = (byte)bitBuffer;
-                bitBuffer >>= 8;
-                bitsInBuffer -= 8;
+                output[offset++] = (byte)_bitBuffer;
+                _bitBuffer >>= 8;
+                _bitsInBuffer -= 8;
                 length--;
                 bytesFromBitBuffer++;
             }
@@ -158,14 +158,14 @@ namespace System.IO.Compression
                 return bytesFromBitBuffer;
             }
 
-            int avail = end - start;
+            int avail = _end - _start;
             if (length > avail)
             {
                 length = avail;
             }
 
-            Array.Copy(buffer, start, output, offset, length);
-            start += length;
+            Array.Copy(_buffer, _start, output, offset, length);
+            _start += length;
             return bytesFromBitBuffer + length;
         }
 
@@ -173,7 +173,7 @@ namespace System.IO.Compression
         // This means the caller can call SetInput to add more input.        
         public bool NeedsInput()
         {
-            return start == end;
+            return _start == _end;
         }
 
         // Set the byte array to be processed.
@@ -188,26 +188,26 @@ namespace System.IO.Compression
             Debug.Assert(offset >= 0, "");
             Debug.Assert(length >= 0, "");
             Debug.Assert(offset <= buffer.Length - length, "");
-            Debug.Assert(start == end, "");
+            Debug.Assert(_start == _end, "");
 
-            this.buffer = buffer;
-            start = offset;
-            end = offset + length;
+            _buffer = buffer;
+            _start = offset;
+            _end = offset + length;
         }
 
         // Skip n bits in the buffer
         public void SkipBits(int n)
         {
-            Debug.Assert(bitsInBuffer >= n, "No enough bits in the buffer, Did you call EnsureBitsAvailable?");
-            bitBuffer >>= n;
-            bitsInBuffer -= n;
+            Debug.Assert(_bitsInBuffer >= n, "No enough bits in the buffer, Did you call EnsureBitsAvailable?");
+            _bitBuffer >>= n;
+            _bitsInBuffer -= n;
         }
 
         // Skips to the next byte boundary.
         public void SkipToByteBoundary()
         {
-            bitBuffer >>= (bitsInBuffer % 8);
-            bitsInBuffer = bitsInBuffer - (bitsInBuffer % 8);
+            _bitBuffer >>= (_bitsInBuffer % 8);
+            _bitsInBuffer = _bitsInBuffer - (_bitsInBuffer % 8);
         }
     }
 }

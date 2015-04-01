@@ -9,7 +9,7 @@ namespace System.IO.Compression
 {
     public class GZipStream : Stream
     {
-        private DeflateStream deflateStream;
+        private DeflateStream _deflateStream;
 
 
         public GZipStream(Stream stream, CompressionMode mode)
@@ -21,7 +21,7 @@ namespace System.IO.Compression
 
         public GZipStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
-            deflateStream = new DeflateStream(stream, mode, leaveOpen);
+            _deflateStream = new DeflateStream(stream, mode, leaveOpen);
             SetDeflateStreamFileFormatter(mode);
         }
 
@@ -37,7 +37,7 @@ namespace System.IO.Compression
         // Implies mode = Compress
         public GZipStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
         {
-            deflateStream = new DeflateStream(stream, compressionLevel, leaveOpen);
+            _deflateStream = new DeflateStream(stream, compressionLevel, leaveOpen);
             SetDeflateStreamFileFormatter(CompressionMode.Compress);
         }
 
@@ -47,12 +47,12 @@ namespace System.IO.Compression
             if (mode == CompressionMode.Compress)
             {
                 IFileFormatWriter writeCommand = new GZipFormatter();
-                deflateStream.SetFileFormatWriter(writeCommand);
+                _deflateStream.SetFileFormatWriter(writeCommand);
             }
             else
             {
                 IFileFormatReader readCommand = new GZipDecoder();
-                deflateStream.SetFileFormatReader(readCommand);
+                _deflateStream.SetFileFormatReader(readCommand);
             }
         }
 
@@ -61,12 +61,12 @@ namespace System.IO.Compression
         {
             get
             {
-                if (deflateStream == null)
+                if (_deflateStream == null)
                 {
                     return false;
                 }
 
-                return deflateStream.CanRead;
+                return _deflateStream.CanRead;
             }
         }
 
@@ -74,12 +74,12 @@ namespace System.IO.Compression
         {
             get
             {
-                if (deflateStream == null)
+                if (_deflateStream == null)
                 {
                     return false;
                 }
 
-                return deflateStream.CanWrite;
+                return _deflateStream.CanWrite;
             }
         }
 
@@ -87,12 +87,12 @@ namespace System.IO.Compression
         {
             get
             {
-                if (deflateStream == null)
+                if (_deflateStream == null)
                 {
                     return false;
                 }
 
-                return deflateStream.CanSeek;
+                return _deflateStream.CanSeek;
             }
         }
 
@@ -120,7 +120,7 @@ namespace System.IO.Compression
         public override void Flush()
         {
             CheckDeflateStream();
-            deflateStream.Flush();
+            _deflateStream.Flush();
             return;
         }
 
@@ -137,24 +137,24 @@ namespace System.IO.Compression
         public override int Read(byte[] array, int offset, int count)
         {
             CheckDeflateStream();
-            return deflateStream.Read(array, offset, count);
+            return _deflateStream.Read(array, offset, count);
         }
 
         public override void Write(byte[] array, int offset, int count)
         {
             CheckDeflateStream();
-            deflateStream.Write(array, offset, count);
+            _deflateStream.Write(array, offset, count);
         }
 
         protected override void Dispose(bool disposing)
         {
             try
             {
-                if (disposing && deflateStream != null)
+                if (disposing && _deflateStream != null)
                 {
-                    deflateStream.Dispose();
+                    _deflateStream.Dispose();
                 }
-                deflateStream = null;
+                _deflateStream = null;
             }
             finally
             {
@@ -166,9 +166,9 @@ namespace System.IO.Compression
         {
             get
             {
-                if (deflateStream != null)
+                if (_deflateStream != null)
                 {
-                    return deflateStream.BaseStream;
+                    return _deflateStream.BaseStream;
                 }
                 else
                 {
@@ -180,18 +180,18 @@ namespace System.IO.Compression
         public override Task<int> ReadAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return deflateStream.ReadAsync(array, offset, count, cancellationToken);
+            return _deflateStream.ReadAsync(array, offset, count, cancellationToken);
         }
 
         public override Task WriteAsync(Byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             CheckDeflateStream();
-            return deflateStream.WriteAsync(array, offset, count, cancellationToken);
+            return _deflateStream.WriteAsync(array, offset, count, cancellationToken);
         }
 
         private void CheckDeflateStream()
         {
-            if (deflateStream == null)
+            if (_deflateStream == null)
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
             }

@@ -10,16 +10,16 @@ namespace System.IO.Compression
     // See RFC 1952 for details about the format.
     internal class GZipDecoder : IFileFormatReader
     {
-        private GzipHeaderState gzipHeaderSubstate;
-        private GzipHeaderState gzipFooterSubstate;
+        private GzipHeaderState _gzipHeaderSubstate;
+        private GzipHeaderState _gzipFooterSubstate;
 
-        private int gzip_header_flag;
-        private int gzip_header_xlen;
-        private uint expectedCrc32;
-        private uint expectedOutputStreamSizeModulo;
-        private int loopCounter;
-        private uint actualCrc32;
-        private long actualStreamSizeModulo;
+        private int _gzip_header_flag;
+        private int _gzip_header_xlen;
+        private uint _expectedCrc32;
+        private uint _expectedOutputStreamSizeModulo;
+        private int _loopCounter;
+        private uint _actualCrc32;
+        private long _actualStreamSizeModulo;
 
         public GZipDecoder()
         {
@@ -28,10 +28,10 @@ namespace System.IO.Compression
 
         public void Reset()
         {
-            gzipHeaderSubstate = GzipHeaderState.ReadingID1;
-            gzipFooterSubstate = GzipHeaderState.ReadingCRC;
-            expectedCrc32 = 0;
-            expectedOutputStreamSizeModulo = 0;
+            _gzipHeaderSubstate = GzipHeaderState.ReadingID1;
+            _gzipFooterSubstate = GzipHeaderState.ReadingCRC;
+            _expectedCrc32 = 0;
+            _expectedOutputStreamSizeModulo = 0;
         }
 
         public bool ReadHeader(InputBuffer input)
@@ -39,7 +39,7 @@ namespace System.IO.Compression
             while (true)
             {
                 int bits;
-                switch (gzipHeaderSubstate)
+                switch (_gzipHeaderSubstate)
                 {
                     case GzipHeaderState.ReadingID1:
                         bits = input.GetBits(8);
@@ -52,7 +52,7 @@ namespace System.IO.Compression
                         {
                             throw new InvalidDataException(SR.CorruptedGZipHeader);
                         }
-                        gzipHeaderSubstate = GzipHeaderState.ReadingID2;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingID2;
                         goto case GzipHeaderState.ReadingID2;
 
                     case GzipHeaderState.ReadingID2:
@@ -67,7 +67,7 @@ namespace System.IO.Compression
                             throw new InvalidDataException(SR.CorruptedGZipHeader);
                         }
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingCM;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingCM;
                         goto case GzipHeaderState.ReadingCM;
 
                     case GzipHeaderState.ReadingCM:
@@ -82,7 +82,7 @@ namespace System.IO.Compression
                             throw new InvalidDataException(SR.UnknownCompressionMode);
                         }
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingFLG; ;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingFLG; ;
                         goto case GzipHeaderState.ReadingFLG;
 
                     case GzipHeaderState.ReadingFLG:
@@ -92,14 +92,14 @@ namespace System.IO.Compression
                             return false;
                         }
 
-                        gzip_header_flag = bits;
-                        gzipHeaderSubstate = GzipHeaderState.ReadingMMTime;
-                        loopCounter = 0; // 4 MMTIME bytes
+                        _gzip_header_flag = bits;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingMMTime;
+                        _loopCounter = 0; // 4 MMTIME bytes
                         goto case GzipHeaderState.ReadingMMTime;
 
                     case GzipHeaderState.ReadingMMTime:
                         bits = 0;
-                        while (loopCounter < 4)
+                        while (_loopCounter < 4)
                         {
                             bits = input.GetBits(8);
                             if (bits < 0)
@@ -107,11 +107,11 @@ namespace System.IO.Compression
                                 return false;
                             }
 
-                            loopCounter++;
+                            _loopCounter++;
                         }
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingXFL;
-                        loopCounter = 0;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingXFL;
+                        _loopCounter = 0;
                         goto case GzipHeaderState.ReadingXFL;
 
                     case GzipHeaderState.ReadingXFL:      // ignore XFL
@@ -121,7 +121,7 @@ namespace System.IO.Compression
                             return false;
                         }
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingOS;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingOS;
                         goto case GzipHeaderState.ReadingOS;
 
                     case GzipHeaderState.ReadingOS:      // ignore OS
@@ -131,11 +131,11 @@ namespace System.IO.Compression
                             return false;
                         }
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingXLen1;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingXLen1;
                         goto case GzipHeaderState.ReadingXLen1;
 
                     case GzipHeaderState.ReadingXLen1:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.ExtraFieldsFlag) == 0)
+                        if ((_gzip_header_flag & (int)GZipOptionalHeaderFlags.ExtraFieldsFlag) == 0)
                         {
                             goto case GzipHeaderState.ReadingFileName;
                         }
@@ -146,8 +146,8 @@ namespace System.IO.Compression
                             return false;
                         }
 
-                        gzip_header_xlen = bits;
-                        gzipHeaderSubstate = GzipHeaderState.ReadingXLen2;
+                        _gzip_header_xlen = bits;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingXLen2;
                         goto case GzipHeaderState.ReadingXLen2;
 
                     case GzipHeaderState.ReadingXLen2:
@@ -157,14 +157,14 @@ namespace System.IO.Compression
                             return false;
                         }
 
-                        gzip_header_xlen |= (bits << 8);
-                        gzipHeaderSubstate = GzipHeaderState.ReadingXLenData;
-                        loopCounter = 0; // 0 bytes of XLEN data read so far
+                        _gzip_header_xlen |= (bits << 8);
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingXLenData;
+                        _loopCounter = 0; // 0 bytes of XLEN data read so far
                         goto case GzipHeaderState.ReadingXLenData;
 
                     case GzipHeaderState.ReadingXLenData:
                         bits = 0;
-                        while (loopCounter < gzip_header_xlen)
+                        while (_loopCounter < _gzip_header_xlen)
                         {
                             bits = input.GetBits(8);
                             if (bits < 0)
@@ -172,16 +172,16 @@ namespace System.IO.Compression
                                 return false;
                             }
 
-                            loopCounter++;
+                            _loopCounter++;
                         }
-                        gzipHeaderSubstate = GzipHeaderState.ReadingFileName;
-                        loopCounter = 0;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingFileName;
+                        _loopCounter = 0;
                         goto case GzipHeaderState.ReadingFileName;
 
                     case GzipHeaderState.ReadingFileName:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.FileNameFlag) == 0)
+                        if ((_gzip_header_flag & (int)GZipOptionalHeaderFlags.FileNameFlag) == 0)
                         {
-                            gzipHeaderSubstate = GzipHeaderState.ReadingComment;
+                            _gzipHeaderSubstate = GzipHeaderState.ReadingComment;
                             goto case GzipHeaderState.ReadingComment;
                         }
 
@@ -199,13 +199,13 @@ namespace System.IO.Compression
                             }
                         } while (true);
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingComment;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingComment;
                         goto case GzipHeaderState.ReadingComment;
 
                     case GzipHeaderState.ReadingComment:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.CommentFlag) == 0)
+                        if ((_gzip_header_flag & (int)GZipOptionalHeaderFlags.CommentFlag) == 0)
                         {
-                            gzipHeaderSubstate = GzipHeaderState.ReadingCRC16Part1;
+                            _gzipHeaderSubstate = GzipHeaderState.ReadingCRC16Part1;
                             goto case GzipHeaderState.ReadingCRC16Part1;
                         }
 
@@ -223,13 +223,13 @@ namespace System.IO.Compression
                             }
                         } while (true);
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingCRC16Part1;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingCRC16Part1;
                         goto case GzipHeaderState.ReadingCRC16Part1;
 
                     case GzipHeaderState.ReadingCRC16Part1:
-                        if ((gzip_header_flag & (int)GZipOptionalHeaderFlags.CRCFlag) == 0)
+                        if ((_gzip_header_flag & (int)GZipOptionalHeaderFlags.CRCFlag) == 0)
                         {
-                            gzipHeaderSubstate = GzipHeaderState.Done;
+                            _gzipHeaderSubstate = GzipHeaderState.Done;
                             goto case GzipHeaderState.Done;
                         }
 
@@ -239,7 +239,7 @@ namespace System.IO.Compression
                             return false;
                         }
 
-                        gzipHeaderSubstate = GzipHeaderState.ReadingCRC16Part2;
+                        _gzipHeaderSubstate = GzipHeaderState.ReadingCRC16Part2;
                         goto case GzipHeaderState.ReadingCRC16Part2;
 
                     case GzipHeaderState.ReadingCRC16Part2:
@@ -249,7 +249,7 @@ namespace System.IO.Compression
                             return false;
                         }
 
-                        gzipHeaderSubstate = GzipHeaderState.Done;
+                        _gzipHeaderSubstate = GzipHeaderState.Done;
                         goto case GzipHeaderState.Done;
 
                     case GzipHeaderState.Done:
@@ -264,9 +264,9 @@ namespace System.IO.Compression
         public bool ReadFooter(InputBuffer input)
         {
             input.SkipToByteBoundary();
-            if (gzipFooterSubstate == GzipHeaderState.ReadingCRC)
+            if (_gzipFooterSubstate == GzipHeaderState.ReadingCRC)
             {
-                while (loopCounter < 4)
+                while (_loopCounter < 4)
                 {
                     int bits = input.GetBits(8);
                     if (bits < 0)
@@ -274,19 +274,19 @@ namespace System.IO.Compression
                         return false;
                     }
 
-                    expectedCrc32 |= ((uint)bits << (8 * loopCounter));
-                    loopCounter++;
+                    _expectedCrc32 |= ((uint)bits << (8 * _loopCounter));
+                    _loopCounter++;
                 }
-                gzipFooterSubstate = GzipHeaderState.ReadingFileSize;
-                loopCounter = 0;
+                _gzipFooterSubstate = GzipHeaderState.ReadingFileSize;
+                _loopCounter = 0;
             }
 
-            if (gzipFooterSubstate == GzipHeaderState.ReadingFileSize)
+            if (_gzipFooterSubstate == GzipHeaderState.ReadingFileSize)
             {
-                if (loopCounter == 0)
-                    expectedOutputStreamSizeModulo = 0;
+                if (_loopCounter == 0)
+                    _expectedOutputStreamSizeModulo = 0;
 
-                while (loopCounter < 4)
+                while (_loopCounter < 4)
                 {
                     int bits = input.GetBits(8);
                     if (bits < 0)
@@ -294,8 +294,8 @@ namespace System.IO.Compression
                         return false;
                     }
 
-                    expectedOutputStreamSizeModulo |= ((uint)bits << (8 * loopCounter));
-                    loopCounter++;
+                    _expectedOutputStreamSizeModulo |= ((uint)bits << (8 * _loopCounter));
+                    _loopCounter++;
                 }
             }
 
@@ -304,24 +304,24 @@ namespace System.IO.Compression
 
         public void UpdateWithBytesRead(byte[] buffer, int offset, int copied)
         {
-            actualCrc32 = Crc32Helper.UpdateCrc32(actualCrc32, buffer, offset, copied);
+            _actualCrc32 = Crc32Helper.UpdateCrc32(_actualCrc32, buffer, offset, copied);
 
-            long n = actualStreamSizeModulo + (uint)copied;
+            long n = _actualStreamSizeModulo + (uint)copied;
             if (n >= GZipConstants.FileLengthModulo)
             {
                 n %= GZipConstants.FileLengthModulo;
             }
-            actualStreamSizeModulo = n;
+            _actualStreamSizeModulo = n;
         }
 
         public void Validate()
         {
-            if (expectedCrc32 != actualCrc32)
+            if (_expectedCrc32 != _actualCrc32)
             {
                 throw new InvalidDataException(SR.InvalidCRC);
             }
 
-            if (actualStreamSizeModulo != expectedOutputStreamSizeModulo)
+            if (_actualStreamSizeModulo != _expectedOutputStreamSizeModulo)
             {
                 throw new InvalidDataException(SR.InvalidStreamSize);
             }

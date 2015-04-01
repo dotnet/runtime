@@ -28,33 +28,33 @@ namespace System.IO.Compression
         internal const int EndOfBlockCode = 256;
         internal const int NumberOfCodeLengthTreeElements = 19;
 
-        int tableBits;
-        short[] table;
-        short[] left;
-        short[] right;
-        byte[] codeLengthArray;
+        private int _tableBits;
+        private short[] _table;
+        private short[] _left;
+        private short[] _right;
+        private byte[] _codeLengthArray;
 #if DEBUG
-        uint[] codeArrayDebug;
+        private uint[] _codeArrayDebug;
 #endif
 
-        int tableMask;
+        private int _tableMask;
 
         // huffman tree for static block
-        static HuffmanTree staticLiteralLengthTree;
-        static HuffmanTree staticDistanceTree;
+        private static HuffmanTree s_staticLiteralLengthTree;
+        private static HuffmanTree s_staticDistanceTree;
 
         static HuffmanTree()
         {
             // construct the static literal tree and distance tree
-            staticLiteralLengthTree = new HuffmanTree(GetStaticLiteralTreeLength());
-            staticDistanceTree = new HuffmanTree(GetStaticDistanceTreeLength());
+            s_staticLiteralLengthTree = new HuffmanTree(GetStaticLiteralTreeLength());
+            s_staticDistanceTree = new HuffmanTree(GetStaticDistanceTreeLength());
         }
 
         static public HuffmanTree StaticLiteralLengthTree
         {
             get
             {
-                return staticLiteralLengthTree;
+                return s_staticLiteralLengthTree;
             }
         }
 
@@ -62,7 +62,7 @@ namespace System.IO.Compression
         {
             get
             {
-                return staticDistanceTree;
+                return s_staticDistanceTree;
             }
         }
 
@@ -72,17 +72,17 @@ namespace System.IO.Compression
                           || codeLengths.Length == MaxDistTreeElements
                           || codeLengths.Length == NumberOfCodeLengthTreeElements,
                           "we only expect three kinds of Length here");
-            codeLengthArray = codeLengths;
+            _codeLengthArray = codeLengths;
 
-            if (codeLengthArray.Length == MaxLiteralTreeElements)
+            if (_codeLengthArray.Length == MaxLiteralTreeElements)
             {  // bits for Literal/Length tree table
-                tableBits = 9;
+                _tableBits = 9;
             }
             else
             {          // bits for distance tree table and code length tree table
-                tableBits = 7;
+                _tableBits = 7;
             }
-            tableMask = (1 << tableBits) - 1;
+            _tableMask = (1 << _tableBits) - 1;
 
             CreateTable();
         }
@@ -90,7 +90,7 @@ namespace System.IO.Compression
 
         // Generate the array contains huffman codes lengths for static huffman tree.
         // The data is in RFC 1951.
-        static byte[] GetStaticLiteralTreeLength()
+        private static byte[] GetStaticLiteralTreeLength()
         {
             byte[] literalTreeLength = new byte[MaxLiteralTreeElements];
             for (int i = 0; i <= 143; i++)
@@ -108,7 +108,7 @@ namespace System.IO.Compression
             return literalTreeLength;
         }
 
-        static byte[] GetStaticDistanceTreeLength()
+        private static byte[] GetStaticDistanceTreeLength()
         {
             byte[] staticDistanceTreeLength = new byte[MaxDistTreeElements];
             for (int i = 0; i < MaxDistTreeElements; i++)
@@ -121,10 +121,10 @@ namespace System.IO.Compression
 
         // Calculate the huffman code for each character based on the code length for each character.
         // This algorithm is described in standard RFC 1951
-        uint[] CalculateHuffmanCode()
+        private uint[] CalculateHuffmanCode()
         {
             uint[] bitLengthCount = new uint[17];
-            foreach (int codeLength in codeLengthArray)
+            foreach (int codeLength in _codeLengthArray)
             {
                 bitLengthCount[codeLength]++;
             }
@@ -139,9 +139,9 @@ namespace System.IO.Compression
             }
 
             uint[] code = new uint[MaxLiteralTreeElements];
-            for (int i = 0; i < codeLengthArray.Length; i++)
+            for (int i = 0; i < _codeLengthArray.Length; i++)
             {
-                int len = codeLengthArray[i];
+                int len = _codeLengthArray[i];
 
                 if (len > 0)
                 {
@@ -155,27 +155,27 @@ namespace System.IO.Compression
         private void CreateTable()
         {
             uint[] codeArray = CalculateHuffmanCode();
-            table = new short[1 << tableBits];
+            _table = new short[1 << _tableBits];
 #if DEBUG            
-            codeArrayDebug = codeArray;
+            _codeArrayDebug = codeArray;
 #endif
 
             // I need to find proof that left and right array will always be 
             // enough. I think they are.
-            left = new short[2 * codeLengthArray.Length];
-            right = new short[2 * codeLengthArray.Length];
-            short avail = (short)codeLengthArray.Length;
+            _left = new short[2 * _codeLengthArray.Length];
+            _right = new short[2 * _codeLengthArray.Length];
+            short avail = (short)_codeLengthArray.Length;
 
-            for (int ch = 0; ch < codeLengthArray.Length; ch++)
+            for (int ch = 0; ch < _codeLengthArray.Length; ch++)
             {
                 // length of this code
-                int len = codeLengthArray[ch];
+                int len = _codeLengthArray[ch];
                 if (len > 0)
                 {
                     // start value (bit reversed)
                     int start = (int)codeArray[ch];
 
-                    if (len <= tableBits)
+                    if (len <= _tableBits)
                     {
                         // If a particular symbol is shorter than nine bits, 
                         // then that symbol's translation is duplicated
@@ -204,10 +204,10 @@ namespace System.IO.Compression
                         }
 
                         // Note the bits in the table are reverted.
-                        int locs = 1 << (tableBits - len);
+                        int locs = 1 << (_tableBits - len);
                         for (int j = 0; j < locs; j++)
                         {
-                            table[start] = (short)ch;
+                            _table[start] = (short)ch;
                             start += increment;
                         }
                     }
@@ -216,16 +216,16 @@ namespace System.IO.Compression
                         // For any code which has length longer than num_elements,
                         // build a binary tree.
 
-                        int overflowBits = len - tableBits;    // the nodes we need to respent the data.
-                        int codeBitMask = 1 << tableBits;    // mask to get current bit (the bits can't fit in the table)  
+                        int overflowBits = len - _tableBits;    // the nodes we need to respent the data.
+                        int codeBitMask = 1 << _tableBits;    // mask to get current bit (the bits can't fit in the table)  
 
                         // the left, right table is used to repesent the
                         // the rest bits. When we got the first part (number bits.) and look at
                         // tbe table, we will need to follow the tree to find the real character.
                         // This is in place to avoid bloating the table if there are
                         // a few ones with long code.
-                        int index = start & ((1 << tableBits) - 1);
-                        short[] array = table;
+                        int index = start & ((1 << _tableBits) - 1);
+                        short[] array = _table;
 
                         do
                         {
@@ -247,11 +247,11 @@ namespace System.IO.Compression
 
                             if ((start & codeBitMask) == 0)
                             {  // if current bit is 0, go change the left array
-                                array = left;
+                                array = _left;
                             }
                             else
                             {                // if current bit is 1, set value in the right array
-                                array = right;
+                                array = _right;
                             }
                             index = -value;         // go to next node
 
@@ -282,23 +282,23 @@ namespace System.IO.Compression
             }
 
             // decode an element 
-            int symbol = table[bitBuffer & tableMask];
+            int symbol = _table[bitBuffer & _tableMask];
             if (symbol < 0)
             {       //  this will be the start of the binary tree
                 // navigate the tree
-                uint mask = (uint)1 << tableBits;
+                uint mask = (uint)1 << _tableBits;
                 do
                 {
                     symbol = -symbol;
                     if ((bitBuffer & mask) == 0)
-                        symbol = left[symbol];
+                        symbol = _left[symbol];
                     else
-                        symbol = right[symbol];
+                        symbol = _right[symbol];
                     mask <<= 1;
                 } while (symbol < 0);
             }
 
-            int codeLength = codeLengthArray[symbol];
+            int codeLength = _codeLengthArray[symbol];
 
             // huffman code lengths must be at least 1 bit long
             if (codeLength <= 0)

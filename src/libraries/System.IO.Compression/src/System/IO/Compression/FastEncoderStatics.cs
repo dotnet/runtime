@@ -166,11 +166,11 @@ namespace System.IO.Compression
         internal const int BFinalNoCompressionHeaderBitCount = 3;
         internal const int MaxCodeLen = 16;
 
-        static private byte[] distLookup;
+        static private byte[] s_distLookup;
 
         static FastEncoderStatics()
         {
-            distLookup = new byte[512];
+            s_distLookup = new byte[512];
 
             // Generate the global slot tables which allow us to convert a distance
             // (0..32K) to a distance slot (0..29) 
@@ -204,7 +204,7 @@ namespace System.IO.Compression
             for (code = 0; code < 16; code++)
             {
                 for (int n = 0; n < (1 << FastEncoderStatics.ExtraDistanceBits[code]); n++)
-                    distLookup[dist++] = (byte)code;
+                    s_distLookup[dist++] = (byte)code;
             }
 
             dist >>= 7; // from now on, all distances are divided by 128 
@@ -212,14 +212,14 @@ namespace System.IO.Compression
             for (; code < FastEncoderStatics.NumDistBaseCodes; code++)
             {
                 for (int n = 0; n < (1 << (FastEncoderStatics.ExtraDistanceBits[code] - 7)); n++)
-                    distLookup[256 + dist++] = (byte)code;
+                    s_distLookup[256 + dist++] = (byte)code;
             }
         }
 
         // Return the position slot (0...29) of a match offset (0...32767)
         static internal int GetSlot(int pos)
         {
-            return distLookup[((pos) < 256) ? (pos) : (256 + ((pos) >> 7))];
+            return s_distLookup[((pos) < 256) ? (pos) : (256 + ((pos) >> 7))];
         }
 
         // Reverse 'length' of the bits in code

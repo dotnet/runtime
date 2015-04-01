@@ -8,7 +8,7 @@ namespace System.IO.Compression
     internal static class Crc32Helper
     {
         // Table for CRC calculation
-        static readonly uint[] crcTable = new uint[256] {
+        private static readonly uint[] s_crcTable = new uint[256] {
             0x00000000u, 0x77073096u, 0xee0e612cu, 0x990951bau, 0x076dc419u,
             0x706af48fu, 0xe963a535u, 0x9e6495a3u, 0x0edb8832u, 0x79dcb8a4u,
             0xe0d5e91eu, 0x97d2d988u, 0x09b64c2bu, 0x7eb17cbdu, 0xe7b82d07u,
@@ -74,7 +74,7 @@ namespace System.IO.Compression
 
             while (--length >= 0)
             {
-                crc32 = crcTable[(crc32 ^ buffer[offset++]) & 0xFF] ^ (crc32 >> 8);
+                crc32 = s_crcTable[(crc32 ^ buffer[offset++]) & 0xFF] ^ (crc32 >> 8);
             }
 
             crc32 ^= 0xffffffffU;
