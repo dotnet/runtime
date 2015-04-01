@@ -1121,7 +1121,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         ClassLoader::NotFoundAction  notFoundAction;
         CorInternalStates            tdTypes;
 
-        switch(typ) {
+        switch((DWORD)typ) {
         case ELEMENT_TYPE_TYPEDBYREF:
         {
             thRet = TypeHandle(g_TypedReferenceMT);
@@ -1517,7 +1517,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             // Check that the type that we loaded matches the signature
             //   with regards to ET_CLASS and ET_VALUETYPE
             // 
-            if ((fLoadTypes == ClassLoader::LoadTypes))
+            if (fLoadTypes == ClassLoader::LoadTypes)
             {
                 // Skip this check when using zap sigs; it should have been correctly computed at NGen time 
                 // and a change from one to the other would have invalidated the image. 
@@ -1811,7 +1811,7 @@ TypeHandle SigPointer::GetGenericInstType(Module *        pModule,
         }
 
 #ifndef DACCESS_COMPILE
-        if ((fLoadTypes == ClassLoader::LoadTypes))
+        if (fLoadTypes == ClassLoader::LoadTypes)
         {
             // Skip this check when using zap sigs; it should have been correctly computed at NGen time 
             // and a change from one to the other would have invalidated the image.  Leave in the code for debug so we can assert below.
@@ -4816,9 +4816,9 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         // b) may be implicit (ie. absent) in the overriden variable's declaration
         if (!(CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL, 
                                        MscorlibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) || 
-          ((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) && 
+          (((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) && 
            (CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL, 
-                      MscorlibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, NULL))))
+                      MscorlibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, NULL)))))
         {
             HENUMInternalHolder hEnum2(pInternalImport2);
             mdGenericParamConstraint tkConstraint2;

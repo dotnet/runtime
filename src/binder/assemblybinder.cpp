@@ -469,66 +469,6 @@ namespace BINDER_SPACE
         Exit:
             return hr;
         }
-
-        // Host assembly "equivalence" relation
-        HRESULT IsValidHostAssembly(AssemblyName     *pProposedAssemblyName,
-                                    AssemblyName     *pRequestedAssemblyName,
-                                    VersionMatchMode  versionMatchMode,
-                                    BOOL              fRequireHigherSV,
-                                    BOOL             *pFIsValidHostAssembly)
-        {
-            HRESULT hr = S_OK;
-
-            AssemblyVersion *pProposedVersion = pProposedAssemblyName->GetVersion();
-            AssemblyVersion *pRequestedVersion = pRequestedAssemblyName->GetVersion();
-
-            if (pProposedVersion->IsEqualFeatureVersion(pRequestedVersion))
-            {
-                if (fRequireHigherSV)
-                {
-                    *pFIsValidHostAssembly =
-                        pProposedVersion->IsLargerServiceVersion(pRequestedVersion);
-                }
-                else if (versionMatchMode == kVersionExact)
-                {
-                    *pFIsValidHostAssembly =
-                        pProposedVersion->IsEqualServiceVersion(pRequestedVersion);
-                }
-                else
-                {
-                    *pFIsValidHostAssembly =
-                        (pProposedVersion->IsLargerServiceVersion(pRequestedVersion) ||
-                         pProposedVersion->IsEqualServiceVersion(pRequestedVersion));
-                }
-            }
-            else if ((versionMatchMode == kVersionFeatureRollForward) &&
-                     (pProposedVersion->IsLargerFeatureVersion(pRequestedVersion)))
-            {
-                *pFIsValidHostAssembly = TRUE;
-            }
-            else
-            {
-               *pFIsValidHostAssembly = FALSE;
-            }
-
-            return hr;
-        }
-
-        inline DWORD BindingStoreEnumToDWORD(INT32 kBindingStore)
-        {
-            switch (kBindingStore)
-            {
-            case 0:
-                return kBindingStoreGAC;
-            case 1:
-                return kBindingStoreManifest;
-            case 2:
-                return kBindingStoreHost;
-            default:
-                _ASSERTE(0);
-                return 0;
-            }
-        }
     };
 
     /* static */
@@ -700,8 +640,7 @@ namespace BINDER_SPACE
 #ifdef FEATURE_VERSIONING_LOG
             hr = LogBindResult(pApplicationContext, hr, &bindResult);
 #else // FEATURE_VERSIONING_LOG
-            // Shut up GCC
-            hr = hr;
+            ;
 #endif // FEATURE_VERSIONING_LOG
 
 #ifndef CROSSGEN_COMPILE

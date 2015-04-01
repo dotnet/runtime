@@ -8915,7 +8915,7 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     bool found = false;
     ULONG32 currentOffset = m_nativeFrame->GetIPOffset();
     for (ULONG32 i = 0; i < count; ++i)
-        if (found = currentOffset == offsets[i])
+        if ((found = currentOffset == offsets[i]))
             break;
 
     if (!found)

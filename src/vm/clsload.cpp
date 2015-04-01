@@ -1393,9 +1393,9 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKeyInner(TypeKey *pKey, BOOL fChe
     // Check if it's the typical instantiation.  In this case it's not stored in the same
     // way as other constructed types.
     if (!pKey->IsConstructed() || 
-        pKey->GetKind() == ELEMENT_TYPE_CLASS && ClassLoader::IsTypicalInstantiation(pKey->GetModule(), 
-                                                                                     pKey->GetTypeToken(),
-                                                                                     pKey->GetInstantiation()))
+        (pKey->GetKind() == ELEMENT_TYPE_CLASS && ClassLoader::IsTypicalInstantiation(pKey->GetModule(), 
+                                                                                      pKey->GetTypeToken(),
+                                                                                      pKey->GetInstantiation())))
     {
         return TypeHandle(pKey->GetModule()->LookupTypeDef(pKey->GetTypeToken()));
     }
@@ -6235,7 +6235,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     // it was already done in CanAccessClass above.
 
     if (accessCheckOptions.TransparencyCheckNeeded() &&
-        (checkTargetMethodTransparency && pOptionalTargetMethod ||
+        ((checkTargetMethodTransparency && pOptionalTargetMethod) ||
          pOptionalTargetField))
     {
         if (!CheckTransparentAccessToCriticalCode(
