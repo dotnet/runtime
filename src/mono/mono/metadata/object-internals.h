@@ -1660,6 +1660,12 @@ mono_exception_get_managed_backtrace (MonoException *exc);
 void
 mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer);
 
+void
+mono_error_raise_exception (MonoError *target_error);
+
+void
+mono_error_set_pending_exception (MonoError *error);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 
 

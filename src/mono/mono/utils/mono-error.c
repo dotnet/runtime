@@ -11,7 +11,6 @@
 #include "mono-error-internals.h"
 
 #include <mono/metadata/exception.h>
-#include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 
@@ -670,20 +669,4 @@ mono_error_convert_to_exception (MonoError *target_error)
 	}
 	mono_error_cleanup (target_error);
 	return ex;
-}
-
-
-/*
-Raises the exception of @error.
-Does nothing if @error has a success error code.
-Aborts in case of a double fault. This happens when it can't recover from an error caused by trying
-to construct the first exception object.
-The error object @error is cleaned up. 
-*/
-void
-mono_error_raise_exception (MonoError *target_error)
-{
-	MonoException *ex = mono_error_convert_to_exception (target_error);
-	if (ex)
-		mono_raise_exception (ex);	
 }

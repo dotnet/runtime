@@ -16,6 +16,7 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/utils/mono-error-internals.h>
 #include <string.h>
 
 #ifdef HAVE_EXECINFO_H
@@ -875,4 +876,27 @@ ves_icall_Mono_Runtime_GetNativeStackTrace (MonoException *exc)
 	res = mono_string_new (mono_domain_get (), trace);
 	g_free (trace);
 	return res;
+}
+
+/*
+Raises the exception of @error.
+Does nothing if @error has a success error code.
+Aborts in case of a double fault. This happens when it can't recover from an error caused by trying
+to construct the first exception object.
+The error object @error is cleaned up.
+*/
+void
+mono_error_raise_exception (MonoError *target_error)
+{
+	MonoException *ex = mono_error_convert_to_exception (target_error);
+	if (ex)
+		mono_raise_exception (ex);
+}
+
+void
+mono_error_set_pending_exception (MonoError *error)
+{
+	MonoException *ex = mono_error_convert_to_exception (error);
+	if (ex)
+		mono_set_pending_exception (ex);
 }
