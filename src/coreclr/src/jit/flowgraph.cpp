@@ -5382,8 +5382,8 @@ DECODE_OPCODE:
         case CEE_CALLI:
             {
                 if (compIsForInlining() || // Ignore tail call in the inlinee. Period.
-                    !tailCall &&
-                    !compTailCallStress()  // A new BB with BBJ_RETURN would have been created
+                    (!tailCall &&
+                    !compTailCallStress())  // A new BB with BBJ_RETURN would have been created
 
                     // after a tailcall statement.
                     // We need to keep this invariant if we want to stress the tailcall.
@@ -21716,7 +21716,7 @@ JitInlineResult       Compiler::fgInvokeInlineeCompiler(GenTreeCall* call)
                          pParam->pThis->eeGetMethodFullName(pParam->fncHandle),
                          pParam->pThis->dspPtr(pParam->inlineInfo->tokenLookupContextHandle)));
 
-            unsigned   compileFlagsForInlinee = pParam->pThis->opts.eeFlags & ~CORJIT_FLG_LOST_WHEN_INLINING
+            unsigned   compileFlagsForInlinee = (pParam->pThis->opts.eeFlags & ~CORJIT_FLG_LOST_WHEN_INLINING)
                                                          | CORJIT_FLG_SKIP_VERIFICATION;
 
 #ifdef DEBUG

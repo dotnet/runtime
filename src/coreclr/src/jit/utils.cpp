@@ -353,12 +353,13 @@ void                dspRegMask(regMaskTP regMask, size_t minSiz)
 #endif // _TARGET_*
             }
             // We've already printed a register. Is this the end of a range?
-            else if ((regNum == REG_INT_LAST)
 #if defined(_TARGET_ARM64_)
+            else if ((regNum == REG_INT_LAST)
                      || (regNum == REG_R17) // last register before TEB
-                     || (regNum == REG_R28) // last register before FP
+                     || (regNum == REG_R28)) // last register before FP
+#else // _TARGET_ARM64_
+            else if (regNum == REG_INT_LAST)
 #endif // _TARGET_ARM64_
-                    )
             {
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);

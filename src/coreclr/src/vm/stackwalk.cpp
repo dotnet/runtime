@@ -1972,8 +1972,8 @@ ProcessFuncletsForGCReporting:
                                     _ASSERTE(m_flags & GC_FUNCLET_REFERENCE_REPORTING);
 
                                     STRESS_LOG2(LF_GCROOTS, LL_INFO100, 
-                                    "STACKWALK: Reached parent of non-filter funclet @ CallerSP: " FMT_ADDR ", m_crawl.pFunc = " FMT_ADDR "\n", 
-                                    DBG_ADDR(m_sfParent.SP), DBG_ADDR(m_crawl.pFunc));
+                                    "STACKWALK: Reached parent of non-filter funclet @ CallerSP: %p, m_crawl.pFunc = %p\n",
+                                    m_sfParent.SP, m_crawl.pFunc);
 
                                     // by default a funclet's parent won't report its GC roots since they would have already
                                     // been reported by the funclet.  however there is a small window during unwind before
@@ -2008,8 +2008,8 @@ ProcessFuncletsForGCReporting:
                                         }
                                         
                                         STRESS_LOG4(LF_GCROOTS, LL_INFO100, 
-                                        "Funclet didn't report references: handling frame: " FMT_ADDR ", m_sfFuncletParent = " FMT_ADDR ", is funclet: %d, skip reporting %d\n", 
-                                        DBG_ADDR(pTracker->GetEstablisherOfActualHandlingFrame().SP), DBG_ADDR(m_sfFuncletParent.SP), m_crawl.IsFunclet(), shouldSkipReporting);
+                                        "Funclet didn't report references: handling frame: %p, m_sfFuncletParent = %p, is funclet: %d, skip reporting %d\n", 
+                                        pTracker->GetEstablisherOfActualHandlingFrame().SP, m_sfFuncletParent.SP, m_crawl.IsFunclet(), shouldSkipReporting);
                                     }
                                     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = shouldSkipReporting;
 
