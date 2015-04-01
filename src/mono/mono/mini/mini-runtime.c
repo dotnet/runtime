@@ -2987,6 +2987,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_unwind_init ();
 
+#ifdef XDEBUG_ENABLED
 	if (g_getenv ("MONO_XDEBUG")) {
 		const char *xdebug_opts = g_getenv ("MONO_XDEBUG");
 		mono_xdebug_init (xdebug_opts);
@@ -2998,6 +2999,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;
 	}
+#endif
 
 #ifdef ENABLE_LLVM
 	if (mono_use_llvm) {
