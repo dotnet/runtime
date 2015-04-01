@@ -163,6 +163,8 @@ And restore your packages.config file:
 ellismg@linux:~/coreclr-demo/packages$ mono nuget.exe restore -Source https://www.myget.org/F/dotnet-corefx/ -PackagesDirectory .
 ```
 
+NOTE: This assumes you installed Mono from the mono-project.com packages. If you have built your own please see this comment in [Issue #602](https://github.com/dotnet/coreclr/issues/602#issuecomment-88203778)
+
 Finally, you need to copy over the assemblies to the runtime folder.  You don't want to copy over System.Console.dll or System.Diagnostics.Debug however, since the version from NuGet is the Windows version.  The easiest way to do this is with a little find magic:
 
 ```
