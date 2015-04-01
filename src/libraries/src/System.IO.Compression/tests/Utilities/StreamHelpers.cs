@@ -40,8 +40,6 @@ public static partial class StreamHelpers
 
     public static async Task<Stream> CreateTempCopyStream(String path)
     {
-        Console.WriteLine("CreateTempCopyStream for: " + path);
-
         var bytes = File.ReadAllBytes(path);
 
         var ms = new MemoryStream();

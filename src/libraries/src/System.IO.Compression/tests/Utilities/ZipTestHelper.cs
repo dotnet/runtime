@@ -144,7 +144,6 @@ namespace System.IO.Compression.Test
             using (ZipArchive archive = new ZipArchive(archiveFile, mode))
             {
                 var allFilesInDir = FileData.InPath(directory);
-                Console.WriteLine("Expect " + allFilesInDir.Count + " Files in-" + directory);
                 foreach (var file in allFilesInDir)
                 {
                     count++;
@@ -157,7 +156,6 @@ namespace System.IO.Compression.Test
                         entryName = entryName.Replace('\\', '/');
                         entry = archive.GetEntry(entryName);
                     }
-                    Console.WriteLine("ZipEntry= " + entryName);
 
                     if (file.IsFile)
                     {

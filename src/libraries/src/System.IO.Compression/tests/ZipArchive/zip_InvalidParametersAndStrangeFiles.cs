@@ -21,6 +21,7 @@ namespace System.IO.Compression.Test
             catch (Exception e)
             {
                 Console.WriteLine(string.Format("{0}: {1}", Message, e.ToString()));
+                throw;
             }
         }
 
