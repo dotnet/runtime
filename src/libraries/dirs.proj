@@ -4,7 +4,9 @@
 
   <ItemGroup>
     <Project Include="*\src\*.csproj" Exclude="$(ExcludeProjects)" />
+    <Project Include="*\src\*.vbproj" Exclude="$(ExcludeProjects)" />
     <Project Include="*\tests\**\*.csproj" Exclude="$(ExcludeProjects)" />
+    <Project Include="*\tests\**\*.vbproj" Exclude="$(ExcludeProjects)" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
