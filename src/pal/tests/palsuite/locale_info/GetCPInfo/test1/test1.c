@@ -30,11 +30,11 @@ int __cdecl main(int argc, char *argv[])
     {
         Fail("GetCPInfo() unable to get info for CP_ACP\n");
     }
-    if (!GetCPInfo(0x4E4, &cpinfo))
-    {
-        Fail("GetCPInfo() unable to get info for code page 0x4E4\n");
-    }
 
+    if (!GetCPInfo(65001, &cpinfo))
+    {
+        Fail("GetCPInfo() unable to get info for code page 65001 (utf8)\n");
+    }
 
     if (GetCPInfo(-1, &cpinfo))
     {

@@ -69,15 +69,6 @@ struct _CP_MAPPING
 #else
 #error Insufficient platform support for text encodings
 #endif
-
-#if !HAVE_COREFOUNDATION || ENABLE_DOWNLEVEL_FOR_NLS
-BOOL CODEPAGEInit(void);
-void CODEPAGECleanup(void);
-BOOL CODEPAGEAcquireReadLock(void);
-BOOL CODEPAGEAcquireWriteLock(void);
-BOOL CODEPAGEReleaseLock(void);
-#endif /* !HAVE_COREFOUNDATION || ENABLE_DOWNLEVEL_FOR_NLS */
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
