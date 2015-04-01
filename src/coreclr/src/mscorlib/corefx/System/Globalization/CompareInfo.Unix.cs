@@ -54,6 +54,12 @@ namespace System.Globalization
             Contract.Assert(value != null);
 
             // TODO: Implement This Fully.
+
+            if (value.Length == 0)
+            {
+                return startIndex;
+            }
+
             if (ignoreCase)
             {
                 source = source.ToUpper(CultureInfo.InvariantCulture);
