@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -35,8 +35,6 @@ class StripHeaderAndFooter
         fextra = ((flag & 4) != 0);
         fname = ((flag & 8) != 0);
         fComment = ((flag & 16) != 0);
-
-        //			Console.WriteLine("flag: {0}, fCRC: {1}, fextra: {2}, fname: {3}, fComment: {4}", flag, fCRC, fextra, fname, fComment);
 
         //MTIME, XFL and OS
         SkipBytes(inputStream, 6);
