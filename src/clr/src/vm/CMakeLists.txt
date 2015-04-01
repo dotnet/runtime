@@ -25,7 +25,6 @@ add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
-    add_definitions(-DFEATURE_COREFX_GLOBALIZATION)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON

@@ -94,7 +94,7 @@
     <FeatureSvrGc Condition="'$(TargetArch)' != 'arm'">true</FeatureSvrGc>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(OS)' == 'Unix'">
+  <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <FeaturePal>true</FeaturePal>
 
     <FeatureStubsAsIL>true</FeatureStubsAsIL>

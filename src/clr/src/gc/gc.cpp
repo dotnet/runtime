@@ -1873,7 +1873,9 @@ size_t switch_alignment_size (BOOL already_padded_p)
 void set_node_aligninfo (BYTE *node, int requiredAlignment, ptrdiff_t pad);
 void clear_node_aligninfo (BYTE *node);
 #else // FEATURE_STRUCTALIGN
+#define node_realigned(node)    (((plug_and_reloc*)(node))[-1].reloc & 1)
 void set_node_realigned (BYTE* node);
+void clear_node_realigned(BYTE* node);
 #endif // FEATURE_STRUCTALIGN
 
 inline
@@ -5858,23 +5860,43 @@ BYTE*& pin_allocation_context_start_region (mark* m)
     return m->allocation_context_start_region;
 }
 
+BYTE* get_plug_start_in_saved (BYTE* old_loc, mark* pinned_plug_entry)
+{
+    BYTE* saved_pre_plug_info = (BYTE*)(pinned_plug_entry->get_pre_plug_reloc_info());
+    BYTE* plug_start_in_saved = saved_pre_plug_info + (old_loc - (pinned_plug (pinned_plug_entry) - sizeof (plug_and_gap)));
+    //dprintf (1, ("detected a very short plug: %Ix before PP %Ix, pad %Ix", 
+    //    old_loc, pinned_plug (pinned_plug_entry), plug_start_in_saved));
+    dprintf (1, ("EP: %Ix(%Ix), %Ix", old_loc, (BYTE)pinned_plug_entry, plug_start_in_saved));
+    return plug_start_in_saved;
+}
+
 inline
 void set_padding_in_expand (BYTE* old_loc, 
-                       BOOL set_padding_on_saved_p,
-                       mark* pinned_plug_entry)
+                            BOOL set_padding_on_saved_p,
+                            mark* pinned_plug_entry)
 {
     if (set_padding_on_saved_p)
     {
-        BYTE* saved_pre_plug_info = (BYTE*)(pinned_plug_entry->get_pre_plug_reloc_info());
-        BYTE* plug_start_in_saved = saved_pre_plug_info + (old_loc - (pinned_plug (pinned_plug_entry) - sizeof (plug_and_gap)));
-        //dprintf (1, ("detected a very short plug: %Ix before PP %Ix, pad %Ix", 
-        //    old_loc, pinned_plug (pinned_plug_entry), plug_start_in_saved));
-        dprintf (1, ("EP: %Ix(%Ix)", old_loc, (BYTE)pinned_plug_entry));
-        set_plug_padded (plug_start_in_saved);
+        set_plug_padded (get_plug_start_in_saved (old_loc, pinned_plug_entry));
     }
     else
     {
         set_plug_padded (old_loc);
+    }
+}
+
+inline
+void clear_padding_in_expand (BYTE* old_loc, 
+                              BOOL set_padding_on_saved_p,
+                              mark* pinned_plug_entry)
+{
+    if (set_padding_on_saved_p)
+    {
+        clear_plug_padded (get_plug_start_in_saved (old_loc, pinned_plug_entry));
+    }
+    else
+    {
+        clear_plug_padded (old_loc);
     }
 }
 #endif //SHORT_PLUGS
@@ -6041,7 +6063,7 @@ size_t& gc_heap::bpromoted_bytes(int thread)
 #ifdef MULTIPLE_HEAPS
     return g_bpromoted [thread*16];
 #else //MULTIPLE_HEAPS
-    thread = thread;
+    UNREFERENCED_PARAMETER(thread);
     return g_bpromoted;
 #endif //MULTIPLE_HEAPS
 }
@@ -8303,6 +8325,16 @@ public:
                size_t plug_size
                REQD_ALIGN_AND_OFFSET_DCL)
     {
+        if (old_loc)
+        {
+#ifdef SHORT_PLUGS
+            assert (!is_plug_padded (old_loc));
+#endif //SHORT_PLUGS
+            assert (!node_realigned (old_loc));
+        }
+
+        size_t saved_plug_size = plug_size;
+
 #ifdef FEATURE_STRUCTALIGN
         // BARTOKTODO (4841): this code path is disabled (see can_fit_all_blocks_p) until we take alignment requirements into account
         _ASSERTE(requiredAlignment == DATA_ALIGNMENT && false);
@@ -8351,10 +8383,15 @@ retry:
         size_t new_free_space_size = 0;
         BOOL can_fit = FALSE;
         size_t pad = 0;
-        
+
         for (i = 0; i < free_space_count; i++)
         {
             size_t free_space_size = 0;
+            pad = 0;
+#ifdef SHORT_PLUGS
+            BOOL short_plugs_padding_p = FALSE;
+#endif //SHORT_PLUGS
+            BOOL realign_padding_p = FALSE;
 
             if (bucket_free_space[i].is_plug)
             {
@@ -8367,17 +8404,17 @@ retry:
                     ((plug_free_space_start - pin_allocation_context_start_region (m))>=DESIRED_PLUG_LENGTH)))
                 {
                     pad = Align (min_obj_size);
-                    set_padding_in_expand (old_loc, set_padding_on_saved_p, pinned_plug_entry);
+                    short_plugs_padding_p = TRUE;
                 }
 #endif //SHORT_PLUGS
 
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start+pad)))
                 {
-                    pad += switch_alignment_size (FALSE);
-                    set_node_realigned (old_loc);
+                    pad += switch_alignment_size (pad != 0);
+                    realign_padding_p = TRUE;
                 }
 
-                plug_size += pad;
+                plug_size = saved_plug_size + pad;
 
                 free_space_size = pinned_len (m);
                 new_address = pinned_plug (m) - pinned_len (m);
@@ -8388,17 +8425,29 @@ retry:
                     new_free_space_size = free_space_size - plug_size;
                     pinned_len (m) = new_free_space_size;
 #ifdef SIMPLE_DPRINTF
-                    dprintf (SEG_REUSE_LOG_0, ("[%d]free space before pin: [0x%Ix, [0x%Ix (2^%d) -> [0x%Ix, [0x%Ix (2^%d)",
+                    dprintf (SEG_REUSE_LOG_0, ("[%d]FP: 0x%Ix->0x%Ix(%Ix)(%Ix), [0x%Ix (2^%d) -> [0x%Ix (2^%d)",
                                 heap_num, 
-                                new_address, pinned_plug (m), 
+                                old_loc,
+                                new_address, 
+                                (plug_size - pad),
+                                pad,
+                                pinned_plug (m), 
                                 index_of_set_bit (round_down_power2 (free_space_size)),
-                                (pinned_plug (m) - pinned_len (m)), pinned_plug (m),
+                                (pinned_plug (m) - pinned_len (m)), 
                                 index_of_set_bit (round_down_power2 (new_free_space_size))));
 #endif //SIMPLE_DPRINTF
 
-                    if (pad)
+#ifdef SHORT_PLUGS
+                    if (short_plugs_padding_p)
                     {
                         pin_allocation_context_start_region (m) = plug_free_space_start;
+                        set_padding_in_expand (old_loc, set_padding_on_saved_p, pinned_plug_entry);
+                    }
+#endif //SHORT_PLUGS
+
+                    if (realign_padding_p)
+                    {
+                        set_node_realigned (old_loc);
                     }
 
                     can_fit = TRUE;
@@ -8412,10 +8461,10 @@ retry:
                 if (!((old_loc == 0) || same_large_alignment_p (old_loc, heap_segment_plan_allocated (seg))))
                 {
                     pad = switch_alignment_size (FALSE);
-                    set_node_realigned (old_loc);
+                    realign_padding_p = TRUE;
                 }
 
-                plug_size += pad;
+                plug_size = saved_plug_size + pad;
 
                 if (free_space_size >= (plug_size + Align (min_obj_size)) ||
                     free_space_size == plug_size)
@@ -8424,13 +8473,19 @@ retry:
                     new_free_space_size = free_space_size - plug_size;
                     heap_segment_plan_allocated (seg) = new_address + plug_size;
 #ifdef SIMPLE_DPRINTF
-                    dprintf (SEG_REUSE_LOG_0, ("[%d]free space at the end of seg 0x%Ix (2^%d) -> 0x%Ix (2^%d)",
+                    dprintf (SEG_REUSE_LOG_0, ("[%d]FS: 0x%Ix-> 0x%Ix(%Ix) (2^%d) -> 0x%Ix (2^%d)",
                                 heap_num, 
+                                old_loc,
                                 new_address, 
+                                (plug_size - pad),
                                 index_of_set_bit (round_down_power2 (free_space_size)),
                                 heap_segment_plan_allocated (seg), 
                                 index_of_set_bit (round_down_power2 (new_free_space_size))));
 #endif //SIMPLE_DPRINTF
+
+                    if (realign_padding_p)
+                        set_node_realigned (old_loc);
+
                     can_fit = TRUE;
                 }
             }
@@ -10242,8 +10297,6 @@ BOOL gc_heap::size_fit_p (size_t size REQD_ALIGN_AND_OFFSET_DCL, BYTE* alloc_poi
     }
 #endif //SHORT_PLUGS
 
-    // TODO: this is incorrect - if we don't pad, we would have a different alignment so
-    // calculating the alignment requirement here is incorrect.
     if (!((old_loc == 0) || same_large_alignment_p (old_loc, alloc_pointer)))
         size = size + switch_alignment_size (already_padded);
 
@@ -13528,6 +13581,7 @@ BYTE* gc_heap::allocate_in_condemned_generations (generation* gen,
                                                   size_t size,
                                                   int from_gen_number,
 #ifdef SHORT_PLUGS
+                                                  BOOL* convert_to_pinned_p,
                                                   BYTE* next_pinned_plug,
                                                   heap_segment* current_seg,
 #endif //SHORT_PLUGS
@@ -13739,8 +13793,17 @@ retry:
 
             if ((dist_to_next_pin >= 0) && (dist_to_next_pin < (ptrdiff_t)Align (min_obj_size)))
             {
+                dprintf (3, ("%Ix->(%Ix,%Ix),%Ix(%Ix)(%Ix),NP->PP", 
+                    old_loc, 
+                    generation_allocation_pointer (gen),
+                    generation_allocation_limit (gen),
+                    next_pinned_plug,
+                    size, 
+                    dist_to_next_pin));
                 clear_plug_padded (old_loc);
                 pad = 0;
+                *convert_to_pinned_p = TRUE;
+                return 0;
             }
         }
 #endif //SHORT_PLUGS
@@ -16269,7 +16332,7 @@ size_t& gc_heap::promoted_bytes(int thread)
 #ifdef MULTIPLE_HEAPS
     return g_promoted [thread*16];
 #else //MULTIPLE_HEAPS
-    thread = thread;
+    UNREFERENCED_PARAMETER(thread);
     return g_promoted;
 #endif //MULTIPLE_HEAPS
 }
@@ -16913,7 +16976,7 @@ __declspec(naked) void __fastcall Prefetch(void* addr)
 #else //PREFETCH
 inline void Prefetch (void* addr)
 {
-    addr = addr;
+    UNREFERENCED_PARAMETER(addr);
 }
 #endif //PREFETCH
 #ifdef MH_SC_MARK
@@ -17856,7 +17919,7 @@ void gc_heap::background_verify_mark (Object*& object, ScanContext* sc, DWORD fl
 
 void gc_heap::background_promote (Object** ppObject, ScanContext* sc, DWORD flags)
 {
-    sc;
+    UNREFERENCED_PARAMETER(sc);
     //in order to save space on the array, mark the object,
     //knowing that it will be visited later
     assert (settings.concurrent);
@@ -19482,8 +19545,6 @@ void set_node_relocation_distance(BYTE* node, ptrdiff_t val)
 #define set_node_left(node) ((plug_and_reloc*)(node))[-1].reloc |= 2;
 
 #ifndef FEATURE_STRUCTALIGN
-#define node_realigned(node)    (((plug_and_reloc*)(node))[-1].reloc & 1)
-
 void set_node_realigned(BYTE* node)
 {
     ((plug_and_reloc*)(node))[-1].reloc |= 1;
@@ -19635,7 +19696,6 @@ void gc_heap::plan_generation_start (generation* gen, generation* consing_gen, B
         allocate_in_condemned_generations (consing_gen, Align (min_obj_size), -1);
     generation_plan_allocation_start_size (gen) = Align (min_obj_size);
     size_t allocation_left = (size_t)(generation_allocation_limit (consing_gen) - generation_allocation_pointer (consing_gen));
-#ifdef RESPECT_LARGE_ALIGNMENT
     if (next_plug_to_allocate)
     {
         size_t dist_to_next_plug = (size_t)(next_plug_to_allocate - generation_allocation_pointer (consing_gen));
@@ -19644,16 +19704,17 @@ void gc_heap::plan_generation_start (generation* gen, generation* consing_gen, B
             allocation_left = dist_to_next_plug;
         }
     }
-#endif //RESPECT_LARGE_ALIGNMENT
     if (allocation_left < Align (min_obj_size))
     {
         generation_plan_allocation_start_size (gen) += allocation_left;
         generation_allocation_pointer (consing_gen) += allocation_left;
     }
 
-    dprintf (1, ("plan alloc gen%d start at %Ix (ptr: %Ix, limit: %Ix)", gen->gen_num, 
+    dprintf (1, ("plan alloc gen%d(%Ix) start at %Ix (ptr: %Ix, limit: %Ix, next: %Ix)", gen->gen_num, 
         generation_plan_allocation_start (gen),
-        generation_allocation_pointer (consing_gen), generation_allocation_limit (consing_gen))); 
+        generation_plan_allocation_start_size (gen),
+        generation_allocation_pointer (consing_gen), generation_allocation_limit (consing_gen),
+        next_plug_to_allocate));
 }
 
 void gc_heap::realloc_plan_generation_start (generation* gen, generation* consing_gen)
@@ -20594,6 +20655,18 @@ BOOL gc_heap::loh_object_p (BYTE* o)
 }
 #endif //FEATURE_LOH_COMPACTION
 
+void gc_heap::convert_to_pinned_plug (BOOL& last_npinned_plug_p, 
+                                      BOOL& last_pinned_plug_p, 
+                                      BOOL& pinned_plug_p,
+                                      size_t ps,
+                                      size_t& artificial_pinned_size)
+{
+    last_npinned_plug_p = FALSE;
+    last_pinned_plug_p = TRUE;
+    pinned_plug_p = TRUE;
+    artificial_pinned_size = ps;
+}
+
 // Because we have the artifical pinning, we can't gaurantee that pinned and npinned
 // plugs are always interleaved.
 void gc_heap::store_plug_gap_info (BYTE* plug_start,
@@ -21152,32 +21225,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
                             last_pinned_plug = plug_start;
                         }
 
-                        last_pinned_plug_p = TRUE;
-                        last_npinned_plug_p = FALSE;
-                        pinned_plug_p = TRUE;
-                        artificial_pinned_size = ps;
+                        convert_to_pinned_plug (last_npinned_plug_p, last_pinned_plug_p, pinned_plug_p,
+                                                ps, artificial_pinned_size);
                     }
                 }
-            }
-
-            if (pinned_plug_p)
-            {
-                if (fire_pinned_plug_events_p)
-                    FireEtwPinPlugAtGCTime(plug_start, plug_end, 
-                                           (merge_with_last_pin_p ? 0 : (BYTE*)node_gap_size (plug_start)), 
-                                           GetClrInstanceId());
-
-                if (merge_with_last_pin_p)
-                {
-                    merge_with_last_pinned_plug (last_pinned_plug, ps);
-                }
-                else
-                {
-                    assert (last_pinned_plug == plug_start);
-                    set_pinned_info (plug_start, ps, consing_gen);
-                }
-
-                new_address = plug_start;
             }
 
             if (allocate_first_generation_start)
@@ -21200,6 +21251,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
             dynamic_data* dd_active_old = dynamic_data_of (active_old_gen_number);
             dd_survived_size (dd_active_old) += ps;
 
+            BOOL convert_to_pinned_p = FALSE;
+
             if (!pinned_plug_p)
             {
 #if defined (RESPECT_LARGE_ALIGNMENT) || defined (FEATURE_STRUCTALIGN)
@@ -21217,6 +21270,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                                                            ps,
                                                            active_old_gen_number,
 #ifdef SHORT_PLUGS
+                                                           &convert_to_pinned_p,
                                                            (npin_before_pin_p ? plug_end : 0),
                                                            seg1,
 #endif //SHORT_PLUGS
@@ -21242,6 +21296,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                         allocate_in_condemned = TRUE;
                         new_address = allocate_in_condemned_generations (consing_gen, ps, active_old_gen_number, 
 #ifdef SHORT_PLUGS
+                                                                         &convert_to_pinned_p,
                                                                          (npin_before_pin_p ? plug_end : 0),
                                                                          seg1,
 #endif //SHORT_PLUGS
@@ -21249,39 +21304,72 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     }
                 }
 
-                if (!new_address)
+                if (convert_to_pinned_p)
                 {
-                    //verify that we are at then end of the ephemeral segment
-                    assert (generation_allocation_segment (consing_gen) ==
-                            ephemeral_heap_segment);
-                    //verify that we are near the end
-                    assert ((generation_allocation_pointer (consing_gen) + Align (ps)) <
-                            heap_segment_allocated (ephemeral_heap_segment));
-                    assert ((generation_allocation_pointer (consing_gen) + Align (ps)) >
-                            (heap_segment_allocated (ephemeral_heap_segment) + Align (min_obj_size)));
+                    assert (last_npinned_plug_p == TRUE);
+                    assert (last_pinned_plug_p == FALSE);
+                    convert_to_pinned_plug (last_npinned_plug_p, last_pinned_plug_p, pinned_plug_p,
+                                            ps, artificial_pinned_size);
+                    enque_pinned_plug (plug_start, FALSE, 0);
+                    last_pinned_plug = plug_start;
                 }
                 else
                 {
-#ifdef SIMPLE_DPRINTF
-                    dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix",
-                        (size_t)(node_gap_size (plug_start)), 
-                        plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
-                            (size_t)new_address + ps, ps));
-#endif //SIMPLE_DPRINTF
-#ifdef SHORT_PLUGS
-                    if (is_plug_padded (plug_start))
+                    if (!new_address)
                     {
-                        dprintf (3, ("%Ix was padded", plug_start));
-                        dd_padding_size (dd_active_old) += Align (min_obj_size);
+                        //verify that we are at then end of the ephemeral segment
+                        assert (generation_allocation_segment (consing_gen) ==
+                                ephemeral_heap_segment);
+                        //verify that we are near the end
+                        assert ((generation_allocation_pointer (consing_gen) + Align (ps)) <
+                                heap_segment_allocated (ephemeral_heap_segment));
+                        assert ((generation_allocation_pointer (consing_gen) + Align (ps)) >
+                                (heap_segment_allocated (ephemeral_heap_segment) + Align (min_obj_size)));
                     }
+                    else
+                    {
+#ifdef SIMPLE_DPRINTF
+                        dprintf (3, ("(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix",
+                            (size_t)(node_gap_size (plug_start)), 
+                            plug_start, plug_end, (size_t)new_address, (size_t)(plug_start - new_address),
+                                (size_t)new_address + ps, ps));
+#endif //SIMPLE_DPRINTF
+
+#ifdef SHORT_PLUGS
+                        if (is_plug_padded (plug_start))
+                        {
+                            dprintf (3, ("%Ix was padded", plug_start));
+                            dd_padding_size (dd_active_old) += Align (min_obj_size);
+                        }
 #endif //SHORT_PLUGS
+                    }
                 }
             }
-            else
+
+            if (pinned_plug_p)
             {
-                dprintf (3, ( "(%Ix)PP: [%Ix, %Ix[%Ix]",
+                if (fire_pinned_plug_events_p)
+                    FireEtwPinPlugAtGCTime(plug_start, plug_end, 
+                                           (merge_with_last_pin_p ? 0 : (BYTE*)node_gap_size (plug_start)), 
+                                           GetClrInstanceId());
+
+                if (merge_with_last_pin_p)
+                {
+                    merge_with_last_pinned_plug (last_pinned_plug, ps);
+                }
+                else
+                {
+                    assert (last_pinned_plug == plug_start);
+                    set_pinned_info (plug_start, ps, consing_gen);
+                }
+
+                new_address = plug_start;
+
+                dprintf (3, ( "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)",
                             (size_t)(node_gap_size (plug_start)), (size_t)plug_start,
-                            (size_t)plug_end, ps));
+                            (size_t)plug_end, ps,
+                            (merge_with_last_pin_p ? 1 : 0)));
+
                 dprintf (3, ("adding %Id to gen%d pinned surv", plug_end - plug_start, active_old_gen_number));
                 dd_pinned_survived_size (dd_active_old) += plug_end - plug_start;
                 dd_added_pinned_size (dd_active_old) += added_pinning_size;
@@ -21434,7 +21522,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     generation* gen = generation_of (active_new_gen_number);
                     plan_generation_start (gen, consing_gen, 0);
 
-                    if ((demotion_low == MAX_PTR))
+                    if (demotion_low == MAX_PTR)
                     {
                         demotion_low = pplug;
                         dprintf (3, ("end plan: dlow->%Ix", demotion_low));
@@ -25824,7 +25912,7 @@ void gc_heap::background_grow_c_mark_list()
 void gc_heap::background_promote_callback (Object** ppObject, ScanContext* sc,
                                   DWORD flags)
 {
-    sc = sc;
+    UNREFERENCED_PARAMETER(sc);
     //in order to save space on the array, mark the object,
     //knowing that it will be visited later
     assert (settings.concurrent);
@@ -28269,11 +28357,6 @@ void gc_heap::realloc_plug (size_t last_plug_size, BYTE*& last_plug,
     }
     else if (last_plug >= start_address)
     {
-
-#ifdef SHORT_PLUGS
-        clear_plug_padded (last_plug);
-#endif //SHORT_PLUGS
-
 #ifdef FEATURE_STRUCTALIGN
         int requiredAlignment;
         ptrdiff_t pad;
@@ -28300,11 +28383,10 @@ void gc_heap::realloc_plug (size_t last_plug_size, BYTE*& last_plug,
 
         if (shortened_p)
         {
-            assert (pinned_plug_entry != NULL);
-
             last_plug_size += sizeof (gap_reloc_pair);
 
 #ifdef SHORT_PLUGS
+            assert (pinned_plug_entry != NULL);
             if (last_plug_size <= sizeof (plug_and_gap))
             {
                 set_padding_on_saved_p = TRUE;
@@ -28313,6 +28395,10 @@ void gc_heap::realloc_plug (size_t last_plug_size, BYTE*& last_plug,
 
             dprintf (3, ("ra plug %Ix was shortened, adjusting plug size to %Ix", last_plug_size))
         }
+
+#ifdef SHORT_PLUGS
+        clear_padding_in_expand (last_plug, set_padding_on_saved_p, pinned_plug_entry);
+#endif //SHORT_PLUGS
 
         BYTE* new_address = allocate_in_expanded_heap(gen, last_plug_size, adjacentp, last_plug, 
 #ifdef SHORT_PLUGS
@@ -31326,7 +31412,7 @@ void gc_heap::descr_card_table ()
         {
             if (card_set_p (i))
             {
-                if ((min == -1))
+                if (min == -1)
                 {
                     min = i;
                 }
@@ -32415,7 +32501,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
         }
 
         // Are we at the end of the youngest_generation?
-        if ((seg == ephemeral_heap_segment))
+        if (seg == ephemeral_heap_segment)
         {
             if (curr_object >= end_youngest)
             {
@@ -34550,7 +34636,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #endif //!MULTIPLE_HEAPS
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
-    if (!pGenGCHeap->settings.concurrent && pGenGCHeap->settings.found_finalizers || 
+    if ((!pGenGCHeap->settings.concurrent && pGenGCHeap->settings.found_finalizers) || 
         FinalizerThread::HaveExtraWorkForFinalizer())
     {
         FinalizerThread::EnableFinalization();
@@ -34668,7 +34754,7 @@ bool GCHeap::IsThreadUsingAllocationContextHeap(alloc_context* acontext, int thr
 {
 #ifdef MULTIPLE_HEAPS
     return ((acontext->home_heap == GetHeap(thread_number)) ||
-            (acontext->home_heap == 0) && (thread_number == 0));
+            ((acontext->home_heap == 0) && (thread_number == 0)));
 #else
     return true;
 #endif //MULTIPLE_HEAPS

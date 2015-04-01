@@ -421,7 +421,7 @@ public:
         ELEMENT_TYPE *pSrc;
         SIZE_T nSrc;
 
-        while (pSrc = iter.GetNext(&nSrc))
+        while ((pSrc = iter.GetNext(&nSrc)))
         {
             memcpy(pDest, pSrc, nSrc * sizeof(ELEMENT_TYPE));
             pDest += nSrc;
@@ -436,7 +436,7 @@ public:
         SIZE_T              count;
         SIZE_T              chunkBaseIndex = 0;
         
-        while (chunk = iter.GetNext(&count))
+        while ((chunk = iter.GetNext(&count)))
         {
             SIZE_T nextBaseIndex = chunkBaseIndex + count;
             if (nextBaseIndex > index)

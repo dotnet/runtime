@@ -225,7 +225,7 @@ private:
         startInCoop = bStartInCoop;
         conditional = bConditional;
 
-        if (!conditional || IFTHREAD && g_pEEInterface->GetThread() == NULL)
+        if (!conditional || (IFTHREAD && g_pEEInterface->GetThread() == NULL))
         {
             return;
         }
@@ -245,7 +245,7 @@ private:
 
     void LeaveInternal()
     {
-        if (!conditional || IFTHREAD && g_pEEInterface->GetThread() == NULL)
+        if (!conditional || (IFTHREAD && g_pEEInterface->GetThread() == NULL))
         {
             return;
         }

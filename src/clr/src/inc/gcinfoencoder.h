@@ -554,7 +554,7 @@ public:
             size_t currentChunk = ((size_t) n) & (numEncodings-1);
             size_t topmostBit = currentChunk & (numEncodings >> 1);
             n >>= base; // signed arithmetic shift
-            if( topmostBit && (n == (SSIZE_T)-1) || !topmostBit && (n == 0))
+            if((topmostBit && (n == (SSIZE_T)-1)) || (!topmostBit && (n == 0)))
             {
                 // The topmost bit correctly represents the sign
                 Write( currentChunk, base+1 ); // This sets the extension bit to zero

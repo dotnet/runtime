@@ -1913,9 +1913,9 @@ void                Compiler::impSpillSideEffects(bool      spillGlobEffects,
         GenTreePtr lclVarTree;
             
         if  ((tree->gtFlags & spillFlags) != 0        ||
-              spillGlobEffects &&                         // Only consider the following when  spillGlobEffects == TRUE               
+              (spillGlobEffects &&                        // Only consider the following when  spillGlobEffects == TRUE               
               !impIsAddressInLocal(tree, &lclVarTree) &&  // No need to spill the GT_ADDR node on a local.
-              gtHasLocalsWithAddrOp(tree))                // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or lvAddrTaken flag.
+              gtHasLocalsWithAddrOp(tree)))               // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or lvAddrTaken flag.
         {
             impSpillStackEntry(i, BAD_VAR_NUM 
                                DEBUGARG(false) DEBUGARG(reason));
@@ -6085,8 +6085,12 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
     }
     else
 #endif  //INLINE_NDIRECT
-    if  (opcode == CEE_CALLI &&
-         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_STDCALL  ||
+    // TODO-Review: the indentation below suggests different precedence of the && and ||
+    // operators than the one based on the parens around the first && term. 
+    // It needs to be investigated whether the indentation is wrong or the
+    // parens are wrong and all the || terms should be grouped together in parens.
+    if ((opcode == CEE_CALLI &&
+         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_STDCALL) ||
          (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_C        ||
          (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_THISCALL ||
          (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_FASTCALL)
@@ -10488,8 +10492,12 @@ _CONV:
             if (codeAddr < codeEndp)
             {
                 OPCODE nextOpcode = (OPCODE) getU1LittleEndian(codeAddr);
-                if (!opts.compDbgCode &&
-                    (nextOpcode == CEE_STLOC)   ||
+                // TODO-Review: the indentation below suggests different precedence of the && and ||
+                // operators than the one based on the parens around the first && term. 
+                // It needs to be investigated whether the indentation is wrong or the
+                // parens are wrong and all the || terms should be grouped together in parens.
+                if ((!opts.compDbgCode &&
+                    (nextOpcode == CEE_STLOC))  ||
                     (nextOpcode == CEE_STLOC_S) ||
                     ((nextOpcode >= CEE_STLOC_0) && (nextOpcode <= CEE_STLOC_3)))
                 {
