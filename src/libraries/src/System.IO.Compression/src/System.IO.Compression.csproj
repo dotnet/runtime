@@ -15,7 +15,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' " />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\IO\TaskHelpers.cs" />
     <Compile Include="System\IO\Compression\BlockType.cs" />
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />
     <Compile Include="System\IO\Compression\CompressionMode.cs" />

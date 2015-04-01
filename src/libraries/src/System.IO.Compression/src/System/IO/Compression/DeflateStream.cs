@@ -322,7 +322,7 @@ namespace System.IO.Compression
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return TaskHelpers.FromCancellation<int>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
             }
 
             Interlocked.Increment(ref asyncOperations);
@@ -620,7 +620,7 @@ namespace System.IO.Compression
             EnsureNotDisposed();
 
             if (cancellationToken.IsCancellationRequested)
-                return TaskHelpers.FromCancellation<int>(cancellationToken);
+                return Task.FromCanceled<int>(cancellationToken);
 
             Interlocked.Increment(ref asyncOperations);
 
