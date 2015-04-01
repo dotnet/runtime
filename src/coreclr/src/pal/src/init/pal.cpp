@@ -275,14 +275,6 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-#if !HAVE_COREFOUNDATION || ENABLE_DOWNLEVEL_FOR_NLS
-        if( !CODEPAGEInit() )
-        {
-            ERROR( "Unable to initialize the locks or the codepage.\n" );
-            goto done;
-        }
-#endif // !HAVE_COREFOUNDATION || ENABLE_DOWNLEVEL_FOR_NLS
-
         /* initialize the shared memory infrastructure */
         if(!SHMInitialize())
         {
@@ -565,9 +557,6 @@ CLEANUP1a:
 CLEANUP1:
     SHMCleanup();
 CLEANUP0:
-#if !HAVE_COREFOUNDATION
-    CODEPAGECleanup();
-#endif // !HAVE_COREFOUNDATION
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:
@@ -889,9 +878,6 @@ PALCommonCleanup(PALCLEANUP_STEP step, BOOL full_cleanup)
 
                 MiscCleanup();
 
-#if !HAVE_COREFOUNDATION
-                CODEPAGECleanup();
-#endif // !HAVE_COREFOUNDATION
                 TLSCleanup();
             }
 
