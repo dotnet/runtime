@@ -3290,7 +3290,7 @@ static int
 find_interface_offset (int num_ifaces, MonoClass **interfaces_full, int *interface_offsets_full, MonoClass *ic)
 {
 	int i = find_interface (num_ifaces, interfaces_full, ic);
-	if (ic >= 0)
+	if (i >= 0)
 		return interface_offsets_full [i];
 	return -1;
 }
