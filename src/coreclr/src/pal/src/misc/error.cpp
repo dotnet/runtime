@@ -28,8 +28,6 @@ using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
-DWORD StartupLastError;
-
 /*++
 Function:
   SetErrorMode
@@ -96,25 +94,7 @@ PALAPI
 GetLastError(
          VOID)
 {
-    DWORD retval;
-    CPalThread *pThread;
-
-    PERF_ENTRY(GetLastError);
-    ENTRY("GetLastError ()\n");
-    
-    pThread = InternalGetCurrentThread();
-    if (pThread == NULL)
-    {
-        retval = StartupLastError;
-        goto done;
-    }
-
-    retval = pThread->GetLastError();
-
-done:
-    LOGEXIT("GetLastError returns %d\n",retval);
-    PERF_EXIT(GetLastError);
-    return retval;
+    return CPalThread::GetLastError();
 }
 
 
@@ -142,24 +122,6 @@ PALAPI
 SetLastError(
          IN DWORD dwErrCode)
 {
-    CPalThread *pThread;
-  
-    PERF_ENTRY(SetLastError);
-    ENTRY("SetLastError (dwErrCode=%u)\n", dwErrCode);
-
-    pThread = InternalGetCurrentThread();
-    if (pThread == NULL)
-    {
-        StartupLastError = dwErrCode;
-        goto done;
-    }
-
-    pThread->SetLastError(dwErrCode);
-
-done:
-    LOGEXIT("SetLastError returns\n");
-    PERF_EXIT(SetLastError);
+    CPalThread::SetLastError(dwErrCode);
 }
-
-
 

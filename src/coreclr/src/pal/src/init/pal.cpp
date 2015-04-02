@@ -192,13 +192,14 @@ Initialize(
        case, since debug channels are not initialized yet. So in that case the
        ENTRY will be called after the DBG channels initialization */
     ENTRY_EXTERNAL("PAL_Initialize(argc = %d argv = %p)\n", argc, argv);
-    /*Firstly initiate a temporary lastError storage */
-    StartupLastError = ERROR_GEN_FAILURE;
+
+    /*Firstly initiate a lastError */
+    SetLastError(ERROR_GEN_FAILURE);
 
 #ifdef __APPLE__
     if (!RunningNatively())
     {
-        StartupLastError = ERROR_BAD_FORMAT;
+        SetLastError(ERROR_BAD_FORMAT);
         goto exit;
     }
 #endif // __APPLE__
