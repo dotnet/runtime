@@ -41,7 +41,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void DeleteRoot()
         {
-            Assert.Throws<IOException>(() => new DirectoryInfo("C:\\").Delete());
+            Assert.Throws<IOException>(() => new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory())).Delete());
         }
     }
 }

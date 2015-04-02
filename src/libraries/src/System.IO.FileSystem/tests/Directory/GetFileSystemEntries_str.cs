@@ -111,7 +111,7 @@ public class Directory_GetFileSystemEntries_str
             iCountTestcases++;
             try
             {
-                String strTempDir = "c:\\dls;d\\442349-0\\v443094(*)(+*$#$*\\\\\\";
+                String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 2);
                 Directory.GetFileSystemEntries(strTempDir);
                 iCountErrors++;
                 printerr("Error_1003! Expected exception not thrown");
@@ -129,7 +129,7 @@ public class Directory_GetFileSystemEntries_str
             iCountTestcases++;
             try
             {
-                String strTempDir = "c:\\\\\\\\\\";
+                String strTempDir = Directory.GetCurrentDirectory() + new string(Path.DirectorySeparatorChar, 5);
                 strArr = Directory.GetFileSystemEntries(strTempDir);
                 if (strArr == null || strArr.Length == 0)
                 {
@@ -179,10 +179,10 @@ public class Directory_GetFileSystemEntries_str
             dir2.CreateSubdirectory("TestDir1");
             dir2.CreateSubdirectory("TestDir2");
             dir2.CreateSubdirectory("TestDir3");
-            FileStream fs1 = new FileInfo(dir2.ToString() + "\\" + "TestFile1").Create();
-            FileStream fs2 = new FileInfo(dir2.ToString() + "\\" + "TestFile2").Create();
-            FileStream fs3 = new FileInfo(dir2.ToString() + "\\" + "Test.bat").Create();
-            FileStream fs4 = new FileInfo(dir2.ToString() + "\\" + "Test.exe").Create();
+            FileStream fs1 = new FileInfo(Path.Combine(dir2.ToString(), "TestFile1")).Create();
+            FileStream fs2 = new FileInfo(Path.Combine(dir2.ToString(), "TestFile2")).Create();
+            FileStream fs3 = new FileInfo(Path.Combine(dir2.ToString(), "Test.bat")).Create();
+            FileStream fs4 = new FileInfo(Path.Combine(dir2.ToString(), "Test.exe")).Create();
 
             iCountTestcases++;
             strArr = Directory.GetFileSystemEntries(dir2.Name);
@@ -194,7 +194,7 @@ public class Directory_GetFileSystemEntries_str
             }
 
             for (int iLoop = 0; iLoop < strArr.Length; iLoop++)
-                strArr[iLoop] = strArr[iLoop].Substring(strArr[iLoop].IndexOf("\\") + 1);
+                strArr[iLoop] = Path.GetFileName(strArr[iLoop]);
 
             iCountTestcases++;
             if (Array.IndexOf(strArr, "TestDir1") < 0)

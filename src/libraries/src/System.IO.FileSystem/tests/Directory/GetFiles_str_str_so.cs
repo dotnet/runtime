@@ -86,7 +86,7 @@ public class Directory_GetFiles_str_str_so
             /* Scenario disabled when porting because it modifies the filesystem outside of the test's working directory
             try
             {
-                dirName = ManageFileSystem.GetNonExistingDir(@"\", ManageFileSystem.DirPrefixName);
+                dirName = ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), ManageFileSystem.DirPrefixName);
                 using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                 {
                     expectedFiles = fileManager.GetFiles(dirName, 0);
@@ -107,7 +107,7 @@ public class Directory_GetFiles_str_str_so
                     }
                 }
                 //only 1 level
-                dirName = ManageFileSystem.GetNonExistingDir(@"\", ManageFileSystem.DirPrefixName);
+                dirName = ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), ManageFileSystem.DirPrefixName);
                 dirName = Path.GetFullPath(dirName);
                 using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 1, 10))
                 {
@@ -349,7 +349,7 @@ public class Directory_GetFiles_str_str_so
                     }
                 }
                 //path too long
-                CheckException<PathTooLongException>(delegate { files = Directory.GetFiles(String.Format("{0}\\{1}", new String('a', 100), new String('b', 200)), "*.*", SearchOption.TopDirectoryOnly); }, String.Format("Err_927gs! wrong exception thrown"));
+                CheckException<PathTooLongException>(delegate { files = Directory.GetFiles(Path.Combine(new String('a', 100), new String('b', 200)), "*.*", SearchOption.TopDirectoryOnly); }, String.Format("Err_927gs! wrong exception thrown"));
                 CheckException<PathTooLongException>(delegate { files = Directory.GetFiles(new String('a', 100), new String('b', 200), SearchOption.TopDirectoryOnly); }, String.Format("Err_213aka! wrong exception thrown"));
             }
             catch (Exception ex)
@@ -420,7 +420,7 @@ public class Directory_GetFiles_str_str_so
             /* Scenario disabled when porting because it modifies the filesystem outside of the test's working directory
             try
             {
-                dirName = ManageFileSystem.GetNonExistingDir(@"\", ManageFileSystem.DirPrefixName);
+                dirName = ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), ManageFileSystem.DirPrefixName);
                 using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                 {
                     expectedFiles = fileManager.GetAllFiles();

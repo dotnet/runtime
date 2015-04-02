@@ -35,7 +35,7 @@ public class FileInfo_get_Name
             //-----------------------------------------------------------------
             s_strLoc = "Loc_2723d";
 
-            fil2 = new FileInfo("Hello\\file.tmp");
+            fil2 = new FileInfo(Path.Combine("Hello", "file.tmp"));
             s_iCountTestcases++;
             if (!fil2.Name.Equals("file.tmp"))
             {
@@ -45,7 +45,7 @@ public class FileInfo_get_Name
 
 
             // [] \Directory\File
-            fil2 = new FileInfo("\\Directory\\File");
+            fil2 = new FileInfo(Path.DirectorySeparatorChar + Path.Combine("Directory", "File"));
             s_iCountTestcases++;
             if (!fil2.Name.Equals("File"))
             {
@@ -55,7 +55,7 @@ public class FileInfo_get_Name
 
 
             // [] UNC share
-            fil2 = new FileInfo("\\\\Machine\\Directory\\File");
+            fil2 = new FileInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
             s_iCountTestcases++;
             if (!fil2.Name.Equals("File"))
             {
@@ -64,7 +64,7 @@ public class FileInfo_get_Name
             }
 
             // [] Multiple spaces and dots in filename
-            fil2 = new FileInfo("C:\\File.tmp hello.blah");
+            fil2 = new FileInfo(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "File.tmp hello.blah"));
             s_iCountTestcases++;
             if (!fil2.Name.Equals("File.tmp hello.blah"))
             {

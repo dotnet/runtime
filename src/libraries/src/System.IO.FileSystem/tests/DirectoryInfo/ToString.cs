@@ -50,9 +50,9 @@ public class DirectoryInfo_ToString
 
             strLoc = "Loc_20u9x";
 
-            dir = new DirectoryInfo("c:\\");
+            dir = new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()));
             iCountTestcases++;
-            if (!dir.ToString().Equals("c:\\"))
+            if (!dir.ToString().Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_2098x! Incorrect dir returned==" + dir.ToString());
@@ -109,7 +109,7 @@ public class DirectoryInfo_ToString
 
             dir = new DirectoryInfo("..");
             iCountTestcases++;
-            if (!dir.FullName.Equals(Directory.GetCurrentDirectory().Substring(0, Directory.GetCurrentDirectory().LastIndexOf("\\"))))
+            if (!dir.FullName.Equals(Path.GetDirectoryName(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_298xy! Incorrect dir returned, dir==" + dir.ToString());

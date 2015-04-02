@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.IO;
 using System.Collections;
@@ -276,7 +277,7 @@ public class FileInfo_CopyTo_str
             fs2.Dispose();
             fil2 = new FileInfo(filName);
             File.Delete(testFilName);
-            fil1 = fil2.CopyTo(Path.GetDirectoryName(testFilName) + "\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.\\" + Path.GetFileName(testFilName));
+            fil1 = fil2.CopyTo(Path.GetDirectoryName(testFilName) + string.Concat(Enumerable.Repeat(Path.DirectorySeparatorChar + ".", 90).ToArray()) + Path.DirectorySeparatorChar + Path.GetFileName(testFilName));
             iCountTestcases++;
             if (!fil1.FullName.Equals(testFilName))
             {

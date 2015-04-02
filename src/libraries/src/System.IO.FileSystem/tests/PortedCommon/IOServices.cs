@@ -102,14 +102,14 @@ internal class IOServices
     public static PathInfo GetPath(string rootPath, int characterCount, int maxComponent = IOInputs.MaxComponent)
     {
         List<string> paths = new List<string>();
-        rootPath = rootPath.TrimEnd('\\', '/');
+        rootPath = rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
         StringBuilder path = new StringBuilder(characterCount);
         path.Append(rootPath);
 
         while (path.Length < characterCount)
         {
-            path.Append('\\');
+            path.Append(Path.DirectorySeparatorChar);
             if (path.Length == characterCount)
                 break;
 

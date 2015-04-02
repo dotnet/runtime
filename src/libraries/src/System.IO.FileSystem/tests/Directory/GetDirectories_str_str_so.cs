@@ -80,7 +80,7 @@ public class Directory_GetDirectories_str_str_so
             /* Scenario disabled when porting because it modifies the filesystem outside of the test's working directory
             try
             {
-                dirName = ManageFileSystem.GetNonExistingDir(@"\", ManageFileSystem.DirPrefixName);
+                dirName = ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), ManageFileSystem.DirPrefixName);
                 using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                 {
                     expectedDirs = fileManager.GetDirectories(1);
@@ -102,7 +102,7 @@ public class Directory_GetDirectories_str_str_so
                     }
                 }
                 //only 1 level
-                dirName = ManageFileSystem.GetNonExistingDir(@"\", ManageFileSystem.DirPrefixName);
+                dirName = ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), ManageFileSystem.DirPrefixName);
                 dirName = Path.GetFullPath(dirName);
                 using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 1, 10))
                 {
@@ -404,7 +404,7 @@ public class Directory_GetDirectories_str_str_so
             /* Scenario disabled when porting because it modifies the filesystem outside of the test's working directory
             try
             {
-                dirName = ManageFileSystem.GetNonExistingDir(@"\", ManageFileSystem.DirPrefixName);
+                dirName = ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), ManageFileSystem.DirPrefixName);
                 using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
                 {
                     expectedDirs = fileManager.GetAllDirectories();
@@ -612,17 +612,14 @@ public class Directory_GetDirectories_str_str_so
             // Regression Test (DevDiv Bug927807): throw NotSupportException when there are whitespace before drive letter
             try
             {
-                string pathStr = @" C:\";
-                var fullPath = Path.GetFullPath(pathStr);
-                Eval(fullPath, "C:\\", "Wrong Full Path");
+                string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
 
-                pathStr = "  D:\\";
-                fullPath = Path.GetFullPath(pathStr);
-                Eval(fullPath, "D:\\", "Wrong Full Path");
+                var fullPath = Path.GetFullPath(" " + root);
+                Eval(fullPath, root, "Wrong Full Path");
 
-                pathStr = "   E:\\Test\\Test.cs  ";
-                fullPath = Path.GetFullPath(pathStr);
-                Eval(fullPath, @"E:\Test\Test.cs", "Wrong Full Path");
+                string pathStr = root + "test" + Path.DirectorySeparatorChar + "test.cs";
+                fullPath = Path.GetFullPath(" " + pathStr);
+                Eval(fullPath, pathStr, "Wrong Full Path");
             }
             catch (Exception ex)
             {
