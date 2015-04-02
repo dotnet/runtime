@@ -11334,6 +11334,7 @@
     </Type>
 
     <Type Status="ImplRoot" Name="System.StubHelpers.StubHelpers">
+      <Member Name="ClearLastError" />
       <Member Name="SetLastError" />
       <Member Name="IsQCall(System.IntPtr)" />
       <Member Name="InitDeclaringType(System.IntPtr)" />

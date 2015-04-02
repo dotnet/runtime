@@ -1632,8 +1632,8 @@ CorUnix::CreateThreadData(
     {
         goto CreateThreadDataExit;
     }
-    
-    pThread->SetLastError(StartupLastError);
+
+    pThread->SetLastError(0);
 
     pThread->m_threadId = THREADSilentGetCurrentThreadId();
     pThread->m_pthreadSelf = pthread_self();
