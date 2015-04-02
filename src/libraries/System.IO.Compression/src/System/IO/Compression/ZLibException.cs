@@ -101,8 +101,7 @@ namespace System.IO.Compression
         public string ZLibErrorMessage
         {
             [SecurityCritical]
-            get
-            { return _zlibErrorMessage; }
+            get { return _zlibErrorMessage; }
         }
     } // internal class ZLibException
 } // namespace System.IO.Compression
