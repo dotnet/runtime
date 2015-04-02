@@ -497,19 +497,21 @@ namespace CorUnix
             return synchronizationInfo.TryAcquireNativeWaitLock();
         }
 
-        void
+        static void
         SetLastError(
             DWORD dwLastError
             )
         {
-            errno = dwLastError;    
+            // Reuse errno to store last error
+            errno = dwLastError;
         };
 
-        DWORD
+        static DWORD
         GetLastError(
             void
             )
         {
+            // Reuse errno to store last error
             return errno;
         };
 
