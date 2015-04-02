@@ -173,4 +173,4 @@ echo.
 echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
-goto :eof
+exit /b 1
