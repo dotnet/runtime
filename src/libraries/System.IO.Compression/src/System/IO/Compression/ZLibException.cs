@@ -105,5 +105,3 @@ namespace System.IO.Compression
         }
     } // internal class ZLibException
 } // namespace System.IO.Compression
-
-// file ZLibException.cs

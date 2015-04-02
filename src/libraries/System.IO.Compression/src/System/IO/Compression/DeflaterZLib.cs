@@ -276,5 +276,3 @@ namespace System.IO.Compression
 
     }  // internal class DeflaterZLib
 }  // namespace System.IO.Compression
-
-// file DeflaterZLib.cs

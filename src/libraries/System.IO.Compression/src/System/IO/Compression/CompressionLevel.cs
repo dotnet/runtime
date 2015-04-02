@@ -16,5 +16,3 @@ namespace System.IO.Compression
         NoCompression = 2
     }  // internal enum CompressionLevel
 }  // namespace System.IO.Compression
-
-// CompressionLevel.cs
