@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.IO.Compression
 {
@@ -575,7 +575,7 @@ namespace System.IO.Compression
             writer.Write(startOfCentralDirectoryTruncated);
 
             //Should be valid because of how we read archiveComment in TryReadBlock:
-            Contract.Assert((archiveComment == null) || (archiveComment.Length < UInt16.MaxValue));
+            Debug.Assert((archiveComment == null) || (archiveComment.Length < UInt16.MaxValue));
 
             writer.Write(archiveComment != null ? (UInt16)archiveComment.Length : (UInt16)0);    //zip file comment length
             if (archiveComment != null)

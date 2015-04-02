@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Text;
 
@@ -300,7 +301,7 @@ namespace System.IO.Compression
                     return OpenInWriteMode();
                 case ZipArchiveMode.Update:
                 default:
-                    Contract.Assert(_archive.Mode == ZipArchiveMode.Update);
+                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
                     return OpenInUpdateMode();
             }
         }
@@ -438,7 +439,7 @@ namespace System.IO.Compression
 
         private String DecodeEntryName(Byte[] entryNameBytes)
         {
-            Contract.Assert(entryNameBytes != null);
+            Debug.Assert(entryNameBytes != null);
 
             Encoding readEntryNameEncoding;
             if ((_generalPurposeBitFlag & BitFlagValues.UnicodeFileName) == 0)
@@ -457,7 +458,7 @@ namespace System.IO.Compression
 
         private Byte[] EncodeEntryName(String entryName, out bool isUTF8)
         {
-            Contract.Assert(entryName != null);
+            Debug.Assert(entryName != null);
 
             Encoding writeEntryNameEncoding;
             if (_archive != null && _archive.EntryNameEncoding != null)
@@ -496,7 +497,7 @@ namespace System.IO.Compression
 
             //_entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             //reading in should not be able to produce a entryname longer than UInt16.MaxValue
-            Contract.Assert(_storedEntryNameBytes.Length <= UInt16.MaxValue);
+            Debug.Assert(_storedEntryNameBytes.Length <= UInt16.MaxValue);
 
             //decide if we need the Zip64 extra field:
             Zip64ExtraField zip64ExtraField = new Zip64ExtraField();
@@ -572,7 +573,7 @@ namespace System.IO.Compression
             writer.Write(extraFieldLength);    //UInt16
 
             // This should hold because of how we read it originally in ZipCentralDirectoryFileHeader:
-            Contract.Assert((_fileComment == null) || (_fileComment.Length <= UInt16.MaxValue));
+            Debug.Assert((_fileComment == null) || (_fileComment.Length <= UInt16.MaxValue));
 
             writer.Write(_fileComment != null ? (UInt16)_fileComment.Length : (UInt16)0);    //file comment length
             writer.Write((UInt16)0);    //disk number start
@@ -598,7 +599,7 @@ namespace System.IO.Compression
         {
             String message;
             //we should have made this exact call in _archive.Init through ThrowIfOpenable
-            Contract.Assert(IsOpenable(false, true, out message));
+            Debug.Assert(IsOpenable(false, true, out message));
 
             //load local header's extra fields. it will be null if we couldn't read for some reason
             if (_originallyInArchive)
@@ -634,7 +635,7 @@ namespace System.IO.Compression
 
             //we should always be compressing with deflate. Stored is used for empty files, but we don't actually
             //call through this function for that - we just write the stored value in the header
-            Contract.Assert(CompressionMethod == CompressionMethodValues.Deflate);
+            Debug.Assert(CompressionMethod == CompressionMethodValues.Deflate);
 
             Stream compressorStream = _compressionLevel.HasValue
                                             ? new DeflateStream(backingStream, _compressionLevel.Value, leaveBackingStreamOpen)
@@ -669,7 +670,7 @@ namespace System.IO.Compression
                 default:
                     //we can assume that only deflate/stored are allowed because we assume that
                     //IsOpenable is checked before this function is called
-                    Contract.Assert(CompressionMethod == CompressionMethodValues.Stored);
+                    Debug.Assert(CompressionMethod == CompressionMethodValues.Stored);
 
                     uncompressedStream = compressedStreamToRead;
                     break;
@@ -693,7 +694,7 @@ namespace System.IO.Compression
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
 
             //we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderIfNeeed
-            Contract.Assert(_archive.IsStillArchiveStreamOwner(this));
+            Debug.Assert(_archive.IsStillArchiveStreamOwner(this));
 
             _everOpenedForWrite = true;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true,
@@ -794,7 +795,7 @@ namespace System.IO.Compression
 
             //_entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             //reading in should not be able to produce a entryname longer than UInt16.MaxValue
-            Contract.Assert(_storedEntryNameBytes.Length <= UInt16.MaxValue);
+            Debug.Assert(_storedEntryNameBytes.Length <= UInt16.MaxValue);
 
             //decide if we need the Zip64 extra field:
             Zip64ExtraField zip64ExtraField = new Zip64ExtraField();
@@ -807,9 +808,9 @@ namespace System.IO.Compression
                 CompressionMethod = CompressionMethodValues.Stored;
                 compressedSizeTruncated = 0;
                 uncompressedSizeTruncated = 0;
-                Contract.Assert(_compressedSize == 0);
-                Contract.Assert(_uncompressedSize == 0);
-                Contract.Assert(_crc32 == 0);
+                Debug.Assert(_compressedSize == 0);
+                Debug.Assert(_uncompressedSize == 0);
+                Debug.Assert(_crc32 == 0);
             }
             else
             {
@@ -822,7 +823,7 @@ namespace System.IO.Compression
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
                     //the crc should not have been set if we are in create mode, but clear it just to be sure
-                    Contract.Assert(_crc32 == 0);
+                    Debug.Assert(_crc32 == 0);
                 }
                 else //if we are not in streaming mode, we have to decide if we want to write zip64 headers
                 {
@@ -1176,7 +1177,7 @@ namespace System.IO.Compression
                 Contract.EndContractBlock();
 
                 ThrowIfDisposed();
-                Contract.Assert(CanWrite);
+                Debug.Assert(CanWrite);
 
                 //if we're not actually writing anything, we don't want to trigger the header
                 if (count == 0)
@@ -1196,7 +1197,7 @@ namespace System.IO.Compression
             public override void Flush()
             {
                 ThrowIfDisposed();
-                Contract.Assert(CanWrite);
+                Debug.Assert(CanWrite);
 
                 _crcSizeStream.Flush();
             }

@@ -112,10 +112,10 @@ namespace System.IO.Compression
 
         void IDeflater.SetInput(byte[] inputBuffer, int startIndex, int count)
         {
-            Contract.Assert(NeedsInput(), "We have something left in previous input!");
-            Contract.Assert(null != inputBuffer);
-            Contract.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
-            Contract.Assert(!_inputBufferHandle.HasValue);
+            Debug.Assert(NeedsInput(), "We have something left in previous input!");
+            Debug.Assert(null != inputBuffer);
+            Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
+            Debug.Assert(!_inputBufferHandle.HasValue);
 
             if (0 == count)
                 return;
@@ -133,10 +133,10 @@ namespace System.IO.Compression
         {
             Contract.Ensures(Contract.Result<int>() >= 0 && Contract.Result<int>() <= outputBuffer.Length);
 
-            Contract.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Contract.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
-            Contract.Assert(_inputBufferHandle.HasValue);
-            Contract.Assert(_inputBufferHandle.Value.IsAllocated);
+            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
+            Debug.Assert(_inputBufferHandle.HasValue);
+            Debug.Assert(_inputBufferHandle.Value.IsAllocated);
 
             try
             {
@@ -177,9 +177,9 @@ namespace System.IO.Compression
 
         bool IDeflater.Finish(byte[] outputBuffer, out int bytesRead)
         {
-            Contract.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
-            Contract.Assert(NeedsInput(), "We have something left in previous input!");
-            Contract.Assert(!_inputBufferHandle.HasValue);
+            Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
+            Debug.Assert(NeedsInput(), "We have something left in previous input!");
+            Debug.Assert(!_inputBufferHandle.HasValue);
 
             // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.
             // If there is still input left we should never be getting here; instead we
@@ -196,8 +196,8 @@ namespace System.IO.Compression
 
         private void DeallocateInputBufferHandle()
         {
-            Contract.Assert(_inputBufferHandle.HasValue);
-            Contract.Assert(_inputBufferHandle.Value.IsAllocated);
+            Debug.Assert(_inputBufferHandle.HasValue);
+            Debug.Assert(_inputBufferHandle.Value.IsAllocated);
 
             lock (_syncLock)
             {

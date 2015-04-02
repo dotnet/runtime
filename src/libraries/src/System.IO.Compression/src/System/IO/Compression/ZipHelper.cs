@@ -26,7 +26,7 @@ namespace System.IO.Compression
 
         internal static Boolean RequiresUnicode(String test)
         {
-            Contract.Assert(test != null);
+            Debug.Assert(test != null);
 
             foreach (Char c in test)
             {
@@ -121,7 +121,7 @@ namespace System.IO.Compression
             {
                 outOfBytes = SeekBackwardsAndRead(stream, buffer, out bufferPointer);
 
-                Contract.Assert(bufferPointer < buffer.Length);
+                Debug.Assert(bufferPointer < buffer.Length);
 
                 while (bufferPointer >= 0 && !signatureFound)
                 {
