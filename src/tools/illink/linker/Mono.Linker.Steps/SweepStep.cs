@@ -144,6 +144,16 @@ namespace Mono.Linker.Steps {
 					scope = assembly.MainModule.Import (td).Scope;
 				hash.Add (tr, scope);
 			}
+			if (assembly.MainModule.HasExportedTypes) {
+				foreach (var et in assembly.MainModule.ExportedTypes) {
+					var td = et.Resolve ();
+					IMetadataScope scope = et.Scope;
+					if ((td != null) && Annotations.IsMarked (td)) {
+						scope = assembly.MainModule.Import (td).Scope;
+						hash.Add (td, scope);
+					}
+				}
+			}
 
 			// Resolve everything first before updating scopes.
 			// If we set the scope to null, then calling Resolve() on any of its
