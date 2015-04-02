@@ -1209,7 +1209,7 @@ FCIMPLEND
 
 FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg)
 {
-    PVOID pEntryPoint = NULL;
+    PCODE pEntryPoint = NULL;
 
 #ifdef _DEBUG
     BEGIN_PRESERVE_LAST_ERROR;
@@ -1257,7 +1257,7 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
     if (NDirect::IsHostHookEnabled())
     {
         // There's one static stub on !_TARGET_X86_.
-        pEntryPoint = (PVOID)GetEEFuncEntryPoint(PInvokeStubForHost);
+        pEntryPoint = GetEEFuncEntryPoint(PInvokeStubForHost);
     }
 #elif defined(_TARGET_ARM_)
     // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
@@ -1265,14 +1265,14 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
 
     if (pEntryPoint == NULL)
     {
-        pEntryPoint = (PVOID)orefThis->GetMethodPtrAux();
+        pEntryPoint = orefThis->GetMethodPtrAux();
     }
 
 #ifdef _DEBUG
     END_PRESERVE_LAST_ERROR;
 #endif
 
-    return pEntryPoint;
+    return (PVOID)pEntryPoint;
 }
 FCIMPLEND
 
