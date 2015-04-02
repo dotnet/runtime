@@ -36,9 +36,9 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        public void CDrive()
+        public void RootOath()
         {
-            string dirName = "c:\\";
+            string dirName = Path.GetPathRoot(Directory.GetCurrentDirectory());
             DirectoryInfo dir = new DirectoryInfo(dirName);
             Assert.Equal(dir.FullName, dirName);
         }
@@ -73,15 +73,15 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void NetworkShare()
         {
-            string dirName = "\\\\contoso\\amusement\\device";
+            string dirName = new string(Path.DirectorySeparatorChar, 2) + Path.Combine("contoso", "amusement", "device");
             Assert.Equal(new DirectoryInfo(dirName).FullName, dirName);
         }
 
         [Fact]
         public void TrailingSlash()
         {
-            DirectoryInfo dir1 = new DirectoryInfo("C:\\hello");
-            DirectoryInfo dir2 = new DirectoryInfo("C:\\hello\\");
+            DirectoryInfo dir1 = new DirectoryInfo(Directory.GetCurrentDirectory());
+            DirectoryInfo dir2 = new DirectoryInfo(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar);
 
             Assert.Equal(dir1.Name, dir2.Name);
             Assert.Equal(dir1.Parent.FullName, dir2.Parent.FullName);

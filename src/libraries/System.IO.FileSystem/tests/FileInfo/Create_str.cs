@@ -110,7 +110,7 @@ public class FileInfo_Create_str
             strLoc = "Loc_09t83";
 
             iCountTestcases++;
-            file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory, "abc\\..\\Test.txt"));
+            file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory, "abc", "..", "Test.txt"));
             try
             {
                 FileStream fs = file2.Create();
@@ -179,11 +179,11 @@ public class FileInfo_Create_str
             strLoc = "Loc_209ud";
 
             iCountTestcases++;
-            file2 = new FileInfo(TestInfo.CurrentDirectory + "\\" + "Test\\Test\\Test\\test.cs");
+            file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory, "Test", "Test", "Test", "test.cs"));
             try
             {
                 file2.Create();
-                if (file2.FullName.IndexOf("Test\\Test\\Test") == -1)
+                if (file2.FullName.IndexOf(Path.Combine("Test", "Test", "Test")) == -1)
                 {
                     iCountErrors++;
                     printerr("Error_0010! Unexpected File name :: " + file2.FullName);
@@ -227,7 +227,7 @@ public class FileInfo_Create_str
             strLoc = "Loc_098gt";
 
             iCountTestcases++;
-            file2 = new FileInfo(TestInfo.CurrentDirectory + "abc\\xyz\\..\\..\\test.txt");
+            file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory, "abc", "xyz", "..", "..", "test.txt"));
             try
             {
                 FileStream fs = file2.Create();

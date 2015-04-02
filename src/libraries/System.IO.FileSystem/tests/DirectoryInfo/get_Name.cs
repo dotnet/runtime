@@ -40,7 +40,7 @@ public class DirectoryInfo_get_Name
 
             iCountTestcases++;
             dir2 = new DirectoryInfo(".");
-            if (!dir2.Name.Equals(Directory.GetCurrentDirectory().Substring(Directory.GetCurrentDirectory().LastIndexOf("\\") + 1)))
+            if (!dir2.Name.Equals(Path.GetFileName(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_69v8j! Incorrect Name on directory, dir2.Name==" + dir2.Name);
@@ -48,7 +48,7 @@ public class DirectoryInfo_get_Name
 
             iCountTestcases++;
             dir2 = new DirectoryInfo(Directory.GetCurrentDirectory());
-            if (!dir2.Name.Equals(Directory.GetCurrentDirectory().Substring(Directory.GetCurrentDirectory().LastIndexOf("\\") + 1)))
+            if (!dir2.Name.Equals(Path.GetFileName(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_97t67! Incorrect Name on directory, dir2.Name==" + dir2.Name);
@@ -61,7 +61,7 @@ public class DirectoryInfo_get_Name
             //-----------------------------------------------------------------
             strLoc = "Loc_99084";
 
-            dir2 = new DirectoryInfo("\\\\contoso\\amusement\\device");
+            dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("contoso", "amusement", "device"));
             if (!dir2.Name.Equals("device"))
             {
                 iCountErrors++;
@@ -71,9 +71,9 @@ public class DirectoryInfo_get_Name
             // [] Root directory
 
             iCountTestcases++;
-            dir2 = new DirectoryInfo("C:\\");
+            dir2 = new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()));
 
-            if (!dir2.Name.Equals("C:\\"))
+            if (!dir2.Name.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_50210! Incorrect name==" + dir2.Name);
@@ -87,7 +87,7 @@ public class DirectoryInfo_get_Name
             string currentDir = Directory.GetCurrentDirectory();
             dir2 = new DirectoryInfo(currentDir.ToUpper());
             iCountTestcases++;
-            if (!dir2.Name.Equals(currentDir.Substring(currentDir.LastIndexOf("\\") + 1).ToUpper()))
+            if (!dir2.Name.Equals(Path.GetFileName(currentDir).ToUpper()))
             {
                 iCountErrors++;
                 Console.WriteLine(dir2.Name);
@@ -96,7 +96,7 @@ public class DirectoryInfo_get_Name
 
             dir2 = new DirectoryInfo(currentDir.ToLower());
             iCountTestcases++;
-            if (!dir2.Name.Equals(currentDir.Substring(currentDir.LastIndexOf("\\") + 1).ToLower()))
+            if (!dir2.Name.Equals(Path.GetFileName(currentDir).ToLower()))
             {
                 iCountErrors++;
                 Console.WriteLine(dir2.Name);

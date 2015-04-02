@@ -125,9 +125,9 @@ public class Directory_Co5663Delete_str_bool
         // [] String should be case insensitive
         //-----------------------------------------------------------------
         string dirName = Path.Combine(TestInfo.CurrentDirectory, s_dirName + "_withFiles");
-        Directory.CreateDirectory(dirName + "\\Test1");
-        Directory.CreateDirectory(dirName + "\\Test2");
-        new FileStream(dirName + "\\Test1\\Hello.tmp", FileMode.Create).Dispose();
+        Directory.CreateDirectory(Path.Combine(dirName, "Test1"));
+        Directory.CreateDirectory(Path.Combine(dirName, "Test2"));
+        new FileStream(Path.Combine(dirName, "Test1", "Hello.tmp"), FileMode.Create).Dispose();
 
         DirectoryInfo dir2 = new DirectoryInfo(dirName);
         try
@@ -159,17 +159,17 @@ public class Directory_Co5663Delete_str_bool
     {
         // [] Directory with subdirectories should fail when passed false and pass when true
         string dirName = Path.Combine(TestInfo.CurrentDirectory, s_dirName + "_withSubDirs");
-        Directory.CreateDirectory(dirName + "\\Test1");
-        DirectoryInfo dir2 = Directory.CreateDirectory(dirName + "\\Test2");
+        Directory.CreateDirectory(Path.Combine(dirName, "Test1"));
+        DirectoryInfo dir2 = Directory.CreateDirectory(Path.Combine(dirName, "Test2"));
         Directory.Delete(dir2.FullName.ToUpper(), false);
-        if (Directory.Exists(dirName + "\\Test2"))
+        if (Directory.Exists(Path.Combine(dirName, "Test2")))
         {
             printerr("Error_49928! Directory not deleted");
             Assert.True(false, "Directory not deleted");
         }
 
         // Trying to delete one with subdirs
-        Directory.CreateDirectory(dirName + "\\Test2");
+        Directory.CreateDirectory(Path.Combine(dirName, "Test2"));
         dir2 = new DirectoryInfo(dirName);
         try
         {

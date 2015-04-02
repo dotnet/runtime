@@ -32,17 +32,17 @@ public class FileInfo_FullName
             //-----------------------------------------------------------------
             s_strLoc = "Loc_2723d";
 
-            strFileName = "Hello\\file.tmp";
+            strFileName = Path.Combine("Hello", "file.tmp");
             fil2 = new FileInfo(strFileName);
             s_iCountTestcases++;
-            if (!fil2.FullName.Equals(s_strTFPath + "\\" + strFileName))
+            if (!fil2.FullName.Equals(Path.Combine(s_strTFPath, strFileName)))
             {
                 s_iCountErrors++;
                 printerr("Error_5yb87! Incorrect name==" + fil2.FullName);
             }
 
             // [] \Directory\File
-            strFileName = "\\Directory\\File";
+            strFileName = Path.DirectorySeparatorChar + Path.Combine("Directory", "File");
             fil2 = new FileInfo(strFileName);
             s_iCountTestcases++;
             if (fil2.FullName.IndexOf(strFileName) != 2)
@@ -52,7 +52,7 @@ public class FileInfo_FullName
             }
 
             // [] UNC share
-            strFileName = "\\\\Machine\\Directory\\File";
+            strFileName =  new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File");
             fil2 = new FileInfo(strFileName);
             s_iCountTestcases++;
             if (!fil2.FullName.Equals(strFileName))
@@ -62,7 +62,7 @@ public class FileInfo_FullName
             }
 
             // [] Multiple spaces and dots in filename
-            strFileName = "C:\\File.tmp hello.blah";
+            strFileName = Path.Combine(Directory.GetCurrentDirectory(), "File.tmp hello.blah");
             fil2 = new FileInfo(strFileName);
             s_iCountTestcases++;
             if (!fil2.FullName.Equals(strFileName))
@@ -71,11 +71,11 @@ public class FileInfo_FullName
                 printerr("Error_2987b! Incorrect name==" + fil2.FullName);
             }
 
-            strFileName = "C://Directory//File";
+            strFileName = Path.Combine(Directory.GetCurrentDirectory(), "Directory", "File").Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             fil2 = new FileInfo(strFileName);
             s_iCountTestcases++;
 
-            if (!fil2.FullName.Equals("C:\\Directory\\File"))
+            if (!fil2.FullName.Equals(Path.Combine(Directory.GetCurrentDirectory(), "Directory", "File")))
             {
                 s_iCountErrors++;
                 Console.WriteLine("strFileName: " + strFileName);

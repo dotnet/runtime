@@ -60,10 +60,10 @@ public class DirectoryInfo_GetFiles
             dir2.CreateSubdirectory("TestDir1");
             dir2.CreateSubdirectory("TestDir2");
             dir2.CreateSubdirectory("TestDir3");
-            FileStream fs1 = new FileInfo(dir2.FullName + "\\" + "TestFile1").Create();
-            FileStream fs2 = new FileInfo(dir2.FullName + "\\" + "TestFile2").Create();
-            FileStream fs3 = new FileInfo(dir2.FullName + "\\" + "Test.bat").Create();
-            FileStream fs4 = new FileInfo(dir2.FullName + "\\" + "Test.exe").Create();
+            FileStream fs1 = new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            FileStream fs2 = new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
+            FileStream fs3 = new FileInfo(Path.Combine(dir2.FullName, "Test.bat")).Create();
+            FileStream fs4 = new FileInfo(Path.Combine(dir2.FullName, "Test.exe")).Create();
             fs1.Dispose();
             fs2.Dispose();
             fs3.Dispose();
@@ -107,8 +107,8 @@ public class DirectoryInfo_GetFiles
                 printerr("Error_29894! Incorrect name==" + filArr[3].Name);
             }
 
-            File.Delete(dirName + "\\TestFile1");
-            File.Delete(dirName + "\\TestFile2");
+            File.Delete(Path.Combine(dirName, "TestFile1"));
+            File.Delete(Path.Combine(dirName, "TestFile2"));
 
             filArr = dir2.GetFiles();
             iCountTestcases++;
