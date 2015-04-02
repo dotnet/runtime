@@ -169,10 +169,6 @@ EXPORTS
     filthint
 #endif
 
-#ifdef FEATURE_PAL
-    SetClrDebugDll
-    UnloadClrDebugDll
-#else
     _EFN_GetManagedExcepStack
     _EFN_GetManagedExcepStackW
     _EFN_GetManagedObjectFieldInfo    
@@ -199,8 +195,6 @@ EXPORTS
     procinfo=ProcInfo
     VerifyStackTrace
     WatsonBuckets
-#endif // !FEATURE_PAL
-
 
 #ifdef FEATURE_CORESYSTEM
 // Only documented for Apollo internal usage
