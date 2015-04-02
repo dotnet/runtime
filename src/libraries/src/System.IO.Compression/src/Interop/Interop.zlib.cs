@@ -10,26 +10,26 @@ internal static partial class Interop
 {
     internal static partial class zlib
     {
-        [DllImport("clrcompression.dll")]
+        [DllImport(Libraries.Zlib)]
         private extern unsafe static int deflateInit2_(byte* stream, int level, int method, int windowBits, int memLevel, int strategy,
                                                 byte* version, int stream_size);
 
-        [DllImport("clrcompression.dll")]
+        [DllImport(Libraries.Zlib)]
         private extern unsafe static int deflate(byte* stream, int flush);
 
-        [DllImport("clrcompression.dll")]
+        [DllImport(Libraries.Zlib)]
         private extern unsafe static int deflateEnd(byte* strm);
 
-        [DllImport("clrcompression.dll")]
+        [DllImport(Libraries.Zlib)]
         private extern unsafe static int inflateInit2_(byte* stream, int windowBits, byte* version, int stream_size);
 
-        [DllImport("clrcompression.dll")]
+        [DllImport(Libraries.Zlib)]
         private extern unsafe static int inflate(byte* stream, int flush);
 
-        [DllImport("clrcompression.dll")]
+        [DllImport(Libraries.Zlib)]
         private extern unsafe static int inflateEnd(byte* stream);
 
-        [DllImport("clrcompression.dll")]
+        [DllImport(Libraries.Zlib)]
         internal extern static int zlibCompileFlags();
 
         internal static unsafe ZLibNative.ErrorCode DeflateInit2_(
