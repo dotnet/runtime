@@ -34,6 +34,11 @@ project, e.g.:
 cd src\System.Collections.Immutable\tests
 msbuild /t:BuildAndTest (or /t:Test to just run the tests if the binaries are already built)
 ```
+It is possible to pass parameters to the underlying xunit runner via the `XunitOptions` parameter, e.g.:
+````
+msbuild /t:Test "/p:XunitOptions=-class Test.ClassUnderTests -notrait category=outerloop"
+````
+
 In some test directories there may be multiple test projects or directories so you may need to specify the specific test project to get it to build and run the tests.
 
 Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use msbuild /t:clean;build;test.
