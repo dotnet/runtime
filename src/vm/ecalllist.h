@@ -1963,6 +1963,9 @@ FCFuncStart(gStubHelperFuncs)
     FCIntrinsic("GetNDirectTarget", StubHelpers::GetNDirectTarget, CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
+#ifdef FEATURE_CORECLR
+    FCFuncElement("ClearLastError", StubHelpers::ClearLastError)
+#endif
     FCFuncElement("ThrowInteropParamException", StubHelpers::ThrowInteropParamException)
     FCFuncElement("InternalGetHRExceptionObject", StubHelpers::GetHRExceptionObject)
 #ifdef FEATURE_COMINTEROP
