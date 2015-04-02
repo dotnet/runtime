@@ -197,4 +197,4 @@ echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
 echo linuxmscorlib - Build mscorlib for Linux
 echo osxmscorlib - Build mscorlib for OS X
-goto :eof
+exit /b 1
