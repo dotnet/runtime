@@ -1155,6 +1155,14 @@ FCIMPL0(void, StubHelpers::SetLastError)
 }
 FCIMPLEND
 
+FCIMPL0(void, StubHelpers::ClearLastError)
+{
+    FCALL_CONTRACT;
+
+    ::SetLastError(0);
+}
+FCIMPLEND
+
 FCIMPL1(FC_BOOL_RET, StubHelpers::IsQCall, NDirectMethodDesc* pNMD)
 {
     FCALL_CONTRACT;
@@ -1201,6 +1209,12 @@ FCIMPLEND
 
 FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT_PTR *ppStubArg)
 {
+    PVOID pEntryPoint = NULL;
+
+#ifdef _DEBUG
+    BEGIN_PRESERVE_LAST_ERROR;
+#endif
+
     CONTRACTL
     {
         FCALL_CHECK;
@@ -1210,10 +1224,8 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
 
     DELEGATEREF orefThis = (DELEGATEREF)ObjectToOBJECTREF(pThisUNSAFE);
 
-    // On x86 we wrap the call with a thunk that handles host notifications.
-    PCODE pInterceptStubEntryPoint = NULL;
-
 #if defined(_TARGET_X86_)
+    // On x86 we wrap the call with a thunk that handles host notifications.
     SyncBlock *pSyncBlock = orefThis->PassiveGetSyncBlock();
     if (pSyncBlock != NULL)
     {
@@ -1224,7 +1236,7 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
             Stub *pInterceptStub = pInteropInfo->GetInterceptStub();
             if (pInterceptStub != NULL)
             {
-                pInterceptStubEntryPoint = pInterceptStub->GetEntryPoint();
+                pEntryPoint = pInterceptStub->GetEntryPoint();
             }
         }
     }
@@ -1245,17 +1257,22 @@ FCIMPL2(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE, UINT
     if (NDirect::IsHostHookEnabled())
     {
         // There's one static stub on !_TARGET_X86_.
-        return (LPVOID)GetEEFuncEntryPoint(PInvokeStubForHost);
+        pEntryPoint = (PVOID)GetEEFuncEntryPoint(PInvokeStubForHost);
     }
 #elif defined(_TARGET_ARM_)
     // @ARMTODO: Nothing to do for ARM yet since we don't support the hosted path.
 #endif // _WIN64, _TARGET_ARM_
 
-    if (pInterceptStubEntryPoint != NULL)
+    if (pEntryPoint == NULL)
     {
-        return (LPVOID)pInterceptStubEntryPoint;
+        pEntryPoint = (PVOID)orefThis->GetMethodPtrAux();
     }
-    return (LPVOID)orefThis->GetMethodPtrAux();
+
+#ifdef _DEBUG
+    END_PRESERVE_LAST_ERROR;
+#endif
+
+    return pEntryPoint;
 }
 FCIMPLEND
 

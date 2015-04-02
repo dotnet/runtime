@@ -1598,6 +1598,11 @@ namespace  System.StubHelpers {
         static internal extern void DemandPermission(IntPtr pNMD);
 #endif // !FEATURE_CORECLR
 
+#if FEATURE_CORECLR
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        static internal extern void ClearLastError();
+#endif
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static internal extern void SetLastError();
 
