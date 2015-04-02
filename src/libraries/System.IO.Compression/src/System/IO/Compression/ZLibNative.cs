@@ -372,7 +372,7 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy, ZLibVersion);
+                    errC = Interop.zlib.DeflateInit2_(ref _zStream, level, CompressionMethod.Deflated, windowBits, memLevel, strategy, ZLibVersion);
                     _initializationState = State.InitializedForDeflate;
                 }
 
@@ -385,7 +385,7 @@ namespace System.IO.Compression
             {
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForDeflate);
-                return Interop.clrcompression.Deflate(ref _zStream, flush);
+                return Interop.zlib.Deflate(ref _zStream, flush);
             }
 
 
@@ -400,7 +400,7 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.DeflateEnd(ref _zStream);
+                    errC = Interop.zlib.DeflateEnd(ref _zStream);
                     _initializationState = State.Disposed;
                 }
                 return errC;
@@ -418,7 +418,7 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.InflateInit2_(ref _zStream, windowBits, ZLibVersion);
+                    errC = Interop.zlib.InflateInit2_(ref _zStream, windowBits, ZLibVersion);
                     _initializationState = State.InitializedForInflate;
                 }
 
@@ -431,7 +431,7 @@ namespace System.IO.Compression
             {
                 EnsureNotDisposed();
                 EnsureState(State.InitializedForInflate);
-                return Interop.clrcompression.Inflate(ref _zStream, flush);
+                return Interop.zlib.Inflate(ref _zStream, flush);
             }
 
 
@@ -446,7 +446,7 @@ namespace System.IO.Compression
                 try { }
                 finally
                 {
-                    errC = Interop.clrcompression.InflateEnd(ref _zStream);
+                    errC = Interop.zlib.InflateEnd(ref _zStream);
                     _initializationState = State.Disposed;
                 }
 
@@ -483,7 +483,7 @@ namespace System.IO.Compression
             [SecurityCritical]
             internal static Int32 ZLibCompileFlags()
             {
-                return Interop.clrcompression.zlibCompileFlags();
+                return Interop.zlib.zlibCompileFlags();
             }
         }  // class ZLibStreamHandle
 

@@ -8,7 +8,7 @@ using System.IO.Compression;
 
 internal static partial class Interop
 {
-    internal static partial class clrcompression
+    internal static partial class zlib
     {
         [DllImport("clrcompression.dll")]
         private extern unsafe static int deflateInit2_(byte* stream, int level, int method, int windowBits, int memLevel, int strategy,

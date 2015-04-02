@@ -51,7 +51,7 @@
     <Compile Include="System\IO\Compression\ZLibNative.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interop\Interop.clrcompression.cs" />
+    <Compile Include="Interop\Interop.zlib.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
