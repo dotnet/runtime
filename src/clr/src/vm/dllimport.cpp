@@ -906,13 +906,23 @@ public:
         }
 #endif // MDA_SUPPORTED
 
+#ifdef FEATURE_CORECLR
+        // For CoreClr, clear the last error before calling the target that returns last error.
+        // There isn't always a way to know the function have failed without checking last error,
+        // in particular on Unix.
+        if (m_fSetLastError && SF_IsForwardStub(m_dwStubFlags))
+        {
+            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__CLEAR_LAST_ERROR, 0, 0);
+        }
+#endif // FEATURE_CORECLR
+
         // Invoke the target (calli, call method, call delegate, get/set field, etc.)
         EmitInvokeTarget(pStubMD);
 
         // Saving last error must be the first thing we do after returning from the target
         if (m_fSetLastError && SF_IsForwardStub(m_dwStubFlags))
         {
-            m_slIL.EmitSetLastError(pcsDispatch);
+            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__SET_LAST_ERROR, 0, 0);
         }
 
 #if defined(_TARGET_X86_)
@@ -2445,14 +2455,6 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     {
         pcs->EmitLDLOC(m_dwRetValLocalNum);
     }
-}
-
-
-void NDirectStubLinker::EmitSetLastError(ILCodeStream* pcsEmit)
-{
-    STANDARD_VM_CONTRACT;
-
-    pcsEmit->EmitCALL(METHOD__STUBHELPERS__SET_LAST_ERROR, 0, 0);
 }
 
 void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
@@ -7294,6 +7296,10 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
 
 EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 {
+    LPVOID ret = NULL;
+
+    BEGIN_PRESERVE_LAST_ERROR;
+
     CONTRACTL
     {
         THROWS;
@@ -7302,8 +7308,6 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         SO_TOLERANT;
     }
     CONTRACTL_END;
-
-    LPVOID ret = NULL;
 
     // this function is called by CLR to native assembly stubs which are called by 
     // managed code as a result, we need an unwind and continue handler to translate 
@@ -7362,6 +7366,8 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
+    END_PRESERVE_LAST_ERROR;
+
     return ret;
 }
 
@@ -7372,6 +7378,8 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
 EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie *pVASigCookie, MethodDesc *pMD)
 {
+    BEGIN_PRESERVE_LAST_ERROR;
+
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -7394,10 +7402,14 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock
     GetILStubForCalli(pVASigCookie, pMD);
 
     pFrame->Pop(CURRENT_THREAD);
+
+    END_PRESERVE_LAST_ERROR;
 }
 
 EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, PCODE pUnmanagedTarget)
 {
+    BEGIN_PRESERVE_LAST_ERROR;
+
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -7419,6 +7431,8 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     GetILStubForCalli(pVASigCookie, NULL);
 
     pFrame->Pop(CURRENT_THREAD);
+
+    END_PRESERVE_LAST_ERROR;
 }
 
 PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)

@@ -42,8 +42,6 @@ extern Volatile<LONG> terminator;
 extern DWORD gPID;
 extern LPWSTR pAppDir;
 
-extern DWORD StartupLastError;
-
 /*++
 Function:
   PROCGetProcessIDFromHandle
