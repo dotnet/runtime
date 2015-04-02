@@ -274,16 +274,14 @@ namespace System.IO.Compression
             public override bool IsInvalid
             {
                 [SecurityCritical]
-                get
-                { return DangerousGetHandle() == new IntPtr(-1); }
+                get { return DangerousGetHandle() == new IntPtr(-1); }
             }
 
             public State InitializationState
             {
                 [Pure]
                 [SecurityCritical]
-                get
-                { return _initializationState; }
+                get { return _initializationState; }
             }
 
 
