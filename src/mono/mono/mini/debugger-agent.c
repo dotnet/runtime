@@ -4727,7 +4727,7 @@ breakpoint_matches_assembly (MonoBreakpoint *bp, MonoAssembly *assembly)
 }
 
 static void
-process_breakpoint_inner (DebuggerTlsData *tls)
+process_breakpoint_inner (DebuggerTlsData *tls, gboolean from_signal)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
@@ -4757,7 +4757,8 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 	/* 
 	 * Skip the instruction causing the breakpoint signal.
 	 */
-	mono_arch_skip_breakpoint (ctx, ji);
+	if (from_signal)
+		mono_arch_skip_breakpoint (ctx, ji);
 
 	if (method->wrapper_type || tls->disable_breakpoints)
 		return;
@@ -4850,7 +4851,7 @@ process_breakpoint_inner (DebuggerTlsData *tls)
 
 /* Process a breakpoint/single step event after resuming from a signal handler */
 static void
-process_signal_event (void (*func) (DebuggerTlsData*))
+process_signal_event (void (*func) (DebuggerTlsData*, gboolean))
 {
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
@@ -4861,7 +4862,7 @@ process_signal_event (void (*func) (DebuggerTlsData*))
 	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
 	mono_thread_state_init_from_monoctx (&tls->restore_state, &tls->handler_ctx);
 
-	func (tls);
+	func (tls, TRUE);
 
 	/* This is called when resuming from a signal handler, so it shouldn't return */
 	memcpy (&ctx, &tls->restore_state.ctx, sizeof (MonoContext));
@@ -4973,7 +4974,7 @@ ss_depth_to_string (StepDepth depth)
 }
 
 static void
-process_single_step_inner (DebuggerTlsData *tls)
+process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 {
 	MonoJitInfo *ji;
 	guint8 *ip;
@@ -4989,7 +4990,8 @@ process_single_step_inner (DebuggerTlsData *tls)
 	ip = MONO_CONTEXT_GET_IP (ctx);
 
 	/* Skip the instruction causing the single step */
-	mono_arch_skip_single_step (ctx);
+	if (from_signal)
+		mono_arch_skip_single_step (ctx);
 
 	if (suspend_count > 0) {
 		process_suspend (tls, ctx);
@@ -5112,7 +5114,7 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 
-	process_single_step_inner (tls);
+	process_single_step_inner (tls, FALSE);
 
 	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
@@ -5129,7 +5131,7 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoContext));
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 
-	process_breakpoint_inner (tls);
+	process_breakpoint_inner (tls, FALSE);
 
 	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));

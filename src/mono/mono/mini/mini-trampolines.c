@@ -1866,3 +1866,67 @@ mini_get_nullified_class_init_trampoline (void)
 
 	return nullified_class_init_trampoline;
 }
+
+/*
+ * mini_get_single_step_trampoline:
+ *
+ *   Return a trampoline which calls debugger_agent_single_step_from_context ().
+ */
+gpointer
+mini_get_single_step_trampoline (void)
+{
+	static gpointer trampoline;
+
+	if (!trampoline) {
+		gpointer tramp;
+		MonoTrampInfo *info;
+
+		if (mono_aot_only) {
+			tramp = mono_aot_get_trampoline ("sdb_single_step_trampoline");
+		} else {
+#ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
+			tramp = mono_arch_create_sdb_trampoline (TRUE, &info, FALSE);
+			mono_tramp_info_register (info);
+#else
+			tramp = NULL;
+			g_assert_not_reached ();
+#endif
+		}
+		mono_memory_barrier ();
+		trampoline = tramp;
+	}
+
+	return trampoline;
+}
+
+/*
+ * mini_get_breakpoint_trampoline:
+ *
+ *   Return a trampoline which calls debugger_agent_breakpoint_from_context ().
+ */
+gpointer
+mini_get_breakpoint_trampoline (void)
+{
+	static gpointer trampoline;
+
+	if (!trampoline) {
+		gpointer tramp;
+		MonoTrampInfo *info;
+
+		if (mono_aot_only) {
+			tramp = mono_aot_get_trampoline ("sdb_breakpoint_trampoline");
+		} else {
+#ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
+			tramp = mono_arch_create_sdb_trampoline (FALSE, &info, FALSE);
+			mono_tramp_info_register (info);
+#else
+			tramp = NULL;
+			g_assert_not_reached ();
+#endif
+		}
+		mono_memory_barrier ();
+		trampoline = tramp;
+	}
+
+	return trampoline;
+}

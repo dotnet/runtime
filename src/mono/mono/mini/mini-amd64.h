@@ -207,6 +207,7 @@ typedef struct MonoCompileArch {
 #endif
 	gpointer seq_point_info_var;
 	gpointer ss_trigger_page_var;
+	gpointer ss_tramp_var;
 	gpointer lmf_var;
 } MonoCompileArch;
 
@@ -220,8 +221,7 @@ typedef struct MonoCompileArch {
 
 /* Structure used by the sequence points in AOTed code */
 typedef struct {
-	gpointer ss_trigger_page;
-	gpointer bp_trigger_page;
+	gpointer ss_tramp_addr;
 	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
 } SeqPointInfo;
 
@@ -354,6 +354,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
+#define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 
 #if defined(TARGET_OSX) || defined(__linux__)
 #define MONO_ARCH_HAVE_TLS_GET_REG 1

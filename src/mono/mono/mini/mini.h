@@ -2364,6 +2364,8 @@ const char*       mono_get_generic_trampoline_simple_name (MonoTrampolineType tr
 char*             mono_get_generic_trampoline_name (MonoTrampolineType tramp_type);
 char*             mono_get_rgctx_fetch_trampoline_name (int slot);
 gpointer          mini_get_nullified_class_init_trampoline (void);
+gpointer          mini_get_single_step_trampoline (void);
+gpointer          mini_get_breakpoint_trampoline (void);
 gpointer          mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp, gboolean add_unbox_tramp);
 gboolean          mini_jit_info_is_gsharedvt (MonoJitInfo *ji);
 
@@ -2437,6 +2439,7 @@ gpointer  mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampI
 gpointer  mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboolean aot);
 gpointer  mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot);
 gpointer  mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info);
+guint8*   mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot);
 gpointer  mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot);
 gpointer  mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot);
 guint8   *mono_arch_create_llvm_native_thunk     (MonoDomain *domain, guint8* addr) MONO_LLVM_INTERNAL;
