@@ -22,7 +22,7 @@ namespace System.IO.Compression
         // that they do not get inconsistent fields that may lead to an unmanaged memory violation.
         // To prevent *managed* buffer corruption or other weird behaviour users need to synchronise
         // on the stream explicitly.
-        private object _syncLock = new object();
+        private readonly object _syncLock = new object();
 
         #region exposed members
 
