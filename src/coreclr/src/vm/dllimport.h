@@ -468,7 +468,6 @@ public:
 
     void    Begin(DWORD dwStubFlags);
     void    End(DWORD dwStubFlags);
-    void    EmitSetLastError(ILCodeStream* pcsEmit);
     void    DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD);
     void    EmitLogNativeArgument(ILCodeStream* pslILEmit, DWORD dwPinnedLocal);
     void    LoadCleanupWorkList(ILCodeStream* pcsEmit);
