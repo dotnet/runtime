@@ -7935,6 +7935,7 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 	}
 
 	nacl_global_codeman_validate (&start, 64, &code);
+	mono_arch_flush_icache (start, code - start);
 
 	if (code_len)
 		*code_len = code - start;
