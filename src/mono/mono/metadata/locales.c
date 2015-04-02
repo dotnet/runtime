@@ -624,11 +624,6 @@ ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean ne
 	return ret;
 }
 
-void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale)
-{
-	/* Nothing to do here */
-}
-
 int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo *this, MonoString *str1, gint32 off1, gint32 len1, MonoString *str2, gint32 off2, gint32 len2, gint32 options)
 {
 	/* Do a normal ascii string compare, as we only know the
@@ -636,11 +631,6 @@ int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo
 	 */
 	return(string_invariant_compare (str1, off1, len1, str2, off2, len2,
 					 options));
-}
-
-void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoCompareInfo *this)
-{
-	/* Nothing to do here */
 }
 
 void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo *this, MonoSortKey *key, MonoString *source, gint32 options)

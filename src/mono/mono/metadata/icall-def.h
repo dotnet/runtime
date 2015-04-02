@@ -272,8 +272,6 @@ ICALL(CALDATA_1, "fill_calendar_data", ves_icall_System_Globalization_CalendarDa
 
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
 ICALL(COMPINF_1, "assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey)
-ICALL(COMPINF_2, "construct_compareinfo(string)", ves_icall_System_Globalization_CompareInfo_construct_compareinfo)
-ICALL(COMPINF_3, "free_internal_collator()", ves_icall_System_Globalization_CompareInfo_free_internal_collator)
 ICALL(COMPINF_4, "internal_compare(string,int,int,string,int,int,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare)
 ICALL(COMPINF_5, "internal_index(string,int,int,char,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index_char)
 ICALL(COMPINF_6, "internal_index(string,int,int,string,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index)
