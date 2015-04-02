@@ -1516,6 +1516,71 @@ class Tests
 		return 0;
 	}
 
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void dummy () {
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int div_zero_llvm_inner (int i) {
+		try {
+			// This call make use avoid the 'handler without invoke' restriction in the llvm backend
+			dummy ();
+			return 5 / i;
+		} catch (Exception ex) {
+			return 0;
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static long div_zero_llvm_inner_long (long l) {
+		try {
+			dummy ();
+			return (long)5 / l;
+		} catch (Exception ex) {
+			return 0;
+		}
+	}
+
+	public static int test_0_div_zero_llvm () {
+	    long r = div_zero_llvm_inner (0);
+		if (r != 0)
+			return 1;
+	    r = div_zero_llvm_inner_long (0);
+		if (r != 0)
+			return 2;
+		return 0;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static int div_overflow_llvm_inner (int i) {
+		try {
+			dummy ();
+			return Int32.MinValue / i;
+		} catch (Exception ex) {
+			return 0;
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static long div_overflow_llvm_inner_long (long l) {
+		try {
+			dummy ();
+			return Int64.MinValue / l;
+		} catch (Exception ex) {
+			return 0;
+		}
+	}
+
+	public static int test_0_div_overflow_llvm () {
+		long r = div_overflow_llvm_inner (-1);
+		if (r != 0)
+			return 1;
+		r = div_overflow_llvm_inner_long ((long)-1);
+		if (r != 0)
+			return 2;
+		return 0;
+	}
+
 	public static int return_55 () {
 		return 55;
 	}

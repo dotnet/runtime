@@ -1948,6 +1948,68 @@ emit_llvm_used (MonoLLVMModule *lmodule)
 	LLVMSetSection (used, "llvm.metadata");
 }
 
+static void
+emit_div_check (EmitContext *ctx, LLVMBuilderRef builder, MonoBasicBlock *bb, MonoInst *ins, LLVMValueRef lhs, LLVMValueRef rhs)
+{
+	gboolean need_div_check = FALSE;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	need_div_check = TRUE;
+#endif
+	if (bb->region)
+		/* LLVM doesn't know that these can throw an exception since they are not called through an intrinsic */
+		need_div_check = TRUE;
+
+	if (!need_div_check)
+		return;
+
+	switch (ins->opcode) {
+	case OP_IDIV:
+	case OP_LDIV:
+	case OP_IREM:
+	case OP_LREM:
+	case OP_IDIV_UN:
+	case OP_LDIV_UN:
+	case OP_IREM_UN:
+	case OP_LREM_UN:
+	case OP_IDIV_IMM:
+	case OP_LDIV_IMM:
+	case OP_IREM_IMM:
+	case OP_LREM_IMM:
+	case OP_IDIV_UN_IMM:
+	case OP_LDIV_UN_IMM:
+	case OP_IREM_UN_IMM:
+	case OP_LREM_UN_IMM: {
+		LLVMValueRef cmp;
+		gboolean is_signed = (ins->opcode == OP_IDIV || ins->opcode == OP_LDIV || ins->opcode == OP_IREM || ins->opcode == OP_LREM ||
+							  ins->opcode == OP_IDIV_IMM || ins->opcode == OP_LDIV_IMM || ins->opcode == OP_IREM_IMM || ins->opcode == OP_LREM_IMM);
+
+		cmp = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), 0, FALSE), "");
+		emit_cond_system_exception (ctx, bb, "DivideByZeroException", cmp);
+		CHECK_FAILURE (ctx);
+		builder = ctx->builder;
+
+		/* b == -1 && a == 0x80000000 */
+		if (is_signed) {
+			LLVMValueRef c = (LLVMTypeOf (lhs) == LLVMInt32Type ()) ? LLVMConstInt (LLVMTypeOf (lhs), 0x80000000, FALSE) : LLVMConstInt (LLVMTypeOf (lhs), 0x8000000000000000LL, FALSE);
+			LLVMValueRef cond1 = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), -1, FALSE), "");
+			LLVMValueRef cond2 = LLVMBuildICmp (builder, LLVMIntEQ, lhs, c, "");
+
+			cmp = LLVMBuildICmp (builder, LLVMIntEQ, LLVMBuildAnd (builder, cond1, cond2, ""), LLVMConstInt (LLVMInt1Type (), 1, FALSE), "");
+			emit_cond_system_exception (ctx, bb, "OverflowException", cmp);
+			CHECK_FAILURE (ctx);
+			builder = ctx->builder;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
+ FAILURE:
+	return;
+}
+
 /*
  * emit_entry_bb:
  *
@@ -3077,28 +3139,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			lhs = convert (ctx, lhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
 			rhs = convert (ctx, rhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
 
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-			switch (ins->opcode) {
-			case OP_IDIV:
-			case OP_LDIV:
-			case OP_IREM:
-			case OP_LREM:
-			case OP_IDIV_UN:
-			case OP_LDIV_UN:
-			case OP_IREM_UN:
-			case OP_LREM_UN: {
-				LLVMValueRef cmp;
-
-				cmp = LLVMBuildICmp (builder, LLVMIntEQ, rhs, LLVMConstInt (LLVMTypeOf (rhs), 0, FALSE), "");
-				emit_cond_system_exception (ctx, bb, "DivideByZeroException", cmp);
-				CHECK_FAILURE (ctx);
-				builder = ctx->builder;
-				break;
-			}
-			default:
-				break;
-			}
-#endif
+			emit_div_check (ctx, builder, bb, ins, lhs, rhs);
+			CHECK_FAILURE (ctx);
+			builder = ctx->builder;
 
 			switch (ins->opcode) {
 			case OP_IADD:
@@ -3232,6 +3275,10 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			} else {
 				imm = LLVMConstInt (LLVMInt32Type (), ins->inst_imm, FALSE);
 			}
+
+			emit_div_check (ctx, builder, bb, ins, lhs, imm);
+			CHECK_FAILURE (ctx);
+			builder = ctx->builder;
 
 #if SIZEOF_VOID_P == 4
 			if (ins->opcode == OP_LSHL_IMM || ins->opcode == OP_LSHR_IMM || ins->opcode == OP_LSHR_UN_IMM)
