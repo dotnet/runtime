@@ -30,9 +30,9 @@ We use GitHub labels on our issues in order to classify them.  We have the follo
  * [2 - In Progress](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%222+-+In+Progress%22): Tasks that are under active development.
  * [3 - Done](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%223+-+Done%22): Tasks that are finished.  There should be no open issues in the Done stage.
  * [:Community](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3ACommunity): Community Engagement & Open Development Swim Lane. :swimmer: 
- * [:Port to GitHub](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%22%3APort+to+GitHub%22): Swim lane :swimmer: tracking the work remaining to open source .NET Core Framework
- * [:Infrastructure](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3AInfrastructure): Swim lane :swimmer: tracking OSS Engineering and Infrastructure
- * [:X-Plat](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3AX-Plat): Swim lane :swimmer: for Cross Platform Support
+ * [:Port to GitHub](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%22%3APort+to+GitHub%22): Swim lane tracking the work remaining to open source .NET Core Framework
+ * [:Infrastructure](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3AInfrastructure): Swim lane tracking OSS Engineering and Infrastructure
+ * [:X-Plat](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3A%3AX-Plat): Swim lane for Cross Platform Support
 
 In addition to the above, we have a handful of other labels we use to help classify our issues.  Some of these tag cross cutting concerns (e.g. cross platform, performance, serialization impact) where as others are used to help us track additional work needed before closing an issue (e.g. needs API review). Finally, we have the "needs more info" label.  We use this label to mark issues where we need more information in order to proceed.  Usually this will be because we can't reproduce a reported bug.  We'll close these issues after a little bit if we haven't gotten actionable information, but we welcome folks who have acquired more information to reopen the issue.
 
