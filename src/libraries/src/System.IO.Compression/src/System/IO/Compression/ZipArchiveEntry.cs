@@ -698,7 +698,7 @@ namespace System.IO.Compression
 
             _everOpenedForWrite = true;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true,
-                                                            (Object o, EventArgs e) =>
+                                                            (object o, EventArgs e) =>
                                                             {
                                                                 //release the archive stream
                                                                 _archive.ReleaseArchiveStream(this);
@@ -706,7 +706,7 @@ namespace System.IO.Compression
                                                             });
             _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this);
 
-            return new WrappedStream(_outstandingWriteStream, (Object o, EventArgs e) => _outstandingWriteStream.Dispose());
+            return new WrappedStream(_outstandingWriteStream, (object o, EventArgs e) => _outstandingWriteStream.Dispose());
         }
 
         private Stream OpenInUpdateMode()
@@ -721,7 +721,7 @@ namespace System.IO.Compression
             //always put it at the beginning for them
             UncompressedData.Seek(0, SeekOrigin.Begin);
             return new WrappedStream(UncompressedData,
-                                     (Object o, EventArgs e) =>
+                                     (object o, EventArgs e) =>
                                      {
                                          //once they close, we know uncompressed length, but still not compressed length
                                          //so we don't fill in any size information
