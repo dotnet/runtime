@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.IO.Compression
 {
@@ -252,8 +253,8 @@ namespace System.IO.Compression
             if (_positionInSuperStream + count > _endInSuperStream)
                 count = (int)(_endInSuperStream - _positionInSuperStream);
 
-            Contract.Assert(count >= 0);
-            Contract.Assert(count <= origCount);
+            Debug.Assert(count >= 0);
+            Debug.Assert(count <= origCount);
 
             int ret = _superStream.Read(buffer, offset, count);
 
@@ -421,7 +422,7 @@ namespace System.IO.Compression
 
             //if we're not actually writing anything, we don't want to trigger as if we did write something
             ThrowIfDisposed();
-            Contract.Assert(CanWrite);
+            Debug.Assert(CanWrite);
 
             if (count == 0)
                 return;
@@ -442,7 +443,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
 
             //assume writeable if not disposed
-            Contract.Assert(CanWrite);
+            Debug.Assert(CanWrite);
 
             _baseStream.Flush();
         }

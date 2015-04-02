@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Text;
 
@@ -238,7 +239,7 @@ namespace System.IO.Compression
                     case ZipArchiveMode.Create:
                     case ZipArchiveMode.Update:
                     default:
-                        Contract.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
+                        Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
                         try
                         {
                             WriteFile();
@@ -411,7 +412,7 @@ namespace System.IO.Compression
 
         internal void ReleaseArchiveStream(ZipArchiveEntry entry)
         {
-            Contract.Assert(_archiveStreamOwner == entry);
+            Debug.Assert(_archiveStreamOwner == entry);
 
             _archiveStreamOwner = null;
         }
@@ -526,7 +527,7 @@ namespace System.IO.Compression
                         break;
                     case ZipArchiveMode.Update:
                     default:
-                        Contract.Assert(mode == ZipArchiveMode.Update);
+                        Debug.Assert(mode == ZipArchiveMode.Update);
                         if (_archiveStream.Length == 0)
                         {
                             _readEntries = true;
@@ -601,7 +602,7 @@ namespace System.IO.Compression
                 //read the EOCD
                 ZipEndOfCentralDirectoryBlock eocd;
                 Boolean eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveReader, out eocd);
-                Contract.Assert(eocdProper); //we just found this using the signature finder, so it should be okay
+                Debug.Assert(eocdProper); //we just found this using the signature finder, so it should be okay
 
                 if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
                     throw new InvalidDataException(SR.SplitSpanned);
@@ -632,7 +633,7 @@ namespace System.IO.Compression
                         //use locator to get to Zip64EOCD
                         Zip64EndOfCentralDirectoryLocator locator;
                         Boolean zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveReader, out locator);
-                        Contract.Assert(zip64eocdLocatorProper); //we just found this using the signature finder, so it should be okay
+                        Debug.Assert(zip64eocdLocatorProper); //we just found this using the signature finder, so it should be okay
 
                         if (locator.OffsetOfZip64EOCD > (UInt64)Int64.MaxValue)
                             throw new InvalidDataException(SR.FieldTooBigOffsetToZip64EOCD);
@@ -680,7 +681,7 @@ namespace System.IO.Compression
         {
             //if we are in create mode, we always set readEntries to true in Init
             //if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
-            Contract.Assert(_readEntries);
+            Debug.Assert(_readEntries);
 
             if (_mode == ZipArchiveMode.Update)
             {
