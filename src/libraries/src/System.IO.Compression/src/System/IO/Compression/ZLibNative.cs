@@ -539,5 +539,3 @@ namespace System.IO.Compression
 
     }  // internal class ZLibNative
 }  // namespace System.IO.Compression
-
-// file ZLibNative.cs
