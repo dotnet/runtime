@@ -3742,7 +3742,8 @@ JIT_GenericHandleWorker(
             {
                 // Add the denormalized key for faster lookup next time. This is not a critical entry - no need 
                 // to specify appdomain affinity.
-                AddToGenericHandleCache(&key, res);
+                JitGenericHandleCacheKey denormKey((CORINFO_CLASS_HANDLE)pMT, NULL, signature);
+                AddToGenericHandleCache(&denormKey, res);
                 return (CORINFO_GENERIC_HANDLE) (DictionaryEntry) res;                
             }
         }
@@ -3765,6 +3766,8 @@ JIT_GenericHandleWorker(
             pDictDomain = pMD->GetDomain();
         }
 
+        // Add the normalized key (pDeclaringMT) here so that future lookups of any
+        // inherited types are faster next time rather than just just for this specific pMT.
         JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
         AddToGenericHandleCache(&key, (HashDatum)result);
     }
