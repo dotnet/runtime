@@ -90,7 +90,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     END_PROLOGUE
 
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_INTEGER
-    je      0f
+    je      Done_CONTEXT_INTEGER
     mov     [rdi + CONTEXT_Rdi], rdi
     mov     [rdi + CONTEXT_Rsi], rsi
     mov     [rdi + CONTEXT_Rbx], rbx
@@ -106,12 +106,10 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     mov     [rdi + CONTEXT_R13], r13
     mov     [rdi + CONTEXT_R14], r14
     mov     [rdi + CONTEXT_R15], r15   
-    jmp     1f
-0:
-    nop
-1:
+Done_CONTEXT_INTEGER:
+
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_CONTROL
-    je      2f
+    je      Done_CONTEXT_CONTROL
     
     // Return address is @ (RSP + 8)
     mov     rdx, [rsp + 8]
@@ -127,16 +125,18 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
 .att_syntax 
     mov     %ss, CONTEXT_SegSs(%rdi)
 .intel_syntax noprefix
-2:
+Done_CONTEXT_CONTROL:
+
     // Need to double check this is producing the right result
     // also that FFSXR (fast save/restore) is not turned on
     // otherwise it omits the xmm registers.
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_FLOATING_POINT
-    je      3f
+    je      Done_CONTEXT_FLOATING_POINT
     fxsave  [rdi + CONTEXT_FltSave]
-3:
+Done_CONTEXT_FLOATING_POINT:
+
     test    BYTE PTR [rdi + CONTEXT_ContextFlags], CONTEXT_DEBUG_REGISTERS
-    je      4f
+    je      Done_CONTEXT_DEBUG_REGISTERS
     mov     rdx, dr0
     mov     [rdi + CONTEXT_Dr0], rdx
     mov     rdx, dr1
@@ -149,7 +149,8 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     mov     [rdi + CONTEXT_Dr6], rdx
     mov     rdx, dr7
     mov     [rdi + CONTEXT_Dr7], rdx
-4:
+Done_CONTEXT_DEBUG_REGISTERS:
+
     free_stack 8
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT
