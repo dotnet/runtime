@@ -973,17 +973,26 @@ namespace System {
 
             if ((count == 0) || (omitEmptyEntries && this.Length == 0)) 
             {           
+#if FEATURE_CORECLR
+                return EmptyArray<String>.Value;
+#else
+                // Keep the old behavior of returning a new empty array
+                // to mitigate any potential compat risk.
                 return new String[0];
+#endif
+            }
+
+            if (count == 1)
+            {
+                return new String[] { this };
             }
             
             int[] sepList = new int[Length];            
             int numReplaces = MakeSeparatorList(separator, ref sepList);            
             
-            //Handle the special case of no replaces and special count.
-            if (0 == numReplaces || count == 1) {
-                String[] stringArray = new String[1];
-                stringArray[0] = this;
-                return stringArray;
+            // Handle the special case of no replaces.
+            if (0 == numReplaces) {
+                return new String[] { this };
             }            
 
             if(omitEmptyEntries) 
@@ -1021,18 +1030,26 @@ namespace System {
             }
             
             if ((count == 0) || (omitEmptyEntries && this.Length ==0)) {
+#if FEATURE_CORECLR
+                return EmptyArray<String>.Value;
+#else
+                // Keep the old behavior of returning a new empty array
+                // to mitigate any potential compat risk.
                 return new String[0];
+#endif
+            }
+
+            if (count == 1) {
+                return new String[] { this };
             }
 
             int[] sepList = new int[Length];
             int[] lengthList = new int[Length];                        
             int numReplaces = MakeSeparatorList(separator, ref sepList, ref lengthList);
 
-            //Handle the special case of no replaces and special count.
-            if (0 == numReplaces || count == 1) {
-                String[] stringArray = new String[1];
-                stringArray[0] = this;
-                return stringArray;
+            // Handle the special case of no replaces.
+            if (0 == numReplaces) {
+                return new String[] { this };
             }
             
             if (omitEmptyEntries) {
