@@ -112,6 +112,7 @@ public class Comparer_CaseInsensitive
 
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void ExecuteComparer_CaseInsensitive()
     {
         bool bResult = false;
