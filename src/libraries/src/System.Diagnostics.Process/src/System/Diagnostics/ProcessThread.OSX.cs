@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Diagnostics
 {
     public partial class ProcessThread
@@ -14,13 +16,22 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                int nice = 0;
+                int result = Interop.libc.getpriority(Interop.libc.PriorityWhich.PRIO_DARWIN_THREAD, 0, out nice);
+                if (result <= 0)
+                {
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                }
+
+                return Interop.libc.GetThreadPriorityFromNiceValue(nice);
             }
             set
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                int result = Interop.libc.setpriority(Interop.libc.PriorityWhich.PRIO_DARWIN_THREAD, 0, Interop.libc.GetNiceValueFromThreadPriority(value));
+                if (result < 0)
+                {
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                }
             }
         }
 
@@ -32,8 +43,11 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById((ulong)_threadInfo._threadId);
+                if (info.HasValue)
+                    return new TimeSpan((long)info.Value.pth_system_time);
+                else
+                    throw new System.ComponentModel.Win32Exception();
             }
         }
 
@@ -42,8 +56,7 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -56,8 +69,11 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById((ulong)_threadInfo._threadId);
+                if (info.HasValue)
+                    return new TimeSpan((long)(info.Value.pth_user_time + info.Value.pth_system_time));
+                else
+                    throw new System.ComponentModel.Win32Exception();
             }
         }
 
@@ -69,8 +85,11 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libproc.proc_threadinfo? info = Interop.libproc.GetThreadInfoById((ulong)_threadInfo._threadId);
+                if (info.HasValue)
+                    return new TimeSpan((long)info.Value.pth_user_time);
+                else
+                    throw new System.ComponentModel.Win32Exception();
             }
         }
 
