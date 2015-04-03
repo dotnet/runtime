@@ -309,8 +309,6 @@ namespace System.Diagnostics
 
         private static ModuleInfo[] GetModuleInfos(int processId, bool firstModuleOnly)
         {
-            Contract.Ensures(Contract.Result<ModuleInfo[]>().Length >= 1);
-
             // preserving Everett behavior.    
             if (processId == SystemProcessID || processId == IdleProcessID)
             {
