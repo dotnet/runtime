@@ -1010,7 +1010,7 @@ static gboolean use_managed_allocator = TRUE;
 
 #else
 
-#if defined(__APPLE__) || defined (HOST_WIN32)
+#if defined(TARGET_OSX) || defined(TARGET_WIN32)
 #define EMIT_TLS_ACCESS_NEXT_ADDR(mb)	do {	\
 	mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX);	\
 	mono_mb_emit_byte ((mb), CEE_MONO_TLS);		\
@@ -2750,7 +2750,7 @@ sgen_client_init (void)
 
 #ifndef HAVE_KW_THREAD
 	mono_native_tls_alloc (&thread_info_key, NULL);
-#if defined(__APPLE__) || defined (HOST_WIN32)
+#if defined(TARGET_OSX) || defined(TARGET_WIN32)
 	/* 
 	 * CEE_MONO_TLS requires the tls offset, not the key, so the code below only works on darwin,
 	 * where the two are the same.
