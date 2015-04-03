@@ -21,7 +21,7 @@ namespace System.Globalization
 
             if (value.Length == 0)
             {
-                return 0;
+                return startIndex;
             }
 
             if (ignoreCase)
