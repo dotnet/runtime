@@ -1724,9 +1724,6 @@ major_start_nursery_collection (void)
 #endif
 
 	old_num_major_sections = num_major_sections;
-
-	if (sweep_in_progress ())
-		g_print ("sweeping during nursery collection\n");
 }
 
 static void
