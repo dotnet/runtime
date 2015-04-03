@@ -45,19 +45,21 @@ public class CreateViewStream : MMFTestBase
             String fileContents = String.Empty;
 
             // Verify default values
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname101" + s_uniquifier, 100))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 100))
             {
-                VerifyCreateViewStream("Loc101", mmf, defaultCapacity, defaultAccess, fileContents);
+                VerifyCreateViewStream("Loc101", mmf, 
+                    Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows ? defaultCapacity : 100, // Windows rounds up to page size, but that seems like a bug
+                    defaultAccess, fileContents);
             }
 
             // default length is full MMF
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname102" + s_uniquifier, defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, defaultCapacity * 2))
             {
                 VerifyCreateViewStream("Loc102", mmf, defaultCapacity * 2, defaultAccess, fileContents);
             }
 
             // if MMF is read-only, default access throws
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname103" + s_uniquifier, 100, MemoryMappedFileAccess.Read))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 100, MemoryMappedFileAccess.Read))
             {
                 VerifyCreateViewStreamException<UnauthorizedAccessException>("Loc103", mmf);
             }
@@ -67,7 +69,7 @@ public class CreateViewStream : MMFTestBase
             ////////////////////////////////////////////////////////////////////////
 
             // capacity
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname200" + s_uniquifier, defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewStream("Loc201", mmf, 0, 0, defaultCapacity * 2, defaultAccess, fileContents);
@@ -89,7 +91,7 @@ public class CreateViewStream : MMFTestBase
             }
 
             // size
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname410", defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewStream("Loc211", mmf, 1000, 0, defaultCapacity * 2 - 1000, defaultAccess, fileContents);
@@ -132,7 +134,7 @@ public class CreateViewStream : MMFTestBase
 
             // [] offset
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname400" + s_uniquifier, defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewStream("Loc401", mmf, 0, 0, defaultAccess, defaultCapacity * 2, defaultAccess, fileContents);
@@ -155,7 +157,7 @@ public class CreateViewStream : MMFTestBase
 
             // size
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname410" + s_uniquifier, defaultCapacity * 2))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, defaultCapacity * 2))
             {
                 // 0
                 VerifyCreateViewStream("Loc411", mmf, 1000, 0, defaultAccess, defaultCapacity * 2 - 1000, defaultAccess, fileContents);
@@ -194,10 +196,16 @@ public class CreateViewStream : MMFTestBase
 
             // [] access
 
+            long specifiedCapacity = 1000;
+            long expectedCapacity =
+                Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows ?
+                    defaultCapacity : // on Windows it uninentionally rounds up to the page size
+                    specifiedCapacity;
+
             MemoryMappedFileAccess[] accessList;
 
             // existing file is ReadWriteExecute
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname431" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWriteExecute))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, specifiedCapacity, MemoryMappedFileAccess.ReadWriteExecute))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -209,12 +217,12 @@ public class CreateViewStream : MMFTestBase
                 };
                 foreach (MemoryMappedFileAccess access in accessList)
                 {
-                    VerifyCreateViewStream("Loc431_" + access, mmf, 0, 0, access, defaultCapacity, access, fileContents);
+                    VerifyCreateViewStream("Loc431_" + access, mmf, 0, 0, access, expectedCapacity, access, fileContents);
                 }
             }
 
             // existing file is ReadExecute
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname432" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadExecute))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, specifiedCapacity, MemoryMappedFileAccess.ReadExecute))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -223,7 +231,7 @@ public class CreateViewStream : MMFTestBase
                 };
                 foreach (MemoryMappedFileAccess access in accessList)
                 {
-                    VerifyCreateViewStream("Loc432_" + access, mmf, 0, 0, access, defaultCapacity, access, fileContents);
+                    VerifyCreateViewStream("Loc432_" + access, mmf, 0, 0, access, expectedCapacity, access, fileContents);
                 }
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Write,
@@ -237,7 +245,7 @@ public class CreateViewStream : MMFTestBase
             }
 
             // existing file is CopyOnWrite
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname433" + s_uniquifier, 1000, MemoryMappedFileAccess.CopyOnWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, specifiedCapacity, MemoryMappedFileAccess.CopyOnWrite))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -245,7 +253,7 @@ public class CreateViewStream : MMFTestBase
                 };
                 foreach (MemoryMappedFileAccess access in accessList)
                 {
-                    VerifyCreateViewStream("Loc433_" + access, mmf, 0, 0, access, defaultCapacity, access, fileContents);
+                    VerifyCreateViewStream("Loc433_" + access, mmf, 0, 0, access, expectedCapacity, access, fileContents);
                 }
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Write,
@@ -260,7 +268,7 @@ public class CreateViewStream : MMFTestBase
             }
 
             // existing file is ReadWrite
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname434" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, specifiedCapacity, MemoryMappedFileAccess.ReadWrite))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -270,7 +278,7 @@ public class CreateViewStream : MMFTestBase
                 };
                 foreach (MemoryMappedFileAccess access in accessList)
                 {
-                    VerifyCreateViewStream("Loc434_" + access, mmf, 0, 0, access, defaultCapacity, access, fileContents);
+                    VerifyCreateViewStream("Loc434_" + access, mmf, 0, 0, access, expectedCapacity, access, fileContents);
                 }
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.ReadExecute,
@@ -283,7 +291,7 @@ public class CreateViewStream : MMFTestBase
             }
 
             // existing file is Read
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname435" + s_uniquifier, 1000, MemoryMappedFileAccess.Read))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, specifiedCapacity, MemoryMappedFileAccess.Read))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Read,
@@ -291,7 +299,7 @@ public class CreateViewStream : MMFTestBase
                 };
                 foreach (MemoryMappedFileAccess access in accessList)
                 {
-                    VerifyCreateViewStream("Loc435_" + access, mmf, 0, 0, access, defaultCapacity, access, fileContents);
+                    VerifyCreateViewStream("Loc435_" + access, mmf, 0, 0, access, expectedCapacity, access, fileContents);
                 }
                 accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.Write,
@@ -306,7 +314,7 @@ public class CreateViewStream : MMFTestBase
             }
 
             // invalid enum value
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("CVS_mapname436" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, specifiedCapacity, MemoryMappedFileAccess.ReadWrite))
             {
                 accessList = new MemoryMappedFileAccess[] {
                     (MemoryMappedFileAccess)(-1),
@@ -375,7 +383,7 @@ public class CreateViewStream : MMFTestBase
         iCountTestcases++;
         try
         {
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameForLargeCapacity, FileMode.Open, "RunTestLargeCapacity" + s_uniquifier, capacity))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameForLargeCapacity, FileMode.Open, null, capacity))
             {
                 try
                 {

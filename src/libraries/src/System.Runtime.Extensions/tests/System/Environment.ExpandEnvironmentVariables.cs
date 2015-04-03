@@ -76,7 +76,7 @@ public class ExpandEnvironmentVariables
 
             if (i < 3)
             {
-                Assert.Equal(true, SetEnvironmentVariable(keys[i], "value" + (i + 1)));
+                Environment.SetEnvironmentVariable(keys[i], "value" + (i + 1));
             }
         }
 
@@ -139,7 +139,4 @@ public class ExpandEnvironmentVariables
         Assert.Equal(expectedExpansion, Environment.ExpandEnvironmentVariables(toExpand));
         Assert.Equal("qq" + expectedExpansion + "rr", "qq" + Environment.ExpandEnvironmentVariables(toExpand) + "rr");
     }
-
-    [DllImport("api-ms-win-core-processenvironment-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern bool SetEnvironmentVariable(string lpName, string lpValue);
 }

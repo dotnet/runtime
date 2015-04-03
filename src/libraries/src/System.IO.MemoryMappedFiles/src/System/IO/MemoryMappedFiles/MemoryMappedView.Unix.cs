@@ -15,13 +15,27 @@ namespace System.IO.MemoryMappedFiles
             SafeMemoryMappedFileHandle memMappedFileHandle, MemoryMappedFileAccess access, 
             long requestedOffset, long requestedSize)
         {
-            // If the requested size is either the default or if it's larger than the capacity
-            // of the mapped file, reset it to be the capacity set when creating the mapped file.
-            if (requestedSize == MemoryMappedFile.DefaultSize || requestedSize > memMappedFileHandle._capacity)
+            if (requestedOffset > memMappedFileHandle._capacity)
             {
-                requestedSize = memMappedFileHandle._capacity;
+                throw new ArgumentOutOfRangeException("offset");
             }
-            Debug.Assert(requestedSize > 0);
+            if (requestedSize > MaxProcessAddressSpace)
+            {
+                throw new IOException(SR.ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed);
+            }
+            if (requestedOffset + requestedSize > memMappedFileHandle._capacity)
+            {
+                throw new UnauthorizedAccessException();
+            }
+            if (memMappedFileHandle.IsClosed)
+            {
+                throw new ObjectDisposedException(typeof(MemoryMappedFile).Name);
+            }
+
+            if (requestedSize == MemoryMappedFile.DefaultSize)
+            {
+                requestedSize = memMappedFileHandle._capacity - requestedOffset;
+            }
 
             // mmap can only create views that start at a multiple of the page size. As on Windows,
             // we hide this restriction form the user by creating larger views than the user requested and hiding the parts
@@ -29,9 +43,14 @@ namespace System.IO.MemoryMappedFiles
             // requested view. (mmap may round up the actual length such that it is also page-aligned; we hide that by using
             // the right size and not extending the size to be page-aligned.)
             ulong nativeSize, extraMemNeeded, nativeOffset;
+            int pageSize = Interop.libc.sysconf(Interop.libc.SysConfNames._SC_PAGESIZE);
             ValidateSizeAndOffset(
-                requestedSize, requestedOffset, Interop.libc.sysconf(Interop.libc.SysConfNames._SC_PAGESIZE), 
+                requestedSize, requestedOffset, pageSize, 
                 out nativeSize, out extraMemNeeded, out nativeOffset);
+            if (nativeSize == 0)
+            {
+                nativeSize = (ulong)pageSize;
+            }
 
             bool gotRefOnHandle = false;
             try
@@ -62,19 +81,19 @@ namespace System.IO.MemoryMappedFiles
                 // Nothing to do for options.DelayAllocatePages, since we're only creating the map
                 // with mmap when creating the view.
 
-                // Intersect the permissions from the creation of the MMF and the MMV.
-                Interop.libc.MemoryMappedProtections prot = GetProtections(memMappedFileHandle._access);
-                prot &= GetProtections(access);
-                if (prot == 0)
+                // Verify that the requested view permissions don't exceed the map's permissions
+                Interop.libc.MemoryMappedProtections viewProtForVerification = GetProtections(access, forVerification: true);
+                Interop.libc.MemoryMappedProtections mapProtForVerification = GetProtections(memMappedFileHandle._access, forVerification: true);
+                if ((viewProtForVerification & mapProtForVerification) != viewProtForVerification)
                 {
-                    throw new ArgumentOutOfRangeException("access");
+                    throw new UnauthorizedAccessException(viewProtForVerification + " <> " + mapProtForVerification);
                 }
 
                 // Create the map
                 IntPtr addr = Interop.libc.mmap(
                     IntPtr.Zero,         // don't specify an address; let the system choose one
                     (IntPtr)nativeSize,  // specify the rounded-size we computed so as to page align; size + extraMemNeeded
-                    prot,
+                    GetProtections(access, forVerification: false), // viewProtections is strictly less than mapProtections, so use viewProtections
                     flags,
                     fd,                  // mmap adds a ref count to the fd, so there's no need to dup it.
                     (long)nativeOffset); // specify the rounded-offset we computed so as to page align; offset - extraMemNeeded
@@ -137,8 +156,15 @@ namespace System.IO.MemoryMappedFiles
         // ---- PAL layer ends here ----
         // -----------------------------
 
+        /// <summary>
+        /// The Windows implementation limits maps to the size of the logical address space.
+        /// We use the same value here.
+        /// </summary>
+        private const long MaxProcessAddressSpace = 8192L * 1000 * 1000 * 1000;
+
         /// <summary>Maps a MemoryMappedFileAccess to the associated MemoryMappedProtections.</summary>
-        private static Interop.libc.MemoryMappedProtections GetProtections(MemoryMappedFileAccess access)
+        private static Interop.libc.MemoryMappedProtections GetProtections(
+            MemoryMappedFileAccess access, bool forVerification)
         {
             switch (access)
             {
@@ -149,7 +175,6 @@ namespace System.IO.MemoryMappedFiles
                 case MemoryMappedFileAccess.Write:
                     return Interop.libc.MemoryMappedProtections.PROT_WRITE;
 
-                case MemoryMappedFileAccess.CopyOnWrite:
                 case MemoryMappedFileAccess.ReadWrite:
                     return
                         Interop.libc.MemoryMappedProtections.PROT_READ |
@@ -165,8 +190,13 @@ namespace System.IO.MemoryMappedFiles
                         Interop.libc.MemoryMappedProtections.PROT_READ |
                         Interop.libc.MemoryMappedProtections.PROT_WRITE |
                         Interop.libc.MemoryMappedProtections.PROT_EXEC;
+
+                case MemoryMappedFileAccess.CopyOnWrite:
+                    return forVerification ?
+                        Interop.libc.MemoryMappedProtections.PROT_READ :
+                        Interop.libc.MemoryMappedProtections.PROT_READ | Interop.libc.MemoryMappedProtections.PROT_WRITE;
             }
         }
-
+        
     }
 }

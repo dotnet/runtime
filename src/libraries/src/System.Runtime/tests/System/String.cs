@@ -266,6 +266,7 @@ public static unsafe class StringTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void TestCompare()
     {
         String.Compare("A", "B");
@@ -565,123 +566,67 @@ public static unsafe class StringTests
     [Fact]
     public static void TestIndexOf()
     {
-        int i;
-        i = "Hello".IndexOf('l');
-        Assert.True(i == 2);
-        i = "Hello".IndexOf('x');
-        Assert.True(i == -1);
+        Assert.Equal(2, "Hello".IndexOf('l'));
+        Assert.Equal(-1, "Hello".IndexOf('x'));
 
-        i = "Hello".IndexOf('l', 1);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf('l', 3);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf('l', 4);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf('x', 1);
-        Assert.True(i == -1);
+        Assert.Equal(2, "Hello".IndexOf('l', 1));
+        Assert.Equal(3, "Hello".IndexOf('l', 3));
+        Assert.Equal(-1, "Hello".IndexOf('l', 4));
+        Assert.Equal(-1, "Hello".IndexOf('x', 1));
 
-        i = "Hello".IndexOf('l', 1, 4);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf('l', 3, 2);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf('l', 3, 0);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf('l', 0, 2);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf('l', 0, 3);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf('l', 4, 1);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf('x', 1, 4);
-        Assert.True(i == -1);
+        Assert.Equal(2, "Hello".IndexOf('l', 1, 4));
+        Assert.Equal(3, "Hello".IndexOf('l', 3, 2));
+        Assert.Equal(-1, "Hello".IndexOf('l', 3, 0));
+        Assert.Equal(-1, "Hello".IndexOf('l', 0, 2));
+        Assert.Equal(2, "Hello".IndexOf('l', 0, 3));
+        Assert.Equal(-1, "Hello".IndexOf('l', 4, 1));
+        Assert.Equal(-1, "Hello".IndexOf('x', 1, 4));
 
-        i = "Hello".IndexOf("llo");
-        Assert.True(i == 2);
+        Assert.Equal(2, "Hello".IndexOf("llo"));
+        Assert.Equal(-1, "Hello".IndexOf("LLO"));
+        Assert.Equal(2, "Hello".IndexOf("LLO", StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(-1, "Hello".IndexOf("NoWay", StringComparison.CurrentCultureIgnoreCase));
 
-        i = "Hello".IndexOf("LLO");
-        Assert.True(i == -1);
+        Assert.Equal(2, "Hello".IndexOf("l", 1));
+        Assert.Equal(3, "Hello".IndexOf("l", 3));
+        Assert.Equal(-1, "Hello".IndexOf("l", 4));
+        Assert.Equal(-1, "Hello".IndexOf("x", 1));
 
-        i = "Hello".IndexOf("LLO", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 2);
+        Assert.Equal(2, "Hello".IndexOf("l", 1, 4));
+        Assert.Equal(3, "Hello".IndexOf("l", 3, 2));
+        Assert.Equal(-1, "Hello".IndexOf("l", 3, 0));
+        Assert.Equal(-1, "Hello".IndexOf("l", 0, 2));
+        Assert.Equal(2, "Hello".IndexOf("l", 0, 3));
+        Assert.Equal(-1, "Hello".IndexOf("l", 4, 1));
+        Assert.Equal(-1, "Hello".IndexOf("x", 1, 4));
 
-        i = "Hello".IndexOf("NoWay", StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
+        Assert.Equal(2, "Hello".IndexOf("l", 1, StringComparison.CurrentCulture));
+        Assert.Equal(3, "Hello".IndexOf("l", 3, StringComparison.CurrentCulture));
+        Assert.Equal(-1, "Hello".IndexOf("l", 4, StringComparison.CurrentCulture));
+        Assert.Equal(-1, "Hello".IndexOf("L", 1, StringComparison.CurrentCulture));
 
-        i = "Hello".IndexOf("l", 1);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 3);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf("l", 4);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("x", 1);
-        Assert.True(i == -1);
+        Assert.Equal(2, "Hello".IndexOf("l", 1, 4, StringComparison.CurrentCulture));
+        Assert.Equal(3, "Hello".IndexOf("l", 3, 2, StringComparison.CurrentCulture));
+        Assert.Equal(-1, "Hello".IndexOf("l", 3, 0, StringComparison.CurrentCulture));
+        Assert.Equal(-1, "Hello".IndexOf("l", 0, 2, StringComparison.CurrentCulture));
+        Assert.Equal(2, "Hello".IndexOf("l", 0, 3, StringComparison.CurrentCulture));
+        Assert.Equal(-1, "Hello".IndexOf("l", 4, 1, StringComparison.CurrentCulture));
+        Assert.Equal(-1, "Hello".IndexOf("L", 1, 4, StringComparison.CurrentCulture));
 
-        i = "Hello".IndexOf("l", 1, 4);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 3, 2);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf("l", 3, 0);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("l", 0, 2);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("l", 0, 3);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 4, 1);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("x", 1, 4);
-        Assert.True(i == -1);
+        Assert.Equal(2, "Hello".IndexOf("l", 1, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(3, "Hello".IndexOf("l", 3, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(-1, "Hello".IndexOf("l", 4, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(2, "Hello".IndexOf("L", 1, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(-1, "Hello".IndexOf("X", 1, StringComparison.CurrentCultureIgnoreCase));
 
-        i = "Hello".IndexOf("l", 1, StringComparison.CurrentCulture);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 3, StringComparison.CurrentCulture);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf("l", 4, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("L", 1, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
-
-        i = "Hello".IndexOf("l", 1, 4, StringComparison.CurrentCulture);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 3, 2, StringComparison.CurrentCulture);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf("l", 3, 0, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("l", 0, 2, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("l", 0, 3, StringComparison.CurrentCulture);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 4, 1, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("L", 1, 4, StringComparison.CurrentCulture);
-        Assert.True(i == -1);
-
-        i = "Hello".IndexOf("l", 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf("l", 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("L", 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("X", 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
-
-        i = "Hello".IndexOf("l", 1, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 3, 2, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 3);
-        i = "Hello".IndexOf("l", 3, 0, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("l", 0, 2, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("l", 0, 3, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 2);
-        i = "Hello".IndexOf("l", 4, 1, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("X", 1, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == -1);
-        i = "Hello".IndexOf("", 1, 4, StringComparison.CurrentCultureIgnoreCase);
-        Assert.True(i == 1);
+        Assert.Equal(2, "Hello".IndexOf("l", 1, 4, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(3, "Hello".IndexOf("l", 3, 2, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(-1, "Hello".IndexOf("l", 3, 0, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(-1, "Hello".IndexOf("l", 0, 2, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(2, "Hello".IndexOf("l", 0, 3, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(-1, "Hello".IndexOf("l", 4, 1, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(-1, "Hello".IndexOf("X", 1, 4, StringComparison.CurrentCultureIgnoreCase));
+        Assert.Equal(1, "Hello".IndexOf("", 1, 4, StringComparison.CurrentCultureIgnoreCase));
     }
 
     [Fact]

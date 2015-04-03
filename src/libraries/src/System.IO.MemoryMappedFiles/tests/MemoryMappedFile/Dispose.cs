@@ -40,7 +40,8 @@ public class MMF_Dispose
             // Dispose()
             ////////////////////////////////////////////////////////////////////////
 
-            MemoryMappedFile mmf = MemoryMappedFile.CreateNew("Dispose_mapname101" + s_uniquifier, 100);
+            string tempPath = Path.GetTempFileName();
+            MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(tempPath, FileMode.Open, null, 100);
             MemoryMappedViewStream viewStream = mmf.CreateViewStream();
             MemoryMappedViewAccessor viewAccessor = mmf.CreateViewAccessor();
             mmf.Dispose();
@@ -112,6 +113,10 @@ public class MMF_Dispose
                 _iCountErrors++;
                 Console.WriteLine("ERROR, Loc010c: Unexpected exception, {0}", ex);
             }
+
+            viewStream.Dispose();
+            viewAccessor.Dispose();
+            File.Delete(tempPath);
 
             /// END TEST CASES
 

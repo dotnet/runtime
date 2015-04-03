@@ -9,6 +9,7 @@
     <RootNamespace>System.Diagnostics.Process.Tests</RootNamespace>
     <AssemblyName>System.Diagnostics.Process.Tests</AssemblyName>
     <NuGetPackageImportStamp>b62eec4b</NuGetPackageImportStamp>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -21,6 +22,7 @@
     <Compile Include="Process_EncodingTest.cs" />
     <Compile Include="Process_StreamTests.cs" />
     <Compile Include="Process_UseShellExecute.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -53,9 +53,12 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc114", "\t\t \n\u00A0", 4096);
 
             // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map115" + s_uniquifier, 1000))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyCreateNewException<IOException>("Loc115", "map115" + s_uniquifier, 1000);
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map115" + s_uniquifier, 1000))
+                {
+                    VerifyCreateNewException<IOException>("Loc115", "map115" + s_uniquifier, 1000);
+                }
             }
 
             // MMF with this mapname existed, but was closed
@@ -139,9 +142,12 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc414", "\t\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map415" + s_uniquifier, 4096))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyCreateNewException<IOException>("Loc415", "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.Read, MemoryMappedFileOptions.None, HandleInheritability.None);
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map415" + s_uniquifier, 4096))
+                {
+                    VerifyCreateNewException<IOException>("Loc415", "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.Read, MemoryMappedFileOptions.None, HandleInheritability.None);
+                }
             }
 
             // MMF with this mapname existed, but was closed
@@ -238,10 +244,14 @@ public class CreateNew : MMFTestBase
     /// START HELPER FUNCTIONS
     public void VerifyCreateNew(String strLoc, String mapName, long capacity)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
-            ulong initAvailPageFile = GetAvailPageFile();
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(mapName, capacity))
             {
                 VerifyAccess(strLoc, mmf, MemoryMappedFileAccess.ReadWrite, capacity);
@@ -257,6 +267,11 @@ public class CreateNew : MMFTestBase
 
     public void VerifyCreateNewException<EXCTYPE>(String strLoc, String mapName, long capacity) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -279,10 +294,14 @@ public class CreateNew : MMFTestBase
 
     public void VerifyCreateNew(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
-            ulong initAvailPageFile = GetAvailPageFile();
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(mapName, capacity, access))
             {
                 VerifyAccess(strLoc, mmf, access, capacity);
@@ -298,6 +317,11 @@ public class CreateNew : MMFTestBase
 
     public void VerifyCreateNewException<EXCTYPE>(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -320,10 +344,14 @@ public class CreateNew : MMFTestBase
 
     public void VerifyCreateNew(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access, MemoryMappedFileOptions options, HandleInheritability inheritability)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
-            ulong initAvailPageFile = GetAvailPageFile();
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(mapName, capacity, access, options, inheritability))
             {
                 VerifyAccess(strLoc, mmf, access, capacity);
@@ -339,6 +367,11 @@ public class CreateNew : MMFTestBase
 
     public void VerifyCreateNewException<EXCTYPE>(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access, MemoryMappedFileOptions options, HandleInheritability inheritability) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {

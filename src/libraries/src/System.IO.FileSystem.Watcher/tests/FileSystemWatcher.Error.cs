@@ -9,6 +9,7 @@ using Xunit;
 public partial class FileSystemWatcher_4000_Tests
 {
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
     public static void FileSystemWatcher_Error_File()
     {
         using (var file = Utility.CreateTestFile())

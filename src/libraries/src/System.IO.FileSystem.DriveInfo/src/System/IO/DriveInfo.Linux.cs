@@ -20,7 +20,7 @@ namespace System.IO
             }
             if (driveName.Length == 0)
             {
-                throw new ArgumentException(SR.Arg_MustBeNonEmptyDriveName);
+                throw new ArgumentException(SR.Arg_MustBeNonEmptyDriveName, "driveName");
             }
             return driveName;
         }
@@ -36,12 +36,7 @@ namespace System.IO
             [SecuritySafeCritical]
             get 
             {
-                if (_fileSystemType == null) 
-                {
-                    // If the DriveInfo was created with the public ctor, we need to
-                    // enumerate all of the known drives to find its associated information.
-                    LazyPopulateFileSystemTypeAndName();
-                }
+                EnsureFileSystemTypeAndName();
                 return _fileSystemType;
             }
         }
@@ -133,26 +128,29 @@ namespace System.IO
         }
 
         /// <summary>Lazily populates _fileSystemType and _fileSystemName if they weren't already filled in.</summary>
-        private void LazyPopulateFileSystemTypeAndName()
+        private void EnsureFileSystemTypeAndName()
         {
-            Debug.Assert(_fileSystemName == null && _fileSystemType == null);
-            foreach (DriveInfo drive in GetDrives()) // fill in the info by enumerating drives and copying over the associated data
+            if (_fileSystemName == null || _fileSystemType == null)
             {
-                if (drive.Name == this.Name)
+                foreach (DriveInfo drive in GetDrives()) // fill in the info by enumerating drives and copying over the associated data
                 {
-                    _fileSystemType = drive._fileSystemType;
-                    _fileSystemName = drive._fileSystemName;
-                    return;
+                    if (drive.Name == this.Name)
+                    {
+                        _fileSystemType = drive._fileSystemType;
+                        _fileSystemName = drive._fileSystemName;
+                        return;
+                    }
                 }
+                throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, Name));
             }
-            _fileSystemType = string.Empty;
-            _fileSystemName = string.Empty;
         }
 
         /// <summary>Loads file system stats for the mounted path.</summary>
         /// <returns>The loaded stats.</returns>
         private Interop.libc.structStatvfs GetStats()
         {
+            EnsureFileSystemTypeAndName();
+
             Interop.libc.structStatvfs stats;
             if (Interop.libc.statvfs(Name, out stats) != 0)
             {
@@ -171,27 +169,7 @@ namespace System.IO
         /// <returns>The decoded string.</returns>
         private static unsafe string DecodeString(byte* str)
         {
-            Debug.Assert(str != null);
-            if (str == null)
-            {
-                return string.Empty;
-            }
-            int length = GetNullTerminatedStringLength(str);
-            return Encoding.UTF8.GetString(str, length); // TODO: determine correct encoding; UTF8 is good enough for now
-        }
-
-        /// <summary>Gets the length of the null-terminated string by searching for its null termination.</summary>
-        /// <param name="str">The string.</param>
-        /// <returns>The string's length, not including the null termination.</returns>
-        private static unsafe int GetNullTerminatedStringLength(byte* str)
-        {
-            int length = 0;
-            while (*str != '\0')
-            {
-                length++;
-                str++;
-            }
-            return length;
+            return str != null ? Marshal.PtrToStringAnsi((IntPtr)str) : null;
         }
 
         /// <summary>Categorizes a file system name into a drive type.</summary>

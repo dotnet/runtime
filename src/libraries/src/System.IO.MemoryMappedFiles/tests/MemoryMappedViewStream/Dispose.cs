@@ -31,7 +31,7 @@ public class MMVS_Dispose
     {
         try
         {
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVS_Dispose0", Int16.MaxValue))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Int16.MaxValue))
             {
                 // Dispose twice
                 MemoryMappedViewStream view1 = mmf.CreateViewStream();

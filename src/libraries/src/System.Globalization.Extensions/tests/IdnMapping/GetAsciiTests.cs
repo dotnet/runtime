@@ -10,6 +10,7 @@ namespace System.Globalization.Extensions.Tests
     public class GetAsciiTests
     {
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void SimpleValidationTests()
         {
             var idn = new IdnMapping();
@@ -24,6 +25,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void SurrogatePairsConsecutive()
         {
             var idn = new IdnMapping();
@@ -32,6 +34,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void SurrogatePairsSeparatedByAscii()
         {
             var idn = new IdnMapping();
@@ -40,6 +43,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void SurrogatePairsSeparatedByNonAscii()
         {
             var idn = new IdnMapping();
@@ -48,6 +52,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void SurrogatePairsSeparatedByAsciiAndNonAscii()
         {
             var idn = new IdnMapping();
@@ -56,6 +61,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void FullyQualifiedDomainNameVsIndividualLabels()
         {
             var idn = new IdnMapping();
@@ -71,6 +77,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void EmbeddedNulls()
         {
             var idn = new IdnMapping();
@@ -102,6 +109,7 @@ namespace System.Globalization.Extensions.Tests
         /// with one.  This will cause an ArgumentException.
         /// </remarks>
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void EmbeddedDomainNameConversion()
         {
             var idn = new IdnMapping();
