@@ -6137,6 +6137,13 @@ emit_trampolines (MonoAotCompile *acfg)
 		mono_arch_get_throw_corlib_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 
+#ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
+		mono_arch_create_sdb_trampoline (TRUE, &info, TRUE);
+		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_arch_create_sdb_trampoline (FALSE, &info, TRUE);
+		emit_trampoline (acfg, acfg->got_offset, info);
+#endif
+
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 		mono_arch_get_gsharedvt_trampoline (&info, TRUE);
 		if (info) {

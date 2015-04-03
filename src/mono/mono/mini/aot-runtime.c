@@ -60,6 +60,7 @@
 #include "mini.h"
 #include "seq-points.h"
 #include "version.h"
+#include "debugger-agent.h"
 
 #ifndef DISABLE_AOT
 
@@ -4508,6 +4509,10 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = mono_create_ftnptr_malloc (target);
 				} else if (!strcmp (ji->data.name, "mono_thread_get_and_clear_pending_exception")) {
 					target = mono_thread_get_and_clear_pending_exception;
+				} else if (!strcmp (ji->data.name, "debugger_agent_single_step_from_context")) {
+					target = debugger_agent_single_step_from_context;
+				} else if (!strcmp (ji->data.name, "debugger_agent_breakpoint_from_context")) {
+					target = debugger_agent_breakpoint_from_context;
 				} else if (strstr (ji->data.name, "generic_trampoline_")) {
 					target = mono_aot_get_trampoline (ji->data.name);
 				} else if (aot_jit_icall_hash && g_hash_table_lookup (aot_jit_icall_hash, ji->data.name)) {
