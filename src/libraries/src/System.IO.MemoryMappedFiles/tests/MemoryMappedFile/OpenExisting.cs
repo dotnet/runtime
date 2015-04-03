@@ -15,6 +15,7 @@ public class OpenExisting : MMFTestBase
     private readonly static string s_fileNameTest = "OpenExisting_test_" + s_uniquifier + ".txt";
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
     public static void OpenExistingTestCases()
     {
         bool bResult = false;

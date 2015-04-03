@@ -222,9 +222,12 @@ public class CreateFromFile : MMFTestBase
             VerifyCreateFromFile("Loc214", s_fileNameTest2, FileMode.Open, "\t \n\u00A0");
 
             // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map215" + s_uniquifier))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyCreateFromFileException<IOException>("Loc215", s_fileNameTest2, FileMode.Open, "map215" + s_uniquifier);
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map215" + s_uniquifier))
+                {
+                    VerifyCreateFromFileException<IOException>("Loc215", s_fileNameTest2, FileMode.Open, "map215" + s_uniquifier);
+                }
             }
 
             // MMF with this mapname existed, but was closed
@@ -322,12 +325,15 @@ public class CreateFromFile : MMFTestBase
                 VerifyCreateFromFile("Loc402", fs, "map402" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
-            // same FS
-            using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "map403a" + s_uniquifier, 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                // same FS
+                using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
                 {
-                    VerifyCreateFromFile("Loc403", fs, "map403" + s_uniquifier, 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                    using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "map403a" + s_uniquifier, 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                    {
+                        VerifyCreateFromFile("Loc403", fs, "map403" + s_uniquifier, 8192, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+                    }
                 }
             }
 
@@ -379,12 +385,15 @@ public class CreateFromFile : MMFTestBase
                 VerifyCreateFromFile("Loc414", fs, "\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
-            // MMF with this mapname already exists
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map415" + s_uniquifier))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                using (FileStream fs2 = new FileStream(s_fileNameTest2, FileMode.Open))
+                // MMF with this mapname already exists
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map415" + s_uniquifier))
                 {
-                    VerifyCreateFromFileException<IOException>("Loc415", fs2, "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                    using (FileStream fs2 = new FileStream(s_fileNameTest2, FileMode.Open))
+                    {
+                        VerifyCreateFromFileException<IOException>("Loc415", fs2, "map415" + s_uniquifier, 4096, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                    }
                 }
             }
 
@@ -607,6 +616,10 @@ public class CreateFromFile : MMFTestBase
 
             /// END TEST CASES
 
+           File.Delete(s_fileNameTest1);
+           File.Delete(s_fileNameTest2);
+           File.Delete(s_fileNameTest3);
+
             if (iCountErrors == 0)
             {
                 return true;
@@ -707,6 +720,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFile(String strLoc, String fileName, FileMode fileMode, String mapName)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -725,6 +743,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFileException<EXCTYPE>(String strLoc, String fileName, FileMode fileMode, String mapName) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -747,6 +770,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFile(String strLoc, String fileName, FileMode fileMode, String mapName, long capacity)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -765,6 +793,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFileException<EXCTYPE>(String strLoc, String fileName, FileMode fileMode, String mapName, long capacity) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -787,6 +820,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFile(String strLoc, String fileName, FileMode fileMode, String mapName, long capacity, MemoryMappedFileAccess access)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -805,6 +843,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFileException<EXCTYPE>(String strLoc, String fileName, FileMode fileMode, String mapName, long capacity, MemoryMappedFileAccess access) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -827,6 +870,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFile(String strLoc, FileStream fileStream, String mapName, long capacity, MemoryMappedFileAccess access, HandleInheritability inheritability, bool leaveOpen)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -846,6 +894,11 @@ public class CreateFromFile : MMFTestBase
 
     public void VerifyCreateFromFileException<EXCTYPE>(String strLoc, FileStream fileStream, String mapName, long capacity, MemoryMappedFileAccess access, HandleInheritability inheritability, bool leaveOpen) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
