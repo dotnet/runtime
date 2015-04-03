@@ -10,8 +10,8 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
+                return new TimeSpan(Convert.ToInt64(info.ri_system_time));
             }
         }
 
@@ -20,8 +20,8 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
+                return new DateTime(Convert.ToInt64(info.ri_proc_start_abstime));
             }
         }
 
@@ -34,8 +34,8 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
+                return new TimeSpan(Convert.ToInt64(info.ri_system_time + info.ri_user_time));
             }
         }
 
@@ -47,8 +47,8 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
+                return new TimeSpan(Convert.ToInt64(info.ri_user_time));
             }
         }
 
@@ -59,13 +59,11 @@ namespace System.Diagnostics
         {
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
             }
             set
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                throw new PlatformNotSupportedException(SR.ProcessorAffinityNotSupported);
             }
         }
 
@@ -75,8 +73,12 @@ namespace System.Diagnostics
         /// </summary>
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
-            // TODO: Implement this
-            throw NotImplemented.ByDesign;
+            // Minimum working set (or resident set, as it is called on *nix) doesn't exist so set to 0
+            minWorkingSet = IntPtr.Zero;
+
+            // Get the max working set size
+            Interop.libc.rlimit info = Interop.libc.getrlimit(Interop.libc.RLIMIT_Resources.RLIMIT_RSS);
+            maxWorkingSet = new IntPtr(Convert.ToInt64(info.rlim_cur));
         }
 
         /// <summary>Sets one or both of the minimum and maximum working set limits.</summary>
@@ -86,8 +88,31 @@ namespace System.Diagnostics
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
-            // TODO: Implement this
-            throw NotImplemented.ByDesign;
+            // There isn't a way to set the minimum working set, so throw an exception here
+            if (newMin.HasValue)
+            {
+                throw new PlatformNotSupportedException(SR.MinimumWorkingSetNotSupported);
+            }
+
+            // The minimum resident set will always be 0, default the resulting max to 0 until we set it (to make the compiler happy)
+            resultingMin = IntPtr.Zero;
+            resultingMax = IntPtr.Zero;
+
+            // The default hard upper limit is absurdly high (over 9000PB) so just change the soft limit...especially since
+            // if you aren't root and move the upper limit down, you need root to move it back up
+            if (newMax.HasValue)
+            {
+                Interop.libc.rlimit limits = new Interop.libc.rlimit() { rlim_cur = (ulong)newMax.Value.ToInt64() };
+                int result = Interop.libc.setrlimit(Interop.libc.RLIMIT_Resources.RLIMIT_RSS, ref limits);
+                if (result < 0)
+                {
+                    throw new System.Runtime.InteropServices.COMException(SR.RUsageFailure, System.Runtime.InteropServices.Marshal.GetLastWin32Error());
+                }
+
+                // Grab the actual value, in case the OS decides to fudge the numbers
+                limits = Interop.libc.getrlimit(Interop.libc.RLIMIT_Resources.RLIMIT_RSS);
+                resultingMax = new IntPtr((long)limits.rlim_cur);
+            }
         }
 
         // -----------------------------
@@ -97,13 +122,17 @@ namespace System.Diagnostics
         /// <summary>Gets the path to the current executable, or null if it could not be retrieved.</summary>
         private static string GetExePath()
         {
-            // TODO: Implement this
-            throw NotImplemented.ByDesign;
+            return Interop.libproc.proc_pidpath(Interop.libc.getpid());
         }
 
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
+
+        private Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
+        {
+            return Interop.libproc.proc_pid_rusage(Interop.libc.getpid());
+        }
 
     }
 }

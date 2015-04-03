@@ -249,4 +249,28 @@
   <data name="CantSetProcessStartInfo" xml:space="preserve">
     <value>Process is already associated with a real process, so the requested operation cannot be performed.</value>
   </data>
+  <data name="CantGetAllPids" xml:space="preserve">
+    <value>Could not get all running Process IDs</value>
+  </data>
+  <data name="CantFindProcessExecutablePath" xml:space="preserve">
+    <value>The path for process {0} can't be found.</value>
+  </data>
+  <data name="NegativePidNotSupported" xml:space="preserve">
+    <value>Process IDs cannot be negative.</value>
+  </data>
+  <data name="ProcessorAffinityNotSupported" xml:space="preserve">
+    <value>OS X does not support deterministic Process or Thread Processor Affinity.</value>
+  </data>
+  <data name="ResourceLimitQueryFailure" xml:space="preserve">
+    <value>Failed to retrieve process resource limits for the current process. See the error code for OS-specific error information.</value>
+  </data>
+  <data name="RUsageFailure" xml:space="preserve">
+    <value>Failed to set or retrieve rusage information. See the error code for OS-specific error information.</value>
+  </data>
+  <data name="MinimumWorkingSetNotSupported" xml:space="preserve">
+    <value>OS X does not support setting the minimum working set</value>
+  </data>
+  <data name="ProcessInformationUnavailable" xml:space="preserve">
+    <value>The requested Process information is not available; this could be due to the current user context not having the proper permissions to the requested process.</value>
+  </data>
 </root>
