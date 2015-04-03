@@ -20,49 +20,54 @@ public class FileVersionInfoTest
     private const string TestCsFileName = "Assembly1.cs";
     private const string TestNotFoundFileName = "notfound.dll";
 
-    static FileVersionInfoTest()
-    {
-        InitializeExpectedValues();
-    }
-
-    private static MyFVI s_fviNativeConsoleApp;
-    private static MyFVI s_fviNativeLibrary;
-    private static MyFVI s_fviSecondNativeLibrary;
-    private static MyFVI s_fviAssembly1;
-    private static MyFVI s_fviAssembly1_cs;
+    private MyFVI _fviNativeConsoleApp;
+    private MyFVI _fviNativeLibrary;
+    private MyFVI _fviSecondNativeLibrary;
+    private MyFVI _fviAssembly1;
+    private MyFVI _fviAssembly1_cs;
 
     [Fact]
-    public static void FileVersionInfo_Normal()
+    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    public void FileVersionInfo_Normal()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName), s_fviNativeConsoleApp);
+        EnsureExpectedValuesInitialized();
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName), _fviNativeConsoleApp);
     }
 
     [Fact]
-    public static void FileVersionInfo_Chinese()
+    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    public void FileVersionInfo_Chinese()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName), s_fviNativeLibrary);
+        EnsureExpectedValuesInitialized();
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName), _fviNativeLibrary);
     }
 
     [Fact]
-    public static void FileVersionInfo_DifferentFileVersionAndProductVersion()
+    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    public void FileVersionInfo_DifferentFileVersionAndProductVersion()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName), s_fviSecondNativeLibrary);
+        EnsureExpectedValuesInitialized();
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName), _fviSecondNativeLibrary);
     }
 
     [Fact]
-    public static void FileVersionInfo_CustomManagedAssembly()
+    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    public void FileVersionInfo_CustomManagedAssembly()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), s_fviAssembly1);
+        EnsureExpectedValuesInitialized();
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), _fviAssembly1);
     }
 
     [Fact]
-    public static void FileVersionInfo_EmptyFVI()
+    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    public void FileVersionInfo_EmptyFVI()
     {
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), s_fviAssembly1_cs);
+        EnsureExpectedValuesInitialized();
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), _fviAssembly1_cs);
     }
 
     [Fact]
-    public static void FileVersionInfo_FileNotFound()
+    public void FileVersionInfo_FileNotFound()
     {
         VerifyVersionInfoException<FileNotFoundException>(Path.Combine(Directory.GetCurrentDirectory(), TestNotFoundFileName));
     }
@@ -72,7 +77,7 @@ public class FileVersionInfoTest
     // [] DLL has unknown codepage info
     // [] DLL language/codepage is 8-hex-digits (locale > 0x999) (different codepath)
 
-    private static void VerifyVersionInfo(String filePath, MyFVI expected)
+    private void VerifyVersionInfo(String filePath, MyFVI expected)
     {
         FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(filePath);
         TestStringProperty("Comments", fvi.Comments, expected.Comments);
@@ -122,22 +127,22 @@ public class FileVersionInfoTest
                                false);
     }
 
-    private static void VerifyVersionInfoException<T>(String filePath) where T : Exception
+    private void VerifyVersionInfoException<T>(String filePath) where T : Exception
     {
         Assert.Throws<T>(() => FileVersionInfo.GetVersionInfo(filePath));
     }
 
-    private static void TestStringProperty(String propertyName, String actual, String expected)
+    private void TestStringProperty(String propertyName, String actual, String expected)
     {
         TestStringProperty(propertyName, actual, expected, true);
     }
 
-    private static void TestStringProperty(String propertyName, String actual, String expected, bool testOnNonEnglishPlatform)
+    private void TestStringProperty(String propertyName, String actual, String expected, bool testOnNonEnglishPlatform)
     {
         TestStringProperty(propertyName, actual, expected, null, true);
     }
 
-    private static void TestStringProperty(String propertyName, String actual, String expected, String alternate, bool testOnNonEnglishPlatform)
+    private void TestStringProperty(String propertyName, String actual, String expected, String alternate, bool testOnNonEnglishPlatform)
     {
         if (testOnNonEnglishPlatform || CultureInfo.CurrentCulture.Name == "en-US")
         {
@@ -150,166 +155,171 @@ public class FileVersionInfoTest
         }
     }
 
-    private static void TestProperty<T>(String propertyName, T actual, T expected)
+    private void TestProperty<T>(String propertyName, T actual, T expected)
     {
         Assert.Equal(expected, actual);
     }
 
-    private static void InitializeExpectedValues()
+    private void EnsureExpectedValuesInitialized()
     {
+        if (_fviNativeConsoleApp != null)
+        {
+            return;
+        }
+
         // NativeConsoleApp (English)
-        s_fviNativeConsoleApp = new MyFVI();
-        s_fviNativeConsoleApp.Comments = "";
-        s_fviNativeConsoleApp.CompanyName = "This is not a real company name.";
-        s_fviNativeConsoleApp.FileBuildPart = 3;
-        s_fviNativeConsoleApp.FileDescription = "This is the description for the native console application.";
-        s_fviNativeConsoleApp.FileMajorPart = 5;
-        s_fviNativeConsoleApp.FileMinorPart = 4;
-        s_fviNativeConsoleApp.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName);
-        s_fviNativeConsoleApp.FilePrivatePart = 2;
-        s_fviNativeConsoleApp.FileVersion = "5.4.3.2";
-        s_fviNativeConsoleApp.InternalName = NativeConsoleAppFileName;
-        s_fviNativeConsoleApp.IsDebug = false;
-        s_fviNativeConsoleApp.IsPatched = false;
-        s_fviNativeConsoleApp.IsPrivateBuild = false;
-        s_fviNativeConsoleApp.IsPreRelease = true;
-        s_fviNativeConsoleApp.IsSpecialBuild = true;
-        s_fviNativeConsoleApp.Language = GetFileVersionLanguage(0x0409);//English (United States)
-        s_fviNativeConsoleApp.LegalCopyright = "Copyright (C) 2050";
-        s_fviNativeConsoleApp.LegalTrademarks = "";
-        s_fviNativeConsoleApp.OriginalFilename = NativeConsoleAppFileName;
-        s_fviNativeConsoleApp.PrivateBuild = "";
-        s_fviNativeConsoleApp.ProductBuildPart = 3;
-        s_fviNativeConsoleApp.ProductMajorPart = 5;
-        s_fviNativeConsoleApp.ProductMinorPart = 4;
-        s_fviNativeConsoleApp.ProductName = Path.GetFileNameWithoutExtension(NativeConsoleAppFileName);
-        s_fviNativeConsoleApp.ProductPrivatePart = 2;
-        s_fviNativeConsoleApp.ProductVersion = "5.4.3.2";
-        s_fviNativeConsoleApp.SpecialBuild = "";
+        _fviNativeConsoleApp = new MyFVI();
+        _fviNativeConsoleApp.Comments = "";
+        _fviNativeConsoleApp.CompanyName = "This is not a real company name.";
+        _fviNativeConsoleApp.FileBuildPart = 3;
+        _fviNativeConsoleApp.FileDescription = "This is the description for the native console application.";
+        _fviNativeConsoleApp.FileMajorPart = 5;
+        _fviNativeConsoleApp.FileMinorPart = 4;
+        _fviNativeConsoleApp.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName);
+        _fviNativeConsoleApp.FilePrivatePart = 2;
+        _fviNativeConsoleApp.FileVersion = "5.4.3.2";
+        _fviNativeConsoleApp.InternalName = NativeConsoleAppFileName;
+        _fviNativeConsoleApp.IsDebug = false;
+        _fviNativeConsoleApp.IsPatched = false;
+        _fviNativeConsoleApp.IsPrivateBuild = false;
+        _fviNativeConsoleApp.IsPreRelease = true;
+        _fviNativeConsoleApp.IsSpecialBuild = true;
+        _fviNativeConsoleApp.Language = GetFileVersionLanguage(0x0409);//English (United States)
+        _fviNativeConsoleApp.LegalCopyright = "Copyright (C) 2050";
+        _fviNativeConsoleApp.LegalTrademarks = "";
+        _fviNativeConsoleApp.OriginalFilename = NativeConsoleAppFileName;
+        _fviNativeConsoleApp.PrivateBuild = "";
+        _fviNativeConsoleApp.ProductBuildPart = 3;
+        _fviNativeConsoleApp.ProductMajorPart = 5;
+        _fviNativeConsoleApp.ProductMinorPart = 4;
+        _fviNativeConsoleApp.ProductName = Path.GetFileNameWithoutExtension(NativeConsoleAppFileName);
+        _fviNativeConsoleApp.ProductPrivatePart = 2;
+        _fviNativeConsoleApp.ProductVersion = "5.4.3.2";
+        _fviNativeConsoleApp.SpecialBuild = "";
 
         // NativeLibrary.dll (Chinese)
-        s_fviNativeLibrary = new MyFVI();
-        s_fviNativeLibrary.Comments = "";
-        s_fviNativeLibrary.CompanyName = "A non-existent company";
-        s_fviNativeLibrary.FileBuildPart = 3;
-        s_fviNativeLibrary.FileDescription = "Here is the description of the native library.";
-        s_fviNativeLibrary.FileMajorPart = 9;
-        s_fviNativeLibrary.FileMinorPart = 9;
-        s_fviNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName);
-        s_fviNativeLibrary.FilePrivatePart = 3;
-        s_fviNativeLibrary.FileVersion = "9.9.3.3";
-        s_fviNativeLibrary.InternalName = "NativeLi.dll";
-        s_fviNativeLibrary.IsDebug = false;
-        s_fviNativeLibrary.IsPatched = true;
-        s_fviNativeLibrary.IsPrivateBuild = false;
-        s_fviNativeLibrary.IsPreRelease = true;
-        s_fviNativeLibrary.IsSpecialBuild = false;
-        s_fviNativeLibrary.Language = GetFileVersionLanguage(0x0004);//Chinese (Simplified)
-        s_fviNativeLibrary.Language2 = GetFileVersionLanguage(0x0804);//Chinese (Simplified, PRC) - changed, but not yet on all platforms
-        s_fviNativeLibrary.LegalCopyright = "None";
-        s_fviNativeLibrary.LegalTrademarks = "";
-        s_fviNativeLibrary.OriginalFilename = "NativeLi.dll";
-        s_fviNativeLibrary.PrivateBuild = "";
-        s_fviNativeLibrary.ProductBuildPart = 40;
-        s_fviNativeLibrary.ProductMajorPart = 20;
-        s_fviNativeLibrary.ProductMinorPart = 30;
-        s_fviNativeLibrary.ProductName = "I was never given a name.";
-        s_fviNativeLibrary.ProductPrivatePart = 50;
-        s_fviNativeLibrary.ProductVersion = "20.30.40.50";
-        s_fviNativeLibrary.SpecialBuild = "";
+        _fviNativeLibrary = new MyFVI();
+        _fviNativeLibrary.Comments = "";
+        _fviNativeLibrary.CompanyName = "A non-existent company";
+        _fviNativeLibrary.FileBuildPart = 3;
+        _fviNativeLibrary.FileDescription = "Here is the description of the native library.";
+        _fviNativeLibrary.FileMajorPart = 9;
+        _fviNativeLibrary.FileMinorPart = 9;
+        _fviNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName);
+        _fviNativeLibrary.FilePrivatePart = 3;
+        _fviNativeLibrary.FileVersion = "9.9.3.3";
+        _fviNativeLibrary.InternalName = "NativeLi.dll";
+        _fviNativeLibrary.IsDebug = false;
+        _fviNativeLibrary.IsPatched = true;
+        _fviNativeLibrary.IsPrivateBuild = false;
+        _fviNativeLibrary.IsPreRelease = true;
+        _fviNativeLibrary.IsSpecialBuild = false;
+        _fviNativeLibrary.Language = GetFileVersionLanguage(0x0004);//Chinese (Simplified)
+        _fviNativeLibrary.Language2 = GetFileVersionLanguage(0x0804);//Chinese (Simplified, PRC) - changed, but not yet on all platforms
+        _fviNativeLibrary.LegalCopyright = "None";
+        _fviNativeLibrary.LegalTrademarks = "";
+        _fviNativeLibrary.OriginalFilename = "NativeLi.dll";
+        _fviNativeLibrary.PrivateBuild = "";
+        _fviNativeLibrary.ProductBuildPart = 40;
+        _fviNativeLibrary.ProductMajorPart = 20;
+        _fviNativeLibrary.ProductMinorPart = 30;
+        _fviNativeLibrary.ProductName = "I was never given a name.";
+        _fviNativeLibrary.ProductPrivatePart = 50;
+        _fviNativeLibrary.ProductVersion = "20.30.40.50";
+        _fviNativeLibrary.SpecialBuild = "";
 
         // Mtxex.dll
-        s_fviSecondNativeLibrary = new MyFVI();
-        s_fviSecondNativeLibrary.Comments = "";
-        s_fviSecondNativeLibrary.CompanyName = "";
-        s_fviSecondNativeLibrary.FileBuildPart = 0;
-        s_fviSecondNativeLibrary.FileDescription = "";
-        s_fviSecondNativeLibrary.FileMajorPart = 0;
-        s_fviSecondNativeLibrary.FileMinorPart = 65535;
-        s_fviSecondNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName);
-        s_fviSecondNativeLibrary.FilePrivatePart = 2;
-        s_fviSecondNativeLibrary.FileVersion = "0.65535.0.2";
-        s_fviSecondNativeLibrary.InternalName = "SecondNa.dll";
-        s_fviSecondNativeLibrary.IsDebug = false;
-        s_fviSecondNativeLibrary.IsPatched = false;
-        s_fviSecondNativeLibrary.IsPrivateBuild = false;
-        s_fviSecondNativeLibrary.IsPreRelease = false;
-        s_fviSecondNativeLibrary.IsSpecialBuild = false;
-        s_fviSecondNativeLibrary.Language = GetFileVersionLanguage(0x0400);//Process Default Language
-        s_fviSecondNativeLibrary.LegalCopyright = "Copyright (C) 1 - 2014";
-        s_fviSecondNativeLibrary.LegalTrademarks = "";
-        s_fviSecondNativeLibrary.OriginalFilename = "SecondNa.dll";
-        s_fviSecondNativeLibrary.PrivateBuild = "";
-        s_fviSecondNativeLibrary.ProductBuildPart = 0;
-        s_fviSecondNativeLibrary.ProductMajorPart = 1;
-        s_fviSecondNativeLibrary.ProductMinorPart = 0;
-        s_fviSecondNativeLibrary.ProductName = "Unkown_Product_Name";
-        s_fviSecondNativeLibrary.ProductPrivatePart = 1;
-        s_fviSecondNativeLibrary.ProductVersion = "1.0.0.1";
-        s_fviSecondNativeLibrary.SpecialBuild = "";
+        _fviSecondNativeLibrary = new MyFVI();
+        _fviSecondNativeLibrary.Comments = "";
+        _fviSecondNativeLibrary.CompanyName = "";
+        _fviSecondNativeLibrary.FileBuildPart = 0;
+        _fviSecondNativeLibrary.FileDescription = "";
+        _fviSecondNativeLibrary.FileMajorPart = 0;
+        _fviSecondNativeLibrary.FileMinorPart = 65535;
+        _fviSecondNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName);
+        _fviSecondNativeLibrary.FilePrivatePart = 2;
+        _fviSecondNativeLibrary.FileVersion = "0.65535.0.2";
+        _fviSecondNativeLibrary.InternalName = "SecondNa.dll";
+        _fviSecondNativeLibrary.IsDebug = false;
+        _fviSecondNativeLibrary.IsPatched = false;
+        _fviSecondNativeLibrary.IsPrivateBuild = false;
+        _fviSecondNativeLibrary.IsPreRelease = false;
+        _fviSecondNativeLibrary.IsSpecialBuild = false;
+        _fviSecondNativeLibrary.Language = GetFileVersionLanguage(0x0400);//Process Default Language
+        _fviSecondNativeLibrary.LegalCopyright = "Copyright (C) 1 - 2014";
+        _fviSecondNativeLibrary.LegalTrademarks = "";
+        _fviSecondNativeLibrary.OriginalFilename = "SecondNa.dll";
+        _fviSecondNativeLibrary.PrivateBuild = "";
+        _fviSecondNativeLibrary.ProductBuildPart = 0;
+        _fviSecondNativeLibrary.ProductMajorPart = 1;
+        _fviSecondNativeLibrary.ProductMinorPart = 0;
+        _fviSecondNativeLibrary.ProductName = "Unkown_Product_Name";
+        _fviSecondNativeLibrary.ProductPrivatePart = 1;
+        _fviSecondNativeLibrary.ProductVersion = "1.0.0.1";
+        _fviSecondNativeLibrary.SpecialBuild = "";
 
         // Assembly1.dll
-        s_fviAssembly1 = new MyFVI();
-        s_fviAssembly1.Comments = "Have you played a Contoso amusement device today?";
-        s_fviAssembly1.CompanyName = "The name of the company.";
-        s_fviAssembly1.FileBuildPart = 2;
-        s_fviAssembly1.FileDescription = "My File";
-        s_fviAssembly1.FileMajorPart = 4;
-        s_fviAssembly1.FileMinorPart = 3;
-        s_fviAssembly1.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
-        s_fviAssembly1.FilePrivatePart = 1;
-        s_fviAssembly1.FileVersion = "4.3.2.1";
-        s_fviAssembly1.InternalName = TestAssemblyFileName;
-        s_fviAssembly1.IsDebug = false;
-        s_fviAssembly1.IsPatched = false;
-        s_fviAssembly1.IsPrivateBuild = false;
-        s_fviAssembly1.IsPreRelease = false;
-        s_fviAssembly1.IsSpecialBuild = false;
-        s_fviAssembly1.Language = GetFileVersionLanguage(0x0000);//Language Neutral
-        s_fviAssembly1.LegalCopyright = "Copyright, you betcha!";
-        s_fviAssembly1.LegalTrademarks = "TM";
-        s_fviAssembly1.OriginalFilename = TestAssemblyFileName;
-        s_fviAssembly1.PrivateBuild = "";
-        s_fviAssembly1.ProductBuildPart = 2;
-        s_fviAssembly1.ProductMajorPart = 4;
-        s_fviAssembly1.ProductMinorPart = 3;
-        s_fviAssembly1.ProductName = "The greatest product EVER";
-        s_fviAssembly1.ProductPrivatePart = 1;
-        s_fviAssembly1.ProductVersion = "4.3.2.1";
-        s_fviAssembly1.SpecialBuild = "";
+        _fviAssembly1 = new MyFVI();
+        _fviAssembly1.Comments = "Have you played a Contoso amusement device today?";
+        _fviAssembly1.CompanyName = "The name of the company.";
+        _fviAssembly1.FileBuildPart = 2;
+        _fviAssembly1.FileDescription = "My File";
+        _fviAssembly1.FileMajorPart = 4;
+        _fviAssembly1.FileMinorPart = 3;
+        _fviAssembly1.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
+        _fviAssembly1.FilePrivatePart = 1;
+        _fviAssembly1.FileVersion = "4.3.2.1";
+        _fviAssembly1.InternalName = TestAssemblyFileName;
+        _fviAssembly1.IsDebug = false;
+        _fviAssembly1.IsPatched = false;
+        _fviAssembly1.IsPrivateBuild = false;
+        _fviAssembly1.IsPreRelease = false;
+        _fviAssembly1.IsSpecialBuild = false;
+        _fviAssembly1.Language = GetFileVersionLanguage(0x0000);//Language Neutral
+        _fviAssembly1.LegalCopyright = "Copyright, you betcha!";
+        _fviAssembly1.LegalTrademarks = "TM";
+        _fviAssembly1.OriginalFilename = TestAssemblyFileName;
+        _fviAssembly1.PrivateBuild = "";
+        _fviAssembly1.ProductBuildPart = 2;
+        _fviAssembly1.ProductMajorPart = 4;
+        _fviAssembly1.ProductMinorPart = 3;
+        _fviAssembly1.ProductName = "The greatest product EVER";
+        _fviAssembly1.ProductPrivatePart = 1;
+        _fviAssembly1.ProductVersion = "4.3.2.1";
+        _fviAssembly1.SpecialBuild = "";
 
         // Assembly1.cs
-        s_fviAssembly1_cs = new MyFVI();
-        s_fviAssembly1_cs.Comments = null;
-        s_fviAssembly1_cs.CompanyName = null;
-        s_fviAssembly1_cs.FileBuildPart = 0;
-        s_fviAssembly1_cs.FileDescription = null;
-        s_fviAssembly1_cs.FileMajorPart = 0;
-        s_fviAssembly1_cs.FileMinorPart = 0;
-        s_fviAssembly1_cs.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName);
-        s_fviAssembly1_cs.FilePrivatePart = 0;
-        s_fviAssembly1_cs.FileVersion = null;
-        s_fviAssembly1_cs.InternalName = null;
-        s_fviAssembly1_cs.IsDebug = false;
-        s_fviAssembly1_cs.IsPatched = false;
-        s_fviAssembly1_cs.IsPrivateBuild = false;
-        s_fviAssembly1_cs.IsPreRelease = false;
-        s_fviAssembly1_cs.IsSpecialBuild = false;
-        s_fviAssembly1_cs.Language = null;
-        s_fviAssembly1_cs.LegalCopyright = null;
-        s_fviAssembly1_cs.LegalTrademarks = null;
-        s_fviAssembly1_cs.OriginalFilename = null;
-        s_fviAssembly1_cs.PrivateBuild = null;
-        s_fviAssembly1_cs.ProductBuildPart = 0;
-        s_fviAssembly1_cs.ProductMajorPart = 0;
-        s_fviAssembly1_cs.ProductMinorPart = 0;
-        s_fviAssembly1_cs.ProductName = null;
-        s_fviAssembly1_cs.ProductPrivatePart = 0;
-        s_fviAssembly1_cs.ProductVersion = null;
-        s_fviAssembly1_cs.SpecialBuild = null;
+        _fviAssembly1_cs = new MyFVI();
+        _fviAssembly1_cs.Comments = null;
+        _fviAssembly1_cs.CompanyName = null;
+        _fviAssembly1_cs.FileBuildPart = 0;
+        _fviAssembly1_cs.FileDescription = null;
+        _fviAssembly1_cs.FileMajorPart = 0;
+        _fviAssembly1_cs.FileMinorPart = 0;
+        _fviAssembly1_cs.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName);
+        _fviAssembly1_cs.FilePrivatePart = 0;
+        _fviAssembly1_cs.FileVersion = null;
+        _fviAssembly1_cs.InternalName = null;
+        _fviAssembly1_cs.IsDebug = false;
+        _fviAssembly1_cs.IsPatched = false;
+        _fviAssembly1_cs.IsPrivateBuild = false;
+        _fviAssembly1_cs.IsPreRelease = false;
+        _fviAssembly1_cs.IsSpecialBuild = false;
+        _fviAssembly1_cs.Language = null;
+        _fviAssembly1_cs.LegalCopyright = null;
+        _fviAssembly1_cs.LegalTrademarks = null;
+        _fviAssembly1_cs.OriginalFilename = null;
+        _fviAssembly1_cs.PrivateBuild = null;
+        _fviAssembly1_cs.ProductBuildPart = 0;
+        _fviAssembly1_cs.ProductMajorPart = 0;
+        _fviAssembly1_cs.ProductMinorPart = 0;
+        _fviAssembly1_cs.ProductName = null;
+        _fviAssembly1_cs.ProductPrivatePart = 0;
+        _fviAssembly1_cs.ProductVersion = null;
+        _fviAssembly1_cs.SpecialBuild = null;
     }
 
-    internal struct MyFVI
+    internal class MyFVI
     {
         public string Comments;
         public string CompanyName;

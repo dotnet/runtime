@@ -48,6 +48,10 @@
       <Project>{28eb14be-3bc9-4543-aba6-a932424dfbd0}</Project>
       <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
     </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
   </ItemGroup>
   <!-- Automatically added by VS -->
   <ItemGroup>
