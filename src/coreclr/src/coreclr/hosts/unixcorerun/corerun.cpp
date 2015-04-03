@@ -327,7 +327,8 @@ int ExecuteManagedAssembly(
                 "TRUSTED_PLATFORM_ASSEMBLIES",
                 "APP_PATHS",
                 "APP_NI_PATHS",
-                "NATIVE_DLL_SEARCH_DIRECTORIES"
+                "NATIVE_DLL_SEARCH_DIRECTORIES",
+                "AppDomainCompatSwitch"
             };
             const char *propertyValues[] = {
                 // TRUSTED_PLATFORM_ASSEMBLIES
@@ -337,7 +338,9 @@ int ExecuteManagedAssembly(
                 // APP_NI_PATHS
                 appPath.c_str(),
                 // NATIVE_DLL_SEARCH_DIRECTORIES
-                nativeDllSearchDirs.c_str()
+                nativeDllSearchDirs.c_str(),
+                // AppDomainCompatSwitch
+                "UseLatestBehaviorWhenTFMNotSpecified"
             };
 
             HRESULT st = executeAssembly(
