@@ -53,18 +53,21 @@ public class CreateOrOpen : MMFTestBase
             // all whitespace
             VerifyCreate("Loc114", "\t \n\u00A0", 4096);
 
-            // MMF with this mapname already exists (pagefile backed)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_map115a" + s_uniquifier, 1000))
-            {
-                VerifyOpen("Loc115a", "COO_map115a" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite);
-            }
-
-            // MMF with this mapname already exists (filesystem backed)
             String fileText = "Non-empty file for MMF testing.";
-            File.WriteAllText(s_fileNameTest, fileText);
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest, FileMode.Open, "COO_map115b" + s_uniquifier))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyOpen("Loc115b", "COO_map115b" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite);
+                // MMF with this mapname already exists (pagefile backed)
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_map115a" + s_uniquifier, 1000))
+                {
+                    VerifyOpen("Loc115a", "COO_map115a" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite);
+                }
+
+                // MMF with this mapname already exists (filesystem backed)
+                File.WriteAllText(s_fileNameTest, fileText);
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest, FileMode.Open, "COO_map115b" + s_uniquifier))
+                {
+                    VerifyOpen("Loc115b", "COO_map115b" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite);
+                }
             }
 
             // MMF with this mapname existed, but was closed - new MMF
@@ -96,22 +99,25 @@ public class CreateOrOpen : MMFTestBase
             else // 64-bit machine
                 VerifyException<IOException>("Loc215b", "COO_mapname215" + s_uniquifier, Int64.MaxValue); // valid but too large
 
-            // ignored for existing file (smaller)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname216" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyOpen("Loc216", "COO_mapname216" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
-            }
+                // ignored for existing file (smaller)
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname216" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyOpen("Loc216", "COO_mapname216" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
 
-            // ignored for existing file (larger)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname217" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
-            {
-                VerifyOpen("Loc217", "COO_mapname217" + s_uniquifier, 10000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
-            }
+                // ignored for existing file (larger)
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname217" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyOpen("Loc217", "COO_mapname217" + s_uniquifier, 10000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
 
-            // existing file - invalid - still exception
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname218" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
-            {
-                VerifyException<ArgumentOutOfRangeException>("Loc218", "COO_mapname218" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+                // existing file - invalid - still exception
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname218" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyException<ArgumentOutOfRangeException>("Loc218", "COO_mapname218" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+                }
             }
 
             ////////////////////////////////////////////////////////////////////////
@@ -146,10 +152,12 @@ public class CreateOrOpen : MMFTestBase
                 VerifyException<ArgumentOutOfRangeException>("Loc332_" + ((int)access), "COO_mapname332_" + ((int)access) + s_uniquifier, 1000, access);
             }
 
-            // default security - all valid for existing file
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname333" + s_uniquifier, 1000))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                accessList = new MemoryMappedFileAccess[] {
+                // default security - all valid for existing file
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname333" + s_uniquifier, 1000))
+                {
+                    accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.CopyOnWrite,
                     MemoryMappedFileAccess.Read,
                     MemoryMappedFileAccess.Write,
@@ -157,9 +165,10 @@ public class CreateOrOpen : MMFTestBase
                     MemoryMappedFileAccess.ReadExecute,
                     MemoryMappedFileAccess.ReadWriteExecute,
                 };
-                foreach (MemoryMappedFileAccess access in accessList)
-                {
-                    VerifyOpen("Loc333_" + access, "COO_mapname333" + s_uniquifier, 1000, access, access);
+                    foreach (MemoryMappedFileAccess access in accessList)
+                    {
+                        VerifyOpen("Loc333_" + access, "COO_mapname333" + s_uniquifier, 1000, access, access);
+                    }
                 }
             }
 
@@ -182,20 +191,23 @@ public class CreateOrOpen : MMFTestBase
             // all whitespace
             VerifyCreate("Loc414", "\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
-            // MMF with this mapname already exists (pagefile backed)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_map415a" + s_uniquifier, 1000))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                using (MemoryMappedFile mmf2 = MemoryMappedFile.CreateOrOpen("COO_map415a" + s_uniquifier, 1000))
+                // MMF with this mapname already exists (pagefile backed)
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_map415a" + s_uniquifier, 1000))
                 {
-                    VerifyOpen("Loc415a", "COO_map415a" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                    using (MemoryMappedFile mmf2 = MemoryMappedFile.CreateOrOpen("COO_map415a" + s_uniquifier, 1000))
+                    {
+                        VerifyOpen("Loc415a", "COO_map415a" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                    }
                 }
-            }
 
-            // MMF with this mapname already exists (filesystem backed)
-            File.WriteAllText(s_fileNameTest, fileText);
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest, FileMode.Open, "COO_map415b"))
-            {
-                VerifyOpen("Loc415b", "COO_map415b" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                // MMF with this mapname already exists (filesystem backed)
+                File.WriteAllText(s_fileNameTest, fileText);
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest, FileMode.Open, "COO_map415b"))
+                {
+                    VerifyOpen("Loc415b", "COO_map415b" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
             }
 
             // MMF with this mapname existed, but was closed - new MMF
@@ -227,22 +239,25 @@ public class CreateOrOpen : MMFTestBase
             else // 64-bit machine
                 VerifyException<IOException>("Loc425b", "COO_mapname425" + s_uniquifier, Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None); // valid but too large
 
-            // ignored for existing file (smaller)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname426" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyOpen("Loc426", "COO_mapname426" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
-            }
+                // ignored for existing file (smaller)
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname426" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyOpen("Loc426", "COO_mapname426" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
 
-            // ignored for existing file (larger)
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname427" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
-            {
-                VerifyOpen("Loc427", "COO_mapname427" + s_uniquifier, 10000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
-            }
+                // ignored for existing file (larger)
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname427" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyOpen("Loc427", "COO_mapname427" + s_uniquifier, 10000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
 
-            // existing file - invalid - still exception
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname428" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
-            {
-                VerifyException<ArgumentOutOfRangeException>("Loc428", "COO_mapname428" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+                // existing file - invalid - still exception
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname428" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyException<ArgumentOutOfRangeException>("Loc428", "COO_mapname428" + s_uniquifier, 0, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
+                }
             }
 
             // [] access
@@ -273,10 +288,12 @@ public class CreateOrOpen : MMFTestBase
                 VerifyException<ArgumentOutOfRangeException>("Loc432_" + ((int)access), "COO_mapname432_" + ((int)access) + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None);
             }
 
-            // default security - all valid
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname433" + s_uniquifier, 1000))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                accessList = new MemoryMappedFileAccess[] {
+                // default security - all valid
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname433" + s_uniquifier, 1000))
+                {
+                    accessList = new MemoryMappedFileAccess[] {
                     MemoryMappedFileAccess.CopyOnWrite,
                     MemoryMappedFileAccess.Read,
                     MemoryMappedFileAccess.Write,
@@ -284,27 +301,28 @@ public class CreateOrOpen : MMFTestBase
                     MemoryMappedFileAccess.ReadExecute,
                     MemoryMappedFileAccess.ReadWriteExecute,
                 };
-                foreach (MemoryMappedFileAccess access in accessList)
-                {
-                    VerifyOpen("Loc433_" + access, "COO_mapname433" + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None, access);
+                    foreach (MemoryMappedFileAccess access in accessList)
+                    {
+                        VerifyOpen("Loc433_" + access, "COO_mapname433" + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None, access);
+                    }
                 }
-            }
 
-            // default security, original (lesser) viewAccess is respected
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname434" + s_uniquifier, 1000, MemoryMappedFileAccess.Read))
-            {
-                accessList = new MemoryMappedFileAccess[] {
-                    MemoryMappedFileAccess.CopyOnWrite,
-                    MemoryMappedFileAccess.Read,
-                    MemoryMappedFileAccess.ReadWrite,
-                    MemoryMappedFileAccess.ReadExecute,
-                    MemoryMappedFileAccess.ReadWriteExecute,
-                };
-                foreach (MemoryMappedFileAccess access in accessList)
+                // default security, original (lesser) viewAccess is respected
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname434" + s_uniquifier, 1000, MemoryMappedFileAccess.Read))
                 {
-                    VerifyOpen("Loc434_" + access, "COO_mapname434" + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.Read);
+                    accessList = new MemoryMappedFileAccess[] {
+                        MemoryMappedFileAccess.CopyOnWrite,
+                        MemoryMappedFileAccess.Read,
+                        MemoryMappedFileAccess.ReadWrite,
+                        MemoryMappedFileAccess.ReadExecute,
+                        MemoryMappedFileAccess.ReadWriteExecute,
+                    };
+                    foreach (MemoryMappedFileAccess access in accessList)
+                    {
+                        VerifyOpen("Loc434_" + access, "COO_mapname434" + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.Read);
+                    }
+                    VerifyOpen("Loc434_Write", "COO_mapname434" + s_uniquifier, 1000, MemoryMappedFileAccess.Write, MemoryMappedFileOptions.None, HandleInheritability.None, (MemoryMappedFileAccess)(-1));  // for current architecture, rights=Write implies ReadWrite access but not Read, so no expected access here
                 }
-                VerifyOpen("Loc434_Write", "COO_mapname434" + s_uniquifier, 1000, MemoryMappedFileAccess.Write, MemoryMappedFileOptions.None, HandleInheritability.None, (MemoryMappedFileAccess)(-1));  // for current architecture, rights=Write implies ReadWrite access but not Read, so no expected access here
             }
 
             // [] options
@@ -322,10 +340,13 @@ public class CreateOrOpen : MMFTestBase
             // invalid
             VerifyException<ArgumentOutOfRangeException>("Loc443", "COO_mapname443" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, (MemoryMappedFileOptions)(-1), HandleInheritability.None);
 
-            // ignored for existing file
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname444" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyOpen("Loc444", "COO_mapname444" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                // ignored for existing file
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname444" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyOpen("Loc444", "COO_mapname444" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
             }
 
             // [] memoryMappedFileSecurity
@@ -335,10 +356,13 @@ public class CreateOrOpen : MMFTestBase
             // valid non-null
             VerifyCreate("Loc451", "COO_mapname451" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
-            // ignored for existing
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("COO_mapname452" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyOpen("Loc452", "COO_mapname452" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                // ignored for existing
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("COO_mapname452" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
+                {
+                    VerifyOpen("Loc452", "COO_mapname452" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
             }
 
             // [] inheritability
@@ -349,18 +373,21 @@ public class CreateOrOpen : MMFTestBase
             // Inheritable - new file
             VerifyCreate("Loc462", "COO_mapname462" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable);
 
-            // Mix and match: None - existing file w/Inheritable
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname464" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable))
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
             {
-                VerifyOpen("Loc464a", "COO_mapname464" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
-            }
-
-            // Mix and match: Inheritable - existing file w/None
-            using (FileStream fs = new FileStream(s_fileNameTest, FileMode.Open))
-            {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "COO_mapname465" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                // Mix and match: None - existing file w/Inheritable
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname464" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable))
                 {
-                    VerifyOpen("Loc465b", "COO_mapname465" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWrite);
+                    VerifyOpen("Loc464a", "COO_mapname464" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None, MemoryMappedFileAccess.ReadWrite);
+                }
+
+                // Mix and match: Inheritable - existing file w/None
+                using (FileStream fs = new FileStream(s_fileNameTest, FileMode.Open))
+                {
+                    using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, "COO_mapname465" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                    {
+                        VerifyOpen("Loc465b", "COO_mapname465" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable, MemoryMappedFileAccess.ReadWrite);
+                    }
                 }
             }
 
@@ -391,10 +418,14 @@ public class CreateOrOpen : MMFTestBase
     /// START HELPER FUNCTIONS
     public void VerifyCreate(String strLoc, String mapName, long capacity)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
-            ulong initAvailPageFile = GetAvailPageFile();
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen(mapName, capacity))
             {
                 VerifyAccess(strLoc, mmf, MemoryMappedFileAccess.ReadWrite, capacity);
@@ -410,6 +441,11 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyOpen(String strLoc, String mapName, long capacity, MemoryMappedFileAccess expectedAccess)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -428,6 +464,11 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyException<EXCTYPE>(String strLoc, String mapName, long capacity) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -450,10 +491,14 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyCreate(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
-            ulong initAvailPageFile = GetAvailPageFile();
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen(mapName, capacity, access))
             {
                 VerifyAccess(strLoc, mmf, access, capacity);
@@ -469,6 +514,11 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyOpen(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access, MemoryMappedFileAccess expectedAccess)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -488,6 +538,11 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyException<EXCTYPE>(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -510,10 +565,14 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyCreate(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access, MemoryMappedFileOptions options, HandleInheritability inheritability)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
-            ulong initAvailPageFile = GetAvailPageFile();
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen(mapName, capacity, access, options, inheritability))
             {
                 VerifyAccess(strLoc, mmf, access, capacity);
@@ -529,6 +588,11 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyOpen(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access, MemoryMappedFileOptions options, HandleInheritability inheritability, MemoryMappedFileAccess expectedAccess)
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {
@@ -547,6 +611,11 @@ public class CreateOrOpen : MMFTestBase
 
     public void VerifyException<EXCTYPE>(String strLoc, String mapName, long capacity, MemoryMappedFileAccess access, MemoryMappedFileOptions options, HandleInheritability inheritability) where EXCTYPE : Exception
     {
+        if (mapName != null && Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         iCountTestcases++;
         try
         {

@@ -72,6 +72,11 @@ public class MMFTestBase
 
     public void VerifyHandleInheritability(String strLoc, SafeMemoryMappedFileHandle handle, HandleInheritability inheritability)
     {
+        if (Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+        {
+            return;
+        }
+
         uint expected;
         if (inheritability == HandleInheritability.Inheritable)
             expected = HANDLE_FLAG_INHERIT;
@@ -84,36 +89,6 @@ public class MMFTestBase
         bool result = GetHandleInformation(handle.DangerousGetHandle(), out flags);
 
         Eval(expected, (flags & HANDLE_FLAG_INHERIT), "ERROR, {0}: HandleInheritability was wrong.", strLoc);
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal class MEMORYSTATUSEX
-    {
-        internal MEMORYSTATUSEX()
-        {
-            this.dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>();
-        }
-        internal uint dwLength;
-        internal uint dwMemoryLoad;
-        internal ulong ullTotalPhys;
-        internal ulong ullAvailPhys;
-        internal ulong ullTotalPageFile;
-        internal ulong ullAvailPageFile;
-        internal ulong ullTotalVirtual;
-        internal ulong ullAvailVirtual;
-        internal ulong ullAvailExtendedVirtual;
-    }
-
-    [return: MarshalAs(UnmanagedType.Bool)]
-    [DllImport("kernel32.dll", SetLastError = true)]
-    internal static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
-
-    public ulong GetAvailPageFile()
-    {
-        MEMORYSTATUSEX memStatus = new MEMORYSTATUSEX();
-        bool result = GlobalMemoryStatusEx(memStatus);
-        ulong availPageFile = memStatus.ullAvailPageFile;
-        return availPageFile;
     }
 
     public void VerifyAccess(String strLoc, MemoryMappedFile mmf, MemoryMappedFileAccess expectedAccess, long capacity)

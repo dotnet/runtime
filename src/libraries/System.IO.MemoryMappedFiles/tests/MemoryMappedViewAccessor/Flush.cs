@@ -34,7 +34,7 @@ public class MMVA_Flush
     {
         try
         {
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVA_Flush0", Int16.MaxValue))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Int16.MaxValue))
             {
                 using (MemoryMappedViewAccessor view = mmf.CreateViewAccessor())
                 {
