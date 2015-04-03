@@ -208,11 +208,13 @@ static SgenPointerQueue allocated_blocks;
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
 
-#define FOREACH_BLOCK_NO_LOCK(bl) {					\
+#define FOREACH_BLOCK_NO_LOCK_CONDITION(cond,bl) {			\
 	size_t __index;							\
-	SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); \
+	SGEN_ASSERT (0, (cond) && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); \
 	for (__index = 0; __index < allocated_blocks.next_slot; ++__index) { \
 		(bl) = BLOCK_UNTAG (allocated_blocks.data [__index]);
+#define FOREACH_BLOCK_NO_LOCK(bl)					\
+	FOREACH_BLOCK_NO_LOCK_CONDITION(sgen_is_world_stopped (), bl)
 #define FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK(bl,hr) {			\
 	size_t __index;							\
 	SGEN_ASSERT (0, sgen_is_world_stopped () && !sweep_in_progress (), "Can't iterate blocks while the world is running or sweep is in progress."); \
@@ -1997,7 +1999,13 @@ major_get_used_size (void)
 	gint64 size = 0;
 	MSBlockInfo *block;
 
-	FOREACH_BLOCK_NO_LOCK (block) {
+	/*
+	 * We're holding the GC lock, but the sweep thread might be running.  Make sure it's
+	 * finished, then we can iterate over the block array.
+	 */
+	major_finish_sweep_checking ();
+
+	FOREACH_BLOCK_NO_LOCK_CONDITION (TRUE, block) {
 		int count = MS_BLOCK_FREE / block->obj_size;
 		void **iter;
 		size += count * block->obj_size;
