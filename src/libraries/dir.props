@@ -45,6 +45,19 @@
   debug configurations, and to Release for any of the release configurations.
   -->
 
+  <ItemGroup>
+    <AllowableOSs Include="Windows_NT" />
+    <AllowableOSs Include="Linux" />
+    <AllowableOSs Include="OSX" />
+  </ItemGroup>
+  <ItemGroup>
+    <AllowableConfigurations Include="Debug" />
+    <AllowableConfigurations Include="Release" />
+  </ItemGroup>
+  <ItemGroup>
+    <AllowablePlatforms Include="AnyCPU" />
+  </ItemGroup>
+  
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <Platform Condition="'$(Platform)'==''">AnyCPU</Platform>
