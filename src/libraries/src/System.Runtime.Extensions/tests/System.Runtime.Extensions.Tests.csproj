@@ -9,6 +9,7 @@
     <RootNamespace>System.Runtime.Extensions.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Extensions.Tests</AssemblyName>
     <RestorePackages>true</RestorePackages>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -49,6 +50,7 @@
     <Compile Include="System\Math.cs" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\StringComparer.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

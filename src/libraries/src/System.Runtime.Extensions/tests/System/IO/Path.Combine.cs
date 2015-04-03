@@ -51,6 +51,7 @@ public class PathCombineTests
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
     public static void ContainsInvalidCharWithoutRootedAfterArgumentNull()
     {
         //any path contains invalid character without rooted after (AE)
@@ -65,6 +66,7 @@ public class PathCombineTests
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
     public static void ContainsInvalidCharWithRootedAfterArgumentNull()
     {
         //any path contains invalid character with rooted after (AE)
