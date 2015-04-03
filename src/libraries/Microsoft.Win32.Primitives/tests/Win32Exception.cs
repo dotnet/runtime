@@ -79,6 +79,7 @@ namespace Microsoft.Win32.Primitives.Tests
         private const int E_FAIL = unchecked((int)0x80004005);
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public static void InstantiateExceptionWithLongErrorString()
         {
             // This test checks that Win32Exception supports error strings greater than 256 characters.
