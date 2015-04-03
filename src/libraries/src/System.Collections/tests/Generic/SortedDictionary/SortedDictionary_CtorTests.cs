@@ -124,6 +124,7 @@ namespace SortedDictionaryTests
             }
 
             [Fact]
+            [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
             public static void SortedDictionary_IDictionaryIKeyComparerCtorTest()
             {
                 Driver<String, String> driver = new Driver<String, String>();
@@ -159,6 +160,7 @@ namespace SortedDictionaryTests
             }
 
             [Fact]
+            [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
             public static void SortedDictionary_IKeyComparerCtorTest()
             {
                 Driver<String, String> driver1 = new Driver<String, String>();
