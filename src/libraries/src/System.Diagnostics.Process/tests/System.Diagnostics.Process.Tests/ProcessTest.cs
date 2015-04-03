@@ -218,24 +218,30 @@ namespace System.Diagnostics.ProcessTests
         }
 
         [Fact]
-        [ActiveIssue(606)]
         public void Process_MainModule()
         {
             // Get MainModule property from a Process object
-            string moduleName = _process.MainModule.ModuleName;
-            Assert.Equal(CoreRunName, moduleName);
-
-            // Check that the mainModule is present in the modules list.
-            bool foundMainModule = false;
-            foreach (ProcessModule pModule in _process.Modules)
+            ProcessModule mainModule = _process.MainModule;
+            if (mainModule != null)
             {
-                if (String.Equals(moduleName, CoreRunName, StringComparison.OrdinalIgnoreCase))
+                Assert.Equal(CoreRunName, Path.GetFileNameWithoutExtension(mainModule.ModuleName));
+
+                // Check that the mainModule is present in the modules list.
+                bool foundMainModule = false;
+                if (_process.Modules != null)
                 {
-                    foundMainModule = true;
-                    break;
+                    foreach (ProcessModule pModule in _process.Modules)
+                    {
+                        if (String.Equals(Path.GetFileNameWithoutExtension(mainModule.ModuleName), CoreRunName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            foundMainModule = true;
+                            break;
+                        }
+                    }
+
+                    Assert.True(foundMainModule, "Could not found Module " + mainModule.ModuleName);
                 }
             }
-            Assert.True(foundMainModule, "Could not found Module " + moduleName);
         }
 
         [Fact]
