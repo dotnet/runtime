@@ -30,20 +30,20 @@ namespace System.Diagnostics
             Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(pid);
             if (info.HasValue == false)
             {
-                procInfo._basePriority = info.Value.ptinfo.pti_priority;
-                procInfo._handleCount = Interop.libproc.GetFileDescriptorsForPid(pid).Count;
-                procInfo._processId = pid;
-                procInfo._processName = info.Value.pbsd.pbi_comm;
-                procInfo._virtualBytes = (long)info.Value.ptinfo.pti_virtual_size;
-                procInfo._workingSet = (long)info.Value.ptinfo.pti_resident_size;
+                procInfo.BasePriority = info.Value.ptinfo.pti_priority;
+                procInfo.HandleCount = Interop.libproc.GetFileDescriptorsForPid(pid).Count;
+                procInfo.ProcessId = pid;
+                procInfo.ProcessName = info.Value.pbsd.pbi_comm;
+                procInfo.VirtualBytes = (long)info.Value.ptinfo.pti_virtual_size;
+                procInfo.WorkingSet = (long)info.Value.ptinfo.pti_resident_size;
 
                 // These values don't have meaning or don't exist on OSX
-                procInfo._pageFileBytes = -1;
-                procInfo._poolNonpagedBytes = -1;
-                procInfo._poolPagedBytes = -1;
-                procInfo._privateBytes = -1;
-                procInfo._virtualBytesPeak = -1;
-                procInfo._sessionId = -1;
+                procInfo.PageFileBytes = -1;
+                procInfo.PoolNonpagedBytes = -1;
+                procInfo.PoolPagedBytes = -1;
+                procInfo.PrivateBytes = -1;
+                procInfo.VirtualBytesPeak = -1;
+                procInfo.SessionId = -1;
             }
 
             // Create a threadinfo for each thread in the process

@@ -41,25 +41,25 @@ namespace System.Diagnostics
                 Interop.procfs.ParsedStat procFsStat = Interop.procfs.ReadStatFile(pid);
                 pi = new ProcessInfo
                 {
-                    _processId = pid,
-                    _processName = procFsStat.comm,
-                    _basePriority = (int)procFsStat.nice,
-                    _virtualBytes = (long)procFsStat.vsize,
-                    _workingSet = procFsStat.rss,
-                    _sessionId = procFsStat.session,
-                    _handleCount = 0, // not a Unix concept
+                    ProcessId = pid,
+                    ProcessName = procFsStat.comm,
+                    BasePriority = (int)procFsStat.nice,
+                    VirtualBytes = (long)procFsStat.vsize,
+                    WorkingSet = procFsStat.rss,
+                    SessionId = procFsStat.session,
+                    HandleCount = 0, // not a Unix concept
 
                     // We don't currently fill in the following values.
                     // A few of these could probably be filled in from getrusage,
                     // but only for the current process or its children, not for
                     // arbitrary other processes.
-                    _poolPagedBytes = 0,
-                    _poolNonpagedBytes = 0,
-                    _virtualBytesPeak = 0,
-                    _workingSetPeak = 0,
-                    _pageFileBytes = 0,
-                    _pageFileBytesPeak = 0,
-                    _privateBytes = 0,
+                    PoolPagedBytes = 0,
+                    PoolNonpagedBytes = 0,
+                    VirtualBytesPeak = 0,
+                    WorkingSetPeak = 0,
+                    PageFileBytes = 0,
+                    PageFileBytesPeak = 0,
+                    PrivateBytes = 0,
                 };
             }
             catch (FileNotFoundException)
@@ -85,7 +85,7 @@ namespace System.Diagnostics
                         {
                             _processId = pid,
                             _threadId = tid,
-                            _basePriority = pi._basePriority,
+                            _basePriority = pi.BasePriority,
                             _currentPriority = (int)stat.nice,
                             _startAddress = (IntPtr)stat.startstack,
                             _threadState = ProcFsStateToThreadState(stat.state),
