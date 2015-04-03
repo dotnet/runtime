@@ -12,9 +12,10 @@ using System.Text;
 
 namespace System.IO.FileSystem.DriveInfoTests
 {
-    public class DriveInfoTests
+    public class DriveInfoWindowsTests
     {
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestConstructor()
         {
             string[] invalidInput = { ":", "://", @":\", ":/", @":\\", "Az", "1", "a1", @"\\share", @"\\", "c ", string.Empty, " c" };
@@ -40,6 +41,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestGetDrives()
         {
             var validExpectedDrives = GetValidDriveLettersOnMachine();
@@ -56,6 +58,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestDriveFormat()
         {
             var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -81,6 +84,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestDriveType()
         {
             var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
@@ -93,6 +97,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestValidDiskSpaceProperties()
         {
             bool win32Result;
@@ -120,6 +125,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestInvalidDisksSpaceProperties()
         {
             var invalidDrive = new DriveInfo(GetInvalidDriveLettersOnMachine().First().ToString());
@@ -130,6 +136,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact, OuterLoop]
+        [PlatformSpecific(PlatformID.Windows)]
         public void TestVolumeLabel()
         {
             // Get Volume Label - valid drive

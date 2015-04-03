@@ -38,7 +38,7 @@ public class MMVS_SetLength
             // SetLength()
             ////////////////////////////////////////////////////////////////////////
 
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVS_SetLength0", 100))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 100))
             {
                 using (MemoryMappedViewStream viewStream = mmf.CreateViewStream())
                 {

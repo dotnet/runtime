@@ -11,6 +11,7 @@ namespace System.Globalization.Extensions.Tests
     public class NormalizationAll
     {
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void NormalizeTest()
         {
             bool failed = false;

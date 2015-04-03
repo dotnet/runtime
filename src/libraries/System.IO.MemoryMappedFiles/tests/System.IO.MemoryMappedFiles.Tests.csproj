@@ -43,6 +43,7 @@
     <Compile Include="MemoryMappedFile\MMFTestBase.cs" />
     <Compile Include="MemoryMappedFile\OpenExisting.cs" />
     <Compile Include="Common\SystemInfoHelpers.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
@@ -57,6 +58,10 @@
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.IO.MemoryMappedFiles</Name>
     </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj"> 
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project> 
+      <Name>XunitTraitsDiscoverers</Name> 
+    </ProjectReference> 
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

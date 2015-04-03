@@ -34,7 +34,7 @@ public class MMVS_Flush
     {
         try
         {
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVS_Flush0", Int16.MaxValue))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Int16.MaxValue))
             {
                 using (MemoryMappedViewStream view = mmf.CreateViewStream())
                 {

@@ -10,6 +10,7 @@ public class RegexLangElementsCoverageTests
 {
     // This class mainly exists to hit language elements that were missed in other test cases.
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void RegexLangElementsCoverage()
     {
         //////////// Global Variables used for all tests

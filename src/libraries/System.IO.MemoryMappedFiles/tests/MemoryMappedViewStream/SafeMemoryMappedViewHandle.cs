@@ -36,7 +36,7 @@ public class MMVS_get_SafeMemoryMappedViewHandle
         try
         {
             // pagefile backed
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVS_SFMMVH0", 100))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 100))
             {
                 using (MemoryMappedViewStream viewStream = mmf.CreateViewStream())
                 {
@@ -48,7 +48,7 @@ public class MMVS_get_SafeMemoryMappedViewHandle
             // file backed
             String fileText = "Non-empty file for MMF testing.";
             File.WriteAllText("SMMVH_test2.txt", fileText);
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("SMMVH_test2.txt", FileMode.Open, "MMVS_SFMMVH1"))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile("SMMVH_test2.txt", FileMode.Open))
             {
                 using (MemoryMappedViewStream viewStream = mmf.CreateViewStream())
                 {

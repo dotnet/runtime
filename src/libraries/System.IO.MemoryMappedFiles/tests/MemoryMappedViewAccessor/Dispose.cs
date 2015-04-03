@@ -31,7 +31,7 @@ public class MMVA_DisposeTest
     {
         try
         {
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVA_Dispose0", Int16.MaxValue))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Int16.MaxValue))
             {
                 // Dispose twice
                 MemoryMappedViewAccessor view1 = mmf.CreateViewAccessor();

@@ -81,17 +81,21 @@ namespace System.Diagnostics.ProcessTests
         public void Process_BasePriority()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
+            Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
 
-            try
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
             {
-                //SetAndCheckBasePriority(ProcessPriorityClass.RealTime, 24);
-                SetAndCheckBasePriority(ProcessPriorityClass.High, 13);
-                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 4);
-                SetAndCheckBasePriority(ProcessPriorityClass.Normal, 8);
-            }
-            finally
-            {
-                _process.PriorityClass = originalPriority;
+                try
+                {
+                    //SetAndCheckBasePriority(ProcessPriorityClass.RealTime, 24);
+                    SetAndCheckBasePriority(ProcessPriorityClass.High, 13);
+                    SetAndCheckBasePriority(ProcessPriorityClass.Idle, 4);
+                    SetAndCheckBasePriority(ProcessPriorityClass.Normal, 8);
+                }
+                finally
+                {
+                    _process.PriorityClass = originalPriority;
+                }
             }
         }
 
@@ -178,6 +182,7 @@ namespace System.Diagnostics.ProcessTests
 
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public void Process_GetHandle()
         {
             Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
@@ -221,7 +226,16 @@ namespace System.Diagnostics.ProcessTests
         public void Process_MainModule()
         {
             // Get MainModule property from a Process object
-            ProcessModule mainModule = _process.MainModule;
+            ProcessModule mainModule = null;
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            {
+                mainModule = _process.MainModule;
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => _process.MainModule);
+            }
+
             if (mainModule != null)
             {
                 Assert.Equal(CoreRunName, Path.GetFileNameWithoutExtension(mainModule.ModuleName));
@@ -250,41 +264,49 @@ namespace System.Diagnostics.ProcessTests
             IntPtr min, max;
             uint flags;
 
-            int intCurrValue = (Int32)_process.MaxWorkingSet;
+            long curValue = (long)_process.MaxWorkingSet;
+            Assert.True(curValue >= 0);
 
-            try
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
             {
-                _process.MaxWorkingSet = (IntPtr)(intCurrValue + 1024);
-                Interop.GetProcessWorkingSetSizeEx(_process.SafeHandle, out min, out max, out flags);
-                intCurrValue = (int)max;
-                _process.Refresh();
-                Assert.Equal(intCurrValue, (int)_process.MaxWorkingSet);
-            }
-            finally
-            {
-                _process.MaxWorkingSet = (IntPtr)intCurrValue;
+                try
+                {
+                    _process.MaxWorkingSet = (IntPtr)((int)curValue + 1024);
+                    Interop.GetProcessWorkingSetSizeEx(_process.SafeHandle, out min, out max, out flags);
+                    curValue = (int)max;
+                    _process.Refresh();
+                    Assert.Equal(curValue, (int)_process.MaxWorkingSet);
+                }
+                finally
+                {
+                    _process.MaxWorkingSet = (IntPtr)curValue;
+                }
             }
         }
 
         [Fact]
         public void Process_MinWorkingSet()
         {
-            int intCurrValue = (Int32)_process.MinWorkingSet;
-            IntPtr min;
-            IntPtr max;
-            uint flags;
+            long curValue = (long)_process.MinWorkingSet;
+            Assert.True(curValue >= 0);
 
-            try
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
             {
-                _process.MinWorkingSet = (IntPtr)(intCurrValue - 1024);
-                Interop.GetProcessWorkingSetSizeEx(_process.SafeHandle, out min, out max, out flags);
-                intCurrValue = (int)min;
-                _process.Refresh();
-                Assert.Equal(intCurrValue, (int)_process.MinWorkingSet);
-            }
-            finally
-            {
-                _process.MinWorkingSet = (IntPtr)intCurrValue;
+                try
+                {
+                    _process.MinWorkingSet = (IntPtr)((int)curValue - 1024);
+
+                    IntPtr min, max;
+                    uint flags;
+                    Interop.GetProcessWorkingSetSizeEx(_process.SafeHandle, out min, out max, out flags);
+                    curValue = (int)min;
+                    _process.Refresh();
+                    Assert.Equal(curValue, (int)_process.MinWorkingSet);
+                }
+                finally
+                {
+                    _process.MinWorkingSet = (IntPtr)curValue;
+                }
             }
         }
 
@@ -303,62 +325,67 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        public void DoNothing(TimeSpan ignoreValue)
+        private void AssertNonZeroWindowsZeroUnix(long value)
         {
-            // This method does nothing.
+            switch (global::Interop.PlatformDetection.OperatingSystem)
+            {
+                case global::Interop.OperatingSystem.Windows:
+                    Assert.NotEqual(0, value);
+                    break;
+                default:
+                    Assert.Equal(0, value);
+                    break;
+            }
         }
 
         [Fact]
         public void Process_NonpagedSystemMemorySize64()
         {
-            Assert.NotEqual(0L, _process.NonpagedSystemMemorySize64);
+            AssertNonZeroWindowsZeroUnix(_process.NonpagedSystemMemorySize64);
         }
 
         [Fact]
         public void Process_PagedMemorySize64()
         {
-            Assert.NotEqual(0L, _process.PagedMemorySize64);
+            AssertNonZeroWindowsZeroUnix(_process.PagedMemorySize64);
         }
 
         [Fact]
         public void Process_PagedSystemMemorySize64()
         {
-            Assert.NotEqual(0L, _process.PagedSystemMemorySize64);
+            AssertNonZeroWindowsZeroUnix(_process.PagedSystemMemorySize64);
         }
 
         [Fact]
         public void Process_PeakPagedMemorySize64()
         {
-            Assert.NotEqual(0L, _process.PeakPagedMemorySize64);
+            AssertNonZeroWindowsZeroUnix(_process.PeakPagedMemorySize64);
         }
 
         [Fact]
         public void Process_PeakVirtualMemorySize64()
         {
-            Assert.NotEqual(0L, _process.PeakVirtualMemorySize64);
+            AssertNonZeroWindowsZeroUnix(_process.PeakVirtualMemorySize64);
         }
 
         [Fact]
         public void Process_PeakWorkingSet64()
         {
-            Assert.NotEqual(0L, _process.PeakWorkingSet64);
+            AssertNonZeroWindowsZeroUnix(_process.PeakWorkingSet64);
         }
 
         [Fact]
         public void Process_PrivateMemorySize64()
         {
-            Assert.NotEqual(0L, _process.PrivateMemorySize64);
+            AssertNonZeroWindowsZeroUnix(_process.PrivateMemorySize64);
         }
 
         [Fact]
         public void Process_PrivilegedProcessorTime()
         {
-            // There is no good way to test the actual values of these
-            // w/o the user of Performance Counters or a ton of pinvokes, and so for now we simply check
-            // they do not throw exception when called.
-            DoNothing(_process.UserProcessorTime);
-            DoNothing(_process.PrivilegedProcessorTime);
-            DoNothing(_process.TotalProcessorTime);
+            Assert.True(_process.UserProcessorTime.TotalSeconds >= 0);
+            Assert.True(_process.PrivilegedProcessorTime.TotalSeconds >= 0);
+            Assert.True(_process.TotalProcessorTime.TotalSeconds >= 0);
         }
 
         [Fact]
@@ -381,7 +408,6 @@ namespace System.Diagnostics.ProcessTests
         public void Process_PriorityBoostEnabled()
         {
             bool isPriorityBoostEnabled = _process.PriorityBoostEnabled;
-
             try
             {
                 _process.PriorityBoostEnabled = true;
@@ -390,19 +416,15 @@ namespace System.Diagnostics.ProcessTests
                 _process.PriorityBoostEnabled = false;
                 Assert.False(_process.PriorityBoostEnabled, "Process_PriorityBoostEnabled002 failed");
             }
-
             finally
             {
                 _process.PriorityBoostEnabled = isPriorityBoostEnabled;
             }
-
         }
 
         public void Process_PriorityClass()
         {
-
             ProcessPriorityClass priorityClass = _process.PriorityClass;
-
             try
             {
                 _process.PriorityClass = ProcessPriorityClass.High;
@@ -434,12 +456,20 @@ namespace System.Diagnostics.ProcessTests
         [DllImport("api-ms-win-core-processthreads-l1-1-0.dll")]
         internal static extern int GetCurrentProcessId();
 
+        [DllImport("libc")]
+        internal static extern int getpid();
+
         [Fact]
         public void Process_GetCurrentProcess()
         {
-            int currentProcessId = ProcessTest.GetCurrentProcessId();
+            Process current = Process.GetCurrentProcess();
+            Assert.NotNull(current);
 
-            Assert.Equal(currentProcessId, Process.GetCurrentProcess().Id);
+            int currentProcessId = global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows ?
+                GetCurrentProcessId() :
+                getpid();
+
+            Assert.Equal(currentProcessId, current.Id);
             Assert.Equal(Process.GetProcessById(currentProcessId).ProcessName, Process.GetCurrentProcess().ProcessName);
         }
 
@@ -505,7 +535,10 @@ namespace System.Diagnostics.ProcessTests
             Environment2.Add("NewKey", "NewValue");
             Environment2.Add("NewKey2", "NewValue2");
             Assert.True(Environment2.ContainsKey("NewKey"));
-            Assert.True(Environment2.ContainsKey("newkey")); // Windows is case-insensitive (will need to adapt this when we support tests on Unix)
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            {
+                Assert.True(Environment2.ContainsKey("newkey"));
+            }
             Assert.False(Environment2.ContainsKey("NewKey99"));
 
             //Iterating
@@ -541,7 +574,10 @@ namespace System.Diagnostics.ProcessTests
 
             //Contains
             Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey", "NewValue")));
-            Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("nEwKeY", "NewValue"))); // case-insensitive keys on Windows
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            {
+                Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("nEwKeY", "NewValue")));
+            }
             Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey99", "NewValue99")));
 
             //Exception not thrown with invalid key
@@ -563,9 +599,12 @@ namespace System.Diagnostics.ProcessTests
             retval = Environment2.TryGetValue("NewKey", out stringout);
             Assert.True(retval);
             Assert.Equal("NewValue", stringout);
-            retval = Environment2.TryGetValue("NeWkEy", out stringout);
-            Assert.True(retval);
-            Assert.Equal("NewValue", stringout);
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            {
+                retval = Environment2.TryGetValue("NeWkEy", out stringout);
+                Assert.True(retval);
+                Assert.Equal("NewValue", stringout);
+            }
 
             stringout = null;
             retval = false;
@@ -606,7 +645,10 @@ namespace System.Diagnostics.ProcessTests
             Assert.Throws<System.Collections.Generic.KeyNotFoundException>(() => { string a1 = Environment2["1bB"]; });
 
             Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey2", "NewValue2")));
-            Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NEWKeY2", "NewValue2"))); // case-insensitive keys on Windows
+            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            {
+                Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NEWKeY2", "NewValue2")));
+            }
             Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey2", "newvalue2")));
             Assert.False(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("newkey2", "newvalue2")));
 
