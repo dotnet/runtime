@@ -21,7 +21,7 @@ namespace System.IO.MemoryMappedFiles
                                             MemoryMappedFileAccess access, long offset, long size)
         {
             // MapViewOfFile can only create views that start at a multiple of the system memory allocation 
-            // granularity. We decided to hide this restriction form the user by creating larger views than the
+            // granularity. We decided to hide this restriction from the user by creating larger views than the
             // user requested and hiding the parts that the user did not request.  extraMemNeeded is the amount of
             // extra memory we allocate before the start of the requested view. MapViewOfFile will also round the 
             // capacity of the view to the nearest multiple of the system page size.  Once again, we hide this 

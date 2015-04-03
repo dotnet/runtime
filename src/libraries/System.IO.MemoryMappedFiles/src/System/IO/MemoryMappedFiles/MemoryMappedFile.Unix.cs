@@ -15,13 +15,25 @@ namespace System.IO.MemoryMappedFiles
         /// </summary>
         [SecurityCritical]
         private static unsafe SafeMemoryMappedFileHandle CreateCore(
-            SafeFileHandle fileHandle, string mapName, 
+            FileStream fileStream, string mapName, 
             HandleInheritability inheritability, MemoryMappedFileAccess access, 
             MemoryMappedFileOptions options, long capacity)
         {
             if (mapName != null)
             {
+                // TODO: We currently do not support named maps.  We could possibly support 
+                // named maps in the future by using shm_open / shm_unlink.
                 throw CreateNamedMapsNotSupportedException();
+            }
+
+            SafeFileHandle fileHandle = null;
+            if (fileStream != null)
+            {
+                fileHandle = fileStream.SafeFileHandle;
+                if (fileStream.Length < capacity)
+                {
+                    fileStream.SetLength(capacity);
+                }
             }
 
             return new SafeMemoryMappedFileHandle(fileHandle, inheritability, access, options, capacity);
