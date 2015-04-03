@@ -14,10 +14,6 @@ internal static partial class Interop
 
         internal static int getpriority(PriorityWhich which, int who, out int priority)
         {
-            // We need to clear errno before calling getpriority since -1 is a valid return value. Unfortunately
-            // the SetLastWin32Error function is not exposed yet...so do some reflection trickery to call it
-            // TODO: REMOVE TRICKERY AND EXPOSE API BEFORE CHECKIN
-            typeof(Marshal).GetTypeInfo().GetDeclaredMethod("SetLastWin32Error").Invoke(null, new object[] { 0 });
             priority = getpriority(which, who);
             return Marshal.GetLastWin32Error();
         }

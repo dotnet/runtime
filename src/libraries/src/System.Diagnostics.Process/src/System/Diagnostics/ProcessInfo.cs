@@ -15,249 +15,248 @@ namespace System.Diagnostics
     internal sealed class ProcessInfo
     {
         internal readonly List<ThreadInfo> _threadInfoList = new List<ThreadInfo>();
-        private int _basePriorityInternal;
-        private string _processNameInternal;
-        private int _processIdInternal;
-        private int _handleCountInternal;
-        private long _poolPagedBytesInternal;
-        private long _poolNonpagedBytesInternal;
-        private long _virtualBytesInternal;
-        private long _virtualBytesPeakInternal;
-        private long _workingSetPeakInternal;
-        private long _workingSetInternal;
-        private long _pageFileBytesPeakInternal;
-        private long _pageFileBytesInternal;
-        private long _privateBytesInternal;
-        private int _sessionIdInternal;
+        private int _basePriority;
+        private string _processName;
+        private int _processId;
+        private int _handleCount;
+        private long _poolPagedBytes;
+        private long _poolNonpagedBytes;
+        private long _virtualBytes;
+        private long _virtualBytesPeak;
+        private long _workingSetPeak;
+        private long _workingSet;
+        private long _pageFileBytesPeak;
+        private long _pageFileBytes;
+        private long _privateBytes;
+        private int _sessionId;
 
-        /*************** TODO: Rename and check that all callers are okay with these throwing or find a different fix */
-        internal int _basePriority
+        internal int BasePriority
         {
             get
             {
-                if (_basePriorityInternal == -1)
+                if (_basePriority == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _basePriorityInternal;
+                    return _basePriority;
             }
             set
             {
-                _basePriorityInternal = value;
+                _basePriority = value;
             }
         }
 
-        internal string _processName
+        internal string ProcessName
         {
             get
             {
-                if (_processNameInternal == null)
+                if (_processName == null)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _processNameInternal;
+                    return _processName;
             }
             set
             {
-                _processNameInternal = value;
+                _processName = value;
             }
         }
 
-        internal int _processId
+        internal int ProcessId
         {
             get
             {
-                if (_processIdInternal == -1)
+                if (_processId == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _processIdInternal;
+                    return _processId;
             }
             set
             {
-                _processIdInternal = value;
+                _processId = value;
             }
         }
 
-        internal int _handleCount
+        internal int HandleCount
         {
             get
             {
-                if (_handleCountInternal == -1)
+                if (_handleCount == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _handleCountInternal;
+                    return _handleCount;
             }
             set
             {
-                _handleCountInternal = value;
+                _handleCount = value;
             }
         }
 
-        internal long _poolPagedBytes
+        internal long PoolPagedBytes
         {
             get
             {
-                if (_poolPagedBytesInternal == -1)
+                if (_poolPagedBytes == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _poolPagedBytesInternal;
+                    return _poolPagedBytes;
             }
             set
             {
-                _poolPagedBytesInternal = value;
+                _poolPagedBytes = value;
             }
         }
         
-        internal long _poolNonpagedBytes
+        internal long PoolNonpagedBytes
         {
             get
             {
-                if (_poolNonpagedBytesInternal == -1)
+                if (_poolNonpagedBytes == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _poolNonpagedBytesInternal;
+                    return _poolNonpagedBytes;
             }
             set
             {
-                _poolPagedBytesInternal = value;
+                _poolPagedBytes = value;
             }
         }
 
-        internal long _virtualBytes
+        internal long VirtualBytes
         {
             get
             {
-                if (_virtualBytesInternal == -1)
+                if (_virtualBytes == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
                     return _virtualBytes;
             }
             set
             {
-                _virtualBytesInternal = value;
+                _virtualBytes = value;
             }
         }
 
-        internal long _virtualBytesPeak
+        internal long VirtualBytesPeak
         {
             get
             {
-                if (_virtualBytesPeakInternal == -1)
+                if (_virtualBytesPeak == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _virtualBytesPeakInternal;
+                    return _virtualBytesPeak;
             }
             set
             {
-                _virtualBytesPeakInternal = value;
+                _virtualBytesPeak = value;
             }
         }
 
-        internal long _workingSetPeak
+        internal long WorkingSetPeak
         {
             get
             {
-                if (_workingSetPeakInternal == -1)
+                if (_workingSetPeak == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _workingSetPeakInternal;
+                    return _workingSetPeak;
             }
             set
             {
-                _workingSetPeakInternal = value;
+                _workingSetPeak = value;
             }
         }
 
-        internal long _workingSet
+        internal long WorkingSet
         {
             get
             {
-                if (_workingSetInternal == -1)
+                if (_workingSet == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _workingSetInternal;
+                    return _workingSet;
             }
             set
             {
-                _workingSetInternal = value;
+                _workingSet = value;
             }
         }
 
-        internal long _pageFileBytesPeak
+        internal long PageFileBytesPeak
         {
             get
             {
-                if (_pageFileBytesPeakInternal == -1)
+                if (_pageFileBytesPeak == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _pageFileBytesPeakInternal;
+                    return _pageFileBytesPeak;
             }
             set
             {
-                _pageFileBytesPeakInternal = value;
+                _pageFileBytesPeak = value;
             }
         }
 
-        internal long _pageFileBytes
+        internal long PageFileBytes
         {
             get
             {
-                if (_pageFileBytesInternal == -1)
+                if (_pageFileBytes == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _pageFileBytesInternal;
+                    return _pageFileBytes;
             }
             set
             {
-                _pageFileBytesInternal = value;
+                _pageFileBytes = value;
             }
         }
 
-        internal long _privateBytes
+        internal long PrivateBytes
         {
             get
             {
-                if (_privateBytesInternal == -1)
+                if (_privateBytes == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _privateBytesInternal;
+                    return _privateBytes;
             }
             set
             {
-                _privateBytesInternal = value;
+                _privateBytes = value;
             }
         }
         
-        internal int _sessionId
+        internal int SessionId
         {
             get
             {
-                if (_sessionIdInternal == -1)
+                if (_sessionId == -1)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
                 else
-                    return _sessionIdInternal;
+                    return _sessionId;
             }
             set
             {
-                _sessionIdInternal = value;
+                _sessionId = value;
             }
         }
-        /************* END TODO*/
+
 
         internal ProcessInfo()
         {
-            _basePriorityInternal = -1;
-            _processNameInternal = null;
-            _processIdInternal = -1;
-            _handleCountInternal = -1;
-            _poolPagedBytesInternal = -1;
-            _poolNonpagedBytesInternal = -1;
-            _virtualBytesInternal = -1;
-            _virtualBytesPeakInternal = -1;
-            _workingSetInternal = -1;
-            _workingSetPeakInternal = -1;
-            _pageFileBytesInternal = -1;
-            _pageFileBytesPeakInternal = -1;
-            _privateBytesInternal = -1;
-            _sessionIdInternal = -1;
+            _basePriority = -1;
+            _processName = null;
+            _processId = -1;
+            _handleCount = -1;
+            _poolPagedBytes = -1;
+            _poolNonpagedBytes = -1;
+            _virtualBytes = -1;
+            _virtualBytesPeak = -1;
+            _workingSet = -1;
+            _workingSetPeak = -1;
+            _pageFileBytes = -1;
+            _pageFileBytesPeak = -1;
+            _privateBytes = -1;
+            _sessionId = -1;
         }
     }
 }

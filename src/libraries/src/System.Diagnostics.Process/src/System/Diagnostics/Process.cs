@@ -137,7 +137,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._basePriority;
+                return _processInfo.BasePriority;
             }
         }
 
@@ -210,7 +210,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._handleCount;
+                return _processInfo.HandleCount;
             }
         }
 
@@ -307,7 +307,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._poolNonpagedBytes;
+                return _processInfo.PoolNonpagedBytes;
             }
         }
 
@@ -316,7 +316,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._pageFileBytes;
+                return _processInfo.PageFileBytes;
             }
         }
 
@@ -325,7 +325,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._poolPagedBytes;
+                return _processInfo.PoolPagedBytes;
             }
         }
 
@@ -334,7 +334,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._pageFileBytesPeak;
+                return _processInfo.PageFileBytesPeak;
             }
         }
 
@@ -343,7 +343,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._workingSetPeak;
+                return _processInfo.WorkingSetPeak;
             }
         }
 
@@ -352,7 +352,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._virtualBytesPeak;
+                return _processInfo.VirtualBytesPeak;
             }
         }
 
@@ -417,7 +417,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._privateBytes;
+                return _processInfo.PrivateBytes;
             }
         }
 
@@ -432,7 +432,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._processName;
+                return _processInfo.ProcessName;
             }
         }
 
@@ -466,7 +466,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._sessionId;
+                return _processInfo.SessionId;
             }
         }
 
@@ -538,7 +538,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._virtualBytes;
+                return _processInfo.VirtualBytes;
             }
         }
 
@@ -648,7 +648,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo._workingSet;
+                return _processInfo.WorkingSet;
             }
         }
 
@@ -961,7 +961,7 @@ namespace System.Diagnostics
             for (int i = 0; i < processInfos.Length; i++)
             {
                 ProcessInfo processInfo = processInfos[i];
-                processes[i] = new Process(machineName, isRemoteMachine, processInfo._processId, processInfo);
+                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
             }
 #if FEATURE_TRACESWITCH
             Debug.WriteLineIf(_processTracing.TraceVerbose, "Process.GetProcesses(" + machineName + ")");
