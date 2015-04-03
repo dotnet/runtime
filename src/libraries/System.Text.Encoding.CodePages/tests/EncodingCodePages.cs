@@ -69,6 +69,7 @@ public class EncodingTest
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void TestDefaultCodePage()
     {
 
@@ -99,6 +100,7 @@ public class EncodingTest
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void TestSpecificCodepageEncodings()
     {
         EnsureInitialization();
