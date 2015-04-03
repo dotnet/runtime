@@ -11,6 +11,7 @@ namespace System.Globalization.Extensions.Tests
     public class StringNormalization
     {
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void NormalizeTest()
         {
             string composed = "\u00C4\u00C7"; // "ÄÇ"
@@ -49,6 +50,7 @@ namespace System.Globalization.Extensions.Tests
         }
 
         [Fact]
+        [ActiveIssue(810, PlatformID.Linux | PlatformID.OSX)]
         public void ExceptionsTest()
         {
             string fi = "\uFB01";
