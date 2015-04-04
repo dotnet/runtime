@@ -814,11 +814,12 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
         // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
         // opportunity. Its an acceptable loss from an imperfect heuristic.
         if (NULL == WszGetModuleHandle(szFullPathName))
+#endif            
         {
             szFullPathName = NULL;
             fDebuggerLoadingNgen = false;
         }
-#endif
+
     }
 
     // If we don't have or decided not to load the NGEN image, check to see if IL image is available
@@ -880,6 +881,11 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
                                                 DWORD dwOpenFlags,
                                                 bool validateFileInfo)
 {
+#ifdef FEATURE_PAL    
+    // TODO: Some intricate details of file mapping don't work on Linux as on Windows.
+    // We have to revisit this and try to fix it for POSIX system. 
+    return E_FAIL;
+#else    
     if (validateFileInfo)
     {
         // Check that we've got the right file to target.
@@ -988,6 +994,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
     }
 
     return hr;
+#endif // FEATURE_PAL     
 }
 
 //---------------------------------------------------------------------------------------
@@ -2550,6 +2557,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         ReleaseHolder<ISymUnmanagedBinder> pBinder;
         if (symFormat == IDacDbiInterface::kSymbolFormatPDB)
         {
+#ifndef FEATURE_PAL
             // PDB format - use diasymreader.dll with COM activation
             InlineSString<_MAX_PATH> ssBuf;
             IfFailThrow(FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
@@ -2557,6 +2565,11 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
                                                IID_ISymUnmanagedBinder,
                                                (void**)&pBinder,
                                                NULL));
+#else
+            IfFailThrow(FakeCoCreateInstance(CLSID_CorSymBinder_SxS,
+                                             IID_ISymUnmanagedBinder,
+                                             (void**)&pBinder));
+#endif
         }
         else if (symFormat == IDacDbiInterface::kSymbolFormatILDB)
         {

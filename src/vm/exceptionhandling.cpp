@@ -4625,7 +4625,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
 
 VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 {
-    if (ex->ExceptionRecord.ExceptionCode != STATUS_BREAKPOINT)
+    if (ex->ExceptionRecord.ExceptionCode != STATUS_BREAKPOINT && ex->ExceptionRecord.ExceptionCode != STATUS_SINGLE_STEP)
     {
         // A hardware exception is handled only if it happened in a jitted code or 
         // in one of the JIT helper functions (JIT_MemSet, ...)
@@ -4644,7 +4644,34 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             UNREACHABLE();
         }
 
-        _ASSERTE(!"HandleHardwareException: Hardware exception happened out of managed code");
+        _ASSERTE(!"HandleHardwareException: Hardware exception happened out of managed code");        
+    }
+    else 
+    {
+        // This is a breakpoint or single step stop, we report it to the debugger.
+        Thread *pThread = GetThread(); 
+        if (pThread != NULL && g_pDebugInterface != NULL)
+        {
+            if (ex->ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT)   
+            {
+                // If this is breakpoint context is set up to point to an instuction after the break instuction.
+                // But debugger expectes to see context that points to the break instruction, that's why we correct it.
+                SetIP(&ex->ContextRecord, GetIP(&ex->ContextRecord) - CORDbg_BREAK_INSTRUCTION_SIZE);
+                ex->ExceptionRecord.ExceptionAddress = (void *)GetIP(&ex->ContextRecord);
+            }
+
+            if (g_pDebugInterface->FirstChanceNativeException(&ex->ExceptionRecord,
+                                                          &ex->ContextRecord,
+                                                          ex->ExceptionRecord.ExceptionCode,
+                                                          pThread))
+            {
+                return;
+                // Ideally we'd like to put 
+                //   RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
+                // here, but RtlRestoreContext is not completely reliable for debugging on Linux (doesn't restore EFlags)
+                // that's why we'll just return. Read more in signal.cpp/common_signal_handler .
+            }
+        }
     }
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }

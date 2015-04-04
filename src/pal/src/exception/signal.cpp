@@ -556,7 +556,38 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
 
         g_hardwareExceptionHandler(&exception);
 
-        ASSERT("HandleHardwareException has returned, it should not.\n");
+        if (pointers->ExceptionRecord->ExceptionCode == STATUS_BREAKPOINT || 
+            pointers->ExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP)
+        {
+
+#if HAVE_MACH_EXCEPTIONS
+                RtlRestoreContext(&exception.ContextRecord, &exception.ExceptionRecord);
+#elif __LINUX__
+                // Here we shamelessly exploit undocumented behavior of Linux signal handlers:
+                // 
+                // When signal handler exits it completely restores context saved in ucontext, 
+                // if any changes are applied to it by the signal handler they will also be 
+                // restored and affect further course of execution.
+                //
+                // We'd love to avoid using this assumption, but unfortunately setcontext()
+                // (which is used in PAL implementation of RtlRestoreContext) doesn't restore eflags 
+                // and loads zero into RAX register. It might be fine for exception handling, but unacceptable 
+                // for debugger. That's why for debugger's signals (breakpoint and singlestep) we
+                // actually allow HardwareExceptionHandler to return and change context on exit.
+
+                // TODO: We should just implement setcontext helper in assembly and call it from RtlRestoreContext
+                // on Linux. setcontext() is not actually that hard to implement.
+
+                CONTEXTToNativeContext(&exception.ContextRecord, ucontext);
+                return;
+#else // HAVE_MACH_EXCEPTIONS
+                #error not yet implemented
+#endif // HAVE_MACH_EXCEPTIONS
+        }
+        else
+        {
+            ASSERT("HardwareExceptionHandler has returned, it should not.");
+        }
     }
     else
     {
