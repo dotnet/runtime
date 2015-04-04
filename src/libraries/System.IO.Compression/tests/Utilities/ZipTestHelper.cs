@@ -185,8 +185,8 @@ namespace System.IO.Compression.Test
                             Double offBy = (file.LastModifiedDate - entry.LastWriteTime.DateTime).TotalSeconds;
                             Assert.True(
                                 (offBy >= -2 && offBy <= 2) ||
-                                // Temporary adjustment for bug 325601
-                                (file.LastModifiedDate.IsDaylightSavingTime() == true && (offBy >= 3598 && offBy <= 3602)),
+                                // Temporary adjustment for active issue 1326
+                                ((offBy >= 3598 && offBy <= 3602)),
                                 String.Format("{0}, {1}, {2}", file.LastModifiedDate.ToString(), entry.LastWriteTime.DateTime.ToString(), file.FullName));
                         }
 
