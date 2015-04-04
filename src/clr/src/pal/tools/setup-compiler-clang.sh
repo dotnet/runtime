@@ -7,6 +7,10 @@ if which clang-3.5 > /dev/null 2>&1
     then  
         export CC="$(which clang-3.5)" 
         export CXX="$(which clang++-3.5)"    
+elif which clang35 > /dev/null 2>&1 
+    then  
+        export CC="$(which clang35)" 
+        export CXX="$(which clang++35)"    
 elif which clang > /dev/null 2>&1 
     then 
         export CC="$(which clang)" 
