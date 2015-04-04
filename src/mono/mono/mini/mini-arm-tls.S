@@ -36,8 +36,11 @@ mono_fast_get_tls_key :
 	ldr	r0, [r1, r0, lsl #2]
 #endif
 	bx	lr
-#else
-	nop
+#elif defined(TARGET_IOS)
+	mrc	p15, 0, r1, c13, c0, 3
+	bic	r1, r1, #3
+	ldr	r0, [r1, r0, lsl #2]
+	bx	lr
 #endif
 
 	/*
@@ -66,8 +69,10 @@ mono_fallback_get_tls_key :
 	ldr	r0, [r0, r1, lsl #2]
 #endif
 	pop	{pc}
-#else
-	nop
+#elif defined(TARGET_IOS)
+	push	{lr}
+	bl	_pthread_getspecific
+	pop	{pc}
 #endif
 
 	/*
@@ -92,8 +97,11 @@ mono_fast_set_tls_key :
 	str	r1, [r2, r0, lsl #2]
 #endif
 	bx	lr
-#else
-	nop
+#elif defined(TARGET_IOS)
+	mrc	p15, 0, r2, c13, c0, 3
+	bic	r2, r2, #3
+	str	r1, [r2, r0, lsl #2]
+	bx	lr
 #endif
 
 	/*
@@ -122,8 +130,10 @@ mono_fallback_set_tls_key :
 	str	r1, [r0, r2, lsl #2]
 #endif
 	pop	{pc}
-#else
-	nop
+#elif defined(TARGET_IOS)
+	push	{lr}
+	bl	_pthread_setspecific
+	pop	{pc}
 #endif
 
 #endif

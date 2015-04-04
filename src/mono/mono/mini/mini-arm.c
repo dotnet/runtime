@@ -30,7 +30,8 @@
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
 #if defined(HAVE_KW_THREAD) && defined(__linux__) \
-	|| defined(TARGET_ANDROID)
+	|| defined(TARGET_ANDROID) \
+	|| defined(TARGET_IOS)
 #define HAVE_FAST_TLS
 #endif
 
@@ -497,33 +498,6 @@ emit_save_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 			code = mono_arm_emit_tls_get (cfg, code, ARMREG_R0, lmf_addr_tls_offset);
 		}
 	}
-#ifdef TARGET_IOS
-	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-		int lmf_offset;
-
-		/* Inline mono_get_lmf_addr () */
-		/* jit_tls = pthread_getspecific (mono_jit_tls_id); lmf_addr = &jit_tls->lmf; */
-
-		/* Load mono_jit_tls_id */
-		/* OP_AOTCONST */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_TLS_ID, NULL);
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-		ARM_B (code, 0);
-		*(gpointer*)code = NULL;
-		code += 4;
-		ARM_LDR_REG_REG (code, ARMREG_R0, ARMREG_PC, ARMREG_R0);
-		/* call pthread_getspecific () */
-		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-							 (gpointer)"pthread_getspecific");
-		code = emit_call_seq (cfg, code);
-		/* lmf_addr = &jit_tls->lmf */
-		lmf_offset = MONO_STRUCT_OFFSET (MonoJitTlsData, lmf);
-		g_assert (arm_is_imm8 (lmf_offset));
-		ARM_ADD_REG_IMM (code, ARMREG_R0, ARMREG_R0, lmf_offset, 0);
-
-		get_lmf_fast = TRUE;
-	}
-#endif
 
 	if (!get_lmf_fast) {
 		mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
@@ -683,6 +657,11 @@ mono_arm_have_fast_tls (void)
 
 	/* Expecting mrc + bx lr in the kuser_get_tls kernel helper */
 	return memcmp (kuser_get_tls, expected, 8) == 0;
+#elif defined(TARGET_IOS)
+	guint32 expected [] = {0x1f70ee1d, 0x0103f021, 0x0020f851, 0xbf004770};
+	/* Discard thumb bit */
+	guint32* pthread_getspecific_addr = (guint32*) ((guint32)pthread_getspecific & 0xfffffffe);
+	return memcmp ((void*)pthread_getspecific_addr, expected, 16) == 0;
 #else
 	return FALSE;
 #endif
