@@ -757,7 +757,16 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
 #ifdef FEATURE_CORECLR
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER, &wszClsid));
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH, &wszProfilerDLL));
+
+#if defined(_TARGET_X86_)
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_32, &wszProfilerDLL));
+#elif defined(_TARGET_AMD64_)
+    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_64, &wszProfilerDLL));
+#endif
+    if(wszProfilerDLL == NULL)
+    {
+        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH, &wszProfilerDLL));
+    }
 #else // FEATURE_CORECLR
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_COR_PROFILER, &wszClsid));
     
