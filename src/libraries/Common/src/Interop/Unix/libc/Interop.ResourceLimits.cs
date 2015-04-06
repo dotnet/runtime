@@ -66,7 +66,7 @@ internal static partial class Interop
             int result = getrlimit(resource, ref info);
             if (result < 0)
             {
-                throw new COMException(SR.ResourceLimitQueryFailure, Marshal.GetLastWin32Error());
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.ResourceLimitQueryFailure);
             }
 
             return info;

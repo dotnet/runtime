@@ -106,7 +106,7 @@ namespace System.Diagnostics
                 int result = Interop.libc.setrlimit(Interop.libc.RLIMIT_Resources.RLIMIT_RSS, ref limits);
                 if (result < 0)
                 {
-                    throw new System.Runtime.InteropServices.COMException(SR.RUsageFailure, System.Runtime.InteropServices.Marshal.GetLastWin32Error());
+                    throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error(), SR.RUsageFailure);
                 }
 
                 // Grab the actual value, in case the OS decides to fudge the numbers

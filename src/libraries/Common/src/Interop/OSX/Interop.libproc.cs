@@ -44,50 +44,9 @@ internal static partial class Interop
             TH_FLAGS_IDLE       = 0x2
         }
 
-        /// <summary>
-        /// Converts an OS-level thread state to a .NET thread state.
-        /// </summary>
-        /// <param name="state">The OS state to convert</param>
-        /// <returns>The .NET mapping of the OS thread state</returns>
-        internal static System.Diagnostics.ThreadState ConvertOsxThreadRunStateToThreadState(ThreadRunState state)
-        {
-            switch (state)
-            {
-                case ThreadRunState.TH_STATE_RUNNING:
-                    return System.Diagnostics.ThreadState.Running;
-                case ThreadRunState.TH_STATE_STOPPED:
-                    return System.Diagnostics.ThreadState.Terminated;
-                case ThreadRunState.TH_STATE_HALTED:
-                    return System.Diagnostics.ThreadState.Wait;
-                case ThreadRunState.TH_STATE_UNINTERRUPTIBLE:
-                    return System.Diagnostics.ThreadState.Running;
-                case ThreadRunState.TH_STATE_WAITING:
-                    return System.Diagnostics.ThreadState.Standby;
-                default:
-                    throw new ArgumentOutOfRangeException("state");
-            }
-        }
-
-        /// <summary>
-        /// Convert an OS-level thread flag to a .NET ThreadWaitReason
-        /// </summary>
-        /// <param name="flags">The OS flags to convert</param>
-        /// <returns>
-        /// Returns a single thread wait reasons based on flag priority.
-        /// </returns>
-        internal static System.Diagnostics.ThreadWaitReason ConvertOsxThreadFlagsToWaitReason(ThreadFlags flags)
-        {
-            // Since ThreadWaitReason isn't a flag, we have to do a mapping and will lose some information.
-            // The priorities below are arbitrary
-            if ((flags & ThreadFlags.TH_FLAGS_SWAPPED) == ThreadFlags.TH_FLAGS_SWAPPED)
-                return System.Diagnostics.ThreadWaitReason.PageOut;
-            else
-                return System.Diagnostics.ThreadWaitReason.Unknown; // There isn't a good mapping for anything else
-        }
-
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        internal struct proc_bsdinfo
+        internal unsafe struct proc_bsdinfo
         {
             internal uint       pbi_flags;
             internal uint       pbi_status;
@@ -101,10 +60,8 @@ internal static partial class Interop
             internal uint       pbi_svuid;
             internal uint       pbi_svgid;
             internal uint       reserved;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAXCOMLEN)]
-            internal string     pbi_comm;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAXCOMLEN * 2)]
-            internal string     pbi_name;
+            internal fixed byte pbi_comm[MAXCOMLEN];
+            internal fixed byte pbi_name[MAXCOMLEN * 2];
             internal uint       pbi_nfiles;
             internal uint       pbi_pgid;
             internal uint       pbi_pjobc;
@@ -117,7 +74,7 @@ internal static partial class Interop
 
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential)]
-        internal struct proc_taskinfo
+        internal unsafe struct proc_taskinfo
         {
             internal ulong   pti_virtual_size;
             internal ulong   pti_resident_size;
@@ -141,42 +98,41 @@ internal static partial class Interop
 
         // from sys\resource.h
         [StructLayout(LayoutKind.Sequential)]
-        internal struct rusage_info_v3
+        internal unsafe struct rusage_info_v3
         {
-            [MarshalAs(UnmanagedType.LPArray, SizeConst = 16)]
-            internal ushort[]    ri_uuid;
-            internal ulong       ri_user_time;
-            internal ulong       ri_system_time;
-            internal ulong       ri_pkg_idle_wkups;
-            internal ulong       ri_interrupt_wkups;
-            internal ulong       ri_pageins;
-            internal ulong       ri_wired_size;
-            internal ulong       ri_resident_size;
-            internal ulong       ri_phys_footprint;
-            internal ulong       ri_proc_start_abstime;
-            internal ulong       ri_proc_exit_abstime;
-            internal ulong       ri_child_user_time;
-            internal ulong       ri_child_system_time;
-            internal ulong       ri_child_pkg_idle_wkups;
-            internal ulong       ri_child_interrupt_wkups;
-            internal ulong       ri_child_pageins;
-            internal ulong       ri_child_elapsed_abstime;
-            internal ulong       ri_diskio_bytesread;
-            internal ulong       ri_diskio_byteswritten;
-            internal ulong       ri_cpu_time_qos_default;
-            internal ulong       ri_cpu_time_qos_maintenance;
-            internal ulong       ri_cpu_time_qos_background;
-            internal ulong       ri_cpu_time_qos_utility;
-            internal ulong       ri_cpu_time_qos_legacy;
-            internal ulong       ri_cpu_time_qos_user_initiated;
-            internal ulong       ri_cpu_time_qos_user_interactive;
-            internal ulong       ri_billed_system_time;
-            internal ulong       ri_serviced_system_time;
+            internal fixed ushort   ri_uuid[16];
+            internal ulong          ri_user_time;
+            internal ulong          ri_system_time;
+            internal ulong          ri_pkg_idle_wkups;
+            internal ulong          ri_interrupt_wkups;
+            internal ulong          ri_pageins;
+            internal ulong          ri_wired_size;
+            internal ulong          ri_resident_size;
+            internal ulong          ri_phys_footprint;
+            internal ulong          ri_proc_start_abstime;
+            internal ulong          ri_proc_exit_abstime;
+            internal ulong          ri_child_user_time;
+            internal ulong          ri_child_system_time;
+            internal ulong          ri_child_pkg_idle_wkups;
+            internal ulong          ri_child_interrupt_wkups;
+            internal ulong          ri_child_pageins;
+            internal ulong          ri_child_elapsed_abstime;
+            internal ulong          ri_diskio_bytesread;
+            internal ulong          ri_diskio_byteswritten;
+            internal ulong          ri_cpu_time_qos_default;
+            internal ulong          ri_cpu_time_qos_maintenance;
+            internal ulong          ri_cpu_time_qos_background;
+            internal ulong          ri_cpu_time_qos_utility;
+            internal ulong          ri_cpu_time_qos_legacy;
+            internal ulong          ri_cpu_time_qos_user_initiated;
+            internal ulong          ri_cpu_time_qos_user_interactive;
+            internal ulong          ri_billed_system_time;
+            internal ulong          ri_serviced_system_time;
         }
 
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        internal struct proc_taskallinfo
+        internal unsafe struct proc_taskallinfo
         {
             internal proc_bsdinfo    pbsd;
             internal proc_taskinfo   ptinfo;
@@ -213,47 +169,52 @@ internal static partial class Interop
         /// <param name="buffersize">The length of the block of memory allocated for the PID array</param>
         /// <returns>Returns the number of elements (PIDs) in the buffer</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static extern int proc_listallpids(
-            IntPtr buffer, 
-            int buffersize);
+        private static unsafe extern int proc_listallpids(
+            int*    pBuffer, 
+            int     buffersize);
 
         /// <summary>
         /// Queries the OS for the list of all running processes and returns the PID for each
         /// </summary>
         /// <returns>Returns a list of PIDs corresponding to all running processes</returns>
-        internal static int[] proc_listallpids()
+        internal static unsafe int[] proc_listallpids()
         {
             // Get the number of processes currently running to know how much data to allocate
-            int numProcesses = proc_listallpids(IntPtr.Zero, 0);
+            int numProcesses = proc_listallpids(null, 0);
             if (numProcesses <= 0)
             {
-                throw new System.Runtime.InteropServices.COMException(SR.CantGetAllPids, Marshal.GetLastWin32Error());
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.CantGetAllPids);
             }
 
-            // Allocate the correct amount of memory, plus 1/4 more just in case more processes have spawned between
-            // when we asked and now (very possible), and then get the PID list
-            int bufferSize = Convert.ToInt32(numProcesses * Marshal.SizeOf<uint>() * (numProcesses * .25));
-            IntPtr unmanagedArray = Marshal.AllocCoTaskMem(bufferSize);
-            numProcesses = proc_listallpids(unmanagedArray, bufferSize);
-            if (numProcesses <= 0)
+            int[] processes = null;
+
+            do
             {
-                throw new System.Runtime.InteropServices.COMException(SR.CantGetAllPids, Marshal.GetLastWin32Error());
+                // Create a new array for the processes (plus a 10% buffer in case new processes have spawned)
+                processes = new int[(int)(numProcesses + (numProcesses * .10))];
+                fixed (int* pBuffer = processes)
+                {
+                    numProcesses = proc_listallpids(pBuffer, processes.Length * Marshal.SizeOf<int>());
+                    if (numProcesses <= 0)
+                    {
+                        throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.CantGetAllPids);
+                    }
+                }
             }
+            while (numProcesses == processes.Length);
 
-            // Copy the pids from unmanaged to managed memory and then free unmanaged memory
-            int[] pids = new int[numProcesses];
-            Marshal.Copy(unmanagedArray, pids, 0, numProcesses);
-            Marshal.FreeCoTaskMem(unmanagedArray);
+            // Remove extra elements
+            Array.Resize<int>(ref processes, numProcesses);
 
-            return pids;
+            return processes;
         }
 
         /// <summary>
         /// Gets information about a process given it's PID
         /// </summary>
         /// <param name="pid">The PID of the process</param>
-        /// <param name="flavor">Should be one of the PROC_PID* constants</param>
-        /// <param name="arg">Should be 0</param>
+        /// <param name="flavor">Should be PROC_PIDTASKALLINFO</param>
+        /// <param name="arg">Flavor dependent value</param>
         /// <param name="buffer">A pointer to a block of memory (of size proc_taskallinfo) allocated that will contain the data</param>
         /// <param name="bufferSize">The size of the allocated block above</param>
         /// <returns>
@@ -262,11 +223,74 @@ internal static partial class Interop
         /// to not having enough permissions to query for the data of that specific process
         /// </returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static extern int proc_pidinfo(
+        private static unsafe extern int proc_pidinfo(
             int pid,
             int flavor,
             ulong arg,
-            IntPtr buffer,
+            proc_taskallinfo* buffer,
+            int bufferSize);
+
+        /// <summary>
+        /// Gets information about a process given it's PID
+        /// </summary>
+        /// <param name="pid">The PID of the process</param>
+        /// <param name="flavor">Should be PROC_PIDTHREADINFO</param>
+        /// <param name="arg">Flavor dependent value</param>
+        /// <param name="buffer">A pointer to a block of memory (of size proc_threadinfo) allocated that will contain the data</param>
+        /// <param name="bufferSize">The size of the allocated block above</param>
+        /// <returns>
+        /// The amount of data actually returned. If this size matches the bufferSize parameter then
+        /// the data is valid. If the sizes do not match then the data is invalid, most likely due 
+        /// to not having enough permissions to query for the data of that specific process
+        /// </returns>
+        [DllImport(Interop.Libraries.libproc, SetLastError = true)]
+        private static unsafe extern int proc_pidinfo(
+            int pid,
+            int flavor,
+            ulong arg,
+            proc_threadinfo* buffer,
+            int bufferSize);
+
+        /// <summary>
+        /// Gets information about a process given it's PID
+        /// </summary>
+        /// <param name="pid">The PID of the process</param>
+        /// <param name="flavor">Should be PROC_PIDLISTFDS</param>
+        /// <param name="arg">Flavor dependent value</param>
+        /// <param name="buffer">A pointer to a block of memory (of size proc_fdinfo) allocated that will contain the data</param>
+        /// <param name="bufferSize">The size of the allocated block above</param>
+        /// <returns>
+        /// The amount of data actually returned. If this size matches the bufferSize parameter then
+        /// the data is valid. If the sizes do not match then the data is invalid, most likely due 
+        /// to not having enough permissions to query for the data of that specific process
+        /// </returns>
+        [DllImport(Interop.Libraries.libproc, SetLastError = true)]
+        private static unsafe extern int proc_pidinfo(
+            int pid,
+            int flavor,
+            ulong arg,
+            proc_fdinfo* buffer,
+            int bufferSize);
+
+        /// <summary>
+        /// Gets information about a process given it's PID
+        /// </summary>
+        /// <param name="pid">The PID of the process</param>
+        /// <param name="flavor">Should be PROC_PIDTASKALLINFO</param>
+        /// <param name="arg">Flavor dependent value</param>
+        /// <param name="buffer">A pointer to a block of memory (of size ulong[]) allocated that will contain the data</param>
+        /// <param name="bufferSize">The size of the allocated block above</param>
+        /// <returns>
+        /// The amount of data actually returned. If this size matches the bufferSize parameter then
+        /// the data is valid. If the sizes do not match then the data is invalid, most likely due 
+        /// to not having enough permissions to query for the data of that specific process
+        /// </returns>
+        [DllImport(Interop.Libraries.libproc, SetLastError = true)]
+        private static unsafe extern int proc_pidinfo(
+            int pid,
+            int flavor,
+            ulong arg,
+            ulong* buffer,
             int bufferSize);
 
         /// <summary>
@@ -277,11 +301,18 @@ internal static partial class Interop
         /// Returns a valid proc_taskallinfo struct for valid processes that the caller 
         /// has permission to access; otherwise, returns null
         /// </returns>
-        internal static proc_taskallinfo? GetProcessInfoById(int pid)
+        internal static unsafe proc_taskallinfo? GetProcessInfoById(int pid)
         {
-            proc_taskallinfo info;
-            bool success = internal_proc_pidinfo_helper<proc_taskallinfo>(pid, PROC_PIDTASKALLINFO, 0, out info);
-            return (success ? new proc_taskallinfo?(info) : null);
+            // Negative PIDs are invalid
+            if (pid < 0)
+            {
+                throw new ArgumentOutOfRangeException("pid");
+            }
+
+            int size = Marshal.SizeOf<proc_taskallinfo>();
+            proc_taskallinfo info = default(proc_taskallinfo);
+            int result = proc_pidinfo(pid, PROC_PIDTASKALLINFO, 0, &info, size);
+            return (result == size ? new proc_taskallinfo?(info) : null);
         }
 
         /// <summary>
@@ -292,66 +323,7 @@ internal static partial class Interop
         /// Returns a valid proc_threadinfo struct for valid threads that the caller
         /// has permissions to access; otherwise, returns null
         /// </returns>
-        internal static proc_threadinfo? GetThreadInfoById(ulong thread)
-        {
-            proc_threadinfo info;
-            bool success = internal_proc_pidinfo_helper<proc_threadinfo>(Interop.libc.getpid(), PROC_PIDTHREADINFO, (ulong)thread, out info);
-            return (success ? new proc_threadinfo?(info) : null);
-        }
-
-        internal static List<KeyValuePair<ulong, proc_threadinfo?>> GetAllThreadsInProcess(int pid)
-        {
-            // Allocate unmanaged memory for the thread IDs
-            int size = PROC_PIDLISTTHREADS_SIZE * 20; // start assuming 20 threads is enough
-            IntPtr buffer = Marshal.AllocCoTaskMem(size);
-
-            // Try to get the thread IDs
-            int result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0,  buffer, size);
-
-            // Since we don't know how many threads there could be, if result == size, that could mean two things
-            // 1) We guessed exactly how many threads there are
-            // 2) There are more threads that we didn't get since our buffer is too small
-            // To make sure it isn't #2, when we result == size, double the buffer and try again
-            while (result == size)
-            {
-                Marshal.FreeCoTaskMem(buffer);
-                size *= 2;
-                Marshal.AllocCoTaskMem(size);
-                result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, buffer, size);
-            }
-
-            // Any data means result > 0
-            if (result <= 0)
-            {
-                throw new System.ComponentModel.Win32Exception();
-            }
-
-            List<KeyValuePair<ulong, proc_threadinfo?>> threads = new List<KeyValuePair<ulong, proc_threadinfo?>>();
-
-            // Loop over each thread and get the info
-            for (int i = 0; i < (result / PROC_PIDLISTTHREADS_SIZE); i++)
-            {
-                ulong threadId = (ulong)Marshal.ReadInt64(buffer, i * Marshal.SizeOf<ulong>());
-                threads.Add(new KeyValuePair<ulong, proc_threadinfo?>(threadId, GetThreadInfoById(threadId)));
-            }
-
-            // Free our unmanaged memory
-            Marshal.FreeCoTaskMem(buffer);
-
-            return threads;
-        }
-
-        /// <summary>
-        /// Retrieves the number of open file descriptors for the specified pid
-        /// </summary>
-        /// <returns>Returns a list of open File Descriptors for this process</returns>
-        /// <remarks>
-        /// This function doesn't use the helper since it seems to allow passing NULL
-        /// values in to the buffer and length parameters to get back an estimation 
-        /// of how much data we will need to allocate; the other flavors don't seem
-        /// to support doing that.
-        /// </remarks>
-        internal static List<proc_fdinfo> GetFileDescriptorsForPid(int pid)
+        internal static unsafe proc_threadinfo? GetThreadInfoById(int pid, ulong thread)
         {
             // Negative PIDs are invalid
             if (pid < 0)
@@ -359,68 +331,116 @@ internal static partial class Interop
                 throw new ArgumentOutOfRangeException("pid");
             }
 
-            int size = 0;
-            IntPtr buffer = IntPtr.Zero;
-            
-            // Query for an estimation about the size of the buffer we will need. This seems
-            // to add some padding from the real number, so we don't need to do that
-            int result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, buffer, size);
-            if (result <= 0)
+            // Negative TIDs are invalid
+            if (thread < 0)
             {
-                throw new System.ComponentModel.Win32Exception();
+                throw new ArgumentOutOfRangeException("thread");
             }
 
-            // Allocate our unmanaged memory and call again to get the descriptors
-            size = result;
-            buffer = Marshal.AllocCoTaskMem(size);
-            result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, buffer, size);
-            if (result <= 0)
-            {
-                throw new System.ComponentModel.Win32Exception();
-            }
-
-            List<proc_fdinfo> fds = new List<proc_fdinfo>();
-
-            // Copy the file descriptors over
-            for (int i = 0; i < (result / PROC_PIDLISTFD_SIZE); i++)
-            {
-                fds.Add(Marshal.PtrToStructure<proc_fdinfo>(buffer + (i * PROC_PIDLISTFD_SIZE)));
-            }
-
-            // Free our unmanaged memory
-            Marshal.FreeCoTaskMem(buffer);
-
-            return fds;
+            int size = Marshal.SizeOf<proc_threadinfo>();
+            proc_threadinfo info = default(proc_threadinfo);
+            int result = proc_pidinfo(pid, PROC_PIDTHREADINFO, (ulong)thread, &info, size);
+            return (result == size ? new proc_threadinfo?(info) : null);
         }
 
-        private static bool internal_proc_pidinfo_helper<T>(int pid, int flavor, ulong args, out T info)
+        internal static unsafe List<KeyValuePair<ulong, proc_threadinfo?>> GetAllThreadsInProcess(int pid)
         {
             // Negative PIDs are invalid
             if (pid < 0)
             {
-                throw new ArgumentOutOfRangeException("pid", SR.NegativePidNotSupported);
+                throw new ArgumentOutOfRangeException("pid");
             }
 
-            bool success = false;
+            int result = 0;
+            int size = 20; // start assuming 20 threads is enough
+            ulong[] threadIds = null;
 
-            // Allocate our unmanaged buffer for the task info
-            info = default(T);
-            int size = Marshal.SizeOf<T>();
-            IntPtr buffer = Marshal.AllocCoTaskMem(size);
-
-            // Get the process information for the given PID
-            int result = proc_pidinfo(pid, flavor, args, buffer, size);
-            if (result == size)
+            // We have no way of knowning how many threads the process has (and therefore how big our buffer should be)
+            // so while the return value of the function is the same as our buffer size (meaning it completely filled
+            // our buffer), double our buffer size and try again. This ensures that we don't miss any threads
+            do
             {
-                // Copy the struct from unmanaged memory to managed memory
-                info = Marshal.PtrToStructure<T>(buffer);
-                success = true;
+                threadIds = new ulong[size];
+                fixed (ulong* pBuffer = threadIds)
+                {
+                    result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, pBuffer, Marshal.SizeOf<ulong>() * threadIds.Length);
+                }
+
+                if (result <= 0)
+                {
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                }
+                else
+                {
+                    size *= 2;
+                }
+            }
+            while (result == Marshal.SizeOf<ulong>() * threadIds.Length);
+
+            // Remove any extra elements
+            Array.Resize<ulong>(ref threadIds, (int)(result / Marshal.SizeOf<ulong>()));
+
+            // Loop over each thread and get the thread info
+            List<KeyValuePair<ulong, proc_threadinfo?>> threads = new List<KeyValuePair<ulong, proc_threadinfo?>>();
+            foreach (ulong id in threadIds)
+            {
+                threads.Add(new KeyValuePair<ulong, proc_threadinfo?>(id, GetThreadInfoById(pid, id)));
             }
 
-            // Free our unmanaged buffer
-            Marshal.FreeCoTaskMem(buffer);
+            return threads;
+        }
 
-            return success;
+        /// <summary>
+        /// Retrieves the number of open file descriptors for the specified pid
+        /// </summary>
+        /// <returns>Returns an array of open File Descriptors for this process</returns>
+        /// <remarks>
+        /// This function doesn't use the helper since it seems to allow passing NULL
+        /// values in to the buffer and length parameters to get back an estimation 
+        /// of how much data we will need to allocate; the other flavors don't seem
+        /// to support doing that.
+        /// </remarks>
+        internal static unsafe proc_fdinfo[] GetFileDescriptorsForPid(int pid)
+        {
+            // Negative PIDs are invalid
+            if (pid < 0)
+            {
+                throw new ArgumentOutOfRangeException("pid");
+            }
+
+            // Query for an estimation about the size of the buffer we will need. This seems
+            // to add some padding from the real number, so we don't need to do that
+            int result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, (proc_fdinfo*)null, 0);
+            if (result <= 0)
+            {
+                throw new System.ComponentModel.Win32Exception();
+            }
+
+            proc_fdinfo[] fds = null;
+            int size = (int)(result / Marshal.SizeOf<proc_fdinfo>());
+
+            // Just in case the app opened a ton of handles between when we asked and now,
+            // make sure we retry if our buffer is filled
+            do
+            {
+                fds = new proc_fdinfo[size];
+                fixed (proc_fdinfo* pFds = fds)
+                {
+                    result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, pFds, Marshal.SizeOf<proc_fdinfo>() * fds.Length);
+                }
+
+                if (result <= 0)
+                {
+                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                }
+                else
+                {
+                    size *= 2;
+                }
+            }
+            while (result == (fds.Length * Marshal.SizeOf<proc_fdinfo>()));
+
+            return fds;
         }
 
         /// <summary>
@@ -431,9 +451,9 @@ internal static partial class Interop
         /// <param name="bufferSize">The size of the buffer, should be PROC_PIDPATHINFO_MAXSIZE</param>
         /// <returns>Returns the length of the path returned on success</returns>
         [DllImport(Interop.Libraries.libproc, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern int proc_pidpath(
+        private static unsafe extern int proc_pidpath(
             int pid, 
-            IntPtr buffer, 
+            byte* buffer, 
             uint bufferSize);
 
         /// <summary>
@@ -441,7 +461,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="pid">The PID of the running process</param>
         /// <returns>Returns the full path to the process executable</returns>
-        internal static string proc_pidpath(int pid)
+        internal static unsafe string proc_pidpath(int pid)
         {
             // Negative PIDs are invalid
             if (pid < 0)
@@ -449,24 +469,21 @@ internal static partial class Interop
                 throw new ArgumentOutOfRangeException("pid", SR.NegativePidNotSupported);
             }
 
-            // Allocate our unmanaged buffer for the path
-            string path = string.Empty;
-            uint size = (uint)Marshal.SizeOf<char>() * PROC_PIDPATHINFO_MAXSIZE + 1;
-            IntPtr buffer = Marshal.AllocCoTaskMem((int)size);
-
-            // Get the PID's executable's path
-            int result = proc_pidpath(pid, buffer, size);
-            if (result < 0)
+            // The path is a fixed buffer size, so use that and trim it after
+            int result = 0;
+            byte[] buffer = new byte[PROC_PIDPATHINFO_MAXSIZE];
+            fixed (byte* pBuffer = buffer)
             {
-                // Check for less than 0 since the kernel process won't have a path
-                throw new COMException(string.Format(SR.CantFindProcessExecutablePath, pid), Marshal.GetLastWin32Error());
+                result = proc_pidpath(pid, pBuffer, (uint)(buffer.Length * Marshal.SizeOf<byte>()));
             }
 
-            // Copy unmanaged data into a managed string and free the unmanaged buffer
-            path = Marshal.PtrToStringUni(buffer, result);
-            Marshal.FreeCoTaskMem(buffer);
+            if (result <= 0)
+            {
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            }
 
-            return path;
+            // OS X uses UTF-8. The conversion may not strip off all trailing \0s so remove them here
+            return System.Text.UTF8Encoding.UTF8.GetString(buffer).Trim('\0');
         }
 
         /// <summary>
@@ -481,19 +498,19 @@ internal static partial class Interop
         /// void* and not a strong type even though it returns a rusage_info struct
         /// </remarks>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
-        private static extern int proc_pid_rusage(
+        private static unsafe extern int proc_pid_rusage(
             int pid,
             int flavor,
-            IntPtr rusage_info_t);
+            rusage_info_v3* rusage_info_t);
 
         /// <summary>
         /// Gets the rusage information for the process identified by the PID
         /// </summary>
         /// <param name="pid">The process to retrieve the rusage for</param>
         /// <returns>On success, returns a struct containing info about the process; on
-        /// failure or when the caller doesn't have permissions to the process, throws a COMException
+        /// failure or when the caller doesn't have permissions to the process, throws a Win32Exception
         /// </returns>
-        internal static rusage_info_v3 proc_pid_rusage(int pid)
+        internal static unsafe rusage_info_v3 proc_pid_rusage(int pid)
         {
             // Negative PIDs are invalid
             if (pid < 0)
@@ -501,21 +518,14 @@ internal static partial class Interop
                 throw new ArgumentOutOfRangeException("pid", SR.NegativePidNotSupported);
             }
 
-            // Allocate our managed buffer for the data
-            rusage_info_v3 info;
-            int size = Marshal.SizeOf<rusage_info_v3>();
-            IntPtr buffer = Marshal.AllocCoTaskMem(size);
+            rusage_info_v3 info = new rusage_info_v3();
 
             // Get the PIDs rusage info
-            int result = proc_pid_rusage(pid, RUSAGE_SELF, buffer);
+            int result = proc_pid_rusage(pid, RUSAGE_SELF, &info);
             if (result < 0)
             {
-                throw new COMException(SR.RUsageFailure, Marshal.GetLastWin32Error());
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.RUsageFailure);
             }
-
-            // Copy the unmanaged data into the managed struct and delete the unmanaged buffer
-            info = Marshal.PtrToStructure<rusage_info_v3>(buffer);
-            Marshal.FreeCoTaskMem(buffer);
 
             return info;
         }
