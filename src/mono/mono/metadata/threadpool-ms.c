@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef PLATFORM_ANDROID
+#if !defined (HAVE_COMPLEX_H)
 #include <../../support/libm/complex.h>
 #else
 #include <complex.h>
