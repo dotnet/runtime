@@ -12,13 +12,18 @@
     <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="..\..\src\Interop\Interop.PlatformDetection.cs">
+      <Link>Interop.PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="Attributes\ActiveIssueAttribute.cs" />
-    <Compile Include="Category.cs" />
+    <Compile Include="XunitConstants.cs" />
     <Compile Include="Discoverers\ActiveIssueDiscoverer.cs" />
     <Compile Include="Attributes\OuterLoopAttribute.cs" />
     <Compile Include="Discoverers\OuterLoopTestsDiscoverer.cs" />
