@@ -341,15 +341,6 @@ _wapi_thread_apc_pending (gpointer handle)
  * call the wait function again. This essentially means that the target thread will
  * busy wait until it is ready to process the interruption.
  */
-void
-wapi_interrupt_thread (gpointer thread_handle)
-{
-	gpointer wait_handle;
-
-	wait_handle = wapi_prepare_interrupt_thread (thread_handle);
-	wapi_finish_interrupt_thread (wait_handle);
-}
-
 gpointer
 wapi_prepare_interrupt_thread (gpointer thread_handle)
 {
