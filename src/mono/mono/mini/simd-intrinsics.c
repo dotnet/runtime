@@ -61,7 +61,16 @@ The advantage of this change is that it could have a _membase version and promot
 without a OP_LDADDR.
 */
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
+#if defined (MONO_ARCH_SIMD_INTRINSICS)
+
+#if defined (DISABLE_JIT)
+
+void
+mono_simd_intrinsics_init (void)
+{
+}
+
+#else
 
 //#define IS_DEBUG_ON(cfg) (0)
 
@@ -1673,4 +1682,5 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	return NULL;
 }
 
-#endif
+#endif /* DISABLE_JIT */
+#endif /* MONO_ARCH_SIMD_INTRINSICS */
