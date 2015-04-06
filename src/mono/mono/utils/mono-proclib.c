@@ -581,8 +581,8 @@ mono_cpu_count (void)
 	if (count > 0)
 		return count + 1;
 #endif
-#ifdef _SC_NPROCESSORS_ONLN
-	count = sysconf (_SC_NPROCESSORS_ONLN);
+#ifdef _SC_NPROCESSORS_CONF
+	count = sysconf (_SC_NPROCESSORS_CONF);
 	if (count > 0)
 		return count;
 #endif
