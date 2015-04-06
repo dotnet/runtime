@@ -25,7 +25,7 @@ We use the OSS testing framework [xunit|http://xunit.github.io/]
 ### Running tests on the command line
 
 By default, the core tests are run as part of the build. Running the tests from
-the command line is as simple as invoking `build.cmd`. 
+the command line is as simple as invoking `build.cmd` on windows, and `run-test.sh` on linux and osx. 
 
 You can also run the test for an individual project by building just one test
 project, e.g.:
@@ -34,6 +34,61 @@ cd src\System.Collections.Immutable\tests
 msbuild /t:BuildAndTest (or /t:Test to just re-run the tests)
 ```
 In some test directories there may be multiple test projects or directories so you may need to specify the specific test project to get it to build and run the tests.
+
+The tests can also be filtered based on xunit trait attributes defined in XunitTraitDiscoverers project. These attributes are to be specified over the test method. The available xunit attributes are:
+
+_**OuterLoop:**_
+This attribute returns the 'outerloop' category, so to run outerloop tests use the following commandline,
+```
+xunit.console.netcore.exe *.dll -trait category=outerloop
+build.cmd *.csproj /p:RunTestsWithCategories=OuterLoop
+```
+_**PlatformSpecific(Xunit.PlatformID platforms):**_
+Use this attribute on test methods, to specifiy that this test may only be run on the specified platforms. This attribute returns the following categories based on platform 
+
+       - nonwindowstests: for tests that don't run on Windows
+       - nonlinuxtests: for tests that don't run on Linux
+       - nonosxtests: for tests that don't run on OSX
+
+To run Linux specific tests on a Linux box, use the following commandline,
+```
+xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests
+```
+_**ActiveIssue(int issue, Xunit.PlatformID platforms):**_
+Use this attribute over tests methods, to skip failing tests only on the specific platforms, if no platforms is specified, then the test is skipped on all platforms. This attribute returns the 'failing' category, so to run all acceptable tests on Linux that are not failing, use the following commandline,
+```
+xunit.console.netcore.exe *.dll -notrait category=failing -notrait category=nonlinuxtests
+```
+And to run all acceptable tests on Linux that are failing,
+```
+xunit.console.netcore.exe *.dll -trait category=failing -notrait category=nonlinuxtests
+```
+
+_**A few common examples with the above attributes:**_
+
+- Run all tests acceptable on Windows
+```
+xunit.console.netcore.exe *.dll -notrait category=nonwindowstests
+```
+- Run all inner loop tests acceptable on Linux
+```
+xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -notrait category=OuterLoop
+```
+- Run all outer loop tests acceptable on OSX that are not currently associated with active issues
+```
+xunit.console.netcore.exe *.dll -notrait category=nonosxtests -trait category=OuterLoop -notrait category=failing
+```
+- Run all tests acceptable on Linux that are currently associated with active issues
+```
+xunit.console.netcore.exe *.dll -notrait category=nonlinuxtests -trait category=failing
+```
+
+All the required dlls to run a test project can be found in the bin\\tests\\{Flavor}\\{Project}.Tests\\aspnetcore50\\ which should be created on building the test project.
+
+To skip an entire test project from being run on a specific platform, for ex, skip running registry tests on linux and mac, use the <UnsupportedPlatforms> msbuild property on the csproj. Valid platform values are
+```
+<UnsupportedPlatforms>Windows_NT;Linux;OSX</UnsupportedPlatforms>
+```
 
 ### Running tests from Visual Studio
 
