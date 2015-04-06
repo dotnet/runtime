@@ -6051,7 +6051,13 @@ mono_generic_class_get_class (MonoGenericClass *gclass)
 	mono_generic_class_setup_parent (klass, gklass);
 
 	if (gclass->is_dynamic) {
-		klass->inited = 1;
+		/*
+		 * We don't need to do any init workf with unbaked typebuilders. Generic instances created at this point will be later unregistered and/or fixed.
+		 * This is to avoid work that would probably give wrong results as fields change as we build the TypeBuilder.
+		 * See remove_instantiations_of_and_ensure_contents in reflection.c and its usage in reflection.c to understand the fixup stage of SRE banking.
+		*/
+		if (!gklass->wastypebuilder)
+			klass->inited = 1;
 
 		mono_class_setup_supertypes (klass);
 
