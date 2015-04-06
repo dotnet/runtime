@@ -207,6 +207,47 @@ get_pid_status_item_buf (int pid, const char *item, char *rbuf, int blen, MonoPr
 	return NULL;
 }
 
+#if USE_SYSCTL
+
+#ifdef KERN_PROC2
+#define KINFO_PROC struct kinfo_proc2
+#else
+#define KINFO_PROC struct kinfo_proc
+#endif
+
+static gboolean
+sysctl_kinfo_proc (gpointer pid, KINFO_PROC* processi)
+{
+	int res;
+	size_t data_len = sizeof (KINFO_PROC);
+
+#ifdef KERN_PROC2
+	int mib [6];
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC2;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = GPOINTER_TO_UINT (pid);
+	mib [4] = sizeof(KINFO_PROC);
+	mib [5] = 400; /* XXX */
+
+	res = sysctl (mib, 6, processi, &data_len, NULL, 0);
+#else
+	int mib [4];
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = GPOINTER_TO_UINT (pid);
+
+	res = sysctl (mib, 4, processi, &data_len, NULL, 0);
+#endif /* KERN_PROC2 */
+
+	if (res < 0 || data_len != sizeof (KINFO_PROC))
+		return FALSE;
+
+	return TRUE;
+}
+#endif /* USE_SYSCTL */
+
 /**
  * mono_process_get_name:
  * @pid: pid of the process
@@ -220,44 +261,13 @@ char*
 mono_process_get_name (gpointer pid, char *buf, int len)
 {
 #if USE_SYSCTL
-	int res;
-#ifdef KERN_PROC2
-	int mib [6];
-	size_t data_len = sizeof (struct kinfo_proc2);
-	struct kinfo_proc2 processi;
-#else
-	int mib [4];
-	size_t data_len = sizeof (struct kinfo_proc);
-	struct kinfo_proc processi;
-#endif /* KERN_PROC2 */
+	KINFO_PROC processi;
 
 	memset (buf, 0, len);
 
-#ifdef KERN_PROC2
-	mib [0] = CTL_KERN;
-	mib [1] = KERN_PROC2;
-	mib [2] = KERN_PROC_PID;
-	mib [3] = GPOINTER_TO_UINT (pid);
-	mib [4] = sizeof(struct kinfo_proc2);
-	mib [5] = 400; /* XXX */
+	if (sysctl_kinfo_proc (pid, &processi))
+		strncpy (buf, processi.kinfo_name_member, len - 1);
 
-	res = sysctl (mib, 6, &processi, &data_len, NULL, 0);
-
-	if (res < 0 || data_len != sizeof (struct kinfo_proc2)) {
-		return buf;
-	}
-#else
-	mib [0] = CTL_KERN;
-	mib [1] = KERN_PROC;
-	mib [2] = KERN_PROC_PID;
-	mib [3] = GPOINTER_TO_UINT (pid);
-	
-	res = sysctl (mib, 4, &processi, &data_len, NULL, 0);
-	if (res < 0 || data_len != sizeof (struct kinfo_proc)) {
-		return buf;
-	}
-#endif /* KERN_PROC2 */
-	strncpy (buf, processi.kinfo_name_member, len - 1);
 	return buf;
 #else
 	char fname [128];
@@ -282,11 +292,42 @@ mono_process_get_name (gpointer pid, char *buf, int len)
 #endif
 }
 
+void
+mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gint64 *kernel_time)
+{
+	if (user_time)
+		*user_time = mono_process_get_data (pid, MONO_PROCESS_USER_TIME);
+
+	if (kernel_time)
+		*kernel_time = mono_process_get_data (pid, MONO_PROCESS_SYSTEM_TIME);
+
+	if (start_time) {
+		*start_time = 0;
+
+#if USE_SYSCTL
+		{
+			KINFO_PROC processi;
+
+			if (sysctl_kinfo_proc (pid, &processi))
+				*start_time = mono_100ns_datetime_from_timeval (processi.kp_proc.p_starttime);
+		}
+#endif
+
+		if (*start_time == 0) {
+			static guint64 boot_time = 0;
+			if (!boot_time)
+				boot_time = mono_100ns_datetime () - ((guint64)mono_msec_ticks ()) * 10000;
+
+			*start_time = boot_time + mono_process_get_data (pid, MONO_PROCESS_ELAPSED);
+		}
+	}
+}
+
 /*
  * /proc/pid/stat format:
  * pid (cmdname) S 
  * 	[0] ppid pgid sid tty_nr tty_pgrp flags min_flt cmin_flt maj_flt cmaj_flt
- * 	[10] utime stime cutime cstime prio nice threads 0 start_time vsize rss
+ * 	[10] utime stime cutime cstime prio nice threads 0 start_time vsize
  * 	[20] rss rsslim start_code end_code start_stack esp eip pending blocked sigign
  * 	[30] sigcatch wchan 0 0 exit_signal cpu rt_prio policy
  */
@@ -521,7 +562,7 @@ mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProces
 	case MONO_PROCESS_FAULTS:
 		return get_process_stat_item (rpid, 6, TRUE, error);
 	case MONO_PROCESS_ELAPSED:
-		return get_process_stat_item (rpid, 18, FALSE, error) / get_user_hz ();
+		return get_process_stat_time (rpid, 18, FALSE, error);
 	case MONO_PROCESS_PPID:
 		return get_process_stat_time (rpid, 0, FALSE, error);
 	case MONO_PROCESS_PAGED_BYTES:

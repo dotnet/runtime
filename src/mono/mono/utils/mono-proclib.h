@@ -58,6 +58,8 @@ struct _MonoCpuUsageState {
 
 gpointer* mono_process_list     (int *size);
 
+void      mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gint64 *kernel_time);
+
 char*     mono_process_get_name (gpointer pid, char *buf, int len);
 
 gint64    mono_process_get_data (gpointer pid, MonoProcessData data);
