@@ -4,13 +4,13 @@
 using System;
 using System.Runtime.InteropServices;
 
-using off64_t = System.Int64;
+using off_t = System.Int64; // Assuming either 64-bit machine or _FILE_OFFSET_BITS == 64
 
 internal static partial class Interop
 {
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern off64_t ftruncate64(int fd, off64_t length);
+        internal static extern int ftruncate(int fd, off_t length);
     }
 }
