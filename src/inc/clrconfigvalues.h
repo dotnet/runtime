@@ -822,6 +822,8 @@ RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_COR_PROFILER_PATH_64, W("COR_PROFILER_PATH
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_CORECLR_ENABLE_PROFILING, W("CORECLR_ENABLE_PROFILING"), 0, "CoreCLR only: Flag to indicate whether profiling should be enabled for the currently running process.", CLRConfig::DontPrependCOMPLUS_ | CLRConfig::IgnoreConfigFiles)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER, W("CORECLR_PROFILER"), "CoreCLR only: Specifies GUID of profiler to load into currently running process", CLRConfig::DontPrependCOMPLUS_)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH, W("CORECLR_PROFILER_PATH"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running process", CLRConfig::DontPrependCOMPLUS_)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_32, W("CORECLR_PROFILER_PATH_32"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 32 process", CLRConfig::DontPrependCOMPLUS_)
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_CORECLR_PROFILER_PATH_64, W("CORECLR_PROFILER_PATH_64"), "CoreCLR only: Specifies the path to the DLL of profiler to load into currently running 64 process", CLRConfig::DontPrependCOMPLUS_)
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_ProfAPI_ProfilerCompatibilitySetting, W("ProfAPI_ProfilerCompatibilitySetting"), "Specifies the profiler loading policy (the default is not to load a V2 profiler in V4)", CLRConfig::REGUTIL_default | CLRConfig::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_AttachThreadAlwaysOn, W("AttachThreadAlwaysOn"), "Forces profapi attach thread to be created on startup, instead of on-demand.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MsBetweenAttachCheck, W("MsBetweenAttachCheck"), 500, "")
