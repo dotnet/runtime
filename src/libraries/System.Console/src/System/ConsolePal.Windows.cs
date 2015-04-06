@@ -104,22 +104,10 @@ namespace System
 
         private static Encoding GetEncoding(int codePage)
         {
-            // In most scenarios, 437 is the codepage used for Console encoding. However this encoding is not available 
-            // by default or on all platforms, and so we use the try{} catch{} pattern and use UTF8 in case of failure. 
-            // This ensures that if the user uses Encoding.RegisterProvider to register the encoding the Console class 
-            // can automatically get the codepage as well.
-            Encoding enc;
-            try
-            {
-                enc = Encoding.GetEncoding(codePage);
-                Debug.Assert(!(enc is UnicodeEncoding)); // if this ever changes, will need to update how we read/write Windows console streams
-                enc = new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
-            }
-            catch (NotSupportedException)
-            {
-                enc = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-            }
-            return enc;
+            Encoding enc = EncodingHelper.GetSupportedConsoleEncoding(codePage);
+            Contract.Assert(!(enc is UnicodeEncoding)); // if this ever changes, will need to update how we read/write Windows console stream
+
+            return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
 
         // For ResetColor
