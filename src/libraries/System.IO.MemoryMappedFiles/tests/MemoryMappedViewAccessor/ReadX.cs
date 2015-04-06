@@ -48,8 +48,7 @@ public class MMVA_ReadX : TestBase
 
         try
         {
-            using (FileStream fs = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, 0x1000, FileOptions.DeleteOnClose))
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, null, pageSize * 10, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, pageSize * 10))
             {
                 // Default ViewAccessor size - whole MMF
                 using (MemoryMappedViewAccessor view = mmf.CreateViewAccessor())
