@@ -19,13 +19,13 @@ enum {
 typedef struct _MonoRuntimeWorkItem MonoRuntimeWorkItem;
 typedef struct _MonoNativeOverlapped MonoNativeOverlapped;
 
-static void
+static void G_GNUC_UNUSED
 mono_threadpool_ms_init (void)
 {
 	/* Initialization is done lazily */
 }
 
-static void
+static void G_GNUC_UNUSED
 mono_threadpool_ms_init_tls (void)
 {
 	/* The WSQ is now implemented in managed */
@@ -47,7 +47,7 @@ mono_threadpool_ms_suspend (void);
 void
 mono_threadpool_ms_resume (void);
 
-static gboolean
+static gboolean G_GNUC_UNUSED
 mono_threadpool_ms_is_queue_array (MonoArray *arr)
 {
 	/* The queue is in managed code */
@@ -78,7 +78,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_ReportThreadStatus (gboolean is_
 gboolean
 ves_icall_System_Threading_Microsoft_ThreadPool_RequestWorkerThread (void);
 
-static gboolean
+static gboolean G_GNUC_UNUSED
 ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped)
 {
 	/* This copy the behavior of the current Mono implementation */
@@ -86,14 +86,14 @@ ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (Mono
 	return FALSE;
 }
 
-static gboolean
+static gboolean G_GNUC_UNUSED
 ves_icall_System_Threading_Microsoft_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle)
 {
 	/* This copy the behavior of the current Mono implementation */
 	return TRUE;
 }
 
-static gboolean
+static gboolean G_GNUC_UNUSED
 ves_icall_System_Threading_Microsoft_ThreadPool_IsThreadPoolHosted (void)
 {
 	return FALSE;

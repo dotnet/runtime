@@ -427,6 +427,10 @@ struct _MethodInfo {
 	MonoJitInfo *ji;
 };
 
+#ifdef TLS_INIT
+#undef TLS_INIT
+#endif
+
 #ifdef HOST_WIN32
 #define TLS_SET(x,y) (TlsSetValue (x, y))
 #define TLS_GET(t,x) ((t *) TlsGetValue (x))
