@@ -254,8 +254,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fsync.cs">
       <Link>Common\Interop\Unix\Interop.fsync.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate64.cs">
-      <Link>Common\Interop\Unix\Interop.ftruncate64.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
+      <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.getegid.cs">
       <Link>Common\Interop\Unix\Interop.getegid.cs</Link>
