@@ -63,8 +63,6 @@ typedef WapiLargeInteger LARGE_INTEGER;
 typedef WapiLargeInteger *PLARGE_INTEGER;
 typedef WapiULargeInteger ULARGE_INTEGER;
 typedef WapiULargeInteger *PULARGE_INTEGER;
-typedef WapiSystemInfo SYSTEM_INFO;
-typedef WapiSystemInfo *LPSYSTEM_INFO;
 typedef WapiFloatingSaveArea FLOATING_SAVE_AREA;
 typedef WapiFloatingSaveArea *PFLOATING_SAVE_AREA;
 typedef WapiContext CONTEXT;

@@ -28,7 +28,6 @@ OTHER_H = \
 	semaphores.h	\
 	sockets.h	\
 	status.h	\
-	system.h	\
 	threads.h	\
 	timefuncs.h	\
 	types.h		\
@@ -83,8 +82,6 @@ OTHER_SRC = \
 	socket-private.h	\
 	socket-wrappers.h	\
 	status.h		\
-	system.c		\
-	system.h		\
 	threads.h		\
 	thread-private.h	\
 	timefuncs.c		\
