@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Microsoft.DotNet.CoreCLR.Debug.Development</id>
-    <version>1.0.2-prerelease</version>
+    <version>1.0.3-prerelease</version>
     <title>Microsoft DotNet CoreCLR Runtime For Component Development</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
