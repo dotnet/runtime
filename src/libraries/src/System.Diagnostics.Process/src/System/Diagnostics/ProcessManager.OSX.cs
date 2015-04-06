@@ -31,9 +31,9 @@ namespace System.Diagnostics
             if (info.HasValue == false)
             {
                 procInfo.BasePriority = info.Value.ptinfo.pti_priority;
-                procInfo.HandleCount = Interop.libproc.GetFileDescriptorsForPid(pid).Count;
+                procInfo.HandleCount = Interop.libproc.GetFileDescriptorsForPid(pid).Length;
                 procInfo.ProcessId = pid;
-                procInfo.ProcessName = info.Value.pbsd.pbi_comm;
+                procInfo.ProcessName = GetStringFromProcInfo(info.Value.pbsd).Trim('\0');
                 procInfo.VirtualBytes = (long)info.Value.ptinfo.pti_virtual_size;
                 procInfo.WorkingSet = (long)info.Value.ptinfo.pti_resident_size;
 
@@ -58,8 +58,8 @@ namespace System.Diagnostics
                                 _processId = pid,
                                 _startAddress = IntPtr.Zero, // We don't have this info
                                 _threadId = Convert.ToInt32(t.Key),
-                                _threadState = Interop.libproc.ConvertOsxThreadRunStateToThreadState((Interop.libproc.ThreadRunState)t.Value.Value.pth_run_state),
-                                _threadWaitReason = Interop.libproc.ConvertOsxThreadFlagsToWaitReason((Interop.libproc.ThreadFlags)t.Value.Value.pth_flags)
+                                _threadState = ConvertOsxThreadRunStateToThreadState((Interop.libproc.ThreadRunState)t.Value.Value.pth_run_state),
+                                _threadWaitReason = ConvertOsxThreadFlagsToWaitReason((Interop.libproc.ThreadFlags)t.Value.Value.pth_flags)
                             });
                     }
                 });
@@ -68,7 +68,43 @@ namespace System.Diagnostics
         }
 
         // ----------------------------------
-        // ---- OSX PAL layer ends here ----
+        // ---- Unix PAL layer ends here ----
         // ----------------------------------
+
+        private static unsafe string GetStringFromProcInfo(Interop.libproc.proc_bsdinfo info)
+        {
+            int length = 0;
+            for (byte* ptr = info.pbi_comm; *ptr != 0; ptr++, length++) ;
+            return System.Text.Encoding.UTF8.GetString(info.pbi_comm, length);
+        }
+
+        private static System.Diagnostics.ThreadState ConvertOsxThreadRunStateToThreadState(Interop.libproc.ThreadRunState state)
+        {
+            switch (state)
+            {
+                case Interop.libproc.ThreadRunState.TH_STATE_RUNNING:
+                    return System.Diagnostics.ThreadState.Running;
+                case Interop.libproc.ThreadRunState.TH_STATE_STOPPED:
+                    return System.Diagnostics.ThreadState.Terminated;
+                case Interop.libproc.ThreadRunState.TH_STATE_HALTED:
+                    return System.Diagnostics.ThreadState.Wait;
+                case Interop.libproc.ThreadRunState.TH_STATE_UNINTERRUPTIBLE:
+                    return System.Diagnostics.ThreadState.Running;
+                case Interop.libproc.ThreadRunState.TH_STATE_WAITING:
+                    return System.Diagnostics.ThreadState.Standby;
+                default:
+                    throw new ArgumentOutOfRangeException("state");
+            }
+        }
+
+        private static System.Diagnostics.ThreadWaitReason ConvertOsxThreadFlagsToWaitReason(Interop.libproc.ThreadFlags flags)
+        {
+            // Since ThreadWaitReason isn't a flag, we have to do a mapping and will lose some information.
+            // The priorities below are arbitrary
+            if ((flags & Interop.libproc.ThreadFlags.TH_FLAGS_SWAPPED) == Interop.libproc.ThreadFlags.TH_FLAGS_SWAPPED)
+                return System.Diagnostics.ThreadWaitReason.PageOut;
+            else
+                return System.Diagnostics.ThreadWaitReason.Unknown; // There isn't a good mapping for anything else
+        }
     }
 }
