@@ -16,6 +16,21 @@ internal static partial class Interop
         OSX
     }
 
+    internal static bool IsWindows
+    {
+        get { return OperatingSystem.Windows == PlatformDetection.OperatingSystem; }
+    }
+
+    internal static bool IsLinux
+    {
+        get { return OperatingSystem.Linux == PlatformDetection.OperatingSystem; }
+    }
+
+    internal static bool IsOSX
+    {
+        get { return OperatingSystem.OSX == PlatformDetection.OperatingSystem; }
+    }
+
     internal static class PlatformDetection
     {
         internal static OperatingSystem OperatingSystem { get { return s_os.Value; } }
