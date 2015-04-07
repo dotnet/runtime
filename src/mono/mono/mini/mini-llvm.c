@@ -1107,7 +1107,7 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 		if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_CHAR || t->type == MONO_TYPE_BOOLEAN)
 			v = LLVMBuildZExt (ctx->builder, v, LLVMInt32Type (), "");
 		else if (t->type == MONO_TYPE_I1 || t->type == MONO_TYPE_I2)
-			v = LLVMBuildZExt (ctx->builder, v, LLVMInt32Type (), "");
+			v = LLVMBuildSExt (ctx->builder, v, LLVMInt32Type (), "");
 		else if (t->type == MONO_TYPE_U8)
 			v = LLVMBuildZExt (ctx->builder, v, LLVMInt64Type (), "");
 	}
