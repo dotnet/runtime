@@ -10,6 +10,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(include)
 
+if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+  # required for libunwind
+  include_directories("/usr/local/include/")
+endif()
+
 # Compile options
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
