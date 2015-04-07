@@ -669,8 +669,6 @@ private: ;
     // is propagated to the new tracker instance.
     class PartialTrackerState
     {
-        StackFrame m_sfResumeStackFrame;
-        StackRange m_ScannedStackRange;
         UINT_PTR m_uCatchToCallPC;
         PTR_EXCEPTION_CLAUSE_TOKEN m_pClauseForCatchToken;
         EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
@@ -692,12 +690,6 @@ private: ;
                                                 // reuse its memory, if it's non-NULL, it better be a valid thread pointer
 
     StackRange              m_ScannedStackRange;
-    // Range used to initialize the m_ScannedStackRange at start of the 2nd pass.
-    // This is: 
-    // 1) null range for non-interleaved exception handling and the very first
-    //    2nd pass of the interleaved handling and
-    // 2) non-null for the other 2nd passes of the interleaved handling.
-    StackRange              m_secondPassInitialScannedStackRange;
     DAC_EXCEPTION_POINTERS  m_ptrs;
     OBJECTHANDLE            m_hThrowable;
     StackTraceInfo          m_StackTraceInfo;
