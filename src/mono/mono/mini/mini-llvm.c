@@ -2656,6 +2656,11 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 			emit_volatile_store (ctx, exvar->dreg);
 		}
 	}
+
+#ifdef TARGET_ARM
+ FAILURE:
+	return;
+#endif
 }
 
 static void
@@ -2697,6 +2702,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		emit_handler_start (ctx, bb, builder);
+		CHECK_FAILURE (ctx);
 		builder = ctx->builder;
 	}
 
