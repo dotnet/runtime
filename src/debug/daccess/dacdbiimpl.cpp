@@ -480,7 +480,7 @@ BOOL DacDbiInterfaceImpl::IsTransitionStub(CORDB_ADDRESS address)
     // Currently IsIPInModule() is not implemented in the PAL.  Rather than skipping the check, we should
     // either E_NOTIMPL this API or implement IsIPInModule() in the PAL.  Since ICDProcess::IsTransitionStub()
     // is only called by VS in mixed-mode debugging scenarios, and mixed-mode debugging is not supported on 
-    // Mac, there is really no incentive to implement this API on Mac at this point.
+    // POSIX systems, there is really no incentive to implement this API at this point.
     ThrowHR(E_NOTIMPL);
 
 #else // !FEATURE_PAL    
@@ -5621,7 +5621,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
         // thread handle.  The function to do the conversion is OpenThread(), which is not implemented in PAL.
         // Instead, we just zero out the seed CONTEXT for the stackwalk.  This tells the stackwalker to
         // start the stackwalk with the first explicit frame.  This won't work when we do native debugging, 
-        // but that won't happen on the Linux/Mac since they don't support native debugging.
+        // but that won't happen on the POSIX systems since they don't support native debugging.
         ZeroMemory(pContextBuffer, sizeof(*pContextBuffer));        
 #else  // FEATURE_PAL
         pContextBuffer->ContextFlags = CONTEXT_ALL;
