@@ -529,15 +529,21 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 		}
 	}
 #ifdef BIND_ROOM
-	bsize = chunk_size / BIND_ROOM;
+	if (dynamic)
+		/* Reserve more space since there are no other chunks we might use if this one gets full */
+		bsize = (chunk_size * 2) / BIND_ROOM;
+	else
+		bsize = chunk_size / BIND_ROOM;
 	if (bsize < MIN_BSIZE)
 		bsize = MIN_BSIZE;
 	bsize += MIN_ALIGN -1;
 	bsize &= ~ (MIN_ALIGN - 1);
 	if (chunk_size - size < bsize) {
 		chunk_size = size + bsize;
-		chunk_size += pagesize - 1;
-		chunk_size &= ~ (pagesize - 1);
+		if (!dynamic) {
+			chunk_size += pagesize - 1;
+			chunk_size &= ~ (pagesize - 1);
+		}
 	}
 #endif
 
