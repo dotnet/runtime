@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A958BBDD-3238-4E58-AB7F-390AB6D88233}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Security.SecureString</RootNamespace>
+    <AssemblyName>System.Security.SecureString</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\crypt32\Interop.CryptProtectData.cs">
+      <Link>Common\Interop\Windows\Interop.CryptProtectData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\crypt32\Interop.CryptUnprotectData.cs">
+      <Link>Common\Interop\Windows\Interop.CryptUnprotectData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\crypt32\Interop.DATA_BLOB.cs">
+      <Link>Common\Interop\Windows\Interop.DATA_BLOB.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.ZeroMemory.cs">
+      <Link>Common\Interop\Windows\Interop.ZeroMemory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs">
+      <Link>Common\Interop\Windows\Interop.SysAllocStringLen.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.SysStringLen.cs">
+      <Link>Common\Interop\Windows\Interop.SysStringLen.cs</Link>
+    </Compile>
+    <Compile Include="System\Security\SecureString.cs" />
+    <Compile Include="System\Security\SafeBSTRHandle.cs" />
+    <Compile Include="System\Security\SecureStringMarshal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

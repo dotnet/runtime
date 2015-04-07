@@ -190,6 +190,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
 
+* **System.Security.SecureString**. Provides support for accessing and modifying text that should be kept confidential.
+
 * The overall list of items we currently plan to move onto GitHub is [here][typelist].
 
 [roslyn]: https://roslyn.codeplex.com/
