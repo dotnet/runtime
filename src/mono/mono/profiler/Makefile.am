@@ -18,11 +18,10 @@ if HAVE_VTUNE
 vtune_lib = libmono-profiler-vtune.la
 endif
 
-lib_LTLIBRARIES = libmono-profiler-cov.la libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la $(vtune_lib)
+lib_LTLIBRARIES = libmono-profiler-aot.la libmono-profiler-iomap.la libmono-profiler-log.la $(vtune_lib)
 
 if PLATFORM_DARWIN
 libmono_profiler_log_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
-libmono_profiler_cov_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
 if PLATFORM_ANDROID
 libmono_profiler_log_la_LDFLAGS = -avoid-version
@@ -56,8 +55,6 @@ else
 LIBMONO=$(top_builddir)/mono/mini/libmonosgen-$(API_VER).la
 endif
 
-libmono_profiler_cov_la_SOURCES = mono-cov.c
-libmono_profiler_cov_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
 libmono_profiler_aot_la_LIBADD = $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 #libmono_profiler_logging_la_SOURCES = mono-profiler-logging.c
