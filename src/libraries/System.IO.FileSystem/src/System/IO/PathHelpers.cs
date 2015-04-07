@@ -161,5 +161,10 @@ namespace System.IO
 
             return;
         }
+
+        internal static StringComparison GetComparison(bool caseSensitive)
+        {
+            return caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        }
     }
 }
