@@ -57,7 +57,8 @@ namespace System.IO
 
         private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
-    
+        private const int MaxSharedBuilderCapacity = 360; // also the max capacity used in StringBuilderCache
+		
         private Stream stream;
         private Encoding encoding;
         private Decoder decoder;
@@ -70,6 +71,9 @@ namespace System.IO
         private int byteLen;
         // This is used only for preamble detection
         private int bytePos;
+
+        [NonSerialized]
+        private StringBuilder _builder;
 
         // This is the maximum number of chars we can get from one call to 
         // ReadBuffer.  Used so ReadBuffer can tell when to copy data into
@@ -270,6 +274,7 @@ namespace System.IO
                     charBuffer = null;
                     charPos = 0;
                     charLen = 0;
+                    _builder = null;
                     base.Dispose(disposing);
                 }
             }
@@ -401,13 +406,14 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             // Call ReadBuffer, then pull data out of charBuffer.
-            StringBuilder sb = new StringBuilder(charLen - charPos);
+            StringBuilder sb = AcquireSharedStringBuilder(charLen - charPos);
             do {
                 sb.Append(charBuffer, charPos, charLen - charPos);
                 charPos = charLen;  // Note we consumed these characters
                 ReadBuffer();
             } while (charLen > 0);
-            return sb.ToString();
+
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
         public override int ReadBlock([In, Out] char[] buffer, int index, int count)
@@ -529,6 +535,38 @@ namespace System.IO
             return _checkPreamble;
         }
 
+        private StringBuilder AcquireSharedStringBuilder(int capacity)
+        {
+            // Do not touch the shared builder if it will be removed on release
+            if (capacity > MaxSharedBuilderCapacity)
+                return new StringBuilder(capacity);
+
+            // note that since StreamReader does not support concurrent reads it is not needed to
+            // set _builder to null to avoid parallel acquisitions.
+            StringBuilder sb = _builder;
+
+            if (sb == null)
+                return _builder = new StringBuilder(capacity);
+             
+            // Clear the shared builder. Does not remove the allocated buffers so they are reused.
+            sb.Length = 0;
+
+            // When needed, recreate the buffer backing the StringBuilder so that further Append calls
+            // are less likely to internally allocate new StringBuilders (or chunks).
+            if (sb.Capacity < capacity)
+                sb.Capacity = capacity;
+
+            return sb;
+        }
+
+        private string GetStringAndReleaseSharedStringBuilder(StringBuilder sb)
+        {
+            if (sb == _builder && sb.Capacity > MaxSharedBuilderCapacity)
+                _builder = null;
+
+            return sb.ToString();
+        }
+        
         internal virtual int ReadBuffer() {
             charLen = 0;
             charPos = 0;
@@ -723,7 +761,7 @@ namespace System.IO
                         String s;
                         if (sb != null) {
                             sb.Append(charBuffer, charPos, i - charPos);
-                            s = sb.ToString();
+                            s = GetStringAndReleaseSharedStringBuilder(sb);
                         }
                         else {
                             s = new String(charBuffer, charPos, i - charPos);
@@ -737,10 +775,10 @@ namespace System.IO
                     i++;
                 } while (i < charLen);
                 i = charLen - charPos;
-                if (sb == null) sb = new StringBuilder(i + 80);
+                if (sb == null) sb = AcquireSharedStringBuilder(i + 80);
                 sb.Append(charBuffer, charPos, i);
             } while (ReadBuffer() > 0);
-            return sb.ToString();
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
         
         #region Task based Async APIs
@@ -793,7 +831,7 @@ namespace System.IO
                         if (sb != null)
                         {
                             sb.Append(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                            s = sb.ToString();
+                            s = GetStringAndReleaseSharedStringBuilder(sb);
                         }
                         else
                         {
@@ -817,12 +855,12 @@ namespace System.IO
                 } while (i < tmpCharLen);
 
                 i = tmpCharLen - tmpCharPos;
-                if (sb == null) sb = new StringBuilder(i + 80);
+                if (sb == null) sb = AcquireSharedStringBuilder(i + 80);
                 sb.Append(tmpCharBuffer, tmpCharPos, i);
 
             } while (await ReadBufferAsync().ConfigureAwait(false) > 0);
 
-            return sb.ToString();
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
         [HostProtection(ExternalThreading=true)]
@@ -850,7 +888,7 @@ namespace System.IO
         private async Task<String> ReadToEndAsyncInternal()
         {
             // Call ReadBuffer, then pull data out of charBuffer.
-            StringBuilder sb = new StringBuilder(CharLen_Prop - CharPos_Prop);
+            StringBuilder sb = AcquireSharedStringBuilder(CharLen_Prop - CharPos_Prop);
             do
             {
                 int tmpCharPos = CharPos_Prop;
@@ -859,7 +897,7 @@ namespace System.IO
                 await ReadBufferAsync().ConfigureAwait(false);
             } while (CharLen_Prop > 0);
 
-            return sb.ToString();
+            return GetStringAndReleaseSharedStringBuilder(sb);
         }
 
         [HostProtection(ExternalThreading=true)]
