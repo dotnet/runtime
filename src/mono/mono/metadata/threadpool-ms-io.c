@@ -359,28 +359,27 @@ epoll_thread_create_socket_async_results (gint fd, struct epoll_event *epoll_eve
 	g_assert (epoll_event);
 	g_assert (list);
 
-	if (!*list) {
-		epoll_ctl (threadpool_io->epoll.fd, EPOLL_CTL_DEL, fd, epoll_event);
-	} else {
-		gint events;
+	if (*list && (epoll_event->events & (EPOLLIN | EPOLLERR | EPOLLHUP)) != 0) {
+		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
+		if (io_event)
+			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+	}
+	if (*list && (epoll_event->events & (EPOLLOUT | EPOLLERR | EPOLLHUP)) != 0) {
+		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
+		if (io_event)
+			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+	}
 
-		if ((epoll_event->events & (EPOLLIN | EPOLLERR | EPOLLHUP)) != 0) {
-			MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
-			if (io_event)
-				mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
-		}
-		if ((epoll_event->events & (EPOLLOUT | EPOLLERR | EPOLLHUP)) != 0) {
-			MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
-			if (io_event)
-				mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
-		}
+	if (*list) {
+		gint events = get_events (*list);
 
-		events = get_events (*list);
 		epoll_event->events = ((events & MONO_POLLOUT) ? EPOLLOUT : 0) | ((events & MONO_POLLIN) ? EPOLLIN : 0);
 		if (epoll_ctl (threadpool_io->epoll.fd, EPOLL_CTL_MOD, fd, epoll_event) == -1) {
 			if (epoll_ctl (threadpool_io->epoll.fd, EPOLL_CTL_ADD, fd, epoll_event) == -1)
 				g_warning ("epoll_thread_create_socket_async_results: epoll_ctl () failed, error (%d) %s", errno, g_strerror (errno));
 		}
+	} else {
+		epoll_ctl (threadpool_io->epoll.fd, EPOLL_CTL_DEL, fd, epoll_event);
 	}
 
 	return TRUE;
@@ -491,21 +490,20 @@ kqueue_thread_create_socket_async_results (gint fd, struct kevent *kqueue_event,
 	g_assert (kqueue_event);
 	g_assert (list);
 
+
+	if (*list && (kqueue_event->filter == EVFILT_READ || (kqueue_event->flags & EV_ERROR) != 0)) {
+		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
+		if (io_event)
+			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+	}
+	if (*list && (kqueue_event->filter == EVFILT_WRITE || (kqueue_event->flags & EV_ERROR) != 0)) {
+		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
+		if (io_event)
+			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+	}
+
 	if (*list) {
-		gint events;
-
-		if (kqueue_event->filter == EVFILT_READ || (kqueue_event->flags & EV_ERROR) != 0) {
-			MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
-			if (io_event)
-				mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
-		}
-		if (kqueue_event->filter == EVFILT_WRITE || (kqueue_event->flags & EV_ERROR) != 0) {
-			MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
-			if (io_event)
-				mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
-		}
-
-		events = get_events (*list);
+		gint events = get_events (*list);
 		if (kqueue_event->filter == EVFILT_READ && (events & MONO_POLLIN) != 0) {
 			EV_SET (kqueue_event, fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
 			if (kevent (threadpool_io->kqueue.fd, kqueue_event, 1, NULL, 0, NULL) == -1)
@@ -708,22 +706,21 @@ poll_thread_create_socket_async_results (gint fd, mono_pollfd *poll_fd, MonoMLis
 	if (fd == -1 || poll_fd->revents == 0)
 		return FALSE;
 
-	if (!*list) {
-		POLL_INIT_FD (poll_fd, -1, 0);
-	} else {
-		if ((poll_fd->revents & (MONO_POLLIN | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) != 0) {
-			MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
-			if (io_event)
-				mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
-		}
-		if ((poll_fd->revents & (MONO_POLLOUT | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) != 0) {
-			MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
-			if (io_event)
-				mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
-		}
-
-		poll_fd->events = get_events (*list);
+	if (*list && (poll_fd->revents & (MONO_POLLIN | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) != 0) {
+		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
+		if (io_event)
+			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
 	}
+	if (*list && (poll_fd->revents & (MONO_POLLOUT | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) != 0) {
+		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
+		if (io_event)
+			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+	}
+
+	if (*list)
+		poll_fd->events = get_events (*list);
+	else
+		POLL_INIT_FD (poll_fd, -1, 0);
 
 	return TRUE;
 }
@@ -808,7 +805,7 @@ polling_thread (gpointer data)
 		mono_mutex_lock (&threadpool_io->states_lock);
 		for (i = 0; i < max && ready > 0; ++i) {
 			MonoMList *list;
-			gboolean created;
+			gboolean valid_fd;
 			gint fd;
 
 			switch (threadpool_io->backend) {
@@ -839,21 +836,21 @@ polling_thread (gpointer data)
 			switch (threadpool_io->backend) {
 #if defined(HAVE_EPOLL)
 			case BACKEND_EPOLL:
-				created = epoll_thread_create_socket_async_results (fd, &threadpool_io->epoll.events [i], &list);
+				valid_fd = epoll_thread_create_socket_async_results (fd, &threadpool_io->epoll.events [i], &list);
 				break;
 #elif defined(HAVE_KQUEUE)
 			case BACKEND_KQUEUE:
-				created = kqueue_thread_create_socket_async_results (fd, &threadpool_io->kqueue.events [i], &list);
+				valid_fd = kqueue_thread_create_socket_async_results (fd, &threadpool_io->kqueue.events [i], &list);
 				break;
 #endif
 			case BACKEND_POLL:
-				created = poll_thread_create_socket_async_results (fd, &threadpool_io->poll.fds [i], &list);
+				valid_fd = poll_thread_create_socket_async_results (fd, &threadpool_io->poll.fds [i], &list);
 				break;
 			default:
 				g_assert_not_reached ();
 			}
 
-			if (!created)
+			if (!valid_fd)
 				continue;
 
 			if (list)
