@@ -6,9 +6,8 @@
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <NoWarn>$(NoWarn);1634;1691;649;1058;436</NoWarn>
+    <NoWarn>649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);USE_REFEMIT;FEATURE_LEGACYNETCF</DefineConstants>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
@@ -76,29 +75,6 @@
     <Compile Include="System\Xml\Serialization\XmlSerializationWriterILGen.cs" />
     <Compile Include="System\Xml\Serialization\SourceInfo.cs" />
     <Compile Include="System\Xml\Serialization\XmlSchema.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\AttributeCollection.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\Fetchers.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\Fixups.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\LogicalXmlInfo.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\SerializationHelpers.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\Soap.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\SoapAttributes.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\SoapAttributeOverrides.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\SoapTypeAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\SoapElementAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\SoapAttributeAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\SoapEnumAttribute.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\TypeContainer.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlMapping.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlReflectionImporter.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlSerializationReader.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlSerializationReflector.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlSerializationReflectorExt.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlSerializationWriter.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlSerializer.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\XmlTypeMapping.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\resources.cs" />
-    <Compile Include="System\Xml\Serialization\LegacyNetCF\stubs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
