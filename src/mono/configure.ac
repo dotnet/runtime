@@ -3837,7 +3837,6 @@ AC_CONFIG_COMMANDS([nolock-libtool], [sed -e 's/lock_old_archive_extraction=yes/
 
 AC_OUTPUT([
 Makefile
-mono-core.spec
 mono-uninstalled.pc
 scripts/mono-find-provides
 scripts/mono-find-requires

@@ -36,11 +36,9 @@ EXTRA_DIST= \
         README.md \
 	    LICENSE \
 	    autogen.sh \
-	    build-mingw32.sh \
 	    mkinstalldirs \
 	    mono-uninstalled.pc.in \
 	    winconfig.h \
-	    mono-core.spec \
 	    external
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
