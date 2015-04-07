@@ -121,10 +121,7 @@ If coverage succeeds, the code coverage report will be generated automatically a
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 
 ### Notes 
-* Running tests from using the VS test explorer does not currently work 
-after we switched to running on CoreCLR. We will be working on enabling 
-full VS test integration but we don't have an ETA yet. In the meantime,
-use the steps above to launch/debug the tests using the console runner.
+* Running tests from using the VS test explorer does not currently work after we switched to running on CoreCLR. [We will be working on enabling full VS test integration](https://github.com/dotnet/corefx/issues/1318) but we don't have an ETA yet. In the meantime, use the steps above to launch/debug the tests using the console runner.
 
 * VS 2015 is required to debug tests running on CoreCLR as the CoreCLR
 debug engine is a VS 2015 component.
