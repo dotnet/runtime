@@ -217,9 +217,10 @@ DECL_OFFSET(MonoLMF, rsp)
 DECL_OFFSET(MonoLMF, rbp)
 DECL_OFFSET(MonoLMF, rip)
 
+DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
 DECL_OFFSET(SeqPointInfo, bp_addrs)
+
 DECL_OFFSET(DynCallArgs, res)
-DECL_OFFSET(SeqPointInfo, ss_trigger_page)
 
 DECL_OFFSET(MonoLMFTramp, regs)
 DECL_OFFSET(MonoLMFTramp, lmf_addr)
