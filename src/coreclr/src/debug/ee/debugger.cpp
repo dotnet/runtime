@@ -16736,7 +16736,7 @@ void *DebuggerHeap::Alloc(DWORD size)
     // We don't have executable heap in PAL, but we still need to allocate 
     // executable memory, that's why have change protection level for 
     // each allocation. 
-    // TODO: We need to look how JIT solves this problem.
+    // UNIXTODO: We need to look how JIT solves this problem.
     DWORD unusedFlags;
     if (!VirtualProtect(ret, size, PAGE_EXECUTE_READWRITE, &unusedFlags))
     {
@@ -16785,6 +16785,19 @@ void *DebuggerHeap::Realloc(void *pMem, DWORD newSize, DWORD oldSize)
     memcpy(ret, pMem, oldSize);
     this->Free(pMem);
 #endif
+
+
+#ifdef FEATURE_PAL
+    // We don't have executable heap in PAL, but we still need to allocate 
+    // executable memory, that's why have change protection level for 
+    // each allocation. 
+    // UNIXTODO: We need to look how JIT solves this problem.
+    DWORD unusedFlags;
+    if (!VirtualProtect(ret, newSize, PAGE_EXECUTE_READWRITE, &unusedFlags))
+    {
+        _ASSERTE(!"VirtualProtect failed to make this memory executable");
+    }
+#endif // FEATURE_PAL    
 
     return ret;
 }
