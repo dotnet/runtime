@@ -55,8 +55,13 @@ static const uint32_t ten_to_ten_div_4 = 2500000000U;
 #define DECIMAL_LO32(dec)        ((dec).v.v.Lo32)
 #define DECIMAL_MID32(dec)       ((dec).v.v.Mid32)
 #define DECIMAL_HI32(dec)        ((dec).Hi32)
-#define DECIMAL_LO64_GET(dec)    ((dec).v.Lo64)
-#define DECIMAL_LO64_SET(dec,value)   {(dec).v.Lo64 = value; }
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+# define DECIMAL_LO64_GET(dec)   (((uint64_t)((dec).v.v.Mid32) << 32) | (dec).v.v.Lo32)
+# define DECIMAL_LO64_SET(dec,value)   {(dec).v.v.Lo32 = (value); (dec).v.v.Mid32 = ((value) >> 32); }
+#else
+# define DECIMAL_LO64_GET(dec)    ((dec).v.Lo64)
+# define DECIMAL_LO64_SET(dec,value)   {(dec).v.Lo64 = value; }
+#endif
 
 #define DECIMAL_SETZERO(dec) {DECIMAL_LO32(dec) = 0; DECIMAL_MID32(dec) = 0; DECIMAL_HI32(dec) = 0; DECIMAL_SIGNSCALE(dec) = 0;}
 #define COPYDEC(dest, src) {DECIMAL_SIGNSCALE(dest) = DECIMAL_SIGNSCALE(src); DECIMAL_HI32(dest) = DECIMAL_HI32(src); \
@@ -2214,6 +2219,8 @@ mono_decimal_compare (MonoDecimal *left, MonoDecimal *right)
 	uint32_t   left_sign;
 	uint32_t   right_sign;
 	MonoDecimal result;
+
+	result.Hi32 = 0; 	// Just to shut up the compiler
 
 	// First check signs and whether either are zero.  If both are
 	// non-zero and of the same sign, just use subtraction to compare.
