@@ -78,26 +78,14 @@ ves_icall_System_Threading_Microsoft_ThreadPool_ReportThreadStatus (gboolean is_
 gboolean
 ves_icall_System_Threading_Microsoft_ThreadPool_RequestWorkerThread (void);
 
-static gboolean G_GNUC_UNUSED
-ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped)
-{
-	/* This copy the behavior of the current Mono implementation */
-	mono_raise_exception (mono_get_exception_not_implemented (NULL));
-	return FALSE;
-}
+gboolean
+ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped);
 
-static gboolean G_GNUC_UNUSED
-ves_icall_System_Threading_Microsoft_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle)
-{
-	/* This copy the behavior of the current Mono implementation */
-	return TRUE;
-}
+gboolean
+ves_icall_System_Threading_Microsoft_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle);
 
-static gboolean G_GNUC_UNUSED
-ves_icall_System_Threading_Microsoft_ThreadPool_IsThreadPoolHosted (void)
-{
-	return FALSE;
-}
+gboolean
+ves_icall_System_Threading_Microsoft_ThreadPool_IsThreadPoolHosted (void);
 
 /* Internals */
 
