@@ -71,22 +71,8 @@ typedef enum {
 
 typedef struct {
 	gint fd;
-
-	union {
-#if defined(HAVE_EPOLL)
-		struct {
-			struct epoll_event *event;
-			gint op;
-		} epoll;
-#elif defined(HAVE_KQUEUE)
-		struct {
-			struct kevent *event;
-		} kqueue;
-#endif
-		struct {
-			mono_pollfd fd;
-		} poll;
-	};
+	gint events;
+	gboolean is_new;
 } ThreadPoolIOUpdate;
 
 typedef struct {
@@ -292,38 +278,18 @@ epoll_cleanup (void)
 }
 
 static void
-epoll_update (gint fd, gint events, gboolean is_new)
-{
-	ThreadPoolIOUpdate *update;
-	struct epoll_event *event;
-	gchar msg = 'c';
-
-	event = g_new0 (struct epoll_event, 1);
-	event->data.fd = fd;
-	if ((events & MONO_POLLIN) != 0)
-		event->events |= EPOLLIN;
-	if ((events & MONO_POLLOUT) != 0)
-		event->events |= EPOLLOUT;
-
-	mono_mutex_lock (&threadpool_io->updates_lock);
-	threadpool_io->updates_size += 1;
-	threadpool_io->updates = g_renew (ThreadPoolIOUpdate, threadpool_io->updates, threadpool_io->updates_size);
-
-	update = &threadpool_io->updates [threadpool_io->updates_size - 1];
-	update->fd = fd;
-	update->epoll.event = event;
-	update->epoll.op = is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
-	mono_mutex_unlock (&threadpool_io->updates_lock);
-
-	polling_thread_wakeup ();
-}
-
-static void
 epoll_thread_add_update (ThreadPoolIOUpdate *update)
 {
-	if (epoll_ctl (threadpool_io->epoll.fd, update->epoll.op, update->fd, update->epoll.event) == -1)
-		g_warning ("epoll_thread_add_update: epoll_ctl(%s) failed, error (%d) %s", update->epoll.op == EPOLL_CTL_ADD ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
-	g_free (update->epoll.event);
+	struct epoll_event event;
+
+	event.data.fd = update->fd;
+	if ((update->events & MONO_POLLIN) != 0)
+		event.events |= EPOLLIN;
+	if ((update->events & MONO_POLLOUT) != 0)
+		event.events |= EPOLLOUT;
+
+	if (epoll_ctl (threadpool_io->epoll.fd, update->is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
+		g_warning ("epoll_thread_add_update: epoll_ctl(%s) failed, error (%d) %s", update->is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
 }
 
 static gint
@@ -426,35 +392,17 @@ kqueue_cleanup (void)
 }
 
 static void
-kqueue_update (gint fd, gint events, gboolean is_new)
-{
-	ThreadPoolIOUpdate *update;
-	struct kevent *event;
-
-	event = g_new0 (struct kevent, 1);
-	if ((events & MONO_POLLIN) != 0)
-		EV_SET (event, fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
-	if ((events & MONO_POLLOUT) != 0)
-		EV_SET (event, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
-
-	mono_mutex_lock (&threadpool_io->updates_lock);
-	threadpool_io->updates_size += 1;
-	threadpool_io->updates = g_renew (ThreadPoolIOUpdate, threadpool_io->updates, threadpool_io->updates_size);
-
-	update = &threadpool_io->updates [threadpool_io->updates_size - 1];
-	update->fd = fd;
-	update->kqueue.event = event;
-	mono_mutex_unlock (&threadpool_io->updates_lock);
-
-	polling_thread_wakeup ();
-}
-
-static void
 kqueue_thread_add_update (ThreadPoolIOUpdate *update)
 {
-	if (kevent (threadpool_io->kqueue.fd, update->kqueue.event, 1, NULL, 0, NULL) == -1)
+	struct kevent event;
+
+	if ((update->events & MONO_POLLIN) != 0)
+		EV_SET (&event, update->fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
+	if ((update->events & MONO_POLLOUT) != 0)
+		EV_SET (&event, update->fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
+
+	if (kevent (threadpool_io->kqueue.fd, &event, 1, NULL, 0, NULL) == -1)
 		g_warning ("kqueue_thread_add_update: kevent(update) failed, error (%d) %s", errno, g_strerror (errno));
-	g_free (update->kqueue.event);
 }
 
 static gint
@@ -553,23 +501,6 @@ poll_cleanup (void)
 	g_free (threadpool_io->poll.fds);
 }
 
-static void
-poll_update (gint fd, gint events, gboolean is_new)
-{
-	ThreadPoolIOUpdate *update;
-
-	mono_mutex_lock (&threadpool_io->updates_lock);
-	threadpool_io->updates_size += 1;
-	threadpool_io->updates = g_renew (ThreadPoolIOUpdate, threadpool_io->updates, threadpool_io->updates_size);
-
-	update = &threadpool_io->updates [threadpool_io->updates_size - 1];
-	update->fd = fd;
-	POLL_INIT_FD (&update->poll.fd, fd, events);
-	mono_mutex_unlock (&threadpool_io->updates_lock);
-
-	polling_thread_wakeup ();
-}
-
 static gint
 poll_mark_bad_fds (mono_pollfd *poll_fds, gint poll_fds_size)
 {
@@ -610,7 +541,7 @@ poll_thread_add_update (ThreadPoolIOUpdate *update)
 
 	for (j = 1; j < threadpool_io->poll.fds_size; ++j) {
 		mono_pollfd *poll_fd = threadpool_io->poll.fds + j;
-		if (poll_fd->fd == update->poll.fd.fd) {
+		if (poll_fd->fd == update->fd) {
 			found = TRUE;
 			break;
 		}
@@ -631,7 +562,7 @@ poll_thread_add_update (ThreadPoolIOUpdate *update)
 			POLL_INIT_FD (threadpool_io->poll.fds + k, -1, 0);
 	}
 
-	POLL_INIT_FD (threadpool_io->poll.fds + j, update->poll.fd.fd, update->poll.fd.events);
+	POLL_INIT_FD (threadpool_io->poll.fds + j, update->fd, update->events);
 
 	if (j >= threadpool_io->poll.fds_max)
 		threadpool_io->poll.fds_max = j + 1;
@@ -1110,6 +1041,7 @@ mono_threadpool_ms_io_cleanup (void)
 MonoAsyncResult *
 mono_threadpool_ms_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *sockares)
 {
+	ThreadPoolIOUpdate *update;
 	MonoMList *list;
 	gboolean is_new;
 	gint events;
@@ -1137,27 +1069,19 @@ mono_threadpool_ms_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *sockare
 
 	events = get_events (list);
 
-	switch (threadpool_io->backend) {
-#if defined(HAVE_EPOLL)
-	case BACKEND_EPOLL: {
-		epoll_update (fd, events, is_new);
-		break;
-	}
-#elif defined(HAVE_KQUEUE)
-	case BACKEND_KQUEUE: {
-		kqueue_update (fd, events, is_new);
-		break;
-	}
-#endif
-	case BACKEND_POLL: {
-		poll_update (fd, events, is_new);
-		break;
-	}
-	default:
-		g_assert_not_reached ();
-	}
+	mono_mutex_lock (&threadpool_io->updates_lock);
+	threadpool_io->updates_size += 1;
+	threadpool_io->updates = g_renew (ThreadPoolIOUpdate, threadpool_io->updates, threadpool_io->updates_size);
+
+	update = &threadpool_io->updates [threadpool_io->updates_size - 1];
+	update->fd = fd;
+	update->events = events;
+	update->is_new = is_new;
+	mono_mutex_unlock (&threadpool_io->updates_lock);
 
 	mono_mutex_unlock (&threadpool_io->states_lock);
+
+	polling_thread_wakeup ();
 
 	return ares;
 }
