@@ -4,9 +4,16 @@
  * Copyright (C) 2008 Novell, Inc.
  */
 
-#include <utils/mono-time.h>
+#include <config.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
+#include <utils/mono-time.h>
+
 
 #define MTICKS_PER_SEC 10000000
 
@@ -56,9 +63,6 @@ mono_100ns_datetime (void)
 
 #else
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 
 #if defined (HAVE_SYS_PARAM_H)
 #include <sys/param.h>
