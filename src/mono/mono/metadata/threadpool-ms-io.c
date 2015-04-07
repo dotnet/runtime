@@ -37,12 +37,6 @@
 #include <mono/utils/mono-poll.h>
 #include <mono/utils/mono-threads.h>
 
-/* Keep in sync with System.Net.Sockets.MonoSocketRuntimeWorkItem */
-struct _MonoSocketRuntimeWorkItem {
-	MonoObject object;
-	MonoSocketAsyncResult *socket_async_result;
-};
-
 /* Keep in sync with System.Net.Sockets.Socket.SocketOperation */
 enum {
 	AIO_OP_FIRST,
@@ -328,12 +322,12 @@ epoll_thread_create_socket_async_results (gint fd, struct epoll_event *epoll_eve
 	if (*list && (epoll_event->events & (EPOLLIN | EPOLLERR | EPOLLHUP)) != 0) {
 		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
 		if (io_event)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) io_event)->vtable->domain, (MonoObject*) io_event);
 	}
 	if (*list && (epoll_event->events & (EPOLLOUT | EPOLLERR | EPOLLHUP)) != 0) {
 		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
 		if (io_event)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) io_event)->vtable->domain, (MonoObject*) io_event);
 	}
 
 	if (*list) {
@@ -438,16 +432,15 @@ kqueue_thread_create_socket_async_results (gint fd, struct kevent *kqueue_event,
 	g_assert (kqueue_event);
 	g_assert (list);
 
-
 	if (*list && (kqueue_event->filter == EVFILT_READ || (kqueue_event->flags & EV_ERROR) != 0)) {
 		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
 		if (io_event)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) io_event)->vtable->domain, (MonoObject*) io_event);
 	}
 	if (*list && (kqueue_event->filter == EVFILT_WRITE || (kqueue_event->flags & EV_ERROR) != 0)) {
 		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
 		if (io_event)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) io_event)->vtable->domain, (MonoObject*) io_event);
 	}
 
 	if (*list) {
@@ -640,12 +633,12 @@ poll_thread_create_socket_async_results (gint fd, mono_pollfd *poll_fd, MonoMLis
 	if (*list && (poll_fd->revents & (MONO_POLLIN | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) != 0) {
 		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLIN);
 		if (io_event)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) io_event)->vtable->domain, (MonoObject*) io_event);
 	}
 	if (*list && (poll_fd->revents & (MONO_POLLOUT | MONO_POLLERR | MONO_POLLHUP | MONO_POLLNVAL)) != 0) {
 		MonoSocketAsyncResult *io_event = get_state (list, MONO_POLLOUT);
 		if (io_event)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) io_event)->vtable->domain, io_event);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) io_event)->vtable->domain, (MonoObject*) io_event);
 	}
 
 	if (*list)
@@ -1112,14 +1105,14 @@ mono_threadpool_ms_io_remove_socket (int fd)
 
 		sockares2 = get_state (&list, MONO_POLLIN);
 		if (sockares2)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) sockares2)->vtable->domain, sockares2);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares2)->vtable->domain, (MonoObject*) sockares2);
 
 		if (!list)
 			break;
 
 		sockares2 = get_state (&list, MONO_POLLOUT);
 		if (sockares2)
-			mono_threadpool_io_enqueue_socket_async_result (((MonoObject*) sockares2)->vtable->domain, sockares2);
+			mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares2)->vtable->domain, (MonoObject*) sockares2);
 	}
 }
 
@@ -1151,71 +1144,6 @@ mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
 	}
 }
 
-void
-mono_threadpool_io_enqueue_socket_async_result (MonoDomain *domain, MonoSocketAsyncResult *sockares)
-{
-	MonoImage *system_image;
-	MonoClass *socket_runtime_work_item_class;
-	MonoSocketRuntimeWorkItem *srwi;
-
-	g_assert (sockares);
-
-	system_image = mono_image_loaded ("System");
-	g_assert (system_image);
-
-	socket_runtime_work_item_class = mono_class_from_name (system_image, "System.Net.Sockets", "MonoSocketRuntimeWorkItem");
-	g_assert (socket_runtime_work_item_class);
-
-	srwi = (MonoSocketRuntimeWorkItem*) mono_object_new (domain, socket_runtime_work_item_class);
-	MONO_OBJECT_SETREF (srwi, socket_async_result, sockares);
-
-	mono_threadpool_ms_enqueue_work_item (domain, (MonoObject*) srwi);
-}
-
-void
-ves_icall_System_Net_Sockets_MonoSocketRuntimeWorkItem_ExecuteWorkItem (MonoSocketRuntimeWorkItem *rwi)
-{
-	MonoSocketAsyncResult *sockares;
-	MonoAsyncResult *ares;
-	MonoObject *exc = NULL;
-
-	g_assert (rwi);
-
-	sockares = rwi->socket_async_result;
-	g_assert (sockares);
-	g_assert (sockares->ares);
-
-	switch (sockares->operation) {
-	case AIO_OP_RECEIVE:
-		sockares->total = ves_icall_System_Net_Sockets_Socket_Receive_internal ((SOCKET) (gssize) sockares->handle, sockares->buffer, sockares->offset,
-		                                                                            sockares->size, sockares->socket_flags, &sockares->error);
-		break;
-	case AIO_OP_SEND:
-		sockares->total = ves_icall_System_Net_Sockets_Socket_Send_internal ((SOCKET) (gssize) sockares->handle, sockares->buffer, sockares->offset,
-		                                                                            sockares->size, sockares->socket_flags, &sockares->error);
-		break;
-	}
-
-	ares = sockares->ares;
-	g_assert (ares);
-
-	mono_async_result_invoke (ares, &exc);
-
-	if (sockares->completed && sockares->callback) {
-		MonoAsyncResult *cb_ares;
-
-		/* Don't call mono_async_result_new() to avoid capturing the context */
-		cb_ares = (MonoAsyncResult*) mono_object_new (mono_domain_get (), mono_defaults.asyncresult_class);
-		MONO_OBJECT_SETREF (cb_ares, async_delegate, sockares->callback);
-		MONO_OBJECT_SETREF (cb_ares, async_state, (MonoObject*) sockares);
-
-		mono_threadpool_ms_enqueue_async_result (mono_domain_get (), cb_ares);
-	}
-
-	if (exc)
-		mono_raise_exception ((MonoException*) exc);
-}
-
 #else
 
 gboolean
@@ -1244,18 +1172,6 @@ mono_threadpool_ms_io_remove_socket (int fd)
 
 void
 mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
-{
-	g_assert_not_reached ();
-}
-
-void
-mono_threadpool_io_enqueue_socket_async_result (MonoDomain *domain, MonoSocketAsyncResult *sockares)
-{
-	g_assert_not_reached ();
-}
-
-void
-ves_icall_System_Net_Sockets_MonoSocketRuntimeWorkItem_ExecuteWorkItem (MonoSocketRuntimeWorkItem *rwi)
 {
 	g_assert_not_reached ();
 }

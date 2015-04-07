@@ -72,12 +72,6 @@
 #define HILL_CLIMBING_ERROR_SMOOTHING_FACTOR 0.01
 #define HILL_CLIMBING_MAX_SAMPLE_ERROR_PERCENT 0.15
 
-/* Keep in sync with System.Threading.RuntimeWorkItem */
-struct _MonoRuntimeWorkItem {
-	MonoObject object;
-	MonoAsyncResult *async_result;
-};
-
 typedef union {
 	struct {
 		gint16 max_working; /* determined by heuristic */
@@ -432,24 +426,6 @@ mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item)
 		}
 		mono_thread_pop_appdomain_ref ();
 	}
-}
-
-void
-mono_threadpool_ms_enqueue_async_result (MonoDomain *domain, MonoAsyncResult *ares)
-{
-	static MonoClass *runtime_work_item_class = NULL;
-	MonoRuntimeWorkItem *rwi;
-
-	g_assert (ares);
-
-	if (!runtime_work_item_class)
-		runtime_work_item_class = mono_class_from_name (mono_defaults.corlib, "System.Threading", "MonoRuntimeWorkItem");
-	g_assert (runtime_work_item_class);
-
-	rwi = (MonoRuntimeWorkItem*) mono_object_new (domain, runtime_work_item_class);
-	MONO_OBJECT_SETREF (rwi, async_result, ares);
-
-	mono_threadpool_ms_enqueue_work_item (domain, (MonoObject*) rwi);
 }
 
 static void
@@ -1285,7 +1261,7 @@ mono_threadpool_ms_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate
 		return mono_threadpool_ms_io_add (ares, (MonoSocketAsyncResult*) state);
 #endif
 
-	mono_threadpool_ms_enqueue_async_result (domain, ares);
+	mono_threadpool_ms_enqueue_work_item (domain, (MonoObject*) ares);
 	return ares;
 }
 
@@ -1400,21 +1376,6 @@ void
 mono_threadpool_ms_resume (void)
 {
 	threadpool->suspended = FALSE;
-}
-
-void
-ves_icall_System_Threading_MonoRuntimeWorkItem_ExecuteWorkItem (MonoRuntimeWorkItem *rwi)
-{
-	MonoAsyncResult *ares;
-	MonoObject *exc = NULL;
-
-	g_assert (rwi);
-	ares = rwi->async_result;
-	g_assert (ares);
-
-	mono_async_result_invoke (ares, &exc);
-	if (exc)
-		mono_raise_exception ((MonoException*) exc);
 }
 
 void
