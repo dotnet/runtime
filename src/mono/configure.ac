@@ -2955,7 +2955,7 @@ if test "x$host" != "x$target"; then
    AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
    enable_mcs_build=no
    case "$target" in
-   arm-darwin)
+   arm*-darwin*)
 		TARGET=ARM;
 		arch_target=arm;
 		ACCESS_UNALIGNED="no"
@@ -3016,7 +3016,7 @@ if test "x$host" != "x$target"; then
 		AC_DEFINE(TARGET_X86, 1, [...])
 		sizeof_register=4
 		;;
-   armv5-linux-androideabi)
+   arm*-linux-*)
 		TARGET=ARM;
 		arch_target=arm;
 		AC_DEFINE(TARGET_ARM, 1, [...])
@@ -3027,8 +3027,17 @@ if test "x$host" != "x$target"; then
 		# in mono-compiler.h
 		with_tls=pthread
 		target_mach=no
+		case "$target" in
+		armv7l-unknown-linux-gnueabi*)
+			# TEGRA
+			CPPFLAGS="$CPPFLAGS"
+			;;
+   		armv5-*-linux-androideabi*)
+			CPPFLAGS="$CPPFLAGS"
+			;;
+		esac
 		;;
-   i686-linux-android)
+   i686*-linux-*)
 		TARGET=X86;
 		arch_target=x86;
 		AC_DEFINE(TARGET_X86, 1, [...])
@@ -3040,7 +3049,7 @@ if test "x$host" != "x$target"; then
 		with_tls=pthread
 		target_mach=no
 		;;
-   x86_64-linux-android)
+   x86_64*-linux-*)
 		TARGET=AMD64;
 		arch_target=amd64;
 		AC_DEFINE(TARGET_AMD64, 1, [...])
@@ -3064,7 +3073,7 @@ if test "x$host" != "x$target"; then
 		with_tls=pthread
 		target_mach=no
 		;;
-   aarch64-v8a-linux-android)
+   aarch64*-linux-*)
 		TARGET=ARM64;
 		arch_target=arm64;
 		AC_DEFINE(TARGET_ARM64, 1, [...])
@@ -3075,9 +3084,8 @@ if test "x$host" != "x$target"; then
 		with_tls=pthread
 		target_mach=no
 		;;
-	aarch64-darwin)
-		TARGET=ARM64;
-		arch_target=arm64;
+	aarch64-*)
+		TARGET=ARM64
 		;;
 	*)
 		AC_MSG_ERROR([Cross compiling is not supported for target $target])
