@@ -210,6 +210,9 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	g_assert ((code - start) < SZ_THROW); 
 
+	mono_arch_flush_icache(start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
 	if (info)
 		*info = mono_tramp_info_create ("call_filter",
 						start, code - start, ji,
@@ -356,6 +359,9 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 	/* we should never reach this breakpoint */
 	s390_break (code);
 	g_assert ((code - start) < size);
+
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	if (info)
 		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" 
