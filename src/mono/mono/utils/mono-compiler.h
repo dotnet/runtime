@@ -194,6 +194,17 @@
 	pthread_key_t _y;	\
 	(void) (&_x == &_y);		\
 	y = (gint32) x; })
+
+#elif defined(TARGET_ANDROID) && defined(TARGET_ARM)
+
+#define MONO_HAVE_FAST_TLS
+#define MONO_FAST_TLS_SET(x,y) pthread_setspecific(x, y)
+#define MONO_FAST_TLS_GET(x) pthread_getspecific(x)
+#define MONO_FAST_TLS_INIT(x) pthread_key_create(&x, NULL)
+#define MONO_FAST_TLS_DECLARE(x) static pthread_key_t x;
+
+#define MONO_THREAD_VAR_OFFSET(var, offset) do { offset = (int)var; } while (0)
+
 #else /* no HAVE_KW_THREAD */
 
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1

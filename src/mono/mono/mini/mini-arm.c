@@ -29,7 +29,8 @@
 #include "mini-gc.h"
 #include "mono/arch/arm/arm-vfp-codegen.h"
 
-#if defined(HAVE_KW_THREAD) && defined(__linux__)
+#if defined(HAVE_KW_THREAD) && defined(__linux__) \
+	|| defined(TARGET_ANDROID)
 #define HAVE_FAST_TLS
 #endif
 
@@ -675,7 +676,8 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 static gboolean
 mono_arm_have_fast_tls (void)
 {
-#if defined(HAVE_KW_THREAD) && defined(__linux__)
+#if (defined(HAVE_KW_THREAD) && defined(__linux__)) \
+	|| defined(TARGET_ANDROID)
 	guint32* kuser_get_tls = (void*)0xffff0fe0;
 	guint32 expected [] = {0xee1d0f70, 0xe12fff1e};
 

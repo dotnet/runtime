@@ -28,9 +28,13 @@ _mono_fast_get_tls_key :
 	.global mono_fast_get_tls_key
 mono_fast_get_tls_key :
 #endif
-#if defined(HAVE_KW_THREAD) && defined(__linux__)
+#if defined(__linux__)
 	mrc	p15, 0, r1, c13, c0, 3
+#if defined(HAVE_KW_THREAD)
 	ldr	r0, [r1, r0]
+#elif defined(TARGET_ANDROID)
+	ldr	r0, [r1, r0, lsl #2]
+#endif
 	bx	lr
 #else
 	nop
@@ -50,13 +54,17 @@ _mono_fallback_get_tls_key :
 	.global mono_fallback_get_tls_key
 mono_fallback_get_tls_key :
 #endif
-#if defined(HAVE_KW_THREAD) && defined(__linux__)
+#if defined(__linux__)
 	mov	r1, r0
 	mvn	r0, #0xf000
 	sub	r0, r0, #31
 	push	{lr}
 	blx	r0
+#if defined(HAVE_KW_THREAD)
 	ldr	r0, [r0, r1]
+#elif defined(TARGET_ANDROID)
+	ldr	r0, [r0, r1, lsl #2]
+#endif
 	pop	{pc}
 #else
 	nop
@@ -76,9 +84,13 @@ _mono_fast_set_tls_key :
 	.global mono_fast_set_tls_key
 mono_fast_set_tls_key :
 #endif
-#if defined(HAVE_KW_THREAD) && defined(__linux__)
+#if defined(__linux__)
 	mrc	p15, 0, r2, c13, c0, 3
+#if defined(HAVE_KW_THREAD)
 	str	r1, [r2, r0]
+#elif defined(TARGET_ANDROID)
+	str	r1, [r2, r0, lsl #2]
+#endif
 	bx	lr
 #else
 	nop
@@ -98,13 +110,17 @@ _mono_fallback_set_tls_key :
 	.global mono_fallback_set_tls_key
 mono_fallback_set_tls_key :
 #endif
-#if defined(HAVE_KW_THREAD) && defined(__linux__)
+#if defined(__linux__)
 	mov	r2, r0
 	mvn	r0, #0xf000
 	sub	r0, r0, #31
 	push	{lr}
 	blx	r0
+#if defined(HAVE_KW_THREAD)
 	str	r1, [r0, r2]
+#elif defined(TARGET_ANDROID)
+	str	r1, [r0, r2, lsl #2]
+#endif
 	pop	{pc}
 #else
 	nop
