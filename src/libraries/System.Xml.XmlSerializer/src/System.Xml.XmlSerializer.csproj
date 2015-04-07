@@ -9,7 +9,6 @@
     <NoWarn>$(NoWarn);1634;1691;649;1058;436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);USE_REFEMIT;FEATURE_LEGACYNETCF</DefineConstants>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>

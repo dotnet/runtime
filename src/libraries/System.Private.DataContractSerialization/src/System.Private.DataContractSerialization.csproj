@@ -5,12 +5,12 @@
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
     <AssemblyName>System.Private.DataContractSerialization</AssemblyName>
+	<AssemblyVersion>4.0.0.0</AssemblyVersion>
     <RootNamespace>System.Private.DataContractSerialization</RootNamespace>
     <OutputType>Library</OutputType>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{6B4C1660-D158-4820-BE1C-D7A29CEBEC9B}</ProjectGuid>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
