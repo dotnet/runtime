@@ -3521,8 +3521,6 @@ void ExceptionTracker::PopTrackers(
 // Save the state of the source exception tracker
 void ExceptionTracker::PartialTrackerState::Save(const ExceptionTracker* pSourceTracker)
 {
-    m_sfResumeStackFrame = pSourceTracker->m_sfResumeStackFrame;
-    m_ScannedStackRange = pSourceTracker->m_ScannedStackRange;
     m_uCatchToCallPC = pSourceTracker->m_uCatchToCallPC;
     m_pClauseForCatchToken = pSourceTracker->m_pClauseForCatchToken;
     m_ClauseForCatch = pSourceTracker->m_ClauseForCatch;
@@ -3536,8 +3534,6 @@ void ExceptionTracker::PartialTrackerState::Save(const ExceptionTracker* pSource
 // Restore the state into the target exception tracker
 void ExceptionTracker::PartialTrackerState::Restore(ExceptionTracker* pTargetTracker)
 {
-    pTargetTracker->m_sfResumeStackFrame = m_sfResumeStackFrame;
-    pTargetTracker->m_ScannedStackRange = m_ScannedStackRange;
     pTargetTracker->m_uCatchToCallPC = m_uCatchToCallPC;
     pTargetTracker->m_pClauseForCatchToken = m_pClauseForCatchToken;
     pTargetTracker->m_ClauseForCatch = m_ClauseForCatch;
@@ -3718,9 +3714,6 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
             previousTrackerPartialState.Restore(pNewTracker);
             // Reset the 'unwind has started' flag to indicate we are in the first pass again
             pNewTracker->m_ExceptionFlags.ResetUnwindHasStarted();
-            // Remember the current scanned stack range so that we can restore it after
-            // switching to the 2nd pass.
-            pNewTracker->m_secondPassInitialScannedStackRange = pNewTracker->m_ScannedStackRange;
         }
 
         CONSISTENCY_CHECK(pNewTracker->IsValid());
@@ -3873,7 +3866,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
                 // We have to detect this transition because otherwise we break when unmanaged code
                 // catches our exceptions.
                 EH_LOG((LL_INFO100, ">>tracker transitioned to second pass\n"));
-                pTracker->m_ScannedStackRange = pTracker->m_secondPassInitialScannedStackRange;
+                pTracker->m_ScannedStackRange.Reset();
 
                 pTracker->m_ExceptionFlags.SetUnwindHasStarted();
                 if (pTracker->m_ExceptionFlags.UnwindingToFindResumeFrame())
