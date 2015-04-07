@@ -4,17 +4,12 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{BC2E1649-291D-412e-9529-EDDA94FA7AD6}</ProjectGuid>
+    <ProjectGuid>{BC2E1649-291D-412E-9529-EDDA94FA7AD6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.Compression.Tests</AssemblyName>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
@@ -32,13 +27,11 @@
   <ItemGroup>
     <Compile Include="DeflateStreamTests.cs" />
     <Compile Include="GZipStreamTests.cs" />
-
     <Compile Include="ZipArchive\zip_CreateTests.cs" />
     <Compile Include="ZipArchive\zip_InvalidParametersAndStrangeFiles.cs" />
     <Compile Include="ZipArchive\zip_ManualAndCompatibilityTests.cs" />
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
-    
     <Compile Include="Utilities\CRC.cs" />
     <Compile Include="Utilities\FileData.cs" />
     <Compile Include="Utilities\LinqReplacements.cs" />
@@ -52,10 +45,10 @@
     <Folder Include="DeflateStream\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <!-- Temporary until we have new work in build tools to
        deploy content from nuget packages -->
-  <Target Name="CopySystemIOCompressionTestDataToTestDirectory"
+  <Target
+    Name="CopySystemIOCompressionTestDataToTestDirectory"
     AfterTargets="CopyTestToTestDirectory"
     Inputs="$(PackagesDir)$(CompressionTestPackage)\content"
     Outputs="$(TestPath)%(TestTargetFramework.Folder)\*.*">
@@ -67,7 +60,6 @@
       <CompressionTestDataSrc Include="$(PackagesDir)$(CompressionTestPackage)\content\**\*.*" />
       <CompressionTestDataDest Include="@(CompressionTestDataSrc->'$(TestPath)$(TestTargetFrameworkFolder)\%(RecursiveDir)%(Filename)%(Extension)')" />
     </ItemGroup>
-
     <Copy
       SourceFiles="@(CompressionTestDataSrc)"
       DestinationFiles="@(CompressionTestDataDest)"
@@ -76,7 +68,6 @@
       Retries="$(CopyRetryCount)"
       RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
       UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
