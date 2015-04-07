@@ -109,6 +109,9 @@ mono_win32_get_handle_stackoverflow (void)
 	/* return */
 	x86_ret (code);
 
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
 	return start;
 }
 
@@ -354,6 +357,9 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 		g_slist_free (unwind_ops);
 	}
 
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
 	return start;
 }
 
@@ -430,6 +436,9 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 			g_free (l->data);
 		g_slist_free (unwind_ops);
 	}
+
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	g_assert ((code - start) < kMaxCodeSize);
 	return start;
@@ -652,6 +661,9 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 			g_free (l->data);
 		g_slist_free (unwind_ops);
 	}
+
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	return start;
 }
@@ -942,6 +954,9 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 			g_free (l->data);
 		g_slist_free (unwind_ops);
 	}
+
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
 
 	return start;
 }
