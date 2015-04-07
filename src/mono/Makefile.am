@@ -40,7 +40,6 @@ EXTRA_DIST= \
 	    mkinstalldirs \
 	    mono-uninstalled.pc.in \
 	    winconfig.h \
-	    mono-core.spec \
 	    external
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_MCS=false EXTERNAL_RUNTIME=false
