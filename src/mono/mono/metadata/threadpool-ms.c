@@ -21,15 +21,14 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <config.h>
+#include <glib.h>
 
 #if !defined (HAVE_COMPLEX_H)
 #include <../../support/libm/complex.h>
 #else
 #include <complex.h>
 #endif
-
-#include <config.h>
-#include <glib.h>
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
