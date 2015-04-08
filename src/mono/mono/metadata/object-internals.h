@@ -267,12 +267,6 @@ typedef struct {
 } MonoArgumentException;
 
 typedef struct {
-	MonoSystemException base;
-	MonoString *msg;
-	MonoString *type_name;
-} MonoTypeLoadException;
-
-typedef struct {
 	MonoObject   object;
 	MonoObject  *async_state;
 	MonoObject  *handle;
