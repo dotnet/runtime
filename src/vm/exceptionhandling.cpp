@@ -4640,7 +4640,17 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             GCX_COOP();
             fef.InitAndLink(&ex->ContextRecord);
 
-            DispatchManagedException(*ex);
+            // We throw the exception and catch it right away so that in case the DispatchManagedException
+            // needs to cross managed to native stack frames boundary, there is an exception that can
+            // be rethrow in the StartUnwindingNativeFrames.
+            try
+            {
+                throw *ex;
+            }
+            catch (PAL_SEHException& ex2)
+            {
+                DispatchManagedException(ex2);
+            }
             UNREACHABLE();
         }
 
