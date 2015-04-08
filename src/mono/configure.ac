@@ -102,14 +102,11 @@ case "$host" in
 		host_win32=yes
 		mono_cv_clang=no
 		if test "x$cross_compiling" = "xno"; then
-			target_win32=yes
 			if test "x$host" == "x$build" -a "x$host" == "x$target"; then
-				AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32])
+				target_win32=yes
 			fi
 		else
 			target_win32=yes
-			AC_DEFINE(TARGET_WIN32,1,[Target OS is Win32/MinGW])
-			AC_DEFINE(MINGW_CROSS_COMPILE,1,[Cross-compiling using MinGW])
 		fi
 		HOST_CC="gcc"
 		# Windows XP SP2 is required
@@ -3072,6 +3069,7 @@ if test "x$host" != "x$target"; then
 		# in mono-compiler.h
 		with_tls=pthread
 		target_mach=no
+		target_win32=no
 		;;
    aarch64*-linux-*)
 		TARGET=ARM64;
