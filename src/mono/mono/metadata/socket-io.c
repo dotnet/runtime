@@ -633,8 +633,8 @@ static gint32 get_family_hint(void)
 		MonoVTable *vtable;
 
 		socket_class = mono_class_from_name (get_socket_assembly (), "System.Net.Sockets", "Socket");
-		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4Supported");
-		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6Supported");
+		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4_supported");
+		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6_supported");
 		vtable = mono_class_vtable (mono_domain_get (), socket_class);
 		g_assert (vtable);
 		mono_runtime_class_init (vtable);
@@ -1573,7 +1573,7 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 	MonoSafeHandle *safe_handle;
 	MonoClassField *field;
 	
-	field = mono_class_get_field_from_name (sockobj->vtable->klass, "socket");
+	field = mono_class_get_field_from_name (sockobj->vtable->klass, "safe_handle");
 	safe_handle = ((MonoSafeHandle*) (*(gpointer *)(((char *)sockobj)+field->offset)));
 
 	if (safe_handle == NULL)
