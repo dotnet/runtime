@@ -582,9 +582,7 @@ public:
     BOOL stress_induced;
 #endif // STRESS_HEAP
 
-#ifdef _WIN64
     DWORD entry_memory_load;
-#endif //_WIN64
 
     void init_mechanisms(); //for each GC
     void first_init(); // for the life of the EE
@@ -728,13 +726,17 @@ class alloc_list
 {
     BYTE* head;
     BYTE* tail;
+    size_t damage_count;
+
 public:
     BYTE*& alloc_list_head () { return head;}
     BYTE*& alloc_list_tail () { return tail;}
+    size_t& alloc_list_damage_count(){ return damage_count; }
     alloc_list()
     {
         head = 0; 
         tail = 0; 
+        damage_count = 0;
     }
 };
 
@@ -746,6 +748,7 @@ class allocator
     alloc_list first_bucket;
     alloc_list* buckets;
     alloc_list& alloc_list_of (unsigned int bn);
+    size_t& alloc_list_damage_count_of (unsigned int bn);
 
 public:
     allocator (unsigned int num_b, size_t fbs, alloc_list* b);
@@ -1211,6 +1214,9 @@ public:
     PER_HEAP
     void verify_heap (BOOL begin_gc_p);
 #endif //VERIFY_HEAP
+
+    PER_HEAP_ISOLATED
+    void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
 
     PER_HEAP_ISOLATED
     void fire_pevents();
@@ -1815,7 +1821,7 @@ protected:
     PER_HEAP
     void adjust_limit_clr (BYTE* start, size_t limit_size,
                            alloc_context* acontext, heap_segment* seg,
-                           int align_const);
+                           int align_const, int gen_number);
     PER_HEAP
     void  leave_allocation_segment (generation* gen);
 
@@ -3421,6 +3427,9 @@ protected:
 
     PER_HEAP
     gc_history_per_heap gc_data_per_heap;
+
+    PER_HEAP
+    size_t maxgen_pinned_compact_before_advance;
 
     // dynamic tuning.
     PER_HEAP

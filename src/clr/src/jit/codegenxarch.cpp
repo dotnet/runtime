@@ -3550,14 +3550,28 @@ void CodeGen::genCodeForCpObj(GenTreeCpObj* cpObjNode)
     // src = RSI and dst = RDI. 
     // Either these registers must not contain lclVars, or they must be dying or marked for spill.
     // This is because these registers are incremented as we go through the struct.
-    if (srcAddr->gtRegNum == REG_RSI)
+    GenTree* actualSrcAddr = srcAddr->gtSkipReloadOrCopy();
+    GenTree* actualDstAddr = dstAddr->gtSkipReloadOrCopy();
+    unsigned srcLclVarNum = BAD_VAR_NUM;
+    unsigned dstLclVarNum = BAD_VAR_NUM;
+    bool isSrcAddrLiveOut = false;
+    bool isDstAddrLiveOut = false;
+    if (genIsRegCandidateLocal(actualSrcAddr))
     {
-        assert(!genIsRegCandidateLocal(srcAddr) || (srcAddr->gtFlags & (GTF_VAR_DEATH | GTF_SPILL)) != 0);
+        srcLclVarNum = actualSrcAddr->AsLclVarCommon()->gtLclNum;
+        isSrcAddrLiveOut = ((actualSrcAddr->gtFlags & (GTF_VAR_DEATH | GTF_SPILL)) == 0);
     }
-    if (dstAddr->gtRegNum == REG_RDI)
+    if (genIsRegCandidateLocal(actualDstAddr))
     {
-        assert(!genIsRegCandidateLocal(dstAddr) || (dstAddr->gtFlags & (GTF_VAR_DEATH | GTF_SPILL)) != 0);
+        dstLclVarNum = actualDstAddr->AsLclVarCommon()->gtLclNum;
+        isDstAddrLiveOut = ((actualDstAddr->gtFlags & (GTF_VAR_DEATH | GTF_SPILL)) == 0);
     }
+    assert((actualSrcAddr->gtRegNum != REG_RSI) ||
+           !isSrcAddrLiveOut                ||
+           ((srcLclVarNum == dstLclVarNum) && !isDstAddrLiveOut));
+    assert((actualDstAddr->gtRegNum != REG_RDI) ||
+           !isDstAddrLiveOut                ||
+           ((srcLclVarNum == dstLclVarNum) && !isSrcAddrLiveOut));
 #endif // DEBUG
 
     // Consume these registers.

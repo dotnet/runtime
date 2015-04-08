@@ -882,10 +882,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
         // Fire the EE startup ETW event
         ETWFireEvent(EEStartupStart_V1);
-
-        // Fire the runtime information ETW event
-        ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
-#endif // FEATURE_EVENT_TRACE        
+#endif // FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_IPCMAN
         // Give PerfMon a chance to hook up to us
@@ -953,6 +950,9 @@ void EEStartupHelper(COINITIEE fFlags)
         {
             IfFailGoLog(g_pConfig->sync());        
         }
+
+        // Fire the runtime information ETW event
+        ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
         if (breakOnEELoad.val(CLRConfig::UNSUPPORTED_BreakOnEELoad) == 1)
         {

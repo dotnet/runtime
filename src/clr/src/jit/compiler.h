@@ -1968,14 +1968,6 @@ public:
     // is such an object pointer.
     bool                    gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
-
-    // Assignment trees which contain an unmanged PInvoke call need to have a simple op1
-    // in order to prevent us from have a TYP_BYREF live accross a call to a PInvoke
-    // If necessary this method will morph such an assignment to honor this restriction
-    //
-    GenTreePtr              gtCheckReorderAssignmentForUnmanagedCall(GenTreePtr tree);
-
-
     //-------------------------------------------------------------------------
 
     GenTreePtr              gtFoldExpr       (GenTreePtr    tree);
@@ -3873,6 +3865,14 @@ public:
         return m_switchDescMap;
     }
 
+    // Invalidate the map of unique switch block successors. For example, since the hash key of the map
+    // depends on block numbers, we must invalidate the map when the blocks are renumbered, to ensure that
+    // we don't accidentally look up and return the wrong switch data.
+    void InvalidateUniqueSwitchSuccMap()
+    {
+        m_switchDescMap = nullptr;
+    }
+
     // Requires "switchBlock" to be a block that ends in a switch.  Returns
     // the corresponding SwitchUniqueSuccSet.
     SwitchUniqueSuccSet GetDescriptorForSwitch(BasicBlock* switchBlk);
@@ -5048,7 +5048,7 @@ protected :
     void                optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
     // Updates the successors of "blk": if "blk2" is a successor of "blk", and there is a mapping for "blk2->blk3" in "redirectMap",
-    // change "blk" so that "blk3" is this successor.
+    // change "blk" so that "blk3" is this successor. Note that the predecessor lists are not updated.
     void                optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap);
 
     // Marks the containsCall information to "lnum" and any parent loops.

@@ -1045,8 +1045,7 @@ CordbProcess::~CordbProcess()
     // We shouldn't still be in Cordb's list of processes. Unfortunately, our root Cordb object
     // may have already been deleted b/c we're at the mercy of ref-counting, so we can't check.
     
-    if (m_sharedAppDomain)
-        delete m_sharedAppDomain;
+	_ASSERTE(m_sharedAppDomain == NULL);
         
     m_processMutex.Destroy();
     m_StopGoLock.Destroy();
@@ -1278,11 +1277,17 @@ void CordbProcess::NeuterChildren()
     m_ContinueNeuterList.NeuterAndClear(this);
 
     m_userThreads.NeuterAndClear(GetProcessLock());
-
+    
     m_pDefaultAppDomain = NULL;
 
     // Frees per-appdomain left-side resources. See assumptions above.
     m_appDomains.NeuterAndClear(GetProcessLock());
+    if (m_sharedAppDomain != NULL)
+    {
+        m_sharedAppDomain->Neuter();
+        m_sharedAppDomain->InternalRelease();
+        m_sharedAppDomain = NULL;
+    }
 
     m_steppers.NeuterAndClear(GetProcessLock());
 
@@ -8751,6 +8756,7 @@ CordbAppDomain * CordbProcess::GetSharedAppDomain()
         {
             delete pAD;
         }
+		m_sharedAppDomain->InternalAddRef();
     }
     
     return m_sharedAppDomain;
@@ -13093,9 +13099,31 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
                     fcd.action = HIJACK_ACTION_EXIT_UNHANDLED;
                 }
 
-                // if the user changed the context during this hijack or if it had the SingleStep flag set on it,
-                // then update the LS context
-                if (pUnmanagedThread->IsContextSet() || IsSSFlagEnabled(&tempContext))
+                //
+                // LS context is restored here so that execution continues from next instruction that caused the hijack.
+                // We shouldn't always restore the LS context though.
+                // Consider the following case where this can cause issues:
+                // Debuggee process hits an exception and calls KERNELBASE!RaiseException, debugger gets the notification and
+                // prepares for first-chance hijack. Debugger(DBI) saves the current thread context (see SetupFirstChanceHijackForSync) which is restored
+                // later below (see SafeWriteThreadContext call) when the process is in VEH (CLRVectoredExceptionHandlerShim->FirstChanceSuspendHijackWorker).
+                // The thread context that got saved(by SetupFirstChanceHijackForSync) was for when the thread was executing RaiseException and when
+                // this context gets restored in VEH, the thread resumes after the exception handler with a context that is not same as one with which
+                // it entered. This inconsistency can lead to bad execution code-paths or even a debuggee crash.
+                //
+                // Example case where we should definitely update the LS context:
+                // After a DbgBreakPoint call, IP gets updated to point to the instruction after int 3 and this is the context saved by debugger.
+                // The IP in context passed to VEH still points to int 3 though and if we don't update the LS context in VEH, the breakpoint
+                // instruction will get executed again.
+                //
+                // Here's a list of cases when we update the LS context:
+                // * we know that context was explicitly updated during this hijack, OR
+                // * if single-stepping flag was set on it originally, OR
+                // * if this was a breakpoint event
+                // Note that above list is a heuristic and it is possible that we need to add more such cases in future.
+                //
+                BOOL isBreakPointEvent = (pUnmanagedEvent->m_currentDebugEvent.dwDebugEventCode == EXCEPTION_DEBUG_EVENT &&
+                    pUnmanagedEvent->m_currentDebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT);
+                if (pUnmanagedThread->IsContextSet() || IsSSFlagEnabled(&tempContext) || isBreakPointEvent)
                 {
                     _ASSERTE(fcd.pLeftSideContext != NULL);
                     LOG((LF_CORDB, LL_INFO10000, "W32ET::W32EL: updating LS context at 0x%p\n", fcd.pLeftSideContext));

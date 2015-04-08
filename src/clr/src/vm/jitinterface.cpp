@@ -7850,7 +7850,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         }
     }
 
-
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerPresent())
     {
