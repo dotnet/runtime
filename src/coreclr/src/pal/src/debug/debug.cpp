@@ -518,35 +518,6 @@ SetThreadContext(
     return ret;
 }
 
-VOID 
-PALAPI 
-RtlRestoreContext(
-  IN PCONTEXT ContextRecord,
-  IN PEXCEPTION_RECORD ExceptionRecord
-)
-{
-#if !HAVE_MACH_EXCEPTIONS
-#if HAVE_GETCONTEXT
-    native_context_t ucontext;
-    getcontext(&ucontext);
-#else
-#error Don't know how to get current context on this platform!
-#endif
-
-    CONTEXTToNativeContext(ContextRecord, &ucontext);
-
-#if HAVE_SETCONTEXT
-    setcontext(&ucontext);
-#else
-#error Don't know how to set current context on this platform!
-#endif
-
-#else
-    MachSetThreadContext(const_cast<CONTEXT *>(ContextRecord));
-    ASSERT("MachSetThreadContext should never return\n");
-#endif // HAVE_MACH_EXCEPTIONS
-}
-
 /*++
 Function:
   ReadProcessMemory
