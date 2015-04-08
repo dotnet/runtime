@@ -1406,7 +1406,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_array_internal(SOCKET sock, M
 	return(recv);
 }
 
-gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr, gint32 *error)
+gint32 ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr, gint32 *error)
 {
 	int ret;
 	guchar *buf;
