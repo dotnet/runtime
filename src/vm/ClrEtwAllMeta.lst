@@ -101,6 +101,8 @@ nomac:GarbageCollection:::GCMarkHandles
 nostack:GarbageCollection:::GCMarkHandles
 nomac:GarbageCollection:::GCMarkOlderGenerationRoots
 nostack:GarbageCollection:::GCMarkOlderGenerationRoots
+nomac:GarbageCollection:::GCMarkWithType
+nostack:GarbageCollection:::GCMarkWithType
 nostack:GarbageCollection:::PinObjectAtGCTime
 nostack:GarbageCollection:::FinalizeObject
 nostack:GarbageCollection:::GCGenerationRange
@@ -113,6 +115,11 @@ nostack:GarbageCollection:::GCBulkMovedObjectRanges
 nostack:GarbageCollection:::GCBulkRootCCW
 nostack:GarbageCollection:::GCBulkRCW
 nostack:GarbageCollection:::GCBulkRootStaticVar
+nomac:GarbageCollection:::GCPerHeapHistory_V3
+nostack:GarbageCollection:::GCPerHeapHistory_V3
+nomac:GarbageCollection:::GCGlobalHeap_V2
+nostack:GarbageCollection:::GCGlobalHeap_V2
+nomac:GarbageCollection:::GCJoin_V2
 
 #############
 # Type events

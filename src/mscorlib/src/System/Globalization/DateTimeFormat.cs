@@ -929,6 +929,7 @@ namespace System {
                         case Calendar.CAL_HEBREW:
                         case Calendar.CAL_JULIAN:
                         case Calendar.CAL_UMALQURA:
+                        case Calendar.CAL_PERSIAN:
                             timeOnlySpecialCase = true;
                             dtfi = DateTimeFormatInfo.InvariantInfo;
                             break;                        
