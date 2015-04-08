@@ -1062,43 +1062,47 @@ ensure_cleanedup (void)
 	io_status = STATUS_CLEANED_UP;
 }
 
-gboolean
-mono_threadpool_ms_is_io (MonoObject *target, MonoObject *state)
+static gboolean
+is_socket_async_callback (MonoClass *class)
 {
-	static MonoClass *socket_class = NULL;
-	static MonoClass *socket_async_class = NULL;
+	static MonoClass *socket_async_callback_class = NULL;
+
+	if (!socket_async_callback_class)
+		socket_async_callback_class = mono_class_from_name (mono_defaults.system, "System.Net.Sockets", "SocketAsyncCallback");
+	g_assert (socket_async_callback_class);
+
+	return class == socket_async_callback_class;
+}
+
+static gboolean
+is_async_read_handler (MonoClass *class)
+{
 	static MonoClass *process_class = NULL;
 	static MonoClass *async_read_handler_class = NULL;
-	MonoClass *class;
-	MonoSocketAsyncResult *sockares;
-
-	if (!mono_defaults.system)
-		mono_defaults.system = mono_image_loaded ("System");
-	if (!mono_defaults.system)
-		return FALSE;
-	g_assert (mono_defaults.system);
-
-	if (!socket_class)
-		socket_class = mono_class_from_name (mono_defaults.system, "System.Net.Sockets", "Socket");
-	g_assert (socket_class);
 
 	if (!process_class)
 		process_class = mono_class_from_name (mono_defaults.system, "System.Diagnostics", "Process");
 	g_assert (process_class);
-
-	class = target->vtable->klass;
-
-	if (!socket_async_class) {
-		if (class->nested_in && class->nested_in == socket_class && strcmp (class->name, "SocketAsyncCall") == 0)
-			socket_async_class = class;
-	}
 
 	if (!async_read_handler_class) {
 		if (class->nested_in && class->nested_in == process_class && strcmp (class->name, "AsyncReadHandler") == 0)
 			async_read_handler_class = class;
 	}
 
-	if (class != socket_async_class && class != async_read_handler_class)
+	return class == async_read_handler_class;
+}
+
+gboolean
+mono_threadpool_ms_is_io (MonoObject *target, MonoObject *state)
+{
+	MonoSocketAsyncResult *sockares;
+
+	if (!mono_defaults.system)
+		mono_defaults.system = mono_image_loaded ("System");
+	if (!mono_defaults.system)
+		return FALSE;
+
+	if (!is_socket_async_callback (target->vtable->klass) && !is_async_read_handler (target->vtable->klass))
 		return FALSE;
 
 	sockares = (MonoSocketAsyncResult*) state;

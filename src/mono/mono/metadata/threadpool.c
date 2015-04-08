@@ -213,16 +213,6 @@ is_corlib_type (MonoDomain *domain, MonoClass *klass)
 	return klass->image == mono_defaults.corlib;
 }
 
-/*
- * Note that we call it is_socket_type() where 'socket' refers to the image
- * that contains the System.Net.Sockets.Socket type.
-*/
-static gboolean
-is_socket_type (MonoDomain *domain, MonoClass *klass)
-{
-	return is_system_type (domain, klass);
-}
-
 #define check_type_cached(domain, ASSEMBLY, _class, _namespace, _name, loc) do { \
 	if (*loc) \
 		return *loc == _class; \
@@ -235,20 +225,12 @@ is_socket_type (MonoDomain *domain, MonoClass *klass)
 
 #define check_corlib_type_cached(domain, _class, _namespace, _name, loc) check_type_cached (domain, corlib, _class, _namespace, _name, loc)
 
-#define check_socket_type_cached(domain, _class, _namespace, _name, loc) check_type_cached (domain, socket, _class, _namespace, _name, loc)
-
 #define check_system_type_cached(domain, _class, _namespace, _name, loc) check_type_cached (domain, system, _class, _namespace, _name, loc)
 
 static gboolean
 is_corlib_asyncresult (MonoDomain *domain, MonoClass *klass)
 {
 	check_corlib_type_cached (domain, klass, "System.Runtime.Remoting.Messaging", "AsyncResult", &domain->corlib_asyncresult_class);
-}
-
-static gboolean
-is_socket (MonoDomain *domain, MonoClass *klass)
-{
-	check_socket_type_cached (domain, klass, "System.Net.Sockets", "Socket", &domain->socket_class);
 }
 
 static gboolean
@@ -261,9 +243,8 @@ is_socketasyncresult (MonoDomain *domain, MonoClass *klass)
 static gboolean
 is_socketasynccall (MonoDomain *domain, MonoClass *klass)
 {
-	return (klass->nested_in &&
-			is_socket (domain, klass->nested_in) &&
-			!strcmp (klass->name, "SocketAsyncCall"));
+	static MonoClass *socket_async_callback_klass = NULL;
+	check_system_type_cached (domain, klass, "System.Net.Sockets", "SocketAsyncCallback", &socket_async_callback_klass);
 }
 
 static gboolean
