@@ -14,6 +14,7 @@ Book of the Runtime
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 - [Stack Walking](stackwalking.md)
 - [Mscorlib and Calling Into the Runtime](mscorlib.md)
+- [Implementing Profilability](profilability.md)
 
 .NET Runtime Specs
 ==================
