@@ -91,5 +91,5 @@ else
 check-local: testlog
 endif
 
-EXTRA_DIST=utils.c utils.h proflog.h log-profiler.txt perf_event.h \
+EXTRA_DIST=utils.c utils.h proflog.h perf_event.h \
 	$(PLOG_TESTS_SRC) ptestrunner.pl
