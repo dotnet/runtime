@@ -16,19 +16,21 @@ namespace System.Text.RegularExpressions
     public class Group : Capture
     {
         // the empty group object
-        internal static Group _emptygroup = new Group(String.Empty, Array.Empty<int>(), 0);
+        internal static Group _emptygroup = new Group(String.Empty, Array.Empty<int>(), 0, string.Empty);
 
         internal int[] _caps;
         internal int _capcount;
         internal CaptureCollection _capcoll;
+        internal string _name;
 
-        internal Group(String text, int[] caps, int capcount)
+        internal Group(String text, int[] caps, int capcount, string name)
 
         : base(text, capcount == 0 ? 0 : caps[(capcount - 1) * 2],
                capcount == 0 ? 0 : caps[(capcount * 2) - 1])
         {
             _caps = caps;
             _capcount = capcount;
+            _name = name;
         }
 
         /// <summary>
@@ -39,6 +41,14 @@ namespace System.Text.RegularExpressions
             get
             {
                 return _capcount != 0;
+            }
+        }
+
+        public string Name
+        {
+            get
+            {
+                return _name;
             }
         }
 
