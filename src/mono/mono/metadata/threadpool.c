@@ -254,9 +254,8 @@ is_socket (MonoDomain *domain, MonoClass *klass)
 static gboolean
 is_socketasyncresult (MonoDomain *domain, MonoClass *klass)
 {
-	return (klass->nested_in &&
-			is_socket (domain, klass->nested_in) &&
-			!strcmp (klass->name, "SocketAsyncResult"));
+	static MonoClass *socket_async_result_klass = NULL;
+	check_system_type_cached (domain, klass, "System.Net.Sockets", "SocketAsyncResult", &socket_async_result_klass);
 }
 
 static gboolean
