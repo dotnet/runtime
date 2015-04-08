@@ -13,7 +13,7 @@ namespace System.Resources.ResourceWriterTests
     public class ResourceWriterTests
     {
         //The Following two collections are tightly coupled
-        //If s_dict is changed, please manually update _RefBuffer
+        // If s_dict is changed, please manually update _RefBuffer
         private static Dictionary<string, string> s_dict = new Dictionary<string, string>{
                                                                            { "name1", "value1"},
                                                                            { "name2", "value2"},
@@ -149,4 +149,10 @@ namespace System.Resources.ResourceWriterTests
             Assert.True(hError, "The generated Resource does not match the reference");
         }
     }
+
 }
+
+
+
+
+
