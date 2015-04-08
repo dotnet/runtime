@@ -4,6 +4,10 @@
 #include <mono/utils/mono-compiler.h>
 #include <glib.h>
 
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 /* Returns the number of milliseconds from boot time: this should be monotonic */
 guint32 mono_msec_ticks      (void);
 
