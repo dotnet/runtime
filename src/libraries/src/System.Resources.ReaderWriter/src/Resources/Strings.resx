@@ -123,4 +123,49 @@
   <data name="Argument_StreamNotWritable" xml:space="preserve">
     <value>Stream was not writable.</value>
   </data>
+<data name="Arg_ResourceFileUnsupportedVersion" xml:space="preserve">
+    <value>The ResourceReader class does not know how to read this version of .resources files.</value>
+  </data>
+  <data name="Resources_StreamNotValid" xml:space="preserve">
+    <value>Stream is not a valid resource file.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesHeaderCorrupted" xml:space="preserve">
+    <value>Corrupt .resources file. Unable to read resources from this file because of invalid header information. Try regenerating the .resources file.</value>
+  </data>
+  <data name="Argument_StreamNotReadable" xml:space="preserve">
+    <value>Stream was not readable.</value>
+  </data>
+  <data name="BadImageFormat_NegativeStringLength" xml:space="preserve">
+    <value>Corrupt .resources file. String length must be non-negative.</value>
+  </data>
+  <data name="BadImageFormat_ResourcesNameInvalidOffset" xml:space="preserve">
+    <value>Corrupt .resources file. The Invalid offset into name section is .</value>
+  </data>
+  <data name="NotSupported_WrongResourceReader_Type" xml:space="preserve">
+    <value>This .resources file should not be read with this reader. The resource reader type is</value>
+  </data>
+  <data name="BadImageFormat_TypeMismatch" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified type doesn't match the available data in the stream.</value>
+  </data>
+  <data name="BadImageFormat_ResourceNameCorrupted_NameIndex" xml:space="preserve">
+    <value>Corrupt .resources file. The resource name for name index that extends past the end of the strea is </value>
+  </data>
+  <data name="BadImageFormat_ResourcesDataInvalidOffset" xml:space="preserve">
+    <value>Corrupt .resources file. Invalid offset  into data section is </value>
+  </data>
+  <data name="Format_Bad7BitInt32" xml:space="preserve">
+    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
+  </data>
+  <data name="BadImageFormat_InvalidType" xml:space="preserve">
+    <value>Corrupt .resources file.  The specified type doesn't exist.</value>
+  </data>
+  <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
+    <value>Enumeration has not started. Call MoveNext</value>
+  </data>
+  <data name="InvalidOperation_EnumEnded" xml:space="preserve">
+    <value>Enumeration already finished.</value>
+  </data>
+  <data name="ResourceReaderIsClosed" xml:space="preserve">
+    <value>ResourceReader is closed.</value>
+  </data>
 </root>
