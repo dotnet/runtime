@@ -9,7 +9,7 @@
 
 #include <config.h>
 
-#ifndef TARGET_WIN32
+#ifndef HOST_WIN32
 
 #include <glib.h>
 #include <string.h>
