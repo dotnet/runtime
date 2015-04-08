@@ -76,6 +76,16 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #include <sys/vmparam.h>
 #endif
 
+#ifndef __APPLE__
+#if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
+#define SYSCONF_PAGES _SC_AVPHYS_PAGES
+#elif HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
+#define SYSCONF_PAGES _SC_PHYS_PAGES
+#else
+#error Dont know how to get page-size on this architecture!
+#endif
+#endif // __APPLE__
+
 
 /*++
 Function:
@@ -256,8 +266,8 @@ GlobalMemoryStatusEx(
     // We do this only when we have the total physical memory available.
     if (lpBuffer->ullTotalPhys > 0)
     {
-#if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
-        lpBuffer->ullAvailPhys = sysconf(_SC_AVPHYS_PAGES) * sysconf(_SC_PAGE_SIZE);
+#ifndef __APPLE__
+        lpBuffer->ullAvailPhys = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
         INT64 used_memory = lpBuffer->ullTotalPhys - lpBuffer->ullAvailPhys;
         lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
 #else
@@ -276,7 +286,7 @@ GlobalMemoryStatusEx(
                 lpBuffer->dwMemoryLoad = (DWORD)((used_memory * 100) / lpBuffer->ullTotalPhys);
             }
         }
-#endif // HAVE_SYSCONF
+#endif // __APPLE__
     }
 
     // TODO: figure out a way to get the real values for the total / available virtual
