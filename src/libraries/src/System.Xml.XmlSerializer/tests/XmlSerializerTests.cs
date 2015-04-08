@@ -973,6 +973,58 @@ public class XmlSerializerTests
         Assert.StrictEqual(value.TestProperty, actual.TestProperty);
     }
 
+    [Fact]
+    public static void Xml_XmlElementAsRoot()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml("<html></html>");
+        XmlElement expected = xDoc.CreateElement("Element");
+        expected.InnerText = "Element innertext";
+        var actual = SerializeAndDeserialize(expected, @"<?xml version=""1.0"" encoding=""utf-8""?><Element>Element innertext</Element>");
+        Assert.NotNull(actual);
+        Assert.StrictEqual(expected.InnerText, actual.InnerText);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithXmlElementProperty()
+    {
+        XmlDocument xDoc = new XmlDocument();
+        xDoc.LoadXml("<html></html>");
+        XmlElement productElement = xDoc.CreateElement("Product");
+        productElement.InnerText = "Product innertext";
+        XmlElement categoryElement = xDoc.CreateElement("Category");
+        categoryElement.InnerText = "Category innertext";
+        var expected = new TypeWithXmlElementProperty() { Elements = new[] { productElement, categoryElement } };
+        var actual = SerializeAndDeserialize(expected, @"<?xml version=""1.0"" encoding=""utf-8""?><TypeWithXmlElementProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Product>Product innertext</Product><Category>Category innertext</Category></TypeWithXmlElementProperty>");
+        Assert.StrictEqual(expected.Elements.Length, actual.Elements.Length);
+        for (int i = 0; i < expected.Elements.Length; ++i)
+        {
+            Assert.StrictEqual(expected.Elements[i].InnerText, actual.Elements[i].InnerText);
+        }
+    }
+
+    [Fact]
+    public static void Xml_XmlDocumentAsRoot()
+    {
+        XmlDocument expected = new XmlDocument();
+        expected.LoadXml("<html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html>");
+        var actual = SerializeAndDeserialize(expected, @"<?xml version=""1.0"" encoding=""utf-8""?><html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html>");
+        Assert.NotNull(actual);
+        Assert.StrictEqual(expected.OuterXml, actual.OuterXml);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithXmlDocumentProperty()
+    {
+        XmlDocument xmlDoc = new XmlDocument();
+        xmlDoc.LoadXml("<html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html>");
+        var expected = new TypeWithXmlDocumentProperty() {Document = xmlDoc};
+        var actual = SerializeAndDeserialize(expected, @"<TypeWithXmlDocumentProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Document><html><head>Head content</head><body><h1>Heading1</h1><div>Text in body</div></body></html></Document></TypeWithXmlDocumentProperty>");
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.Document);
+        Assert.StrictEqual(expected.Document.OuterXml, actual.Document.OuterXml);
+    }
+
     private static System.Reflection.ConstructorInfo FindDefaultConstructor(System.Reflection.TypeInfo ti)
     {
         foreach (System.Reflection.ConstructorInfo ci in ti.DeclaredConstructors)
