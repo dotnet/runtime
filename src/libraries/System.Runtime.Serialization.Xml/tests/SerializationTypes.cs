@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -289,23 +290,23 @@ namespace SerializationTypes
         }
     }
 
-    public class TypeWithIDictionaryPropertyInitWithConcreteType 
+    public class TypeWithIDictionaryPropertyInitWithConcreteType
     {
         private IDictionary<string, string> dictionaryProperty;
 
-        public IDictionary<string, string> DictionaryProperty 
+        public IDictionary<string, string> DictionaryProperty
         {
-            get 
+            get
             {
                 return this.dictionaryProperty;
             }
-            set 
+            set
             {
                 this.dictionaryProperty = value;
             }
         }
 
-        public TypeWithIDictionaryPropertyInitWithConcreteType() 
+        public TypeWithIDictionaryPropertyInitWithConcreteType()
         {
             dictionaryProperty = new Dictionary<string, string>();
         }
@@ -913,7 +914,7 @@ namespace SerializationTypes
     [KnownType(typeof(SimpleBaseDerived2))]
     public class GenericBase2<T, K>
         where T : new()
-        where K : new()
+    where K : new()
     {
         [DataMember]
         public T genericData1;
@@ -2091,4 +2092,16 @@ public class TestableDerivedException : System.Exception
     { }
 
     public string TestProperty { get; set; }
+}
+
+
+public class TypeWithXmlElementProperty
+{
+    [XmlAnyElement]
+    public XmlElement[] Elements;
+}
+
+public class TypeWithXmlDocumentProperty
+{
+    public XmlDocument Document;
 }
