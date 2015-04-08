@@ -6996,8 +6996,8 @@ mono_TypedReference_MakeTypedReferenceInternal (MonoObject *target, MonoArray *f
 	MonoTypedRef res;
 	MonoReflectionField *f;
 	MonoClass *klass;
-	MonoType *ftype;
-	guint8 *p;
+	MonoType *ftype = NULL;
+	guint8 *p = NULL;
 	int i;
 
 	memset (&res, 0, sizeof (res));
