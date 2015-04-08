@@ -582,6 +582,7 @@ typedef enum
                                           COR_PRF_MONITOR_GC |
                                           COR_PRF_MONITOR_SUSPENDS |
                                           COR_PRF_MONITOR_CLASS_LOADS |
+                                          COR_PRF_MONITOR_EXCEPTIONS |
                                           COR_PRF_MONITOR_JIT_COMPILATION,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.

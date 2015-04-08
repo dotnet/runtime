@@ -4741,6 +4741,27 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
 #ifndef FEATURE_CORECLR
             startupFlags = CorHost2::GetStartupFlags();
+
+            // Some of the options specified by the startup flags can be overwritten by config files. 
+            // Strictly speaking since the field in this event is called StartupFlags there's nothing 
+            // wrong with just showing the actual startup flags but it makes it less useful (a more 
+            // appropriate name for the field is StartupOptions).
+            startupFlags &= ~STARTUP_CONCURRENT_GC;
+            if (g_pConfig->GetGCconcurrent())
+                startupFlags |= STARTUP_CONCURRENT_GC;
+
+            if (g_pConfig->DefaultSharePolicy() != AppDomain::SHARE_POLICY_UNSPECIFIED)
+            {
+                startupFlags &= ~STARTUP_LOADER_OPTIMIZATION_MASK;
+                startupFlags |= g_pConfig->DefaultSharePolicy() << 1;
+            }
+
+            startupFlags &= ~STARTUP_LEGACY_IMPERSONATION;
+            startupFlags &= ~STARTUP_ALWAYSFLOW_IMPERSONATION;
+            if (g_pConfig->ImpersonationMode() == IMP_NOFLOW)
+                startupFlags |= STARTUP_LEGACY_IMPERSONATION;
+            else if (g_pConfig->ImpersonationMode() == IMP_ALWAYSFLOW)
+                startupFlags |= STARTUP_ALWAYSFLOW_IMPERSONATION;
 #endif //!FEATURE_CORECLR
 
             // Determine the startupmode
@@ -6391,12 +6412,105 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
 #endif // FEATURE_PREJIT
 }
 
+// Called be ETW::MethodLog::SendEventsForJitMethods
+// Sends the ETW events once our caller determines whether or not rejit locks can be acquired
+VOID ETW::MethodLog::SendEventsForJitMethodsHelper(BaseDomain *pDomainFilter,
+                                                   LoaderAllocator *pLoaderAllocatorFilter,
+                                                   DWORD dwEventOptions,
+                                                   BOOL fLoadOrDCStart,
+                                                   BOOL fUnloadOrDCEnd,
+                                                   BOOL fSendMethodEvent,
+                                                   BOOL fSendILToNativeMapEvent,
+                                                   BOOL fGetReJitIDs)
+{
+    CONTRACTL{
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    EEJitManager::CodeHeapIterator heapIterator(pDomainFilter, pLoaderAllocatorFilter);
+    while (heapIterator.Next())
+    {
+        MethodDesc * pMD = heapIterator.GetMethod();
+        if (pMD == NULL)
+            continue;
+
+        TADDR codeStart = heapIterator.GetMethodCode();
+
+        // Grab rejitID from the rejit manager. In some cases, such as collectible loader
+        // allocators, we don't support rejit so we need to short circuit the call.
+        // This also allows our caller to avoid having to pre-enter the rejit
+        // manager locks.
+        // see code:#TableLockHolder
+        ReJITID rejitID =
+            fGetReJitIDs ? pMD->GetReJitManager()->GetReJitIdNoLock(pMD, codeStart) : 0;
+
+        // There are small windows of time where the heap iterator may come across a
+        // codeStart that is not yet published to the MethodDesc. This may happen if
+        // we're JITting the method right now on another thread, and have not completed
+        // yet. Detect the race, and skip the method if appropriate. (If rejitID is
+        // nonzero, there is no race, as GetReJitIdNoLock will not return a nonzero
+        // rejitID if the codeStart has not yet been published for that rejitted version
+        // of the method.) This check also catches recompilations due to EnC, which we do
+        // not want to issue events for, in order to ensure xperf's assumption that
+        // MethodDesc* + ReJITID + extent (hot vs. cold) form a unique key for code
+        // ranges of methods
+        if ((rejitID == 0) && (codeStart != PCODEToPINSTR(pMD->GetNativeCode())))
+            continue;
+
+        // When we're called to announce loads, then the methodload event itself must
+        // precede any supplemental events, so that the method load or method jitting
+        // event is the first event the profiler sees for that MethodID (and not, say,
+        // the MethodILToNativeMap event.)
+        if (fLoadOrDCStart)
+        {
+            if (fSendMethodEvent)
+            {
+                ETW::MethodLog::SendMethodEvent(
+                    pMD,
+                    dwEventOptions,
+                    TRUE,           // bIsJit
+                    NULL,           // namespaceOrClassName
+                    NULL,           // methodName
+                    NULL,           // methodSignature
+                    codeStart,
+                    rejitID);
+            }
+        }
+
+        // Send any supplemental events requested for this MethodID
+        if (fSendILToNativeMapEvent)
+            ETW::MethodLog::SendMethodILToNativeMapEvent(pMD, dwEventOptions, rejitID);
+
+        // When we're called to announce unloads, then the methodunload event itself must
+        // come after any supplemental events, so that the method unload event is the
+        // last event the profiler sees for this MethodID
+        if (fUnloadOrDCEnd)
+        {
+            if (fSendMethodEvent)
+            {
+                ETW::MethodLog::SendMethodEvent(
+                    pMD,
+                    dwEventOptions,
+                    TRUE,           // bIsJit
+                    NULL,           // namespaceOrClassName
+                    NULL,           // methodName
+                    NULL,           // methodSignature
+                    codeStart,
+                    rejitID);
+            }
+        }
+    }
+}
+
 /****************************************************************************/
 /* This routine sends back method events of type 'dwEventOptions', for all 
    JITed methods in either a given LoaderAllocator (if pLoaderAllocatorFilter is non NULL) 
    or in a given Domain (if pDomainFilter is non NULL) or for
    all methods (if both filters are null) */ 
 /****************************************************************************/
+// Code review indicates this method is never called with both filters NULL. Ideally we would
+// assert this and change the comment above, but given I am making a change late in the release I am being cautious
 VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions)
 {
     CONTRACTL {
@@ -6424,9 +6538,6 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
                 (ETW::EnumerationLog::EnumerationStructs::MethodDCStartILToNativeMap |
                 ETW::EnumerationLog::EnumerationStructs::MethodDCEndILToNativeMap)) != 0;
 
-        BOOL fCollectibleLoaderAllocatorFilter = 
-            ((pLoaderAllocatorFilter != NULL) && (pLoaderAllocatorFilter->IsCollectible()));
-
         if (fSendILToNativeMapEvent)
         {
             // The call to SendMethodILToNativeMapEvent assumes that the debugger's lazy
@@ -6439,83 +6550,48 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
             g_pDebugInterface->InitializeLazyDataIfNecessary();
         }
 
-        // GetRejitIdNoLock requires that the rejit lock is taken already. We need to take
-        // it here, before CodeHeapIterator takes the SingleUseLock because that is defined
-        // ordering.
-        ReJitManager::TableLockHolder lksharedRejitMgrModule(SharedDomain::GetDomain()->GetReJitManager());
-        ReJitManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetReJitManager());
-        EEJitManager::CodeHeapIterator heapIterator(pDomainFilter, pLoaderAllocatorFilter);
-        while(heapIterator.Next())
+        // #TableLockHolder:
+        // 
+        // A word about ReJitManager::TableLockHolder... As we enumerate through the functions,
+        // we may need to grab their ReJITIDs. The ReJitManager grabs its table Crst in order to
+        // fetch these. However, several other kinds of locks are being taken during this
+        // enumeration, such as the SystemDomain lock and the EEJitManager::CodeHeapIterator's
+        // lock. In order to avoid lock-leveling issues, we grab the appropriate ReJitManager
+        // table locks after SystemDomain and before CodeHeapIterator. In particular, we need to
+        // grab the SharedDomain's ReJitManager table lock as well as the specific AppDomain's
+        // ReJitManager table lock for the current AppDomain we're iterating. Why the SharedDomain's
+        // ReJitManager lock? For any given AppDomain we're iterating over, the MethodDescs we
+        // find may be managed by that AppDomain's ReJitManger OR the SharedDomain's ReJitManager.
+        // (This is due to generics and whether given instantiations may be shared based on their
+        // arguments.) Therefore, we proactively take the SharedDomain's ReJitManager's table
+        // lock up front, and then individually take the appropriate AppDomain's ReJitManager's
+        // table lock that corresponds to the domain or module we're currently iterating over.
+        //
+
+        // We only support getting rejit IDs when filtering by domain.
+        if (pDomainFilter)
         {
-            MethodDesc * pMD = heapIterator.GetMethod();
-            if (pMD == NULL)
-                continue;
-
-            TADDR codeStart = heapIterator.GetMethodCode();
-        
-            // Grab rejitID from the rejit manager. Short-circuit the call if we're filtering
-            // by a collectible loader allocator, since rejit is not supported on RefEmit
-            // assemblies.
-            ReJITID rejitID = 
-                fCollectibleLoaderAllocatorFilter ?
-                0 :
-                pMD->GetReJitManager()->GetReJitIdNoLock(pMD, codeStart);
-
-            // There are small windows of time where the heap iterator may come across a
-            // codeStart that is not yet published to the MethodDesc. This may happen if
-            // we're JITting the method right now on another thread, and have not completed
-            // yet. Detect the race, and skip the method if appropriate. (If rejitID is
-            // nonzero, there is no race, as GetReJitIdNoLock will not return a nonzero
-            // rejitID if the codeStart has not yet been published for that rejitted version
-            // of the method.) This check also catches recompilations due to EnC, which we do
-            // not want to issue events for, in order to ensure xperf's assumption that
-            // MethodDesc* + ReJITID + extent (hot vs. cold) form a unique key for code
-            // ranges of methods
-            if ((rejitID == 0) && (codeStart != PCODEToPINSTR(pMD->GetNativeCode())))
-                continue;
-
-            // When we're called to announce loads, then the methodload event itself must
-            // precede any supplemental events, so that the method load or method jitting
-            // event is the first event the profiler sees for that MethodID (and not, say,
-            // the MethodILToNativeMap event.)
-            if (fLoadOrDCStart)
-            {
-                if (fSendMethodEvent)
-                {
-                    ETW::MethodLog::SendMethodEvent(
-                        pMD, 
-                        dwEventOptions, 
-                        TRUE,           // bIsJit
-                        NULL,           // namespaceOrClassName
-                        NULL,           // methodName
-                        NULL,           // methodSignature
-                        codeStart,
-                        rejitID);
-                }
-            }
-
-            // Send any supplemental events requested for this MethodID
-            if (fSendILToNativeMapEvent)
-                ETW::MethodLog::SendMethodILToNativeMapEvent(pMD, dwEventOptions, rejitID);
-
-            // When we're called to announce unloads, then the methodunload event itself must
-            // come after any supplemental events, so that the method unload event is the
-            // last event the profiler sees for this MethodID
-            if (fUnloadOrDCEnd)
-            {
-                if (fSendMethodEvent)
-                {
-                    ETW::MethodLog::SendMethodEvent(
-                        pMD, 
-                        dwEventOptions, 
-                        TRUE,           // bIsJit
-                        NULL,           // namespaceOrClassName
-                        NULL,           // methodName
-                        NULL,           // methodSignature
-                        codeStart,
-                        rejitID);
-                }
-            }
+            ReJitManager::TableLockHolder lkRejitMgrSharedDomain(SharedDomain::GetDomain()->GetReJitManager());
+            ReJitManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetReJitManager());
+            SendEventsForJitMethodsHelper(pDomainFilter,
+                pLoaderAllocatorFilter,
+                dwEventOptions,
+                fLoadOrDCStart,
+                fUnloadOrDCEnd,
+                fSendMethodEvent,
+                fSendILToNativeMapEvent,
+                TRUE);
+        }
+        else
+        {
+            SendEventsForJitMethodsHelper(pDomainFilter,
+                pLoaderAllocatorFilter,
+                dwEventOptions,
+                fLoadOrDCStart,
+                fUnloadOrDCEnd,
+                fSendMethodEvent,
+                fSendILToNativeMapEvent,
+                FALSE);
         }
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 #endif // !DACCESS_COMPILE
@@ -6859,6 +6935,12 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
         // Thus hitting a timeout due to a large number of methods will not affect modules rundown.tf g
         ETW::EnumerationLog::IterateModule(moduleFilter, enumerationOptions);
 
+        // As best I can tell from code review, these if statements below are never true. There is
+        // only one caller to this method that specifies a moduleFilter, ETW::LoaderLog::ModuleLoad.
+        // That method never specifies these flags. Because it is late in a release cycle I am not
+        // making a change, but if you see this comment early in the next release cycle consider
+        // deleting this apparently dead code.
+
         // DC End or Unload Jit Method events from all Domains
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnloadOrDCEndAny)
         {
@@ -6895,6 +6977,7 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
                     ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
                 }
             }
+
             ETW::EnumerationLog::IterateDomain(SharedDomain::GetDomain(), enumerationOptions);
         }    
     }    
