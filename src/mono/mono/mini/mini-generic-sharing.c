@@ -15,8 +15,8 @@
 
 #include "mini.h"
 
-//#define ALLOW_PARTIAL_SHARING TRUE
-#define ALLOW_PARTIAL_SHARING FALSE
+#define ALLOW_PARTIAL_SHARING TRUE
+//#define ALLOW_PARTIAL_SHARING FALSE
  
 #if 0
 #define DEBUG(...) __VA_ARGS__
