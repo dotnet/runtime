@@ -18,7 +18,7 @@
 // PLEASE READ!
 //
 // There are strict rules for how to implement ICorProfilerInfo* methods.  Please read
-// http://devdiv/sites/CLR/ProfilingAPI/Shared%20Documents/ImplementingProfilability.doc
+// https://github.com/dotnet/coreclr/blob/master/Documentation/profilability.md
 // to understand the rules and why they exist.
 //
 // As a reminder, here is a short summary of your responsibilities.  Every PUBLIC
