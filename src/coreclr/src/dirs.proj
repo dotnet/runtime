@@ -41,13 +41,14 @@
         <ProjectFile Include="delayimp\delayimp.nativeproj" Condition="'$(BuildProjectName)' != 'CoreSys'"/>
         <ProjectFile Include="dlls\dirs.proj" />
         <ProjectFile Include="unwinder\dirs.proj" Condition="'$(TargetArch)' != 'i386'" />
+
+        <!-- In the CodeGen branch, we use RyuJIT for all JIT builds -->
+        <ProjectFile Include="jit\dirs.proj"   Condition="'$(_BuildBranch)' == 'CodeGen'" />
         
-	<!-- In FXMain we build RyuJIT only for amd64 and arm64 -->
-        <ProjectFile Include="jit32\dirs.proj" Condition="'$(BuildArchitecture)' != 'amd64' and '$(BuildArchitecture)' != 'arm64'"/>
-        <ProjectFile Include="jit\dirs.proj" Condition="'$(BuildArchitecture)' == 'amd64' or '$(BuildArchitecture)' == 'arm64'"/>
-	<!-- In Codegen we always build RyuJIT this includes x86 as well as amd64 and arm64 ==>
-        <ProjectFile Include="jit\dirs.proj" />
-        -->
+        <!-- In other branches, we build RyuJIT only for amd64 and arm64, and use JIT32 for ARM and x86 -->
+        <ProjectFile Include="jit\dirs.proj"   Condition="('$(_BuildBranch)' != 'CodeGen') and ('$(BuildArchitecture)' == 'amd64' or  '$(BuildArchitecture)' == 'arm64')" />
+        <ProjectFile Include="jit32\dirs.proj" Condition="('$(_BuildBranch)' != 'CodeGen') and ('$(BuildArchitecture)' != 'amd64' and '$(BuildArchitecture)' != 'arm64')" />
+
         <ProjectFile Include="jit64\dirs.proj" />
 
         <ProjectFile Include="tools\dirs.proj" />

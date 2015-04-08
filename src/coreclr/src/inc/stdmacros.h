@@ -294,7 +294,6 @@ inline ULONG RoundUpToPower2(ULONG x)
 #define DBG_IPTR_NAME(iptr)            \
         (iptr) ? "interior" : "base"
 
-
 #define LOG_HANDLE_OBJECT_CLASS(str1, hnd, str2, obj)    \
         str1 FMT_HANDLE str2 FMT_OBJECT FMT_CLASS "\n",  \
         DBG_ADDR(hnd), DBG_ADDR(obj), DBG_CLASS_NAME_OBJ(obj)
@@ -307,6 +306,15 @@ inline ULONG RoundUpToPower2(ULONG x)
         FMT_PIPTR FMT_ADDR FMT_CLASS "\n",               \
         DBG_PIN_NAME(pin), DBG_IPTR_NAME(iptr),          \
         DBG_ADDR(obj), DBG_CLASS_NAME_IPTR(obj,iptr)
+
+#define LOG_HANDLE_OBJECT(str1, hnd, str2, obj)          \
+        str1 FMT_HANDLE str2 FMT_OBJECT "\n",            \
+        DBG_ADDR(hnd), DBG_ADDR(obj)
+
+#define LOG_PIPTR_OBJECT(obj, pin, iptr)                 \
+        FMT_PIPTR FMT_ADDR "\n",                         \
+        DBG_PIN_NAME(pin), DBG_IPTR_NAME(iptr),          \
+        DBG_ADDR(obj)
 
 #define UNIQUE_LABEL_DEF(a,x)           a##x
 #define UNIQUE_LABEL_DEF_X(a,x)         UNIQUE_LABEL_DEF(a,x)

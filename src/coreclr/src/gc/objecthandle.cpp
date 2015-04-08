@@ -146,9 +146,9 @@ void CALLBACK UpdateDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtr
     Object **pPrimaryRef = (Object **)pObjRef;
     Object **pSecondaryRef = (Object **)pExtraInfo;
   
-    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT_CLASS("Querying for new location of ", 
+    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT("Querying for new location of ", 
             pPrimaryRef, "to ", *pPrimaryRef)));
-    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT_CLASS(" and ", 
+    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT(" and ", 
             pSecondaryRef, "to ", *pSecondaryRef)));
 
 #ifdef _DEBUG
@@ -371,7 +371,7 @@ void CALLBACK UpdatePointer(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInfo, L
 {
     LIMITED_METHOD_CONTRACT;
 
-    LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Querying for new location of ", pObjRef, "to ", *pObjRef)));
+    LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT("Querying for new location of ", pObjRef, "to ", *pObjRef)));
 
     Object **ppRef = (Object **)pObjRef;
 
@@ -536,7 +536,7 @@ void CALLBACK UpdatePointerPinned(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraI
     promote_func* callback = (promote_func*) lp2;
     callback(ppRef, (ScanContext *)lp1, GC_CALL_PINNED);
     
-    LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Updating ", pObjRef, "to pinned ", *pObjRef)));
+    LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT("Updating ", pObjRef, "to pinned ", *pObjRef)));
 }
 
 

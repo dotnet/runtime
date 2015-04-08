@@ -3748,8 +3748,8 @@ void                Compiler::fgFixupStructReturn(GenTreePtr     call)
 /*****************************************************************************
  *
  *  A little helper used to rearrange nested commutative operations. The
- *  effect is that nested commutative operations are transformed into a
- *  'left-deep' tree, i.e. into something like this:
+ *  effect is that nested associative, commutative operations are transformed
+ *  into a 'left-deep' tree, i.e. into something like this:
  *
  *      (((a op b) op c) op d) op...
  */
@@ -3758,51 +3758,55 @@ void                Compiler::fgFixupStructReturn(GenTreePtr     call)
 
 void                Compiler::fgMoveOpsLeft(GenTreePtr tree)
 {
-    GenTreePtr      op1  = tree->gtOp.gtOp1;
-    GenTreePtr      op2  = tree->gtOp.gtOp2;
-    genTreeOps      oper = tree->OperGet();
-
-    noway_assert(GenTree::OperIsCommutative(oper));
-    noway_assert(oper == GT_ADD || oper == GT_XOR || oper == GT_OR ||
-                 oper == GT_AND || oper == GT_MUL);
-    noway_assert(!varTypeIsFloating(tree->TypeGet()) || !opts.genFPorder);
-    noway_assert(oper == op2->gtOper);
-
-    // Commutativity doesn't hold if overflow checks are needed
-
-    if (tree->gtOverflowEx() || op2->gtOverflowEx())
-        return;
-
-    if (gtIsActiveCSE_Candidate(op2))
-    {
-        // If we have marked op2 as a CSE candidate,
-        // we can't perform a commutative reordering
-        // because any value numbers that we computed for op2
-        // will be incorrect after performing a commutative reordering
-        //
-        return;
-    }
-
-    if (oper == GT_MUL && (op2->gtFlags & GTF_MUL_64RSLT))
-        return;
-
-    // Check for GTF_ADDRMODE_NO_CSE flag on add/mul Binary Operators
-    if (    ((oper == GT_ADD) || (oper == GT_MUL))
-         && ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)               )
-    {
-        return;
-    }
-
-    if ( (tree->gtFlags | op2->gtFlags) & GTF_BOOLEAN )
-    {
-        // We could deal with this, but we were always broken and just hit the assert
-        // below regarding flags, which means it's not frequent, so will just bail out.
-        // See #195514
-        return;
-    }
+    GenTreePtr op1;
+    GenTreePtr op2;
+    genTreeOps oper;
 
     do
     {
+        op1  = tree->gtOp.gtOp1;
+        op2  = tree->gtOp.gtOp2;
+        oper = tree->OperGet();
+
+        noway_assert(GenTree::OperIsCommutative(oper));
+        noway_assert(oper == GT_ADD || oper == GT_XOR || oper == GT_OR ||
+                     oper == GT_AND || oper == GT_MUL);
+        noway_assert(!varTypeIsFloating(tree->TypeGet()) || !opts.genFPorder);
+        noway_assert(oper == op2->gtOper);
+
+        // Commutativity doesn't hold if overflow checks are needed
+
+        if (tree->gtOverflowEx() || op2->gtOverflowEx())
+            return;
+
+        if (gtIsActiveCSE_Candidate(op2))
+        {
+            // If we have marked op2 as a CSE candidate,
+            // we can't perform a commutative reordering
+            // because any value numbers that we computed for op2
+            // will be incorrect after performing a commutative reordering
+            //
+            return;
+        }
+
+        if (oper == GT_MUL && (op2->gtFlags & GTF_MUL_64RSLT))
+            return;
+
+        // Check for GTF_ADDRMODE_NO_CSE flag on add/mul Binary Operators
+        if (    ((oper == GT_ADD) || (oper == GT_MUL))
+             && ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)               )
+        {
+            return;
+        }
+
+        if ( (tree->gtFlags | op2->gtFlags) & GTF_BOOLEAN )
+        {
+            // We could deal with this, but we were always broken and just hit the assert
+            // below regarding flags, which means it's not frequent, so will just bail out.
+            // See #195514
+            return;
+        }
+
         noway_assert(!tree->gtOverflowEx() && !op2->gtOverflowEx());
 
         GenTreePtr      ad1 = op2->gtOp.gtOp1;
@@ -4191,6 +4195,10 @@ GenTreePtr          Compiler::fgMorphArrayIndex(GenTreePtr tree)
     // Store information about it.
     GetArrayInfoMap()->Set(tree, ArrayInfo(elemTyp, elemSize, (int) elemOffs, elemStructType));
 
+    // Remember this 'indTree' that we just created, as we still need to attach the fieldSeq information to it.
+
+    GenTreePtr indTree = tree;
+
     // Did we create a bndsChk tree?
     if  (bndsChk)
     {
@@ -4215,12 +4223,29 @@ GenTreePtr          Compiler::fgMorphArrayIndex(GenTreePtr tree)
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), arrRefDefn, tree);
     }
 
+    // Currently we morph the tree to perform some folding operations prior 
+    // to attaching fieldSeq info and labeling constant array index contributions
+    // 
     fgMorphTree(tree);
 
-    if (fgIsCommaThrow(tree))
-        return tree;
-
+    // Ideally we just want to proceed to attaching fieldSeq info and labeling the 
+    // constant array index contributions, but the morphing operation may have changed 
+    // the 'tree' into something that now unconditionally throws an exception.
+    //
+    // In such case the gtEffectiveVal could be a new tree or it's gtOper could be modified
+    // or it could be left unchanged.  If it is unchanged then we should not return, 
+    // instead we should proceed to attaching fieldSeq info, etc...
+    // 
     GenTreePtr arrElem = tree->gtEffectiveVal();
+
+    if (fgIsCommaThrow(tree))
+    {
+        if ((arrElem != indTree) ||          // A new tree node may have been created
+            (indTree->OperGet() != GT_IND))  // The GT_IND may have been changed to a GT_CNS_INT
+        {
+            return tree;     // Just return the Comma-Throw, don't try to attach the fieldSeq info, etc..
+        }
+    }
 
     assert(!fgGlobalMorph || (arrElem->gtFlags & GTF_MORPHED));
 
@@ -7668,10 +7693,6 @@ GenTreePtr          Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* ma
 #if !FEATURE_STACK_FP_X87
         tree = fgMorphForRegisterFP(tree);
 #endif
-        if (tree->OperKind() & GTK_ASGOP)
-        {
-            tree = gtCheckReorderAssignmentForUnmanagedCall(tree);
-        }
     }
 
     genTreeOps      oper    = tree->OperGet();
@@ -10920,28 +10941,31 @@ ASG_OP:
 
     case GT_XOR:
 
-        /* "x ^ -1" is "~x" */
-
-        if ((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == -1))
+        if (!optValnumCSE_phase)
         {
-            tree->ChangeOper(GT_NOT);
-            tree->gtOp2 = NULL;
-            DEBUG_DESTROY_NODE(op2);
-        }
-        else if ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == -1))
-        {
-            tree->ChangeOper(GT_NOT);
-            tree->gtOp2 = NULL;
-            DEBUG_DESTROY_NODE(op2);
-        }
-        else if ((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1) &&
-                 op1->OperIsCompare())
-        {
-            /* "binaryVal ^ 1" is "!binaryVal" */
-            gtReverseCond(op1);
-            DEBUG_DESTROY_NODE(op2);
-            DEBUG_DESTROY_NODE(tree);
-            return op1;
+            /* "x ^ -1" is "~x" */
+            
+            if ((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == -1))
+            {
+                tree->ChangeOper(GT_NOT);
+                tree->gtOp2 = NULL;
+                DEBUG_DESTROY_NODE(op2);
+            }
+            else if ((op2->gtOper == GT_CNS_LNG) && (op2->gtIntConCommon.LngValue() == -1))
+            {
+                tree->ChangeOper(GT_NOT);
+                tree->gtOp2 = NULL;
+                DEBUG_DESTROY_NODE(op2);
+            }
+            else if ((op2->gtOper == GT_CNS_INT) && (op2->gtIntConCommon.IconValue() == 1) &&
+                     op1->OperIsCompare())
+            {
+                /* "binaryVal ^ 1" is "!binaryVal" */
+                gtReverseCond(op1);
+                DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(tree);
+                return op1;
+            }
         }
 
         break;
@@ -14509,7 +14533,12 @@ Compiler::fgWalkResult      Compiler::fgMarkAddrTakenLocalsPreCB(GenTreePtr* pTr
 
     case GT_ADD:
         assert(axc != AXC_Addr);
-        if (axc == AXC_Ind)
+        // See below about treating pointer operations as wider indirection.
+        if (tree->gtOp.gtOp1->gtType == TYP_BYREF || tree->gtOp.gtOp2->gtType == TYP_BYREF)
+        {
+            axcStack->Push(AXC_IndWide);
+        }
+        else if (axc == AXC_Ind)
         {
             // Let the children know that the parent was a GT_ADD, to be evaluated in an IND context.
             // If it's an add of a constant and an address, and the constant represents a field,
@@ -14522,16 +14551,55 @@ Compiler::fgWalkResult      Compiler::fgMarkAddrTakenLocalsPreCB(GenTreePtr* pTr
         }
         return WALK_CONTINUE;
 
+    // !!! Treat Pointer Operations as Wider Indirection
+    //
+    // If we are performing pointer operations, make sure we treat that as equivalent to a wider
+    // indirection. This is because the pointers could be pointing to the address of struct fields
+    // and could be used to perform operations on the whole struct or passed to another method.
+    // 
+    // When visiting a node in this pre-order walk, we do not know if we would in the future
+    // encounter a GT_ADDR of a GT_FIELD below.
+    //
+    // Note: GT_ADDR of a GT_FIELD is always a TYP_BYREF.
+    // So let us be conservative and treat TYP_BYREF operations as AXC_IndWide and propagate a
+    // wider indirection context down the expr tree.
+    //
+    // Example, in unsafe code,
+    //
+    //   IL_000e  12 00             ldloca.s     0x0
+    //   IL_0010  7c 02 00 00 04    ldflda       0x4000002
+    //   IL_0015  12 00             ldloca.s     0x0
+    //   IL_0017  7c 01 00 00 04    ldflda       0x4000001
+    //   IL_001c  59                sub
+    //
+    // When visiting the GT_SUB node, if the types of either of the GT_SUB's operand are BYREF, then
+    // consider GT_SUB to be equivalent of an AXC_IndWide.
+    //
+    // Similarly for pointer comparisons and pointer escaping as integers through conversions, treat
+    // them as AXC_IndWide.
+    //
+    
+    // BINOP
+    case GT_SUB:
+    case GT_MUL:
+    case GT_DIV:
+    case GT_UDIV:
+    case GT_OR:
+    case GT_XOR:
+    case GT_AND:
+    case GT_LSH:
+    case GT_RSH:
+    case GT_RSZ:
     case GT_EQ:
     case GT_NE:
     case GT_LT:
     case GT_LE:
-    case GT_GE:
     case GT_GT:
+    case GT_GE:
+    // UNOP
     case GT_CAST:
-        if (tree->gtOp.gtOp1->gtType == TYP_BYREF)
+        if ((tree->gtOp.gtOp1->gtType == TYP_BYREF) || (tree->OperIsBinary() && (tree->gtOp.gtOp2->gtType == TYP_BYREF)))
         {
-            // if code is trying to convert a byref or compare one, pessimize.  
             axcStack->Push(AXC_IndWide);
             return WALK_CONTINUE;
         }

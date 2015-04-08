@@ -500,15 +500,13 @@ namespace System.Diagnostics.Tracing {
         [Event(140, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable,
          Task = Tasks.GetResponse, Opcode = EventOpcode.Start, Version = 1)]
         private void GetResponseStart(long id, string uri, bool success, bool synchronous) {
-            if (IsEnabled())
-                WriteEvent(140, id, uri, success, synchronous);
+            WriteEvent(140, id, uri, success, synchronous);
         }
 
         [Event(141, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable, 
          Task = Tasks.GetResponse, Opcode = EventOpcode.Stop, Version = 1)]
         private void GetResponseStop(long id, bool success, bool synchronous, int statusCode) {
-            if (IsEnabled())
-                WriteEvent(141, id, success, synchronous, statusCode);
+            WriteEvent(141, id, success, synchronous, statusCode);
         }
 
         // In the desktop runtime they don't use Tasks for the point at which the response happens, which means that the
@@ -516,35 +514,37 @@ namespace System.Diagnostics.Tracing {
         [Event(142, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable,
          Task = Tasks.GetRequestStream, Opcode = EventOpcode.Start, Version = 1)]
         private void GetRequestStreamStart(long id, string uri, bool success, bool synchronous) {
-            if (IsEnabled())
-                WriteEvent(142, id, uri, success, synchronous);
+            WriteEvent(142, id, uri, success, synchronous);
         }
 
         [Event(143, Level = EventLevel.Informational, Keywords = Keywords.NetClient, ActivityOptions=EventActivityOptions.Disable,
          Task = Tasks.GetRequestStream, Opcode = EventOpcode.Stop, Version = 1)]
         private void GetRequestStreamStop(long id, bool success, bool synchronous) {
-            if (IsEnabled())
-                WriteEvent(143, id, success, synchronous);
+            WriteEvent(143, id, success, synchronous);
         }
 
         [NonEvent, System.Security.SecuritySafeCritical]
         public unsafe void BeginGetResponse(object id, string uri, bool success, bool synchronous) {
-            GetResponseStart((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), uri, success, synchronous);
+            if (IsEnabled())
+                GetResponseStart(IdForObject(id), uri, success, synchronous);
         }
             
         [NonEvent, System.Security.SecuritySafeCritical]
         public unsafe void EndGetResponse(object id, bool success, bool synchronous, int statusCode) {
-            GetResponseStop((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), success, synchronous, statusCode);
+            if (IsEnabled())
+                GetResponseStop(IdForObject(id), success, synchronous, statusCode);
         }
 
         [NonEvent, System.Security.SecuritySafeCritical]
         public unsafe void BeginGetRequestStream(object id, string uri, bool success, bool synchronous) {
-            GetRequestStreamStart((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), uri, success, synchronous);
+            if (IsEnabled())
+                GetRequestStreamStart(IdForObject(id), uri, success, synchronous);
         }
 
         [NonEvent, System.Security.SecuritySafeCritical]
         public unsafe void EndGetRequestStream(object id, bool success, bool synchronous) {
-            GetRequestStreamStop((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), success, synchronous);
+            if (IsEnabled())
+                GetRequestStreamStop(IdForObject(id), success, synchronous);
         }
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
@@ -607,6 +607,13 @@ namespace System.Diagnostics.Tracing {
             ThreadTransferReceive((long) *((void**) JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
         }
 
+        // return a stable ID for a an object.  We use the hash code which is not truely unique but is 
+        // close enough for now at least. we add to it 0x7FFFFFFF00000000 to make it distinguishable
+        // from the style of ID that simply casts the object reference to a long (since old versions of the 
+        // runtime will emit IDs of that form).  
+        private static long IdForObject(object obj) {
+            return obj.GetHashCode() + 0x7FFFFFFF00000000;
+        }
     }
 }
 

@@ -61,12 +61,13 @@ enum gc_condemn_reason_condition
     gen_gen2_too_small = 13,
     gen_induced_noforce_p = 14,
     gen_before_bgc = 15,
-    gcrc_max = 16
+    gen_almost_max_alloc = 16,
+    gcrc_max = 17
 };
 
 #ifdef DT_LOG
 static char* record_condemn_reasons_gen_header = "[cg]i|f|a|t|";
-static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|";
+static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|a|";
 static char char_gen_number[4] = {'0', '1', '2', '3'};
 #endif //DT_LOG
 
@@ -135,6 +136,16 @@ public:
         return value;
     }
 
+    DWORD get_reasons0()
+    {
+        return condemn_reasons_gen;
+    }
+
+    DWORD get_reasons1()
+    {
+        return condemn_reasons_condition;
+    }
+
 #ifdef DT_LOG
     char get_gen_char (DWORD value)
     {
@@ -149,11 +160,9 @@ public:
     void print (int heap_num);
 };
 
-// *******IMPORTANT*******
-// The data members in this class are specifically
-// arranged in decending order by their sizes to guarantee no
-// padding - this is important for recording the ETW event 
-// 'cause ETW stuff will not apply padding.
+// Right now these are all size_t's but if you add a type that requires
+// padding you should add a pragma pack here since I am firing this as
+// a struct in an ETW event.
 struct gc_generation_data
 {
     // data recorded at the beginning of a GC
@@ -166,14 +175,22 @@ struct gc_generation_data
     size_t free_list_space_after;
     size_t free_obj_space_after;
     size_t in;
-    size_t out;
-
-    // The following data is calculated in 
-    // desired_new_allocation.
+    size_t pinned_surv;
+    size_t npinned_surv;
     size_t new_allocation;
-    size_t surv;
 
     void print (int heap_num, int gen_num);
+};
+
+struct maxgen_size_increase
+{
+    size_t free_list_allocated;
+    size_t free_list_rejected;
+    size_t end_seg_allocated;
+    size_t condemned_allocated;
+    size_t pinned_allocated;
+    size_t pinned_allocated_advance;
+    DWORD running_free_list_efficiency;
 };
 
 // The following indicates various mechanisms and one value
@@ -249,31 +266,19 @@ static gc_mechanism_descr gc_mechanisms_descr[max_mechanism_per_heap] =
     {"expanded heap ", str_heap_expand_mechanisms},
     {"compacted because of ", str_compact_reasons}
 };
-
 #endif //DT_LOG
 
 int index_of_set_bit (size_t power2);
 
 #define mechanism_mask (1 << (sizeof (DWORD) * 8 - 1))
 // interesting per heap data we want to record for each GC.
-// *******IMPORTANT*******
-// The data members in this class are specifically
-// arranged in decending order by their sizes to guarantee no
-// padding - this is important for recording the ETW event 
-// 'cause ETW stuff will not apply padding.
 class gc_history_per_heap
 {
 public:
-    // The reason we use max_generation+3 is because when we are 
-    // condemning 1+, we calculate generation 0 data twice and we'll
-    // store data from the 2nd pass in gen_data[max_generation+2].
-    // For generations > condemned_gen, the values are all 0.
-    gc_generation_data gen_data[max_generation+3]; 
+    gc_generation_data gen_data[max_generation+2]; 
+    maxgen_size_increase maxgen_size_info;
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
-    // if we got the memory pressure in generation_to_condemn, this 
-    // will record that value; otherwise it's 0.
-    DWORD mem_pressure;
     // The mechanisms data is compacted in the following way:
     // most significant bit indicates if we did the operation.
     // the rest of the bits indicate the reason
@@ -286,7 +291,7 @@ public:
 
     DWORD heap_index; 
 
-    ULONGLONG extra_gen0_committed;
+    size_t extra_gen0_committed;
 
     void set_mechanism (gc_mechanism_per_heap mechanism_per_heap, DWORD value)
     {
@@ -315,44 +320,8 @@ public:
         return -1;
     }
 
-    void print (int heap_num);
+    void print();
 };
-
-#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_REDHAWK)
-
-#if !defined(ETW_INLINE)
-#define ETW_INLINE DECLSPEC_NOINLINE __inline
-#endif
-
-ETW_INLINE
-ULONG 
-Etw_GCDataPerHeapSpecial(
-	__in PCEVENT_DESCRIPTOR Descriptor, 
-	__in LPCGUID EventGuid, 
-	__in gc_history_per_heap gc_data_per_heap,
-	__in ULONG datasize,
-	__in UINT8 ClrInstanceId)
-{
-    REGHANDLE RegHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
-#define ARGUMENT_COUNT_GCDataPerHeapTemplate 2
-    ULONG Error = ERROR_SUCCESS;
-typedef struct _MCGEN_TRACE_BUFFER {
-    EVENT_TRACE_HEADER Header;
-    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_GCDataPerHeapTemplate];
-} MCGEN_TRACE_BUFFER;
-
-    MCGEN_TRACE_BUFFER TraceBuf;
-    PEVENT_DATA_DESCRIPTOR EventData = TraceBuf.EventData;
-
-    EventDataDescCreate(&EventData[0], &gc_data_per_heap, datasize);
-
-    EventDataDescCreate(&EventData[1], &ClrInstanceId, sizeof(ClrInstanceId));
-
-    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_GCDataPerHeapTemplate, EventData);
-}
-
-#undef TraceEvent
-#endif // FEATURE_EVENT_TRACE && !FEATURE_REDHAWK
 
 // we store up to 32 boolean settings.
 enum gc_global_mechanism_p
@@ -362,14 +331,10 @@ enum gc_global_mechanism_p
     global_promotion,
     global_demotion,
     global_card_bundles,
+    global_elevation,
     max_global_mechanism
 };
 
-// *******IMPORTANT*******
-// The data members in this class are specifically
-// arranged in decending order by their sizes to guarantee no
-// padding - this is important for recording the ETW event 
-// 'cause ETW stuff will not apply padding.
 struct gc_history_global
 {
     // We may apply other factors after we calculated gen0 budget in
@@ -380,6 +345,8 @@ struct gc_history_global
     int condemned_generation;
     int gen0_reduction_count;
     gc_reason reason;
+    int pause_mode;
+    DWORD mem_pressure;
     DWORD global_mechanims_p;
 
     void set_mechanism_p (gc_global_mechanism_p mechanism)

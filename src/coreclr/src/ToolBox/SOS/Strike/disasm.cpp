@@ -56,6 +56,10 @@ namespace X86GCDump
     #undef LOG
     #endif
     #define LOG(x) ((void)0)
+    #ifdef LOG_PIPTR
+    #undef LOG_PIPTR
+    #endif
+    #define LOG_PIPTR(pObjRef, gcFlags, hCallBack) ((void)0)
 #include "gcdumpnonx86.cpp"
 #endif // FEATURE_PAL
 #endif // SOS_TARGET_AMD64

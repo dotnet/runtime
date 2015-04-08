@@ -761,6 +761,8 @@ namespace System {
         }
 
 #if FEATURE_RANDOMIZED_STRING_HASHING
+        // Do not remove!
+        // This method is called by reflection in System.Xml
         [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int InternalMarvin32HashString(string s, int strLen, long additionalEntropy);
