@@ -5,8 +5,8 @@ namespace System.ServiceProcess
 {
     public enum ServiceStartMode
     {
-        Manual = Interop.START_TYPE_DEMAND,
-        Automatic = Interop.START_TYPE_AUTO,
-        Disabled = Interop.START_TYPE_DISABLED,
+        Manual = Interop.mincore.ServiceStartModes.START_TYPE_DEMAND,
+        Automatic = Interop.mincore.ServiceStartModes.START_TYPE_AUTO,
+        Disabled = Interop.mincore.ServiceStartModes.START_TYPE_DISABLED,
     }
 }
