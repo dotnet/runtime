@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Tests</AssemblyName>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -208,6 +209,9 @@
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo_str.cs" />
     <Compile Include="FileInfo\CopyTo_str_b.cs" />
+    
+    <!-- Helpers -->
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
     
   </ItemGroup>
   <ItemGroup>
