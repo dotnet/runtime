@@ -213,7 +213,7 @@ typedef struct MonoCompileArch {
 
 
 
-#ifdef HOST_WIN32
+#ifdef TARGET_WIN32
 #define PARAM_REGS 4
 #else
 #define PARAM_REGS 6
@@ -287,7 +287,7 @@ typedef struct {
 #define MONO_ARCH_NOMAP32BIT 1
 #endif
 
-#ifdef HOST_WIN32
+#ifdef TARGET_WIN32
 #define MONO_AMD64_ARG_REG1 AMD64_RCX
 #define MONO_AMD64_ARG_REG2 AMD64_RDX
 #define MONO_AMD64_ARG_REG3 AMD64_R8
@@ -410,7 +410,7 @@ typedef struct {
 
 extern MonoBreakpointInfo mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
-#ifdef HOST_WIN32
+#ifdef TARGET_WIN32
 
 void mono_arch_unwindinfo_add_push_nonvol (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
 void mono_arch_unwindinfo_add_set_fpreg (gpointer* monoui, gpointer codebegin, gpointer nextip, guchar reg );
