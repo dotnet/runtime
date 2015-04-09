@@ -259,7 +259,7 @@ epoll_init (void)
 #ifdef EPOOL_CLOEXEC
 	threadpool_io->epoll.fd = epoll_create1 (EPOLL_CLOEXEC);
 #else
-	threadpool_io->epoll.fd = epoll_create1 (256);
+	threadpool_io->epoll.fd = epoll_create (256);
 	fcntl (threadpool_io->epoll.fd, F_SETFD, FD_CLOEXEC);
 #endif
 
