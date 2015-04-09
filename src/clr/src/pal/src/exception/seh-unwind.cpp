@@ -39,20 +39,26 @@ Abstract:
 
 #if HAVE_LIBUNWIND_H
 #if UNWIND_CONTEXT_IS_UCONTEXT_T
+
+#if defined(_AMD64_)
+#define ASSIGN_UNWIND_REGS \
+    ASSIGN_REG(Rip)        \
+    ASSIGN_REG(Rsp)        \
+    ASSIGN_REG(Rbp)        \
+    ASSIGN_REG(Rbx)        \
+    ASSIGN_REG(R12)        \
+    ASSIGN_REG(R13)        \
+    ASSIGN_REG(R14)        \
+    ASSIGN_REG(R15)     
+#else // _AMD64_
+#error unsupported architecture
+#endif // _AMD64_
+
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
-#if defined(_AMD64_)
-    unwContext->uc_mcontext.gregs[REG_RIP] = winContext->Rip;
-    unwContext->uc_mcontext.gregs[REG_RSP] = winContext->Rsp;
-    unwContext->uc_mcontext.gregs[REG_RBP] = winContext->Rbp;
-    unwContext->uc_mcontext.gregs[REG_RBX] = winContext->Rbx;
-    unwContext->uc_mcontext.gregs[REG_R12] = winContext->R12;
-    unwContext->uc_mcontext.gregs[REG_R13] = winContext->R13;
-    unwContext->uc_mcontext.gregs[REG_R14] = winContext->R14;
-    unwContext->uc_mcontext.gregs[REG_R15] = winContext->R15;
-#else
-#error unsupported architecture
-#endif
+#define ASSIGN_REG(reg) MCREG_##reg(unwContext->uc_mcontext) = winContext->reg;
+    ASSIGN_UNWIND_REGS
+#undef ASSIGN_REG
 }
 #else
 static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
