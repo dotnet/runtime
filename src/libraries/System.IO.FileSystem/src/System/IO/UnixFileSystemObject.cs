@@ -50,6 +50,10 @@ namespace System.IO
                     {
                         attrs |= FileAttributes.ReadOnly;
                     }
+                    if (IsLink)
+                    {
+                        attrs |= FileAttributes.ReparsePoint;
+                    }
                     if (Path.GetFileName(_fullPath).StartsWith("."))
                     {
                         attrs |= FileAttributes.Hidden;
@@ -61,10 +65,25 @@ namespace System.IO
                 }
                 set
                 {
-                    // We can't change directory or hidden; the only thing we can reasonably change
-                    // is whether the file object is readonly, just changing its permissions accordingly.
+                    // Validate that only flags from the attribute are being provided.  This is an
+                    // approximation for the validation done by the Win32 function.
+                    const FileAttributes allValidFlags =
+                        FileAttributes.Archive | FileAttributes.Compressed | FileAttributes.Device |
+                        FileAttributes.Directory | FileAttributes.Encrypted | FileAttributes.Hidden |
+                        FileAttributes.Hidden | FileAttributes.IntegrityStream | FileAttributes.Normal |
+                        FileAttributes.NoScrubData | FileAttributes.NotContentIndexed | FileAttributes.Offline |
+                        FileAttributes.ReadOnly | FileAttributes.ReparsePoint | FileAttributes.SparseFile | 
+                        FileAttributes.System | FileAttributes.Temporary;
+                    if ((value & ~allValidFlags) != 0)
+                    {
+                        throw new ArgumentException(SR.Arg_InvalidFileAttrs);
+                    }
+
+                    // The only thing we can reasonably change is whether the file object is readonly,
+                    // just changing its permissions accordingly.
                     EnsureStatInitialized();
                     IsReadOnlyAssumesInitialized = (value & FileAttributes.ReadOnly) != 0;
+                    _fileinfoInitialized = -1;
                 }
             }
 
@@ -73,7 +92,15 @@ namespace System.IO
             {
                 get
                 {
-                    return (_fileinfo.mode & (int)Interop.libcoreclr.FileTypes.S_IFMT) == (int)Interop.libcoreclr.FileTypes.S_IFDIR;
+                    return (_fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFDIR;
+                }
+            }
+
+            private bool IsLink
+            {
+                get
+                {
+                    return (_fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFLNK;
                 }
             }
 
@@ -88,17 +115,17 @@ namespace System.IO
                     Interop.libc.Permissions readBit, writeBit;
                     if (_fileinfo.uid == Interop.libc.geteuid())      // does the user effectively own the file?
                     {
-                        readBit = Interop.libc.Permissions.S_IRUSR;
+                        readBit  = Interop.libc.Permissions.S_IRUSR;
                         writeBit = Interop.libc.Permissions.S_IWUSR;
                     }
                     else if (_fileinfo.gid == Interop.libc.getegid()) // does the user belong to a group that effectively owns the file?
                     {
-                        readBit = Interop.libc.Permissions.S_IRGRP;
+                        readBit  = Interop.libc.Permissions.S_IRGRP;
                         writeBit = Interop.libc.Permissions.S_IWGRP;
                     }
-                    else                                        // everyone else
+                    else                                              // everyone else
                     {
-                        readBit = Interop.libc.Permissions.S_IROTH;
+                        readBit  = Interop.libc.Permissions.S_IROTH;
                         writeBit = Interop.libc.Permissions.S_IWOTH;
                     }
 
@@ -108,12 +135,6 @@ namespace System.IO
                 }
                 set
                 {
-                    bool isReadOnly = IsReadOnlyAssumesInitialized;
-                    if (value == isReadOnly)
-                    {
-                        return;
-                    }
-
                     int newMode = _fileinfo.mode;
                     if (value) // true if going from writable to readable, false if going from readable to writable
                     {
@@ -150,9 +171,14 @@ namespace System.IO
 
             public DateTimeOffset CreationTime
             {
-                // Not supported.
-                get { return default(DateTimeOffset); }
-                set { } // Not supported. Only some systems support "birthtime" from stat.
+                get
+                {
+                    EnsureStatInitialized();
+                    return (_fileinfo.flags & (uint)Interop.libcoreclr.FileInformationFlags.HasBTime) != 0 ?
+                        DateTimeOffset.FromUnixTimeSeconds(_fileinfo.btime) :
+                        default(DateTimeOffset);
+                }
+                set { } // Not supported
             }
 
             public DateTimeOffset LastAccessTime
@@ -231,7 +257,21 @@ namespace System.IO
                 {
                     int errno = _fileinfoInitialized;
                     _fileinfoInitialized = -1;
-                    throw Interop.GetExceptionForIoErrno(errno, _fullPath, _isDirectory);
+
+                    bool failedBecauseOfDirectory = _isDirectory;
+                    if (!failedBecauseOfDirectory && errno == Interop.Errors.ENOENT)
+                    {
+                        // Windows distinguishes between whether the directory or the file isn't found,
+                        // and throws a different exception in these cases.  We attempt to approximate that
+                        // here; there is a race condition here, where something could change between
+                        // when the error occurs and our checks, but it's the best we can do, and the
+                        // worst case in such a race condition (which could occur if the file system is
+                        // being manipulated concurrently with these checks) is that we throw a
+                        // FileNotFoundException instead of DirectoryNotFoundexception.
+                        failedBecauseOfDirectory = !Directory.Exists(Path.GetDirectoryName(_fullPath));
+                    }
+
+                    throw Interop.GetExceptionForIoErrno(errno, _fullPath, failedBecauseOfDirectory);
                 }
             }
         }

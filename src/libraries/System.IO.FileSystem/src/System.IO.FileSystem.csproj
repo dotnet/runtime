@@ -296,7 +296,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rename.cs">
       <Link>Common\Interop\Unix\Interop.rename.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.remove.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rmdir.cs">
       <Link>Common\Interop\Unix\Interop.remove.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">

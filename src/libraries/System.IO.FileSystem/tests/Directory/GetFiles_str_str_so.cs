@@ -287,8 +287,8 @@ public class Directory_GetFiles_str_str_so
             // - Path contains empty, space and invalid filename, long, readonly invalid characters. The same for searchPattern parm as well
             try
             {
-                String[] invalidValuesForPath = { "", " ", ">" };
-                String[] invalidValuesForSearch = { "..", @"..\" };
+                String[] invalidValuesForPath = Interop.IsWindows ? new[]{ "", " ", ">" } : new[]{ "", "\0" };
+                String[] invalidValuesForSearch = { "..", @".." + Path.DirectorySeparatorChar };
                 CheckException<ArgumentNullException>(delegate { files = Directory.GetFiles(null, "*.*", SearchOption.TopDirectoryOnly); }, "Err_347g! worng exception thrown");
                 CheckException<ArgumentNullException>(delegate { files = Directory.GetFiles(Directory.GetCurrentDirectory(), null, SearchOption.TopDirectoryOnly); }, "Err_326pgt! worng exception thrown");
                 CheckException<ArgumentOutOfRangeException>(delegate { files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.*", (SearchOption)100); }, "Err_589kvu! worng exception thrown - see bug #386545");
@@ -306,7 +306,7 @@ public class Directory_GetFiles_str_str_so
                 {
                     CheckException<ArgumentException>(delegate { files = Directory.GetFiles(invalidPaths[i].ToString(), "*.*", SearchOption.TopDirectoryOnly); }, String.Format("Err_538wyc! worng exception thrown: {1}", i, invalidPaths[i]));
                 }
-                Char[] invalidFileNames = Path.GetInvalidFileNameChars();
+                Char[] invalidFileNames = Interop.IsWindows ? Path.GetInvalidFileNameChars() : new[] { '\0' };
                 for (int i = 0; i < invalidFileNames.Length; i++)
                 {
                     switch (invalidFileNames[i])
@@ -321,7 +321,7 @@ public class Directory_GetFiles_str_str_so
                             // 1) we assumed that this will work in all non-9x machine
                             // 2) Then only in XP
                             // 3) NTFS?
-                            if (FileSystemDebugInfo.IsCurrentDriveNTFS())
+                            if (Interop.IsWindows && FileSystemDebugInfo.IsCurrentDriveNTFS()) // testing NTFS
                             {
                                 CheckException<IOException>(delegate { files = Directory.GetFiles(Directory.GetCurrentDirectory(), String.Format("te{0}st", invalidFileNames[i].ToString()), SearchOption.TopDirectoryOnly); }, String.Format("Err_997gqs_{0}! worng exception thrown: {1} - bug#387196", i, (int)invalidFileNames[i]));
                             }
@@ -349,8 +349,8 @@ public class Directory_GetFiles_str_str_so
                     }
                 }
                 //path too long
-                CheckException<PathTooLongException>(delegate { files = Directory.GetFiles(Path.Combine(new String('a', 100), new String('b', 200)), "*.*", SearchOption.TopDirectoryOnly); }, String.Format("Err_927gs! wrong exception thrown"));
-                CheckException<PathTooLongException>(delegate { files = Directory.GetFiles(new String('a', 100), new String('b', 200), SearchOption.TopDirectoryOnly); }, String.Format("Err_213aka! wrong exception thrown"));
+                CheckException<PathTooLongException>(delegate { files = Directory.GetFiles(Path.Combine(new String('a', IOInputs.MaxPath), new String('b', IOInputs.MaxPath)), "*.*", SearchOption.TopDirectoryOnly); }, String.Format("Err_927gs! wrong exception thrown"));
+                CheckException<PathTooLongException>(delegate { files = Directory.GetFiles(new String('a', IOInputs.MaxPath), new String('b', IOInputs.MaxPath), SearchOption.TopDirectoryOnly); }, String.Format("Err_213aka! wrong exception thrown"));
             }
             catch (Exception ex)
             {

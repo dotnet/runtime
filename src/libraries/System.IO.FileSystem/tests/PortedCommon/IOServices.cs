@@ -96,10 +96,10 @@ internal class IOServices
 
     public static PathInfo GetPath(int characterCount)
     {
-        return GetPath("C:", characterCount);
+        return GetPath("C:", characterCount, IOInputs.MaxComponent);
     }
 
-    public static PathInfo GetPath(string rootPath, int characterCount, int maxComponent = IOInputs.MaxComponent)
+    public static PathInfo GetPath(string rootPath, int characterCount, int maxComponent)
     {
         List<string> paths = new List<string>();
         rootPath = rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);

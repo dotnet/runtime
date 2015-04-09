@@ -82,6 +82,12 @@ public class DirectoryInfo_GetFiles
             int i = 0;
             foreach (FileInfo f in filArr)
                 names[i++] = f.Name;
+            
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
+
             iCountTestcases++;
             if (Array.IndexOf(names, "Test.bat") < 0)
             {

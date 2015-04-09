@@ -129,7 +129,7 @@ public class FileInfo_Create_str
             strLoc = "Loc_2908y";
 
             StringBuilder sb = new StringBuilder(TestInfo.CurrentDirectory);
-            while (sb.Length < 260)
+            while (sb.Length < IOInputs.MaxPath + 1)
                 sb.Append("a");
 
             iCountTestcases++;
@@ -205,7 +205,7 @@ public class FileInfo_Create_str
             iCountTestcases++;
             try
             {
-                file2 = new FileInfo(":");
+                file2 = new FileInfo("\0");
                 file2.Create();
                 iCountErrors++;
                 printerr("Error_19883! Expected exception not thrown, file2==" + file2.FullName);
@@ -270,20 +270,23 @@ public class FileInfo_Create_str
             }
             */
 
-            // [] Create file in current file2 by giving full File check casing as well
-            strLoc = "loc_89tbh";
-
-            string fileName2 = Path.Combine(TestInfo.CurrentDirectory, Path.GetRandomFileName());
-            fs2 = File.Create(fileName2);
-            file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory.ToLowerInvariant(), Path.GetFileNameWithoutExtension(fileName2).ToLowerInvariant() + Path.GetExtension(fileName2).ToUpperInvariant()));
-            iCountTestcases++;
-            if (!file2.Exists)
+            if (!Interop.IsLinux) // testing case-insensitivity
             {
-                iCountErrors++;
-                printerr("Error_t87gy! File not created, file==" + file2.FullName);
+                // [] Create file in current file2 by giving full File check casing as well
+                strLoc = "loc_89tbh";
+
+                string fileName2 = Path.Combine(TestInfo.CurrentDirectory, Path.GetRandomFileName());
+                fs2 = File.Create(fileName2);
+                file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory.ToLowerInvariant(), Path.GetFileNameWithoutExtension(fileName2).ToLowerInvariant() + Path.GetExtension(fileName2).ToUpperInvariant()));
+                iCountTestcases++;
+                if (!file2.Exists)
+                {
+                    iCountErrors++;
+                    printerr("Error_t87gy! File not created, file==" + file2.FullName);
+                }
+                fs2.Dispose();
+                file2.Delete();
             }
-            fs2.Dispose();
-            file2.Delete();
         }
         catch (Exception exc_general)
         {

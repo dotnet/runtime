@@ -19,6 +19,7 @@ public class FileInfo_SetCreationTime_dt
     public static String s_strTFPath        = Directory.GetCurrentDirectory();
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // roundtripping birthtime not supported on Unix
     public static void runTest()
     {
 

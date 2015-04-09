@@ -375,7 +375,7 @@ public class File_ReadAll_all
             //That we are closing the file is imlictly tested above
 
             path = Path.GetTempFileName();
-            stream = new FileStream(path, FileMode.Create);
+            stream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
             writer = new StreamWriter(stream);
             builder = new StringBuilder();
             for (int i = 0; i < 100; i++)

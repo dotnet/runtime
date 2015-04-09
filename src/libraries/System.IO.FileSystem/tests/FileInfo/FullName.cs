@@ -45,20 +45,23 @@ public class FileInfo_FullName
             strFileName = Path.DirectorySeparatorChar + Path.Combine("Directory", "File");
             fil2 = new FileInfo(strFileName);
             s_iCountTestcases++;
-            if (fil2.FullName.IndexOf(strFileName) != 2)
+            if (fil2.FullName.IndexOf(strFileName) != (Interop.IsWindows ? 2 : 0)) // drive label
             {
                 s_iCountErrors++;
                 printerr("Error_78288! Incorrect name==" + fil2.FullName);
             }
 
-            // [] UNC share
-            strFileName =  new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File");
-            fil2 = new FileInfo(strFileName);
-            s_iCountTestcases++;
-            if (!fil2.FullName.Equals(strFileName))
+            if (Interop.IsWindows) // UNC shares
             {
-                s_iCountErrors++;
-                printerr("Error_67y8b! Incorrect name==" + fil2.FullName);
+                // [] UNC share
+                strFileName = new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File");
+                fil2 = new FileInfo(strFileName);
+                s_iCountTestcases++;
+                if (!fil2.FullName.Equals(strFileName))
+                {
+                    s_iCountErrors++;
+                    printerr("Error_67y8b! Incorrect name==" + fil2.FullName);
+                }
             }
 
             // [] Multiple spaces and dots in filename
