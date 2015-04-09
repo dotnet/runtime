@@ -5,6 +5,10 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
+        // The proc_start_time RUsage is in nanoseconds but we need to convert to milliseconds so
+        // this is the number of nanoseconds in a millisecond.
+        private const ulong NumberOfNanoSecondsInMilliseconds = 100000000000;
+
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         public TimeSpan PrivilegedProcessorTime
         {
@@ -20,8 +24,13 @@ namespace System.Diagnostics
         {
             get
             {
+                // Get the RUsage data and convert the process start time (which is the number of
+                // nanoseconds before Now that the process started) to a DateTime.
+                DateTime now = DateTime.Now;
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new DateTime(Convert.ToInt64(info.ri_proc_start_abstime));
+                int milliseconds = Convert.ToInt32(info.ri_proc_start_abstime / NumberOfNanoSecondsInMilliseconds);
+                TimeSpan ts = new TimeSpan(0, 0, 0, 0, milliseconds);
+                return now.Subtract(ts);
             }
         }
 
@@ -73,6 +82,10 @@ namespace System.Diagnostics
         /// </summary>
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
+            // We can only do this for the current process on OS X
+            if (_processId != Interop.libc.getpid())
+                throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
+
             // Minimum working set (or resident set, as it is called on *nix) doesn't exist so set to 0
             minWorkingSet = IntPtr.Zero;
 
@@ -88,6 +101,10 @@ namespace System.Diagnostics
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
         {
+            // We can only do this for the current process on OS X
+            if (_processId != Interop.libc.getpid())
+                throw new PlatformNotSupportedException(SR.OsxExternalProcessWorkingSetNotSupported);
+
             // There isn't a way to set the minimum working set, so throw an exception here
             if (newMin.HasValue)
             {

@@ -39,7 +39,7 @@ internal static partial class Interop
         /// <param name="resource">The type of resource limit to query for</param>
         /// <param name="info">The limit values</param>
         /// <returns>Returns 0 on success; on failure, -1 is returned and errno is set to the OS-specific error code</returns>
-        [DllImport(Interop.Libraries.Libc)]
+        [DllImport(Interop.Libraries.Libc, SetLastError = true)]
         private static extern int getrlimit(
             RLIMIT_Resources    resource, 
             ref rlimit          info);
@@ -50,7 +50,7 @@ internal static partial class Interop
         /// <param name="resource">The type of resource to limit</param>
         /// <param name="info">The new maximum values for the limit</param>
         /// <returns>Returns 0 on success; otherwise, returns -1 and sets errno to the platform-specific error code</returns>
-        [DllImport(Interop.Libraries.Libc)]
+        [DllImport(Interop.Libraries.Libc, SetLastError = true)]
         internal static extern int setrlimit(
             RLIMIT_Resources    resource,
             ref rlimit          info);
