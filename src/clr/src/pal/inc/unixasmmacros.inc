@@ -195,6 +195,11 @@ C_FUNC(\Name\()_End):
         .cfi_adjust_cfa_offset -8
 .endm
 
+.macro pop_eflags
+        popfq
+        .cfi_adjust_cfa_offset -8
+.endm
+
 .macro pop_argument_register Reg
         pop_register \Reg
 .endm
