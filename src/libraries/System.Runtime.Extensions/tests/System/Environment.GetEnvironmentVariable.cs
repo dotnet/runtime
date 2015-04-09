@@ -12,19 +12,22 @@ public class GetEnvironmentVariable
     public void NullVariableThrowsArgumentNull()
     {
         Assert.Throws<ArgumentNullException>(() => Environment.GetEnvironmentVariable(null));
+        Assert.Throws<ArgumentNullException>(() => Environment.SetEnvironmentVariable(null, "test"));
+        Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable("", "test"));
     }
 
     [Fact]
     public void EmptyVariableReturnsNull()
     {
-        Assert.Equal(null, Environment.GetEnvironmentVariable(String.Empty));
+        Assert.Null(Environment.GetEnvironmentVariable(String.Empty));
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/635", PlatformID.Linux | PlatformID.OSX)]
     public void RandomLongVariableNameCanRoundTrip()
     {
         // NOTE: The limit of 32766 characters enforced by dekstop
-        // SetEnvironmentVariable (not in the contract) is antiquated. I was
+        // SetEnvironmentVariable is antiquated. I was
         // able to create ~1GB names and values on my Windows 8.1 box. On
         // desktop, GetEnvironmentVariable throws OOM during its attempt to
         // demand huge EnvironmentPermission well before that. Also, the old
@@ -38,13 +41,13 @@ public class GetEnvironmentVariable
 
         try
         {
-            Assert.Equal(true, SetEnvironmentVariable(variable, value));
+            SetEnvironmentVariableWithPInvoke(variable, value);
 
             Assert.Equal(value, Environment.GetEnvironmentVariable(variable));
         }
         finally
         {
-            Assert.Equal(true, SetEnvironmentVariable(variable, null));
+            SetEnvironmentVariableWithPInvoke(variable, null);
         }
     }
 
@@ -52,26 +55,32 @@ public class GetEnvironmentVariable
     public void RandomVariableThatDoesNotExistReturnsNull()
     {
         string variable = "TestVariable_SurelyThisDoesNotExist";
-        Assert.Equal(null, Environment.GetEnvironmentVariable(variable));
+        Assert.Null(Environment.GetEnvironmentVariable(variable));
     }
 
     [Fact]
-    public void VariableNamesAreCaseInsensitive()
+    public void VariableNamesAreCaseInsensitiveAsAppropriate()
     {
-        const string value = "TestValue";
+        string value = "TestValue";
 
         try
         {
-            Assert.Equal(true, SetEnvironmentVariable("ThisIsATestEnvironmentVariable", value));
+            Environment.SetEnvironmentVariable("ThisIsATestEnvironmentVariable", value);
 
             Assert.Equal(value, Environment.GetEnvironmentVariable("ThisIsATestEnvironmentVariable"));
+
+            if (Interop.PlatformDetection.OperatingSystem != Interop.OperatingSystem.Windows)
+            {
+                value = null;
+            }
+
             Assert.Equal(value, Environment.GetEnvironmentVariable("thisisatestenvironmentvariable"));
             Assert.Equal(value, Environment.GetEnvironmentVariable("THISISATESTENVIRONMENTVARIABLE"));
             Assert.Equal(value, Environment.GetEnvironmentVariable("ThISISATeSTENVIRoNMEnTVaRIABLE"));
         }
         finally
         {
-            Assert.Equal(true, SetEnvironmentVariable("ThisIsATestEnvironmentVariable", null));
+            Environment.SetEnvironmentVariable("ThisIsATestEnvironmentVariable", null);
         }
     }
 
@@ -109,6 +118,21 @@ public class GetEnvironmentVariable
         }
     }
 
+    private static void SetEnvironmentVariableWithPInvoke(string name, string value)
+    {
+        bool success =
+            Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows ?
+                SetEnvironmentVariable(name, value) :
+                (value != null ? setenv(name, value, 1) : unsetenv(name)) == 0;
+        Assert.True(success);
+    }
+
     [DllImport("api-ms-win-core-processenvironment-l1-1-0.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool SetEnvironmentVariable(string lpName, string lpValue);
+
+    [DllImport("libc")]
+    private static extern int setenv(string name, string value, int overwrite);
+
+    [DllImport("libc")]
+    private static extern int unsetenv(string name);
 }

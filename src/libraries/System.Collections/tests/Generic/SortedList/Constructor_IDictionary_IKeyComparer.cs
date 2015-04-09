@@ -201,6 +201,7 @@ namespace SortedListCtorIDicIKeyComp
     public class Constructor_IDictionary_IKeyComparer
     {
         [Fact]
+        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
         public static void RunTests()
         {
             //This mostly follows the format established by the original author of these tests

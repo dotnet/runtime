@@ -8,7 +8,7 @@ using Xunit;
 
 public class Directory_AnsiChars
 {
-    [Fact]
+    [ActiveIssue(847)]
     public static void runTest()
     {
         bool bTestPassed = false;
@@ -36,11 +36,7 @@ public class Directory_AnsiChars
             Console.WriteLine("unexpected exception occured... Exception message:" + e.ToString());
         }
 
-        if (bTestPassed)
-        {
-            Console.WriteLine("Test PASSED");
-        }
-        else
+        if (!bTestPassed)
         {
             Console.WriteLine("Test FAILED");
         }

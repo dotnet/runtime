@@ -23,7 +23,7 @@ internal static class IOInputs
     {
         yield return Path.GetRandomFileName();
         yield return "!@#$%^&";
-        yield return "\x65e5\x672c\x8a9e";
+        // yield return "\x65e5\x672c\x8a9e"; // TODO: Issue #846
         yield return "A";
         yield return " A";
         yield return "  A";
@@ -59,50 +59,31 @@ internal static class IOInputs
 
     public static IEnumerable<string> GetUncPathsWithoutShareName()
     {
-        yield return @"\\";
-        yield return @"\\ ";
-        yield return @"\\\\\\\\\\\\";
-        yield return @"\\S";
-        yield return @"\\S ";
-        yield return @"\\Server";
-        yield return @"\\Server \";
-        yield return @"\\Server \\";
-        yield return @"\\Server\ ";
-        yield return @"\\Server\\ ";
-
-        // check alt dir seperator character as well
-        yield return @"//";
-        yield return @"// ";
-        yield return @"////////////";
-        yield return @"//S";
-        yield return @"//S ";
-        yield return @"//Server";
-        yield return @"//Server /";
-        yield return @"//Server //";
-        yield return @"//Server/ ";
-        yield return @"//Server// ";
+        foreach (char slash in new[] { Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar })
+        {
+            string slashes = new string(slash, 2);
+            yield return slashes;
+            yield return slashes + " ";
+            yield return slashes + new string(slash, 5);
+            yield return slashes + "S";
+            yield return slashes + "S ";
+            yield return slashes + "Server";
+            yield return slashes + "Server " + slash;
+            yield return slashes + "Server " + new string(slash, 2);
+            yield return slashes + "Server" + slash + " ";
+            yield return slashes + "Server" + slash + slash + " ";
+        }
     }
 
     public static IEnumerable<string> GetPathsWithReservedDeviceNames()
     {
+        string root = Path.GetPathRoot(Directory.GetCurrentDirectory());
         foreach (string deviceName in GetReservedDeviceNames())
         {
             yield return deviceName;
-        }
-
-        foreach (string deviceName in GetReservedDeviceNames())
-        {
-            yield return @"C:\" + deviceName;
-        }
-
-        foreach (string deviceName in GetReservedDeviceNames())
-        {
-            yield return @"C:\Directory\" + deviceName;
-        }
-
-        foreach (string deviceName in GetReservedDeviceNames())
-        {
-            yield return @"\\Server\" + deviceName;
+            yield return Path.Combine(root, deviceName);
+            yield return Path.Combine(root, "Directory", deviceName);
+            yield return Path.Combine(new string(Path.DirectorySeparatorChar, 2), "Server", deviceName);
         }
     }
 

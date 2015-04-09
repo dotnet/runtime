@@ -51,10 +51,6 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializer
     {
-#if FEATURE_LEGACYNETCF
-        private System.Xml.Serialization.LegacyNetCF.XmlSerializer _legacyNetCFSerializer;
-#endif
-
         private TempAssembly _tempAssembly;
         private bool _typedSerializer;
         private Type _primitiveType;
@@ -285,14 +281,6 @@ namespace System.Xml.Serialization
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize6"]/*' />
         internal void Serialize(XmlWriter xmlWriter, object o, XmlSerializerNamespaces namespaces, string encodingStyle, string id)
         {
-#if FEATURE_LEGACYNETCF
-            if (_legacyNetCFSerializer != null)
-            {
-                _legacyNetCFSerializer.Serialize(xmlWriter, o, namespaces, encodingStyle);
-                return;
-            }
-#endif
-
             try
             {
                 if (_primitiveType != null)
@@ -383,13 +371,6 @@ namespace System.Xml.Serialization
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize5"]/*' />
         internal object Deserialize(XmlReader xmlReader, string encodingStyle, XmlDeserializationEvents events)
         {
-#if FEATURE_LEGACYNETCF
-            if (_legacyNetCFSerializer != null)
-            {
-                return _legacyNetCFSerializer.Deserialize(xmlReader, encodingStyle);
-            }
-#endif
-
             try
             {
                 if (_primitiveType != null)
@@ -437,13 +418,6 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public virtual bool CanDeserialize(XmlReader xmlReader)
         {
-#if FEATURE_LEGACYNETCF
-            if (_legacyNetCFSerializer != null)
-            {
-                return _legacyNetCFSerializer.CanDeserialize(xmlReader);
-            }
-#endif
-
             if (_primitiveType != null)
             {
                 TypeDesc typeDesc = (TypeDesc)TypeScope.PrimtiveTypes[_primitiveType];

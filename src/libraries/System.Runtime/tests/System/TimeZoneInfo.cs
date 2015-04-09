@@ -93,6 +93,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void ValidateRussiaTimeZoneTest()
     {
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
@@ -108,6 +109,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void ValidateExceptionsTest()
     {
         DateTimeOffset time1 = new DateTimeOffset(2006, 5, 12, 0, 0, 0, TimeSpan.Zero);
@@ -135,6 +137,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void NearMinMaxDateTimeOffsetConvertTest()
     {
         VerifyConvert(DateTimeOffset.MaxValue, TimeZoneInfo.Utc.Id, DateTimeOffset.MaxValue);
@@ -164,6 +167,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void DateTimeOffsetVariousSystemTimeZonesTest()
     {
         var time1 = new DateTimeOffset(2006, 5, 12, 5, 17, 42, new TimeSpan(-7, 0, 0));
@@ -272,6 +276,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void SameTimeZonesTest()
     {
         var time1 = new DateTimeOffset(2003, 10, 26, 3, 0, 1, new TimeSpan(-2, 0, 0));
@@ -307,6 +312,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void NearMinMaxDateTimeConvertTest()
     {
         DateTime time1 = new DateTime(2006, 5, 12);
@@ -324,6 +330,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void DateTimeVariousSystemTimeZonesTest()
     {
         var time1utc = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Utc);
@@ -383,6 +390,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void PerthRulesTest()
     {
         var time1utc = new DateTime(2005, 12, 31, 15, 59, 59, DateTimeKind.Utc);
@@ -446,6 +454,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void UtcToUtcTest()
     {
         var time1utc = new DateTime(2003, 3, 30, 0, 0, 23, DateTimeKind.Utc);
@@ -463,6 +472,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void UtcToLocalTest()
     {
         if (s_localIsPST)
@@ -501,6 +511,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void LocalToSystemTest()
     {
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42);
@@ -591,6 +602,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void LocalToLocalTest()
     {
         if (s_localIsPST)
@@ -649,6 +661,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void LocalToUtcTest()
     {
         var time1 = new DateTime(1964, 6, 19, 12, 45, 10);
@@ -726,6 +739,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void DtKindTest()
     {
         VerifyConvertException<ArgumentException>(new DateTime(2006, 2, 13, 5, 37, 48, DateTimeKind.Utc), s_strPacific, s_strSydney);
@@ -742,6 +756,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void MiscUtcTests()
     {
         VerifyConvert(new DateTime(2003, 4, 6, 1, 30, 0, DateTimeKind.Utc), "UTC", DateTime.SpecifyKind(new DateTime(2003, 4, 6, 1, 30, 0), DateTimeKind.Utc));
@@ -797,6 +812,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void BrasiliaTests()
     {
         var time1 = new DateTimeOffset(2003, 10, 26, 3, 0, 1, new TimeSpan(-2, 0, 0));
@@ -816,6 +832,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void TongaTests()
     {
         var time1 = new DateTime(2006, 5, 12, 5, 17, 42, DateTimeKind.Utc);
@@ -904,6 +921,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void ThrowOnNairobiAmbiguousOffsetsTests()
     {
         VerifyAmbiguousOffsetsException<ArgumentException>(s_nairobiTz, new DateTime(2006, 1, 15, 7, 15, 23));
@@ -919,6 +937,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void AmsterdamAmbiguousOffsetsTests()
     {
         //
@@ -1162,6 +1181,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void LocalAmbiguousOffsetsTests()
     {
         if (!s_localIsPST)
@@ -1201,6 +1221,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void DstTests()
     {
         VerifyDST(TimeZoneInfo.Utc, new DateTime(2006, 1, 15, 7, 15, 23), false);
@@ -1403,6 +1424,7 @@ public static class TimeZoneInfoTests
     }
 
     [Fact]
+    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
     public static void InvalidTimeTests()
     {
         VerifyInv(TimeZoneInfo.Utc, new DateTime(2006, 1, 15, 7, 15, 23), false);

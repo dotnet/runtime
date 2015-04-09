@@ -31,6 +31,7 @@ public partial class FileSystemWatcher_4000_Tests
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)]
     public static void FileSystemWatcher_NotifyFilter_CreationTime()
     {
         using (var file = Utility.CreateTestFile())
@@ -169,6 +170,7 @@ public partial class FileSystemWatcher_4000_Tests
     private const uint SE_FILE_OBJECT = 0x1;
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
     public static void FileSystemWatcher_NotifyFilter_Security()
     {
         using (var file = Utility.CreateTestFile())
@@ -213,7 +215,7 @@ public partial class FileSystemWatcher_4000_Tests
 
             // Change attributes
             var attributes = File.GetAttributes(file.Path);
-            attributes |= FileAttributes.Temporary;
+            File.SetAttributes(file.Path, attributes | FileAttributes.ReadOnly);
             File.SetAttributes(file.Path, attributes);
 
             // Change creation time
@@ -230,15 +232,18 @@ public partial class FileSystemWatcher_4000_Tests
             file.Write(buffer, 0, buffer.Length);
             file.Flush(flushToDisk: true);
 
-            // Change security
-            uint result = SetSecurityInfoByHandle(file.Path,
-                SE_FILE_OBJECT,
-                DACL_SECURITY_INFORMATION, // Only setting the DACL
-                owner: IntPtr.Zero,
-                group: IntPtr.Zero,
-                dacl: IntPtr.Zero, // full access to everyone
-                sacl: IntPtr.Zero);
-            Assert.Equal(ERROR_SUCCESS, result);
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            {
+                // Change security
+                uint result = SetSecurityInfoByHandle(file.Path,
+                    SE_FILE_OBJECT,
+                    DACL_SECURITY_INFORMATION, // Only setting the DACL
+                    owner: IntPtr.Zero,
+                    group: IntPtr.Zero,
+                    dacl: IntPtr.Zero, // full access to everyone
+                    sacl: IntPtr.Zero);
+                Assert.Equal(ERROR_SUCCESS, result);
+            }
 
             // None of these should trigger any events
             Utility.ExpectNoEvent(eventOccured, "any");

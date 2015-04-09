@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
+using System;
 using System.IO.Pipes;
 using System.Threading.Tasks;
 using Xunit;
@@ -86,7 +87,14 @@ public class AnonymousPipesSimpleTest
             Assert.False(string.IsNullOrWhiteSpace(server.GetClientHandleAsString()));
             Assert.False(server.IsAsync);
             Assert.True(server.IsConnected);
-            Assert.Equal(0, server.OutBufferSize);
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            {
+                Assert.Equal(0, server.OutBufferSize);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => server.OutBufferSize);
+            }
             Assert.Equal(PipeTransmissionMode.Byte, server.ReadMode);
             Assert.NotNull(server.SafePipeHandle);
             Assert.Equal(PipeTransmissionMode.Byte, server.TransmissionMode);
@@ -94,7 +102,14 @@ public class AnonymousPipesSimpleTest
             server.Write(new byte[] { 123 }, 0, 1);
             server.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
             server.Flush();
-            server.WaitForPipeDrain();
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            {
+                server.WaitForPipeDrain();
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => server.WaitForPipeDrain());
+            }
 
             clientTask.Wait();
             server.DisposeLocalCopyOfClientHandle();
@@ -104,7 +119,14 @@ public class AnonymousPipesSimpleTest
         {
             Task clientTask = Task.Run(() => StartClient(PipeDirection.Out, server.ClientSafePipeHandle));
 
-            Assert.Equal(4096, server.InBufferSize);
+            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            {
+                Assert.Equal(4096, server.InBufferSize);
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => server.InBufferSize);
+            }
             byte[] readData = new byte[] { 0, 1 };
             Assert.Equal(1, server.Read(readData, 0, 1));
             Assert.Equal(1, server.ReadAsync(readData, 1, 1).Result);
@@ -130,14 +152,28 @@ public class AnonymousPipesSimpleTest
                 Assert.True(client.CanWrite);
                 Assert.False(client.IsAsync);
                 Assert.True(client.IsConnected);
-                Assert.Equal(0, client.OutBufferSize);
+                if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+                {
+                    Assert.Equal(0, client.OutBufferSize);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => client.OutBufferSize);
+                }
                 Assert.Equal(PipeTransmissionMode.Byte, client.ReadMode);
                 Assert.NotNull(client.SafePipeHandle);
                 Assert.Equal(PipeTransmissionMode.Byte, client.TransmissionMode);
 
                 client.Write(new byte[] { 123 }, 0, 1);
                 client.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
-                client.WaitForPipeDrain();
+                if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+                {
+                    client.WaitForPipeDrain();
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => client.WaitForPipeDrain());
+                }
                 client.Flush();
 
                 serverTask.Wait();
@@ -150,7 +186,14 @@ public class AnonymousPipesSimpleTest
             {
                 Task serverTask = Task.Run(() => DoStreamOperations(server));
 
-                Assert.Equal(4096, client.InBufferSize);
+                if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+                {
+                    Assert.Equal(4096, client.InBufferSize);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => client.InBufferSize);
+                }
                 byte[] readData = new byte[] { 0, 1 };
                 Assert.Equal(1, client.Read(readData, 0, 1));
                 Assert.Equal(1, client.ReadAsync(readData, 1, 1).Result);

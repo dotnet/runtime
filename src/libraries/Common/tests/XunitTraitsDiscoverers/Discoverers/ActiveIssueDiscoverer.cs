@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -21,14 +22,19 @@ namespace Xunit.TraitDiscoverers
         /// <returns>The trait values.</returns>
         public IEnumerable<KeyValuePair<string, string>> GetTraits(IAttributeInfo traitAttribute)
         {
-            string issue = traitAttribute.GetConstructorArguments().First().ToString();
-            PlatformID platforms = (PlatformID)traitAttribute.GetConstructorArguments().Last();
-            if (platforms.HasFlag(PlatformID.Windows))
-                yield return new KeyValuePair<string, string>(XunitConstants.Category, XunitConstants.NonWindowsTest);
-            if (platforms.HasFlag(PlatformID.Linux))
-                yield return new KeyValuePair<string, string>(XunitConstants.Category, XunitConstants.NonLinuxTest);
-            if (platforms.HasFlag(PlatformID.OSX))
-                yield return new KeyValuePair<string, string>(XunitConstants.Category, XunitConstants.NonOSXTest);
+            IEnumerable<object> ctorArgs = traitAttribute.GetConstructorArguments();
+            Contract.Assert(ctorArgs.Count() >= 2);
+
+            string issue = ctorArgs.First().ToString();
+            PlatformID platforms = (PlatformID)ctorArgs.Last();
+            if ((platforms.HasFlag(PlatformID.Windows) && Interop.IsWindows) ||
+                (platforms.HasFlag(PlatformID.Linux) && Interop.IsLinux) ||
+                (platforms.HasFlag(PlatformID.OSX) && Interop.IsOSX))
+            {
+                yield return new KeyValuePair<string, string>(XunitConstants.Category, XunitConstants.Failing);
+                yield return new KeyValuePair<string, string>(XunitConstants.ActiveIssue, issue);
+            }
+                
         }
     }
 }

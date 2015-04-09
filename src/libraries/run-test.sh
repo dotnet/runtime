@@ -8,15 +8,15 @@ usage()
     echo "Input sources:"
     echo "    --coreclr-bins <location>     Location of root of the binaries directory"
     echo "                                  containing the linux/mac coreclr build"
-    echo "                                  default: <repo_root>\binaries"
+    echo "                                  default: <repo_root>\bin"
     echo "    --mscorlib-bins <location>    Location of the root binaries directory containing"
     echo "                                  the linux/mac mscorlib.dll"
-    echo "                                  default: <repo_root>\binaries"
+    echo "                                  default: <repo_root>\bin"
     echo "    --corefx-tests <location>     Location of the root binaries location containing"
     echo "                                  the windows tests"
     echo "                                  default: bin"
     echo "    --corefx-bins <location>      Location of the linux/mac corefx binaries"
-    echo "                                  default: bin"
+    echo "                                  default: <repo_root>\bin"
     echo
     echo "Flavor/OS options:"
     echo "    --configuration <config>      Configuration to run (Debug/Release)"
@@ -33,8 +33,8 @@ usage()
 
 ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Location parameters
-CoreClrBinRoot="$ProjectRoot/binaries"
-MscorlibBinRoot="$ProjectRoot/binaries"
+CoreClrBinRoot="$ProjectRoot/bin"
+MscorlibBinRoot="$ProjectRoot/bin"
 CoreFxTestsRoot="$ProjectRoot/bin"
 CoreFxBinRoot="$ProjectRoot/bin"
 # OS/Configuration defaults
@@ -87,8 +87,8 @@ create_test_overlay()
 
   # First the temporary test host binaries
   local packageLibDir="$packageDir/lib"
-  local coreClrDir="$CoreClrBinRoot/Product/$LowerOS.x64.$LowerConfiguration"
-  local mscorlibLocation="$MscorlibBinRoot/Product/Unix.x64.$LowerConfiguration/mscorlib.dll"
+  local coreClrDir="$CoreClrBinRoot/Product/$OS.x64.$Configuration"
+  local mscorlibLocation="$MscorlibBinRoot/Product/Linux.x64.$Configuration/mscorlib.dll"
   local coreFxDir="$CoreFxBinRoot/$OS.AnyCPU.$Configuration"
   
   if [ ! -d $packageLibDir ]
@@ -139,7 +139,7 @@ runtest()
 
   # Check here to see whether we should run this project
 
-  if grep "UnsupportedOperatingSystems.*$OS.*" $1
+  if grep "UnsupportedPlatforms.*$OS.*" $1
   then
     echo "Test project file $1 indicates this test is not supported on $OS, skipping"
     return

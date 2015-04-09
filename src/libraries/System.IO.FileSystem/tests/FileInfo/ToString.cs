@@ -35,41 +35,41 @@ public class FileInfo_ToString
             //-----------------------------------------------------------------
             s_strLoc = "Loc_2723d";
 
-            fil2 = new FileInfo("Hello\\file.tmp");
+            fil2 = new FileInfo(Path.Combine("Hello", "file.tmp"));
             s_iCountTestcases++;
-            if (!fil2.ToString().Equals("Hello\\file.tmp"))
+            if (!fil2.ToString().Equals(Path.Combine("Hello", "file.tmp")))
             {
                 s_iCountErrors++;
                 printerr("Error_5yb87! Incorrect name==" + fil2.ToString());
             }
 
 
-            fil2 = new FileInfo("\\Directory\\File");
+            fil2 = new FileInfo(Path.DirectorySeparatorChar + Path.Combine("Directory", "File"));
             s_iCountTestcases++;
-            if (!fil2.ToString().Equals("\\Directory\\File"))
+            if (!fil2.ToString().Equals(Path.DirectorySeparatorChar + Path.Combine("Directory", "File")))
             {
                 s_iCountErrors++;
                 printerr("Error_78288! Incorrect name==" + fil2.ToString());
             }
 
-            fil2 = new FileInfo("\\\\Machine\\Directory\\File");
+            fil2 = new FileInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
             s_iCountTestcases++;
-            if (!fil2.ToString().Equals("\\\\Machine\\Directory\\File"))
+            if (!fil2.ToString().Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File")))
             {
                 s_iCountErrors++;
                 printerr("Error_67y8b! Incorrect name==" + fil2.ToString());
             }
 
-            fil2 = new FileInfo("C:\\File.tmp hello.blah");
+            fil2 = new FileInfo(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "File.tmp hello.blah"));
             s_iCountTestcases++;
-            if (!fil2.ToString().Equals("C:\\File.tmp hello.blah"))
+            if (!fil2.ToString().Equals(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "File.tmp hello.blah")))
             {
                 s_iCountErrors++;
                 printerr("Error_2987b! Incorrect name==" + fil2.ToString());
             }
-            fil2 = new FileInfo("C://Directory//File");
+            fil2 = new FileInfo(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "Directory", "File").Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
             s_iCountTestcases++;
-            if (!fil2.ToString().Equals("C://Directory//File"))
+            if (!fil2.ToString().Equals(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "Directory", "File").Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)))
             {
                 s_iCountErrors++;
                 printerr("Error_2y78d! Incorrect name==" + fil2.ToString());

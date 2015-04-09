@@ -16,6 +16,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CancelKeyPress.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="SetError.cs" />

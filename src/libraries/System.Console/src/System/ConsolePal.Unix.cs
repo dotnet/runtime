@@ -1117,7 +1117,19 @@ namespace System
                         _count = 0;
                     }
                 }
+            }
+        }
 
+        internal sealed class ControlCHandlerRegistrar
+        {
+            internal void Register()
+            {
+                // UNIXTODO: Install SIGINT signal handler.
+            }
+
+            internal void Unregister()
+            {
+                // UNIXTODO: remove handler.
             }
         }
     }

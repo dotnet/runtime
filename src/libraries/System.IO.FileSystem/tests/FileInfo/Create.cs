@@ -107,7 +107,7 @@ public class FileInfo_Create
             strLoc = "Loc_09t83";
 
             iCountTestcases++;
-            fileName = Path.Combine(TestInfo.CurrentDirectory, "abc\\..", Path.GetRandomFileName());
+            fileName = Path.Combine(TestInfo.CurrentDirectory, "abc", "..", Path.GetRandomFileName());
             file2 = new FileInfo(fileName);
             try
             {

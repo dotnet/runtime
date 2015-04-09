@@ -160,8 +160,8 @@ public class DirectoryInfo_GetDirectories_str
             dir2.CreateSubdirectory("Test1Dir1");
             dir2.CreateSubdirectory("Test1Dir2");
             FileStream[] fs = new FileStream[2];
-            fs[0] = new FileInfo(dir2.FullName + "\\" + "TestFile1").Create();
-            fs[1] = new FileInfo(dir2.FullName + "\\" + "TestFile2").Create();
+            fs[0] = new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            fs[1] = new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
             for (int iLoop = 0; iLoop < 2; iLoop++)
                 fs[iLoop].Dispose();
 
@@ -179,7 +179,7 @@ public class DirectoryInfo_GetDirectories_str
             String[] names = new String[dirA.Length];
             int i = 0;
             foreach (DirectoryInfo f in dirA)
-                names[i++] = f.FullName.Substring(f.FullName.LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f.FullName);
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1Dir1") < 0)
             {
@@ -211,8 +211,8 @@ public class DirectoryInfo_GetDirectories_str
                 printerr("Error_190vh! Incorrect name==" + dirA[4].ToString());
             }
 
-            Directory.Delete(dirName + "\\TestDir2");
-            Directory.Delete(dirName + "\\TestDir3");
+            Directory.Delete(Path.Combine(dirName, "TestDir2"));
+            Directory.Delete(Path.Combine(dirName, "TestDir3"));
 
             dirA = dir2.GetDirectories("*");
             iCountTestcases++;
@@ -224,7 +224,7 @@ public class DirectoryInfo_GetDirectories_str
             names = new String[dirA.Length];
             i = 0;
             foreach (DirectoryInfo f in dirA)
-                names[i++] = f.FullName.Substring(f.FullName.LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f.FullName);
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1Dir1") < 0)
             {
@@ -246,7 +246,7 @@ public class DirectoryInfo_GetDirectories_str
 
             dir1 = new DirectoryInfo(".");
 
-            dirA = dir1.GetDirectories(String.Format("{0}\\*", dirName));
+            dirA = dir1.GetDirectories(Path.Combine(dirName, "*"));
 
             if (dirA.Length != 3)
             {
@@ -256,7 +256,7 @@ public class DirectoryInfo_GetDirectories_str
             names = new String[dirA.Length];
             i = 0;
             foreach (DirectoryInfo f in dirA)
-                names[i++] = f.FullName.Substring(f.FullName.LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f.FullName);
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1Dir1") < 0)
             {

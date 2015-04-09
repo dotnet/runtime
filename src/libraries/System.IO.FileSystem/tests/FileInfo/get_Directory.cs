@@ -40,50 +40,50 @@ public class FileInfo_get_Directory
             //-----------------------------------------------------------------
             strLoc = "Loc_2723d";
 
-            fil2 = new FileInfo("Hello\\file.tmp");
+            fil2 = new FileInfo(Path.Combine("Hello", "file.tmp"));
             dir2 = fil2.Directory;
             iCountTestcases++;
-            if (!dir2.FullName.Equals(Directory.GetCurrentDirectory() + "\\Hello"))
+            if (!dir2.FullName.Equals(Path.Combine(Directory.GetCurrentDirectory(), "Hello")))
             {
                 iCountErrors++;
                 printerr("Error_5yb87! Incorrect name==" + dir2.FullName);
             }
 
             // [] Directory string starting with \
-            fil2 = new FileInfo("\\Directory\\File");
+            fil2 = new FileInfo(Path.Combine("Directory", "File"));
             dir2 = fil2.Directory;
             iCountTestcases++;
-            if (!dir2.FullName.Equals(Directory.GetCurrentDirectory().Substring(0, 2) + "\\Directory"))
+            if (!dir2.FullName.Equals(Path.Combine(Directory.GetCurrentDirectory(), "Directory")))
             {
                 iCountErrors++;
                 printerr("Error_78288! Incorrect name==" + dir2.FullName);
             }
 
             // [] UNC share
-            fil2 = new FileInfo("\\\\Machine\\Directory\\File");
+            fil2 = new FileInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
             dir2 = fil2.Directory;
             iCountTestcases++;
-            if (!dir2.FullName.Equals("\\\\Machine\\Directory"))
+            if (!dir2.FullName.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory")))
             {
                 iCountErrors++;
                 printerr("Error_67y8b! Incorrect name==" + dir2.FullName);
             }
 
             // [] 
-            fil2 = new FileInfo("C:\\File.tmp hello.blah");
+            fil2 = new FileInfo(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "File.tmp hello.blah"));
             dir2 = fil2.Directory;
             iCountTestcases++;
-            if (!dir2.FullName.Equals("C:\\"))
+            if (!dir2.FullName.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_2987b! Incorrect name==" + dir2.FullName);
             }
 
             // [] C:/Directory/File
-            fil2 = new FileInfo("C:/Directory/File");
+            fil2 = new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), "File").Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
             dir2 = fil2.Directory;
             iCountTestcases++;
-            if (!dir2.FullName.Equals("C:\\Directory"))
+            if (!dir2.FullName.Equals(Directory.GetCurrentDirectory()))
             {
                 iCountErrors++;
                 printerr("Error_2y78d! Incorrect name==" + dir2.FullName);
@@ -91,10 +91,10 @@ public class FileInfo_get_Directory
 
 
             // [] Multiple subdireactories
-            fil2 = new FileInfo("C:\\Dir1\\Dir2\\Dir3\\Dir4\\File1");
+            fil2 = new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), "Dir1", "Dir2", "Dir3", "Dir4", "File1"));
             dir2 = fil2.Directory;
             iCountTestcases++;
-            if (!dir2.FullName.Equals("C:\\Dir1\\Dir2\\Dir3\\Dir4"))
+            if (!dir2.FullName.Equals(Path.Combine(Directory.GetCurrentDirectory(), "Dir1", "Dir2", "Dir3", "Dir4")))
             {
                 iCountErrors++;
                 printerr("Error_283fy! Incorrect name==" + dir2.FullName);

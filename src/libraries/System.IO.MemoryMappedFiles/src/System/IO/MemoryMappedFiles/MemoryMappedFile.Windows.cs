@@ -20,9 +20,10 @@ namespace System.IO.MemoryMappedFiles
         private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
         [SecurityCritical]
         private static SafeMemoryMappedFileHandle CreateCore(
-            SafeFileHandle fileHandle, string mapName, HandleInheritability inheritability,
+            FileStream fileStream, string mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
         {
+            SafeFileHandle fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
             // split the long into two ints

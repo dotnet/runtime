@@ -25,18 +25,10 @@ namespace EnumerableTests
         {
             _totalCount++;
 
-            Console.WriteLine();
-            Console.WriteLine("--------------------------------");
-            Console.WriteLine("Running Inner Test: {0} ({1})", methodName, testName);
-
-            if (failCount == 0)
-            {
-                Console.WriteLine("---- Inner Test PASSED ---------");
-            }
-            else
+            if (failCount != 0)
             {
                 _totalFailCount++;
-                Console.WriteLine("---- Inner Test FAILED ---------");
+                Console.WriteLine("---- Inner Test FAILED: {0} ({1}) ----", methodName, testName);
             }
         }
 

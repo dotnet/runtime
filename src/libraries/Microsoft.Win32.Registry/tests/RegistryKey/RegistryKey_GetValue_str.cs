@@ -26,6 +26,7 @@ namespace Microsoft.Win32.RegistryTests
                 _rk1.DeleteSubKeyTree(_testKeyName);
             if (_rk1.GetValue(_testKeyName) != null)
                 _rk1.DeleteValue(_testKeyName);
+            _rk2 = _rk1.CreateSubKey(_testKeyName);
         }
 
         public RegistryKey_GetValue_str()
@@ -36,19 +37,9 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void Test01()
         {
-            // [] Passing in null should return null
-            //Update: we now return the default value here
-
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-
-            try
-            {
-                Object ol = _rk1.GetValue(null);
-            }
-            catch (Exception e)
-            {
-                Assert.False(true, "Err_2121 Unexpected exception :: " + e.Message);
-            }
+            Assert.True(_rk2.SetDefaultValue());
+            Assert.Equal(Helpers._DefaultValue, _rk2.GetValue(null));
+            Assert.Equal(Helpers._DefaultValue, _rk2.GetValue(String.Empty));
         }
 
         [Fact]
@@ -67,8 +58,6 @@ namespace Microsoft.Win32.RegistryTests
         public void Test03()
         {
             // [] Vanilla case , add a  bunch different objects, then get them
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
 
             Random rand = new Random(-55);
 
@@ -111,8 +100,6 @@ namespace Microsoft.Win32.RegistryTests
         {
             // [] Getting back a string
 
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-
             String str = "Here is a little test string";
             _rk2.SetValue(_testStringName, str);
             if (!_rk2.GetValue(_testStringName).Equals(str))
@@ -130,8 +117,6 @@ namespace Microsoft.Win32.RegistryTests
             ubArr[0] = 1;
             ubArr[1] = 2;
             ubArr[2] = 3;
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
 
             // [] Getting byte array
             _rk2.SetValue("UBArr", ubArr);
@@ -159,8 +144,6 @@ namespace Microsoft.Win32.RegistryTests
         public void RegistryKeySetValueMultiStringRoundTrips()
         {
             // [] Getting a string array
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
 
             String[] strArr = new String[3];
             strArr[0] = "Her kommer nissen";

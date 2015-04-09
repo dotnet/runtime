@@ -191,7 +191,7 @@ public class File_Create_str_i
             strLoc = "loc_89tbh_1";
 
             //see VSWhidbey bug 103341
-            filName = String.Format(@"{0}\{1}", TestInfo.CurrentDirectory, Path.GetRandomFileName());
+            filName = Path.Combine(TestInfo.CurrentDirectory, Path.GetRandomFileName());
             if (File.Exists(filName))
                 File.Delete(filName);
             fs2 = File.Create(String.Format(" {0}", filName), 100);
@@ -206,7 +206,7 @@ public class File_Create_str_i
             strLoc = "loc_89tbh_3";
 
             //see VSWhidbey bug 103341
-            filName = String.Format(@" {0}\ {1}", TestInfo.CurrentDirectory, Path.GetRandomFileName());
+            filName = Path.Combine(" " + TestInfo.CurrentDirectory, " " + Path.GetRandomFileName());
             if (File.Exists(filName))
                 File.Delete(filName);
             fs2 = File.Create(filName, 100);
@@ -229,7 +229,7 @@ public class File_Create_str_i
                 File.Delete(filName);
             fs2 = File.Create(filName, 100);
             iCountTestcases++;
-            filName = String.Format(@"{0}\{1}", Directory.GetCurrentDirectory(), filName);
+            filName = Path.Combine(Directory.GetCurrentDirectory(), filName);
             if (!File.Exists(filName))
             {
                 iCountErrors++;

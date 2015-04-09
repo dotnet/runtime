@@ -11,9 +11,19 @@ internal class SystemInfoHelpers
 {
     internal static uint GetPageSize()
     {
-        SYSTEM_INFO info;
-        GetSystemInfo(out info);
-        return info.dwPageSize;
+        if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+        {
+            SYSTEM_INFO info;
+            GetSystemInfo(out info);
+            return info.dwPageSize;
+        }
+        else
+        {
+            int result = sysconf(_SC_PAGESIZE);
+            return result > 0 ?
+                (uint)result :
+                8192; // reasonable default
+        }
     }
 
     [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
@@ -33,4 +43,9 @@ internal class SystemInfoHelpers
         internal short wProcessorLevel;
         internal short wProcessorRevision;
     }
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int sysconf(int name);
+
+    private const int _SC_PAGESIZE = 30;
 }
