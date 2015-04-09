@@ -888,7 +888,6 @@ PALCommonCleanup(PALCLEANUP_STEP step, BOOL full_cleanup)
                 // MutexCleanup();
 
                 MiscCleanup();
-                TIMECleanUpTransitionDates();
 
 #if !HAVE_COREFOUNDATION
                 CODEPAGECleanup();
