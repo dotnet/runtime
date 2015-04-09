@@ -4657,7 +4657,7 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
         {
             if (ex->ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT)   
             {
-                // If this is breakpoint context is set up to point to an instruction after the break instruction.
+                // If this is breakpoint context, it is set up to point to an instruction after the break instruction.
                 // But debugger expects to see context that points to the break instruction, that's why we correct it.
                 SetIP(&ex->ContextRecord, GetIP(&ex->ContextRecord) - CORDbg_BREAK_INSTRUCTION_SIZE);
                 ex->ExceptionRecord.ExceptionAddress = (void *)GetIP(&ex->ContextRecord);
