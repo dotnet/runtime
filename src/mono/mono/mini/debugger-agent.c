@@ -2309,7 +2309,7 @@ decode_ptr_id (guint8 *buf, guint8 **endbuf, guint8 *limit, IdType type, MonoDom
 	dbg_unlock ();
 
 	if (res->domain == NULL) {
-		DEBUG_PRINTF (0, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
+		DEBUG_PRINTF (1, "ERR_UNLOADED, id=%d, type=%d.\n", id, type);
 		*err = ERR_UNLOADED;
 		return NULL;
 	}
