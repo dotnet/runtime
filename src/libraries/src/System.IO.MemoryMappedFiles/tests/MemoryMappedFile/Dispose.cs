@@ -40,8 +40,7 @@ public class MMF_Dispose
             // Dispose()
             ////////////////////////////////////////////////////////////////////////
 
-            string tempPath = Path.GetTempFileName();
-            MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(tempPath, FileMode.Open, null, 100);
+            MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 100);
             MemoryMappedViewStream viewStream = mmf.CreateViewStream();
             MemoryMappedViewAccessor viewAccessor = mmf.CreateViewAccessor();
             mmf.Dispose();
@@ -116,7 +115,6 @@ public class MMF_Dispose
 
             viewStream.Dispose();
             viewAccessor.Dispose();
-            File.Delete(tempPath);
 
             /// END TEST CASES
 
