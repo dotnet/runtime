@@ -22,7 +22,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void CreateCurrentDirectoryWithRelativeTraversal()
         {
-            DirectoryInfo dir = new DirectoryInfo(Path.Combine(TestDirectory, "abc\\xyz\\..\\.."));
+            DirectoryInfo dir = new DirectoryInfo(Path.Combine(TestDirectory, "abc", "xyz", "..", ".."));
             dir.Create();
             Assert.Equal(dir.FullName, TestDirectory);
         }
@@ -67,7 +67,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void PathJustTooLong()
         {
-            StringBuilder sb = new StringBuilder(TestDirectory + "\\");
+            StringBuilder sb = new StringBuilder(TestDirectory + Path.DirectorySeparatorChar);
             while (sb.Length < 248)
             {
                 sb.Append("a");
@@ -81,7 +81,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void PathJustShortEnough()
         {
-            StringBuilder sb = new StringBuilder(TestDirectory + "\\");
+            StringBuilder sb = new StringBuilder(TestDirectory + Path.DirectorySeparatorChar);
             while (sb.Length < 247)
             {
                 sb.Append("a");

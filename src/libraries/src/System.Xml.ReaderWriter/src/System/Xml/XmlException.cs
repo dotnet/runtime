@@ -33,9 +33,6 @@ namespace System.Xml
         //provided to meet the ECMA standards
         public XmlException(String message) : this(message, ((Exception)null), 0, 0)
         {
-#if DEBUG
-            Debug.Assert(message == null || !message.StartsWith("Xml_", StringComparison.Ordinal), "Do not pass a resource here!");
-#endif
         }
 
         //provided to meet ECMA standards

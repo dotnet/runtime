@@ -18,6 +18,10 @@ namespace System.Diagnostics
 
         internal sealed class UnixDebugLogger : IDebugLogger
         {
+            private const string EnvVar_DebugWriteToStdErr = "COMPlus_DebugWriteToStdErr";
+            private static readonly bool s_shouldWriteToStdErr = 
+                Environment.GetEnvironmentVariable(EnvVar_DebugWriteToStdErr) == "1";
+
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
                 // TODO: Implement this
@@ -29,7 +33,11 @@ namespace System.Diagnostics
                 Assert(message != null);
 
                 WriteToSyslog(message);
-                WriteToFile(Interop.Devices.stderr, message);
+
+                if (s_shouldWriteToStdErr)
+                {
+                    WriteToFile(Interop.Devices.stderr, message);
+                }
             }
 
             private static void WriteToSyslog(string message)

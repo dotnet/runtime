@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Xml.Tests", "tests\System.Runtime.Serialization.Xml.Tests.csproj", "{30CAB353-089E-4294-B23B-F2DD1D945654}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9618597D-FDAE-42CB-B368-80DB80EA1E37}"
 	ProjectSection(SolutionItems) = preProject
 		.nuget\packages.config = .nuget\packages.config

@@ -66,7 +66,7 @@ public class DirectoryInfo_Co5511get_FullName
 
             iCountTestcases++;
             dir = new DirectoryInfo("This directory does not exist");
-            if (!dir.FullName.Equals(Directory.GetCurrentDirectory() + "\\This directory does not exist"))
+            if (!dir.FullName.Equals(Path.Combine(Directory.GetCurrentDirectory(), "This directory does not exist")))
             {
                 iCountErrors++;
                 printerr("Error_109z9! Incorrect directory name, dir==" + dir.ToString());
@@ -77,9 +77,9 @@ public class DirectoryInfo_Co5511get_FullName
 
             strLoc = "Loc_20u9x";
 
-            dir = new DirectoryInfo("c:\\");
+            dir = new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()));
             iCountTestcases++;
-            if (!dir.FullName.Equals("c:\\"))
+            if (!dir.FullName.Equals(Path.GetPathRoot(Directory.GetCurrentDirectory())))
             {
                 iCountErrors++;
                 printerr("Error_2098x! Incorrect dir returned==" + dir.FullName);
@@ -89,8 +89,8 @@ public class DirectoryInfo_Co5511get_FullName
 
             strLoc = "Loc_099s8";
 
-            dir = new DirectoryInfo("C:\\");
-            DirectoryInfo dir2 = new DirectoryInfo("C:\\");
+            dir = new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()).ToUpper());
+            DirectoryInfo dir2 = new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory()).ToUpper());
 
             iCountTestcases++;
             if (!dir.FullName.Equals(dir2.FullName))
@@ -147,9 +147,9 @@ public class DirectoryInfo_Co5511get_FullName
 
             dir = new DirectoryInfo("..");
             iCountTestcases++;
-            String strParent = Directory.GetCurrentDirectory().Substring(0, Directory.GetCurrentDirectory().LastIndexOf("\\"));
-            if (strParent.IndexOf("\\") == -1 && strParent.IndexOf("/") == -1)
-                strParent = strParent + "\\";
+            String strParent = Path.GetDirectoryName(Directory.GetCurrentDirectory());
+            if (strParent.IndexOf(Path.DirectorySeparatorChar) == -1 && strParent.IndexOf(Path.AltDirectorySeparatorChar) == -1)
+                strParent = strParent + Path.DirectorySeparatorChar;
             if (!dir.FullName.Equals(strParent))
             {
                 iCountErrors++;

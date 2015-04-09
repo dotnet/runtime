@@ -52,7 +52,7 @@ public class MMVS_ReadWrite : TestBase
                 File.Delete("file1.dat");
             using (FileStream fileStream = new FileStream("file1.dat", FileMode.Create, FileAccess.ReadWrite))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileStream, "MMVS_ReadWrite0", pageSize * 10, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fileStream, null, pageSize * 10, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
                 {
                     // Default ViewStream size - whole MMF
                     using (MemoryMappedViewStream view = mmf.CreateViewStream())
@@ -340,7 +340,7 @@ public class MMVS_ReadWrite : TestBase
             }
 
             // Use a pagefile backed MMF instead of file backed
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVS_ReadWrite1", pageSize * 10))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, pageSize * 10))
             {
                 using (MemoryMappedViewStream view = mmf.CreateViewStream())
                 {
@@ -388,7 +388,7 @@ public class MMVS_ReadWrite : TestBase
                     VerifyRead("Loc432", view, new Byte[16], 0, 16, byteArray3, 16);
                     view.Seek(-8, SeekOrigin.End);
                     VerifyRead("Loc433", view, new Byte[16], 0, 16, byteArray3b, 8);  // read partial array
-                    // BinaryReader
+                                                                                      // BinaryReader
                     reader.BaseStream.Seek(-16, SeekOrigin.End);
                     VerifyReadDecimal("Loc434", reader, dec); // now at end of stream
                     VerifyReadDecimalException<IOException>("Loc435", reader);

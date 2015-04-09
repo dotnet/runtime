@@ -133,11 +133,11 @@ public class DirectoryInfo_GetFileSystemInfos_str
             dir2.CreateSubdirectory("TestDir3");
             dir2.CreateSubdirectory("Test1Dir1");
             dir2.CreateSubdirectory("Test1Dir2");
-            new FileInfo(dir2.FullName + "\\" + "TestFile1").Create();
-            new FileInfo(dir2.FullName + "\\" + "TestFile2").Create();
-            new FileInfo(dir2.FullName + "\\" + "TestFile3").Create();
-            new FileInfo(dir2.FullName + "\\" + "Test1File1").Create();
-            new FileInfo(dir2.FullName + "\\" + "Test1File2").Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "TestFile3")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "Test1File1")).Create();
+            new FileInfo(Path.Combine(dir2.FullName, "Test1File2")).Create();
 
             // [] Search criteria ending with '*'
 
@@ -313,8 +313,8 @@ public class DirectoryInfo_GetFileSystemInfos_str
 
             // [] Search criteria Beginning and ending with '*'
 
-            new FileInfo(dir2.FullName + "\\" + "AAABB").Create();
-            Directory.CreateDirectory(dir2.FullName + "\\" + "aaabbcc");
+            new FileInfo(Path.Combine(dir2.FullName, "AAABB")).Create();
+            Directory.CreateDirectory(Path.Combine(dir2.FullName, "aaabbcc"));
 
             fsArr = dir2.GetFileSystemInfos("*BB*");
             iCountTestcases++;
@@ -357,8 +357,8 @@ public class DirectoryInfo_GetFileSystemInfos_str
                 printerr("Error_209v7! Incorrect number of files==" + fsArr.Length);
             }
 
-            new FileInfo(dir2.FullName + "\\" + "TestDir1\\Test.tmp").Create();
-            fsArr = dir2.GetFileSystemInfos("TestDir1\\*");
+            new FileInfo(Path.Combine(dir2.FullName, "TestDir1", "Test.tmp")).Create();
+            fsArr = dir2.GetFileSystemInfos(Path.Combine("TestDir1", "*"));
             iCountTestcases++;
             if (fsArr.Length != 1)
             {

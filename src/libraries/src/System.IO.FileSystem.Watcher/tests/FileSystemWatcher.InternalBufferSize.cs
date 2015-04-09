@@ -10,6 +10,7 @@ public partial class FileSystemWatcher_4000_Tests
 {
     [Fact]
     [ActiveIssue(1165)]
+    [PlatformSpecific(PlatformID.Windows)]
     public static void FileSystemWatcher_InternalBufferSize_File()
     {
         using (var file = Utility.CreateTestFile())

@@ -32,24 +32,6 @@ namespace Microsoft.Win32.RegistryTests
         }
 
         [Fact]
-        public void Test01()
-        {
-            // [] Null arguments should be ignored
-            try
-            {
-                Object obj = _rk1.GetValue(null, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                if (obj != null)
-                {
-                    Assert.False(true, "Error Key value is incorrect...");
-                }
-            }
-            catch (Exception e)
-            {
-                Assert.False(true, "Error Unexpected exception occured , got exc==" + e.ToString());
-            }
-        }
-
-        [Fact]
         public void Test02()
         {
             //passing negative value for the enum should throw
@@ -82,25 +64,6 @@ namespace Microsoft.Win32.RegistryTests
         }
 
         [Fact]
-        public void Test05()
-        {
-            // [] Pass name=string.Empty 
-            String strTest = "This is a test string";
-            try
-            {
-                Object obj1 = _rk1.GetValue(String.Empty, strTest, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                if (obj1.ToString() != strTest)
-                {
-                    Assert.False(true, "Error null return expected");
-                }
-            }
-            catch (Exception e)
-            {
-                Assert.False(true, "Error Unexpected exception occured.... exception message...:" + e.ToString());
-            }
-        }
-
-        [Fact]
         public void Test06()
         {
             // [] Pass name=Existing key, default value = null 
@@ -111,20 +74,6 @@ namespace Microsoft.Win32.RegistryTests
                 string strKey = "MyTestKey";
                 _rk2.SetValue(strKey, strTest, RegistryValueKind.ExpandString);
                 Object obj1 = _rk2.GetValue(strKey, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
-                if (obj1.ToString() != strTest)
-                {
-                    Assert.False(true, "Error null return expected");
-                }
-            }
-            catch (Exception e)
-            {
-                Assert.False(true, "Error Unexpected exception occured.... exception message...:" + e.ToString());
-            }
-
-            // [] Pass name=null, default value = some value 
-            try
-            {
-                Object obj1 = _rk2.GetValue(null, strTest, RegistryValueOptions.DoNotExpandEnvironmentNames);
                 if (obj1.ToString() != strTest)
                 {
                     Assert.False(true, "Error null return expected");

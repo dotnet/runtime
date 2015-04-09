@@ -74,7 +74,7 @@ public class File_SetAttributes_str_attrs
             iCountTestcases++;
             try
             {
-                File.SetAttributes("c:\\this is a invalid testing directory\\test\\test", FileAttributes.Hidden);
+                File.SetAttributes(Path.Combine(Path.GetPathRoot(Directory.GetCurrentDirectory()), "this is a invalid testing directory", "test", "test"), FileAttributes.Hidden);
                 iCountErrors++;
                 printerr("Error_0006! Expected exception not thrown");
             }

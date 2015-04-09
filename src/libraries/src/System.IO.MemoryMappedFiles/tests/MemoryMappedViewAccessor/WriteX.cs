@@ -49,7 +49,7 @@ public class MMVA_WriteX : TestBase
 
         try
         {
-            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("MMVA_WriteX0", _pageSize * 10))
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, _pageSize * 10))
             {
                 // Default ViewAccessor size - whole MMF
                 using (MemoryMappedViewAccessor view = mmf.CreateViewAccessor())

@@ -117,7 +117,7 @@ public class DirectoryInfo_GetFiles_str
             strLoc = "Loc_4y982";
 
             dir2 = Directory.CreateDirectory(dirName);
-            strArr = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\" + dirName);
+            strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName));
             iCountTestcases++;
             if (strArr.Length != 0)
             {
@@ -136,18 +136,18 @@ public class DirectoryInfo_GetFiles_str
             dir2.CreateSubdirectory("TestDir3");
             dir2.CreateSubdirectory("Test1Dir1");
             dir2.CreateSubdirectory("Test1Dir2");
-            fs[0] = new FileInfo(dir2.FullName + "\\" + "TestFile1").Create();
-            fs[1] = new FileInfo(dir2.FullName + "\\" + "TestFile2").Create();
-            fs[2] = new FileInfo(dir2.FullName + "\\" + "TestFile3").Create();
-            fs[3] = new FileInfo(dir2.FullName + "\\" + "Test1File1").Create();
-            fs[4] = new FileInfo(dir2.FullName + "\\" + "Test1File2").Create();
+            fs[0] = new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            fs[1] = new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
+            fs[2] = new FileInfo(Path.Combine(dir2.FullName, "TestFile3")).Create();
+            fs[3] = new FileInfo(Path.Combine(dir2.FullName, "Test1File1")).Create();
+            fs[4] = new FileInfo(Path.Combine(dir2.FullName, "Test1File2")).Create();
             for (int iLoop = 0; iLoop < 5; iLoop++)
                 fs[iLoop].Dispose();
 
             // Get all files
             strLoc = "Loc_4y7gb";
 
-            strArr = Directory.GetFiles(".\\" + dirName);
+            strArr = Directory.GetFiles("." + Path.DirectorySeparatorChar + dirName);
             iCountTestcases++;
             if (strArr.Length != 5)
             {
@@ -158,7 +158,7 @@ public class DirectoryInfo_GetFiles_str
             int i = 0;
             foreach (String f in strArr)
             {
-                names[i++] = f.Substring(f.LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f);
             }
 
             iCountTestcases++;
@@ -193,11 +193,11 @@ public class DirectoryInfo_GetFiles_str
             }
 
             strLoc = "Loc_45500";
-            File.Delete(dirName + "\\TestFile1");
-            File.Delete(dirName + "\\Test1File1");
+            File.Delete(Path.Combine(dirName, "TestFile1"));
+            File.Delete(Path.Combine(dirName, "Test1File1"));
 
             iCountTestcases++;
-            strArr = Directory.GetFiles(".\\" + dirName);
+            strArr = Directory.GetFiles(Path.Combine(".", dirName));
             if (strArr.Length != 3)
             {
                 iCountErrors++;
@@ -206,7 +206,7 @@ public class DirectoryInfo_GetFiles_str
             names = new String[strArr.Length];
             i = 0;
             foreach (String f in strArr)
-                names[i++] = f.Substring(f.LastIndexOf("\\") + 1);
+                names[i++] = Path.GetFileName(f);
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1File2") < 0)
             {

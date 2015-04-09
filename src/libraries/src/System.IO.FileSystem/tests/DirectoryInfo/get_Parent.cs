@@ -42,7 +42,7 @@ public class DirectoryInfo_get_Parent
 
             strLoc = "Loc_49b78";
 
-            dir2 = new DirectoryInfo("C:\\").Parent;
+            dir2 = new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory())).Parent;
             iCountTestcases++;
             if (dir2 != null)
             {
@@ -54,7 +54,7 @@ public class DirectoryInfo_get_Parent
 
             strLoc = "Loc_98ygg";
 
-            dir2 = new DirectoryInfo("\\Machine\\Test").Parent;
+            dir2 = new DirectoryInfo(Path.DirectorySeparatorChar + Path.Combine("Machine", "Test")).Parent;
             str2 = dir2.Name;
             iCountTestcases++;
             if (!str2.Equals("Machine"))
@@ -67,7 +67,7 @@ public class DirectoryInfo_get_Parent
 
             strLoc = "Loc_yg7bk";
 
-            dir2 = new DirectoryInfo("\\\\Machine\\Test").Parent;
+            dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")).Parent;
             iCountTestcases++;
             if (dir2 != null)
             {
@@ -79,10 +79,10 @@ public class DirectoryInfo_get_Parent
             // [] Get parent of directory string ending with \
 
             strLoc = "Loc_9876b";
-            dir2 = new DirectoryInfo("X:\\a\\b\\c\\d").Parent;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "a") + Path.DirectorySeparatorChar).Parent;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\a\\b\\c"))
+            if (!str2.Equals(Directory.GetCurrentDirectory()))
             {
                 iCountErrors++;
                 printerr("Error_298yg! Unexpected parent==" + str2);
@@ -91,11 +91,11 @@ public class DirectoryInfo_get_Parent
             // [] Get parent of nested directories
 
             strLoc = "Loc_75y7b";
-            dir2 = new DirectoryInfo("X:\\a\\b\\c").Parent;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "a")).Parent;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\a\\b"))
-            {
+            if (!str2.Equals(Directory.GetCurrentDirectory()))
+                {
                 iCountErrors++;
                 printerr("Error_9887b! Unexpected parent==" + str2);
             }
@@ -104,10 +104,10 @@ public class DirectoryInfo_get_Parent
 
             strLoc = "Loc_y7t98";
 
-            dir2 = new DirectoryInfo("\\\\Machine\\Test1\\Test2").Parent;
+            dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1", "Test2")).Parent;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("\\\\Machine\\Test1"))
+            if (!str2.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1")))
             {
                 iCountErrors++;
                 printerr("Error_69929! Unexpected parent==" + str2);
@@ -117,10 +117,10 @@ public class DirectoryInfo_get_Parent
 
             strLoc = "Loc_2984y";
 
-            dir2 = new DirectoryInfo("X:\\Test\\..\\.\\Test").Parent;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "Test", "..", ".", "Test")).Parent;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\"))
+            if (!str2.Equals(Directory.GetCurrentDirectory()))
             {
                 iCountErrors++;
                 printerr("Error_20928! Unexpected parent==" + str2);
@@ -130,10 +130,10 @@ public class DirectoryInfo_get_Parent
 
             strLoc = "Loc_8y76y";
 
-            dir2 = new DirectoryInfo("X:\\My Samples\\Hello To The World\\Test").Parent;
+            dir2 = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "My Samples", "Hello To The World", "Test")).Parent;
             str2 = dir2.FullName;
             iCountTestcases++;
-            if (!str2.Equals("X:\\My Samples\\Hello To The World"))
+            if (!str2.Equals(Path.Combine(Directory.GetCurrentDirectory(), "My Samples", "Hello To The World")))
             {
                 iCountErrors++;
                 printerr("Error_9019c! Unexpected parent==" + str2);

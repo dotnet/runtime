@@ -48,7 +48,7 @@ public class Directory_Delete_MountVolume
                 if (FileSystemDebugInfo.IsCurrentDriveNTFS() && otherDriveInMachine != null)
                 {
                     Console.WriteLine(scenarioDescription);
-                    mountedDirName = Path.GetFullPath(ManageFileSystem.GetNonExistingDir(@"\", MountPrefixName));
+                    mountedDirName = Path.GetFullPath(ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), MountPrefixName));
 
                     try
                     {
@@ -136,7 +136,7 @@ public class Directory_Delete_MountVolume
                 if (FileSystemDebugInfo.IsCurrentDriveNTFS())
                 {
                     File.AppendAllText(debugFileName, String.Format("{0}{1}", scenarioDescription, Environment.NewLine));
-                    mountedDirName = Path.GetFullPath(ManageFileSystem.GetNonExistingDir(@"\", MountPrefixName));
+                    mountedDirName = Path.GetFullPath(ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), MountPrefixName));
                     try
                     {
                         Directory.CreateDirectory(mountedDirName);

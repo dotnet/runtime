@@ -2,23 +2,23 @@
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
   <!-- Build Tools Version -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00026</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00029</BuildToolsVersion>
   </PropertyGroup>
 
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <SourceDir>$(ProjectDir)src/</SourceDir>
 
     <!-- Output directories -->
-    <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin\</BinDir>
-    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj\</ObjDir>
-    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests\</TestWorkingDir>
-    <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages\</PackagesOutDir>
+    <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
+    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
+    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
+    <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages/</PackagesOutDir>
     
     <!-- Input Directories -->
-    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages\</PackagesDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)\lib\</ToolsDir>
+    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
   </PropertyGroup>
 
   <!-- Common nuget properties -->

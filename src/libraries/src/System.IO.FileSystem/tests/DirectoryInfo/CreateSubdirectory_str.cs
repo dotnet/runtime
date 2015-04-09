@@ -107,7 +107,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void MultipleNewDirectories()
         {
-            string subdirName = "Test\\Test\\Test";
+            string subdirName = Path.Combine("Test", "Test", "Test");
 
             DirectoryInfo dir = new DirectoryInfo(TestDirectory).CreateSubdirectory(subdirName);
 
@@ -128,7 +128,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void NetworkName()
         {
-            Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory("\\\\contoso\\amusement\\device"));
+            Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("contoso", "amusement", "device")));
         }
 
         [Fact]

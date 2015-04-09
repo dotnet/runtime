@@ -50,9 +50,13 @@
                   Address="https://www.nuget.org/nuget.exe"
                   Condition="!Exists('$(NuGetToolPath)')" />
 
+    <PropertyGroup>
+      <_RestoreBuildToolsCommand>$(NugetRestoreCommand) "$(SourceDir).nuget/packages.config"</_RestoreBuildToolsCommand>
+    </PropertyGroup>
+
     <!-- Restore build tools -->
-    <Exec Command="$(NugetRestoreCommand) &quot;$(SourceDir).nuget\packages.config&quot;" StandardOutputImportance="Low" />
-    
+    <Exec Command="$(_RestoreBuildToolsCommand)" StandardOutputImportance="Low" />
+
     <Error Condition="'$(ErrorIfBuildToolsRestoredFromIndividualProject)'=='true'"
            Text="The build tools package was just restored and so we cannot continue the build of an individual project because targets from the build tools package were not able to be imported. Please retry the build the individual project again." />
 

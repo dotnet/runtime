@@ -182,7 +182,7 @@ public class Directory_Move_str_str
             //-----------------------------------------------------------------
 
             Directory.CreateDirectory(dirName);
-            Directory.Move(dirName + "\\", tempDirName + "\\");
+            Directory.Move(dirName + Path.DirectorySeparatorChar, tempDirName + Path.DirectorySeparatorChar);
             iCountTestcases++;
             if (Directory.Exists(dirName))
             {
@@ -231,7 +231,7 @@ public class Directory_Move_str_str
             strLoc = "Loc_00028";
 
             dir2 = Directory.CreateDirectory(dirName);
-            dir2.CreateSubdirectory("SubDir\\SubSubDir");
+            dir2.CreateSubdirectory(Path.Combine("SubDir", "SubSubDir"));
             FailSafeDirectoryOperations.MoveDirectory(dirName, tempDirName);
             //			Directory.Move(dirName, tempDirName);
             iCountTestcases++;
@@ -248,7 +248,7 @@ public class Directory_Move_str_str
                 printerr("Error_00030! Destination directory missing");
             }
             iCountTestcases++;
-            if (!Directory.Exists(dir2.FullName + "\\SubDir\\SubSubDir"))
+            if (!Directory.Exists(Path.Combine(dir2.FullName, "SubDir", "SubSubDir")))
             {
                 iCountErrors++;
                 printerr("Error_00031! Subdirectories not moved");

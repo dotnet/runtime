@@ -171,7 +171,7 @@ namespace System.IO.MemoryMappedFiles
             SafeMemoryMappedFileHandle handle = null;
             try
             {
-                handle = CreateCore(fileStream.SafeFileHandle, mapName, HandleInheritability.None,
+                handle = CreateCore(fileStream, mapName, HandleInheritability.None,
                     access, MemoryMappedFileOptions.None, capacity);
             }
             catch
@@ -244,7 +244,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
 
-            SafeMemoryMappedFileHandle handle = CreateCore(fileStream.SafeFileHandle, mapName, inheritability,
+            SafeMemoryMappedFileHandle handle = CreateCore(fileStream, mapName, inheritability,
                 access, MemoryMappedFileOptions.None, capacity);
 
             return new MemoryMappedFile(handle, fileStream, leaveOpen);

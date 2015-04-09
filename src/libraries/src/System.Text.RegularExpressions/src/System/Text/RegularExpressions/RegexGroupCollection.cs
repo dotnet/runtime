@@ -6,6 +6,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.RegularExpressions
 {
@@ -15,38 +16,16 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public class GroupCollection : ICollection
     {
-        internal Match _match;
-        internal Dictionary<Int32, Int32> _captureMap;
+        private readonly Match _match;
+        private readonly Dictionary<int, int> _captureMap;
 
         // cache of Group objects fed to the user
-        internal Group[] _groups;
+        private Group[] _groups;
 
-        /*
-         * Nonpublic constructor
-         */
-        internal GroupCollection(Match match, Dictionary<Int32, Int32> caps)
+        internal GroupCollection(Match match, Dictionary<int, int> caps)
         {
             _match = match;
             _captureMap = caps;
-        }
-
-        /// <summary>
-        /// The object on which to synchronize
-        /// </summary>
-        Object ICollection.SyncRoot
-        {
-            get
-            {
-                return _match;
-            }
-        }
-
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return false;
-            }
         }
 
         /// <summary>
@@ -54,21 +33,15 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public int Count
         {
-            get
-            {
-                return _match._matchcount.Length;
-            }
+            get { return _match._matchcount.Length; }
         }
 
         public Group this[int groupnum]
         {
-            get
-            {
-                return GetGroup(groupnum);
-            }
+            get { return GetGroup(groupnum); }
         }
 
-        public Group this[String groupname]
+        public Group this[string groupname]
         {
             get
             {
@@ -79,7 +52,15 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal Group GetGroup(int groupnum)
+        /// <summary>
+        /// Provides an enumerator in the same order as Item[].
+        /// </summary>
+        public IEnumerator GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        private Group GetGroup(int groupnum)
         {
             if (_captureMap != null)
             {
@@ -97,11 +78,10 @@ namespace System.Text.RegularExpressions
             return Group._emptygroup;
         }
 
-
-        /*
-         * Caches the group objects
-         */
-        internal Group GetGroupImpl(int groupnum)
+        /// <summary>
+        /// Caches the group objects
+        /// </summary>
+        private Group GetGroupImpl(int groupnum)
         {
             if (groupnum == 0)
                 return _match;
@@ -120,10 +100,16 @@ namespace System.Text.RegularExpressions
             return _groups[groupnum - 1];
         }
 
-        /// <summary>
-        /// Copies all the elements of the collection to the given array
-        /// beginning at the given index.
-        /// </summary>
+        bool ICollection.IsSynchronized
+        {
+            get { return false; }
+        }
+
+        object ICollection.SyncRoot
+        {
+            get { return _match; }
+        }
+
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
@@ -135,77 +121,51 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>
-        /// Provides an enumerator in the same order as Item[].
-        /// </summary>
-        public IEnumerator GetEnumerator()
+        private class Enumerator : IEnumerator
         {
-            return new GroupEnumerator(this);
-        }
-    }
+            private readonly GroupCollection _collection;
+            private int _index;
 
-
-    /*
-     * This non-public enumerator lists all the captures
-     * Should it be public?
-     */
-    internal class GroupEnumerator : IEnumerator
-    {
-        internal GroupCollection _rgc;
-        internal int _curindex;
-
-        /*
-         * Nonpublic constructor
-         */
-        internal GroupEnumerator(GroupCollection rgc)
-        {
-            _curindex = -1;
-            _rgc = rgc;
-        }
-
-        /*
-         * As required by IEnumerator
-         */
-        public bool MoveNext()
-        {
-            int size = _rgc.Count;
-
-            if (_curindex >= size)
-                return false;
-
-            _curindex++;
-
-            return (_curindex < size);
-        }
-
-        /*
-         * As required by IEnumerator
-         */
-        public Object Current
-        {
-            get { return Capture; }
-        }
-
-        /*
-         * Returns the current capture
-         */
-        public Capture Capture
-        {
-            get
+            internal Enumerator(GroupCollection collection)
             {
-                if (_curindex < 0 || _curindex >= _rgc.Count)
-                    throw new InvalidOperationException(SR.EnumNotStarted);
+                Debug.Assert(collection != null, "collection cannot be null.");
 
-                return _rgc[_curindex];
+                _collection = collection;
+                _index = -1;
             }
-        }
 
-        /*
-         * Reset to before the first item
-         */
-        public void Reset()
-        {
-            _curindex = -1;
+            public bool MoveNext()
+            {
+                int size = _collection.Count;
+
+                if (_index >= size)
+                    return false;
+
+                _index++;
+
+                return _index < size;
+            }
+
+            public Group Current
+            {
+                get
+                {
+                    if (_index < 0 || _index >= _collection.Count)
+                        throw new InvalidOperationException(SR.EnumNotStarted);
+
+                    return _collection[_index];
+                }
+            }
+
+            object IEnumerator.Current
+            {
+                get { return Current; }
+            }
+
+            void IEnumerator.Reset()
+            {
+                _index = -1;
+            }
         }
     }
 }

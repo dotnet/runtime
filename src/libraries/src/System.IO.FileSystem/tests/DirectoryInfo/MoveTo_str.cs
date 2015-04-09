@@ -324,7 +324,7 @@ public class DirectoryInfo_Move_str
             iCountTestcases++;
             try
             {
-                dir2.MoveTo(Path.Combine(testDir, "Test\\Test\\Test"));
+                dir2.MoveTo(Path.Combine(testDir, "Test", "Test", "Test"));
                 iCountErrors++;
                 printerr("Error_1039s! Expected exception not thrown");
                 fil2.Delete();
@@ -401,7 +401,7 @@ public class DirectoryInfo_Move_str
             iCountTestcases++;
             try
             {
-                subdir = new DirectoryInfo(Path.Combine(TestInfo.CurrentDirectory, "NewTest5525\\Test5525"));
+                subdir = new DirectoryInfo(Path.Combine(TestInfo.CurrentDirectory, "NewTest5525", "Test5525"));
             }
             catch (Exception exc)
             {
@@ -430,7 +430,7 @@ public class DirectoryInfo_Move_str
             {
                 dir2 = new DirectoryInfo(subDir);
                 dir2.Create();
-                dir2.MoveTo(TestInfo.CurrentDirectory + "\\" + value);
+                dir2.MoveTo(Path.Combine(TestInfo.CurrentDirectory, value));
                 if (!dir2.FullName.Equals(moveDir))
                 {
                     Console.WriteLine("moveDir: <{0}>", moveDir);
