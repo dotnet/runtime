@@ -1268,21 +1268,6 @@ GetFileTime(
         OUT LPFILETIME lpLastWriteTime);
 
 PALIMPORT
-BOOL
-PALAPI
-FileTimeToLocalFileTime(
-            IN CONST FILETIME *lpFileTime,
-            OUT LPFILETIME lpLocalFileTime);
-
-PALIMPORT
-BOOL
-PALAPI
-LocalFileTimeToFileTime(
-            IN CONST FILETIME *lpLocalFileTime,
-            OUT LPFILETIME lpFileTime);
-
-
-PALIMPORT
 VOID
 PALAPI
 GetSystemTimeAsFileTime(
@@ -1319,15 +1304,6 @@ FileTimeToDosDateTime(
     IN CONST FILETIME *lpFileTime,
     OUT LPWORD lpFatDate,
     OUT LPWORD lpFatTime
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-DosDateTimeToFileTime(
-    IN WORD wFatDate,
-    IN WORD wFatTime,
-    OUT LPFILETIME lpFileTime
     );
 
 
@@ -4068,37 +4044,6 @@ GetUserDefaultLocaleName(
            OUT LPWSTR lpLocaleName,
            IN int cchLocaleName);
 
-
-
-
-#define TIME_ZONE_ID_INVALID ((DWORD)0xFFFFFFFF)
-#define TIME_ZONE_ID_UNKNOWN  0
-#define TIME_ZONE_ID_STANDARD 1
-#define TIME_ZONE_ID_DAYLIGHT 2
-
-
-typedef struct _TIME_ZONE_INFORMATION {
-    LONG Bias;
-    WCHAR StandardName[ 32 ];
-    SYSTEMTIME StandardDate;
-    LONG StandardBias;
-    WCHAR DaylightName[ 32 ];
-    SYSTEMTIME DaylightDate;
-    LONG DaylightBias;
-} TIME_ZONE_INFORMATION, *PTIME_ZONE_INFORMATION, *LPTIME_ZONE_INFORMATION;
-
-PALIMPORT
-DWORD
-PALAPI
-GetTimeZoneInformation(
-               OUT LPTIME_ZONE_INFORMATION lpTimeZoneInformation);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_GetTimeZoneInformation(
-               IN int year,
-               OUT LPTIME_ZONE_INFORMATION lpTimeZoneInformation);
 
 #define LCID_INSTALLED            0x00000001  // installed locale ids
 #define LCID_SUPPORTED            0x00000002  // supported locale ids

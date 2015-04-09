@@ -456,9 +456,6 @@ MiscInitialize(void)
 {
     InternalInitializeCriticalSection(&gcsEnvironment);
     MiscGetEnvArray();
-#if HAVE_TIMEZONE_VAR
-    tzset();
-#endif  // HAVE_TIMEZONE_VAR
 
     return TRUE;
 }
