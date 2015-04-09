@@ -2664,7 +2664,7 @@ mini_parse_debug_options (void)
 		else if (!strcmp (arg, "explicit-null-checks"))
 			debug_options.explicit_null_checks = TRUE;
 		else if (!strcmp (arg, "gen-seq-points"))
-			debug_options.gen_seq_points_debug_data = TRUE;
+			debug_options.gen_sdb_seq_points = TRUE;
 		else if (!strcmp (arg, "gen-compact-seq-points"))
 			debug_options.gen_seq_points_compact_data = TRUE;
 		else if (!strcmp (arg, "init-stacks"))

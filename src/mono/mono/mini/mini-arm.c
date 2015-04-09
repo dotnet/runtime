@@ -2154,7 +2154,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 		}
 	}
 
-	if (cfg->gen_seq_points_debug_data) {
+	if (cfg->gen_sdb_seq_points) {
 		if (cfg->soft_breakpoints) {
 			MonoInst *ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;

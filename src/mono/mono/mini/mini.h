@@ -1518,7 +1518,7 @@ typedef struct {
 	guint            keep_cil_nops : 1;
 	guint            gen_seq_points : 1;
 	/* Generate seq points for use by the debugger */
-	guint            gen_seq_points_debug_data : 1;
+	guint            gen_sdb_seq_points : 1;
 	guint            explicit_null_checks : 1;
 	guint            compute_gc_maps : 1;
 	guint            soft_breakpoints : 1;
@@ -1884,7 +1884,7 @@ typedef struct {
 	 * Whenever data such as next sequence points and flags is required.
 	 * Next sequence points and flags are required by the debugger agent.
 	 */
-	gboolean gen_seq_points_debug_data;
+	gboolean gen_sdb_seq_points;
 	gboolean gen_seq_points_compact_data;
 	gboolean explicit_null_checks;
 	/*

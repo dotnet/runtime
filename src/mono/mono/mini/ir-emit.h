@@ -408,7 +408,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 	} while (0)
 
 #define NEW_SEQ_POINT(cfg,dest,il_offset,intr_loc) do {	 \
-	MONO_INST_NEW ((cfg), (dest), cfg->gen_seq_points_debug_data ? OP_SEQ_POINT : OP_IL_SEQ_POINT); \
+	MONO_INST_NEW ((cfg), (dest), cfg->gen_sdb_seq_points ? OP_SEQ_POINT : OP_IL_SEQ_POINT); \
 	(dest)->inst_imm = (il_offset); \
 	(dest)->flags = intr_loc ? MONO_INST_SINGLE_STEP_LOC : 0; \
 	} while (0)

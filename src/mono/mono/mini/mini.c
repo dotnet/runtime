@@ -2412,7 +2412,7 @@ mono_codegen (MonoCompile *cfg)
 		if (cfg->opt & MONO_OPT_PEEPHOLE)
 			mono_arch_peephole_pass_2 (cfg, bb);
 
-		if (cfg->gen_seq_points && !cfg->gen_seq_points_debug_data)
+		if (cfg->gen_seq_points && !cfg->gen_sdb_seq_points)
 			bb_deduplicate_op_il_seq_points (cfg, bb);
 	}
 
@@ -3119,14 +3119,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->full_aot = full_aot;
 	cfg->skip_visibility = method->skip_visibility;
 	cfg->orig_method = method;
-	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_seq_points_debug_data;
-	cfg->gen_seq_points_debug_data = debug_options.gen_seq_points_debug_data;
+	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_sdb_seq_points;
+	cfg->gen_sdb_seq_points = debug_options.gen_sdb_seq_points;
 
 #ifdef PLATFORM_ANDROID
 	if (cfg->method->wrapper_type != MONO_WRAPPER_NONE) {
 		/* FIXME: Why is this needed */
 		cfg->gen_seq_points = FALSE;
-		cfg->gen_seq_points_debug_data = FALSE;
+		cfg->gen_sdb_seq_points = FALSE;
 	}
 #endif
 

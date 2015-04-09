@@ -49,7 +49,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	GSList **next = NULL;
 	SeqPoint* seq_points;
 	GByteArray* array;
-	gboolean has_debug_data = cfg->gen_seq_points_debug_data;
+	gboolean has_debug_data = cfg->gen_sdb_seq_points;
 
 	if (!cfg->seq_points)
 		return;

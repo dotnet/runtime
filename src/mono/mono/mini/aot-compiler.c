@@ -7890,7 +7890,7 @@ emit_exception_info (MonoAotCompile *acfg)
 			// By design aot-runtime decode_exception_debug_info is not able to load sequence point debug data from a file.
 			// As it is not possible to load debug data from a file its is also not possible to store it in a file.
 			gboolean method_seq_points_to_file = acfg->aot_opts.gen_seq_points_file &&
-				cfg->gen_seq_points && !cfg->gen_seq_points_debug_data;
+				cfg->gen_seq_points && !cfg->gen_sdb_seq_points;
 			gboolean method_seq_points_to_binary = cfg->gen_seq_points && !method_seq_points_to_file;
 			
 			emit_exception_debug_info (acfg, cfg, method_seq_points_to_binary);
@@ -9236,7 +9236,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		MonoDebugOptions *opt = mini_get_debug_options ();
 
 		opt->mdb_optimizations = TRUE;
-		opt->gen_seq_points_debug_data = TRUE;
+		opt->gen_sdb_seq_points = TRUE;
 
 		if (!mono_debug_enabled ()) {
 			aot_printerrf (acfg, "The soft-debug AOT option requires the --debug option.\n");

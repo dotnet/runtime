@@ -2998,7 +2998,7 @@ direct_icalls_enabled (MonoCompile *cfg)
 	if (cfg->compile_llvm)
 		return FALSE;
 #endif
-	if (cfg->gen_seq_points_debug_data || cfg->disable_direct_icalls)
+	if (cfg->gen_sdb_seq_points || cfg->disable_direct_icalls)
 		return FALSE;
 	return TRUE;
 }
@@ -7804,7 +7804,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		seq_points = FALSE;
 	}
 
-	if (cfg->gen_seq_points_debug_data && cfg->method == method) {
+	if (cfg->gen_sdb_seq_points && cfg->method == method) {
 		minfo = mono_debug_lookup_method (method);
 		if (minfo) {
 			int i, n_il_offsets;
@@ -13071,7 +13071,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	/* Add a sequence point for method entry/exit events */
-	if (seq_points && cfg->gen_seq_points_debug_data) {
+	if (seq_points && cfg->gen_sdb_seq_points) {
 		NEW_SEQ_POINT (cfg, ins, METHOD_ENTRY_IL_OFFSET, FALSE);
 		MONO_ADD_INS (init_localsbb, ins);
 		NEW_SEQ_POINT (cfg, ins, METHOD_EXIT_IL_OFFSET, FALSE);
