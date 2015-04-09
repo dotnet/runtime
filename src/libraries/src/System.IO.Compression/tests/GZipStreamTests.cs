@@ -21,7 +21,7 @@ namespace System.IO.Compression.Tests
             var writeStream = new MemoryStream();
             var zip = new GZipStream(writeStream, CompressionMode.Compress);
 
-            Assert.True(zip.BaseStream == writeStream, "Reference not equal with base stream");
+            Assert.Same(zip.BaseStream, writeStream);
             writeStream.Dispose();
         }
 
@@ -31,7 +31,7 @@ namespace System.IO.Compression.Tests
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Decompress);
 
-            Assert.True(zip.BaseStream == ms, "Reference not equal with base stream");
+            Assert.Same(zip.BaseStream, ms);
             ms.Dispose();
         }
 
