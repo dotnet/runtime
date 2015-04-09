@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -289,25 +290,25 @@ namespace SerializationTypes
         }
     }
 
-    public class TypeWithIDictionaryPropertyInitWithConcreteType 
+    public class TypeWithIDictionaryPropertyInitWithConcreteType
     {
-        private IDictionary<string, string> dictionaryProperty;
+        private IDictionary<string, string> _dictionaryProperty;
 
-        public IDictionary<string, string> DictionaryProperty 
+        public IDictionary<string, string> DictionaryProperty
         {
-            get 
+            get
             {
-                return this.dictionaryProperty;
+                return _dictionaryProperty;
             }
-            set 
+            set
             {
-                this.dictionaryProperty = value;
+                _dictionaryProperty = value;
             }
         }
 
-        public TypeWithIDictionaryPropertyInitWithConcreteType() 
+        public TypeWithIDictionaryPropertyInitWithConcreteType()
         {
-            dictionaryProperty = new Dictionary<string, string>();
+            _dictionaryProperty = new Dictionary<string, string>();
         }
     }
 
@@ -1821,29 +1822,33 @@ namespace SerializationTypes
 
     public class TypeWithNonPublicDefaultConstructor
     {
-        static string prefix;
+        private static string s_prefix;
         static TypeWithNonPublicDefaultConstructor()
         {
-            prefix = "Mr. ";
+            s_prefix = "Mr. ";
         }
 
         private TypeWithNonPublicDefaultConstructor()
         {
-            Name = prefix + "FooName";
+            Name = s_prefix + "FooName";
         }
         public string Name { get; set; }
     }
 
     [XmlRoot("RootElement")]
-    public class TypeWithMismatchBetweenAttributeAndPropertyType {
+    public class TypeWithMismatchBetweenAttributeAndPropertyType
+    {
         private int _intValue = 120;
 
         [DefaultValue(true), XmlAttribute("IntValue")]
-        public int IntValue {
-            get {
+        public int IntValue
+        {
+            get
+            {
                 return _intValue;
             }
-            set {
+            set
+            {
                 _intValue = value;
             }
         }
@@ -1875,19 +1880,19 @@ namespace SerializationTypes
 
         public ArticleBase(string title, string category)
         {
-            this.title = title;
-            this.category = category;
+            _title = title;
+            _category = category;
         }
 
-        string title;
+        private string _title;
 
         [DataMember]
-        public string Title { get { return title; } set { title = value; } }
+        public string Title { get { return _title; } set { _title = value; } }
 
-        string category;
+        private string _category;
 
         [DataMember]
-        public string Category { get { return category; } set { category = value; } }
+        public string Category { get { return _category; } set { _category = value; } }
 
         public override string ToString()
         {
@@ -1934,58 +1939,58 @@ namespace SerializationTypes
 
     public class MyGenericList<T> : IList<T>
     {
-        List<T> internalList = new List<T>();
+        private List<T> _internalList = new List<T>();
 
         public int IndexOf(T item)
         {
-            return internalList.IndexOf(item);
+            return _internalList.IndexOf(item);
         }
 
         public void Insert(int index, T item)
         {
-            internalList.Insert(index, item);
+            _internalList.Insert(index, item);
         }
 
         public void RemoveAt(int index)
         {
-            internalList.RemoveAt(index);
+            _internalList.RemoveAt(index);
         }
 
         public T this[int index]
         {
             get
             {
-                return internalList[index];
+                return _internalList[index];
             }
             set
             {
-                internalList[index] = value;
+                _internalList[index] = value;
             }
         }
 
         public void Add(T item)
         {
-            internalList.Add(item);
+            _internalList.Add(item);
         }
 
         public void Clear()
         {
-            internalList.Clear();
+            _internalList.Clear();
         }
 
         public bool Contains(T item)
         {
-            return internalList.Contains(item);
+            return _internalList.Contains(item);
         }
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            internalList.CopyTo(array, arrayIndex);
+            _internalList.CopyTo(array, arrayIndex);
         }
 
         public int Count
         {
-            get { return internalList.Count; }
+            get { return _internalList.Count; }
         }
 
         public bool IsReadOnly
@@ -1995,23 +2000,23 @@ namespace SerializationTypes
 
         public bool Remove(T item)
         {
-            return internalList.Remove(item);
+            return _internalList.Remove(item);
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            return internalList.GetEnumerator();
+            return _internalList.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return internalList.GetEnumerator();
+            return _internalList.GetEnumerator();
         }
     }
 
     public class TypeWithListPropertiesWithoutPublicSetters
     {
-        List<string> anotherStringList = new List<string>();
+        private List<string> _anotherStringList = new List<string>();
 
         public TypeWithListPropertiesWithoutPublicSetters()
         {
@@ -2020,7 +2025,7 @@ namespace SerializationTypes
         }
         public MyGenericList<int> IntList { get; private set; }
         public List<string> StringList { get; private set; }
-        public List<string> AnotherStringList { get { return anotherStringList; } }
+        public List<string> AnotherStringList { get { return _anotherStringList; } }
     }
 
     public abstract class HighScoreManager<T> where T : HighScoreManager<T>.HighScoreBase
@@ -2091,4 +2096,16 @@ public class TestableDerivedException : System.Exception
     { }
 
     public string TestProperty { get; set; }
+}
+
+
+public class TypeWithXmlElementProperty
+{
+    [XmlAnyElement]
+    public XmlElement[] Elements;
+}
+
+public class TypeWithXmlDocumentProperty
+{
+    public XmlDocument Document;
 }

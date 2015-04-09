@@ -1368,7 +1368,17 @@ namespace System.Xml.Serialization
                 SpecialMapping special = (SpecialMapping)attribute.Mapping;
                 if (special.TypeDesc.Kind == TypeKind.Attribute || special.TypeDesc.CanBeAttributeValue)
                 {
-                    throw CodeGenerator.NotSupported("XLinq");
+                    System.Diagnostics.Debug.Assert(parent == "o" || parent == "p");
+                    MethodInfo XmlSerializationWriter_WriteXmlAttribute = typeof(XmlSerializationWriter).GetMethod(
+                        "WriteXmlAttribute",
+                        CodeGenerator.InstanceBindingFlags,
+                        new Type[] { typeof(XmlNode), typeof(Object) }
+                        );
+                    ilg.Ldarg(0);
+                    ilg.Ldloc(source.Source);
+                    ilg.Ldarg(parent);
+                    ilg.ConvertValue(ilg.GetArg(parent).ArgType, typeof(Object));
+                    ilg.Call(XmlSerializationWriter_WriteXmlAttribute);
                 }
                 else
                     throw new InvalidOperationException(SR.XmlInternalError);
@@ -1636,7 +1646,148 @@ namespace System.Xml.Serialization
                 }
                 if (anyCount > 0)
                 {
-                    throw CodeGenerator.NotSupported("XLinq");
+                    if (elements.Length - anyCount > 0) ilg.InitElseIf();
+                    else ilg.InitIf();
+
+                    string fullTypeName = typeof(XmlElement).FullName;
+
+                    source.Load(typeof(object));
+                    ilg.IsInst(typeof(XmlElement));
+                    ilg.Load(null);
+                    ilg.Cne();
+                    ilg.AndIf();
+
+                    LocalBuilder elemLoc = ilg.DeclareLocal(typeof(XmlElement), "elem");
+                    source.Load(typeof(XmlElement));
+                    ilg.Stloc(elemLoc);
+
+                    int c = 0;
+
+                    foreach (ElementAccessor element in namedAnys)
+                    {
+                        if (c++ > 0) ilg.InitElseIf();
+                        else ilg.InitIf();
+
+                        string enumFullName = null;
+
+                        Label labelEnd, labelFalse;
+                        if (choice != null)
+                        {
+                            object enumValue;
+                            enumFullName = enumTypeName + ".@" + FindChoiceEnumValue(element, (EnumMapping)choice.Mapping, out enumValue);
+                            labelFalse = ilg.DefineLabel();
+                            labelEnd = ilg.DefineLabel();
+                            ILGenLoad(enumSource, choice == null ? null : choice.Mapping.TypeDesc.Type);
+                            ilg.Load(enumValue);
+                            ilg.Bne(labelFalse);
+                            if (isNullable && !element.IsNullable)
+                            {
+                                source.Load(typeof(object));
+                                ilg.Load(null);
+                                ilg.Cne();
+                            }
+                            else
+                            {
+                                ilg.Ldc(true);
+                            }
+                            ilg.Br(labelEnd);
+                            ilg.MarkLabel(labelFalse);
+                            ilg.Ldc(false);
+                            ilg.MarkLabel(labelEnd);
+                            ilg.AndIf();
+                        }
+                        labelFalse = ilg.DefineLabel();
+                        labelEnd = ilg.DefineLabel();
+                        MethodInfo XmlNode_get_Name = typeof(XmlNode).GetMethod(
+                            "get_Name",
+                            CodeGenerator.InstanceBindingFlags,
+                            CodeGenerator.EmptyTypeArray
+                            );
+                        MethodInfo XmlNode_get_NamespaceURI = typeof(XmlNode).GetMethod(
+                            "get_NamespaceURI",
+                            CodeGenerator.InstanceBindingFlags,
+                            CodeGenerator.EmptyTypeArray
+                            );
+                        ilg.Ldloc(elemLoc);
+                        ilg.Call(XmlNode_get_Name);
+                        ilg.Ldstr(GetCSharpString(element.Name));
+                        MethodInfo String_op_Equality = typeof(string).GetMethod(
+                            "op_Equality",
+                            CodeGenerator.StaticBindingFlags,
+                            new Type[] { typeof(string), typeof(string) }
+                            );
+                        ilg.Call(String_op_Equality);
+                        ilg.Brfalse(labelFalse);
+                        ilg.Ldloc(elemLoc);
+                        ilg.Call(XmlNode_get_NamespaceURI);
+                        ilg.Ldstr(GetCSharpString(element.Namespace));
+                        ilg.Call(String_op_Equality);
+                        ilg.Br(labelEnd);
+                        ilg.MarkLabel(labelFalse);
+                        ilg.Ldc(false);
+                        ilg.MarkLabel(labelEnd);
+                        if (choice != null) ilg.If();
+                        else ilg.AndIf();
+                        WriteElement(new SourceInfo("elem", null, null, elemLoc.LocalType, ilg), element, arrayName, writeAccessors);
+
+                        if (choice != null)
+                        {
+                            ilg.Else();
+
+                            MethodInfo XmlSerializationWriter_CreateChoiceIdentifierValueException = typeof(XmlSerializationWriter).GetMethod(
+                                "CreateChoiceIdentifierValueException",
+                                CodeGenerator.InstanceBindingFlags,
+                                new Type[] { typeof(String), typeof(String), typeof(String), typeof(String) }
+                                );
+                            ilg.Ldarg(0);
+                            ilg.Ldstr(GetCSharpString(enumFullName));
+                            ilg.Ldstr(GetCSharpString(choice.MemberName));
+                            ilg.Ldloc(elemLoc);
+                            ilg.Call(XmlNode_get_Name);
+                            ilg.Ldloc(elemLoc);
+                            ilg.Call(XmlNode_get_NamespaceURI);
+                            ilg.Call(XmlSerializationWriter_CreateChoiceIdentifierValueException);
+                            ilg.Throw();
+                            ilg.EndIf();
+                        }
+                    }
+                    if (c > 0)
+                    {
+                        ilg.Else();
+                    }
+                    if (unnamedAny != null)
+                    {
+                        WriteElement(new SourceInfo("elem", null, null, elemLoc.LocalType, ilg), unnamedAny, arrayName, writeAccessors);
+                    }
+                    else
+                    {
+                        MethodInfo XmlSerializationWriter_CreateUnknownAnyElementException = typeof(XmlSerializationWriter).GetMethod(
+                            "CreateUnknownAnyElementException",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(String), typeof(String) }
+                            );
+                        ilg.Ldarg(0);
+                        ilg.Ldloc(elemLoc);
+                        MethodInfo XmlNode_get_Name = typeof(XmlNode).GetMethod(
+                            "get_Name",
+                            CodeGenerator.InstanceBindingFlags,
+                            CodeGenerator.EmptyTypeArray
+                            );
+                        MethodInfo XmlNode_get_NamespaceURI = typeof(XmlNode).GetMethod(
+                            "get_NamespaceURI",
+                            CodeGenerator.InstanceBindingFlags,
+                            CodeGenerator.EmptyTypeArray
+                            );
+                        ilg.Call(XmlNode_get_Name);
+                        ilg.Ldloc(elemLoc);
+                        ilg.Call(XmlNode_get_NamespaceURI);
+                        ilg.Call(XmlSerializationWriter_CreateUnknownAnyElementException);
+                        ilg.Throw();
+                    }
+                    if (c > 0)
+                    {
+                        ilg.EndIf();
+                    }
                 }
                 if (text != null)
                 {
@@ -1873,7 +2024,36 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw CodeGenerator.NotSupported("XLinq");
+                    // XmlNode, XmlElement
+                    Label ifLabel1 = ilg.DefineLabel();
+                    Label ifLabel2 = ilg.DefineLabel();
+                    source.Load(null);
+                    ilg.IsInst(typeof(XmlNode));
+                    ilg.Brtrue(ifLabel1);
+                    source.Load(null);
+                    ilg.Load(null);
+                    ilg.Ceq();
+                    ilg.Br(ifLabel2);
+                    ilg.MarkLabel(ifLabel1);
+                    ilg.Ldc(true);
+                    ilg.MarkLabel(ifLabel2);
+                    ilg.If();
+
+                    WriteElementCall("WriteElementLiteral", typeof(XmlNode), source, name, ns, element.IsNullable, element.Any);
+
+                    ilg.Else();
+
+                    MethodInfo XmlSerializationWriter_CreateInvalidAnyTypeException = typeof(XmlSerializationWriter).GetMethod(
+                        "CreateInvalidAnyTypeException",
+                        CodeGenerator.InstanceBindingFlags,
+                        new Type[] { typeof(Object) }
+                        );
+                    ilg.Ldarg(0);
+                    source.Load(null);
+                    ilg.Call(XmlSerializationWriter_CreateInvalidAnyTypeException);
+                    ilg.Throw();
+
+                    ilg.EndIf();
                 }
             }
             else

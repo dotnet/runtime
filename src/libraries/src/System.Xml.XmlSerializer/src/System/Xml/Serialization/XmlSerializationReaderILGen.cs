@@ -2005,7 +2005,33 @@ namespace System.Xml.Serialization
             }
             if (anyAttribute != null)
             {
-                throw CodeGenerator.NotSupported("XLinq");
+                LocalBuilder localAttr = ilg.DeclareOrGetLocal(typeof(XmlAttribute), "attr");
+                MethodInfo XmlSerializationReader_get_Document = typeof(XmlSerializationReader).GetMethod(
+                    "get_Document",
+                    CodeGenerator.InstanceBindingFlags,
+                    CodeGenerator.EmptyTypeArray
+                    );
+                MethodInfo XmlDocument_ReadNode = typeof(XmlDocument).GetMethod(
+                    "ReadNode",
+                    CodeGenerator.InstanceBindingFlags,
+                    new Type[] { typeof(XmlReader) }
+                    );
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Document);
+                ilg.Ldarg(0);
+                ilg.Call(XmlSerializationReader_get_Reader);
+                ilg.Call(XmlDocument_ReadNode);
+                ilg.ConvertValue(XmlDocument_ReadNode.ReturnType, localAttr.LocalType);
+                ilg.Stloc(localAttr);
+                MethodInfo XmlSerializationReader_ParseWsdlArrayType = typeof(XmlSerializationReader).GetMethod(
+                    "ParseWsdlArrayType",
+                    CodeGenerator.InstanceBindingFlags,
+                    new Type[] { localAttr.LocalType }
+                    );
+                ilg.Ldarg(0);
+                ilg.Ldloc(localAttr);
+                ilg.Call(XmlSerializationReader_ParseWsdlArrayType);
+                WriteAttribute(anyAttribute);
             }
             else
             {
@@ -2064,7 +2090,22 @@ namespace System.Xml.Serialization
                 }
                 else if (special.TypeDesc.CanBeAttributeValue)
                 {
-                    throw CodeGenerator.NotSupported("XLinq");
+                    LocalBuilder attrLoc = ilg.GetLocal("attr");
+                    ilg.Ldloc(attrLoc);
+                    // to get code compat
+                    if (attrLoc.LocalType == typeof(XmlAttribute))
+                    {
+                        ilg.Load(null);
+                        ilg.Cne();
+                    }
+                    else
+                        ilg.IsInst(typeof(XmlAttribute));
+                    ilg.If();
+                    WriteSourceBegin(member.ArraySource);
+                    ilg.Ldloc(attrLoc);
+                    ilg.ConvertValue(attrLoc.LocalType, typeof(XmlAttribute));
+                    WriteSourceEnd(member.ArraySource, member.Mapping.TypeDesc.IsArrayLike ? member.Mapping.TypeDesc.ArrayElementTypeDesc.Type : member.Mapping.TypeDesc.Type);
+                    ilg.EndIf();
                 }
                 else
                     throw new InvalidOperationException(SR.XmlInternalError);
@@ -3107,7 +3148,21 @@ namespace System.Xml.Serialization
                 switch (special.TypeDesc.Kind)
                 {
                     case TypeKind.Node:
-                        throw CodeGenerator.NotSupported("XLinq");
+                        bool isDoc = special.TypeDesc.FullName == typeof(XmlDocument).FullName;
+                        WriteSourceBeginTyped(source, special.TypeDesc);
+                        MethodInfo XmlSerializationReader_ReadXmlXXX = typeof(XmlSerializationReader).GetMethod(
+                              isDoc ? "ReadXmlDocument" : "ReadXmlNode",
+                              CodeGenerator.InstanceBindingFlags,
+                              new Type[] { typeof(Boolean) }
+                              );
+                        ilg.Ldarg(0);
+                        ilg.Ldc(element.Any ? false : true);
+                        ilg.Call(XmlSerializationReader_ReadXmlXXX);
+                        // See logic in WriteSourceBeginTyped whether or not to castclass.
+                        if (special.TypeDesc != null)
+                            ilg.Castclass(special.TypeDesc.Type);
+                        WriteSourceEnd(source, special.TypeDesc.Type);
+                        break;
                     case TypeKind.Serializable:
                         SerializableMapping sm = (SerializableMapping)element.Mapping;
                         // check to see if we need to do the derivation
