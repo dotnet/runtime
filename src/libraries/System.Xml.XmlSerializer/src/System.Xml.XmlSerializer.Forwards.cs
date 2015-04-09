@@ -4,5 +4,5 @@
 using System.Runtime.CompilerServices;
 
 
-[assembly:TypeForwardedTo(typeof(System.Xml.Serialization.IXmlSerializable))]
-[assembly:TypeForwardedTo(typeof(System.Xml.Serialization.XmlSchemaProviderAttribute))]
+[assembly: TypeForwardedTo(typeof(System.Xml.Serialization.IXmlSerializable))]
+[assembly: TypeForwardedTo(typeof(System.Xml.Serialization.XmlSchemaProviderAttribute))]
