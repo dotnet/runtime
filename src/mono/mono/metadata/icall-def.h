@@ -733,7 +733,7 @@ ICALL(RT_1, "CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceI
 ICALL(RT_2, "GetConstructors_internal", ves_icall_Type_GetConstructors_internal)
 ICALL(RT_3, "GetEvents_internal", ves_icall_Type_GetEvents_internal)
 ICALL(RT_5, "GetFields_internal", ves_icall_Type_GetFields_internal)
-ICALL(RT_6, "GetGenericArguments", ves_icall_MonoType_GetGenericArguments)
+ICALL(RT_6, "GetGenericArgumentsInternal", ves_icall_MonoType_GetGenericArguments)
 ICALL(RT_7, "GetGenericParameterAttributes", ves_icall_Type_GetGenericParameterAttributes)
 ICALL(RT_8, "GetGenericParameterConstraints_impl", ves_icall_Type_GetGenericParameterConstraints)
 ICALL(RT_9, "GetGenericParameterPosition", ves_icall_Type_GetGenericParameterPosition)

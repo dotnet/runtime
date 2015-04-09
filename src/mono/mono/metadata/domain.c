@@ -716,6 +716,10 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
                 mono_defaults.corlib, "System", "MonoType");
 	g_assert (mono_defaults.monotype_class != 0);
 
+	mono_defaults.runtimetype_class = mono_class_from_name (
+                mono_defaults.corlib, "System", "RuntimeType");
+	g_assert (mono_defaults.runtimetype_class != 0);
+
 	mono_defaults.exception_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Exception");
 	g_assert (mono_defaults.exception_class != 0);
