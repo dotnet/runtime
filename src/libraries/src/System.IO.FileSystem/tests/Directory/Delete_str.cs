@@ -39,6 +39,7 @@ public class Directory_Delete_str
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // readonly directories can be deleted on Unix
     public static void ShouldThrowIOExceptionDeletingReadOnlyDirectory()
     {
         string dirPath = Path.Combine(TestInfo.CurrentDirectory, s_dirName);
@@ -122,7 +123,7 @@ public class Directory_Delete_str
             throw;
         }
 
-        Directory.Delete(dir2.FullName.ToLower(), true);
+        Directory.Delete(dir2.FullName, true);
         if (Directory.Exists(dirPath))
         {
             printerr("Error_26y7b! Directory not deleted");
@@ -138,7 +139,7 @@ public class Directory_Delete_str
         //-----------------------------------------------------------------
         Directory.CreateDirectory(Path.Combine(dirPath, Path.GetRandomFileName()));
         DirectoryInfo dir2 = Directory.CreateDirectory(Path.Combine(dirPath, Path.GetRandomFileName()));
-        Directory.Delete(dir2.FullName.ToUpper());
+        Directory.Delete(dir2.FullName);
 
         if (Directory.Exists(dir2.FullName))
         {

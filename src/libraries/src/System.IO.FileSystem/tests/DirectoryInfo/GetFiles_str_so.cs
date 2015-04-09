@@ -15,7 +15,7 @@ using System.Security;
 using System.Globalization;
 using Xunit;
 
-public class DirectoryInfo_FetFiles_str_so
+public class DirectoryInfo_GetFiles_str_so
 {
     private delegate void ExceptionCode();
     private static bool s_pass = true;
@@ -92,12 +92,12 @@ public class DirectoryInfo_FetFiles_str_so
                     CheckException<ArgumentNullException>(delegate { files = dirInfo.GetFiles(null, SearchOption.TopDirectoryOnly); }, "Err_751mwu! worng exception thrown");
                     CheckException<ArgumentOutOfRangeException>(delegate { files = dirInfo.GetFiles("*.*", (SearchOption)100); }, "Err_589kvu! worng exception thrown - see bug #386545");
                     CheckException<ArgumentOutOfRangeException>(delegate { files = dirInfo.GetFiles("*.*", (SearchOption)(-1)); }, "Err_359vcj! worng exception thrown - see bug #386545");
-                    String[] invalidValuesForSearch = { "..", @"..\" };
+                    String[] invalidValuesForSearch = { "..", @".." + Path.DirectorySeparatorChar };
                     for (int i = 0; i < invalidValuesForSearch.Length; i++)
                     {
                         CheckException<ArgumentException>(delegate { files = dirInfo.GetFiles(invalidValuesForSearch[i], SearchOption.TopDirectoryOnly); }, String.Format("Err_631bwy! worng exception thrown: {1}", i, invalidValuesForSearch[i]));
                     }
-                    Char[] invalidFileNames = Path.GetInvalidFileNameChars();
+                    Char[] invalidFileNames = Interop.IsWindows ? Path.GetInvalidFileNameChars() : new[] { '\0' };
                     for (int i = 0; i < invalidFileNames.Length; i++)
                     {
                         switch (invalidFileNames[i])
@@ -111,7 +111,7 @@ public class DirectoryInfo_FetFiles_str_so
                                 // 1) we assumed that this will work in all non-9x machine
                                 // 2) Then only in XP
                                 // 3) NTFS?
-                                if (FileSystemDebugInfo.IsCurrentDriveNTFS())
+                                if (Interop.IsWindows && FileSystemDebugInfo.IsCurrentDriveNTFS())
                                     CheckException<IOException>(delegate { files = dirInfo.GetFiles(String.Format("te{0}st", invalidFileNames[i].ToString()), SearchOption.TopDirectoryOnly); }, String.Format("Err_997gqs! worng exception thrown: {1} - bug#387196", i, (int)invalidFileNames[i]));
                                 else
                                 {

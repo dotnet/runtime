@@ -193,29 +193,33 @@ public class DirectoryInfo_Move_str
 #if !TEST_WINRT // Can't access other root drives
             // [] Move to different drive will throw AccessException
             //-----------------------------------------------------------------
-            strLoc = "Loc_00025";
+            if (Interop.IsWindows) // drive labels
 
-            dir2 = Directory.CreateDirectory(testDir);
-            iCountTestcases++;
-            try
             {
-                if (dir2.FullName.Substring(0, 3) == @"d:\" || dir2.FullName.Substring(0, 3) == @"D:\")
-                    dir2.MoveTo("C:\\TempDirectory");
-                else
-                    dir2.MoveTo("D:\\TempDirectory");
-                Console.WriteLine("Root directory..." + dir2.FullName.Substring(0, 3));
-                iCountErrors++;
-                printerr("Error_00078! Expected exception not thrown");
+                strLoc = "Loc_00025";
+
+                dir2 = Directory.CreateDirectory(testDir);
+                iCountTestcases++;
+                try
+                {
+                    if (dir2.FullName.Substring(0, 3) == @"d:\" || dir2.FullName.Substring(0, 3) == @"D:\")
+                        dir2.MoveTo("C:\\TempDirectory");
+                    else
+                        dir2.MoveTo("D:\\TempDirectory");
+                    Console.WriteLine("Root directory..." + dir2.FullName.Substring(0, 3));
+                    iCountErrors++;
+                    printerr("Error_00078! Expected exception not thrown");
+                }
+                catch (IOException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_23r0g! Incorrect exception thrown, exc==" + exc.ToString());
+                }
+                dir2.Delete(true);
             }
-            catch (IOException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_23r0g! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-            dir2.Delete(true);
 #endif
 
             // [] Move non-existent directory
@@ -267,7 +271,7 @@ public class DirectoryInfo_Move_str
             strLoc = "Loc_2908y";
 
             StringBuilder sb = new StringBuilder(TestInfo.CurrentDirectory);
-            while (sb.Length < 260)
+            while (sb.Length < IOInputs.MaxPath + 1)
                 sb.Append("a");
 
             iCountTestcases++;
@@ -294,7 +298,7 @@ public class DirectoryInfo_Move_str
             strLoc = "Loc_48fyf";
 
             sb = new StringBuilder();
-            for (int i = 0; i < 260; i++)
+            for (int i = 0; i < IOInputs.MaxPath + 1; i++)
                 sb.Append("a");
 
             iCountTestcases++;
@@ -345,6 +349,10 @@ public class DirectoryInfo_Move_str
 
             iCountTestcases++;
             Directory.CreateDirectory(testDir + "a");
+            if (!Interop.IsWindows) // exception on Unix would only happen if the directory isn't empty
+            {
+                File.Create(Path.Combine(testDir + "a", "temp.txt")).Dispose(); 
+            }
             dir2 = Directory.CreateDirectory(testDir);
             try
             {
@@ -424,7 +432,7 @@ public class DirectoryInfo_Move_str
 
             String subDir = Path.Combine(TestInfo.CurrentDirectory, "LaksTemp");
             DeleteFileDir(subDir);
-            String[] values = { "TestDir", @"TestDir\" };
+            String[] values = { "TestDir", "TestDir" + Path.DirectorySeparatorChar };
             String moveDir = Path.Combine(TestInfo.CurrentDirectory, values[1]);
             foreach (String value in values)
             {

@@ -54,28 +54,24 @@ namespace System.IO.FileSystem.Tests
         public void PathTooLong()
         {
             StringBuilder sb = new StringBuilder(TestDirectory);
-            while (sb.Length < 259)
+            while (sb.Length < IOInputs.MaxPath)
             {
                 sb.Append("a");
             }
 
-            DirectoryInfo dir = new DirectoryInfo(sb.ToString());
-
-            Assert.Throws<PathTooLongException>(() => dir.Create());
+            Assert.Throws<PathTooLongException>(() => new DirectoryInfo(sb.ToString()).Create());
         }
 
         [Fact]
         public void PathJustTooLong()
         {
             StringBuilder sb = new StringBuilder(TestDirectory + Path.DirectorySeparatorChar);
-            while (sb.Length < 248)
+            while (sb.Length < IOInputs.MaxDirectory + 1)
             {
                 sb.Append("a");
             }
 
-            DirectoryInfo dir = new DirectoryInfo(sb.ToString());
-
-            Assert.Throws<PathTooLongException>(() => dir.Create());
+            Assert.Throws<PathTooLongException>(() => new DirectoryInfo(sb.ToString()).Create());
         }
 
         [Fact]
@@ -114,6 +110,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // colon valid filename char on Unix
         public void CreateColon()
         {
             Assert.Throws<ArgumentException>(() => new DirectoryInfo(":"));

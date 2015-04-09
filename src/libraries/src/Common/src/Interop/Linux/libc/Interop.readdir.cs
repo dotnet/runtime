@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern IntPtr readdir(IntPtr dirp);
+        internal static extern IntPtr readdir(SafeDirHandle dirp);
 
         internal static unsafe DType GetDirEntType(IntPtr dirEnt)
         {

@@ -195,7 +195,7 @@ public class Directory_GetFileSystemEntries_str_str
             iCountTestcases++;
             try
             {
-                String strTempDir = "..ab ab.. .. abc..d\abc..";
+                String strTempDir = Path.Combine("..ab ab.. .. abc..d", "abc..");
                 Directory.GetFileSystemEntries(dirName, strTempDir);
                 iCountErrors++;
                 printerr("Error_144003! Expected exception not thrown");
@@ -433,7 +433,7 @@ public class Directory_GetFileSystemEntries_str_str
             strArr = Directory.GetFileSystemEntries(dir2.Name, "*BB*");
 
             iCountTestcases++;
-            if (strArr.Length != 2)
+            if (strArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + strArr.Length);
@@ -441,11 +441,14 @@ public class Directory_GetFileSystemEntries_str_str
             for (int iLoop = 0; iLoop < strArr.Length; iLoop++)
                 strArr[iLoop] = Path.GetFileName(strArr[iLoop]);
 
-            iCountTestcases++;
-            if (Array.IndexOf(strArr, "aaabbcc") < 0)
+            if (!Interop.IsLinux) // Linux is case-sensitive
             {
-                iCountErrors++;
-                printerr("Error_956yb! Incorrect name==" + strArr[0]);
+                iCountTestcases++;
+                if (Array.IndexOf(strArr, "aaabbcc") < 0)
+                {
+                    iCountErrors++;
+                    printerr("Error_956yb! Incorrect name==" + strArr[0]);
+                }
             }
             iCountTestcases++;
             if (Array.IndexOf(strArr, "AAABB") < 0)

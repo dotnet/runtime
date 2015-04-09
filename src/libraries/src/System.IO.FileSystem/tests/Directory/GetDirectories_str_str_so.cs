@@ -312,8 +312,8 @@ public class Directory_GetDirectories_str_str_so
             //characters. The same for searchPattern parm as well
             try
             {
-                String[] invalidValuesForPath = { "", " ", ">" };
-                String[] invalidValuesForSearch = { "..", @"..\" };
+                String[] invalidValuesForPath = Interop.IsWindows ? new[]{ "", " ", ">" } : new[]{ "", "\0" };
+                String[] invalidValuesForSearch = { "..", @".." + Path.DirectorySeparatorChar };
                 CheckException<ArgumentNullException>(delegate { dirs = Directory.GetDirectories(null, "*", SearchOption.TopDirectoryOnly); }, "Err_347g! worng exception thrown");
                 CheckException<ArgumentNullException>(delegate { dirs = Directory.GetDirectories(Directory.GetCurrentDirectory(), null, SearchOption.TopDirectoryOnly); }, "Err_326pgt! worng exception thrown");
                 CheckException<ArgumentOutOfRangeException>(delegate { dirs = Directory.GetDirectories(Directory.GetCurrentDirectory(), "*", (SearchOption)100); }, "Err_589kvu! worng exception thrown - see bug #386545");

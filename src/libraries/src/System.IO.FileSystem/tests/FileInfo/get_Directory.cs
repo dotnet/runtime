@@ -59,14 +59,17 @@ public class FileInfo_get_Directory
                 printerr("Error_78288! Incorrect name==" + dir2.FullName);
             }
 
-            // [] UNC share
-            fil2 = new FileInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
-            dir2 = fil2.Directory;
-            iCountTestcases++;
-            if (!dir2.FullName.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory")))
+            if (Interop.IsWindows) // UNC shares
             {
-                iCountErrors++;
-                printerr("Error_67y8b! Incorrect name==" + dir2.FullName);
+                // [] UNC share
+                fil2 = new FileInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
+                dir2 = fil2.Directory;
+                iCountTestcases++;
+                if (!dir2.FullName.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory")))
+                {
+                    iCountErrors++;
+                    printerr("Error_67y8b! Incorrect name==" + dir2.FullName);
+                }
             }
 
             // [] 

@@ -29,6 +29,11 @@ public class DirectoryInfo_GetSetTimes
 
         foreach (TimeProperty timeProperty in Enum.GetValues(typeof(TimeProperty)))
         {
+            if (!Interop.IsWindows && timeProperty == TimeProperty.CreationTime) // roundtripping birthtime not supported on Unix
+            {
+                continue;
+            }
+
             foreach (DateTimeKind kind in Enum.GetValues(typeof(DateTimeKind)))
             {
                 DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, kind);

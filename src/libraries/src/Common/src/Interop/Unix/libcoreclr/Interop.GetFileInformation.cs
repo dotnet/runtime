@@ -31,6 +31,7 @@ internal static partial class Interop
             internal const int S_IFIFO = 0x1000;
             internal const int S_IFDIR = 0x4000;
             internal const int S_IFREG = 0x8000;
+            internal const int S_IFLNK = 0xA000;
         }
 
         [Flags]

@@ -82,14 +82,14 @@ public class Directory_GetDirectories_str
             }
             //-----------------------------------------------------------------
 
-            // [] ArgumentException for all whitespace
+            // [] ArgumentException for invalid path
             //-----------------------------------------------------------------
             strLoc = "Loc_1190x";
 
             iCountTestcases++;
             try
             {
-                Directory.GetDirectories("*");
+                Directory.GetDirectories("\0");
                 iCountErrors++;
                 printerr("Error_2198y! Expected exception not thrown");
             }
@@ -263,7 +263,7 @@ public class Directory_GetDirectories_str
 
             strLoc = "Loc_48yg7";
 
-            dirArr = dir2.GetDirectories("T*st*d*2");
+            dirArr = dir2.GetDirectories("T*st*D*2");
             iCountTestcases++;
             if (dirArr.Length != 2)
             {
@@ -279,7 +279,7 @@ public class Directory_GetDirectories_str
 
             dirArr = dir2.GetDirectories("*BB*");
             iCountTestcases++;
-            if (dirArr.Length != 2)
+            if (dirArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of directories==" + dirArr.Length);
@@ -295,11 +295,15 @@ public class Directory_GetDirectories_str
                 iCountErrors++;
                 printerr("Error_956yb! Incorrect name==" + dirArr[0]);
             }
-            iCountTestcases++;
-            if (Array.IndexOf(names, "aaabbcc") < 0)
+
+            if (!Interop.IsLinux) // linux is case-sensitive
             {
-                iCountErrors++;
-                printerr("Error_48yg7! Incorrect name==" + dirArr[1]);
+                iCountTestcases++;
+                if (Array.IndexOf(names, "aaabbcc") < 0)
+                {
+                    iCountErrors++;
+                    printerr("Error_48yg7! Incorrect name==" + dirArr[1]);
+                }
             }
 
             // [] Should not search on fullpath

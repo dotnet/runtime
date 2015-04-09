@@ -30,12 +30,13 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
-        public void NonExistantDirectories()
+        public void NonExistentDirectories()
         {
             Assert.False(new DirectoryInfo("Da drar vi til fjells").Exists);
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // drive labels
         public void BadDriveLetterFormat()
         {
             Assert.Throws<NotSupportedException>(() => new DirectoryInfo("xx:\\"));
@@ -44,16 +45,12 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void PathTooLong()
         {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 500; i++)
-            {
-                sb.Append(i);
-            }
-
-            Assert.Throws<PathTooLongException>(() => new DirectoryInfo(sb.ToString()));
+            string s = new string('s', IOInputs.MaxPath + 1);
+            Assert.Throws<PathTooLongException>(() => new DirectoryInfo(s));
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)] // testing case-insensitivity
         public void CaseInsensitivity()
         {
             Assert.True(new DirectoryInfo(TestDirectory.ToUpperInvariant()).Exists);

@@ -36,7 +36,7 @@ public class Directory_Co5736SetCurrentDirectory_dir
             //Code coverage
             try
             {
-                Directory.SetCurrentDirectory(new String('a', 1000));
+                Directory.SetCurrentDirectory(new String('a', IOInputs.MaxPath+1));
                 iCountErrors++;
                 Console.WriteLine("Err_34tgs! No exception thrown");
             }

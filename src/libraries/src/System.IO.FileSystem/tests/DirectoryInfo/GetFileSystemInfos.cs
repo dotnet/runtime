@@ -86,6 +86,11 @@ public class DirectoryInfo_GetFileSystemInfos
             int i = 0;
             foreach (FileSystemInfo fse in fsArr)
                 names[i++] = fse.Name;
+            
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
 
             iCountTestcases++;
             if (Array.IndexOf(names, "TestDir1") < 0)

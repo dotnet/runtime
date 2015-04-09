@@ -29,6 +29,11 @@ public class FileInfo_GetSetTimes
         
         foreach(TimeProperty timeProperty in Enum.GetValues(typeof(TimeProperty)))
         {
+            if (Interop.IsLinux && timeProperty == TimeProperty.CreationTime) // birthtime not supported on Linux
+            {
+                continue;
+            }
+
             foreach (DateTimeKind kind in  Enum.GetValues(typeof(DateTimeKind)))
             {
                 DateTime dt = new DateTime(2014, 12, 1, 12, 0, 0, kind);

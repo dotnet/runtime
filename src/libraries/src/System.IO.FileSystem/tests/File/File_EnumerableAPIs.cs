@@ -261,13 +261,16 @@ namespace EnumerableTests
             String nullFileName = null;
             String emptyFileName1 = "";
             String emptyFileName2 = " ";
-            String longPath = new String('a', 240) + @"\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\test.txt";
+            String longPath = Path.Combine(new String('a', IOInputs.MaxDirectory), "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "test.txt");
 
             String notExistsFileName = null;
-            String unusedDrive = EnumerableUtils.GetUnusedDrive();
-            if (unusedDrive != null)
+            if (Interop.IsWindows) // drive labels
             {
-                notExistsFileName = Path.Combine(unusedDrive, @"temp\notExists\temp.txt"); // just skip otherwise
+                String unusedDrive = EnumerableUtils.GetUnusedDrive();
+                if (unusedDrive != null)
+                {
+                    notExistsFileName = Path.Combine(unusedDrive, Path.Combine("temp", "notExists", "temp.txt")); // just skip otherwise
+                }
             }
             String[] lines = { "test line 1", "test line 2" };
             IEnumerable<String> contents = (IEnumerable<String>)lines;

@@ -51,31 +51,34 @@ public class DirectoryInfo_get_Root
                 printerr("Error_69y7b! Unexpected parent==" + dir2.FullName);
             }
 
-            // [] Get root of \Directory
-
-            strLoc = "Loc_98ygg";
-
-            dir2 = new DirectoryInfo(Path.DirectorySeparatorChar + Path.Combine("Machine", "Test")).Root;
-            str2 = dir2.FullName;
-            iCountTestcases++;
-            String root = Path.GetPathRoot(Directory.GetCurrentDirectory());
-            if (!str2.Equals(root))
+            if (Interop.IsWindows) // UNC shares
             {
-                iCountErrors++;
-                printerr("Error_91y7b! Unexpected parent==" + str2);
-            }
+                // [] Get root of \Directory
 
-            // [] Get root of UNC share
+                strLoc = "Loc_98ygg";
 
-            strLoc = "Loc_yg7bk";
+                dir2 = new DirectoryInfo(Path.DirectorySeparatorChar + Path.Combine("Machine", "Test")).Root;
+                str2 = dir2.FullName;
+                iCountTestcases++;
+                String root = Path.GetPathRoot(Directory.GetCurrentDirectory());
+                if (!str2.Equals(root))
+                {
+                    iCountErrors++;
+                    printerr("Error_91y7b! Unexpected parent==" + str2);
+                }
 
-            dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")).Root;
-            str2 = dir2.FullName;
-            iCountTestcases++;
-            if (!str2.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")))
-            {
-                iCountErrors++;
-                printerr("Error_4y7gb! Unexpected parent==" + dir2.FullName);
+                // [] Get root of UNC share
+
+                strLoc = "Loc_yg7bk";
+
+                dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")).Root;
+                str2 = dir2.FullName;
+                iCountTestcases++;
+                if (!str2.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test")))
+                {
+                    iCountErrors++;
+                    printerr("Error_4y7gb! Unexpected parent==" + dir2.FullName);
+                }
             }
 
             // [] get root of subdirectories ending with \
@@ -103,17 +106,20 @@ public class DirectoryInfo_get_Root
             }
 
 
-            // [] Get root of nested subdirs on UNC share
-
-            strLoc = "Loc_y7t98";
-
-            dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1", "Test2", "Test3")).Root;
-            str2 = dir2.FullName;
-            iCountTestcases++;
-            if (!str2.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1")))
+            if (Interop.IsWindows) // UNC shares
             {
-                iCountErrors++;
-                printerr("Error_69929! Unexpected parent==" + str2);
+                // [] Get root of nested subdirs on UNC share
+
+                strLoc = "Loc_y7t98";
+
+                dir2 = new DirectoryInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1", "Test2", "Test3")).Root;
+                str2 = dir2.FullName;
+                iCountTestcases++;
+                if (!str2.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Test1")))
+                {
+                    iCountErrors++;
+                    printerr("Error_69929! Unexpected parent==" + str2);
+                }
             }
 
             // [] Include ".." and "." in directory string

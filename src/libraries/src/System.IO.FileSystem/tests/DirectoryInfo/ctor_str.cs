@@ -44,6 +44,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // drive labels
         public void CDriveCase()
         {
             DirectoryInfo dir = new DirectoryInfo("c:\\");
@@ -71,6 +72,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // UNC shares
         public void NetworkShare()
         {
             string dirName = new string(Path.DirectorySeparatorChar, 2) + Path.Combine("contoso", "amusement", "device");

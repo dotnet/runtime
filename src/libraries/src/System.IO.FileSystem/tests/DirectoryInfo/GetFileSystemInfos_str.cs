@@ -93,7 +93,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
             iCountTestcases++;
             try
             {
-                dir2.GetFileSystemInfos("..ab ab.. .. abc..d\abc..");
+                dir2.GetFileSystemInfos(Path.Combine("..ab ab.. .. abc..d", "abc.."));
                 iCountErrors++;
                 printerr("Error_2198y! Expected exception not thrown");
             }
@@ -153,6 +153,12 @@ public class DirectoryInfo_GetFileSystemInfos_str
             int i = 0;
             foreach (FileSystemInfo f in fsArr)
                 names[i++] = f.Name;
+            
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
+
             iCountTestcases++;
             if (Array.IndexOf(names, "TestFile1") < 0)
             {
@@ -186,6 +192,12 @@ public class DirectoryInfo_GetFileSystemInfos_str
             i = 0;
             foreach (FileSystemInfo f in fsArr)
                 names[i++] = f.Name;
+            
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
+
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1Dir1") < 0)
             {
@@ -318,7 +330,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
 
             fsArr = dir2.GetFileSystemInfos("*BB*");
             iCountTestcases++;
-            if (fsArr.Length != 2)
+            if (fsArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + fsArr.Length);
@@ -328,13 +340,17 @@ public class DirectoryInfo_GetFileSystemInfos_str
             foreach (FileSystemInfo fs in fsArr)
                 names[i++] = fs.Name;
 
-            iCountTestcases++;
-            if (Array.IndexOf(names, "aaabbcc") < 0)
+            if (!Interop.IsLinux) // Linux is case-sensitive
             {
-                iCountErrors++;
-                printerr("Error_956yb! Incorrect name==" + fsArr[0]);
-                foreach (FileSystemInfo s in fsArr)
-                    Console.WriteLine(s.Name);
+
+                iCountTestcases++;
+                if (Array.IndexOf(names, "aaabbcc") < 0)
+                {
+                    iCountErrors++;
+                    printerr("Error_956yb! Incorrect name==" + fsArr[0]);
+                    foreach (FileSystemInfo s in fsArr)
+                        Console.WriteLine(s.Name);
+                }
             }
             iCountTestcases++;
             if (Array.IndexOf(names, "AAABB") < 0)

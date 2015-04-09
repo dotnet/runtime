@@ -98,7 +98,7 @@ public class File_SetAttributes_str_attrs
 #if !TEST_WINRT
             iCountTestcases++;
             File.SetAttributes(fileName, FileAttributes.Hidden);
-            if ((File.GetAttributes(fileName) & FileAttributes.Hidden) == 0)
+            if ((File.GetAttributes(fileName) & FileAttributes.Hidden) == 0 && Interop.IsWindows) // setting Hidden not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0010! Hidden not set");
@@ -107,7 +107,7 @@ public class File_SetAttributes_str_attrs
             iCountTestcases++;
             file1.Refresh();
             File.SetAttributes(fileName, FileAttributes.System);
-            if ((File.GetAttributes(fileName) & FileAttributes.System) == 0)
+            if ((File.GetAttributes(fileName) & FileAttributes.System) == 0 && Interop.IsWindows) // setting System not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0011! System not set");
@@ -134,7 +134,7 @@ public class File_SetAttributes_str_attrs
             iCountTestcases++;
             file1.Refresh();
             File.SetAttributes(fileName, FileAttributes.Temporary);
-            if ((File.GetAttributes(fileName) & FileAttributes.Temporary) == 0)
+            if ((File.GetAttributes(fileName) & FileAttributes.Temporary) == 0 && Interop.IsWindows) // setting Temporary not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0013! Temporary not set");
@@ -142,7 +142,7 @@ public class File_SetAttributes_str_attrs
 
             File.SetAttributes(fileName, FileAttributes.Archive);
             file1.Refresh();
-            File.SetAttributes(fileName, FileAttributes.ReadOnly | file1.Attributes);
+            File.SetAttributes(fileName, FileAttributes.ReadOnly | FileAttributes.Archive); // setting Archive not supported on Unix
             file1.Refresh();
             iCountTestcases++;
             if ((File.GetAttributes(fileName) & FileAttributes.ReadOnly) != FileAttributes.ReadOnly)
@@ -152,7 +152,7 @@ public class File_SetAttributes_str_attrs
             }
 
             iCountTestcases++;
-            if ((File.GetAttributes(fileName) & FileAttributes.Archive) != FileAttributes.Archive)
+            if ((File.GetAttributes(fileName) & FileAttributes.Archive) != FileAttributes.Archive && Interop.IsWindows) // setting Archive not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0021! Archive attribute not set");
