@@ -11,7 +11,6 @@ using System.Reflection;
 
 namespace System.Xml.Serialization
 {
-
     /// <include file='doc\XmlChoiceIdentifierAttribute.uex' path='docs/doc[@for="XmlChoiceIdentifierAttribute"]/*' />
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
