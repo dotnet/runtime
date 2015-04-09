@@ -63,8 +63,8 @@ namespace System.IO
         //
         internal static void CheckSearchPattern(String searchPattern)
         {
-            int index;
-            while ((index = searchPattern.IndexOf("..", StringComparison.Ordinal)) != -1)
+            int index = 0;
+            while ((index = searchPattern.IndexOf("..", index, StringComparison.Ordinal)) != -1)
             {
                 if (index + 2 == searchPattern.Length) // Terminal ".." . Files names cannot end in ".."
                     throw new ArgumentException(SR.Arg_InvalidSearchPattern);
@@ -72,7 +72,7 @@ namespace System.IO
                 if (IsDirectorySeparator(searchPattern[index + 2]))
                     throw new ArgumentException(SR.Arg_InvalidSearchPattern);
 
-                searchPattern = searchPattern.Substring(index + 2);
+                index += 2;
             }
         }
 
