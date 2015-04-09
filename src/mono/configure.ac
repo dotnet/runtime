@@ -628,17 +628,6 @@ fi
 AC_SUBST([mcs_topdir])
 AC_SUBST([mcs_topdir_from_srcdir])
 
-# Where's the 'olive' source tree?
-if test -d $srcdir/olive; then
-  olivedir=olive
-else
-  olivedir=../olive
-fi
-
-if test -d $srcdir/$olivedir; then
-olive_topdir='$(top_srcdir)/'$olivedir
-fi
-
 # gettext: prepare the translation directories. 
 # we do not configure the full gettext, as we consume it dynamically from C#
 AM_PO_SUBDIRS
@@ -4025,22 +4014,6 @@ fi
       echo "BCL_OPTIMIZE = 1" >> $srcdir/$mcsdir/build/config.make
     fi
 
-  fi
-
-  # if we have an olive folder, override the default settings
-  if test -d $olivedir; then
-
-    if test x$cross_compiling = xno && test x$enable_olive_build != xno; then
-
-      test -w $srcdir/$olivedir/build || chmod +w $srcdir/$olivedir/build
-
-      echo "prefix=$prefix" > $srcdir/$olivedir/build/config.make
-      echo "exec_prefix=$exec_prefix" >> $srcdir/$olivedir/build/config.make
-      echo 'mono_libdir=${exec_prefix}/lib' >> $srcdir/$olivedir/build/config.make
-      echo 'MCS_FLAGS = $(PLATFORM_DEBUG_FLAGS)' >> $srcdir/$olivedir/build/config.make
-      echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $srcdir/$olivedir/build/config.make
-      echo "MONO_VERSION = $myver" >> $srcdir/$olivedir/build/config.make
-    fi
   fi
 
 )
