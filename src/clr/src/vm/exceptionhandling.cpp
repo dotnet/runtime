@@ -4657,8 +4657,8 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
         {
             if (ex->ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT)   
             {
-                // If this is breakpoint context is set up to point to an instuction after the break instuction.
-                // But debugger expectes to see context that points to the break instruction, that's why we correct it.
+                // If this is breakpoint context, it is set up to point to an instruction after the break instruction.
+                // But debugger expects to see context that points to the break instruction, that's why we correct it.
                 SetIP(&ex->ContextRecord, GetIP(&ex->ContextRecord) - CORDbg_BREAK_INSTRUCTION_SIZE);
                 ex->ExceptionRecord.ExceptionAddress = (void *)GetIP(&ex->ContextRecord);
             }
@@ -4668,11 +4668,11 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
                                                           ex->ExceptionRecord.ExceptionCode,
                                                           pThread))
             {
-                return;
-                // Ideally we'd like to put 
-                //   RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
-                // here, but RtlRestoreContext is not completely reliable for debugging on Linux (doesn't restore EFlags)
-                // that's why we'll just return. Read more in signal.cpp/common_signal_handler .
+                RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
+            } 
+            else 
+            {
+                _ASSERTE(!"Looks like a random breakpoint/trap that was not prepared by the EE debugger");
             }
         }
     }
