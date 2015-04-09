@@ -123,14 +123,6 @@ does not exist in the environment.
 --*/
 void MiscUnsetenv(const char *name);
 
-/*++
-Function:
-  TIMECleanUpTransitionDates
-
-Free the memory allocated in TIMEGetStdDstDates.
---*/
-void TIMECleanUpTransitionDates();
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -86,8 +86,6 @@ check_type_size(prwatch_t PRWATCH_T)
 set(CMAKE_EXTRA_INCLUDE_FILE)
 check_type_size(off_t SIZEOF_OFF_T)
 
-check_cxx_symbol_exists(tzname "time.h" HAVE_TZNAME)
-check_cxx_symbol_exists(timezone "time.h" HAVE_TIMEZONE_VAR)
 check_cxx_symbol_exists(SYS_yield sys/syscall.h HAVE_YIELD_SYSCALL)
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)
 check_cxx_symbol_exists(CHAR_BIT sys/limits.h HAVE_CHAR_BIT)
