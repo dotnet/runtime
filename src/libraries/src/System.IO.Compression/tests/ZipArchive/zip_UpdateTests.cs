@@ -113,7 +113,7 @@ namespace System.IO.Compression.Test
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
-                String fileName = ZipTest.zmodified("overwrite\\first.txt");
+                String fileName = ZipTest.zmodified(Path.Combine("overwrite", "first.txt"));
                 ZipArchiveEntry e = archive.GetEntry("first.txt");
 
                 var file = FileData.GetFile(fileName);
@@ -140,7 +140,7 @@ namespace System.IO.Compression.Test
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
-                await updateArchive(archive, ZipTest.zmodified("addFile\\added.txt"), "added.txt");
+                await updateArchive(archive, ZipTest.zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
             }
 
             ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified ("addFile"), ZipArchiveMode.Read, false, false);
@@ -152,7 +152,7 @@ namespace System.IO.Compression.Test
             {
                 var x = archive.Entries;
 
-                await updateArchive(archive, ZipTest.zmodified("addFile\\added.txt"), "added.txt");
+                await updateArchive(archive, ZipTest.zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
             }
 
             ZipTest.IsZipSameAsDir(testArchive, ZipTest.zmodified("addFile"), ZipArchiveMode.Read, false, false);
@@ -163,7 +163,7 @@ namespace System.IO.Compression.Test
 
             using (ZipArchive archive = new ZipArchive(testArchive, ZipArchiveMode.Update, true))
             {
-                await updateArchive(archive, ZipTest.zmodified("addFile\\added.txt"), "added.txt");
+                await updateArchive(archive, ZipTest.zmodified(Path.Combine("addFile", "added.txt")), "added.txt");
                 
                 var x = archive.Entries;
             }

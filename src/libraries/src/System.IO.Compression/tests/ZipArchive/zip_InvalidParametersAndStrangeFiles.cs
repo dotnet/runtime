@@ -167,21 +167,21 @@ namespace System.IO.Compression.Test
         public static async Task StrangeFiles1()
         {
             ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(
-                 ZipTest.strange("extradata\\extraDataLHandCDentryAndArchiveComments.zip")), ZipTest.zfolder("verysmall"), ZipArchiveMode.Update, false, false);
+                 ZipTest.strange(Path.Combine("extradata", "extraDataLHandCDentryAndArchiveComments.zip"))), ZipTest.zfolder("verysmall"), ZipArchiveMode.Update, false, false);
         }
 
         [Fact]
         public static async Task StrangeFiles2()
         {
             ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(
-                 ZipTest.strange("extradata\\extraDataThenZip64.zip")), ZipTest.zfolder("verysmall"), ZipArchiveMode.Update, false, false);
+                 ZipTest.strange(Path.Combine("extradata", "extraDataThenZip64.zip"))), ZipTest.zfolder("verysmall"), ZipArchiveMode.Update, false, false);
         }
 
         [Fact]
         public static async Task StrangeFiles3()
         {
             ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(
-                 ZipTest.strange("extradata\\zip64ThenExtraData.zip")), ZipTest.zfolder("verysmall"), ZipArchiveMode.Update, false, false);
+                 ZipTest.strange(Path.Combine("extradata", "zip64ThenExtraData.zip"))), ZipTest.zfolder("verysmall"), ZipArchiveMode.Update, false, false);
         }
 
         [Fact]

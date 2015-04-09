@@ -12,12 +12,12 @@ namespace System.IO.Compression.Test
     {
         #region filename helpers
 
-        public static String bad(String filename) { return Path.Combine("ZipTestData\\badzipfiles", filename); }
-        public static String compat(String filename) { return Path.Combine("ZipTestData\\compat", filename); }
-        public static String strange(String filename) { return Path.Combine("ZipTestData\\StrangeZipFiles", filename); }
-        public static String zfile(String filename) { return Path.Combine("ZipTestData\\refzipfiles", filename); }
-        public static String zfolder(String filename) { return Path.Combine("ZipTestData\\refzipfolders", filename); }
-        public static String zmodified(String filename) { return Path.Combine("ZipTestData\\modified", filename); }
+        public static String bad(String filename) { return Path.Combine("ZipTestData", "badzipfiles", filename); }
+        public static String compat(String filename) { return Path.Combine("ZipTestData", "compat", filename); }
+        public static String strange(String filename) { return Path.Combine("ZipTestData", "StrangeZipFiles", filename); }
+        public static String zfile(String filename) { return Path.Combine("ZipTestData", "refzipfiles", filename); }
+        public static String zfolder(String filename) { return Path.Combine("ZipTestData", "refzipfolders", filename); }
+        public static String zmodified(String filename) { return Path.Combine("ZipTestData", "modified", filename); }
  
         #endregion
 
