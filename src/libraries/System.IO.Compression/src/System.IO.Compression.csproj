@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Windows_Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <AssemblyName>System.IO.Compression</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{5471BFE8-8071-466F-838E-5ADAA779E742}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="System\IO\Compression\BlockType.cs" />
+    <Compile Include="System\IO\Compression\CompressionLevel.cs" />
+    <Compile Include="System\IO\Compression\CompressionMode.cs" />
+    <Compile Include="System\IO\Compression\CopyEncoder.cs" />
+    <Compile Include="System\IO\Compression\Crc32Helper.cs" />
+    <Compile Include="System\IO\Compression\DeflateInput.cs" />
+    <Compile Include="System\IO\Compression\DeflaterManaged.cs" />
+    <Compile Include="System\IO\Compression\DeflaterZLib.cs" />
+    <Compile Include="System\IO\Compression\DeflateStream.cs" />
+    <Compile Include="System\IO\Compression\FastEncoder.cs" />
+    <Compile Include="System\IO\Compression\FastEncoderStatics.cs" />
+    <Compile Include="System\IO\Compression\FastEncoderWindow.cs" />
+    <Compile Include="System\IO\Compression\FileFormats.cs" />
+    <Compile Include="System\IO\Compression\GZipDecoder.cs" />
+    <Compile Include="System\IO\Compression\GZipStream.cs" />
+    <Compile Include="System\IO\Compression\GZipUtils.cs" />
+    <Compile Include="System\IO\Compression\HuffmanTree.cs" />
+    <Compile Include="System\IO\Compression\IDeflater.cs" />
+    <Compile Include="System\IO\Compression\Inflater.cs" />
+    <Compile Include="System\IO\Compression\InflaterState.cs" />
+    <Compile Include="System\IO\Compression\InputBuffer.cs" />
+    <Compile Include="System\IO\Compression\Match.cs" />
+    <Compile Include="System\IO\Compression\MatchState.cs" />
+    <Compile Include="System\IO\Compression\OutputBuffer.cs" />
+    <Compile Include="System\IO\Compression\OutputWindow.cs" />
+    <Compile Include="System\IO\Compression\ZipArchive.cs" />
+    <Compile Include="System\IO\Compression\ZipArchiveEntry.cs" />
+    <Compile Include="System\IO\Compression\ZipArchiveMode.cs" />
+    <Compile Include="System\IO\Compression\ZipBlocks.cs" />
+    <Compile Include="System\IO\Compression\ZipCustomStreams.cs" />
+    <Compile Include="System\IO\Compression\ZipHelper.cs" />
+    <Compile Include="System\IO\Compression\ZipVersionNeededValues.cs" />
+    <Compile Include="System\IO\Compression\ZLibException.cs" />
+    <Compile Include="System\IO\Compression\ZLibNative.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Interop\Interop.zlib.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
