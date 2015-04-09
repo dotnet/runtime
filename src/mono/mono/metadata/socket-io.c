@@ -633,8 +633,8 @@ static gint32 get_family_hint(void)
 		MonoVTable *vtable;
 
 		socket_class = mono_class_from_name (get_socket_assembly (), "System.Net.Sockets", "Socket");
-		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4Supported");
-		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6Supported");
+		ipv4_field = mono_class_get_field_from_name (socket_class, "ipv4_supported");
+		ipv6_field = mono_class_get_field_from_name (socket_class, "ipv6_supported");
 		vtable = mono_class_vtable (mono_domain_get (), socket_class);
 		g_assert (vtable);
 		mono_runtime_class_init (vtable);
@@ -1406,7 +1406,7 @@ gint32 ves_icall_System_Net_Sockets_Socket_Receive_array_internal(SOCKET sock, M
 	return(recv);
 }
 
-gint32 ves_icall_System_Net_Sockets_Socket_RecvFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr, gint32 *error)
+gint32 ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal(SOCKET sock, MonoArray *buffer, gint32 offset, gint32 count, gint32 flags, MonoObject **sockaddr, gint32 *error)
 {
 	int ret;
 	guchar *buf;
@@ -1573,7 +1573,7 @@ static SOCKET Socket_to_SOCKET(MonoObject *sockobj)
 	MonoSafeHandle *safe_handle;
 	MonoClassField *field;
 	
-	field = mono_class_get_field_from_name (sockobj->vtable->klass, "socket");
+	field = mono_class_get_field_from_name (sockobj->vtable->klass, "safe_handle");
 	safe_handle = ((MonoSafeHandle*) (*(gpointer *)(((char *)sockobj)+field->offset)));
 
 	if (safe_handle == NULL)
@@ -2198,7 +2198,7 @@ void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
 }
 
 gint
-ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
+ves_icall_System_Net_Sockets_Socket_IOControl_internal (SOCKET sock, gint32 code,
 					      MonoArray *input,
 					      MonoArray *output, gint32 *error)
 {
@@ -2467,7 +2467,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_
 }
 
 gboolean
-ves_icall_System_Net_Sockets_Socket_SendFile (SOCKET sock, MonoString *filename, MonoArray *pre_buffer, MonoArray *post_buffer, gint flags)
+ves_icall_System_Net_Sockets_Socket_SendFile_internal (SOCKET sock, MonoString *filename, MonoArray *pre_buffer, MonoArray *post_buffer, gint flags)
 {
 	HANDLE file;
 	gint32 error;

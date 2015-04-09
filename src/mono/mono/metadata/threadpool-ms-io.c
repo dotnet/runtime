@@ -1062,43 +1062,39 @@ ensure_cleanedup (void)
 	io_status = STATUS_CLEANED_UP;
 }
 
+static gboolean
+is_socket_async_callback (MonoImage *system_image, MonoClass *class)
+{
+	MonoClass *socket_async_callback_class = NULL;
+
+	socket_async_callback_class = mono_class_from_name (system_image, "System.Net.Sockets", "SocketAsyncCallback");
+	g_assert (socket_async_callback_class);
+
+	return class == socket_async_callback_class;
+}
+
+static gboolean
+is_async_read_handler (MonoImage *system_image, MonoClass *class)
+{
+	MonoClass *process_class = NULL;
+
+	process_class = mono_class_from_name (system_image, "System.Diagnostics", "Process");
+	g_assert (process_class);
+
+	return class->nested_in && class->nested_in == process_class && strcmp (class->name, "AsyncReadHandler") == 0;
+}
+
 gboolean
 mono_threadpool_ms_is_io (MonoObject *target, MonoObject *state)
 {
-	static MonoClass *socket_class = NULL;
-	static MonoClass *socket_async_class = NULL;
-	static MonoClass *process_class = NULL;
-	static MonoClass *async_read_handler_class = NULL;
-	MonoClass *class;
+	MonoImage *system_image;
 	MonoSocketAsyncResult *sockares;
 
-	if (!mono_defaults.system)
-		mono_defaults.system = mono_image_loaded ("System");
-	if (!mono_defaults.system)
+	system_image = mono_image_loaded ("System");
+	if (!system_image)
 		return FALSE;
-	g_assert (mono_defaults.system);
 
-	if (!socket_class)
-		socket_class = mono_class_from_name (mono_defaults.system, "System.Net.Sockets", "Socket");
-	g_assert (socket_class);
-
-	if (!process_class)
-		process_class = mono_class_from_name (mono_defaults.system, "System.Diagnostics", "Process");
-	g_assert (process_class);
-
-	class = target->vtable->klass;
-
-	if (!socket_async_class) {
-		if (class->nested_in && class->nested_in == socket_class && strcmp (class->name, "SocketAsyncCall") == 0)
-			socket_async_class = class;
-	}
-
-	if (!async_read_handler_class) {
-		if (class->nested_in && class->nested_in == process_class && strcmp (class->name, "AsyncReadHandler") == 0)
-			async_read_handler_class = class;
-	}
-
-	if (class != socket_async_class && class != async_read_handler_class)
+	if (!is_socket_async_callback (system_image, target->vtable->klass) && !is_async_read_handler (system_image, target->vtable->klass))
 		return FALSE;
 
 	sockares = (MonoSocketAsyncResult*) state;
@@ -1237,17 +1233,16 @@ mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
 void
 mono_threadpool_io_enqueue_socket_async_result (MonoDomain *domain, MonoSocketAsyncResult *sockares)
 {
-	static MonoClass *socket_runtime_work_item_class = NULL;
+	MonoImage *system_image;
+	MonoClass *socket_runtime_work_item_class;
 	MonoSocketRuntimeWorkItem *srwi;
 
 	g_assert (sockares);
 
-	if (!mono_defaults.system)
-		mono_defaults.system = mono_image_loaded ("System");
-	g_assert (mono_defaults.system);
+	system_image = mono_image_loaded ("System");
+	g_assert (system_image);
 
-	if (!socket_runtime_work_item_class)
-		socket_runtime_work_item_class = mono_class_from_name (mono_defaults.system, "System.Net.Sockets", "MonoSocketRuntimeWorkItem");
+	socket_runtime_work_item_class = mono_class_from_name (system_image, "System.Net.Sockets", "MonoSocketRuntimeWorkItem");
 	g_assert (socket_runtime_work_item_class);
 
 	srwi = (MonoSocketRuntimeWorkItem*) mono_object_new (domain, socket_runtime_work_item_class);
