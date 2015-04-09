@@ -307,7 +307,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PoolNonpagedBytes;
+                return _processInfo.PoolNonPagedBytes;
             }
         }
 

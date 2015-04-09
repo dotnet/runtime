@@ -15,205 +15,37 @@ namespace System.Diagnostics
     internal sealed class ProcessInfo
     {
         internal readonly List<ThreadInfo> _threadInfoList = new List<ThreadInfo>();
-        private int _basePriority;
-        private string _processName;
-        private int _processId;
-        private int _handleCount;
-        private long _poolPagedBytes;
-        private long _poolNonpagedBytes;
-        private long _virtualBytes;
-        private long _virtualBytesPeak;
-        private long _workingSetPeak;
-        private long _workingSet;
-        private long _pageFileBytesPeak;
-        private long _pageFileBytes;
-        private long _privateBytes;
-        private int _sessionId;
+        internal int BasePriority { get; set; }
+        internal string ProcessName { get; set; }
+        internal int ProcessId { get; set; }
+        internal int HandleCount { get; set; }
+        internal long PoolPagedBytes { get; set; }
+        internal long PoolNonPagedBytes { get; set; }
+        internal long VirtualBytes { get; set; }
+        internal long VirtualBytesPeak { get; set; }
+        internal long WorkingSetPeak { get; set; }
+        internal long WorkingSet { get; set; }
+        internal long PageFileBytesPeak { get; set; }
+        internal long PageFileBytes { get; set; }
+        internal long PrivateBytes { get; set; }
+        internal int SessionId { get; set; }
 
         internal ProcessInfo()
         {
-            _basePriority = 0;
-            _processName = "";
-            _processId = 0;
-            _handleCount = 0;
-            _poolPagedBytes = 0;
-            _poolNonpagedBytes = 0;
-            _virtualBytes = 0;
-            _virtualBytesPeak = 0;
-            _workingSet = 0;
-            _workingSetPeak = 0;
-            _pageFileBytes = 0;
-            _pageFileBytesPeak = 0;
-            _privateBytes = 0;
-            _sessionId = 0;
-        }
-
-        internal int BasePriority
-        {
-            get
-            {
-                return _basePriority;
-            }
-            set
-            {
-                _basePriority = value;
-            }
-        }
-
-        internal string ProcessName
-        {
-            get
-            {
-                return _processName;
-            }
-            set
-            {
-                _processName = value;
-            }
-        }
-
-        internal int ProcessId
-        {
-            get
-            {
-                return _processId;
-            }
-            set
-            {
-                _processId = value;
-            }
-        }
-
-        internal int HandleCount
-        {
-            get
-            {
-                return _handleCount;
-            }
-            set
-            {
-                _handleCount = value;
-            }
-        }
-
-        internal long PoolPagedBytes
-        {
-            get
-            {
-                return _poolPagedBytes;
-            }
-            set
-            {
-                _poolPagedBytes = value;
-            }
-        }
-        
-        internal long PoolNonpagedBytes
-        {
-            get
-            {
-                return _poolNonpagedBytes;
-            }
-            set
-            {
-                _poolPagedBytes = value;
-            }
-        }
-
-        internal long VirtualBytes
-        {
-            get
-            {
-                return _virtualBytes;
-            }
-            set
-            {
-                _virtualBytes = value;
-            }
-        }
-
-        internal long VirtualBytesPeak
-        {
-            get
-            {
-                return _virtualBytesPeak;
-            }
-            set
-            {
-                _virtualBytesPeak = value;
-            }
-        }
-
-        internal long WorkingSetPeak
-        {
-            get
-            {
-                return _workingSetPeak;
-            }
-            set
-            {
-                _workingSetPeak = value;
-            }
-        }
-
-        internal long WorkingSet
-        {
-            get
-            {
-                return _workingSet;
-            }
-            set
-            {
-                _workingSet = value;
-            }
-        }
-
-        internal long PageFileBytesPeak
-        {
-            get
-            {
-                return _pageFileBytesPeak;
-            }
-            set
-            {
-                _pageFileBytesPeak = value;
-            }
-        }
-
-        internal long PageFileBytes
-        {
-            get
-            {
-                return _pageFileBytes;
-            }
-            set
-            {
-                _pageFileBytes = value;
-            }
-        }
-
-        internal long PrivateBytes
-        {
-            get
-            {
-                return _privateBytes;
-            }
-            set
-            {
-                _privateBytes = value;
-            }
-        }
-        
-        internal int SessionId
-        {
-            get
-            {
-                return _sessionId;
-            }
-            set
-            {
-                _sessionId = value;
-            }
+            BasePriority = 0;
+            ProcessName = "";
+            ProcessId = 0;
+            HandleCount = 0;
+            PoolPagedBytes = 0;
+            PoolNonPagedBytes = 0;
+            VirtualBytes = 0;
+            VirtualBytesPeak = 0;
+            WorkingSet = 0;
+            WorkingSetPeak = 0;
+            PageFileBytes = 0;
+            PageFileBytesPeak = 0;
+            PrivateBytes = 0;
+            SessionId = 0;
         }
     }
 }
