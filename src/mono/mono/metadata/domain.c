@@ -600,9 +600,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	}
 	mono_defaults.corlib = mono_assembly_get_image (ass);
 
-	/* might be NULL if System.dll is not yet loaded */
-	mono_defaults.system = mono_image_loaded ("System");
-
 	mono_defaults.object_class = mono_class_from_name (
                 mono_defaults.corlib, "System", "Object");
 	g_assert (mono_defaults.object_class != 0);
