@@ -3122,6 +3122,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->gen_seq_points = debug_options.gen_seq_points_compact_data || debug_options.gen_seq_points_debug_data;
 	cfg->gen_seq_points_debug_data = debug_options.gen_seq_points_debug_data;
 
+#ifdef PLATFORM_ANDROID
+	if (cfg->method->wrapper_type != MONO_WRAPPER_NONE) {
+		/* FIXME: Why is this needed */
+		cfg->gen_seq_points = FALSE;
+		cfg->gen_seq_points_debug_data = FALSE;
+	}
+#endif
+
 	cfg->explicit_null_checks = debug_options.explicit_null_checks;
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
