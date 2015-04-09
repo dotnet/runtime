@@ -37,6 +37,7 @@
 #define SGEN_POINTER_TAG_4(p)		((void*)((mword)(p) | 4))
 #define SGEN_POINTER_UNTAG_4(p)		((void*)((mword)(p) & ~4))
 
+#define SGEN_POINTER_UNTAG_12(p)	((void*)((mword)(p) & ~3))
 #define SGEN_POINTER_UNTAG_24(p)	((void*)((mword)(p) & ~6))
 
 #define SGEN_POINTER_IS_TAGGED_ANY(p)	((mword)(p) & SGEN_TAGGED_POINTER_MASK)

@@ -34,13 +34,11 @@ void sgen_memgov_minor_collection_start (void);
 void sgen_memgov_minor_collection_end (void);
 
 void sgen_memgov_major_collection_start (void);
-void sgen_memgov_major_collection_end (void);
+void sgen_memgov_major_collection_end (gboolean forced);
 
 void sgen_memgov_collection_start (int generation);
 void sgen_memgov_collection_end (int generation, GGTimingInfo* info, int info_count);
 
-void sgen_register_major_sections_alloced (size_t num_sections);
-mword sgen_get_minor_collection_allowance (void);
 gboolean sgen_need_major_collection (mword space_needed);
 
 

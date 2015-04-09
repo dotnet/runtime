@@ -134,7 +134,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_MS_BLOCK_INFO_SORT: return "marksweep-block-info-sort";
 	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
 	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
-	case INTERNAL_MEM_WORKER_JOB_DATA: return "worker-job-data";
+	case INTERNAL_MEM_THREAD_POOL_JOB: return "thread-pool-job";
 	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
 	case INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE: return "old-bridge-hash-table";
 	case INTERNAL_MEM_OLD_BRIDGE_HASH_TABLE_ENTRY: return "old-bridge-hash-table-entry";
@@ -146,7 +146,6 @@ description_for_type (int type)
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE: return "bridge-alive-hash-table";
 	case INTERNAL_MEM_BRIDGE_ALIVE_HASH_TABLE_ENTRY: return "bridge-alive-hash-table-entry";
 	case INTERNAL_MEM_BRIDGE_DEBUG: return "bridge-debug";
-	case INTERNAL_MEM_JOB_QUEUE_ENTRY: return "job-queue-entry";
 	case INTERNAL_MEM_TOGGLEREF_DATA: return "toggleref-data";
 	case INTERNAL_MEM_CARDTABLE_MOD_UNION: return "cardtable-mod-union";
 	case INTERNAL_MEM_BINARY_PROTOCOL: return "binary-protocol";
