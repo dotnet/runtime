@@ -68,16 +68,11 @@ static int map_hw_reg_to_dwarf_reg [] = {
 	72, 73, 74, 75, 76, 77, 78, 79,
 };
 #elif defined (TARGET_X86)
-#if defined(__APPLE__) && !defined (TARGET_ANDROID)
 /*
- * LLVM seems to generate unwind info where esp is encoded as 5, and ebp as 4, ie see this line:
- *   def ESP : RegisterWithSubRegs<"esp", [SP]>, DwarfRegNum<[-2, 5, 4]>;
- * in lib/Target/X86/X86RegisterInfo.td in the llvm sources.
+ * ebp and esp are swapped:
+ * http://lists.cs.uiuc.edu/pipermail/lldb-dev/2014-January/003101.html
  */
 static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 5, 4, 6, 7, 8 };
-#else
-static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
-#endif
 /* + 1 is for IP */
 #define NUM_REGS X86_NREG + 1
 #define DWARF_DATA_ALIGN (-4)
