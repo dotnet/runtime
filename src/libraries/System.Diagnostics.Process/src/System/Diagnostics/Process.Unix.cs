@@ -129,7 +129,7 @@ namespace System.Diagnostics
 
                 int pri = 0;
                 int result = Interop.libc.getpriority(Interop.libc.PriorityWhich.PRIO_PROCESS, _processId, out pri);
-                if (result == -1)
+                if (result == 0)
                 {
                     throw new Win32Exception(); // match Windows exception
                 }

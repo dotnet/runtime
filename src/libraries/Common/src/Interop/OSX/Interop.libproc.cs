@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -100,7 +101,7 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct rusage_info_v3
         {
-            internal fixed ushort   ri_uuid[16];
+            internal fixed byte     ri_uuid[16];
             internal ulong          ri_user_time;
             internal ulong          ri_system_time;
             internal ulong          ri_pkg_idle_wkups;
@@ -142,16 +143,16 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct proc_threadinfo
         {
-            internal ulong pth_user_time;
-            internal ulong pth_system_time;
-            internal int pth_cpu_usage;
-            internal int pth_policy;
-            internal int pth_run_state;
-            internal int pth_flags;
-            internal int pth_sleep_time;
-            internal int pth_curpri;
-            internal int pth_priority;
-            internal int pth_maxpriority;
+            internal ulong      pth_user_time;
+            internal ulong      pth_system_time;
+            internal int        pth_cpu_usage;
+            internal int        pth_policy;
+            internal int        pth_run_state;
+            internal int        pth_flags;
+            internal int        pth_sleep_time;
+            internal int        pth_curpri;
+            internal int        pth_priority;
+            internal int        pth_maxpriority;
             internal fixed byte pth_name[MAXTHREADNAMESIZE];
         }
 
@@ -309,6 +310,7 @@ internal static partial class Interop
                 throw new ArgumentOutOfRangeException("pid");
             }
 
+            // Get the process information for the specified pid
             int size = Marshal.SizeOf<proc_taskallinfo>();
             proc_taskallinfo info = default(proc_taskallinfo);
             int result = proc_pidinfo(pid, PROC_PIDTASKALLINFO, 0, &info, size);
@@ -337,6 +339,7 @@ internal static partial class Interop
                 throw new ArgumentOutOfRangeException("thread");
             }
 
+            // Get the thread information for the specified thread in the specified process
             int size = Marshal.SizeOf<proc_threadinfo>();
             proc_threadinfo info = default(proc_threadinfo);
             int result = proc_pidinfo(pid, PROC_PIDTHREADINFO, (ulong)thread, &info, size);
@@ -376,6 +379,8 @@ internal static partial class Interop
                 }
             }
             while (result == Marshal.SizeOf<ulong>() * threadIds.Length);
+
+            Debug.Assert((result % Marshal.SizeOf<ulong>()) == 0);
 
             // Remove any extra elements
             Array.Resize<ulong>(ref threadIds, (int)(result / Marshal.SizeOf<ulong>()));
@@ -439,6 +444,8 @@ internal static partial class Interop
                 }
             }
             while (result == (fds.Length * Marshal.SizeOf<proc_fdinfo>()));
+
+            Debug.Assert((result % Marshal.SizeOf<proc_fdinfo>()) == 0);
 
             return fds;
         }
@@ -526,6 +533,8 @@ internal static partial class Interop
             {
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.RUsageFailure);
             }
+
+            Debug.Assert((result % Marshal.SizeOf<rusage_info_v3>()) == 0);
 
             return info;
         }

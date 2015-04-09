@@ -30,14 +30,29 @@ namespace System.Diagnostics
         private long _privateBytes;
         private int _sessionId;
 
+        internal ProcessInfo()
+        {
+            _basePriority = 0;
+            _processName = "";
+            _processId = 0;
+            _handleCount = 0;
+            _poolPagedBytes = 0;
+            _poolNonpagedBytes = 0;
+            _virtualBytes = 0;
+            _virtualBytesPeak = 0;
+            _workingSet = 0;
+            _workingSetPeak = 0;
+            _pageFileBytes = 0;
+            _pageFileBytesPeak = 0;
+            _privateBytes = 0;
+            _sessionId = 0;
+        }
+
         internal int BasePriority
         {
             get
             {
-                if (_basePriority == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _basePriority;
+                return _basePriority;
             }
             set
             {
@@ -49,10 +64,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_processName == null)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _processName;
+                return _processName;
             }
             set
             {
@@ -64,10 +76,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_processId == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _processId;
+                return _processId;
             }
             set
             {
@@ -79,10 +88,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_handleCount == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _handleCount;
+                return _handleCount;
             }
             set
             {
@@ -94,10 +100,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_poolPagedBytes == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _poolPagedBytes;
+                return _poolPagedBytes;
             }
             set
             {
@@ -109,10 +112,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_poolNonpagedBytes == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _poolNonpagedBytes;
+                return _poolNonpagedBytes;
             }
             set
             {
@@ -124,10 +124,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_virtualBytes == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _virtualBytes;
+                return _virtualBytes;
             }
             set
             {
@@ -139,10 +136,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_virtualBytesPeak == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _virtualBytesPeak;
+                return _virtualBytesPeak;
             }
             set
             {
@@ -154,10 +148,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_workingSetPeak == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _workingSetPeak;
+                return _workingSetPeak;
             }
             set
             {
@@ -169,10 +160,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_workingSet == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _workingSet;
+                return _workingSet;
             }
             set
             {
@@ -184,10 +172,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_pageFileBytesPeak == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _pageFileBytesPeak;
+                return _pageFileBytesPeak;
             }
             set
             {
@@ -199,10 +184,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_pageFileBytes == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _pageFileBytes;
+                return _pageFileBytes;
             }
             set
             {
@@ -214,10 +196,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_privateBytes == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _privateBytes;
+                return _privateBytes;
             }
             set
             {
@@ -229,34 +208,12 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_sessionId == -1)
-                    throw new Win32Exception(SR.ProcessInformationUnavailable);
-                else
-                    return _sessionId;
+                return _sessionId;
             }
             set
             {
                 _sessionId = value;
             }
-        }
-
-
-        internal ProcessInfo()
-        {
-            _basePriority = -1;
-            _processName = null;
-            _processId = -1;
-            _handleCount = -1;
-            _poolPagedBytes = -1;
-            _poolNonpagedBytes = -1;
-            _virtualBytes = -1;
-            _virtualBytesPeak = -1;
-            _workingSet = -1;
-            _workingSetPeak = -1;
-            _pageFileBytes = -1;
-            _pageFileBytesPeak = -1;
-            _privateBytes = -1;
-            _sessionId = -1;
         }
     }
 }

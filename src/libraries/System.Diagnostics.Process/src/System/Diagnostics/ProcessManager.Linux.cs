@@ -49,17 +49,10 @@ namespace System.Diagnostics
                     SessionId = procFsStat.session,
                     HandleCount = 0, // not a Unix concept
 
-                    // We don't currently fill in the following values.
+                    // We don't currently fill in the other values.
                     // A few of these could probably be filled in from getrusage,
                     // but only for the current process or its children, not for
                     // arbitrary other processes.
-                    PoolPagedBytes = 0,
-                    PoolNonpagedBytes = 0,
-                    VirtualBytesPeak = 0,
-                    WorkingSetPeak = 0,
-                    PageFileBytes = 0,
-                    PageFileBytesPeak = 0,
-                    PrivateBytes = 0,
                 };
             }
             catch (FileNotFoundException)

@@ -17,8 +17,8 @@ namespace System.Diagnostics
             get
             {
                 int nice = 0;
-                int result = Interop.libc.getpriority(Interop.libc.PriorityWhich.PRIO_DARWIN_THREAD, 0, out nice);
-                if (result <= 0)
+                int result = Interop.libc.getpriority(Interop.libc.PriorityWhich.PRIO_DARWIN_THREAD, _threadInfo._threadId, out nice);
+                if (result != 0)
                 {
                     throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
                 }
@@ -27,8 +27,8 @@ namespace System.Diagnostics
             }
             set
             {
-                int result = Interop.libc.setpriority(Interop.libc.PriorityWhich.PRIO_DARWIN_THREAD, 0, Interop.libc.GetNiceValueFromThreadPriority(value));
-                if (result < 0)
+                int result = Interop.libc.setpriority(Interop.libc.PriorityWhich.PRIO_DARWIN_THREAD, _threadInfo._threadId, Interop.libc.GetNiceValueFromThreadPriority(value));
+                if (result != 0)
                 {
                     throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
                 }
