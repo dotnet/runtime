@@ -750,7 +750,7 @@ namespace System.Diagnostics
                         processInfo.PoolPagedBytes = value;
                         break;
                     case ValueId.PoolNonpagedBytes:
-                        processInfo.PoolNonpagedBytes = value;
+                        processInfo.PoolNonPagedBytes = value;
                         break;
                     case ValueId.VirtualBytes:
                         processInfo.VirtualBytes = value;
@@ -955,7 +955,7 @@ namespace System.Diagnostics
                 processInfo.HandleCount = (int)pi.HandleCount;
                 processInfo.SessionId = (int)pi.SessionId;
                 processInfo.PoolPagedBytes = (long)pi.QuotaPagedPoolUsage; ;
-                processInfo.PoolNonpagedBytes = (long)pi.QuotaNonPagedPoolUsage;
+                processInfo.PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage;
                 processInfo.VirtualBytes = (long)pi.VirtualSize;
                 processInfo.VirtualBytesPeak = (long)pi.PeakVirtualSize;
                 processInfo.WorkingSetPeak = (long)pi.PeakWorkingSetSize;
