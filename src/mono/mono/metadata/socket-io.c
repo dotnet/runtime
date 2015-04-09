@@ -2198,7 +2198,7 @@ void ves_icall_System_Net_Sockets_Socket_Shutdown_internal(SOCKET sock,
 }
 
 gint
-ves_icall_System_Net_Sockets_Socket_WSAIoctl (SOCKET sock, gint32 code,
+ves_icall_System_Net_Sockets_Socket_IOControl_internal (SOCKET sock, gint32 code,
 					      MonoArray *input,
 					      MonoArray *output, gint32 *error)
 {
