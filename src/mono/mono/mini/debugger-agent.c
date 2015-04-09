@@ -5324,6 +5324,18 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 
 		if (ss_req->nframes == 0)
 			ss_req->nframes = nframes;
+
+		if ((ss_req->depth == STEP_DEPTH_OVER) && (!sp && !parent_sp)) {
+			DEBUG_PRINTF (1, "[dbg] No parent frame for step over, transition to step into.\n");
+			/*
+			 * This is needed since if we leave managed code, and later return to it, step over
+			 * is not going to stop.
+			 * This approach is a bit ugly, since we change the step depth, but it only affects
+			 * clients who reuse the same step request, and only in this special case.
+			 */
+			ss_req->depth = STEP_DEPTH_INTO;
+		}
+
 		if (ss_req->depth == STEP_DEPTH_OVER) {
 			/* Need to stop in catch clauses as well */
 			for (i = 0; i < nframes; ++i) {
