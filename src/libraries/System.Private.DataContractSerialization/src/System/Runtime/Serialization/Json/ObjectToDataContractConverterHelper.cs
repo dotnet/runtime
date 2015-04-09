@@ -75,7 +75,7 @@ namespace System.Runtime.Serialization.Json
             {
                 DataMember member = dataContract.Members[i];
                 object currentMemberValue;
-                if (deserialzedValue.TryGetValue(XmlConvert.DecodeName(dataContract.Members[i].Name), out currentMemberValue) || 
+                if (deserialzedValue.TryGetValue(XmlConvert.DecodeName(dataContract.Members[i].Name), out currentMemberValue) ||
                     dataContract.IsKeyValuePairAdapter && deserialzedValue.TryGetValue(XmlConvert.DecodeName(dataContract.Members[i].Name.ToLowerInvariant()), out currentMemberValue))
                 {
                     if (member.MemberType.GetTypeInfo().IsPrimitive || currentMemberValue == null)

@@ -678,4 +678,16 @@
   <data name="IsNotAssignableFrom" xml:space="preserve">
     <value>{0} is not assignable from {1}.</value>
   </data>
+  <data name="XmlElementNameMismatch" xml:space="preserve">
+    <value>This element was named '{0}' from namespace '{1}' but should have been named '{2}' from namespace '{3}'.</value>
+  </data>
+  <data name="XmlNeedAttributeHere" xml:space="preserve">
+    <value>The node must be either type XmlAttribute or a derived type.</value>
+  </data>
+  <data name="XmlNoAttributeHere" xml:space="preserve">
+    <value>Cannot write a node of type XmlAttribute as an element value. Use XmlAnyAttributeAttribute with an array of XmlNode or XmlAttribute to write the node as an attribute.</value>
+  </data>
+  <data name="XmlInvalidArrayTypeSyntax" xml:space="preserve">
+    <value>Invalid wsd:arrayType syntax: '{0}'.</value>
+  </data>
 </root>
