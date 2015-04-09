@@ -16,6 +16,7 @@ namespace System.Collections.Specialized.Tests
 
 
         [Fact]
+        [ActiveIssue(1360)]
         public void Test01()
         {
             IntlStrings intl;
