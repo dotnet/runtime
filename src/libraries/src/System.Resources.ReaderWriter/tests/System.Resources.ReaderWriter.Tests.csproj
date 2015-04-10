@@ -7,8 +7,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{8D7202E8-084A-4C20-AB93-3BF70D2E0651}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Resources.ResourceWriter.Tests</AssemblyName>
-    <RootNamespace>System.Resources.ResourceWriterTests</RootNamespace>
+    <AssemblyName>System.Resources.ReaderWriter.Tests</AssemblyName>
+    <RootNamespace>System.Resources.ReaderWriterTests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -20,11 +20,12 @@
       <SubType>Designer</SubType>
     </None>
     <Compile Include="ResourceWriterUnitTest.cs" />
+    <Compile Include="ResourceReaderUnitTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Resources.ResourceWriter.csproj">
+    <ProjectReference Include="..\src\System.Resources.ReaderWriter.csproj">
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
-      <Name>System.Resources.ResourceWriter</Name>
+      <Name>System.Resources.RederWriter</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
