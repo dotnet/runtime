@@ -15,8 +15,11 @@ namespace System.IO.Compression.Test
             await testCreate("small", false);
             await testCreate("normal", true);
             await testCreate("normal", false);
-            await testCreate("unicode", true);
-            await testCreate("unicode", false);
+            if (!Interop.IsLinux) // TODO [ActiveIssue("https://github.com/dotnet/coreclr/issues/333")].  Remove this once libcoreclr uses UTF8 for marshaling.
+            {
+                await testCreate("unicode", true);
+                await testCreate("unicode", false);
+            }
             await testCreate("empty", true);
             await testCreate("empty", false);
             await testCreate("emptydir", true);

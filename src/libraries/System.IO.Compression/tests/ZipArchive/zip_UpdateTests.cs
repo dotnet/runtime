@@ -49,7 +49,10 @@ namespace System.IO.Compression.Test
         {
             await testFolder("normal");
             await testFolder("empty");
-            await testFolder("unicode");
+            if (!Interop.IsLinux) // TODO [ActiveIssue("https://github.com/dotnet/coreclr/issues/333")].  Remove this once libcoreclr uses UTF8 for marshaling.
+            {
+                await testFolder("unicode");
+            }
         }
 
         public static async Task testFolder(String s)
