@@ -65,8 +65,6 @@
 #cmakedefine01 HAVE_PRWATCH_T
 #cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
 
-#cmakedefine01 HAVE_TZNAME
-#cmakedefine01 HAVE_TIMEZONE_VAR
 #cmakedefine01 HAVE_YIELD_SYSCALL
 #cmakedefine01 HAVE_INFTIM
 #cmakedefine01 HAVE_CHAR_BIT
