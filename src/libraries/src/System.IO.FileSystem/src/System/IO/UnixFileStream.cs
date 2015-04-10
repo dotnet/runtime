@@ -1055,10 +1055,7 @@ namespace System.IO
             {
                 if (gotRefOnHandle)
                 {
-                    if (!handle.IsClosed && !handle.IsInvalid) // TODO: Remove once runtime exception handling bug is fixed
-                    {
-                        handle.DangerousRelease();
-                    }
+                    handle.DangerousRelease();
                 }
                 else
                 {

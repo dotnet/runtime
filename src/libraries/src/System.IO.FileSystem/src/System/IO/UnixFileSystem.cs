@@ -520,11 +520,8 @@ namespace System.IO
                     finally
                     {
                         // Close the directory enumerator
-                        if (dirHandle != null && !dirHandle.IsClosed) // TODO: Remove once exception handling bug is fixed
-                        {
-                            dirHandle.Dispose();
-                            dirHandle = null;
-                        }
+                        dirHandle.Dispose();
+                        dirHandle = null;
                     }
 
                     if (toExplore != null && toExplore.Count > 0)
