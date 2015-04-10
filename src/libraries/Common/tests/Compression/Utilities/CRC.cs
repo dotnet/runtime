@@ -6,13 +6,13 @@ using System;
 public class CRC
 {
     /* Table of CRCs of all 8-bit messages. */
-    static ulong[] crc_table = new ulong[256];
+    private static ulong[] s_crc_table = new ulong[256];
 
     /* Flag: has the table been computed? Initially false. */
-    static bool crc_table_computed = false;
+    private static bool s_crc_table_computed = false;
 
     /* Make the table for a fast CRC. */
-    static void make_crc_table()
+    private static void make_crc_table()
     {
         ulong c;
         int n, k;
@@ -27,9 +27,9 @@ public class CRC
                 else
                     c = c >> 1;
             }
-            crc_table[n] = c;
+            s_crc_table[n] = c;
         }
-        crc_table_computed = true;
+        s_crc_table_computed = true;
     }
 
     /* Update a running CRC with the bytes buf[0..len-1]--the CRC
@@ -37,16 +37,16 @@ public class CRC
   is the 1's complement of the final running CRC (see the
   crc() routine below)). */
 
-    static ulong update_crc(ulong crc, byte[] buf, int len)
+    private static ulong update_crc(ulong crc, byte[] buf, int len)
     {
         ulong c = crc;
         int n;
 
-        if (!crc_table_computed)
+        if (!s_crc_table_computed)
             make_crc_table();
         for (n = 0; n < len; n++)
         {
-            c = crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+            c = s_crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
         }
         return c;
     }

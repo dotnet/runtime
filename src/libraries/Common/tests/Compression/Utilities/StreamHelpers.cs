@@ -14,22 +14,22 @@ public static partial class StreamHelpers
         return Path.GetRandomFileName();
     }
 
-    const string dirPrefix = "ZipTests";
-    static int dirCount = 1;
+    private const string dirPrefix = "ZipTests";
+    private static int s_dirCount = 1;
     public static String GetTmpPath(bool create = false)
     {
         var root = Path.GetTempPath();
-        string subDir = dirPrefix + dirCount.ToString();
+        string subDir = dirPrefix + s_dirCount.ToString();
         var tempPath = Path.Combine(root, subDir);
-        dirCount++;
+        s_dirCount++;
 
         while (Directory.Exists(tempPath))
         {
-            subDir = dirPrefix + dirCount.ToString();
+            subDir = dirPrefix + s_dirCount.ToString();
             tempPath = Path.Combine(root, subDir);
-            dirCount++;
+            s_dirCount++;
         }
-        
+
         if (create)
         {
             Directory.CreateDirectory(tempPath);
@@ -43,7 +43,7 @@ public static partial class StreamHelpers
         var bytes = File.ReadAllBytes(path);
 
         var ms = new MemoryStream();
-        await ms.WriteAsync(bytes, 0 , bytes.Length);
+        await ms.WriteAsync(bytes, 0, bytes.Length);
         ms.Position = 0;
 
         return ms;
@@ -51,7 +51,6 @@ public static partial class StreamHelpers
 
     public static String CreateTempCopyFile(String path)
     {
-        Console.WriteLine("CreateTempCopyFile for: " + path);
         var bytes = File.ReadAllBytes(path);
 
         var dir = Path.GetDirectoryName(path);
@@ -60,5 +59,4 @@ public static partial class StreamHelpers
 
         return newN;
     }
-
 }
