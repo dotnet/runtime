@@ -54,6 +54,7 @@ esac
 TestHostVersion="0.0.1-prerelease"
 TestSelection=".*"
 TestsFailed=0
+OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$Configuration/TestOverlay/"
 
 create_test_overlay()
 {
