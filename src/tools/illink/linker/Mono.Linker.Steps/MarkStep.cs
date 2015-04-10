@@ -288,9 +288,25 @@ namespace Mono.Linker.Steps {
 		// even if we (just before saving) will resolve all type references (bug #26752)
 		void MarkWithResolvedScope (TypeReference type)
 		{
-			// we cannot set the Scope of a TypeSpecification so there's no point in resolving it
-			if ((type == null) || (type is TypeSpecification))
+			if (type == null)
 				return;
+
+			// a GenericInstanceType can could contains generic arguments with scope that
+			// needs to be updated out of the PCL facade (bug #28823)
+			var git = (type as GenericInstanceType);
+			if ((git != null) && git.HasGenericArguments) {
+				foreach (var ga in git.GenericArguments)
+					MarkWithResolvedScope (ga);
+				return;
+			}
+			// we cannot set the Scope of a TypeSpecification but it's element type can be set
+			// e.g. System.String[] -> System.String
+			var ts = (type as TypeSpecification);
+			if (ts != null) {
+				MarkWithResolvedScope (ts.GetElementType ());
+				return;
+			}
+
 			var td = type.Resolve ();
 			if (td != null)
 				type.Scope = td.Scope;
