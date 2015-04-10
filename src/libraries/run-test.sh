@@ -8,15 +8,15 @@ usage()
     echo "Input sources:"
     echo "    --coreclr-bins <location>     Location of root of the binaries directory"
     echo "                                  containing the linux/mac coreclr build"
-    echo "                                  default: <repo_root>\bin"
+    echo "                                  default: <repo_root>/bin/Product/<OS>.x64.<Configuration>"
     echo "    --mscorlib-bins <location>    Location of the root binaries directory containing"
     echo "                                  the linux/mac mscorlib.dll"
-    echo "                                  default: <repo_root>\bin"
+    echo "                                  default: <repo_root>/bin/Product/<OS>.x64.<Configuration>"
     echo "    --corefx-tests <location>     Location of the root binaries location containing"
     echo "                                  the windows tests"
-    echo "                                  default: bin"
+    echo "                                  default: <repo_root>/bin/tests/Windows_NT.AnyCPU.<Configuration>"
     echo "    --corefx-bins <location>      Location of the linux/mac corefx binaries"
-    echo "                                  default: <repo_root>\bin"
+    echo "                                  default: <repo_root>/bin/<OS>.AnyCPU.<Configuration>"
     echo
     echo "Flavor/OS options:"
     echo "    --configuration <config>      Configuration to run (Debug/Release)"
@@ -33,10 +33,6 @@ usage()
 
 ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Location parameters
-CoreClrBinRoot="$ProjectRoot/bin"
-MscorlibBinRoot="$ProjectRoot/bin"
-CoreFxTestsRoot="$ProjectRoot/bin"
-CoreFxBinRoot="$ProjectRoot/bin"
 # OS/Configuration defaults
 Configuration="Debug"
 OSName=$(uname -s)
@@ -54,10 +50,8 @@ case $OSName in
         OS=Linux
         ;;
 esac
-LowerOS="$(echo $OS | awk '{print tolower($OS)}')"
 # Misc defaults
 TestHostVersion="0.0.1-prerelease"
-OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$Configuration/TestOverlay/"
 TestSelection=".*"
 TestsFailed=0
 
@@ -87,9 +81,7 @@ create_test_overlay()
 
   # First the temporary test host binaries
   local packageLibDir="$packageDir/lib"
-  local coreClrDir="$CoreClrBinRoot/Product/$OS.x64.$Configuration"
-  local mscorlibLocation="$MscorlibBinRoot/Product/Linux.x64.$Configuration/mscorlib.dll"
-  local coreFxDir="$CoreFxBinRoot/$OS.AnyCPU.$Configuration"
+  local mscorlibLocation="$MscorlibBins/mscorlib.dll"
   
   if [ ! -d $packageLibDir ]
   then
@@ -99,12 +91,12 @@ create_test_overlay()
   cp $packageLibDir/* $OverlayDir
   
   # Then the CoreCLR native binaries
-  if [ ! -d $coreClrDir ]
+  if [ ! -d $CoreClrBins ]
   then
-	echo "Coreclr $OS binaries not found at $coreClrDir"
+	echo "Coreclr $OS binaries not found at $CoreClrBins"
 	exit 1
   fi
-  cp -r $coreClrDir/* $OverlayDir
+  cp -r $CoreClrBins/* $OverlayDir
   
   # Then the mscorlib from the upstream build.
   # TODO When the mscorlib flavors get properly changed then 
@@ -116,12 +108,12 @@ create_test_overlay()
   cp -r $mscorlibLocation $OverlayDir
   
   # Then the binaries from the linux build of corefx
-  if [ ! -d $coreFxDir ]
+  if [ ! -d $CoreFxBins ]
   then
-	echo "Mscorlib not found at $mscorlibLocation"
+	echo "Corefx binaries not found at $CoreFxBins"
 	exit 1
   fi
-  find $coreFxDir -name '*.dll' -exec cp -n '{}' "$OverlayDir" ";"
+  find $CoreFxBins -name '*.dll' -exec cp -n '{}' "$OverlayDir" ";"
 }
 
 copy_test_overlay()
@@ -154,13 +146,14 @@ runtest()
 
   # Grab the directory name that would correspond to this test
 
+  lowerOS="$(echo $OS | awk '{print tolower($OS)}')"
   fileName="${file##*/}"
   fileNameWithoutExtension="${fileName%.*}"
   testDllName="$fileNameWithoutExtension.dll"
-  xunitOSCategory="non$LowerOS"
+  xunitOSCategory="non$lowerOS"
   xunitOSCategory+="tests"
 
-  dirName="$CoreFxTestsRoot/tests/Windows_NT.AnyCPU.$Configuration/$fileNameWithoutExtension/aspnetcore50"
+  dirName="$CoreFxTests/$fileNameWithoutExtension/aspnetcore50"
 
   if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
   then
@@ -195,16 +188,16 @@ do
         usage
         ;;
         --coreclr-bins)
-        CoreClrBinRoot=$2
+        CoreClrBins=$2
         ;;
         --mscorlib-bins)
-        MscorlibBinRoot=$2
+        MscorlibBins=$2
         ;;
         --corefx-tests)
-        CoreFxTestsRoot=$2
+        CoreFxTests=$2
         ;;
         --corefx-bins)
-        CoreFxBinRoot=$2
+        CoreFxBins=$2
         ;;
         --restrict-proj)
         TestSelection=$2
@@ -220,6 +213,28 @@ do
     esac
     shift
 done
+
+# Compute paths to the binaries if they haven't already been computed
+
+if [ "$CoreClrBins" == "" ]
+then
+    CoreClrBins="$ProjectRoot/bin/Product/$OS.x64.$Configuration"
+fi
+
+if [ "$MscorlibBins" == "" ]
+then
+    MscorlibBins="$ProjectRoot/bin/Product/$OS.x64.$Configuration"
+fi
+
+if [ "$CoreFxTests" == "" ]
+then
+    CoreFxTests="$ProjectRoot/bin/tests/Windows_NT.AnyCPU.$Configuration"
+fi
+
+if [ "$CoreFxBins" == "" ]
+then
+    CoreFxBins="$ProjectRoot/bin/$OS.AnyCPU.$Configuration"
+fi
 
 # Check parameters up front for valid values:
 
@@ -239,9 +254,16 @@ create_test_overlay
 
 # Walk the directory tree rooted at src bin/tests/Windows_NT.AnyCPU.$Configuration/
 
+numberOfProcesses=0
+maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
 for file in src/**/tests/*.Tests.csproj
 do
-  runtest $file
+  runtest $file &
+  numberOfProcesses=$(($numberOfProcesses+1))
+  if [ "$numberOfProcesses" -ge $maxProcesses ]; then
+    wait
+    numberOfProcesses=0
+  fi
 done
 
 exit $TestsFailed
