@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+using Microsoft.Win32.SafeHandles;
+
 using CFRunLoopRef = System.IntPtr;
 
 internal static partial class Interop
@@ -16,7 +18,7 @@ internal static partial class Interop
         /// <remarks>
         /// For more information, see the Apple documentation: https://developer.apple.com/library/mac/documentation/CoreFoundation/Reference/CFRunLoopRef/index.html
         /// </remarks>
-        internal static IntPtr kCFRunLoopDefaultMode = Interop.CoreFoundation.CFStringCreateWithCString("kCFRunLoopDefaultMode");
+        internal static SafeCreateHandle kCFRunLoopDefaultMode = Interop.CoreFoundation.CFStringCreateWithCString("kCFRunLoopDefaultMode");
 
         /// <summary>
         /// Starts the current thread's RunLoop. If the RunLoop is already running, creates a new, nested, RunLoop in the same stack.
