@@ -126,7 +126,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 		printf ("VTable is invalid (points inside nursery).\n");
 		goto bridge;
 	}
-	printf ("Class: %s\n", vtable->klass->name);
+	printf ("Class: %s.%s\n", vtable->klass->name_space, vtable->klass->name);
 
 	desc = ((GCVTable*)vtable)->desc;
 	printf ("Descriptor: %lx\n", (long)desc);
@@ -366,20 +366,20 @@ describe_nursery_ptr (char *ptr, gboolean need_setup)
 	if (need_setup)
 		setup_valid_nursery_objects ();
 
-	for (i = 0; i < valid_nursery_object_count; ++i) {
-		if (valid_nursery_objects [i] >= ptr)
+	for (i = 0; i < valid_nursery_object_count - 1; ++i) {
+		if (valid_nursery_objects [i + 1] > ptr)
 			break;
 	}
 
 	if (i >= valid_nursery_object_count || valid_nursery_objects [i] + safe_object_get_size ((MonoObject *)valid_nursery_objects [i]) < ptr) {
-		SGEN_LOG (0, "nursery-ptr (unalloc'd-memory)\n");
+		SGEN_LOG (0, "nursery-ptr (unalloc'd-memory)");
 		return NULL;
 	} else {
 		char *obj = valid_nursery_objects [i];
 		if (obj == ptr)
-			SGEN_LOG (0, "nursery-ptr\n");
+			SGEN_LOG (0, "nursery-ptr %p", obj);
 		else
-			SGEN_LOG (0, "nursery-ptr (interior-ptr offset %td)\n", ptr - obj);
+			SGEN_LOG (0, "nursery-ptr %p (interior-ptr offset %td)", obj, ptr - obj);
 		return obj;
 	}
 }
