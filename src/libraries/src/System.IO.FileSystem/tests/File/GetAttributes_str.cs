@@ -109,7 +109,7 @@ public class File_GetAttributes_str
 #if !TEST_WINRT
             iCountTestcases++;
             file1.Attributes = FileAttributes.Hidden;
-            if ((file1.Attributes & FileAttributes.Hidden) == 0)
+            if ((file1.Attributes & FileAttributes.Hidden) == 0 && Interop.IsWindows) // setting Hidden not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0010! Hidden not set");
@@ -118,7 +118,7 @@ public class File_GetAttributes_str
             iCountTestcases++;
             file1.Refresh();
             file1.Attributes = FileAttributes.System;
-            if ((File.GetAttributes(fileName) & FileAttributes.System) == 0)
+            if ((File.GetAttributes(fileName) & FileAttributes.System) == 0 && Interop.IsWindows) // setting System not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0011! System not set");
@@ -134,7 +134,7 @@ public class File_GetAttributes_str
             {
                 //NOTE: Normal is only allowed on its own. So, if there is already another attribute, this will not work
                 //@TODO!! This might have to be modified
-                if ((File.GetAttributes(fileName) & FileAttributes.Compressed) == 0)
+                if ((File.GetAttributes(fileName) & FileAttributes.Compressed) == 0 && Interop.IsWindows) // setting Compressed not supported on Unix
 #if TEST_WINRT
                 if((File.GetAttributes(fileName) & FileAttributes.Archive) == 0)
 #endif
@@ -148,7 +148,7 @@ public class File_GetAttributes_str
             iCountTestcases++;
             file1.Refresh();
             file1.Attributes = FileAttributes.Temporary;
-            if ((File.GetAttributes(fileName) & FileAttributes.Temporary) == 0)
+            if ((File.GetAttributes(fileName) & FileAttributes.Temporary) == 0 && Interop.IsWindows) // setting Temporary not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0013! Temporary not set");
@@ -157,7 +157,7 @@ public class File_GetAttributes_str
             file1.Attributes = file1.Attributes | FileAttributes.SparseFile;
             file1.Attributes = file1.Attributes | FileAttributes.ReparsePoint;
             iCountTestcases++;
-            if ((File.GetAttributes(fileName) & FileAttributes.Temporary) != FileAttributes.Temporary)
+            if ((File.GetAttributes(fileName) & FileAttributes.Temporary) != FileAttributes.Temporary && Interop.IsWindows) // setting Temporary not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0014! Temporary not set");
@@ -165,7 +165,7 @@ public class File_GetAttributes_str
 
             file1.Refresh();
             file1.Attributes = FileAttributes.Archive;
-            file1.Attributes = FileAttributes.ReadOnly | file1.Attributes;
+            file1.Attributes = FileAttributes.ReadOnly | FileAttributes.Archive; // setting Archive not supported on Unix
             iCountTestcases++;
             if ((File.GetAttributes(fileName) & FileAttributes.ReadOnly) != FileAttributes.ReadOnly)
             {
@@ -174,7 +174,7 @@ public class File_GetAttributes_str
             }
 
             iCountTestcases++;
-            if ((File.GetAttributes(fileName) & FileAttributes.Archive) != FileAttributes.Archive)
+            if ((File.GetAttributes(fileName) & FileAttributes.Archive) != FileAttributes.Archive && Interop.IsWindows)  // setting Archive not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_0021! Archive attribute not set");

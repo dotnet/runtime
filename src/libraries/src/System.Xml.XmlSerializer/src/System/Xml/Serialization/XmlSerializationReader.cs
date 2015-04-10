@@ -33,6 +33,7 @@ namespace System.Xml.Serialization
     public abstract class XmlSerializationReader : XmlSerializationGeneratedCode
     {
         private XmlReader _r;
+        private XmlDocument _d;
         private XmlDeserializationEvents _events;
         private bool _soap12;
         private bool _isReturnValue;
@@ -168,6 +169,19 @@ namespace System.Xml.Serialization
             }
         }
 
+        /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.Document"]/*' />
+        protected XmlDocument Document
+        {
+            get
+            {
+                if (_d == null)
+                {
+                    _d = new XmlDocument(_r.NameTable);
+                }
+                return _d;
+            }
+        }
+
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.ReaderCount"]/*' />
         protected int ReaderCount
         {
@@ -176,8 +190,6 @@ namespace System.Xml.Serialization
                 return 0;
             }
         }
-
-
 
         private void InitPrimitiveIDs()
         {
@@ -619,6 +631,24 @@ namespace System.Xml.Serialization
             return name[5] == ':';
         }
 
+        /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.IsArrayTypeAttribute"]/*' />
+        protected void ParseWsdlArrayType(XmlAttribute attr)
+        {
+            if ((object)attr.LocalName == (object)_wsdlArrayTypeID && (object)attr.NamespaceURI == (object)_wsdlNsID)
+            {
+                int colon = attr.Value.LastIndexOf(':');
+                if (colon < 0)
+                {
+                    attr.Value = _r.LookupNamespace("") + ":" + attr.Value;
+                }
+                else
+                {
+                    attr.Value = _r.LookupNamespace(attr.Value.Substring(0, colon)) + ":" +
+                                 attr.Value.Substring(colon + 1);
+                }
+            }
+            return;
+        }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.IsReturnValue"]/*' />
         protected bool IsReturnValue
@@ -699,6 +729,16 @@ namespace System.Xml.Serialization
             return qname;
         }
 
+        /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.ReadXmlDocument"]/*' />
+        protected XmlDocument ReadXmlDocument(bool wrapped)
+        {
+            XmlNode n = ReadXmlNode(wrapped);
+            if (n == null)
+                return null;
+            XmlDocument doc = new XmlDocument();
+            doc.AppendChild(doc.ImportNode(n, true));
+            return doc;
+        }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CollapseWhitespace"]/*' />
         protected string CollapseWhitespace(string value)
@@ -708,6 +748,31 @@ namespace System.Xml.Serialization
             return value.Trim();
         }
 
+        protected XmlNode ReadXmlNode(bool wrapped)
+        {
+            XmlNode node = null;
+            if (wrapped)
+            {
+                if (ReadNull()) return null;
+                _r.ReadStartElement();
+                _r.MoveToContent();
+                if (_r.NodeType != XmlNodeType.EndElement)
+                    node = Document.ReadNode(_r);
+                int whileIterations = 0;
+                int readerCount = ReaderCount;
+                while (_r.NodeType != XmlNodeType.EndElement)
+                {
+                    UnknownNode(null);
+                    CheckReaderCount(ref whileIterations, ref readerCount);
+                }
+                _r.ReadEndElement();
+            }
+            else
+            {
+                node = Document.ReadNode(_r);
+            }
+            return node;
+        }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.ToByteArrayBase64"]/*' />
         protected static byte[] ToByteArrayBase64(string value)
@@ -852,16 +917,31 @@ namespace System.Xml.Serialization
             {
                 return;
             }
-            else
+            if (_r.NodeType == XmlNodeType.Element)
             {
                 _r.Skip();
                 return;
             }
+            UnknownNode(Document.ReadNode(_r), o, qnames);
         }
 
+        private void UnknownNode(XmlNode unknownNode, object o, string qnames)
+        {
+            if (unknownNode == null)
+                return;
+        }
 
-
-
+        private void GetCurrentPosition(out int lineNumber, out int linePosition)
+        {
+            if (Reader is IXmlLineInfo)
+            {
+                IXmlLineInfo lineInfo = (IXmlLineInfo)Reader;
+                lineNumber = lineInfo.LineNumber;
+                linePosition = lineInfo.LinePosition;
+            }
+            else
+                lineNumber = linePosition = -1;
+        }
 
         private string CurrentTag()
         {
@@ -1062,11 +1142,25 @@ namespace System.Xml.Serialization
 
         private object ReadXmlNodes(bool elementCanBeType)
         {
+            ArrayList xmlNodeList = new ArrayList();
             string elemLocalName = Reader.LocalName;
             string elemNs = Reader.NamespaceURI;
+            string elemName = Reader.Name;
             string xsiTypeName = null;
             string xsiTypeNs = null;
             int skippableNodeCount = 0;
+            int lineNumber = -1, linePosition = -1;
+            XmlNode unknownNode = null;
+            if (Reader.NodeType == XmlNodeType.Attribute)
+            {
+                XmlAttribute attr = Document.CreateAttribute(elemName, elemNs);
+                attr.Value = Reader.Value;
+                unknownNode = attr;
+            }
+            else
+                unknownNode = Document.CreateElement(elemName, elemNs);
+            GetCurrentPosition(out lineNumber, out linePosition);
+            XmlElement unknownElement = unknownNode as XmlElement;
 
             while (Reader.MoveToNextAttribute())
             {
@@ -1084,9 +1178,9 @@ namespace System.Xml.Serialization
                     xsiTypeName = (colon >= 0) ? value.Substring(colon + 1) : value;
                     xsiTypeNs = Reader.LookupNamespace((colon >= 0) ? value.Substring(0, colon) : "");
                 }
-                // To support new Object().
-                // <anyType xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
-                skippableNodeCount--;
+                XmlAttribute xmlAttribute = (XmlAttribute)Document.ReadNode(_r);
+                xmlNodeList.Add(xmlAttribute);
+                if (unknownElement != null) unknownElement.SetAttributeNode(xmlAttribute);
             }
 
             // If the node is referenced (or in case of paramStyle = bare) and if xsi:type is not
@@ -1096,7 +1190,9 @@ namespace System.Xml.Serialization
             {
                 xsiTypeName = elemLocalName;
                 xsiTypeNs = elemNs;
-                skippableNodeCount--;
+                XmlAttribute xsiTypeAttribute = Document.CreateAttribute(_typeID, _instanceNsID);
+                xsiTypeAttribute.Value = elemName;
+                xmlNodeList.Add(xsiTypeAttribute);
             }
             if (xsiTypeName == Soap.UrType &&
                 ((object)xsiTypeNs == (object)_schemaNsID ||
@@ -1114,14 +1210,29 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw CodeGenerator.NotSupported("XLinq");
+                Reader.ReadStartElement();
+                Reader.MoveToContent();
+                int whileIterations = 0;
+                int readerCount = ReaderCount;
+                while (Reader.NodeType != System.Xml.XmlNodeType.EndElement)
+                {
+                    XmlNode xmlNode = Document.ReadNode(_r);
+                    xmlNodeList.Add(xmlNode);
+                    if (unknownElement != null) unknownElement.AppendChild(xmlNode);
+                    Reader.MoveToContent();
+                    CheckReaderCount(ref whileIterations, ref readerCount);
+                }
+                ReadEndElement();
             }
 
 
-            if (skippableNodeCount >= 0)
+            if (xmlNodeList.Count <= skippableNodeCount)
                 return new object();
 
-            throw CodeGenerator.NotSupported("XLinq");
+            XmlNode[] childNodes = (XmlNode[])xmlNodeList.ToArray(typeof(XmlNode));
+
+            UnknownNode(unknownNode, null, null);
+            return childNodes;
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.CheckReaderCount"]/*' />

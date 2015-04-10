@@ -42,5 +42,6 @@ namespace System.IO
         public abstract void SetCurrentDirectory(string fullPath);
         public abstract int MaxPath { get; }
         public abstract int MaxDirectoryPath { get; }
+        public abstract bool CaseSensitive { get; }
     }
 }

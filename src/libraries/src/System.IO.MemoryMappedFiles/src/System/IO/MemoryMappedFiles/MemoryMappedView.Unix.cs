@@ -56,7 +56,8 @@ namespace System.IO.MemoryMappedFiles
             try
             {
                 // Determine whether to create the pages as private or as shared; the former is used for copy-on-write.
-                Interop.libc.MemoryMappedFlags flags = (memMappedFileHandle._access == MemoryMappedFileAccess.CopyOnWrite) ?
+                Interop.libc.MemoryMappedFlags flags = 
+                    (memMappedFileHandle._access == MemoryMappedFileAccess.CopyOnWrite || access == MemoryMappedFileAccess.CopyOnWrite) ?
                     Interop.libc.MemoryMappedFlags.MAP_PRIVATE :
                     Interop.libc.MemoryMappedFlags.MAP_SHARED;
 
@@ -86,7 +87,7 @@ namespace System.IO.MemoryMappedFiles
                 Interop.libc.MemoryMappedProtections mapProtForVerification = GetProtections(memMappedFileHandle._access, forVerification: true);
                 if ((viewProtForVerification & mapProtForVerification) != viewProtForVerification)
                 {
-                    throw new UnauthorizedAccessException(viewProtForVerification + " <> " + mapProtForVerification);
+                    throw new UnauthorizedAccessException();
                 }
 
                 // Create the map
@@ -163,7 +164,7 @@ namespace System.IO.MemoryMappedFiles
         private const long MaxProcessAddressSpace = 8192L * 1000 * 1000 * 1000;
 
         /// <summary>Maps a MemoryMappedFileAccess to the associated MemoryMappedProtections.</summary>
-        private static Interop.libc.MemoryMappedProtections GetProtections(
+        internal static Interop.libc.MemoryMappedProtections GetProtections(
             MemoryMappedFileAccess access, bool forVerification)
         {
             switch (access)

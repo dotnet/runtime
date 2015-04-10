@@ -118,9 +118,9 @@ public class FileInfo_set_Attributes
                 fil2.Attributes = FileAttributes.Hidden;
                 iCountTestcases++;
 #if TEST_WINRT  // WinRT doesn't support hidden
-            if((fil2.Attributes & FileAttributes.Hidden)!=0) {
+                if ((fil2.Attributes & FileAttributes.Hidden)!=0) {
 #else
-                if ((fil2.Attributes & FileAttributes.Hidden) == 0)
+                if ((fil2.Attributes & FileAttributes.Hidden) == 0 && Interop.IsWindows) // setting Hidden not supported on Unix
                 {
 #endif
                     iCountErrors++;
@@ -130,9 +130,9 @@ public class FileInfo_set_Attributes
                 fil2.Refresh();
                 iCountTestcases++;
 #if TEST_WINRT  // WinRT doesn't support system
-            if((fil2.Attributes & FileAttributes.System) == FileAttributes.System) {
+                if((fil2.Attributes & FileAttributes.System) == FileAttributes.System) {
 #else
-                if ((fil2.Attributes & FileAttributes.System) != FileAttributes.System)
+                if ((fil2.Attributes & FileAttributes.System) != FileAttributes.System && Interop.IsWindows) // setting System not supported on Unix
                 {
 #endif
                     iCountErrors++;
@@ -141,7 +141,7 @@ public class FileInfo_set_Attributes
                 fil2.Attributes = FileAttributes.Temporary;
                 fil2.Refresh();
                 iCountTestcases++;
-                if ((fil2.Attributes & FileAttributes.Temporary) == 0)
+                if ((fil2.Attributes & FileAttributes.Temporary) == 0 && Interop.IsWindows) // setting Temporary not supported on Unix
                 {
                     iCountErrors++;
                     printerr("Error_87tg8! Temporary not set");
@@ -167,7 +167,7 @@ public class FileInfo_set_Attributes
                 }
 
                 iCountTestcases++;
-                if ((fil2.Attributes & FileAttributes.Archive) != FileAttributes.Archive)
+                if ((fil2.Attributes & FileAttributes.Archive) != FileAttributes.Archive && Interop.IsWindows) // setting Archive not supported on Unix
                 {
                     iCountErrors++;
                     printerr("Error_2g78b! Archive attribute not set");

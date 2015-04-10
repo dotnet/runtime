@@ -211,6 +211,11 @@ public class Directory_GetFiles_str_str
             foreach (String f in strArr)
                 names[i++] = Path.GetFileName(f);
 
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
+
             iCountTestcases++;
             if (Array.IndexOf(names, "TestFile1") < 0)
             {
@@ -245,6 +250,11 @@ public class Directory_GetFiles_str_str
             i = 0;
             foreach (String f in strArr)
                 names[i++] = Path.GetFileName(f);
+
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
 
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1File1") < 0)
@@ -313,7 +323,7 @@ public class Directory_GetFiles_str_str
 
             strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), "*BB*");
             iCountTestcases++;
-            if (strArr.Length != 2)
+            if (strArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + strArr.Length);
@@ -328,11 +338,14 @@ public class Directory_GetFiles_str_str
                 iCountErrors++;
                 printerr("Error_956yb! Incorrect name==" + strArr[0].ToString());
             }
-            iCountTestcases++;
-            if (Array.IndexOf(names, "aaabbcc") < 0)
+            if (!Interop.IsLinux) // Linux is case-sensitive
             {
-                iCountErrors++;
-                printerr("Error_48yg7! Incorrect name==" + strArr[1].ToString());
+                iCountTestcases++;
+                if (Array.IndexOf(names, "aaabbcc") < 0)
+                {
+                    iCountErrors++;
+                    printerr("Error_48yg7! Incorrect name==" + strArr[1].ToString());
+                }
             }
 
             // [] Exact match on searchstring
@@ -415,33 +428,36 @@ public class Directory_GetFiles_str_str
                 printerr("Err_24y7g! Incorrect exception thrown, exc==" + exc.ToString());
             }
 
-            //bug #417100 - not sure if this hard coded approach is safe in all 9x platforms!!!
-            //But RunAnotherScenario is probably more accurate
-            try
+            if (Interop.IsWindows) // TODO: [ActiveIssue(846)] Globalization on Unix
             {
-                int[] validGreaterThan128ButLessThans160 = { 129, 133, 141, 143, 144, 157 };
-                for (i = 0; i < validGreaterThan128ButLessThans160.Length; i++)
+                //bug #417100 - not sure if this hard coded approach is safe in all 9x platforms!!!
+                //But RunAnotherScenario is probably more accurate
+                try
                 {
-                    Directory.GetFiles(".", ((Char)validGreaterThan128ButLessThans160[i]).ToString());
+                    int[] validGreaterThan128ButLessThans160 = { 129, 133, 141, 143, 144, 157 };
+                    for (i = 0; i < validGreaterThan128ButLessThans160.Length; i++)
+                    {
+                        Directory.GetFiles(".", ((Char)validGreaterThan128ButLessThans160[i]).ToString());
+                    }
                 }
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Err_247gdo! Incorrect exception thrown, exc==" + exc.ToString());
-            }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Err_247gdo! Incorrect exception thrown, exc==" + exc.ToString());
+                }
 
-            try
-            {
-                for (i = 160; i < 256; i++)
+                try
                 {
-                    Directory.GetFiles(".", ((Char)i).ToString());
+                    for (i = 160; i < 256; i++)
+                    {
+                        Directory.GetFiles(".", ((Char)i).ToString());
+                    }
                 }
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Err_960tli! Incorrect exception thrown, exc==" + exc.ToString());
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Err_960tli! Incorrect exception thrown, exc==" + exc.ToString());
+                }
             }
 
 #if DESKTOP

@@ -339,143 +339,140 @@ public class MMVS_ReadWrite : TestBase
                 }
             }
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // currently don't support sharing views of pagefile backed MMFs on Unix
+            // Use a pagefile backed MMF instead of file backed
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, pageSize * 10))
             {
-                // Use a pagefile backed MMF instead of file backed
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, pageSize * 10))
+                using (MemoryMappedViewStream view = mmf.CreateViewStream())
                 {
-                    using (MemoryMappedViewStream view = mmf.CreateViewStream())
-                    {
-                        BinaryReader reader = new BinaryReader(view);
-                        BinaryWriter writer = new BinaryWriter(view);
+                    BinaryReader reader = new BinaryReader(view);
+                    BinaryWriter writer = new BinaryWriter(view);
 
-                        // nothing written - read zeros
-                        VerifyRead("Loc401", view, new Byte[24], 0, 24, new Byte[24], 24);
-                        VerifyReadBoolean("Loc402", reader, false);
-                        VerifyReadUInt16("Loc403", reader, 0);
-                        VerifyReadInt32("Loc404", reader, 0);
-                        VerifyReadDouble("Loc405", reader, 0d);
-                        VerifyReadDecimal("Loc406", reader, 0m);
+                    // nothing written - read zeros
+                    VerifyRead("Loc401", view, new Byte[24], 0, 24, new Byte[24], 24);
+                    VerifyReadBoolean("Loc402", reader, false);
+                    VerifyReadUInt16("Loc403", reader, 0);
+                    VerifyReadInt32("Loc404", reader, 0);
+                    VerifyReadDouble("Loc405", reader, 0d);
+                    VerifyReadDecimal("Loc406", reader, 0m);
 
-                        // Write to ViewStream
-                        view.Seek(0, SeekOrigin.Begin);
-                        view.Write(byteArray1, 0, 16);
-                        view.Seek(0, SeekOrigin.Begin);
-                        VerifyRead("Loc411", view, new Byte[16], 0, 16, byteArray1, 16);
-                        reader.BaseStream.Seek(0, SeekOrigin.Begin);
-                        VerifyReadBoolean("Loc412", reader, true);
-                        VerifyReadUInt16("Loc413", reader, 55610);
-                        VerifyReadInt32("Loc414", reader, 1363047062);
-                        VerifyReadDouble("Loc415", reader, BitConverter.ToDouble(byteArray1, 7));
-                        reader.BaseStream.Seek(0, SeekOrigin.Begin);
-                        VerifyReadDecimal("Loc416", reader, new Decimal(new Int32[] { BitConverter.ToInt32(byteArray1, 0), BitConverter.ToInt32(byteArray1, 4), BitConverter.ToInt32(byteArray1, 8), BitConverter.ToInt32(byteArray1, 12) }));
+                    // Write to ViewStream
+                    view.Seek(0, SeekOrigin.Begin);
+                    view.Write(byteArray1, 0, 16);
+                    view.Seek(0, SeekOrigin.Begin);
+                    VerifyRead("Loc411", view, new Byte[16], 0, 16, byteArray1, 16);
+                    reader.BaseStream.Seek(0, SeekOrigin.Begin);
+                    VerifyReadBoolean("Loc412", reader, true);
+                    VerifyReadUInt16("Loc413", reader, 55610);
+                    VerifyReadInt32("Loc414", reader, 1363047062);
+                    VerifyReadDouble("Loc415", reader, BitConverter.ToDouble(byteArray1, 7));
+                    reader.BaseStream.Seek(0, SeekOrigin.Begin);
+                    VerifyReadDecimal("Loc416", reader, new Decimal(new Int32[] { BitConverter.ToInt32(byteArray1, 0), BitConverter.ToInt32(byteArray1, 4), BitConverter.ToInt32(byteArray1, 8), BitConverter.ToInt32(byteArray1, 12) }));
 
-                        // Write to BinaryWriter
-                        writer.BaseStream.Seek(2161, SeekOrigin.Begin);
-                        writer.Write(dec);
-                        writer.Write(true);
-                        writer.Write(211209802);
-                        view.Seek(2161, SeekOrigin.Begin);
-                        VerifyRead("Loc421", view, new Byte[24], 0, 24, byteArray2, 24);
-                        reader.BaseStream.Seek(2161, SeekOrigin.Begin);
-                        VerifyReadDecimal("Loc422", reader, dec);
-                        VerifyReadBoolean("Loc423", reader, true);
-                        VerifyReadInt32("Loc424", reader, 211209802);
+                    // Write to BinaryWriter
+                    writer.BaseStream.Seek(2161, SeekOrigin.Begin);
+                    writer.Write(dec);
+                    writer.Write(true);
+                    writer.Write(211209802);
+                    view.Seek(2161, SeekOrigin.Begin);
+                    VerifyRead("Loc421", view, new Byte[24], 0, 24, byteArray2, 24);
+                    reader.BaseStream.Seek(2161, SeekOrigin.Begin);
+                    VerifyReadDecimal("Loc422", reader, dec);
+                    VerifyReadBoolean("Loc423", reader, true);
+                    VerifyReadInt32("Loc424", reader, 211209802);
 
-                        // Write to end of stream
-                        view.Seek(-16, SeekOrigin.End);
-                        view.Write(byteArray2, 0, 16); // now at end of stream
-                        VerifyRead("Loc431", view, new Byte[16], 0, 16, new Byte[16], 0);
-                        view.Seek(-16, SeekOrigin.End);
-                        VerifyRead("Loc432", view, new Byte[16], 0, 16, byteArray3, 16);
-                        view.Seek(-8, SeekOrigin.End);
-                        VerifyRead("Loc433", view, new Byte[16], 0, 16, byteArray3b, 8);  // read partial array
-                                                                                          // BinaryReader
-                        reader.BaseStream.Seek(-16, SeekOrigin.End);
-                        VerifyReadDecimal("Loc434", reader, dec); // now at end of stream
-                        VerifyReadDecimalException<IOException>("Loc435", reader);
-                        reader.BaseStream.Seek(-8, SeekOrigin.End);
-                        VerifyRead("Loc436", reader, new Byte[16], 0, 16, byteArray3b, 8);  // read partial array
+                    // Write to end of stream
+                    view.Seek(-16, SeekOrigin.End);
+                    view.Write(byteArray2, 0, 16); // now at end of stream
+                    VerifyRead("Loc431", view, new Byte[16], 0, 16, new Byte[16], 0);
+                    view.Seek(-16, SeekOrigin.End);
+                    VerifyRead("Loc432", view, new Byte[16], 0, 16, byteArray3, 16);
+                    view.Seek(-8, SeekOrigin.End);
+                    VerifyRead("Loc433", view, new Byte[16], 0, 16, byteArray3b, 8);  // read partial array
+                                                                                      // BinaryReader
+                    reader.BaseStream.Seek(-16, SeekOrigin.End);
+                    VerifyReadDecimal("Loc434", reader, dec); // now at end of stream
+                    VerifyReadDecimalException<IOException>("Loc435", reader);
+                    reader.BaseStream.Seek(-8, SeekOrigin.End);
+                    VerifyRead("Loc436", reader, new Byte[16], 0, 16, byteArray3b, 8);  // read partial array
 
-                        // Write to end of stream as calculated from viewstream capacity
-                        view.Seek(view.Capacity - 1, SeekOrigin.Begin);
-                        view.Write(byteArray2, 16, 1); // now at end of stream
-                        VerifyRead("Loc441", view, new Byte[16], 0, 16, new Byte[16], 0);
-                        view.Seek(view.Capacity - 1, SeekOrigin.Begin);
-                        VerifyRead("Loc442", view, new Byte[1], 0, 1, byteArray4, 1);
-                        reader.BaseStream.Seek(view.Capacity - 1, SeekOrigin.Begin);
-                        VerifyReadBoolean("Loc443", reader, true); // now at end of stream
-                        VerifyReadBooleanException<IOException>("Loc444", reader);
+                    // Write to end of stream as calculated from viewstream capacity
+                    view.Seek(view.Capacity - 1, SeekOrigin.Begin);
+                    view.Write(byteArray2, 16, 1); // now at end of stream
+                    VerifyRead("Loc441", view, new Byte[16], 0, 16, new Byte[16], 0);
+                    view.Seek(view.Capacity - 1, SeekOrigin.Begin);
+                    VerifyRead("Loc442", view, new Byte[1], 0, 1, byteArray4, 1);
+                    reader.BaseStream.Seek(view.Capacity - 1, SeekOrigin.Begin);
+                    VerifyReadBoolean("Loc443", reader, true); // now at end of stream
+                    VerifyReadBooleanException<IOException>("Loc444", reader);
 
-                        // Write past end of stream
-                        view.Seek(0, SeekOrigin.End);
-                        VerifyWriteException<NotSupportedException>("Loc451", view, new Byte[16], 0, 16);
-                        writer.Seek(0, SeekOrigin.End);
-                        VerifyWriteException<NotSupportedException>("Loc452", writer, Byte.MaxValue);
+                    // Write past end of stream
+                    view.Seek(0, SeekOrigin.End);
+                    VerifyWriteException<NotSupportedException>("Loc451", view, new Byte[16], 0, 16);
+                    writer.Seek(0, SeekOrigin.End);
+                    VerifyWriteException<NotSupportedException>("Loc452", writer, Byte.MaxValue);
 
-                        // Seek past end
-                        view.Seek(1, SeekOrigin.End);
-                        VerifyRead("Loc461", view, new Byte[1], 0, 1, new Byte[1], 0);
-                        view.Seek((int)(view.Capacity + 1), SeekOrigin.Begin);
-                        VerifyRead("Loc462", view, new Byte[1], 0, 1, new Byte[1], 0);
+                    // Seek past end
+                    view.Seek(1, SeekOrigin.End);
+                    VerifyRead("Loc461", view, new Byte[1], 0, 1, new Byte[1], 0);
+                    view.Seek((int)(view.Capacity + 1), SeekOrigin.Begin);
+                    VerifyRead("Loc462", view, new Byte[1], 0, 1, new Byte[1], 0);
 
-                        // Seek before beginning
-                        VerifySeekException<IOException>("Loc465", view, -1, SeekOrigin.Begin);
-                        VerifySeekException<IOException>("Loc466", view, (int)(-view.Capacity - 1), SeekOrigin.End);
-                        VerifySeekException<IOException>("Loc467", reader.BaseStream, -1, SeekOrigin.Begin);
-                        VerifySeekException<IOException>("Loc468", reader.BaseStream, (int)(-view.Capacity - 1), SeekOrigin.End);
-                    }
+                    // Seek before beginning
+                    VerifySeekException<IOException>("Loc465", view, -1, SeekOrigin.Begin);
+                    VerifySeekException<IOException>("Loc466", view, (int)(-view.Capacity - 1), SeekOrigin.End);
+                    VerifySeekException<IOException>("Loc467", reader.BaseStream, -1, SeekOrigin.Begin);
+                    VerifySeekException<IOException>("Loc468", reader.BaseStream, (int)(-view.Capacity - 1), SeekOrigin.End);
+                }
 
-                    using (MemoryMappedViewStream view = mmf.CreateViewStream(0, 10000, MemoryMappedFileAccess.CopyOnWrite))
-                    {
-                        BinaryReader reader = new BinaryReader(view);
-                        BinaryWriter writer = new BinaryWriter(view);
+                using (MemoryMappedViewStream view = mmf.CreateViewStream(0, 10000, MemoryMappedFileAccess.CopyOnWrite))
+                {
+                    BinaryReader reader = new BinaryReader(view);
+                    BinaryWriter writer = new BinaryWriter(view);
 
-                        // Read existing values
-                        view.Seek(2161, SeekOrigin.Begin);
-                        VerifyRead("Loc501", view, new Byte[24], 0, 24, byteArray2, 24);
-                        reader.BaseStream.Seek(2161, SeekOrigin.Begin);
-                        VerifyReadDecimal("Loc502", reader, dec);
-                        VerifyReadBoolean("Loc503", reader, true);
-                        VerifyReadInt32("Loc504", reader, 211209802);
+                    // Read existing values
+                    view.Seek(2161, SeekOrigin.Begin);
+                    VerifyRead("Loc501", view, new Byte[24], 0, 24, byteArray2, 24);
+                    reader.BaseStream.Seek(2161, SeekOrigin.Begin);
+                    VerifyReadDecimal("Loc502", reader, dec);
+                    VerifyReadBoolean("Loc503", reader, true);
+                    VerifyReadInt32("Loc504", reader, 211209802);
 
-                        // Write to ViewStream
-                        view.Seek(4000, SeekOrigin.Begin);
-                        view.Write(byteArray1, 0, 16);
-                        view.Seek(4000, SeekOrigin.Begin);
-                        VerifyRead("Loc511", view, new Byte[16], 0, 16, byteArray1, 16);
-                        reader.BaseStream.Seek(4000, SeekOrigin.Begin);
-                        VerifyReadBoolean("Loc512", reader, true);
-                        VerifyReadUInt16("Loc513", reader, 55610);
-                        VerifyReadInt32("Loc514", reader, 1363047062);
-                        VerifyReadDouble("Loc515", reader, BitConverter.ToDouble(byteArray1, 7));
-                        reader.BaseStream.Seek(4000, SeekOrigin.Begin);
-                        VerifyReadDecimal("Loc516", reader, new Decimal(new Int32[] { BitConverter.ToInt32(byteArray1, 0), BitConverter.ToInt32(byteArray1, 4), BitConverter.ToInt32(byteArray1, 8), BitConverter.ToInt32(byteArray1, 12) }));
-                    }
+                    // Write to ViewStream
+                    view.Seek(4000, SeekOrigin.Begin);
+                    view.Write(byteArray1, 0, 16);
+                    view.Seek(4000, SeekOrigin.Begin);
+                    VerifyRead("Loc511", view, new Byte[16], 0, 16, byteArray1, 16);
+                    reader.BaseStream.Seek(4000, SeekOrigin.Begin);
+                    VerifyReadBoolean("Loc512", reader, true);
+                    VerifyReadUInt16("Loc513", reader, 55610);
+                    VerifyReadInt32("Loc514", reader, 1363047062);
+                    VerifyReadDouble("Loc515", reader, BitConverter.ToDouble(byteArray1, 7));
+                    reader.BaseStream.Seek(4000, SeekOrigin.Begin);
+                    VerifyReadDecimal("Loc516", reader, new Decimal(new Int32[] { BitConverter.ToInt32(byteArray1, 0), BitConverter.ToInt32(byteArray1, 4), BitConverter.ToInt32(byteArray1, 8), BitConverter.ToInt32(byteArray1, 12) }));
+                }
 
-                    using (MemoryMappedViewStream view = mmf.CreateViewStream(0, 10000, MemoryMappedFileAccess.Read))
-                    {
-                        BinaryReader reader = new BinaryReader(view);
+                using (MemoryMappedViewStream view = mmf.CreateViewStream(0, 10000, MemoryMappedFileAccess.Read))
+                {
+                    BinaryReader reader = new BinaryReader(view);
 
-                        // Read existing values
-                        view.Seek(2161, SeekOrigin.Begin);
-                        VerifyRead("Loc601", view, new Byte[24], 0, 24, byteArray2, 24);
-                        reader.BaseStream.Seek(2161, SeekOrigin.Begin);
-                        VerifyReadDecimal("Loc602", reader, dec);
-                        VerifyReadBoolean("Loc603", reader, true);
-                        VerifyReadInt32("Loc604", reader, 211209802);
+                    // Read existing values
+                    view.Seek(2161, SeekOrigin.Begin);
+                    VerifyRead("Loc601", view, new Byte[24], 0, 24, byteArray2, 24);
+                    reader.BaseStream.Seek(2161, SeekOrigin.Begin);
+                    VerifyReadDecimal("Loc602", reader, dec);
+                    VerifyReadBoolean("Loc603", reader, true);
+                    VerifyReadInt32("Loc604", reader, 211209802);
 
-                        // Values from CopyOnWrite ViewStream were not preserved
-                        view.Seek(4000, SeekOrigin.Begin);
-                        VerifyRead("Loc611", view, new Byte[16], 0, 16, new Byte[16], 16);
-                        reader.BaseStream.Seek(4000, SeekOrigin.Begin);
-                        VerifyReadBoolean("Loc612", reader, false);
-                        VerifyReadUInt16("Loc613", reader, 0);
-                        VerifyReadInt32("Loc614", reader, 0);
-                        VerifyReadDouble("Loc615", reader, 0d);
-                        reader.BaseStream.Seek(4000, SeekOrigin.Begin);
-                        VerifyReadDecimal("Loc616", reader, 0m);
-                    }
+                    // Values from CopyOnWrite ViewStream were not preserved
+                    view.Seek(4000, SeekOrigin.Begin);
+                    VerifyRead("Loc611", view, new Byte[16], 0, 16, new Byte[16], 16);
+                    reader.BaseStream.Seek(4000, SeekOrigin.Begin);
+                    VerifyReadBoolean("Loc612", reader, false);
+                    VerifyReadUInt16("Loc613", reader, 0);
+                    VerifyReadInt32("Loc614", reader, 0);
+                    VerifyReadDouble("Loc615", reader, 0d);
+                    reader.BaseStream.Seek(4000, SeekOrigin.Begin);
+                    VerifyReadDecimal("Loc616", reader, 0m);
                 }
             }
 

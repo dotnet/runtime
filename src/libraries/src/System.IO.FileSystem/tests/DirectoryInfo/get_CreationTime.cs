@@ -18,6 +18,7 @@ public class DirectoryInfo_get_CreationTime
 
     [Fact]
     [OuterLoop]
+    [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)] // getting birthtime not supported on all Unix systems
     public static void runTest()
     {
         int iCountErrors = 0;

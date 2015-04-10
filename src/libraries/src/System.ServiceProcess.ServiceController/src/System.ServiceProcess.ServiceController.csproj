@@ -16,7 +16,55 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="Interop\Interop.Manual.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ServiceProcessOptions.cs">
+      <Link>Common\Interop\Windows\Interop.ServiceProcessOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseServiceHandle.cs">
+      <Link>Common\Interop\Windows\Interop.CloseServiceHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ControlService.cs">
+      <Link>Common\Interop\Windows\Interop.ControlService.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnumDependentServices.cs">
+      <Link>Common\Interop\Windows\Interop.EnumDependentServices.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.EnumServicesStatusEx.cs">
+      <Link>Common\Interop\Windows\Interop.EnumServicesStatusEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenSCManager.cs">
+      <Link>Common\Interop\Windows\Interop.OpenSCManager.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenService.cs">
+      <Link>Common\Interop\Windows\Interop.OpenService.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryServiceConfig.cs">
+      <Link>Common\Interop\Windows\Interop.QueryServiceConfig.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryServiceStatus.cs">
+      <Link>Common\Interop\Windows\Interop.QueryServiceStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.StartService.cs">
+      <Link>Common\Interop\Windows\Interop.StartService.cs</Link>
+    </Compile>
+
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ENUM_SERVICE_STATUS.cs">
+      <Link>Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ENUM_SERVICE_STATUS_PROCESS.cs">
+      <Link>Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS_PROCESS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QUERY_SERVICE_CONFIG.cs">
+      <Link>Common\Interop\Windows\Interop.QUERY_SERVICE_CONFIG.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SERVICE_STATUS.cs">
+      <Link>Common\Interop\Windows\Interop.SERVICE_STATUS.cs</Link>
+    </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
     <Compile Include="System\ServiceProcess\ServiceController.cs" />
     <Compile Include="System\ServiceProcess\ServiceControllerStatus.cs" />

@@ -27,6 +27,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)] // testing case insensitivity
     public static void Exists_DoesCaseInsensitiveInvariantComparions()
     {
         using (TemporaryDirectory directory = new TemporaryDirectory())
@@ -124,6 +125,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // alternate data stream
     public static void Exists_PathWithAlternativeDataStreams_ReturnsFalse()
     {
         var paths = IOInputs.GetPathsWithAlternativeDataStreams();
@@ -137,6 +139,7 @@ public class Directory_Exists
 
     [Fact]
     [OuterLoop]
+    [PlatformSpecific(PlatformID.Windows)] // device names
     public static void Exists_PathWithReservedDeviceNameAsPath_ReturnsFalse()
     {
         var paths = IOInputs.GetPathsWithReservedDeviceNames();
@@ -149,6 +152,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // UNC paths
     public static void Exists_UncPathWithoutShareNameAsPath_ReturnsFalse()
     {
         var paths = IOInputs.GetUncPathsWithoutShareName();
@@ -162,6 +166,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // max directory length not fixed on Unix
     public static void Exists_DirectoryEqualToMaxDirectory_ReturnsTrue()
     {   // Creates directories up to the maximum directory length all at once
         using (TemporaryDirectory directory = new TemporaryDirectory())
@@ -177,6 +182,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // max directory length not fixed on Unix
     public static void Exists_DirectoryWithComponentLongerThanMaxComponentAsPath_ReturnsFalse()
     {
         var paths = IOInputs.GetPathsWithComponentLongerThanMaxComponent();
@@ -216,6 +222,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // drive labels
     public static void Exists_NotReadyDriveAsPath_ReturnsFalse()
     {
         var drive = IOServices.GetNotReadyDrive();
@@ -231,6 +238,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // drive labels
     public static void Exists_SubdirectoryOnNotReadyDriveAsPath_ReturnsFalse()
     {
         var drive = IOServices.GetNotReadyDrive();
@@ -246,6 +254,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // drive labels
     public static void Exists_NonExistentDriveAsPath_ReturnsFalse()
     {
         var drive = IOServices.GetNonExistentDrive();
@@ -261,6 +270,7 @@ public class Directory_Exists
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // drive labels
     public static void Exists_SubdirectoryOnNonExistentDriveAsPath_ReturnsFalse()
     {
         var drive = IOServices.GetNonExistentDrive();
@@ -331,7 +341,7 @@ public class Directory_Exists
     [Fact]
     public static void Exists_DotAsPath_ReturnsTrue()
     {
-        bool result = Directory.Exists(TestInfo.CurrentDirectory + @"\.");
+        bool result = Directory.Exists(Path.Combine(TestInfo.CurrentDirectory, "."));
 
         Assert.True(result);
     }
@@ -339,7 +349,7 @@ public class Directory_Exists
     [Fact]
     public static void Exists_DotDotAsPath_ReturnsTrue()
     {
-        bool result = Directory.Exists(TestInfo.CurrentDirectory + @"\..");
+        bool result = Directory.Exists(Path.Combine(TestInfo.CurrentDirectory, ".."));
 
         Assert.True(result);
     }

@@ -71,8 +71,9 @@ public class File_SetLastWriteTime_str_dt
             fs2.Dispose();                        
                         iCountTestcases++;
             try {
-                File.SetLastWriteTime(fileName , DateTime.Today) ;
-                if((File.GetLastWriteTime(fileName) - DateTime.Now).Seconds > 0) {
+                DateTime today = DateTime.Today;
+                File.SetLastWriteTime(fileName, today) ;
+                if (File.GetLastWriteTime(fileName) != today) {
                     iCountErrors++;
                     printerr( "Error_0007! Creation time cannot be correct");
                 }
@@ -91,8 +92,10 @@ public class File_SetLastWriteTime_str_dt
             iCountTestcases++;
             try
             {
-                File.SetLastWriteTime(fileName , DateTime.Now.AddYears(1)) ;
-                if((File.GetLastWriteTime(fileName) - DateTime.Now.AddYears(1)).Seconds > 1)
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                File.SetLastWriteTime(fileName , now.AddYears(1)) ;
+                if (File.GetLastWriteTime(fileName) != now.AddYears(1))
                 {
                     iCountErrors++;
                     Console.WriteLine(" POINTTOBREAK !!!Error_0013! Creation time cannot be correct.. Expected...{0}, ...Actual...{1}...Seconds difference...{2}",File.GetLastWriteTime(fileName),DateTime.Now.AddYears(1),(File.GetLastWriteTime(fileName) - DateTime.Now.AddYears(1)).Seconds  );
@@ -114,8 +117,10 @@ public class File_SetLastWriteTime_str_dt
             iCountTestcases++;
             try
             {
-                File.SetLastWriteTime(fileName, DateTime.Now.AddYears(-1));
-                if((File.GetLastWriteTime(fileName) - DateTime.Now.AddYears(-1)).Seconds > 1)
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                File.SetLastWriteTime(fileName, now.AddYears(-1));
+                if (File.GetLastWriteTime(fileName) != now.AddYears(-1))
                 {
                     iCountErrors++;
                     Console.WriteLine(" POINTTOBREAK !!!Error_0013! Creation time cannot be correct.. Expected...{0}, ...Actual...{1}...Seconds difference...{2}",File.GetLastWriteTime(fileName),DateTime.Now.AddYears(-1),(File.GetLastWriteTime(fileName) - DateTime.Now.AddYears(-1)).Seconds  );
@@ -137,8 +142,10 @@ public class File_SetLastWriteTime_str_dt
             iCountTestcases++;
             try
             {
-                File.SetLastWriteTime(fileName, DateTime.Now.AddMonths(1));
-                if((File.GetLastWriteTime(fileName) - DateTime.Now.AddMonths(1)).Seconds > 1)
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                File.SetLastWriteTime(fileName, now.AddMonths(1));
+                if (File.GetLastWriteTime(fileName) != now.AddMonths(1))
                 {
                     Console.WriteLine(DateTime.Now.AddMonths(1));
                 
@@ -161,8 +168,10 @@ public class File_SetLastWriteTime_str_dt
             iCountTestcases++;
             try
             {
-                File.SetLastWriteTime(fileName, DateTime.Now.AddMonths(-1));
-                if((File.GetLastWriteTime(fileName) - DateTime.Now.AddMonths(-1)).Seconds > 1)
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                File.SetLastWriteTime(fileName, now.AddMonths(-1));
+                if (File.GetLastWriteTime(fileName) != now.AddMonths(-1))
                 {
                     iCountErrors++;
                     Console.WriteLine(" POINTTOBREAK !!!Error_0013! Creation time cannot be correct.. Expected...{0}, ...Actual...{1}...Seconds difference...{2}",File.GetLastWriteTime(fileName),DateTime.Now.AddMonths(-1),(File.GetLastWriteTime(fileName) - DateTime.Now.AddMonths(-1)).Seconds  );
@@ -184,8 +193,10 @@ public class File_SetLastWriteTime_str_dt
             iCountTestcases++;
             try
             {
-                File.SetLastWriteTime(fileName, DateTime.Now.AddDays(1));
-                if((File.GetLastWriteTime(fileName) - DateTime.Now.AddDays(1)).Seconds > 1)
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                File.SetLastWriteTime(fileName, now.AddDays(1));
+                if (File.GetLastWriteTime(fileName) != now.AddDays(1))
                 {
                     iCountErrors++;
                     Console.WriteLine(" POINTTOBREAK !!!Error_0013! Creation time cannot be correct.. Expected...{0}, ...Actual...{1}...Seconds difference...{2}",File.GetLastWriteTime(fileName),DateTime.Now.AddDays(1),(File.GetLastWriteTime(fileName) - DateTime.Now.AddDays(-1)).Seconds  );
@@ -207,8 +218,10 @@ public class File_SetLastWriteTime_str_dt
             iCountTestcases++;
             try
             {
-                File.SetLastWriteTime(fileName, DateTime.Now.AddDays(-1));
-                if((File.GetLastWriteTime(fileName) - DateTime.Now.AddDays(-1)).Seconds > 1)
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                File.SetLastWriteTime(fileName, now.AddDays(-1));
+                if (File.GetLastWriteTime(fileName) != now.AddDays(-1))
                 {
                     iCountErrors++;
                     Console.WriteLine(" POINTTOBREAK !!!Error_0013! Creation time cannot be correct.. Expected...{0}, ...Actual...{1}...Seconds difference...{2}",File.GetLastWriteTime(fileName),DateTime.Now.AddDays(-1),(File.GetLastWriteTime(fileName) - DateTime.Now.AddDays(-1)).Seconds  );

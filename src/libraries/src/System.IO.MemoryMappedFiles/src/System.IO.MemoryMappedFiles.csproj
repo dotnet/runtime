@@ -123,6 +123,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
+      <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
       <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
@@ -138,11 +141,20 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.msync.cs">
       <Link>Common\Interop\Unix\Interop.msync.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
+      <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
       <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\librt\Interop.shm_open.cs">
+      <Link>Common\Interop\Unix\Interop.shm_open.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Unix.cs" />

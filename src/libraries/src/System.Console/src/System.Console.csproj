@@ -21,7 +21,9 @@
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="System\Console.cs" />
+    <Compile Include="System\ConsoleCancelEventArgs.cs" />
     <Compile Include="System\ConsoleColor.cs" />
+    <Compile Include="System\ConsoleSpecialKey.cs" />
     <Compile Include="System\IO\ConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\SyncTextWriter.cs" />
@@ -68,6 +70,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadConsole.cs">
       <Link>Common\Interop\Windows\Interop.ReadConsole.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleCtrlHandler.cs">
+      <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetConsoleTextAttribute.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleTextAttribute.cs</Link>
@@ -120,6 +125,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open.cs">
       <Link>Common\Interop\Unix\Interop.open.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Unix\Interop.read.cs</Link>
     </Compile>
@@ -131,6 +139,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
+      <Link>Common\Interop\Unix\Interop.GetFileInformation.cs"</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

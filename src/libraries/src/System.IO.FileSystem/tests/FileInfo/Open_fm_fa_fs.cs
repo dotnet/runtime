@@ -191,8 +191,11 @@ public class FileInfo_Open_fm_fa_fs
                 //This should succeed
                 File.Delete(sourceFileName);
 
-                //But we shold still be able to call the file
-                Eval(File.Exists(sourceFileName), "Err_3947sg! File doesn't exists");
+                if (Interop.IsWindows) // Unix allows files to be deleted while in-use
+                {
+                    //But we shold still be able to call the file
+                    Eval(File.Exists(sourceFileName), "Err_3947sg! File doesn't exists");
+                }
 
                 stream.Write(outbits, 0, outbits.Length);
 
