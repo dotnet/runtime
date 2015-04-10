@@ -124,6 +124,25 @@ typedef ucontext_t native_context_t;
 #define MCREG_EFlags(mc)    ((mc).mc_rflags)
 #define MCREG_SegCs(mc)     ((mc).mc_cs)
 
+  // from x86/fpu.h: struct __envxmm64
+#define FPSTATE(uc)             ((savefpu*)((uc)->uc_mcontext.mc_fpstate))
+#define FPREG_ControlWord(uc)   FPSTATE(uc)->sv_env.en_cw
+#define FPREG_StatusWord(uc)    FPSTATE(uc)->sv_env.en_sw
+#define FPREG_TagWord(uc)       FPSTATE(uc)->sv_env.en_tw
+#define FPREG_MxCsr(uc)         FPSTATE(uc)->sv_env.en_mxcsr
+#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc)->sv_env.en_mxcsr_mask
+#define FPREG_ErrorOffset(uc)   *(DWORD*) &(FPSTATE(uc)->sv_env.en_rip)
+#define FPREG_ErrorSelector(uc) *((WORD*) &(FPSTATE(uc)->sv_env.en_rip) + 2)
+#define FPREG_DataOffset(uc)    *(DWORD*) &(FPSTATE(uc)->sv_env.en_rdp)
+#define FPREG_DataSelector(uc)  *((WORD*) &(FPSTATE(uc)->sv_env.en_rdp) + 2)
+
+#define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->sv_xmm[index])
+
+// TODO: port this register to FreeBSD.
+// #define FPREG_St(uc, index)     *(M128A*)&((uc)->mc_fpstate[index])
+// something like this?
+// #define FPREG_St(uc, index)     *(M128A*)&(FPSTATE(uc)->sv_xstate.sx_ymm[index])
+
 #else // BIT64
 
 #define MCREG_Ebx(mc)       ((mc).mc_ebx)
