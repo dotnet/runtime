@@ -19,22 +19,22 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\crypt32\Interop.CryptProtectData.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptProtectData.cs">
       <Link>Common\Interop\Windows\Interop.CryptProtectData.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\crypt32\Interop.CryptUnprotectData.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptUnprotectData.cs">
       <Link>Common\Interop\Windows\Interop.CryptUnprotectData.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\crypt32\Interop.DATA_BLOB.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
       <Link>Common\Interop\Windows\Interop.DATA_BLOB.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.ZeroMemory.cs">
       <Link>Common\Interop\Windows\Interop.ZeroMemory.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.SysAllocStringLen.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs">
       <Link>Common\Interop\Windows\Interop.SysAllocStringLen.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.SysStringLen.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\oleaut32\Interop.SysStringLen.cs">
       <Link>Common\Interop\Windows\Interop.SysStringLen.cs</Link>
     </Compile>
     <Compile Include="System\Security\SecureString.cs" />
