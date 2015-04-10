@@ -9,7 +9,7 @@
     <RootNamespace>System.Security.SecureString.Tests</RootNamespace>
     <AssemblyName>System.Security.SecureString.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UnsupportedOperatingSystems>Linux</UnsupportedOperatingSystems>
+    <UnsupportedPlatforms>Linux</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
