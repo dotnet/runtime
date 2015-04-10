@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Microsoft.Win32.Registry.Tests</RootNamespace>
     <AssemblyName>Microsoft.Win32.Registry.Tests</AssemblyName>
-    <UnsupportedOperatingSystems>Linux</UnsupportedOperatingSystems>
+    <UnsupportedPlatforms>Linux</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -45,6 +45,7 @@
     <Compile Include="Registry\Registry_Getvalue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj.cs" />
     <Compile Include="Registry\Registry_SetValue_str_str_obj_valuekind.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>

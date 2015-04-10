@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{BC2E1649-291D-412E-9529-EDDA94FA7AD6}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.IO.Compression.Tests</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\src\System.IO.Compression.csproj">
+      <Project>{5471BFE8-8071-466f-838E-5ADAA779E742}</Project>
+      <Name>System.IO.Compression</Name>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DeflateStreamTests.cs" />
+    <Compile Include="GZipStreamTests.cs" />
+    <Compile Include="ZipArchive\zip_CreateTests.cs" />
+    <Compile Include="ZipArchive\zip_InvalidParametersAndStrangeFiles.cs" />
+    <Compile Include="ZipArchive\zip_ManualAndCompatibilityTests.cs" />
+    <Compile Include="ZipArchive\zip_ReadTests.cs" />
+    <Compile Include="ZipArchive\zip_UpdateTests.cs" />
+    <Compile Include="Utilities\CRC.cs" />
+    <Compile Include="Utilities\FileData.cs" />
+    <Compile Include="Utilities\LocalMemoryStream.cs" />
+    <Compile Include="Utilities\StreamHelpers.cs" />
+    <Compile Include="Utilities\StripHeaderAndFooter.cs" />
+    <Compile Include="Utilities\WrappedStream.cs" />
+    <Compile Include="Utilities\ZipTestHelper.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DeflateStream\" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <!-- Temporary until we have new work in build tools to
+       deploy content from nuget packages -->
+  <Target
+    Name="CopySystemIOCompressionTestDataToTestDirectory"
+    AfterTargets="CopyTestToTestDirectory"
+    Inputs="$(PackagesDir)$(CompressionTestPackage)\content"
+    Outputs="$(TestPath)%(TestTargetFramework.Folder)\*.*">
+    <PropertyGroup>
+      <CompressionTestPackage>System.IO.Compression.TestData.1.0.0-prerelease</CompressionTestPackage>
+      <TestTargetFrameworkFolder>%(TestTargetFramework.Folder)</TestTargetFrameworkFolder>
+    </PropertyGroup>
+    <ItemGroup>
+      <CompressionTestDataSrc Include="$(PackagesDir)$(CompressionTestPackage)\content\**\*.*" />
+      <CompressionTestDataDest Include="@(CompressionTestDataSrc->'$(TestPath)$(TestTargetFrameworkFolder)\%(RecursiveDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(CompressionTestDataSrc)"
+      DestinationFiles="@(CompressionTestDataDest)"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+</Project>

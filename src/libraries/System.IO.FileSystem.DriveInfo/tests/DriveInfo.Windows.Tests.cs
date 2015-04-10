@@ -136,6 +136,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact, OuterLoop]
+        [ActiveIssue(1355)]
         [PlatformSpecific(PlatformID.Windows)]
         public void TestVolumeLabel()
         {

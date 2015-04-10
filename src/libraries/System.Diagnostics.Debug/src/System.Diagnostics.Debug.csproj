@@ -68,6 +68,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open.cs">
       <Link>Common\Interop\Unix\libc\Interop.open.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\libc\Interop.strerror.cs</Link>
     </Compile>
@@ -76,6 +79,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.write.cs">
       <Link>Common\Interop\Unix\libc\Interop.write.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
+      <Link>Common\Interop\Unix\Interop.GetFileInformation.cs"</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>

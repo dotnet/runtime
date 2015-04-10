@@ -134,6 +134,8 @@ namespace System.IO
             // Make sure the handle is open
             if (handle.IsInvalid)
                 throw new ArgumentException(SR.Arg_InvalidHandle, "handle");
+            if (handle.IsClosed)
+                throw new ObjectDisposedException(SR.ObjectDisposed_FileClosed);
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
                 throw new ArgumentOutOfRangeException("access", SR.ArgumentOutOfRange_Enum);
             if (bufferSize <= 0)
@@ -581,7 +583,7 @@ namespace System.IO
                 SeekCore(value, SeekOrigin.Begin);
             }
 
-            SysCall<long, int>((fd, length, _) => Interop.libc.ftruncate64(fd, length), value);
+            SysCall<long, int>((fd, length, _) => Interop.libc.ftruncate(fd, length), value);
 
             // Return file pointer to where it was before setting length
             if (origPos != value)
@@ -1015,14 +1017,19 @@ namespace System.IO
             TArg1 arg1 = default(TArg1), TArg2 arg2 = default(TArg2),
             bool throwOnError = true)
         {
+            SafeFileHandle handle = _fileHandle;
+
+            Debug.Assert(sysCall != null);
+            Debug.Assert(handle != null);
+
             bool gotRefOnHandle = false;
             try
             {
                 // Get the file descriptor from the handle.  We increment the ref count to help
                 // ensure it's not closed out from under us.
-                _fileHandle.DangerousAddRef(ref gotRefOnHandle);
+                handle.DangerousAddRef(ref gotRefOnHandle);
                 Debug.Assert(gotRefOnHandle);
-                int fd = (int)_fileHandle.DangerousGetHandle();
+                int fd = (int)handle.DangerousGetHandle();
                 Debug.Assert(fd >= 0);
 
                 // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
@@ -1048,7 +1055,7 @@ namespace System.IO
             {
                 if (gotRefOnHandle)
                 {
-                    _fileHandle.DangerousRelease();
+                    handle.DangerousRelease();
                 }
                 else
                 {

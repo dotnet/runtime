@@ -57,13 +57,16 @@ public class FileInfo_get_DirectoryName
                 printerr("Error_78288! Incorrect name==" + fil2.DirectoryName);
             }
 
-            // [] UNC share
-            fil2 = new FileInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
-            iCountTestcases++;
-            if (!fil2.DirectoryName.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory")))
+            if (Interop.IsWindows) // UNC shares
             {
-                iCountErrors++;
-                printerr("Error_67y8b! Incorrect name==" + fil2.DirectoryName);
+                // [] UNC share
+                fil2 = new FileInfo(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory", "File"));
+                iCountTestcases++;
+                if (!fil2.DirectoryName.Equals(new string(Path.DirectorySeparatorChar, 2) + Path.Combine("Machine", "Directory")))
+                {
+                    iCountErrors++;
+                    printerr("Error_67y8b! Incorrect name==" + fil2.DirectoryName);
+                }
             }
 
             // [] Names with spaces

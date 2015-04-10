@@ -19,6 +19,7 @@ namespace System.IO
     {
         public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
         public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
+        public override bool CaseSensitive { get { return false; } }
 
         private static System.IO.FileAttributes ConvertFileAttributes(WinRTFileAttributes fileAttributes)
         {

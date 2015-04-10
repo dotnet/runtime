@@ -222,7 +222,7 @@ public class File_AppendAll_all
             //That we are closing the file after append is imlictly tested above
 
             path = Path.GetTempFileName();
-            stream = new FileStream(path, FileMode.Open);
+            stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             reader = new StreamReader(stream);
 
             content = "";

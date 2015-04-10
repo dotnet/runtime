@@ -57,6 +57,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // alternate data streams
     public static void CreateDirectory_PathWithAlternativeDataStreams_ThrowsNotSupportedException()
     {
         var paths = IOInputs.GetPathsWithAlternativeDataStreams();
@@ -71,6 +72,7 @@ public class Directory_CreateDirectory
 
     [Fact]
     [OuterLoop]
+    [PlatformSpecific(PlatformID.Windows)] // device name prefixes
     public static void CreateDirectory_PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException()
     {   // Throws DirectoryNotFoundException, when the behavior really should be an invalid path
         var paths = IOInputs.GetPathsWithReservedDeviceNames();
@@ -84,6 +86,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // UNC shares
     public static void CreateDirectory_UncPathWithoutShareNameAsPath_ThrowsArgumentException()
     {
         var paths = IOInputs.GetUncPathsWithoutShareName();
@@ -97,6 +100,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // max component size not fixed on Unix
     public static void CreateDirectory_DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsPathTooLongException()
     {
         // While paths themselves can be up to 260 characters including trailing null, file systems
@@ -114,6 +118,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // max directory size not fixed on Unix
     public static void CreateDirectory_DirectoryLongerThanMaxDirectoryAsPath_ThrowsPathTooLongException()
     {
         var paths = IOInputs.GetPathsLongerThanMaxDirectory();
@@ -140,6 +145,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
     public static void CreateDirectory_NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
     {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
         var drive = IOServices.GetNotReadyDrive();
@@ -156,6 +162,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
     public static void CreateDirectory_SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
     {
         var drive = IOServices.GetNotReadyDrive();
@@ -173,6 +180,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
     public static void CreateDirectory_NonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
     {
         var drive = IOServices.GetNonExistentDrive();
@@ -190,6 +198,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // testing drive labels
     public static void CreateDirectory_SubdirectoryOnNonExistentDriveAsPath_ThrowsDirectoryNotFoundException()
     {
         var drive = IOServices.GetNonExistentDrive();
@@ -265,7 +274,7 @@ public class Directory_CreateDirectory
     [Fact]
     public static void CreateDirectory_DotWithoutTrailingSlashAsPath_DoesNotThrow()
     {
-        DirectoryInfo result = Directory.CreateDirectory(TestInfo.CurrentDirectory + @"\."); // "Current" directory
+        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, ".")); // "Current" directory
 
         Assert.True(Directory.Exists(result.FullName));
     }
@@ -273,7 +282,7 @@ public class Directory_CreateDirectory
     [Fact]
     public static void CreateDirectory_DotWithTrailingSlashAsPath_DoesNotThrow()
     {
-        DirectoryInfo result = Directory.CreateDirectory(TestInfo.CurrentDirectory + @"\.\"); // "Current" directory
+        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, ".") + Path.DirectorySeparatorChar); // "Current" directory
 
         Assert.True(Directory.Exists(result.FullName));
     }
@@ -281,7 +290,7 @@ public class Directory_CreateDirectory
     [Fact]
     public static void CreateDirectory_DotDotWithoutTrailingSlashAsPath_DoesNotThrow()
     {
-        DirectoryInfo result = Directory.CreateDirectory(TestInfo.CurrentDirectory + @"\..");    // "Parent" of current directory
+        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, ".."));    // "Parent" of current directory
 
         Assert.True(Directory.Exists(result.FullName));
     }
@@ -289,7 +298,7 @@ public class Directory_CreateDirectory
     [Fact]
     public static void CreateDirectory_DotDotWithTrailingSlashAsPath_DoesNotThrow()
     {
-        DirectoryInfo result = Directory.CreateDirectory(TestInfo.CurrentDirectory + @"\..\");    // "Parent" of current directory
+        DirectoryInfo result = Directory.CreateDirectory(Path.Combine(TestInfo.CurrentDirectory, "..") + Path.DirectorySeparatorChar);    // "Parent" of current directory
 
         Assert.True(Directory.Exists(result.FullName));
     }
@@ -378,11 +387,12 @@ public class Directory_CreateDirectory
 #endif
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // max directory length not fixed on Unix
     public static void CreateDirectory_DirectoryEqualToMaxDirectory_CanBeCreated()
     {   // Recursively creates directories right up to the maximum directory length ("247 chars not including null")
         using (TemporaryDirectory directory = new TemporaryDirectory())
         {
-            PathInfo path = IOServices.GetPath(directory.Path, IOInputs.MaxDirectory);
+            PathInfo path = IOServices.GetPath(directory.Path, IOInputs.MaxDirectory, IOInputs.MaxComponent);
 
             // First create 'C:\AAA...AA', followed by 'C:\AAA...AAA\AAA...AAA', etc
             foreach (string subpath in path.SubPaths)
@@ -396,6 +406,7 @@ public class Directory_CreateDirectory
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // max directory length not fixed on Unix
     public static void CreateDirectory_DirectoryEqualToMaxDirectory_CanBeCreatedAllAtOnce()
     {   // Creates directories up to the maximum directory length all at once
         using (TemporaryDirectory directory = new TemporaryDirectory())
