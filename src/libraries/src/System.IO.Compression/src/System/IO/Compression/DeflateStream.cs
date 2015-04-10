@@ -8,7 +8,7 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO.Compression
 {
-    public class DeflateStream : Stream
+    public partial class DeflateStream : Stream
     {
         internal const int DefaultBufferSize = 8192;
 
@@ -26,8 +26,7 @@ namespace System.IO.Compression
         private bool _wroteBytes;
 
         private enum WorkerType : byte { Managed, ZLib, Unknown };
-        private static volatile WorkerType s_deflaterType = WorkerType.Unknown;
-
+        private static readonly WorkerType s_deflaterType = GetDeflaterType();
 
         public DeflateStream(Stream stream, CompressionMode mode)
             : this(stream, mode, false)
@@ -106,7 +105,7 @@ namespace System.IO.Compression
 
         private static IDeflater CreateDeflater(CompressionLevel? compressionLevel)
         {
-            switch (GetDeflaterType())
+            switch (s_deflaterType)
             {
                 case WorkerType.Managed:
                     return new DeflaterManaged();
@@ -123,20 +122,6 @@ namespace System.IO.Compression
                     Environment.FailFast("Program entered an unexpected state.");
                     return null; // we'll not reach here
             }
-        }
-
-        [System.Security.SecuritySafeCritical]
-        private static WorkerType GetDeflaterType()
-        {
-            // Let's not worry about race conditions:
-            // Yes, we risk initialising the singleton multiple times.
-            // However, initialising the singleton multiple times has no bad consequences, and is fairly cheap.
-
-            if (WorkerType.Unknown != s_deflaterType)
-                return s_deflaterType;
-
-            return (s_deflaterType = WorkerType.ZLib);
-            //return (deflaterType = WorkerType.Managed);
         }
 
         internal void SetFileFormatReader(IFileFormatReader reader)

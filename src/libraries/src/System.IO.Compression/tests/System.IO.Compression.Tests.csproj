@@ -7,6 +7,7 @@
     <ProjectGuid>{BC2E1649-291D-412E-9529-EDDA94FA7AD6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.Compression.Tests</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
@@ -34,12 +35,12 @@
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="Utilities\CRC.cs" />
     <Compile Include="Utilities\FileData.cs" />
-    <Compile Include="Utilities\LinqReplacements.cs" />
     <Compile Include="Utilities\LocalMemoryStream.cs" />
     <Compile Include="Utilities\StreamHelpers.cs" />
     <Compile Include="Utilities\StripHeaderAndFooter.cs" />
     <Compile Include="Utilities\WrappedStream.cs" />
     <Compile Include="Utilities\ZipTestHelper.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="DeflateStream\" />
