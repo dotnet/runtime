@@ -94,7 +94,7 @@ public class DirectoryInfo_get_Attributes
 #if TEST_WINRT  // WinRT doesn't support hidden
             if((diratt & (FileAttributes.Hidden|FileAttributes.Directory)) != (FileAttributes.Directory)) {
 #else
-            if ((diratt & (FileAttributes.Hidden | FileAttributes.Directory)) != (FileAttributes.Hidden | FileAttributes.Directory))
+            if ((diratt & (FileAttributes.Hidden | FileAttributes.Directory)) != (FileAttributes.Hidden | FileAttributes.Directory) && Interop.IsWindows) // setting Hidden not supported on Unix
             {
 #endif
                 iCountErrors++;
@@ -126,7 +126,7 @@ public class DirectoryInfo_get_Attributes
 #if !TEST_WINRT  // WinRT doesn't support hidden
             diratt = dir.Attributes;
             iCountTestcases++;
-            if ((int)(diratt & FileAttributes.Hidden) == 0)
+            if ((int)(diratt & FileAttributes.Hidden) == 0 && Interop.IsWindows) // setting Hidden not supported on Unix
             {
                 iCountErrors++;
                 printerr("Error_20x97! Hidden attribute not set");
@@ -149,9 +149,9 @@ public class DirectoryInfo_get_Attributes
             diratt = dir.Attributes;
             iCountTestcases++;
 #if TEST_WINRT  // WinRT doesn't support system
-            if((diratt & (FileAttributes.System|FileAttributes.Directory)) != (FileAttributes.Directory)) {
+            if ((diratt & (FileAttributes.System|FileAttributes.Directory)) != (FileAttributes.Directory)) {
 #else
-            if ((diratt & (FileAttributes.System | FileAttributes.Directory)) != (FileAttributes.System | FileAttributes.Directory))
+            if ((diratt & (FileAttributes.System | FileAttributes.Directory)) != (FileAttributes.System | FileAttributes.Directory) && Interop.IsWindows) // setting System not supported on Unix
             {
 #endif
                 iCountErrors++;
@@ -168,9 +168,9 @@ public class DirectoryInfo_get_Attributes
             diratt = dir.Attributes;
             iCountTestcases++;
 #if TEST_WINRT  // WinRT doesn't support archive
-            if((diratt & (FileAttributes.Archive|FileAttributes.Directory)) != (FileAttributes.Directory)) {
+            if ((diratt & (FileAttributes.Archive|FileAttributes.Directory)) != (FileAttributes.Directory)) {
 #else
-            if ((diratt & (FileAttributes.Archive | FileAttributes.Directory)) != (FileAttributes.Archive | FileAttributes.Directory))
+            if ((diratt & (FileAttributes.Archive | FileAttributes.Directory)) != (FileAttributes.Archive | FileAttributes.Directory) && Interop.IsWindows) // setting Archive not supported on Unix
             {
 #endif
                 iCountErrors++;

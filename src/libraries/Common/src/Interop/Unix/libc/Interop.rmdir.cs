@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int remove(string pathname);
+        internal static extern int rmdir(string pathname);
     }
 }

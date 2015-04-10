@@ -99,8 +99,10 @@ public class File_SetLastAccessTime_str_dt
             fs2.Dispose();                        
                         iCountTestcases++;
             try {
-                File.SetLastAccessTime(fileName , DateTime.Now.AddYears(-1)) ;
-                if((File.GetLastAccessTime(fileName) - DateTime.Now.AddYears(-1)).Seconds > 0 ) {
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                File.SetLastAccessTime(fileName, now.AddYears(-1)) ;
+                if (File.GetLastAccessTime(fileName) != now.AddYears(-1)) {
                     Console.WriteLine(File.GetLastAccessTime(fileName));
                     Console.WriteLine(DateTime.Now.AddYears(-1));
                     iCountErrors++;

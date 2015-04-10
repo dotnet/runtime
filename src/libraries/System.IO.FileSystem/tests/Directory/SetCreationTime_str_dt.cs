@@ -47,6 +47,7 @@ public class Directory_SetCreationTime_str_dt
 
     [Fact]
     [OuterLoop]
+    [PlatformSpecific(PlatformID.Windows)] // roundtripping birthtime not supported on Unix
     public static void runTest()
     {
         String strLoc = "Loc_0001";

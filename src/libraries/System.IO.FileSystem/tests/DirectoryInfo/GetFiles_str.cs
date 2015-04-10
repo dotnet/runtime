@@ -160,6 +160,11 @@ public class DirectoryInfo_GetFiles_str
             {
                 names[i++] = Path.GetFileName(f);
             }
+            
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
 
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1File1") < 0)
@@ -281,8 +286,11 @@ public class DirectoryInfo_GetFiles_str
             {
                 dir2.GetFiles("<>");
 
-                iCountErrors++;
-                Console.WriteLine("Err_32497gs! No exception thrown");
+                if (Interop.IsWindows) // '<' and '>' are valid Unix filename chars
+                {
+                    iCountErrors++;
+                    Console.WriteLine("Err_32497gs! No exception thrown");
+                }
             }
             catch (ArgumentException)
             {

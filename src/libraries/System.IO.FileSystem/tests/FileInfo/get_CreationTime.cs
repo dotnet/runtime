@@ -20,6 +20,7 @@ public class FileInfo_get_CreationTime
 
     [Fact]
     [OuterLoop]
+    [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)] // getting birthtime not supported on Linux
     public static void runTest()
     {
         String strLoc = "Loc_000oo";

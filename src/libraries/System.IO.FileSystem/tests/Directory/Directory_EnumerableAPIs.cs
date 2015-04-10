@@ -26,7 +26,10 @@ namespace EnumerableTests
 
             TestExceptions();
 
-            TestWhileEnumerating();
+            if (Interop.IsWindows) // test relies on the explicit order being returned on Windows
+            {
+                TestWhileEnumerating();
+            }
 
             s_utils.DeleteTestDirs();
 
@@ -52,7 +55,7 @@ namespace EnumerableTests
             DoDirectoryGetDirectoriesTest(name, "lev2_f", SearchOption.AllDirectories, s_utils.expected_Dirs_ExactSearchPattern);
             DoDirectoryGetDirectoriesTest(name, "lev2_f", SearchOption.TopDirectoryOnly, new HashSet<String>());
 
-            DoDirectoryGetDirectoriesTest(name, @"lev1_a\*", SearchOption.TopDirectoryOnly, s_utils.expected_Dirs_Subdir);
+            DoDirectoryGetDirectoriesTest(name, Path.Combine("lev1_a", "*"), SearchOption.TopDirectoryOnly, s_utils.expected_Dirs_Subdir);
 
             DoDirectoryGetFilesTest(name, "*", SearchOption.AllDirectories, s_utils.expected_Files_Deep);
             DoDirectoryGetFilesTest(name, "*", SearchOption.TopDirectoryOnly, s_utils.expected_Files_Shallow);
@@ -172,15 +175,18 @@ namespace EnumerableTests
             TestWeirdPathIter(whitespacePath, "whitespacePath", new ArgumentException());
 
             // try to test a path that doesn't exist. Skip if can't find an unused drive
-            String pathNotExists = null;
-            String unusedDrive = EnumerableUtils.GetUnusedDrive();
-            if (unusedDrive != null)
+            if (Interop.IsWindows)
             {
-                pathNotExists = Path.Combine(unusedDrive, @"temp\dir");
-            }
-            if (pathNotExists != null)
-            {
-                TestWeirdPathIter(pathNotExists, "pathNotExists", new DirectoryNotFoundException());
+                String pathNotExists = null;
+                String unusedDrive = EnumerableUtils.GetUnusedDrive();
+                if (unusedDrive != null)
+                {
+                    pathNotExists = Path.Combine(unusedDrive, "temp", "dir");
+                }
+                if (pathNotExists != null)
+                {
+                    TestWeirdPathIter(pathNotExists, "pathNotExists", new DirectoryNotFoundException());
+                }
             }
 
             // file (not dir) name. If we try to do GetFiles, GetDirs, etc in a file (not dir) we get IOException
@@ -196,11 +202,11 @@ namespace EnumerableTests
             TestWeirdPathIter(filePath, "pathIsFile", new IOException());
 
             // PathTooLong
-            String longPath = new String('a', 240) + @"\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+            String longPath = Path.Combine(new String('a', IOInputs.MaxDirectory), "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
             TestWeirdPathIter(longPath, "pathTooLong", new PathTooLongException());
 
             // path invalid chars
-            String invalidCharPath = @"temp\fsd<sdsds";
+            String invalidCharPath = "temp" + Path.DirectorySeparatorChar + "fsd\0sdsds";
             TestWeirdPathIter(invalidCharPath, "invalidCharPath", new ArgumentException());
         }
 

@@ -109,7 +109,7 @@ namespace System.IO
             String newDirs = Path.Combine(FullPath, path);
             String fullPath = Path.GetFullPath(newDirs);
 
-            if (0 != String.Compare(FullPath, 0, fullPath, 0, FullPath.Length, StringComparison.OrdinalIgnoreCase))
+            if (0 != String.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathHelpers.GetComparison(FileSystem.Current.CaseSensitive)))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, DisplayPath));
             }
@@ -417,13 +417,14 @@ namespace System.IO
             else
                 fullSourcePath = FullPath + PathHelpers.DirectorySeparatorCharAsString;
 
-            if (String.Compare(fullSourcePath, fullDestDirName, StringComparison.OrdinalIgnoreCase) == 0)
+            StringComparison pathComparison = PathHelpers.GetComparison(FileSystem.Current.CaseSensitive);
+            if (String.Compare(fullSourcePath, fullDestDirName, pathComparison) == 0)
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
             String sourceRoot = Path.GetPathRoot(fullSourcePath);
             String destinationRoot = Path.GetPathRoot(fullDestDirName);
 
-            if (String.Compare(sourceRoot, destinationRoot, StringComparison.OrdinalIgnoreCase) != 0)
+            if (String.Compare(sourceRoot, destinationRoot, pathComparison) != 0)
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             FileSystem.Current.MoveDirectory(FullPath, fullDestDirName);

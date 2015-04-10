@@ -40,6 +40,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // file sharing restriction limitations on Unix
         public void FileShareWithoutReadThrows()
         {
             string fileName = GetTestFilePath();

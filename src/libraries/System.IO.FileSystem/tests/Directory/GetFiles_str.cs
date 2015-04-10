@@ -160,6 +160,11 @@ public class Directory_GetFiles_str
             foreach (FileInfo f in filArr)
                 names[i++] = f.Name;
 
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
+
             iCountTestcases++;
             if (Array.IndexOf(names, "TestFile1") < 0)
             {
@@ -194,6 +199,11 @@ public class Directory_GetFiles_str
             i = 0;
             foreach (FileInfo f in filArr)
                 names[i++] = f.Name;
+
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(names);
+            }
 
             iCountTestcases++;
             if (Array.IndexOf(names, "Test1File1") < 0)
@@ -257,7 +267,7 @@ public class Directory_GetFiles_str
             // [] Multiple wildcards in searchstring
 
             strLoc = "Loc_9438y";
-            filArr = dir2.GetFiles("*es*f*l*");
+            filArr = dir2.GetFiles("*es*F*l*");
             iCountTestcases++;
             if (filArr.Length != 5)
             {
@@ -280,12 +290,12 @@ public class Directory_GetFiles_str
 
             filArr = dir2.GetFiles("*BB*");
             iCountTestcases++;
-            if (filArr.Length != 2)
+            if (filArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + filArr.Length);
             }
-            names = new String[2];
+            names = new String[filArr.Length];
             i = 0;
             foreach (FileInfo f in filArr)
             {
@@ -298,11 +308,14 @@ public class Directory_GetFiles_str
                 iCountErrors++;
                 printerr("Error_956yb! Incorrect name==" + filArr[0].Name);
             }
-            iCountTestcases++;
-            if (Array.IndexOf(names, "aaabbcc") < 0)
+            if (!Interop.IsLinux) // Linux is case-sensitive
             {
-                iCountErrors++;
-                printerr("Error_48yg7! Incorrect name==" + filArr[1].Name);
+                iCountTestcases++;
+                if (Array.IndexOf(names, "aaabbcc") < 0)
+                {
+                    iCountErrors++;
+                    printerr("Error_48yg7! Incorrect name==" + filArr[1].Name);
+                }
             }
 
             // [] Exact match

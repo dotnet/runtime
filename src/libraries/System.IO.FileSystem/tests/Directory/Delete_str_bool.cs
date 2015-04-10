@@ -45,6 +45,7 @@ public class Directory_Co5663Delete_str_bool
     }
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // readonly directories can be deleted on Unix
     public static void DirectoryWithReadOnlyAttribute()
     {
         // [] Deleting directory with Readonly property set should always fail 
@@ -90,6 +91,7 @@ public class Directory_Co5663Delete_str_bool
 #endif
 
     [Fact]
+    [PlatformSpecific(PlatformID.Windows)] // directories with in-use files can be deleted on Unix
     public static void DirectoryWithFileInUse()
     {
         // [] Delete directory with a file that is in use
@@ -146,7 +148,7 @@ public class Directory_Co5663Delete_str_bool
             throw;
         }
 
-        Directory.Delete(dir2.FullName.ToLower(), true);
+        Directory.Delete(dir2.FullName, true);
         if (Directory.Exists(dirName))
         {
             printerr("Error_26y7b! Directory not deleted");
@@ -161,7 +163,7 @@ public class Directory_Co5663Delete_str_bool
         string dirName = Path.Combine(TestInfo.CurrentDirectory, s_dirName + "_withSubDirs");
         Directory.CreateDirectory(Path.Combine(dirName, "Test1"));
         DirectoryInfo dir2 = Directory.CreateDirectory(Path.Combine(dirName, "Test2"));
-        Directory.Delete(dir2.FullName.ToUpper(), false);
+        Directory.Delete(dir2.FullName, false);
         if (Directory.Exists(Path.Combine(dirName, "Test2")))
         {
             printerr("Error_49928! Directory not deleted");
