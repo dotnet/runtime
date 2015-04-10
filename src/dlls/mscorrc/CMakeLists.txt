@@ -4,6 +4,7 @@ if(WIN32)
 else()
 
     set (RC_TO_PO ${CMAKE_CURRENT_SOURCE_DIR}/rctopo.awk)
+    set (PROCESS_RC ${CMAKE_CURRENT_SOURCE_DIR}/processrc.awk)
     
     # Create a command to build gettext resources binary file from windows .rc file
     # The target binary file path is returned in the variable specified by
@@ -33,7 +34,7 @@ else()
             # Preprocess the windows .rc file
             COMMAND ${CMAKE_CXX_COMPILER} -E -P ${PREPROCESS_DEFINITIONS} ${INCLUDE_DIRECTORIES} -o ${PREPROCESSED_SOURCE} -x c ${SOURCE}
             # Convert the preprocessed .rc file to the .po file which is a source for the gettext toolchain
-            COMMAND ${AWK} -f ${RC_TO_PO} ${PREPROCESSED_SOURCE} >${GETTEXT_SOURCE}
+            COMMAND ${AWK} -f ${RC_TO_PO} -f ${PROCESS_RC} ${PREPROCESSED_SOURCE} >${GETTEXT_SOURCE}
             # Compile the .po file into the target binary .mo file
             COMMAND ${MSGFMT} ${GETTEXT_SOURCE} -o ${GETTEXT_TARGET}
             DEPENDS ${SOURCE}
