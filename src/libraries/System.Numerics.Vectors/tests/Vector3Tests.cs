@@ -21,8 +21,14 @@ namespace System.Numerics.Tests
         {
             Vector3 v1 = new Vector3(2.0f, 3.0f, 3.3f);
 
-            Single[] a = new Single[4];
-            Single[] b = new Single[3];
+            float[] a = new float[4];
+            float[] b = new float[3];
+
+            Assert.Throws<ArgumentNullException>(() => v1.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, a.Length));
+            Assert.Throws<ArgumentException>(() => v1.CopyTo(a, a.Length - 2));
+
             v1.CopyTo(a, 1);
             v1.CopyTo(b);
             Assert.Equal(0.0f, a[0]);
@@ -663,7 +669,7 @@ namespace System.Numerics.Tests
 
         // A test for operator * (Vector3f, float)
         [Fact]
-        public void Vector3MultiplyTest()
+        public void Vector3MultiplyOperatorTest()
         {
             Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);
 
@@ -677,9 +683,25 @@ namespace System.Numerics.Tests
             Assert.True(MathHelper.Equal(expected, actual), "Vector3f.operator * did not return the expected value.");
         }
 
+        // A test for operator * (float, Vector3f)
+        [Fact]
+        public void Vector3MultiplyOperatorTest2()
+        {
+            Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);
+
+            const float factor = 2.0f;
+
+            Vector3 expected = new Vector3(2.0f, 4.0f, 6.0f);
+            Vector3 actual;
+
+            actual = factor * a;
+
+            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.operator * did not return the expected value.");
+        }
+
         // A test for operator * (Vector3f, Vector3f)
         [Fact]
-        public void Vector3MultiplyTest1()
+        public void Vector3MultiplyOperatorTest3()
         {
             Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);
 
@@ -895,12 +917,23 @@ namespace System.Numerics.Tests
 
         // A test for Multiply (Vector3f, float)
         [Fact]
-        public void Vector3MultiplyTest2()
+        public void Vector3MultiplyTest()
         {
             Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);
-            float factor = 2.0f;
+            const float factor = 2.0f;
             Vector3 expected = new Vector3(2.0f, 4.0f, 6.0f);
             Vector3 actual = Vector3.Multiply(a, factor);
+            Assert.Equal(expected, actual);
+        }
+
+        // A test for Multiply (float, Vector3f)
+        [Fact]
+        public static void Vector3MultiplyTest2()
+        {
+            Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);
+            const float factor = 2.0f;
+            Vector3 expected = new Vector3(2.0f, 4.0f, 6.0f);
+            Vector3 actual = Vector3.Multiply(factor, a);
             Assert.Equal(expected, actual);
         }
 
