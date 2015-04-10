@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <NoWarn>649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);USE_REFEMIT;FEATURE_LEGACYNETCF</DefineConstants>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>

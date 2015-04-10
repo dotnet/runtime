@@ -1123,21 +1123,9 @@ namespace System.Diagnostics
             return StartCore(startInfo);
         }
 
-        // In most scenario 437 is the codepage used for Console encoding. However this encoding is not available by default and so we use the try{} catch{} pattern and use UTF8 in case of failure.
-        // This ensures that if the user uses Encoding.RegisterProvider to register the encoding the Process class can automatically get the codepage as well.
         private static Encoding GetEncoding(int codePage)
         {
-            Encoding enc = null;
-            try
-            {
-                enc = Encoding.GetEncoding(codePage);
-            }
-            catch (NotSupportedException)
-            {
-                // There is no data available for the above codePage so we will use UTF8 instead with emitPrefix set to false.
-                enc = new UTF8Encoding(false);
-            }
-            return enc;
+            return EncodingHelper.GetSupportedConsoleEncoding(codePage);
         }
 
         public static Process Start(string fileName, string userName, SecureString password, string domain)

@@ -28,7 +28,7 @@ namespace System.Resources
     // Generates a binary .resources file in the system default format 
     // from name and value pairs.  Create one with a unique file name,
     // call AddResource() at least once, then call Generate() to write
-    // the .resources file to disk, then call Close() to close the file.
+    // the .resources file to disk, then call Dispose() to close the file.
     // 
     // The resources generally aren't written out in the same order 
     // they were added.
@@ -78,11 +78,6 @@ namespace System.Resources
             // Check for duplicate resources whose names vary only by case.
             _caseInsensitiveDups.Add(name, null);
             _resourceList.Add(name, value);
-        }
-
-        public void Close()
-        {
-            Dispose();
         }
 
         public void Dispose()
