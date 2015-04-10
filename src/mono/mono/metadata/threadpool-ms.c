@@ -1229,12 +1229,14 @@ mono_threadpool_ms_cleanup (void)
 }
 
 MonoAsyncResult *
-mono_threadpool_ms_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback, MonoObject *state)
+mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params)
 {
 	static MonoClass *async_call_klass = NULL;
-	MonoDomain *domain;
-	MonoAsyncResult *ares;
-	MonoAsyncCall *ac;
+	MonoMethodMessage *message;
+	MonoAsyncResult *async_result;
+	MonoAsyncCall *async_call;
+	MonoDelegate *async_callback = NULL;
+	MonoObject *state = NULL;
 
 	if (!async_call_klass)
 		async_call_klass = mono_class_from_name (mono_defaults.corlib, "System", "MonoAsyncCall");
@@ -1242,31 +1244,32 @@ mono_threadpool_ms_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate
 
 	ensure_initialized (NULL);
 
-	domain = mono_domain_get ();
+	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL);
 
-	ac = (MonoAsyncCall*) mono_object_new (domain, async_call_klass);
-	MONO_OBJECT_SETREF (ac, msg, msg);
-	MONO_OBJECT_SETREF (ac, state, state);
+	async_call = (MonoAsyncCall*) mono_object_new (domain, async_call_klass);
+	MONO_OBJECT_SETREF (async_call, msg, message);
+	MONO_OBJECT_SETREF (async_call, state, state);
 
 	if (async_callback) {
-		MONO_OBJECT_SETREF (ac, cb_method, mono_get_delegate_invoke (((MonoObject*) async_callback)->vtable->klass));
-		MONO_OBJECT_SETREF (ac, cb_target, async_callback);
+		MONO_OBJECT_SETREF (async_call, cb_method, mono_get_delegate_invoke (((MonoObject*) async_callback)->vtable->klass));
+		MONO_OBJECT_SETREF (async_call, cb_target, async_callback);
 	}
 
-	ares = mono_async_result_new (domain, NULL, ac->state, NULL, (MonoObject*) ac);
-	MONO_OBJECT_SETREF (ares, async_delegate, target);
+	async_result = mono_async_result_new (domain, NULL, async_call->state, NULL, (MonoObject*) async_call);
+	MONO_OBJECT_SETREF (async_result, async_delegate, target);
 
 #ifndef DISABLE_SOCKETS
 	if (mono_threadpool_ms_is_io (target, state))
-		return mono_threadpool_ms_io_add (ares, (MonoSocketAsyncResult*) state);
+		return mono_threadpool_ms_io_add (async_result, (MonoSocketAsyncResult*) state);
 #endif
 
-	mono_threadpool_ms_enqueue_work_item (domain, (MonoObject*) ares);
-	return ares;
+	mono_threadpool_ms_enqueue_work_item (domain, (MonoObject*) async_result);
+
+	return async_result;
 }
 
 MonoObject *
-mono_threadpool_ms_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
+mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
 {
 	MonoAsyncCall *ac;
 

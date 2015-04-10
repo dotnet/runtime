@@ -225,8 +225,6 @@ do_console_cancel_event (void)
 	MonoClass *klass;
 	MonoDelegate *load_value;
 	MonoMethod *method;
-	MonoMethodMessage *msg;
-	MonoMethod *im;
 	MonoVTable *vtable;
 
 	/* FIXME: this should likely iterate all the domains, instead */
@@ -252,9 +250,8 @@ do_console_cancel_event (void)
 	klass = load_value->object.vtable->klass;
 	method = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
 	g_assert (method != NULL);
-	im = mono_get_delegate_invoke (method->klass);
-	msg = mono_method_call_message_new (method, NULL, im, NULL, NULL);
-	mono_thread_pool_add ((MonoObject *) load_value, msg, NULL, NULL);
+
+	mono_thread_pool_begin_invoke (domain, (MonoObject*) load_value, method, NULL);
 }
 
 static int need_cancel = FALSE;

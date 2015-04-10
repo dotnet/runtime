@@ -34,9 +34,9 @@ void
 mono_threadpool_ms_cleanup (void);
 
 MonoAsyncResult *
-mono_threadpool_ms_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback, MonoObject *state);
+mono_threadpool_ms_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params);
 MonoObject *
-mono_threadpool_ms_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc);
+mono_threadpool_ms_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc);
 
 gboolean
 mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout);

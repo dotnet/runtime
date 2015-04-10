@@ -2055,13 +2055,9 @@ mono_marshal_emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
 static MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 {
-	MonoMethodMessage *msg;
-	MonoDelegate *async_callback;
 	MonoMulticastDelegate *mcast_delegate;
-	MonoObject *state;
-	MonoMethod *im;
 	MonoClass *klass;
-	MonoMethod *method = NULL, *method2 = NULL;
+	MonoMethod *method;
 
 	g_assert (delegate);
 	mcast_delegate = (MonoMulticastDelegate *) delegate;
@@ -2077,6 +2073,9 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			/* If the target is a proxy, make a direct call. Is proxy's work
 			// to make the call asynchronous.
 			*/
+			MonoMethodMessage *msg;
+			MonoDelegate *async_callback;
+			MonoObject *state;
 			MonoAsyncResult *ares;
 			MonoObject *exc;
 			MonoArray *out_args;
@@ -2100,16 +2099,12 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 
 	klass = delegate->object.vtable->klass;
 
-	method = mono_get_delegate_invoke (klass);
-	method2 = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
-	if (method2)
-		method = method2;
-	g_assert (method != NULL);
+	method = mono_class_get_method_from_name (klass, "BeginInvoke", -1);
+	if (!method)
+		method = mono_get_delegate_invoke (klass);
+	g_assert (method);
 
-	im = mono_get_delegate_invoke (method->klass);
-	msg = mono_method_call_message_new (method, params, im, &async_callback, &state);
-
-	return mono_thread_pool_add ((MonoObject *)delegate, msg, async_callback, state);
+	return mono_thread_pool_begin_invoke (mono_domain_get (), (MonoObject*) delegate, method, params);
 }
 
 #ifndef DISABLE_JIT
@@ -2824,7 +2819,7 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	} else
 #endif
 	{
-		res = mono_thread_pool_finish (ares, &out_args, &exc);
+		res = mono_thread_pool_end_invoke (ares, &out_args, &exc);
 	}
 
 	if (exc) {

@@ -1003,48 +1003,49 @@ icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state)
 }
 
 MonoAsyncResult *
-mono_thread_pool_add (MonoObject *target, MonoMethodMessage *msg, MonoDelegate *async_callback,
-		      MonoObject *state)
+mono_thread_pool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params)
 {
-	MonoDomain *domain;
-	MonoAsyncResult *ares;
-	MonoAsyncCall *ac;
+	MonoMethodMessage *message;
+	MonoAsyncResult *async_result;
+	MonoAsyncCall *async_call;
+	MonoDelegate *async_callback = NULL;
+	MonoObject *state = NULL;
 
 	if (use_ms_threadpool ())
-		return mono_threadpool_ms_add (target, msg, async_callback, state);
+		return mono_threadpool_ms_begin_invoke (domain, target, method, params);
 
-	domain = mono_domain_get ();
+	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL);
 
-	ac = (MonoAsyncCall*)mono_object_new (domain, async_call_klass);
-	MONO_OBJECT_SETREF (ac, msg, msg);
-	MONO_OBJECT_SETREF (ac, state, state);
+	async_call = (MonoAsyncCall*)mono_object_new (domain, async_call_klass);
+	MONO_OBJECT_SETREF (async_call, msg, message);
+	MONO_OBJECT_SETREF (async_call, state, state);
 
 	if (async_callback) {
-		ac->cb_method = mono_get_delegate_invoke (((MonoObject *)async_callback)->vtable->klass);
-		MONO_OBJECT_SETREF (ac, cb_target, async_callback);
+		async_call->cb_method = mono_get_delegate_invoke (((MonoObject*) async_callback)->vtable->klass);
+		MONO_OBJECT_SETREF (async_call, cb_target, async_callback);
 	}
 
-	ares = mono_async_result_new (domain, NULL, ac->state, NULL, (MonoObject*)ac);
-	MONO_OBJECT_SETREF (ares, async_delegate, target);
+	async_result = mono_async_result_new (domain, NULL, async_call->state, NULL, (MonoObject*) async_call);
+	MONO_OBJECT_SETREF (async_result, async_delegate, target);
 
 #ifndef DISABLE_SOCKETS
 	if (socket_io_filter (target, state)) {
-		socket_io_add (ares, (MonoSocketAsyncResult *) state);
-		return ares;
+		socket_io_add (async_result, (MonoSocketAsyncResult *) state);
+		return async_result;
 	}
 #endif
-	threadpool_append_job (&async_tp, (MonoObject *) ares);
-	return ares;
+	threadpool_append_job (&async_tp, (MonoObject *) async_result);
+	return async_result;
 }
 
 MonoObject *
-mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
+mono_thread_pool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc)
 {
 	MonoAsyncCall *ac;
 	HANDLE wait_event;
 
 	if (use_ms_threadpool ()) {
-		return mono_threadpool_ms_finish (ares, out_args, exc);
+		return mono_threadpool_ms_end_invoke (ares, out_args, exc);
 	}
 
 	*exc = NULL;

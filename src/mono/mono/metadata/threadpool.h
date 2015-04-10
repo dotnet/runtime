@@ -11,13 +11,12 @@ void mono_thread_pool_init_tls (void);
 
 void icall_append_job (MonoObject *ar);
 void icall_append_io_job (MonoObject *target, MonoSocketAsyncResult *state);
+
 MonoAsyncResult *
-mono_thread_pool_add     (MonoObject *target, MonoMethodMessage *msg, 
-			  MonoDelegate *async_callback, MonoObject *state);
+mono_thread_pool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod *method, gpointer *params);
 
 MonoObject *
-mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, 
-			 MonoObject **exc);
+mono_thread_pool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObject **exc);
 
 void mono_thread_pool_cleanup (void);
 
