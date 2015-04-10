@@ -157,7 +157,8 @@ runtest()
   fileName="${file##*/}"
   fileNameWithoutExtension="${fileName%.*}"
   testDllName="$fileNameWithoutExtension.dll"
-  xunitOSCategory="non$LowerOStests"
+  xunitOSCategory="non$LowerOS"
+  xunitOSCategory+="tests"
 
   dirName="$CoreFxTestsRoot/tests/Windows_NT.AnyCPU.$Configuration/$fileNameWithoutExtension/aspnetcore50"
 
