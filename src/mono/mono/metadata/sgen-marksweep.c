@@ -1752,7 +1752,7 @@ major_start_major_collection (void)
 	MSBlockInfo *block;
 	int i;
 
-	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "Major collection on unswept heap");
+	major_finish_sweep_checking ();
 
 	/*
 	 * Clear the free lists for block sizes where we do evacuation.  For those block
