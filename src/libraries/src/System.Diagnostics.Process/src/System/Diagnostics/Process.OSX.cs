@@ -5,9 +5,9 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
-        // The proc_start_time RUsage is in nanoseconds but we need to convert to milliseconds so
-        // this is the number of nanoseconds in a millisecond.
-        private const ulong NumberOfNanoSecondsInMilliseconds = 100000000000;
+        // The ri_proc_start_abstime needs to be converted to milliseconds to determine
+        // the actual start time of the process.
+        private const ulong MillisecondFactor = 100000000000;
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         public TimeSpan PrivilegedProcessorTime
@@ -26,11 +26,11 @@ namespace System.Diagnostics
             {
                 // Get the RUsage data and convert the process start time (which is the number of
                 // nanoseconds before Now that the process started) to a DateTime.
-                DateTime now = DateTime.Now;
+                DateTime now = DateTime.UtcNow;
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                int milliseconds = Convert.ToInt32(info.ri_proc_start_abstime / NumberOfNanoSecondsInMilliseconds);
+                int milliseconds = Convert.ToInt32(info.ri_proc_start_abstime / MillisecondFactor);
                 TimeSpan ts = new TimeSpan(0, 0, 0, 0, milliseconds);
-                return now.Subtract(ts);
+                return now.Subtract(ts).ToLocalTime();
             }
         }
 
@@ -123,7 +123,7 @@ namespace System.Diagnostics
                 int result = Interop.libc.setrlimit(Interop.libc.RLIMIT_Resources.RLIMIT_RSS, ref limits);
                 if (result < 0)
                 {
-                    throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error(), SR.RUsageFailure);
+                    throw new System.ComponentModel.Win32Exception(SR.RUsageFailure);
                 }
 
                 // Grab the actual value, in case the OS decides to fudge the numbers
