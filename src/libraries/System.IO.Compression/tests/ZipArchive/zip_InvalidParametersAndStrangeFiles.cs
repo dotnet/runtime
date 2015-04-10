@@ -95,7 +95,7 @@ namespace System.IO.Compression.Test
         public static async Task UnsupportedCompression()
         {
             //lzma compression method
-            await UnsupportedCompressionRoutine(ZipTest.bad("lzma.zip"), true);
+            await UnsupportedCompressionRoutine(ZipTest.bad("LZMA.zip"), true);
 
             await UnsupportedCompressionRoutine(ZipTest.bad("invalidDeflate.zip"), false);
         }

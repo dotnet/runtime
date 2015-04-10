@@ -415,7 +415,9 @@ namespace System.IO.Compression
         }
 
 
-        [Conditional("DEBUG")]
+        // This function makes any execution take a *very* long time to complete.  
+        // Disabling for now by using non-"DEBUG" compilation constant.
+        [Conditional("VERIFY_HASHES")] 
         private void VerifyHashes()
         {
             for (int i = 0; i < FastEncoderHashtableSize; i++)

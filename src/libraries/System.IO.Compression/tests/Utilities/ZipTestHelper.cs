@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -148,12 +149,12 @@ namespace System.IO.Compression.Test
                 {
                     count++;
                     String entryName = file.FullName;
-                    if (file.IsFolder) entryName += "\\";
+                    if (file.IsFolder) entryName += Path.DirectorySeparatorChar;
                     
                     ZipArchiveEntry entry = archive.GetEntry(entryName);
                     if (entry == null)
                     {
-                        entryName = entryName.Replace('\\', '/');
+                        entryName = FlipSlashes(entryName);
                         entry = archive.GetEntry(entryName);
                     }
 
@@ -165,7 +166,7 @@ namespace System.IO.Compression.Test
                         }
                         catch (Exception)
                         {
-                            Console.WriteLine("File Entry {0} in directory but not archive {1}", entryName, file.FullName);
+                            Console.WriteLine("File Entry {0} in directory but not archive: {1}", entryName, file.FullName);
                             throw;
                         }
 
@@ -199,8 +200,11 @@ namespace System.IO.Compression.Test
                     {
                         if (entry == null) //entry not found
                         {
-                            entryName = entryName.Replace("/", "\\");
-                            Boolean isEmtpy = allFilesInDir.Where(f => f.IsFile && f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase)).Count() == 0;
+                            string entryNameOtherSlash = FlipSlashes(entryName);
+                            Boolean isEmtpy = !allFilesInDir.Any(
+                                f => f.IsFile &&
+                                     (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) || 
+                                      f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
                             if ((!dontRequireExplicit || isEmtpy) && !entryName.Contains("emptydir"))
                                 Assert.True(false, String.Format("Folder Entry {0} in directory but not archive: {1}", entryName, directory));
 
@@ -236,47 +240,13 @@ namespace System.IO.Compression.Test
             }
         }
 
-        public static void DirsEqual(String actual, String expected)
+        private static string FlipSlashes(string name)
         {
-            var expectedList = FileData.InPath(expected);
-            var actualList = Directory.GetFiles(actual, "*.*", SearchOption.AllDirectories);
-            var actualFolders = Directory.GetDirectories(actual, "*.*", SearchOption.AllDirectories);
-            var actualCount = actualList.Length + actualFolders.Length;
-            Assert.Equal(expectedList.Count, actualCount);
-
-            ItemEqual(actualList, expectedList, true);
-            ItemEqual(actualFolders, expectedList, false);
-        }
-
-        private static void ItemEqual(String[] actualList, List<FileData> expectedList, Boolean isFile)
-        {
-            for (int i = 0; i < actualList.Length; i++)
-            {
-                var actualFile = actualList[i];
-                String aEntry = Path.GetFullPath(actualFile);
-                String aName = Path.GetFileName(aEntry);
-
-                var bData = expectedList.Where(f => String.Equals(f.Name, aName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
-                String bEntry = Path.GetFullPath(Path.Combine(bData.OrigFolder, bData.FullName));
-                String bName = Path.GetFileName(bEntry);
-                // expected 'emptydir' folder doesn't exist because MSBuild doesn't copy empty dir
-                if (!isFile && aName.Contains("emptydir") && bName.Contains("emptydir"))
-                    continue;
-
-               // Logger.LogInformation("Dir Exp=" + bEntry);
-               // Logger.LogInformation("Dir Act=" + aEntry);
-
-                //we want it to be false that one of them is a directory and the other isn't
-                Assert.False(Directory.Exists(aEntry) ^ Directory.Exists(bEntry),
-                                        "Directory in one is file in other");
-                //contents same
-                if (isFile)
-                {
-                    Stream sa = StreamHelpers.CreateTempCopyStream(aEntry).Result;
-                    Stream sb = StreamHelpers.CreateTempCopyStream(bEntry).Result;
-                    StreamsEqual(sa, sb);
-                }
-            }
+            Debug.Assert(!(name.Contains("\\") && name.Contains("/")));
+            return
+                name.Contains("\\") ? name.Replace("\\", "/") :
+                name.Contains("/") ? name.Replace("/", "\\") :
+                name;
         }
 
         public static async Task CreateFromDir(String directory, Stream archiveStream, ZipArchiveMode mode)
