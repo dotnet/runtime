@@ -5,6 +5,6 @@ namespace System.IO
 {
     internal sealed partial class UnixFileSystem
     {
-        public override bool CaseSensitive { get { return true; } }
+        public override bool CaseSensitive { get { return true; } } // TODO: Issue #1086. Consider doing a lookup based on the mounted file system.
     }
 }
