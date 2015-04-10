@@ -121,7 +121,7 @@ create_test_overlay()
 	echo "Mscorlib not found at $mscorlibLocation"
 	exit 1
   fi
-  cp -n -r $coreFxDir/**/System*.dll $OverlayDir
+  find $coreFxDir -name '*.dll' -exec cp -n '{}' "$OverlayDir" ";"
 }
 
 copy_test_overlay()
@@ -157,7 +157,8 @@ runtest()
   fileName="${file##*/}"
   fileNameWithoutExtension="${fileName%.*}"
   testDllName="$fileNameWithoutExtension.dll"
-  xunitOSCategory="non$LowerOStests"
+  xunitOSCategory="non$LowerOS"
+  xunitOSCategory+="tests"
 
   dirName="$CoreFxTestsRoot/tests/Windows_NT.AnyCPU.$Configuration/$fileNameWithoutExtension/aspnetcore50"
 
