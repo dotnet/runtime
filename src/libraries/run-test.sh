@@ -121,7 +121,7 @@ create_test_overlay()
 	echo "Mscorlib not found at $mscorlibLocation"
 	exit 1
   fi
-  cp -n -r $coreFxDir/**/System*.dll $OverlayDir
+  find $coreFxDir -name '*.dll' -exec cp -n '{}' "$OverlayDir" ";"
 }
 
 copy_test_overlay()
