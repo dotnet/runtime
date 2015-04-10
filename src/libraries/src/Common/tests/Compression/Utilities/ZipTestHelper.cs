@@ -19,7 +19,7 @@ namespace System.IO.Compression.Test
         public static String zfile(String filename) { return Path.Combine("ZipTestData", "refzipfiles", filename); }
         public static String zfolder(String filename) { return Path.Combine("ZipTestData", "refzipfolders", filename); }
         public static String zmodified(String filename) { return Path.Combine("ZipTestData", "modified", filename); }
- 
+
         #endregion
 
         #region helpers
@@ -119,7 +119,6 @@ namespace System.IO.Compression.Test
                     Assert.True(false, "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
 
                 blocksRead++;
-
             } while (ac == 4096);
         }
 
@@ -150,7 +149,7 @@ namespace System.IO.Compression.Test
                     count++;
                     String entryName = file.FullName;
                     if (file.IsFolder) entryName += Path.DirectorySeparatorChar;
-                    
+
                     ZipArchiveEntry entry = archive.GetEntry(entryName);
                     if (entry == null)
                     {
@@ -203,7 +202,7 @@ namespace System.IO.Compression.Test
                             string entryNameOtherSlash = FlipSlashes(entryName);
                             Boolean isEmtpy = !allFilesInDir.Any(
                                 f => f.IsFile &&
-                                     (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) || 
+                                     (f.FullName.StartsWith(entryName, StringComparison.OrdinalIgnoreCase) ||
                                       f.FullName.StartsWith(entryNameOtherSlash, StringComparison.OrdinalIgnoreCase)));
                             if ((!dontRequireExplicit || isEmtpy) && !entryName.Contains("emptydir"))
                                 Assert.True(false, String.Format("Folder Entry {0} in directory but not archive: {1}", entryName, directory));
@@ -217,7 +216,7 @@ namespace System.IO.Compression.Test
                             {
                                 try
                                 {
-                                    Assert.True(es.Length == 0, "Length should be 0");
+                                    Assert.Equal(0, es.Length);
                                 }
                                 catch (NotSupportedException)
                                 {
@@ -247,6 +246,46 @@ namespace System.IO.Compression.Test
                 name.Contains("\\") ? name.Replace("\\", "/") :
                 name.Contains("/") ? name.Replace("/", "\\") :
                 name;
+        }
+        
+        public static void DirsEqual(String actual, String expected)
+        {
+            var expectedList = FileData.InPath(expected);
+            var actualList = Directory.GetFiles(actual, "*.*", SearchOption.AllDirectories);
+            var actualFolders = Directory.GetDirectories(actual, "*.*", SearchOption.AllDirectories);
+            var actualCount = actualList.Length + actualFolders.Length;
+            Assert.Equal(expectedList.Count, actualCount);
+
+            ItemEqual(actualList, expectedList, true);
+            ItemEqual(actualFolders, expectedList, false);
+        }
+
+        private static void ItemEqual(String[] actualList, List<FileData> expectedList, Boolean isFile)
+        {
+            for (int i = 0; i < actualList.Length; i++)
+            {
+                var actualFile = actualList[i];
+                String aEntry = Path.GetFullPath(actualFile);
+                String aName = Path.GetFileName(aEntry);
+
+                var bData = expectedList.Where(f => String.Equals(f.Name, aName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                String bEntry = Path.GetFullPath(Path.Combine(bData.OrigFolder, bData.FullName));
+                String bName = Path.GetFileName(bEntry);
+                // expected 'emptydir' folder doesn't exist because MSBuild doesn't copy empty dir
+                if (!isFile && aName.Contains("emptydir") && bName.Contains("emptydir"))
+                    continue;
+
+                //we want it to be false that one of them is a directory and the other isn't
+                Assert.False(Directory.Exists(aEntry) ^ Directory.Exists(bEntry), "Directory in one is file in other");
+                
+                //contents same
+                if (isFile)
+                {
+                    Stream sa = StreamHelpers.CreateTempCopyStream(aEntry).Result;
+                    Stream sb = StreamHelpers.CreateTempCopyStream(bEntry).Result;
+                    StreamsEqual(sa, sb);
+                }
+            }
         }
 
         public static async Task CreateFromDir(String directory, Stream archiveStream, ZipArchiveMode mode)
@@ -342,7 +381,6 @@ namespace System.IO.Compression.Test
             }
             //compare
             Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");
-
         }
 
         private static void AddEntry(ZipArchive archive, String name, String contents, DateTimeOffset lastWrite)
