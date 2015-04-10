@@ -4587,10 +4587,10 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 
             *currentFlags = firstPassFlags;
 
-            // Pop the last managed frame so that when the native frames are unwound and
-            // the UnwindManagedExceptionPass1 is resumed at the next managed frame, that
-            // managed frame is the current one set in the thread object.
-            GetThread()->GetFrame()->Pop();
+            // Pop all frames that are below the block of native frames and that would be
+            // in the unwound part of the stack when UnwindManagedExceptionPass1 is resumed 
+            // at the next managed frame.
+            UnwindFrameChain(GetThread(), (VOID*)frameContext.Rsp);
 
             // Now we need to unwind the native frames until we reach managed frames again or the exception is
             // handled in the native code.
@@ -5537,6 +5537,15 @@ void ExceptionTracker::StackRange::CombineWith(StackFrame sfCurrent, StackRange*
     }
     else
     {
+#ifdef FEATURE_PAL
+        // When the current range is empty, copy the low bound too. Otherwise a degenerate range would get
+        // created and tests for stack frame in the stack range would always fail.
+        // TODO: Check if we could enable it for non-PAL as well.
+        if (IsEmpty())
+        {
+            m_sfLowBound = pPreviousRange->m_sfLowBound;
+        }
+#endif // FEATURE_PAL
         m_sfHighBound = pPreviousRange->m_sfHighBound;
     }
 }
