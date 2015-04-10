@@ -70,6 +70,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // directories with in-use files can be deleted on Unix
         public void FileInUse()
         {
             string subdirRoot = "FileInUse";
@@ -82,6 +83,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // readonly directories can be deleted on Unix
         public void ReadOnly()
         {
             DirectoryInfo dir = Directory.CreateDirectory(Path.Combine(TestDirectory, "ReadOnly"));

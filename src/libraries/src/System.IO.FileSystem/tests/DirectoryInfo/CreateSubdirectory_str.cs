@@ -33,6 +33,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // tab valid filename char on Unix
         public void Tab()
         {
             Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory("\t"));
@@ -56,7 +57,7 @@ namespace System.IO.FileSystem.Tests
         public void PathTooLong()
         {
             StringBuilder sb = new StringBuilder();
-            while (sb.Length + TestDirectory.Count() + 1 < 259)
+            while (sb.Length + TestDirectory.Count() < IOInputs.MaxPath + 10)
                 sb.Append("a");
 
             Assert.Throws<PathTooLongException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(sb.ToString()));
@@ -66,7 +67,7 @@ namespace System.IO.FileSystem.Tests
         public void PathJustTooLong()
         {
             StringBuilder sb = new StringBuilder();
-            while (sb.Length + TestDirectory.Count() + 1 < 248)
+            while (sb.Length + TestDirectory.Count() < IOInputs.MaxDirectory)
                 sb.Append("a");
 
             Assert.Throws<PathTooLongException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(sb.ToString()));
@@ -115,6 +116,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // colon is a valid filename char on Unix
         public void Colon()
         {
             string[] subdirNames = { ":", ":t", ":test", "te:", "test:", "te:st" };

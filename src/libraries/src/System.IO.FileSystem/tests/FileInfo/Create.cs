@@ -169,7 +169,7 @@ public class FileInfo_Create
             iCountTestcases++;
             try
             {
-                file2 = new FileInfo(":");
+                file2 = new FileInfo("\0");
                 file2.Create();
                 iCountErrors++;
                 printerr("Error_19883! Expected exception not thrown, file2==" + file2.FullName);
@@ -225,32 +225,35 @@ public class FileInfo_Create
             }
             */
 
-            // [] Create file in current file2 by giving full File check casing as well
-            strLoc = "loc_89tbh";
-            fileName = Path.GetRandomFileName();
-            file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory.ToLowerInvariant(), fileName));
-            fs = file2.Create();
-            fs.Dispose();
-            iCountTestcases++;
-            if (!file2.Exists)
+            if (!Interop.IsLinux) // testing case insensitivity
             {
-                iCountErrors++;
-                printerr("Error_t87gy! File not created, file==" + file2.FullName);
-            }
-            file2.Delete();
+                // [] Create file in current file2 by giving full File check casing as well
+                strLoc = "loc_89tbh";
+                fileName = Path.GetRandomFileName();
+                file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory.ToLowerInvariant(), fileName));
+                fs = file2.Create();
+                fs.Dispose();
+                iCountTestcases++;
+                if (!file2.Exists)
+                {
+                    iCountErrors++;
+                    printerr("Error_t87gy! File not created, file==" + file2.FullName);
+                }
+                file2.Delete();
 
-            strLoc = "loc_89mjd";
-            fileName = Path.GetRandomFileName();
-            file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory.ToUpperInvariant(), fileName));
-            fs = file2.Create();
-            fs.Dispose();
-            iCountTestcases++;
-            if (!file2.Exists)
-            {
-                iCountErrors++;
-                printerr("Error_hf3t4! File not created, file==" + file2.FullName);
+                strLoc = "loc_89mjd";
+                fileName = Path.GetRandomFileName();
+                file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory.ToUpperInvariant(), fileName));
+                fs = file2.Create();
+                fs.Dispose();
+                iCountTestcases++;
+                if (!file2.Exists)
+                {
+                    iCountErrors++;
+                    printerr("Error_hf3t4! File not created, file==" + file2.FullName);
+                }
+                file2.Delete();
             }
-            file2.Delete();
         }
         catch (Exception exc_general)
         {

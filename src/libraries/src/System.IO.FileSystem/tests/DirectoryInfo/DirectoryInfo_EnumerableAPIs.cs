@@ -25,7 +25,10 @@ namespace EnumerableTests
 
             TestExceptions();
 
-            TestWhileEnumerating();
+            if (Interop.IsWindows) // test currently relies on the explicit order being returned on Windows
+            {
+                TestWhileEnumerating();
+            }
 
             s_utils.DeleteTestDirs();
 
@@ -49,7 +52,7 @@ namespace EnumerableTests
             DoDirectoryGetDirectoriesTest(name, ".", SearchOption.TopDirectoryOnly, s_utils.expected_Dirs_Shallow_FSI);
             DoDirectoryGetDirectoriesTest(name, "", SearchOption.AllDirectories, new HashSet<FSIEntry>());
 
-            DoDirectoryGetDirectoriesTest(name, @"lev1_a\*", SearchOption.TopDirectoryOnly, s_utils.expected_Dirs_Subdir_FSI);
+            DoDirectoryGetDirectoriesTest(name, @"lev1_a" + Path.DirectorySeparatorChar + "*", SearchOption.TopDirectoryOnly, s_utils.expected_Dirs_Subdir_FSI);
 
             DoDirectoryGetFilesTest(name, "*", SearchOption.AllDirectories, s_utils.expected_Files_Deep_FSI);
             DoDirectoryGetFilesTest(name, "*", SearchOption.TopDirectoryOnly, s_utils.expected_Files_Shallow_FSI);
@@ -157,7 +160,7 @@ namespace EnumerableTests
             DoDirectoryInfoGetDirectoriesTest(name, "lev2_f", SearchOption.AllDirectories, s_utils.expected_Dirs_ExactSearchPattern);
             DoDirectoryInfoGetDirectoriesTest(name, "lev2_f", SearchOption.TopDirectoryOnly, new HashSet<String>());
 
-            DoDirectoryInfoGetDirectoriesTest(name, @"lev1_a\*", SearchOption.TopDirectoryOnly, s_utils.expected_Dirs_Subdir);
+            DoDirectoryInfoGetDirectoriesTest(name, @"lev1_a" + Path.DirectorySeparatorChar + "*", SearchOption.TopDirectoryOnly, s_utils.expected_Dirs_Subdir);
 
             DoDirectoryInfoGetDirectoriesTest(Path.Combine(name, "lev1_c"), ".", SearchOption.TopDirectoryOnly, new HashSet<String>());
 
@@ -358,16 +361,19 @@ namespace EnumerableTests
             String whitespacePath = new String(whitespacePathChars);
             TestWeirdPathIter(whitespacePath, "whitespacePath", new ArgumentException());
 
-            // try to test a path that doesn't exist. Skip if can't find an unused drive
-            String pathNotExists = null;
-            String unusedDrive = EnumerableUtils.GetUnusedDrive();
-            if (unusedDrive != null)
+            if (Interop.IsWindows) // drive labels
             {
-                pathNotExists = Path.Combine(unusedDrive, @"temp\dir");
-            }
-            if (pathNotExists != null)
-            {
-                TestWeirdPathIter(pathNotExists, "pathNotExists", new DirectoryNotFoundException());
+                // try to test a path that doesn't exist. Skip if can't find an unused drive
+                String pathNotExists = null;
+                String unusedDrive = EnumerableUtils.GetUnusedDrive();
+                if (unusedDrive != null)
+                {
+                    pathNotExists = Path.Combine(unusedDrive, "temp", "dir");
+                }
+                if (pathNotExists != null)
+                {
+                    TestWeirdPathIter(pathNotExists, "pathNotExists", new DirectoryNotFoundException());
+                }
             }
 
             // file (not dir) name. If we try to do GetFiles, GetDirs, etc in a file (not dir) we get IOException
@@ -383,11 +389,11 @@ namespace EnumerableTests
             TestWeirdPathIter(filePath, "pathIsFile", new IOException());
 
             // PathTooLong
-            String longPath = new String('a', 240) + @"\bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+            String longPath = Path.Combine(new String('a', IOInputs.MaxPath), "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
             TestWeirdPathIter(longPath, "pathTooLong", new PathTooLongException());
 
             // path invalid chars
-            String invalidCharPath = @"temp\fsd<sdsds";
+            String invalidCharPath = "temp" + Path.DirectorySeparatorChar + "fsd\0sdsds";
             TestWeirdPathIter(invalidCharPath, "invalidCharPath", new ArgumentException());
         }
 

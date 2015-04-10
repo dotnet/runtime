@@ -17,7 +17,10 @@ namespace System.IO.FileSystem.Tests
             {
                 Assert.True(File.Exists(fileName));
                 File.Delete(fileName);
-                Assert.True(File.Exists(fileName));
+                if (Interop.IsWindows) // file sharing restriction limitations on Unix
+                {
+                    Assert.True(File.Exists(fileName));
+                }
             }
 
             Assert.False(File.Exists(fileName));
@@ -51,7 +54,10 @@ namespace System.IO.FileSystem.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete))
             {
                 File.Delete(fileName);
-                Assert.True(File.Exists(fileName));
+                if (Interop.IsWindows) // file sharing restriction limitations on Unix
+                {
+                    Assert.True(File.Exists(fileName));
+                }
             }
 
             Assert.False(File.Exists(fileName));
@@ -77,6 +83,7 @@ namespace System.IO.FileSystem.Tests
             }
         }
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // file sharing restriction limitations on Unix
         public void FileShareDeleteExistingMultipleClients()
         {
             // create the file
@@ -110,6 +117,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)] // file sharing restriction limitations on Unix
         public void FileShareWithoutDeleteThrows()
         {
             string fileName = GetTestFilePath();

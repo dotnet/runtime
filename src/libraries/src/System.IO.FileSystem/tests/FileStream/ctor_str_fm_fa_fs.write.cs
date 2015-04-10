@@ -45,9 +45,15 @@ namespace System.IO.FileSystem.Tests
             string fileName = GetTestFilePath();
 
             // Open without write sharing
-            using (FileStream fs = CreateFileStream(fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read | FileShare.Delete))
+            using (FileStream fs = CreateFileStream(fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
             {
                 FSAssert.ThrowsSharingViolation(() => CreateFileStream(fileName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete));
+            }
+            
+            // Then try the other way around
+            using (FileStream fs = CreateFileStream(fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete))
+            {
+                FSAssert.ThrowsSharingViolation(() => CreateFileStream(fileName, FileMode.Open, FileAccess.Write, FileShare.None));
             }
         }
     }

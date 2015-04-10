@@ -18,6 +18,7 @@ public class Directory_GetCreationTime
 
     [Fact]
     [OuterLoop]
+    [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)] // birth time only available on some Unix systems
     public static void runTest()
     {
         int iCountErrors = 0;
@@ -76,37 +77,39 @@ public class Directory_GetCreationTime
             dir.Delete(true);
 
 #if !TEST_WINRT
-            //#469226 - DirectoryInfo.CreationTime throws System.ArgumentOutOfRangeException for directories on CDs
-            //postponed but we will add the scenario
-            try
+            if (Interop.IsWindows) // testing drive labels
             {
-                IEnumerable<string> drives = IOServices.GetReadyDrives();
-                foreach (string drive in drives)
+                //#469226 - DirectoryInfo.CreationTime throws System.ArgumentOutOfRangeException for directories on CDs
+                //postponed but we will add the scenario
+                try
                 {
-                    String[] dirs = Directory.GetDirectories(drive);
-                    int count = 10;
-                    if (dirs.Length < count)
-                        count = dirs.Length;
-                    for (int i = 0; i < count; i++)
+                    IEnumerable<string> drives = IOServices.GetReadyDrives();
+                    foreach (string drive in drives)
                     {
-                        try
+                        String[] dirs = Directory.GetDirectories(drive);
+                        int count = 10;
+                        if (dirs.Length < count)
+                            count = dirs.Length;
+                        for (int i = 0; i < count; i++)
                         {
-                            DateTime time = Directory.GetCreationTime(dirs[i]);
-                        }
-                        catch (ArgumentOutOfRangeException)
-                        {
-                            Console.WriteLine("Info_9237tgfasd: #469226? drive: {0}, directory: {1}", drive, dirs[i]);
+                            try
+                            {
+                                DateTime time = Directory.GetCreationTime(dirs[i]);
+                            }
+                            catch (ArgumentOutOfRangeException)
+                            {
+                                Console.WriteLine("Info_9237tgfasd: #469226? drive: {0}, directory: {1}", drive, dirs[i]);
+                            }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                ++iCountErrors;
-                Console.WriteLine("Err_734g@! exception thrown: {0}", ex);
+                catch (Exception ex)
+                {
+                    ++iCountErrors;
+                    Console.WriteLine("Err_734g@! exception thrown: {0}", ex);
+                }
             }
 #endif
-
         }
         catch (Exception exc_general)
         {

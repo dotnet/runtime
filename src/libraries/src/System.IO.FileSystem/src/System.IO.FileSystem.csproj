@@ -296,7 +296,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rename.cs">
       <Link>Common\Interop\Unix\Interop.rename.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.remove.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.rmdir.cs">
       <Link>Common\Interop\Unix\Interop.remove.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
@@ -317,12 +317,14 @@
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="System\IO\UnixFileSystem.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.readdir.cs">
       <Link>Common\Interop\Linux\Interop.readdir.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="System\IO\UnixFileSystem.OSX.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.readdir.cs">
       <Link>Common\Interop\OSX\Interop.readdir.cs</Link>
     </Compile>

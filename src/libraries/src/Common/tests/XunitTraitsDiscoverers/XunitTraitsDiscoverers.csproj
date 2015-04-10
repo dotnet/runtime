@@ -10,13 +10,10 @@
     <AssemblyName>XunitTraitsDiscoverers</AssemblyName>
     <RootNamespace>Xunit.TraitDiscoverers</RootNamespace>
     <CLSCompliant>false</CLSCompliant>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="..\..\src\Interop\Interop.PlatformDetection.cs">

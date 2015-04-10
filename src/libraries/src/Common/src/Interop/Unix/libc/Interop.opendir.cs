@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern IntPtr opendir(string name); // opendir/readdir/closedir defined in terms of IntPtr so it may be used in iterators (which don't allow unsafe code)
+        internal static extern SafeDirHandle opendir(string name);
     }
 }

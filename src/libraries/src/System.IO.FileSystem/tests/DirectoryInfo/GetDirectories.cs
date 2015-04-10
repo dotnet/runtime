@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Xunit;
@@ -75,6 +76,12 @@ public class DirectoryInfo_GetDirectories
                 iCountErrors++;
                 printerr("Error_1yt75! Incorrect number of directories returned");
             }
+
+            if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
+            {
+                Array.Sort(dirArr, Comparer<DirectoryInfo>.Create((left, right) => left.FullName.CompareTo(right.FullName)));
+            }
+
             iCountTestcases++;
             if (!dirArr[0].Name.Equals("TestDir1"))
             {
@@ -136,21 +143,23 @@ C:\foo\bar
 C:\wd\bar\abc
             **/
 
-            //@TODO!! use ManageFileSystem utility
-            String rootTempDir = @"\LaksTemp";
-            int dirSuffixNo = 0;
-            while (Directory.Exists(String.Format("{0}{1}", rootTempDir, dirSuffixNo++))) ;
-            rootTempDir = String.Format("{0}{1}", rootTempDir, (dirSuffixNo - 1));
-            String tempFullName = Path.Combine(rootTempDir, "laks1", "laks2");
-            Directory.CreateDirectory(tempFullName);
-            DirectoryInfo dir = new DirectoryInfo(rootTempDir);
-            AddFolders(dir);
-            Eval(s_directories.Count == 3, "Err_9347g! wrong count: {0}", s_directories.Count);
-            Eval(s_directories.Contains(Path.GetFullPath(rootTempDir)), "Err_3407tgs! PAth not found: {0}", Path.GetFullPath(rootTempDir));
-            Eval(s_directories.Contains(Path.Combine(Path.GetFullPath(rootTempDir), "laks1")), "Err_857sqi! PAth not found: {0}", Path.Combine(Path.GetFullPath(rootTempDir), "laks1"));
-            Eval(s_directories.Contains(Path.Combine(Path.GetFullPath(rootTempDir), @"laks1\laks2")), "Err_356slh! PAth not found: {0}", Path.Combine(Path.GetFullPath(rootTempDir), @"laks1\laks2"));
-
-            Directory.Delete(rootTempDir, true);
+            if (Interop.IsWindows) // test expects that '/' is not root
+            {
+                //@TODO!! use ManageFileSystem utility
+                String rootTempDir = Path.DirectorySeparatorChar + "LaksTemp";
+                int dirSuffixNo = 0;
+                while (Directory.Exists(String.Format("{0}{1}", rootTempDir, dirSuffixNo++))) ;
+                rootTempDir = String.Format("{0}{1}", rootTempDir, (dirSuffixNo - 1));
+                String tempFullName = Path.Combine(rootTempDir, "laks1", "laks2");
+                Directory.CreateDirectory(tempFullName);
+                DirectoryInfo dir = new DirectoryInfo(rootTempDir);
+                AddFolders(dir);
+                Eval(s_directories.Count == 3, "Err_9347g! wrong count: {0}", s_directories.Count);
+                Eval(s_directories.Contains(Path.GetFullPath(rootTempDir)), "Err_3407tgs! PAth not found: {0}", Path.GetFullPath(rootTempDir));
+                Eval(s_directories.Contains(Path.Combine(Path.GetFullPath(rootTempDir), "laks1")), "Err_857sqi! PAth not found: {0}", Path.Combine(Path.GetFullPath(rootTempDir), "laks1"));
+                Eval(s_directories.Contains(Path.Combine(Path.GetFullPath(rootTempDir), Path.Combine("laks1", "laks2"))), "Err_356slh! PAth not found: {0}", Path.Combine(Path.GetFullPath(rootTempDir), "laks1", "laks2"));
+                Directory.Delete(rootTempDir, true);
+            }
 
             if (!s_pass)
             {

@@ -130,7 +130,7 @@ public class File_FileExists_str
             strLoc = "Loc_t899t";
 
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 500; i++)
+            for (int i = 0; i < IOInputs.MaxPath + 1; i++)
                 sb.Append(i);
 
             iCountTestcases++;

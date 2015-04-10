@@ -392,7 +392,7 @@ public class File_WriteAll_all
             //That we are closing the file after write is imlictly tested above
 
             path = Path.GetTempFileName();
-            stream = new FileStream(path, FileMode.Open);
+            stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             reader = new StreamReader(stream);
 
             content = "";

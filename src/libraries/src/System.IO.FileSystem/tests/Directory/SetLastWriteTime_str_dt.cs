@@ -115,12 +115,13 @@ public class Directory_SetLastWriteTime_str_dt
             iCountTestcases++;
             try
             {
-                Directory.SetLastWriteTime(fileName, DateTime.Now.AddYears(-1));
-                int iSeconds = (Directory.GetLastAccessTime(fileName) - DateTime.Now.AddMonths(-1)).Seconds;
-                if (iSeconds > 60)
+                DateTime now = DateTime.Now;
+                now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
+                Directory.SetLastWriteTime(fileName, now.AddYears(-1));
+                if (Directory.GetLastWriteTime(fileName) != now.AddYears(-1))
                 {
                     iCountErrors++;
-                    printerr("Error_0013! Creation time cannot be correct" + iSeconds);
+                    printerr("Error_0013! Creation time cannot be correct");
                 }
             }
             catch (Exception exc)

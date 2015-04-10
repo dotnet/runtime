@@ -304,7 +304,7 @@ public class Directory_Co5674GetDirectories_Str_Str
 
             strArr = Directory.GetDirectories(Path.Combine(".", dirName), "*BB*");
             iCountTestcases++;
-            if (strArr.Length != 2)
+            if (strArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of directories==" + strArr.Length);
@@ -319,11 +319,14 @@ public class Directory_Co5674GetDirectories_Str_Str
                 iCountErrors++;
                 printerr("Error_956yb! Incorrect name==" + strArr[0]);
             }
-            iCountTestcases++;
-            if (Array.IndexOf(names, "aaabbcc") < 0)
+            if (!Interop.IsLinux) // Linux is case-sensitive
             {
-                iCountErrors++;
-                printerr("Error_48yg7! Incorrect name==" + strArr[1]);
+                iCountTestcases++;
+                if (Array.IndexOf(names, "aaabbcc") < 0)
+                {
+                    iCountErrors++;
+                    printerr("Error_48yg7! Incorrect name==" + strArr[1]);
+                }
             }
 
             // [] Should not search on fullpath

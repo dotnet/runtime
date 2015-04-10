@@ -576,12 +576,14 @@ namespace System.IO
             if (destPath.Length >= maxDirectoryPath)
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            if (String.Compare(sourcePath, destPath, StringComparison.OrdinalIgnoreCase) == 0)
+            StringComparison pathComparison = PathHelpers.GetComparison(FileSystem.Current.CaseSensitive);
+
+            if (String.Compare(sourcePath, destPath, pathComparison) == 0)
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
             String sourceRoot = Path.GetPathRoot(sourcePath);
             String destinationRoot = Path.GetPathRoot(destPath);
-            if (String.Compare(sourceRoot, destinationRoot, StringComparison.OrdinalIgnoreCase) != 0)
+            if (String.Compare(sourceRoot, destinationRoot, pathComparison) != 0)
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             FileSystem.Current.MoveDirectory(fullsourceDirName, fulldestDirName);

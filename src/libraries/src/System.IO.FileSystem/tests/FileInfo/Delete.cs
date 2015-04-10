@@ -51,53 +51,56 @@ public class FileInfo_Delete
             //-----------------------------------------------------------------
 
 
-            // [] Deleting a file in use should cause IOException
-            //-----------------------------------------------------------------
-            strLoc = "Loc_29yc7";
-
-            fs2 = new FileStream(filName, FileMode.Create);
-            fil2 = new FileInfo(filName);
-            iCountTestcases++;
-            try
+            if (Interop.IsWindows) // deleting in-use files is allowed on Unix
             {
-                fil2.Delete();
+                // [] Deleting a file in use should cause IOException
+                //-----------------------------------------------------------------
+                strLoc = "Loc_29yc7";
+
+                fs2 = new FileStream(filName, FileMode.Create);
+                fil2 = new FileInfo(filName);
+                iCountTestcases++;
+                try
+                {
+                    fil2.Delete();
 #if !TEST_WINRT  // WINRT always sets FILE_SHARE_DELETE
-                iCountErrors++;
-                printerr("Error_1y678! Expected exception not thrown");
-            }
-            catch (IOException)
-            {
+                    iCountErrors++;
+                    printerr("Error_1y678! Expected exception not thrown");
+                }
+                catch (IOException)
+                {
 #endif
-            }
-            catch (UnauthorizedAccessException iexc)
-            {
-                iCountErrors++;
-                printerr("Error_1213! This excepton shouldn't occur on Win9X platforms" + iexc.Message);
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_16709! Incorrect exception thrown, exc==" + exc.ToString());
-            }
-            fs2.Dispose();
+                }
+                catch (UnauthorizedAccessException iexc)
+                {
+                    iCountErrors++;
+                    printerr("Error_1213! This excepton shouldn't occur on Win9X platforms" + iexc.Message);
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_16709! Incorrect exception thrown, exc==" + exc.ToString());
+                }
+                fs2.Dispose();
 #if !TEST_WINRT
-            iCountTestcases++;
-            if (!fil2.Exists)
-            {
-                iCountErrors++;
-                printerr("Error_768bc! File does not exist==" + fil2.FullName);
-            }
-            fil2.Delete();
+                iCountTestcases++;
+                if (!fil2.Exists)
+                {
+                    iCountErrors++;
+                    printerr("Error_768bc! File does not exist==" + fil2.FullName);
+                }
+                fil2.Delete();
 #endif
-            fil2.Refresh();
-            iCountTestcases++;
-            if (fil2.Exists)
-            {
-                iCountErrors++;
-                printerr("Error_810x8! File not deleted==" + fil2.FullName);
-            }
+                fil2.Refresh();
+                iCountTestcases++;
+                if (fil2.Exists)
+                {
+                    iCountErrors++;
+                    printerr("Error_810x8! File not deleted==" + fil2.FullName);
+                }
 
-            //-----------------------------------------------------------------
+                //-----------------------------------------------------------------
+            }
 
 
             // [] Deleting a file should remove it
