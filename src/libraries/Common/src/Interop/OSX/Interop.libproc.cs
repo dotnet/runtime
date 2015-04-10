@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+
 
 internal static partial class Interop
 {
@@ -46,7 +48,7 @@ internal static partial class Interop
         }
 
         // From proc_info.h
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct proc_bsdinfo
         {
             internal uint       pbi_flags;
@@ -184,21 +186,26 @@ internal static partial class Interop
             int numProcesses = proc_listallpids(null, 0);
             if (numProcesses <= 0)
             {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.CantGetAllPids);
+                throw new Win32Exception(SR.CantGetAllPids);
             }
 
-            int[] processes = null;
+            int[] processes;
 
             do
             {
                 // Create a new array for the processes (plus a 10% buffer in case new processes have spawned)
-                processes = new int[(int)(numProcesses + (numProcesses * .10))];
+                // Since we don't know how many threads there could be, if result == size, that could mean two things
+                // 1) We guessed exactly how many processes there are
+                // 2) There are more processes that we didn't get since our buffer is too small
+                // To make sure it isn't #2, when the result == size, increase the buffer and try again
+                processes = new int[(int)(numProcesses * 1.10)];
+
                 fixed (int* pBuffer = processes)
                 {
                     numProcesses = proc_listallpids(pBuffer, processes.Length * Marshal.SizeOf<int>());
                     if (numProcesses <= 0)
                     {
-                        throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.CantGetAllPids);
+                        throw new Win32Exception(SR.CantGetAllPids);
                     }
                 }
             }
@@ -371,25 +378,26 @@ internal static partial class Interop
 
                 if (result <= 0)
                 {
-                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                    throw new Win32Exception();
                 }
                 else
                 {
-                    size *= 2;
+                    checked
+                    {
+                        size *= 2;
+                    }
                 }
             }
             while (result == Marshal.SizeOf<ulong>() * threadIds.Length);
 
             Debug.Assert((result % Marshal.SizeOf<ulong>()) == 0);
 
-            // Remove any extra elements
-            Array.Resize<ulong>(ref threadIds, (int)(result / Marshal.SizeOf<ulong>()));
-
             // Loop over each thread and get the thread info
-            List<KeyValuePair<ulong, proc_threadinfo?>> threads = new List<KeyValuePair<ulong, proc_threadinfo?>>();
-            foreach (ulong id in threadIds)
-            {
-                threads.Add(new KeyValuePair<ulong, proc_threadinfo?>(id, GetThreadInfoById(pid, id)));
+            int count = (int)(result / Marshal.SizeOf<ulong>());
+            List<KeyValuePair<ulong, proc_threadinfo?>> threads = new List<KeyValuePair<ulong, proc_threadinfo?>>(count);
+            for (int i = 0; i < count; i++)
+            {        
+                threads.Add(new KeyValuePair<ulong, proc_threadinfo?>(threadIds[i], GetThreadInfoById(pid, threadIds[i])));
             }
 
             return threads;
@@ -405,7 +413,7 @@ internal static partial class Interop
         /// of how much data we will need to allocate; the other flavors don't seem
         /// to support doing that.
         /// </remarks>
-        internal static unsafe proc_fdinfo[] GetFileDescriptorsForPid(int pid)
+        internal static unsafe int GetFileDescriptorCountForPid(int pid)
         {
             // Negative PIDs are invalid
             if (pid < 0)
@@ -418,10 +426,10 @@ internal static partial class Interop
             int result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, (proc_fdinfo*)null, 0);
             if (result <= 0)
             {
-                throw new System.ComponentModel.Win32Exception();
+                throw new Win32Exception();
             }
 
-            proc_fdinfo[] fds = null;
+            proc_fdinfo[] fds;
             int size = (int)(result / Marshal.SizeOf<proc_fdinfo>());
 
             // Just in case the app opened a ton of handles between when we asked and now,
@@ -436,18 +444,21 @@ internal static partial class Interop
 
                 if (result <= 0)
                 {
-                    throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                    throw new Win32Exception();
                 }
                 else
                 {
-                    size *= 2;
+                    checked
+                    {
+                        size *= 2;
+                    }
                 }
             }
             while (result == (fds.Length * Marshal.SizeOf<proc_fdinfo>()));
 
             Debug.Assert((result % Marshal.SizeOf<proc_fdinfo>()) == 0);
 
-            return fds;
+            return (int)(result / Marshal.SizeOf<proc_fdinfo>());
         }
 
         /// <summary>
@@ -457,7 +468,7 @@ internal static partial class Interop
         /// <param name="buffer">A pointer to an allocated block of memory that will be filled with the process path</param>
         /// <param name="bufferSize">The size of the buffer, should be PROC_PIDPATHINFO_MAXSIZE</param>
         /// <returns>Returns the length of the path returned on success</returns>
-        [DllImport(Interop.Libraries.libproc, CharSet = CharSet.Ansi, SetLastError = true)]
+        [DllImport(Interop.Libraries.libproc, SetLastError = true)]
         private static unsafe extern int proc_pidpath(
             int pid, 
             byte* buffer, 
@@ -478,19 +489,15 @@ internal static partial class Interop
 
             // The path is a fixed buffer size, so use that and trim it after
             int result = 0;
-            byte[] buffer = new byte[PROC_PIDPATHINFO_MAXSIZE];
-            fixed (byte* pBuffer = buffer)
-            {
-                result = proc_pidpath(pid, pBuffer, (uint)(buffer.Length * Marshal.SizeOf<byte>()));
-            }
-
+            byte* pBuffer = stackalloc byte[PROC_PIDPATHINFO_MAXSIZE];
+            result = proc_pidpath(pid, pBuffer, (uint)(PROC_PIDPATHINFO_MAXSIZE * Marshal.SizeOf<byte>()));
             if (result <= 0)
             {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                throw new Win32Exception();
             }
 
             // OS X uses UTF-8. The conversion may not strip off all trailing \0s so remove them here
-            return System.Text.UTF8Encoding.UTF8.GetString(buffer).Trim('\0');
+            return System.Text.Encoding.UTF8.GetString(pBuffer, result);
         }
 
         /// <summary>
@@ -529,12 +536,12 @@ internal static partial class Interop
 
             // Get the PIDs rusage info
             int result = proc_pid_rusage(pid, RUSAGE_SELF, &info);
-            if (result < 0)
+            if (result <= 0)
             {
-                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error(), SR.RUsageFailure);
+                throw new Win32Exception(SR.RUsageFailure);
             }
 
-            Debug.Assert((result % Marshal.SizeOf<rusage_info_v3>()) == 0);
+            Debug.Assert(result == Marshal.SizeOf<rusage_info_v3>());
 
             return info;
         }

@@ -17,7 +17,7 @@ namespace System.Diagnostics
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private static ProcessInfo CreateProcessInfo(int pid)
+        private unsafe static ProcessInfo CreateProcessInfo(int pid)
         {
             // Negative PIDs aren't valid
             if (pid < 0)
@@ -32,13 +32,20 @@ namespace System.Diagnostics
             Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(pid);
             if (info.HasValue)
             {
+                // We need to convert the byte pointer to an IntPtr 
+                // that we can pass to the Marshal.PtrToStringAnsi call
+                // but the nullable struct type makes it difficult to inline,
+                // so make a temp variable to remove the nullable and get the pointer 
+                Interop.libproc.proc_taskallinfo temp = info.Value;
+                IntPtr ptrString = new IntPtr(temp.pbsd.pbi_comm);
+
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
-                procInfo.BasePriority = info.Value.ptinfo.pti_priority;
-                procInfo.HandleCount = Interop.libproc.GetFileDescriptorsForPid(pid).Length;
+                procInfo.BasePriority = temp.ptinfo.pti_priority;
+                procInfo.HandleCount = Interop.libproc.GetFileDescriptorCountForPid(pid);
                 procInfo.ProcessId = pid;
-                procInfo.ProcessName = GetStringFromProcInfo(info.Value.pbsd).Trim('\0');
-                procInfo.VirtualBytes = (long)info.Value.ptinfo.pti_virtual_size;
-                procInfo.WorkingSet = (long)info.Value.ptinfo.pti_resident_size;
+                procInfo.ProcessName = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(ptrString);
+                procInfo.VirtualBytes = (long)temp.ptinfo.pti_virtual_size;
+                procInfo.WorkingSet = (long)temp.ptinfo.pti_resident_size;
             }
 
             // Create a threadinfo for each thread in the process
@@ -66,13 +73,6 @@ namespace System.Diagnostics
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
-
-        private static unsafe string GetStringFromProcInfo(Interop.libproc.proc_bsdinfo info)
-        {
-            int length = 0;
-            for (byte* ptr = info.pbi_comm; *ptr != 0; ptr++, length++) ;
-            return System.Text.Encoding.UTF8.GetString(info.pbi_comm, length);
-        }
 
         private static System.Diagnostics.ThreadState ConvertOsxThreadRunStateToThreadState(Interop.libproc.ThreadRunState state)
         {
