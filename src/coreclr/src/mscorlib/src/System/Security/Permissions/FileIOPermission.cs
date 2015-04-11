@@ -967,7 +967,6 @@ namespace System.Security.Permissions {
                 }
             }
         }
-
     }
     
     [Serializable]

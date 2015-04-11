@@ -3683,14 +3683,21 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // Otherwise it is unspecified and we consume no characters
                     break;
                 case ':':
-                    if (!str.Match(dtfi.TimeSeparator)) {
+                    // We match the separator in time pattern with the character in the time string if both equal to ':' or the date separator is matching the characters in the date string
+                    // We have to exclude the case when the time separator is more than one character and starts with ':' something like "::" for instance.
+                    if (((dtfi.TimeSeparator.Length > 1 && dtfi.TimeSeparator[0] == ':') || !str.Match(':')) && 
+                        !str.Match(dtfi.TimeSeparator)) {
                         // A time separator is expected.
                         result.SetFailure(ParseFailureKind.Format, "Format_BadDateTime", null);
                         return false;
                     }
                     break;
                 case '/':
-                    if (!str.Match(dtfi.DateSeparator)) {
+                    // We match the separator in date pattern with the character in the date string if both equal to '/' or the date separator is matching the characters in the date string
+                    // We have to exclude the case when the date separator is more than one character and starts with '/' something like "//" for instance.
+                    if (((dtfi.DateSeparator.Length > 1 && dtfi.DateSeparator[0] == '/') || !str.Match('/')) && 
+                        !str.Match(dtfi.DateSeparator))
+                    {
                         // A date separator is expected.
                         result.SetFailure(ParseFailureKind.Format, "Format_BadDateTime", null);
                         return false;

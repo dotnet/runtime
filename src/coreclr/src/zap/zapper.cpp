@@ -905,10 +905,6 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     static ConfigDWORD useRyuJitValue;
     bool fUseRyuJit = (useRyuJitValue.val(CLRConfig::INTERNAL_UseRyuJit) == 1);
 
-    // ****** TODO: Until the registry value is set by the .NET 4.6 installer, we pretend .NET 4.6 has been installed, which causes
-    // ******       RyuJit to be used by default.
-    fUseRyuJit = true;
-
     if (!fUseRyuJit)        // Do we need to fall back to JIT64 for NGEN?
     {
         LPCWSTR pwzJitName = MAKEDLLNAME_W(L"compatjit");

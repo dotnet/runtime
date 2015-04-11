@@ -608,8 +608,10 @@ public:
             return gtVNPair.SetConservative(vn);
         }
     }
-
-
+    void                ClearVN()
+    {
+        gtVNPair = ValueNumPair();          // Initializes both elements to "NoVN".
+    }
 
     //---------------------------------------------------------------------
     //  The first set of flags can be used with a large set of nodes, and

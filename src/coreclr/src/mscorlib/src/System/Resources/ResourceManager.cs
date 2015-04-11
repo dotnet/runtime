@@ -38,7 +38,10 @@ namespace System.Resources {
     //
     // This is implemented in System.Runtime.WindowsRuntime as function System.Resources.WindowsRuntimeResourceManager,
     // allowing us to ask for a WinRT-specific ResourceManager.
-    // Ideally this would be an interface, or at least an abstract class - but neither seems to play nice with FriendAccessAllowed.
+    // It is important to have WindowsRuntimeResourceManagerBase as regular class with virtual methods and default implementations. 
+    // Defining WindowsRuntimeResourceManagerBase as abstract class or interface will cause issues when adding more methods to it 
+    // because it’ll create dependency between mscorlib and System.Runtime.WindowsRuntime which will require always shipping both DLLs together. 
+    // Also using interface or abstract class will not play nice with FriendAccessAllowed.
     //
     [FriendAccessAllowed]
     [SecurityCritical]
@@ -54,6 +57,9 @@ namespace System.Resources {
             [SecurityCritical]
             get { return null; } 
         }
+        
+        [SecurityCritical]
+        public virtual bool SetGlobalResourceContextDefaultCulture(CultureInfo ci) { return false; }
     }
 
     [FriendAccessAllowed]
