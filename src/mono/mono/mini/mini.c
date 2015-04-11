@@ -2464,7 +2464,7 @@ mono_codegen (MonoCompile *cfg)
 #endif
 		/* Allocate the code into a separate memory pool so it can be freed */
 		cfg->dynamic_info = g_new0 (MonoJitDynamicMethodInfo, 1);
-		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic ();
+		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic (cfg->thunk_area);
 		mono_domain_lock (cfg->domain);
 		mono_dynamic_code_hash_insert (cfg->domain, cfg->method, cfg->dynamic_info);
 		mono_domain_unlock (cfg->domain);

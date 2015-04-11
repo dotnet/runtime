@@ -6,7 +6,7 @@
 typedef struct _MonoCodeManager MonoCodeManager;
 
 MONO_API MonoCodeManager* mono_code_manager_new     (void);
-MONO_API MonoCodeManager* mono_code_manager_new_dynamic (void);
+MONO_API MonoCodeManager* mono_code_manager_new_dynamic (int bind_size);
 MONO_API void             mono_code_manager_destroy (MonoCodeManager *cman);
 MONO_API void             mono_code_manager_invalidate (MonoCodeManager *cman);
 MONO_API void             mono_code_manager_set_read_only (MonoCodeManager *cman);

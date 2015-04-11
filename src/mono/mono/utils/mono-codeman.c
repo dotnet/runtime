@@ -96,6 +96,7 @@ struct _CodeChunck {
 struct _MonoCodeManager {
 	int dynamic;
 	int read_only;
+	int bind_size;
 	CodeChunk *current;
 	CodeChunk *full;
 	CodeChunk *last;
@@ -365,14 +366,17 @@ mono_code_manager_new (void)
  * Creates a new code manager suitable for holding native code that can be
  * used for single or small methods that need to be deallocated independently
  * of other native code.
+ * BIND_SIZE is the amount of memory reserved for storing thunks. If its 0,
+ * the default size is used.
  *
  * Returns: the new code manager
  */
 MonoCodeManager* 
-mono_code_manager_new_dynamic (void)
+mono_code_manager_new_dynamic (int bind_size)
 {
 	MonoCodeManager *cman = mono_code_manager_new ();
 	cman->dynamic = 1;
+	cman->bind_size = bind_size;
 	return cman;
 }
 
@@ -496,7 +500,7 @@ mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void
 #endif
 
 static CodeChunk*
-new_codechunk (CodeChunk *last, int dynamic, int size)
+new_codechunk (CodeChunk *last, int dynamic, int size, int bind_size)
 {
 	int minsize, flags = CODE_FLAG_MMAP;
 	int chunk_size, bsize = 0;
@@ -529,11 +533,15 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 		}
 	}
 #ifdef BIND_ROOM
-	if (dynamic)
-		/* Reserve more space since there are no other chunks we might use if this one gets full */
-		bsize = (chunk_size * 2) / BIND_ROOM;
-	else
-		bsize = chunk_size / BIND_ROOM;
+	if (bind_size) {
+		bsize = bind_size;
+	} else {
+		if (dynamic)
+			/* Reserve more space since there are no other chunks we might use if this one gets full */
+			bsize = (chunk_size * 2) / BIND_ROOM;
+		else
+			bsize = chunk_size / BIND_ROOM;
+	}
 	if (bsize < MIN_BSIZE)
 		bsize = MIN_BSIZE;
 	bsize += MIN_ALIGN -1;
@@ -622,7 +630,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	}
 
 	if (!cman->current) {
-		cman->current = new_codechunk (cman->last, cman->dynamic, size);
+		cman->current = new_codechunk (cman->last, cman->dynamic, size, cman->bind_size);
 		if (!cman->current)
 			return NULL;
 		cman->last = cman->current;
@@ -655,7 +663,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 		cman->full = chunk;
 		break;
 	}
-	chunk = new_codechunk (cman->last, cman->dynamic, size);
+	chunk = new_codechunk (cman->last, cman->dynamic, size, cman->bind_size);
 	if (!chunk)
 		return NULL;
 	chunk->next = cman->current;
