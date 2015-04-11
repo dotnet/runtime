@@ -96,7 +96,6 @@ platform_android=no
 platform_darwin=no
 case "$host" in
 	*-mingw*|*-*-cygwin*)
-		AC_DEFINE(HOST_WIN32,1,[Host Platform is Win32])
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 		AC_DEFINE(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
 		host_win32=yes
@@ -355,6 +354,14 @@ AC_MSG_RESULT(ok)
 
 if test x$need_link_unlink = xyes; then
    AC_DEFINE(NEED_LINK_UNLINK, 1, [Define if Unix sockets cannot be created in an anonymous namespace])
+fi
+
+if test x$host_win32 = xyes; then
+   AC_DEFINE(HOST_WIN32, 1, [Host Platform is Win32])
+fi
+
+if test x$target_win32 = xyes; then
+   AC_DEFINE(TARGET_WIN32, 1, [Target Platform is Win32])
 fi
 
 AC_SUBST(extra_runtime_ldflags)
