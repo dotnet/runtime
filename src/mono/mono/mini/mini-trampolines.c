@@ -1879,12 +1879,12 @@ mini_get_single_step_trampoline (void)
 
 	if (!trampoline) {
 		gpointer tramp;
-		MonoTrampInfo *info;
 
 		if (mono_aot_only) {
 			tramp = mono_aot_get_trampoline ("sdb_single_step_trampoline");
 		} else {
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
+			MonoTrampInfo *info;
 			tramp = mono_arch_create_sdb_trampoline (TRUE, &info, FALSE);
 			mono_tramp_info_register (info);
 #else
@@ -1911,12 +1911,12 @@ mini_get_breakpoint_trampoline (void)
 
 	if (!trampoline) {
 		gpointer tramp;
-		MonoTrampInfo *info;
 
 		if (mono_aot_only) {
 			tramp = mono_aot_get_trampoline ("sdb_breakpoint_trampoline");
 		} else {
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
+			MonoTrampInfo *info;
 			tramp = mono_arch_create_sdb_trampoline (FALSE, &info, FALSE);
 			mono_tramp_info_register (info);
 #else
