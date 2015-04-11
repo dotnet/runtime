@@ -450,6 +450,14 @@ namespace ETW
         friend class ETW::EnumerationLog;
 #ifdef FEATURE_EVENT_TRACE
         static VOID SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
+        static VOID SendEventsForJitMethodsHelper(BaseDomain *pDomainFilter,
+            LoaderAllocator *pLoaderAllocatorFilter,
+            DWORD dwEventOptions,
+            BOOL fLoadOrDCStart,
+            BOOL fUnloadOrDCEnd,
+            BOOL fSendMethodEvent,
+            BOOL fSendILToNativeMapEvent,
+            BOOL fGetReJitIDs);
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
         static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
         static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, ReJITID rejitID);
@@ -874,15 +882,9 @@ McGenEventProviderEnabled(
 #define ETW_PROVIDER_ENABLED(ProviderSymbol)                 \
         ProviderSymbol##_Context.IsEnabled
 
-#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrInstanceId)\
-        MCGEN_ENABLE_CHECK(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, GCPerHeapHistory) ?\
-        Etw_GCDataPerHeapSpecial(&GCPerHeapHistory, &GarbageCollectionPrivateId, DataPerHeap, DataSize, ClrInstanceId)\
-        : ERROR_SUCCESS\
-
 #else
 
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) TRUE
-#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrInstanceId) 0
 
 #endif // FEATURE_EVENT_TRACE
 

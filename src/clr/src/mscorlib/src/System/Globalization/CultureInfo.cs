@@ -287,6 +287,28 @@ namespace System.Globalization {
  
             return toReturn;
         }
+
+        [SecuritySafeCritical]
+        internal static bool SetCultureInfoForUserPreferredLanguageInAppX(CultureInfo ci)
+        {
+            // If running within a compilation process (mscorsvw.exe, for example), it is illegal to
+            // load any non-mscorlib assembly for execution. Since WindowsRuntimeResourceManager lives
+            // in System.Runtime.WindowsRuntime, caller will need to fall back to default Win32 value,
+            // which should be fine because we should only ever need to access FX resources during NGEN.
+            // FX resources are always loaded from satellite assemblies - even in AppX processes (see the
+            // comments in code:System.Resources.ResourceManager.SetAppXConfiguration for more details).
+            if (AppDomain.IsAppXNGen)
+            {
+                return false;
+            }
+
+            if (s_WindowsRuntimeResourceManager == null)
+            {
+                s_WindowsRuntimeResourceManager = ResourceManager.GetWinRTResourceManager();
+            }
+
+            return s_WindowsRuntimeResourceManager.SetGlobalResourceContextDefaultCulture(ci);
+        }
 #endif
 
         ////////////////////////////////////////////////////////////////////////
@@ -694,7 +716,19 @@ namespace System.Globalization {
             }
 
             set {
-                Thread.CurrentThread.CurrentCulture = value;
+#if FEATURE_APPX
+                    if (value == null) {
+                        throw new ArgumentNullException("value");
+                    }                    
+
+                    if (AppDomain.IsAppXModel()) {
+                        if (SetCultureInfoForUserPreferredLanguageInAppX(value)) {
+                            // successfully set the culture, otherwise fallback to legacy path
+                            return; 
+                        }
+                    }
+#endif
+                    Thread.CurrentThread.CurrentCulture = value;
             }
         }
 
@@ -780,7 +814,19 @@ namespace System.Globalization {
             }
 
             set {
-                Thread.CurrentThread.CurrentUICulture = value;
+#if FEATURE_APPX
+                    if (value == null) {
+                        throw new ArgumentNullException("value");
+                    }                    
+
+                    if (AppDomain.IsAppXModel()) {
+                        if (SetCultureInfoForUserPreferredLanguageInAppX(value)) {
+                            // successfully set the culture, otherwise fallback to legacy path
+                            return; 
+                        }
+                    }
+#endif
+                    Thread.CurrentThread.CurrentUICulture = value;
             }
         }
 

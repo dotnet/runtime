@@ -53,6 +53,22 @@
     } while (0)
 #endif // !VALIDATE_ROOT
 
+#ifndef LOG_PIPTR
+#define LOG_PIPTR(pObjRef, gcFlags, hCallBack)                                                                                                  \
+    {                                                                                                                                           \
+        GCCONTEXT* pGCCtx = (GCCONTEXT*)(hCallBack);                                                                                            \
+        if (pGCCtx->sc->promotion)                                                                                                              \
+        {                                                                                                                                       \
+            LOG((LF_GCROOTS, LL_INFO1000, /* Part Three */                                                                                      \
+                LOG_PIPTR_OBJECT_CLASS(OBJECTREF_TO_UNCHECKED_OBJECTREF(*pObjRef), (gcFlags & GC_CALL_PINNED), (gcFlags & GC_CALL_INTERIOR)))); \
+        }                                                                                                                                       \
+        else                                                                                                                                    \
+        {                                                                                                                                       \
+            LOG((LF_GCROOTS, LL_INFO1000, /* Part Three */                                                                                      \
+                LOG_PIPTR_OBJECT(OBJECTREF_TO_UNCHECKED_OBJECTREF(*pObjRef), (gcFlags & GC_CALL_PINNED), (gcFlags & GC_CALL_INTERIOR))));       \
+        }                                                                                                                                       \
+    }
+#endif // !LOG_PIPTR
 
 bool GcInfoDecoder::SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, LPVOID hCallback)
 {
@@ -1559,8 +1575,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
 
     VALIDATE_ROOT((gcFlags & GC_CALL_INTERIOR), hCallBack, pObjRef);
 
-    LOG((LF_GCROOTS, LL_INFO1000, /* Part Three */
-         LOG_PIPTR_OBJECT_CLASS(OBJECTREF_TO_UNCHECKED_OBJECTREF(*pObjRef), (gcFlags & GC_CALL_PINNED), (gcFlags & GC_CALL_INTERIOR))));
+    LOG_PIPTR(pObjRef, gcFlags, hCallBack);
 #endif //_DEBUG
 
     gcFlags |= CHECK_APP_DOMAIN;
@@ -1657,8 +1672,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // ARM
 
     VALIDATE_ROOT((gcFlags & GC_CALL_INTERIOR), hCallBack, pObjRef);
 
-    LOG((LF_GCROOTS, LL_INFO1000, /* Part Three */
-         LOG_PIPTR_OBJECT_CLASS(OBJECTREF_TO_UNCHECKED_OBJECTREF(*pObjRef), (gcFlags & GC_CALL_PINNED), (gcFlags & GC_CALL_INTERIOR))));
+    LOG_PIPTR(pObjRef, gcFlags, hCallBack);
 #endif //_DEBUG
 
     gcFlags |= CHECK_APP_DOMAIN;
@@ -1752,8 +1766,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
 
     VALIDATE_ROOT((gcFlags & GC_CALL_INTERIOR), hCallBack, pObjRef);
 
-    LOG((LF_GCROOTS, LL_INFO1000, /* Part Three */
-         LOG_PIPTR_OBJECT_CLASS(OBJECTREF_TO_UNCHECKED_OBJECTREF(*pObjRef), (gcFlags & GC_CALL_PINNED), (gcFlags & GC_CALL_INTERIOR))));
+    LOG_PIPTR(pObjRef, gcFlags, hCallBack);
 #endif //_DEBUG
 
     gcFlags |= CHECK_APP_DOMAIN;
@@ -1893,8 +1906,7 @@ void GcInfoDecoder::ReportStackSlotToGC(
 
     VALIDATE_ROOT((gcFlags & GC_CALL_INTERIOR), hCallBack, pObjRef);
 
-    LOG((LF_GCROOTS, LL_INFO1000, /* Part Three */
-         LOG_PIPTR_OBJECT_CLASS(OBJECTREF_TO_UNCHECKED_OBJECTREF(*pObjRef), (gcFlags & GC_CALL_PINNED), (gcFlags & GC_CALL_INTERIOR))));
+    LOG_PIPTR(pObjRef, gcFlags, hCallBack);
 #endif
 
     gcFlags |= CHECK_APP_DOMAIN;

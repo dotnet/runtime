@@ -801,8 +801,9 @@ CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     var_types targetType = simdNode->TypeGet();
     InstructionSet iset = compiler->getSIMDInstructionSet();
 
-    regNumber op1Reg = genConsumeReg(op1);
-    regNumber op2Reg = genConsumeReg(op2);
+    genConsumeOperands(simdNode);
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = op2->gtRegNum;
     regNumber otherReg = op2Reg;
 
     // Vector<Int>.Mul:
@@ -990,8 +991,9 @@ CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
     var_types targetType = simdNode->TypeGet();
     InstructionSet iset = compiler->getSIMDInstructionSet();
 
-    regNumber op1Reg = genConsumeReg(op1);
-    regNumber op2Reg = genConsumeReg(op2);
+    genConsumeOperands(simdNode);
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = op2->gtRegNum;
     regNumber otherReg = op2Reg;
 
     switch(simdNode->gtSIMDIntrinsicID)
@@ -1211,8 +1213,9 @@ CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
     assert(targetType == baseType);
     assert(varTypeIsFloating(baseType));
 
-    regNumber op1Reg = genConsumeReg(op1);
-    regNumber op2Reg = genConsumeReg(op2);
+    genConsumeOperands(simdNode);
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = op2->gtRegNum;
 
     regNumber tmpReg = REG_NA;
     // For SSE, or AVX with 32-byte vectors, we need an additional Xmm register as scratch.
@@ -1390,7 +1393,8 @@ CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     // GetItem has 2 operands:
     // - the source of SIMD type (op1)
     // - the index of the value to be returned.
-    regNumber srcReg = genConsumeReg(op1);
+    genConsumeOperands(simdNode);
+    regNumber srcReg = op1->gtRegNum;
     
     // SSE2 doesn't have an instruction to implement this intrinsic if the index is not a constant.
     // For the non-constant case, we will use the SIMD temp location to store the vector, and
@@ -1403,7 +1407,7 @@ CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
         bool isEBPbased;
         unsigned offs = compiler->lvaFrameAddress(simdInitTempVarNum, &isEBPbased);
-        regNumber indexReg = genConsumeReg(op2);
+        regNumber indexReg = op2->gtRegNum;
 
         // Store the vector to the temp location.
         getEmitter()->emitIns_S_R(ins_Store(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)), 
@@ -1579,8 +1583,9 @@ CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
     assert(op2->TypeGet() == baseType);
     assert(simdNode->gtSIMDSize >= ((index + 1) * genTypeSize(baseType)));
 
-    regNumber op1Reg = genConsumeReg(op1);
-    regNumber op2Reg = genConsumeReg(op2);
+    genConsumeOperands(simdNode);
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = op2->gtRegNum;
 
     // TODO-CQ: For AVX we don't need to do a copy because it supports 3 operands plus immediate.
     if (targetReg != op1Reg)
@@ -1694,17 +1699,7 @@ CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
     assert(genCountBits(treeNode->gtRsvdRegs) == 1);
     regNumber tmpReg = genRegNumFromMask(treeNode->gtRsvdRegs);
 
-    bool reverseOps = ((treeNode->gtFlags & GTF_REVERSE_OPS) != 0);
-    if (!reverseOps)
-    {
-        genConsumeReg(addr);
-        genConsumeReg(data);
-    }
-    else
-    {
-        genConsumeReg(data);
-        genConsumeReg(addr);        
-    }
+    genConsumeOperands(treeNode->AsOp());
 
     // 8-byte write
     getEmitter()->emitIns_AR_R(ins_Store(TYP_DOUBLE), EA_8BYTE, data->gtRegNum, addr->gtRegNum, 0);
