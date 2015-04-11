@@ -10,6 +10,7 @@
     <RootNamespace>System.Dynamic.Runtime.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>67,168,219,414,162,184,458,464,78,169,114,693,108,1981,649,109,1066,3021,3026,3002,3014,3022,660,661,429</NoWarn>
+    <UnsupportedPlatforms>Linux</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
