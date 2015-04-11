@@ -218,7 +218,7 @@ Remarks:
 #endif
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 //+
-// Provider Microsoft-Windows-DotNETRuntime Event Count 155
+// Provider Microsoft-Windows-DotNETRuntime Event Count 159
 //+
 EXTERN_C __declspec(selectany) const GUID MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER = {0xe13c0d23, 0xccbc, 0x4e12, {0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4}};
 
@@ -259,6 +259,10 @@ EXTERN_C __declspec(selectany) const GUID MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVID
 #define CLR_GC_BULKROOTSTATICVAR_OPCODE 0x28
 #define CLR_GC_INCREASEMEMORYPRESSURE_OPCODE 0xc8
 #define CLR_GC_DECREASEMEMORYPRESSURE_OPCODE 0xc9
+#define CLR_GC_MARK_OPCODE 0xca
+#define CLR_GC_JOIN_OPCODE 0xcb
+#define CLR_GC_GCPERHEAPHISTORY_OPCODE 0xcc
+#define CLR_GC_GCGLOBALHEAPHISTORY_OPCODE 0xcd
 #define CLR_METHOD_DCSTARTCOMPLETE_OPCODE 0xe
 #define CLR_METHOD_DCENDCOMPLETE_OPCODE 0xf
 #define CLR_METHOD_METHODLOAD_OPCODE 0x21
@@ -474,7 +478,7 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCBulkSurvivingObjectRange
 #define GCBulkSurvivingObjectRanges_value 0x15
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCBulkMovedObjectRanges = {0x16, 0x0, 0x0, 0x4, 0x1a, 0x1, 0x400000};
 #define GCBulkMovedObjectRanges_value 0x16
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCGenerationRange = {0x17, 0x0, 0x0, 0x4, 0x1b, 0x1, 0x1};
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCGenerationRange = {0x17, 0x0, 0x0, 0x4, 0x1b, 0x1, 0x400000};
 #define GCGenerationRange_value 0x17
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCMarkStackRoots = {0x19, 0x0, 0x0, 0x4, 0x1c, 0x1, 0x1};
 #define GCMarkStackRoots_value 0x19
@@ -698,6 +702,14 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR IncreaseMemoryPressure = {
 #define IncreaseMemoryPressure_value 0xc8
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DecreaseMemoryPressure = {0xc9, 0x0, 0x0, 0x5, 0xc9, 0x1, 0x1};
 #define DecreaseMemoryPressure_value 0xc9
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCMarkWithType = {0xca, 0x0, 0x0, 0x4, 0xca, 0x1, 0x1};
+#define GCMarkWithType_value 0xca
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCJoin_V2 = {0xcb, 0x2, 0x0, 0x5, 0xcb, 0x1, 0x1};
+#define GCJoin_V2_value 0xcb
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCPerHeapHistory_V3 = {0xcc, 0x3, 0x0, 0x4, 0xcc, 0x1, 0x1};
+#define GCPerHeapHistory_V3_value 0xcc
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR GCGlobalHeapHistory_V2 = {0xcd, 0x2, 0x0, 0x4, 0xcd, 0x1, 0x1};
+#define GCGlobalHeapHistory_V2_value 0xcd
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DebugIPCEventStart = {0xf0, 0x0, 0x0, 0x4, 0x1, 0x19, 0x100000000};
 #define DebugIPCEventStart_value 0xf0
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DebugIPCEventEnd = {0xf1, 0x0, 0x0, 0x4, 0x2, 0x19, 0x100000000};
@@ -1384,7 +1396,7 @@ Remarks:
 // Enablement check macro for GCGenerationRange
 //
 
-#define EventEnabledGCGenerationRange() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledGCGenerationRange() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00000040) != 0)
 
 //
 // Event Macro for GCGenerationRange
@@ -2946,6 +2958,62 @@ Remarks:
 #define FireEtwDecreaseMemoryPressure(BytesFreed, ClrInstanceID)\
         EventEnabledDecreaseMemoryPressure() ?\
         CoTemplate_xh(Microsoft_Windows_DotNETRuntimeHandle, &DecreaseMemoryPressure, BytesFreed, ClrInstanceID)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GCMarkWithType
+//
+
+#define EventEnabledGCMarkWithType() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00000001) != 0)
+
+//
+// Event Macro for GCMarkWithType
+//
+#define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes)\
+        EventEnabledGCMarkWithType() ?\
+        CoTemplate_qhqx(Microsoft_Windows_DotNETRuntimeHandle, &GCMarkWithType, HeapNum, ClrInstanceID, Type, Bytes)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GCJoin_V2
+//
+
+#define EventEnabledGCJoin_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00000002) != 0)
+
+//
+// Event Macro for GCJoin_V2
+//
+#define FireEtwGCJoin_V2(Heap, JoinTime, JoinType, ClrInstanceID, JoinID)\
+        EventEnabledGCJoin_V2() ?\
+        CoTemplate_qqqhq(Microsoft_Windows_DotNETRuntimeHandle, &GCJoin_V2, Heap, JoinTime, JoinType, ClrInstanceID, JoinID)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GCPerHeapHistory_V3
+//
+
+#define EventEnabledGCPerHeapHistory_V3() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00000001) != 0)
+
+//
+// Event Macro for GCPerHeapHistory_V3
+//
+#define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values)\
+        EventEnabledGCPerHeapHistory_V3() ?\
+        CoTemplate_hppppppqqqqqqpqNR14(Microsoft_Windows_DotNETRuntimeHandle, &GCPerHeapHistory_V3, ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for GCGlobalHeapHistory_V2
+//
+
+#define EventEnabledGCGlobalHeapHistory_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00000001) != 0)
+
+//
+// Event Macro for GCGlobalHeapHistory_V2
+//
+#define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure)\
+        EventEnabledGCGlobalHeapHistory_V2() ?\
+        CoTemplate_xdqqqqhqq(Microsoft_Windows_DotNETRuntimeHandle, &GCGlobalHeapHistory_V2, FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure)\
         : ERROR_SUCCESS\
 
 //
@@ -10456,6 +10524,229 @@ MCGEN_CALLOUT(RegHandle,
 #endif
 
 //
+//Template from manifest : GCMarkWithType
+//
+#ifndef CoTemplate_qhqx_def
+#define CoTemplate_qhqx_def
+ETW_INLINE
+ULONG
+CoTemplate_qhqx(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const unsigned int  _Arg0,
+    _In_ const unsigned short  _Arg1,
+    _In_ const unsigned int  _Arg2,
+    _In_ unsigned __int64  _Arg3
+    )
+{
+#define ARGUMENT_COUNT_qhqx 4
+    ULONG Error = ERROR_SUCCESS;
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_qhqx];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(unsigned __int64)  );
+
+    Error = EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_qhqx, EventData);
+
+#ifdef MCGEN_CALLOUT
+MCGEN_CALLOUT(RegHandle,
+              Descriptor,
+              ARGUMENT_COUNT_qhqx,
+              EventData);
+#endif
+
+    return Error;
+}
+#endif
+
+//
+//Template from manifest : GCJoin_V2
+//
+#ifndef CoTemplate_qqqhq_def
+#define CoTemplate_qqqhq_def
+ETW_INLINE
+ULONG
+CoTemplate_qqqhq(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const unsigned int  _Arg0,
+    _In_ const unsigned int  _Arg1,
+    _In_ const unsigned int  _Arg2,
+    _In_ const unsigned short  _Arg3,
+    _In_ const unsigned int  _Arg4
+    )
+{
+#define ARGUMENT_COUNT_qqqhq 5
+    ULONG Error = ERROR_SUCCESS;
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_qqqhq];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[4], &_Arg4, sizeof(const unsigned int)  );
+
+    Error = EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_qqqhq, EventData);
+
+#ifdef MCGEN_CALLOUT
+MCGEN_CALLOUT(RegHandle,
+              Descriptor,
+              ARGUMENT_COUNT_qqqhq,
+              EventData);
+#endif
+
+    return Error;
+}
+#endif
+
+//
+//Template from manifest : GCPerHeapHistory_V3
+//
+#ifndef CoTemplate_hppppppqqqqqqpqNR14_def
+#define CoTemplate_hppppppqqqqqqpqNR14_def
+ETW_INLINE
+ULONG
+CoTemplate_hppppppqqqqqqpqNR14(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const unsigned short  _Arg0,
+    _In_opt_ const void *  _Arg1,
+    _In_opt_ const void *  _Arg2,
+    _In_opt_ const void *  _Arg3,
+    _In_opt_ const void *  _Arg4,
+    _In_opt_ const void *  _Arg5,
+    _In_opt_ const void *  _Arg6,
+    _In_ const unsigned int  _Arg7,
+    _In_ const unsigned int  _Arg8,
+    _In_ const unsigned int  _Arg9,
+    _In_ const unsigned int  _Arg10,
+    _In_ const unsigned int  _Arg11,
+    _In_ const unsigned int  _Arg12,
+    _In_opt_ const void *  _Arg13,
+    _In_ const unsigned int  _Arg14,
+    _In_ ULONG _Arg15_Len_,
+    _In_ const PVOID  _Arg15
+    )
+{
+#define ARGUMENT_COUNT_hppppppqqqqqqpqNR14 16
+    ULONG Error = ERROR_SUCCESS;
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_hppppppqqqqqqpqNR14];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(PVOID)  );
+
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(PVOID)  );
+
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(PVOID)  );
+
+    EventDataDescCreate(&EventData[4], &_Arg4, sizeof(PVOID)  );
+
+    EventDataDescCreate(&EventData[5], &_Arg5, sizeof(PVOID)  );
+
+    EventDataDescCreate(&EventData[6], &_Arg6, sizeof(PVOID)  );
+
+    EventDataDescCreate(&EventData[7], &_Arg7, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[8], &_Arg8, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[9], &_Arg9, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[10], &_Arg10, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[11], &_Arg11, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[12], &_Arg12, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[13], &_Arg13, sizeof(PVOID)  );
+
+    EventDataDescCreate(&EventData[14], &_Arg14, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[15], _Arg15, _Arg14 * _Arg15_Len_);
+
+    Error = EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_hppppppqqqqqqpqNR14, EventData);
+
+#ifdef MCGEN_CALLOUT
+MCGEN_CALLOUT(RegHandle,
+              Descriptor,
+              ARGUMENT_COUNT_hppppppqqqqqqpqNR14,
+              EventData);
+#endif
+
+    return Error;
+}
+#endif
+
+//
+//Template from manifest : GCGlobalHeap_V2
+//
+#ifndef CoTemplate_xdqqqqhqq_def
+#define CoTemplate_xdqqqqhqq_def
+ETW_INLINE
+ULONG
+CoTemplate_xdqqqqhqq(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ const signed int  _Arg1,
+    _In_ const unsigned int  _Arg2,
+    _In_ const unsigned int  _Arg3,
+    _In_ const unsigned int  _Arg4,
+    _In_ const unsigned int  _Arg5,
+    _In_ const unsigned short  _Arg6,
+    _In_ const unsigned int  _Arg7,
+    _In_ const unsigned int  _Arg8
+    )
+{
+#define ARGUMENT_COUNT_xdqqqqhqq 9
+    ULONG Error = ERROR_SUCCESS;
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xdqqqqhqq];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(unsigned __int64)  );
+
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const signed int)  );
+
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[4], &_Arg4, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[5], &_Arg5, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[6], &_Arg6, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[7], &_Arg7, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[8], &_Arg8, sizeof(const unsigned int)  );
+
+    Error = EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xdqqqqhqq, EventData);
+
+#ifdef MCGEN_CALLOUT
+MCGEN_CALLOUT(RegHandle,
+              Descriptor,
+              ARGUMENT_COUNT_xdqqqqhqq,
+              EventData);
+#endif
+
+    return Error;
+}
+#endif
+
+//
 //Template from manifest : StressLog
 //
 #ifndef CoTemplate_qcs_def
@@ -12042,6 +12333,10 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_GCSuspendEEEndOpcodeMessage 0x30010089L
 #define MSG_RuntimePublisher_IncreaseMemoryPressureOpcodeMessage 0x300100C8L
 #define MSG_RuntimePublisher_DecreaseMemoryPressureOpcodeMessage 0x300100C9L
+#define MSG_RuntimePublisher_GCMarkOpcodeMessage 0x300100CAL
+#define MSG_RuntimePublisher_GCJoinOpcodeMessage 0x300100CBL
+#define MSG_RuntimePublisher_GCPerHeapHistoryOpcodeMessage 0x300100CCL
+#define MSG_RuntimePublisher_GCGlobalHeapHistoryOpcodeMessage 0x300100CDL
 #define MSG_RuntimePublisher_DCStartCompleteOpcodeMessage 0x3009000EL
 #define MSG_RuntimePublisher_DCEndCompleteOpcodeMessage 0x3009000FL
 #define MSG_RuntimePublisher_MethodLoadOpcodeMessage 0x30090021L
@@ -12383,6 +12678,7 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_MethodILToNativeMapEventMessage 0xB00000BEL
 #define MSG_RuntimePublisher_IncreaseMemoryPressureEventMessage 0xB00000C8L
 #define MSG_RuntimePublisher_DecreaseMemoryPressureEventMessage 0xB00000C9L
+#define MSG_RuntimePublisher_GCMarkWithTypeEventMessage 0xB00000CAL
 #define MSG_RuntimePublisher_GCStart_V1EventMessage 0xB0010001L
 #define MSG_RuntimePublisher_GCEnd_V1EventMessage 0xB0010002L
 #define MSG_RuntimePublisher_GCRestartEEEnd_V1EventMessage 0xB0010003L
@@ -12427,7 +12723,10 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_MethodUnloadVerbose_V2EventMessage 0xB0020090L
 #define MSG_RuntimePublisher_ModuleLoad_V2EventMessage 0xB0020098L
 #define MSG_RuntimePublisher_ModuleUnload_V2EventMessage 0xB0020099L
+#define MSG_RuntimePublisher_GCJoin_V2EventMessage 0xB00200CBL
+#define MSG_RuntimePublisher_GCGlobalHeap_V2EventMessage 0xB00200CDL
 #define MSG_RuntimePublisher_GCAllocationTick_V3EventMessage 0xB003000AL
+#define MSG_RuntimePublisher_GCPerHeapHistory_V3EventMessage 0xB00300CCL
 #define MSG_RundownPublisher_StackEventMessage 0xB1000000L
 #define MSG_RundownPublisher_MethodDCStartEventMessage 0xB100008DL
 #define MSG_RundownPublisher_MethodDCEndEventMessage 0xB100008EL
@@ -12590,16 +12889,18 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_GCRootKind_Stack 0xD0000028L
 #define MSG_RuntimePublisher_GCRootKind_Finalizer 0xD0000029L
 #define MSG_RuntimePublisher_GCRootKind_Handle 0xD000002AL
-#define MSG_RuntimePublisher_GCRootKind_Other 0xD000002BL
-#define MSG_RuntimePublisher_GCHandleKind_WeakShortMessage 0xD000002CL
-#define MSG_RuntimePublisher_GCHandleKind_WeakLongMessage 0xD000002DL
-#define MSG_RuntimePublisher_GCHandleKind_StrongMessage 0xD000002EL
-#define MSG_RuntimePublisher_GCHandleKind_PinnedMessage 0xD000002FL
-#define MSG_RuntimePublisher_GCHandleKind_VariableMessage 0xD0000030L
-#define MSG_RuntimePublisher_GCHandleKind_RefCountedMessage 0xD0000031L
-#define MSG_RuntimePublisher_GCHandleKind_DependentMessage 0xD0000032L
-#define MSG_RuntimePublisher_GCHandleKind_AsyncPinnedMessage 0xD0000033L
-#define MSG_RuntimePublisher_GCHandleKind_SizedRefMessage 0xD0000034L
+#define MSG_RuntimePublisher_GCRootKind_Older 0xD000002BL
+#define MSG_RuntimePublisher_GCRootKind_SizedRef 0xD000002CL
+#define MSG_RuntimePublisher_GCRootKind_Overflow 0xD000002DL
+#define MSG_RuntimePublisher_GCHandleKind_WeakShortMessage 0xD000002EL
+#define MSG_RuntimePublisher_GCHandleKind_WeakLongMessage 0xD000002FL
+#define MSG_RuntimePublisher_GCHandleKind_StrongMessage 0xD0000030L
+#define MSG_RuntimePublisher_GCHandleKind_PinnedMessage 0xD0000031L
+#define MSG_RuntimePublisher_GCHandleKind_VariableMessage 0xD0000032L
+#define MSG_RuntimePublisher_GCHandleKind_RefCountedMessage 0xD0000033L
+#define MSG_RuntimePublisher_GCHandleKind_DependentMessage 0xD0000034L
+#define MSG_RuntimePublisher_GCHandleKind_AsyncPinnedMessage 0xD0000035L
+#define MSG_RuntimePublisher_GCHandleKind_SizedRefMessage 0xD0000036L
 #define MSG_PrivatePublisher_ModuleRangeSectionTypeMap_ModuleSection 0xD3000001L
 #define MSG_PrivatePublisher_ModuleRangeSectionTypeMap_EETableSection 0xD3000002L
 #define MSG_PrivatePublisher_ModuleRangeSectionTypeMap_WriteDataSection 0xD3000003L
