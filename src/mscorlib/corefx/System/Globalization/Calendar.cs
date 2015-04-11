@@ -72,6 +72,7 @@ namespace System.Globalization
         internal const CalendarId CAL_JULIAN = CalendarId.JULIAN;
         internal const CalendarId CAL_TAIWAN = CalendarId.TAIWAN;
         internal const CalendarId CAL_UMALQURA = CalendarId.UMALQURA;
+        internal const CalendarId CAL_PERSIAN = CalendarId.PERSIAN;
 #endif
 
         // The minimum supported DateTime range for the calendar.
