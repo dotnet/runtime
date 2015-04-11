@@ -201,7 +201,8 @@ namespace System.Threading.Tasks
         // Values for ContingentProperties.m_internalCancellationRequested.
         private const int CANCELLATION_REQUESTED = 0x1;
 
-        // Can be null, a single continuation, a list of continuations, or s_taskCompletionSentinel.
+        // Can be null, a single continuation, a list of continuations, or s_taskCompletionSentinel,
+        // in that order. The logic arround this object assumes it will never regress to a previous state.
         private volatile object m_continuationObject = null;
 
         // m_continuationObject is set to this when the task completes.
@@ -4737,23 +4738,12 @@ namespace System.Threading.Tasks
                     // continuation.
                     if (m_continuationObject != s_taskCompletionSentinel)
                     {
-                        // Before growing the list, we look to see whether any continuations in the list 
-                        // have already completed and thus can be removed.  This helps to avoid both unnecessary
-                        // growth to the list, but more importantly it helps to avoid temporary leaks when this
-                        // task is long-lived and a registered continuation has already completed yet is still
-                        // being kept alive.  This can happen in the case of a cancelable continuation.
+                        // Before growing the list we remove possible null entries that are the
+                        // result from RemoveContinuations()
                         if (list.Count == list.Capacity)
                         {
-                            for (int index = list.Count - 1; index >= 0; index--)
-                            {
-                                StandardTaskContinuation cont = list[index] as StandardTaskContinuation;
-                                if (cont != null && cont.m_task.IsCanceled)
-                                {
-                                    list.RemoveAt(index);
-                                }
-                            }
+                            list.RemoveAll(s_IsTaskContinuationNullPredicate);
                         }
-                    
 
                         if (addBeforeOthers)
                             list.Insert(0, tc);
@@ -4792,17 +4782,37 @@ namespace System.Threading.Tasks
         // Removes a continuation task from m_continuations
         internal void RemoveContinuation(object continuationObject) // could be TaskContinuation or Action<Task>
         {
-            // We need to snap a local reference to m_continuations
-            // because we could be racing w/ FinishContinuations() which nulls out m_continuationObject in the end
-            List<object> continuationsLocalRef = m_continuationObject as List<object>;
+            // We need to snap a local reference to m_continuations since reading a volatile object is more costly.
+            // Also to prevent the value to be changed as result of a race condition with another method.
+            object continuationsLocalRef = m_continuationObject;
 
-            // If continuationsLocalRef == null, it means that m_continuationObject is not a list.  We only
-            // remove continuations if there are a list of them.  We take no action if there are no continuations
-            // (m_continuationObject == null), if we are tracking a single continuation (m_continuationObject is
-            // TaskContinuation or Action<Task>), or if the task is complete (m_continuationObject is s_taskCompletionSentinel).
-            if (continuationsLocalRef != null)
+            // Task is completed. Nothing to do here.
+            if (continuationsLocalRef == s_taskCompletionSentinel) return;
+
+            List<object> continuationsLocalListRef = continuationsLocalRef as List<object>;
+
+            if (continuationsLocalListRef == null)
             {
-                lock (continuationsLocalRef)
+                // This is not a list. If we have a single object (the one we want to remove) we try to replace it with an empty list.
+                // Note we cannot go back to a null state, since it will mess up the AddTaskContinuation logic.
+                if (Interlocked.CompareExchange(ref m_continuationObject, new List<object>(), continuationObject) != continuationObject)
+                {
+                    // If we fail it means that either AddContinuationComplex won the race condition and m_continuationObject is now a List
+                    // that contains the element we want to remove. Or FinishContinuations set the s_taskCompletionSentinel.
+                    // So we should try to get a list one more time
+                    continuationsLocalListRef = m_continuationObject as List<object>;
+                }
+                else
+                {
+                    // Exchange was successful so we can skip the last comparison
+                    return;
+                }
+            }
+
+            // if continuationsLocalRef == null it means s_taskCompletionSentinel has been set already and there is nothing else to do.
+            if (continuationsLocalListRef != null)
+            {
+                lock (continuationsLocalListRef)
                 {
                     // There is a small chance that this task completed since we took a local snapshot into
                     // continuationsLocalRef.  In that case, just return; we don't want to be manipulating the
@@ -4810,25 +4820,19 @@ namespace System.Threading.Tasks
                     if (m_continuationObject == s_taskCompletionSentinel) return;
 
                     // Find continuationObject in the continuation list
-                    int index = continuationsLocalRef.IndexOf(continuationObject);
+                    int index = continuationsLocalListRef.IndexOf(continuationObject);
 
                     if (index != -1)
                     {
                         // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
-                        continuationsLocalRef[index] = null;
+                        continuationsLocalListRef[index] = null;
 
-                        // if the list of continuations is large enough it's time to compact it by removing
-                        // all entries marked for clean up
-                        if (continuationsLocalRef.Count > 128)
-                        {
-                            continuationsLocalRef.RemoveAll(s_IsTaskContinuationNullPredicate); // RemoveAll has better performance than doing it ourselves
-                        }
                     }
                 }
             }
         }
 
-        // statically allocated delegate for the RemoveAll expression in RemoveContinuations()
+        // statically allocated delegate for the RemoveAll expression in RemoveContinuations() and AddContinuationComplex()
         private readonly static Predicate<object> s_IsTaskContinuationNullPredicate =
             new Predicate<object>((tc) => { return (tc == null); });
 

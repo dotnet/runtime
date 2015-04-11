@@ -37,6 +37,7 @@ namespace ARM64GCDump
 #define LF_GCROOTS
 #define LL_INFO1000
 #define LOG(x)
+#define LOG_PIPTR(pObjRef, gcFlags, hCallBack)
 #define DAC_ARG(x)
 #include "gcdumpnonx86.cpp"
 }

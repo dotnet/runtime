@@ -295,6 +295,7 @@ const FrameworkConfig g_arFxPolicy[] =
     {L"System.Net.NetworkInformation", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
     {L"System.Net.Primitives", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
     {L"System.Net.Requests", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
+    {L"System.Net.WebHeaderCollection", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
     {L"System.ObjectModel", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
     {L"System.Reflection", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},
     {L"System.Reflection.Emit", MICROSOFT_PUBLICKEY_STR_L, VER_ASSEMBLYVERSION_STR_L, FxPolicyHelper::AppXBinder_Supported},

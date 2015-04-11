@@ -343,7 +343,11 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
     // If the rhs expr is constant, then it is not part of the dependency
     // loop which has to increase monotonically.
     ValueNum vn = expr->gtVNPair.GetConservative();
-    if (m_pCompiler->vnStore->IsVNConstant(vn))
+    if (path->GetCount() > MAX_SEARCH_DEPTH)
+    {
+        return false;
+    }
+    else if (m_pCompiler->vnStore->IsVNConstant(vn))
     {
         return true;
     }
@@ -885,10 +889,16 @@ bool RangeCheck::AddOverflows(Limit& limit1, Limit& limit2)
 // Does the bin operation overflow.
 bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr op1, GenTreePtr op2, SearchPath* path)
 {
-    if (DoesOverflow(block, stmt, op1, path) || DoesOverflow(block, stmt, op2, path))
+    if (!path->Lookup(op1) && DoesOverflow(block, stmt, op1, path))
     {
         return true;
     }
+
+    if (!path->Lookup(op2) && DoesOverflow(block, stmt, op2, path))
+    {
+        return true;
+    }
+
     // Get the cached ranges of op1
     Range* op1Range = nullptr;
     if (!GetRangeMap()->Lookup(op1, &op1Range))
@@ -983,15 +993,17 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTree
     JITDUMP("Does overflow %p?\n", dspPtr(expr));
     path->Set(expr, block);
 
-    noway_assert(path->GetCount() <= MAX_SEARCH_DEPTH);
-
     bool overflows = true;
 
     // Remove hashtable entry for expr when we exit the present scope.
     Range range = Limit(Limit::keUndef);
     ValueNum vn = expr->gtVNPair.GetConservative();
+    if (path->GetCount() > MAX_SEARCH_DEPTH)
+    {
+        overflows = true;
+    }
     // If the definition chain resolves to a constant, it doesn't overflow.
-    if (m_pCompiler->vnStore->IsVNConstant(vn))
+    else if (m_pCompiler->vnStore->IsVNConstant(vn))
     {
         overflows = false;
     }
@@ -1033,7 +1045,7 @@ struct Node
 // eg.: merge((0, dep), (dep, dep)) = (0, dep)
 Range RangeCheck::ComputeRange(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path, bool monotonic DEBUGARG(int indent))
 {
-    bool newlyAdded = path->Set(expr, block);
+    bool newlyAdded = !path->Set(expr, block);
     Range range = Limit(Limit::keUndef);
 
     ValueNum vn = expr->gtVNPair.GetConservative();

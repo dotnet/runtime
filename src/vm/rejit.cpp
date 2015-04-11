@@ -1498,9 +1498,16 @@ HRESULT ReJitManager::DoJumpStampIfNecessary(MethodDesc* pMD, PCODE pCode)
     pInfoToJumpStamp = FindPreReJittedReJitInfo(beginIter, endIter);
     if (pInfoToJumpStamp != NULL)
     {
-        // Found it.  Jump-stamp, SetNativeCode, and we're done.
         _ASSERTE(pInfoToJumpStamp->GetMethodDesc() == pMD);
-        return pInfoToJumpStamp->JumpStampNativeCode(pCode);
+        // does it need to be jump-stamped?
+        if (pInfoToJumpStamp->GetState() != ReJitInfo::kJumpNone)
+        {
+            return S_OK;
+        }
+        else
+        {
+            return pInfoToJumpStamp->JumpStampNativeCode(pCode);
+        }
     }
 
     // In this case, try looking up by module / metadata token.  This is the case where
@@ -1519,6 +1526,19 @@ HRESULT ReJitManager::DoJumpStampIfNecessary(MethodDesc* pMD, PCODE pCode)
     {
         // No jump stamping to do.
         return S_OK;
+    }
+
+    // The placeholder may already have a rejit info for this MD, in which
+    // case we don't need to do any additional work
+    for (ReJitInfo * pInfo = pInfoPlaceholder->m_pShared->GetMethods(); pInfo != NULL; pInfo = pInfo->m_pNext)
+    {
+        if ((pInfo->GetKey().m_keyType == ReJitInfo::Key::kMethodDesc) &&
+            (pInfo->GetMethodDesc() == pMD))
+        {
+            // Any rejit info we find should already be jumpstamped
+            _ASSERTE(pInfo->GetState() != ReJitInfo::kJumpNone);
+            return S_OK;
+        }
     }
 
 #ifdef _DEBUG
