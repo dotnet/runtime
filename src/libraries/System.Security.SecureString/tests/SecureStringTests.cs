@@ -9,6 +9,11 @@ using Xunit;
 
 public static class SecureStringTest
 {
+    // With the current Unix implementation of SecureString, allocating more than a certain
+    // number of pages worth of memory will likely result in OOMs unless in a privileged process.
+    private static readonly bool s_isWindowsOrPrivilegedUnix = 
+        Interop.IsWindows ? true : Interop.libc.geteuid() == 0;
+
     private static void VerifyString(SecureString ss, string exString)
     {
         IntPtr uniStr = IntPtr.Zero;
@@ -66,7 +71,10 @@ public static class SecureStringTest
     {
         // 1. Positive cases
         CreateAndVerifySecureString("test");
-        CreateAndVerifySecureString(new string('a', UInt16.MaxValue + 1)/*Max allowed length is 65536*/);
+        if (s_isWindowsOrPrivilegedUnix)
+        {
+            CreateAndVerifySecureString(new string('a', UInt16.MaxValue + 1)/*Max allowed length is 65536*/);
+        }
 
         // 2. Negative cases
         Assert.Throws<ArgumentNullException>(() => new SecureString(null, 0));
@@ -92,7 +100,10 @@ public static class SecureStringTest
             VerifyString(testString, sb.ToString());
         }
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => { using (SecureString ss = CreateSecureString(new string('a', UInt16.MaxValue + 1))) ss.AppendChar('a'); });
+        if (s_isWindowsOrPrivilegedUnix)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => { using (SecureString ss = CreateSecureString(new string('a', UInt16.MaxValue + 1))) ss.AppendChar('a'); });
+        }
         Assert.Throws<InvalidOperationException>(() => { using (SecureString ss = CreateSecureString(string.Empty)) { ss.MakeReadOnly(); ss.AppendChar('k'); } });
     }
 
@@ -115,13 +126,13 @@ public static class SecureStringTest
         // Check if readOnly
         Assert.Throws<InvalidOperationException>(() => { using (SecureString ss = new SecureString()) { ss.MakeReadOnly(); ss.Clear(); } });
         // Check if secureString has been disposed.
-        Assert.Throws<ObjectDisposedException>(() => { using (SecureString ss = CreateSecureString(new string('a', UInt16.MaxValue + 1))) { ss.Dispose(); ss.Clear(); } });
+        Assert.Throws<ObjectDisposedException>(() => { using (SecureString ss = CreateSecureString(new string('a', 100))) { ss.Dispose(); ss.Clear(); } });
     }
 
     [Fact]
     public static void SecureString_Copy()
     {
-        string exString = new string('a', UInt16.MaxValue + 1);
+        string exString = new string('a', 4000);
         using (SecureString testString = CreateSecureString(exString))
         {
             using (SecureString copy_string = testString.Copy())
@@ -168,9 +179,12 @@ public static class SecureStringTest
             Assert.Throws<ArgumentOutOfRangeException>(() => testString.InsertAt(6, 'S'));
         }
 
-        using (SecureString testString = CreateSecureString(new string('a', UInt16.MaxValue + 1)))
+        if (s_isWindowsOrPrivilegedUnix)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => testString.InsertAt(22, 'S'));
+            using (SecureString testString = CreateSecureString(new string('a', UInt16.MaxValue + 1)))
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => testString.InsertAt(22, 'S'));
+            }
         }
 
         using (SecureString testString = CreateSecureString("test"))
@@ -242,11 +256,14 @@ public static class SecureStringTest
             VerifyString(testString, "bc");
         }
 
-        using (SecureString testString = CreateSecureString(new string('a', UInt16.MaxValue + 1)))
+        if (s_isWindowsOrPrivilegedUnix)
         {
-            testString.RemoveAt(22);
-            testString.AppendChar('a');
-            VerifyString(testString, new string('a', UInt16.MaxValue + 1));
+            using (SecureString testString = CreateSecureString(new string('a', UInt16.MaxValue + 1)))
+            {
+                testString.RemoveAt(22);
+                testString.AppendChar('a');
+                VerifyString(testString, new string('a', UInt16.MaxValue + 1));
+            }
         }
 
         using (SecureString testString = CreateSecureString("test"))
@@ -281,29 +298,67 @@ public static class SecureStringTest
             VerifyString(testString, "def");
         }
 
-        string exString = new string('a', UInt16.MaxValue + 1);
-        using (SecureString testString = CreateSecureString(exString))
+        if (s_isWindowsOrPrivilegedUnix)
         {
-            testString.SetAt(22, 'b');
-            char[] chars = exString.ToCharArray();
-            chars[22] = 'b';
-            VerifyString(testString, new string(chars));
+            string exString = new string('a', UInt16.MaxValue + 1);
+            using (SecureString testString = CreateSecureString(exString))
+            {
+                testString.SetAt(22, 'b');
+                char[] chars = exString.ToCharArray();
+                chars[22] = 'b';
+                VerifyString(testString, new string(chars));
+            }
         }
 
         using (SecureString testString = CreateSecureString("test"))
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => testString.RemoveAt(-1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => testString.RemoveAt(testString.Length));
-            Assert.Throws<ArgumentOutOfRangeException>(() => testString.RemoveAt(testString.Length + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => testString.SetAt(-1, 'a'));
+            Assert.Throws<ArgumentOutOfRangeException>(() => testString.SetAt(testString.Length, 'b'));
+            Assert.Throws<ArgumentOutOfRangeException>(() => testString.SetAt(testString.Length + 1, 'c'));
 
             testString.MakeReadOnly();
-            Assert.Throws<InvalidOperationException>(() => testString.RemoveAt(0));
+            Assert.Throws<InvalidOperationException>(() => testString.SetAt(0, 'd'));
         }
 
         {
             SecureString testString = CreateSecureString("test");
             testString.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => testString.RemoveAt(0));
+            Assert.Throws<ObjectDisposedException>(() => testString.SetAt(0, 'e'));
         }
     }
+
+    [Fact]
+    public static void SecureStringMarshal_ArgValidation()
+    {
+        Assert.Throws<ArgumentNullException>(() => SecureStringMarshal.SecureStringToCoTaskMemUnicode(null));
+    }
+
+    [Fact]
+    public static void SecureString_RepeatedCtorDispose()
+    {
+        string str = new string('a', 4000);
+        for (int i = 0; i < 1000; i++)
+        {
+            CreateSecureString(str).Dispose();
+        }
+    }
+
+    [Fact]
+    [OuterLoop]
+    public static void SecureString_Growth()
+    {
+        string starting = new string('a', 6000);
+        StringBuilder sb = new StringBuilder(starting);
+        using (SecureString testString = CreateSecureString(starting))
+        {
+            for (int i = 0; i < 4000; i++)
+            {
+                char c = (char)('a' + (i % 26));
+                testString.AppendChar(c);
+                sb.Append(c);
+            }
+            VerifyString(testString, sb.ToString());
+        }
+    }
+
 }
