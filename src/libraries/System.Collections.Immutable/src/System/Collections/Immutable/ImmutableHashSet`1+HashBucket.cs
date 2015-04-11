@@ -299,7 +299,7 @@ namespace System.Collections.Immutable
                 /// <returns>
                 /// true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
                 /// </returns>
-                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                /// <exception cref="InvalidOperationException">The collection was modified after the enumerator was created. </exception>
                 public bool MoveNext()
                 {
                     this.ThrowIfDisposed();
@@ -336,7 +336,7 @@ namespace System.Collections.Immutable
                 /// <summary>
                 /// Sets the enumerator to its initial position, which is before the first element in the collection.
                 /// </summary>
-                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                /// <exception cref="InvalidOperationException">The collection was modified after the enumerator was created. </exception>
                 public void Reset()
                 {
                     this.ThrowIfDisposed();

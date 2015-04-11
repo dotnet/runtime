@@ -1286,9 +1286,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Adds an item to the <see cref="T:System.Collections.IList" />.
+        /// Adds an item to the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to add to the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to add to the <see cref="IList"/>.</param>
         /// <returns>
         /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
         /// </returns>
@@ -1300,7 +1300,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes all items from the <see cref="T:System.Collections.Generic.ICollection`1" />.
+        /// Removes all items from the <see cref="ICollection{T}"/>.
         /// </summary>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
@@ -1310,11 +1310,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the <see cref="T:System.Collections.IList" /> contains a specific value.
+        /// Determines whether the <see cref="IList"/> contains a specific value.
         /// </summary>
-        /// <param name="value">The object to locate in the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
-        /// true if the <see cref="T:System.Object" /> is found in the <see cref="T:System.Collections.IList" />; otherwise, false.
+        /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
         [ExcludeFromCodeCoverage]
         bool IList.Contains(object value)
@@ -1325,9 +1325,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines the index of a specific item in the <see cref="T:System.Collections.IList" />.
+        /// Determines the index of a specific item in the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to locate in the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
         /// The index of <paramref name="value" /> if found in the list; otherwise, -1.
         /// </returns>
@@ -1340,10 +1340,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Inserts an item to the <see cref="T:System.Collections.IList" /> at the specified index.
+        /// Inserts an item to the <see cref="IList"/> at the specified index.
         /// </summary>
         /// <param name="index">The zero-based index at which <paramref name="value" /> should be inserted.</param>
-        /// <param name="value">The object to insert into the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
         void IList.Insert(int index, object value)
@@ -1425,9 +1425,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.IList" />.
+        /// Removes the first occurrence of a specific object from the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to remove from the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
         void IList.Remove(object value)
@@ -1436,7 +1436,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes the <see cref="T:System.Collections.Generic.IList`1" /> item at the specified index.
+        /// Removes the <see cref="IList{T}"/> item at the specified index.
         /// </summary>
         /// <param name="index">The zero-based index of the item to remove.</param>
         /// <exception cref="System.NotSupportedException"></exception>
@@ -1469,9 +1469,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+        /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
+        /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
         /// <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
         [ExcludeFromCodeCoverage]
         void ICollection.CopyTo(Array array, int index)

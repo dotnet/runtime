@@ -192,7 +192,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:Enumerator"/> that can be used to iterate through the collection.
+        /// An <see cref="Enumerator"/> that can be used to iterate through the collection.
         /// </returns>
         [Pure]
         public Enumerator GetEnumerator()
@@ -204,7 +204,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         [Pure]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -216,7 +216,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+        /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
         [Pure]
         IEnumerator IEnumerable.GetEnumerator()

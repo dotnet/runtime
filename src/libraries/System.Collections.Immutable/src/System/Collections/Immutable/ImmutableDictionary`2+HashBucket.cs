@@ -88,7 +88,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
             {
@@ -99,7 +99,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through a collection.
             /// </summary>
             /// <returns>
-            /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+            /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
             /// </returns>
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -411,7 +411,7 @@ namespace System.Collections.Immutable
                 /// <returns>
                 /// true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
                 /// </returns>
-                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                /// <exception cref="InvalidOperationException">The collection was modified after the enumerator was created. </exception>
                 public bool MoveNext()
                 {
                     if (_bucket.IsEmpty)
@@ -447,7 +447,7 @@ namespace System.Collections.Immutable
                 /// <summary>
                 /// Sets the enumerator to its initial position, which is before the first element in the collection.
                 /// </summary>
-                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                /// <exception cref="InvalidOperationException">The collection was modified after the enumerator was created. </exception>
                 public void Reset()
                 {
                     // We can safely dispose of the additional enumerator because if the client reuses this enumerator

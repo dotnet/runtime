@@ -446,9 +446,9 @@ namespace System.Collections.Immutable
             #region ICollection members
 
             /// <summary>
-            /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+            /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
             /// </summary>
-            /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
+            /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
             /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
             /// <exception cref="System.NotImplementedException"></exception>
             void ICollection.CopyTo(Array array, int arrayIndex)
@@ -457,9 +457,9 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection" /> is synchronized (thread safe).
+            /// Gets a value indicating whether access to the <see cref="ICollection"/> is synchronized (thread safe).
             /// </summary>
-            /// <returns>true if access to the <see cref="T:System.Collections.ICollection" /> is synchronized (thread safe); otherwise, false.</returns>
+            /// <returns>true if access to the <see cref="ICollection"/> is synchronized (thread safe); otherwise, false.</returns>
             /// <exception cref="System.NotImplementedException"></exception>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             bool ICollection.IsSynchronized
@@ -468,9 +468,9 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets an object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection" />.
+            /// Gets an object that can be used to synchronize access to the <see cref="ICollection"/>.
             /// </summary>
-            /// <returns>An object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection" />.</returns>
+            /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
             /// <exception cref="System.NotImplementedException"></exception>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             object ICollection.SyncRoot
