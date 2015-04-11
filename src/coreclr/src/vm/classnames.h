@@ -29,6 +29,7 @@
 #define g_FXKeyToken "b03f5f7f11d50a3a"         // The FX key used by other framework assemblies: System.Web, System.Drawing, etc.
 #define g_CoreClrKeyToken "7CEC85D7BEA7798E"    // The silverlight platform key used by CoreClr framework assemblies: mscorlib, system, etc
 #define g_SystemAsmName "System"
+#define g_SystemRuntimeAsmName "System.Runtime"
 #define g_DrawingAsmName "System.Drawing"
 #define g_ColorClassName "System.Drawing.Color"
 #define g_ColorTranslatorClassName "System.Drawing.ColorTranslator"
