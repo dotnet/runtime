@@ -21,7 +21,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// <para>
-        /// While <see cref="ImmutableList&lt;T&gt;.AddRange"/> and other bulk change methods
+        /// While <see cref="ImmutableList{T}.AddRange"/> and other bulk change methods
         /// already provide fast bulk change operations on the collection, this class allows
         /// multiple combinations of changes to be made to a set with equal efficiency.
         /// </para>
@@ -160,7 +160,7 @@ namespace System.Collections.Immutable
             #region IList<T> Methods
 
             /// <summary>
-            /// See <see cref="IList&lt;T&gt;"/>
+            /// See <see cref="IList{T}"/>
             /// </summary>
             public int IndexOf(T item)
             {
@@ -168,7 +168,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IList&lt;T&gt;"/>
+            /// See <see cref="IList{T}"/>
             /// </summary>
             public void Insert(int index, T item)
             {
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IList&lt;T&gt;"/>
+            /// See <see cref="IList{T}"/>
             /// </summary>
             public void RemoveAt(int index)
             {
@@ -184,7 +184,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IList&lt;T&gt;"/>
+            /// See <see cref="IList{T}"/>
             /// </summary>
             public void Add(T item)
             {
@@ -192,7 +192,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IList&lt;T&gt;"/>
+            /// See <see cref="IList{T}"/>
             /// </summary>
             public void Clear()
             {
@@ -200,7 +200,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IList&lt;T&gt;"/>
+            /// See <see cref="IList{T}"/>
             /// </summary>
             public bool Contains(T item)
             {
@@ -208,7 +208,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IList&lt;T&gt;"/>
+            /// See <see cref="IList{T}"/>
             /// </summary>
             public bool Remove(T item)
             {
@@ -1188,7 +1188,7 @@ namespace System.Collections.Immutable
         private T[] _cachedContents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableListBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableListBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The list to display in the debugger</param>
         public ImmutableListBuilderDebuggerProxy(ImmutableList<T>.Builder builder)

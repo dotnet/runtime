@@ -30,7 +30,7 @@ namespace System.Collections.Immutable
         private readonly Node _root;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableList&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableList{T}"/> class.
         /// </summary>
         internal ImmutableList()
         {
@@ -38,7 +38,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableList&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableList{T}"/> class.
         /// </summary>
         /// <param name="root">The root of the AVL tree with the contents of this set.</param>
         private ImmutableList(Node root)
@@ -50,7 +50,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         public ImmutableList<T> Clear()
         {
@@ -142,7 +142,7 @@ namespace System.Collections.Immutable
         #region IImmutableList<T> Properties
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public bool IsEmpty
@@ -155,7 +155,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         IImmutableList<T> IImmutableList<T>.Clear()
         {
@@ -163,7 +163,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         public int Count
         {
@@ -256,7 +256,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> Add(T value)
@@ -268,7 +268,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> AddRange(IEnumerable<T> items)
@@ -289,7 +289,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> Insert(int index, T item)
@@ -301,7 +301,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> InsertRange(int index, IEnumerable<T> items)
@@ -316,7 +316,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> Remove(T value)
@@ -325,7 +325,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> Remove(T value, IEqualityComparer<T> equalityComparer)
@@ -411,7 +411,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> RemoveAt(int index)
@@ -444,7 +444,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> SetItem(int index, T value)
@@ -453,7 +453,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> Replace(T oldValue, T newValue)
@@ -462,7 +462,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer)
@@ -973,7 +973,7 @@ namespace System.Collections.Immutable
         #region IImmutableList<T> Methods
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         public bool Contains(T value)
         {
@@ -982,7 +982,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         public int IndexOf(T value)
         {
@@ -990,7 +990,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Add(T value)
@@ -999,7 +999,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.AddRange(IEnumerable<T> items)
@@ -1032,7 +1032,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.Remove(T value, IEqualityComparer<T> equalityComparer)
@@ -1041,7 +1041,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveAll(Predicate<T> match)
@@ -1050,7 +1050,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveRange(IEnumerable<T> items, IEqualityComparer<T> equalityComparer)
@@ -1059,7 +1059,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableList&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableList<T> IImmutableList<T>.RemoveRange(int index, int count)
@@ -1390,11 +1390,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Attempts to discover an <see cref="ImmutableList&lt;T&gt;"/> instance beneath some enumerable sequence
+        /// Attempts to discover an <see cref="ImmutableList{T}"/> instance beneath some enumerable sequence
         /// if one exists.
         /// </summary>
         /// <param name="sequence">The sequence that may have come from an immutable list.</param>
-        /// <param name="other">Receives the concrete <see cref="ImmutableList&lt;T&gt;"/> typed value if one can be found.</param>
+        /// <param name="other">Receives the concrete <see cref="ImmutableList{T}"/> typed value if one can be found.</param>
         /// <returns><c>true</c> if the cast was successful; <c>false</c> otherwise.</returns>
         private static bool TryCastToImmutableList(IEnumerable<T> sequence, out ImmutableList<T> other)
         {
@@ -1816,7 +1816,7 @@ namespace System.Collections.Immutable
             private Node _right;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableList&lt;T&gt;.Node"/> class
+            /// Initializes a new instance of the <see cref="ImmutableList{T}.Node"/> class
             /// that is pre-frozen.
             /// </summary>
             private Node()
@@ -1826,7 +1826,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableList&lt;T&gt;.Node"/> class
+            /// Initializes a new instance of the <see cref="ImmutableList{T}.Node"/> class
             /// that is not yet frozen.
             /// </summary>
             /// <param name="key">The value stored by this node.</param>
@@ -3264,7 +3264,7 @@ namespace System.Collections.Immutable
         private T[] _cachedContents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableListDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableListDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="list">The list to display in the debugger</param>
         public ImmutableListDebuggerProxy(ImmutableList<T> list)

@@ -21,7 +21,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// <para>
-        /// While <see cref="ImmutableSortedSet&lt;T&gt;.Union"/> and other bulk change methods
+        /// While <see cref="ImmutableSortedSet{T}.Union"/> and other bulk change methods
         /// already provide fast bulk change operations on the collection, this class allows
         /// multiple combinations of changes to be made to a set with equal efficiency.
         /// </para>
@@ -360,7 +360,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="ICollection&lt;T&gt;"/>
+            /// See <see cref="ICollection{T}"/>
             /// </summary>
             void ICollection<T>.CopyTo(T[] array, int arrayIndex)
             {
@@ -505,7 +505,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableSortedSetBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSetBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The collection to display in the debugger</param>
         public ImmutableSortedSetBuilderDebuggerProxy(ImmutableSortedSet<T>.Builder builder)

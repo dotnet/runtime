@@ -323,7 +323,7 @@ namespace System.Collections.Immutable
             private readonly IList<T> _collection;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ListOfTWrapper&lt;T&gt;"/> class.
+            /// Initializes a new instance of the <see cref="ListOfTWrapper{T}"/> class.
             /// </summary>
             /// <param name="collection">The collection.</param>
             internal ListOfTWrapper(IList<T> collection)
@@ -388,7 +388,7 @@ namespace System.Collections.Immutable
             private IList<T> _collection;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="FallbackWrapper&lt;T&gt;"/> class.
+            /// Initializes a new instance of the <see cref="FallbackWrapper{T}"/> class.
             /// </summary>
             /// <param name="sequence">The sequence.</param>
             internal FallbackWrapper(IEnumerable<T> sequence)

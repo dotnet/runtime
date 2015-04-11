@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
         private readonly ImmutableStack<T> _tail;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableStack&lt;T&gt;"/> class
+        /// Initializes a new instance of the <see cref="ImmutableStack{T}"/> class
         /// that acts as the empty stack.
         /// </summary>
         private ImmutableStack()
@@ -48,7 +48,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableStack&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableStack{T}"/> class.
         /// </summary>
         /// <param name="head">The head element on the stack.</param>
         /// <param name="tail">The rest of the elements on the stack.</param>
@@ -433,7 +433,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableStackDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableStackDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="stack">The collection to display in the debugger</param>
         public ImmutableStackDebuggerProxy(ImmutableStack<T> stack)

@@ -23,7 +23,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableHashSetDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableHashSetDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="set">The collection to display in the debugger</param>
         public ImmutableHashSetDebuggerProxy(ImmutableHashSet<T> set)

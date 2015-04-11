@@ -20,7 +20,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// <para>
-        /// While <see cref="ImmutableHashSet&lt;T&gt;.Union(IEnumerable&lt;T&gt;)"/> and other bulk change methods
+        /// While <see cref="ImmutableHashSet{T}.Union(IEnumerable{T})"/> and other bulk change methods
         /// already provide fast bulk change operations on the collection, this class allows
         /// multiple combinations of changes to be made to a set with equal efficiency.
         /// </para>
@@ -60,7 +60,7 @@ namespace System.Collections.Immutable
             private int _version;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.Builder"/> class.
+            /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.Builder"/> class.
             /// </summary>
             /// <param name="set">The set.</param>
             internal Builder(ImmutableHashSet<T> set)
@@ -373,7 +373,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See the <see cref="ICollection&lt;T&gt;"/> interface.
+            /// See the <see cref="ICollection{T}"/> interface.
             /// </summary>
             void ICollection<T>.CopyTo(T[] array, int arrayIndex)
             {

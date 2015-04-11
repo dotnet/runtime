@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
             private readonly CountType _countType;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.MutationResult"/> struct.
+            /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.MutationResult"/> struct.
             /// </summary>
             /// <param name="root">The root node of the result.</param>
             /// <param name="count">The total element count or a count adjustment.</param>

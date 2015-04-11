@@ -86,7 +86,7 @@ namespace System.Collections.Immutable
             #region IDictionary<TKey, TValue> Properties and Indexer
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             ICollection<TKey> IDictionary<TKey, TValue>.Keys
             {
@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             ICollection<TValue> IDictionary<TKey, TValue>.Values
             {
@@ -420,7 +420,7 @@ namespace System.Collections.Immutable
             #region IDictionary<TKey, TValue> Methods
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public void Add(TKey key, TValue value)
             {
@@ -433,7 +433,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public bool ContainsKey(TKey key)
             {
@@ -441,7 +441,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public bool Remove(TKey key)
             {
@@ -456,7 +456,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public bool TryGetValue(TKey key, out TValue value)
             {
@@ -464,7 +464,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+            /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
             /// </summary>
             public bool TryGetKey(TKey equalKey, out TKey actualKey)
             {
@@ -473,7 +473,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public void Add(KeyValuePair<TKey, TValue> item)
             {
@@ -481,7 +481,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public void Clear()
             {
@@ -490,7 +490,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public bool Contains(KeyValuePair<TKey, TValue> item)
             {
@@ -498,7 +498,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
             {
@@ -506,7 +506,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public bool Remove(KeyValuePair<TKey, TValue> item)
             {
@@ -519,7 +519,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             public ImmutableSortedDictionary<TKey, TValue>.Enumerator GetEnumerator()
             {
@@ -527,7 +527,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
             {
@@ -535,7 +535,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -665,7 +665,7 @@ namespace System.Collections.Immutable
         private KeyValuePair<TKey, TValue>[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryBuilderDebuggerProxy&lt;TKey, TValue&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="map">The collection to display in the debugger</param>
         public ImmutableSortedDictionaryBuilderDebuggerProxy(ImmutableSortedDictionary<TKey, TValue>.Builder map)

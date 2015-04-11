@@ -731,7 +731,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private readonly ImmutableArray<T>.Builder _builder;
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArrayBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableArrayBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The collection to display in the debugger</param>
         public ImmutableArrayBuilderDebuggerProxy(ImmutableArray<T>.Builder builder)

@@ -224,13 +224,13 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;" /> struct.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
         /// <param name="items">The source array to initialize the resulting array with.</param>
         /// <param name="selector">The function to apply to each element from the source array.</param>
         /// <remarks>
-        /// This overload allows efficient creation of an <see cref="ImmutableArray&lt;T&gt;" /> based on an existing
-        /// <see cref="ImmutableArray&lt;T&gt;" />, where a mapping function needs to be applied to each element from
+        /// This overload allows efficient creation of an <see cref="ImmutableArray{T}"/> based on an existing
+        /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from
         /// the source array.
         /// </remarks>
         [Pure]
@@ -255,15 +255,15 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;" /> struct.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
         /// <param name="items">The source array to initialize the resulting array with.</param>
         /// <param name="start">The index of the first element in the source array to include in the resulting array.</param>
         /// <param name="length">The number of elements from the source array to include in the resulting array.</param>
         /// <param name="selector">The function to apply to each element from the source array included in the resulting array.</param>
         /// <remarks>
-        /// This overload allows efficient creation of an <see cref="ImmutableArray&lt;T&gt;" /> based on a slice of an existing
-        /// <see cref="ImmutableArray&lt;T&gt;" />, where a mapping function needs to be applied to each element from the source array
+        /// This overload allows efficient creation of an <see cref="ImmutableArray{T}"/> based on a slice of an existing
+        /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from the source array
         /// included in the resulting array.
         /// </remarks>
         [Pure]
@@ -290,14 +290,14 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;" /> struct.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
         /// <param name="items">The source array to initialize the resulting array with.</param>
         /// <param name="selector">The function to apply to each element from the source array.</param>
         /// <param name="arg">An argument to be passed to the selector mapping function.</param>
         /// <remarks>
-        /// This overload allows efficient creation of an <see cref="ImmutableArray&lt;T&gt;" /> based on an existing
-        /// <see cref="ImmutableArray&lt;T&gt;" />, where a mapping function needs to be applied to each element from
+        /// This overload allows efficient creation of an <see cref="ImmutableArray{T}"/> based on an existing
+        /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from
         /// the source array.
         /// </remarks>
         [Pure]
@@ -322,7 +322,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;" /> struct.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
         /// <param name="items">The source array to initialize the resulting array with.</param>
         /// <param name="start">The index of the first element in the source array to include in the resulting array.</param>
@@ -330,8 +330,8 @@ namespace System.Collections.Immutable
         /// <param name="selector">The function to apply to each element from the source array included in the resulting array.</param>
         /// <param name="arg">An argument to be passed to the selector mapping function.</param>
         /// <remarks>
-        /// This overload allows efficient creation of an <see cref="ImmutableArray&lt;T&gt;" /> based on a slice of an existing
-        /// <see cref="ImmutableArray&lt;T&gt;" />, where a mapping function needs to be applied to each element from the source array
+        /// This overload allows efficient creation of an <see cref="ImmutableArray{T}"/> based on a slice of an existing
+        /// <see cref="ImmutableArray{T}"/>, where a mapping function needs to be applied to each element from the source array
         /// included in the resulting array.
         /// </remarks>
         [Pure]
@@ -358,7 +358,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;.Builder"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}.Builder"/> class.
         /// </summary>
         /// <typeparam name="T">The type of elements stored in the array.</typeparam>
         /// <returns>A new builder.</returns>
@@ -369,7 +369,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray&lt;T&gt;.Builder"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}.Builder"/> class.
         /// </summary>
         /// <typeparam name="T">The type of elements stored in the array.</typeparam>
         /// <param name="initialCapacity">The size of the initial array backing the builder.</param>

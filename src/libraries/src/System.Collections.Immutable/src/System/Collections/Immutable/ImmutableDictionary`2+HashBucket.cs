@@ -31,7 +31,7 @@ namespace System.Collections.Immutable
             private readonly ImmutableList<KeyValuePair<TKey, TValue>>.Node _additionalElements;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.HashBucket"/> struct.
+            /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}.HashBucket"/> struct.
             /// </summary>
             /// <param name="firstElement">The first element.</param>
             /// <param name="additionalElements">The additional elements.</param>
@@ -342,7 +342,7 @@ namespace System.Collections.Immutable
                 private ImmutableList<KeyValuePair<TKey, TValue>>.Enumerator _additionalEnumerator;
 
                 /// <summary>
-                /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.HashBucket.Enumerator"/> struct.
+                /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}.HashBucket.Enumerator"/> struct.
                 /// </summary>
                 /// <param name="bucket">The bucket.</param>
                 internal Enumerator(HashBucket bucket)
