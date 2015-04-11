@@ -517,7 +517,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         public Enumerator GetEnumerator()
         {
@@ -588,17 +588,17 @@ namespace System.Collections.Immutable
         #region IDictionary<TKey, TValue> Methods
 
         /// <summary>
-        /// Adds an element with the provided key and value to the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+        /// Adds an element with the provided key and value to the <see cref="IDictionary{TKey, TValue}"/>.
         /// </summary>
         /// <param name="key">The object to use as the key of the element to add.</param>
         /// <param name="value">The object to use as the value of the element to add.</param>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.
         /// </exception>
-        /// <exception cref="T:System.ArgumentException">
-        /// An element with the same key already exists in the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+        /// <exception cref="ArgumentException">
+        /// An element with the same key already exists in the <see cref="IDictionary{TKey, TValue}"/>.
         /// </exception>
-        /// <exception cref="T:System.NotSupportedException">
-        /// The <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
+        /// <exception cref="NotSupportedException">
+        /// The <see cref="IDictionary{TKey, TValue}"/> is read-only.
         /// </exception>
         void IDictionary<TKey, TValue>.Add(TKey key, TValue value)
         {
@@ -606,16 +606,16 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes the element with the specified key from the <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+        /// Removes the element with the specified key from the <see cref="IDictionary{TKey, TValue}"/>.
         /// </summary>
         /// <param name="key">The key of the element to remove.</param>
         /// <returns>
-        /// true if the element is successfully removed; otherwise, false.  This method also returns false if <paramref name="key"/> was not found in the original <see cref="T:System.Collections.Generic.IDictionary`2"/>.
+        /// true if the element is successfully removed; otherwise, false.  This method also returns false if <paramref name="key"/> was not found in the original <see cref="IDictionary{TKey, TValue}"/>.
         /// </returns>
-        /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is null.
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is null.
         /// </exception>
-        /// <exception cref="T:System.NotSupportedException">
-        /// The <see cref="T:System.Collections.Generic.IDictionary`2"/> is read-only.
+        /// <exception cref="NotSupportedException">
+        /// The <see cref="IDictionary{TKey, TValue}"/> is read-only.
         /// </exception>
         bool IDictionary<TKey, TValue>.Remove(TKey key)
         {
@@ -658,18 +658,18 @@ namespace System.Collections.Immutable
         #region IDictionary Properties
 
         /// <summary>
-        /// Gets a value indicating whether the <see cref="T:System.Collections.IDictionary" /> object has a fixed size.
+        /// Gets a value indicating whether the <see cref="IDictionary"/> object has a fixed size.
         /// </summary>
-        /// <returns>true if the <see cref="T:System.Collections.IDictionary" /> object has a fixed size; otherwise, false.</returns>
+        /// <returns>true if the <see cref="IDictionary"/> object has a fixed size; otherwise, false.</returns>
         bool IDictionary.IsFixedSize
         {
             get { return true; }
         }
 
         /// <summary>
-        /// Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only.
+        /// Gets a value indicating whether the <see cref="ICollection{T}"/> is read-only.
         /// </summary>
-        /// <returns>true if the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only; otherwise, false.
+        /// <returns>true if the <see cref="ICollection{T}"/> is read-only; otherwise, false.
         ///   </returns>
         bool IDictionary.IsReadOnly
         {
@@ -677,10 +677,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets an <see cref="T:System.Collections.Generic.ICollection`1" /> containing the keys of the <see cref="T:System.Collections.Generic.IDictionary`2" />.
+        /// Gets an <see cref="ICollection{T}"/> containing the keys of the <see cref="IDictionary{TKey, TValue}" />.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.Generic.ICollection`1" /> containing the keys of the object that implements <see cref="T:System.Collections.Generic.IDictionary`2" />.
+        /// An <see cref="ICollection{T}"/> containing the keys of the object that implements <see cref="IDictionary{TKey, TValue}" />.
         ///   </returns>
         ICollection IDictionary.Keys
         {
@@ -688,10 +688,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets an <see cref="T:System.Collections.Generic.ICollection`1" /> containing the values in the <see cref="T:System.Collections.Generic.IDictionary`2" />.
+        /// Gets an <see cref="ICollection{T}"/> containing the values in the <see cref="IDictionary{TKey, TValue}" />.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.Generic.ICollection`1" /> containing the values in the object that implements <see cref="T:System.Collections.Generic.IDictionary`2" />.
+        /// An <see cref="ICollection{T}"/> containing the values in the object that implements <see cref="IDictionary{TKey, TValue}" />.
         ///   </returns>
         ICollection IDictionary.Values
         {
@@ -711,21 +711,21 @@ namespace System.Collections.Immutable
         #region IDictionary Methods
 
         /// <summary>
-        /// Adds an element with the provided key and value to the <see cref="T:System.Collections.IDictionary" /> object.
+        /// Adds an element with the provided key and value to the <see cref="IDictionary"/> object.
         /// </summary>
-        /// <param name="key">The <see cref="T:System.Object" /> to use as the key of the element to add.</param>
-        /// <param name="value">The <see cref="T:System.Object" /> to use as the value of the element to add.</param>
+        /// <param name="key">The <see cref="object"/> to use as the key of the element to add.</param>
+        /// <param name="value">The <see cref="object"/> to use as the value of the element to add.</param>
         void IDictionary.Add(object key, object value)
         {
             throw new NotSupportedException();
         }
 
         /// <summary>
-        /// Determines whether the <see cref="T:System.Collections.IDictionary" /> object contains an element with the specified key.
+        /// Determines whether the <see cref="IDictionary"/> object contains an element with the specified key.
         /// </summary>
-        /// <param name="key">The key to locate in the <see cref="T:System.Collections.IDictionary" /> object.</param>
+        /// <param name="key">The key to locate in the <see cref="IDictionary"/> object.</param>
         /// <returns>
-        /// true if the <see cref="T:System.Collections.IDictionary" /> contains an element with the key; otherwise, false.
+        /// true if the <see cref="IDictionary"/> contains an element with the key; otherwise, false.
         /// </returns>
         bool IDictionary.Contains(object key)
         {
@@ -733,10 +733,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Returns an <see cref="T:System.Collections.IDictionaryEnumerator" /> object for the <see cref="T:System.Collections.IDictionary" /> object.
+        /// Returns an <see cref="IDictionaryEnumerator"/> object for the <see cref="IDictionary"/> object.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.IDictionaryEnumerator" /> object for the <see cref="T:System.Collections.IDictionary" /> object.
+        /// An <see cref="IDictionaryEnumerator"/> object for the <see cref="IDictionary"/> object.
         /// </returns>
         /// <exception cref="System.NotImplementedException"></exception>
         IDictionaryEnumerator IDictionary.GetEnumerator()
@@ -745,7 +745,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes the element with the specified key from the <see cref="T:System.Collections.IDictionary" /> object.
+        /// Removes the element with the specified key from the <see cref="IDictionary"/> object.
         /// </summary>
         /// <param name="key">The key of the element to remove.</param>
         void IDictionary.Remove(object key)
@@ -778,9 +778,9 @@ namespace System.Collections.Immutable
         #region ICollection Methods
 
         /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+        /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
+        /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
         /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
@@ -799,9 +799,9 @@ namespace System.Collections.Immutable
         #region ICollection Properties
 
         /// <summary>
-        /// Gets an object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection" />.
+        /// Gets an object that can be used to synchronize access to the <see cref="ICollection"/>.
         /// </summary>
-        /// <returns>An object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection" />.</returns>
+        /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         object ICollection.SyncRoot
         {
@@ -809,9 +809,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection" /> is synchronized (thread safe).
+        /// Gets a value indicating whether access to the <see cref="ICollection"/> is synchronized (thread safe).
         /// </summary>
-        /// <returns>true if access to the <see cref="T:System.Collections.ICollection" /> is synchronized (thread safe); otherwise, false.</returns>
+        /// <returns>true if access to the <see cref="ICollection"/> is synchronized (thread safe); otherwise, false.</returns>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         bool ICollection.IsSynchronized
         {
@@ -830,7 +830,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         {
@@ -845,7 +845,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+        /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
         [ExcludeFromCodeCoverage]
         IEnumerator IEnumerable.GetEnumerator()
