@@ -1055,7 +1055,12 @@ namespace System {
         ==============================================================================*/
         public static Version Version {
             get {
-                return new Version(ThisAssembly.InformationalVersion);
+
+                // Previously this represented the File version of mscorlib.dll.  Many other libraries in the framework and outside took dependencies on the first three parts of this version 
+                // remaining constant throughout 4.x.  From 4.0 to 4.5.2 this was fine since the file version only incremented the last part.Starting with 4.6 we switched to a file versioning
+                // scheme that matched the product version.  In order to preserve compatibility with existing libraries, this needs to be hard-coded.
+                
+                return new Version(4,0,30319,42000);
             }
         }
 

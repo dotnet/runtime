@@ -5881,6 +5881,17 @@ GenTreePtr          Compiler::gtCloneExpr(GenTree * tree,
             }
             break;
 
+        case GT_LEA:
+            {
+                GenTreeAddrMode* addrModeOp = tree->AsAddrMode();
+                copy = new(this, GT_LEA) GenTreeAddrMode(addrModeOp->TypeGet(),
+                                                         addrModeOp->Base(),
+                                                         addrModeOp->Index(),
+                                                         addrModeOp->gtScale,
+                                                         addrModeOp->gtOffset);
+            }
+            break;
+
 #ifdef FEATURE_SIMD
         case GT_SIMD:
             {
@@ -9764,32 +9775,41 @@ CHK_OVF:
          * or overflow - when dividing MIN by -1 */
 
         case GT_DIV:
-            if (!i2) return tree;
-            if (UINT32(i1) == 0x80000000 && i2 == -1)
-            {
-                /* In IL we have to throw an exception */
-                return tree;
-            }
-            i1 = INT32(i1) / INT32(i2); break;
-
         case GT_MOD:
-            if (!i2) return tree;
-            if (UINT32(i1) == 0x80000000 && i2 == -1)
+        case GT_UDIV:
+        case GT_UMOD:
+            if (INT32(i2) == 0)
             {
-                /* In IL we have to throw an exception */
+                // Division by zero: 
+                // We have to evaluate this expression and throw an exception
                 return tree;
             }
-            i1 = INT32(i1) % INT32(i2); break;
+            else if ((INT32(i2) == -1) &&
+                     (UINT32(i1) == 0x80000000))
+            {
+                // Overflow Division: 
+                // We have to evaluate this expression and throw an exception
+                return tree;
+            }
 
-        case GT_UDIV:
-            if (!i2) return tree;
-            if (UINT32(i1) == 0x80000000 && i2 == -1) return tree;
-            i1 = UINT32(i1) / UINT32(i2); break;
-
-        case GT_UMOD:
-            if (!i2) return tree;
-            if (UINT32(i1) == 0x80000000 && i2 == -1) return tree;
-            i1 = UINT32(i1) % UINT32(i2); break;
+            if (tree->gtOper == GT_DIV)
+            {
+                i1 = INT32(i1) / INT32(i2);
+            }
+            else if (tree->gtOper == GT_MOD)
+            {
+                i1 = INT32(i1) % INT32(i2);
+            }
+            else if (tree->gtOper == GT_UDIV)
+            {
+                i1 = UINT32(i1) / UINT32(i2);
+            }
+            else 
+            {
+                assert(tree->gtOper == GT_UMOD);
+                i1 = UINT32(i1) % UINT32(i2);
+            }
+            break;
 
         default:
             return tree;
@@ -11034,36 +11054,6 @@ bool            Compiler::gtHasCatchArg(GenTreePtr tree)
     return false;
 }
 
-/*****************************************************************************
- *
- *  Callback that checks for a tree that is a GT_CALL to an umanaged target (PInvoke)
- */
-
-static Compiler::fgWalkResult  gtFindUnmanagedCall(GenTreePtr *               pTree,
-                                                   Compiler::fgWalkData *  /* data */)
-{
-    // If the current node is not a GT_CALL then continue searching...
-    if ((*pTree)->OperGet() != GT_CALL) 
-        return Compiler::WALK_CONTINUE;
-
-    // If the current call node does not have the GTF_CALL_UNMANAGED flag set then continue searching...
-    if (((*pTree)->gtFlags & GTF_CALL_UNMANAGED) == 0)
-        return Compiler::WALK_CONTINUE;
-
-    // We found an unmanaged call site
-    return Compiler::WALK_ABORT;
-}
-
-/*****************************************************************************/
-bool            Compiler::gtHasUnmanagedCall(GenTreePtr tree)
-{
-    // Does the current subtree contain an unmanaged call?
-    if (fgWalkTreePre(&tree, gtFindUnmanagedCall) == WALK_ABORT)
-    {
-        return true;
-    }
-    return false;
-}
 
 //------------------------------------------------------------------------
 // gtHasCallOnStack:
@@ -11153,189 +11143,6 @@ void Compiler::gtCheckQuirkAddrExposedLclVar(GenTreePtr tree, GenTreeStack* pare
     }
 #endif
 }
-
-//------------------------------------------------------------------------
-// gtCheckReorderAssignmentForUnmanagedCall: 
-//
-//   Assignment trees which contain an unmanged PInvoke call need to have a simple op1
-//   in order to prevent us from have a TYP_BYREF live accross a call to a PInvoke
-//   This is because we are not allowed to keep a GC pointer in a register accross a
-//   PInvoke call sit.  We cannot update them when/if a GC occurs during the PInvoke call.
-//
-// Arguments:
-//    tree      - An assignment or assignOp GenTree node, that has not yet been morphed
-//
-// Output:
-//    tree      - An unchanged tree 
-//                or a mutated tree when we need to evaluate the address for op1 into a temp
-//
-//   We will mutate the assignment tree  when op1 has a side-effect that might require us 
-//   to evaluate it before op2 and if the op2 tree contains an unmanaged call site
-//
-GenTreePtr      Compiler::gtCheckReorderAssignmentForUnmanagedCall(GenTreePtr tree)
-{
-    assert(tree->OperKind() & GTK_ASGOP);
-
-#if INLINE_NDIRECT
-    // Does this method have any unmanaged calls?
-    if (info.compCallUnmanaged != 0)
-    {
-        GenTreePtr op1     = tree->gtOp.gtOp1;
-        GenTreePtr op2     = tree->gtGetOp2();
-        var_types  asgTyp  = op1->TypeGet();
-
-        // Does op1 have a side-effect that causes us to evaluate it before op2?
-        // Or, does it contain a BYREF that must not be kept live across an unmanaged call?
-        if  (op1->gtFlags & GTF_ALL_EFFECT)
-        {
-            // Does op2 contain an unmanged call?
-            if (gtHasUnmanagedCall(op2))
-            {
-/*
-                 +---------+----------+ 
-           tree  |      GT_ASG        | 
-                 +---------+----------+
-                           | 
-                         /   \ 
-                       /       \ 
-                     /           \ 
-         +-----+-----+             +-----+-----+ 
-     op1 |  . . .    |         op2 |   . . .   |
-         +-----+-----+             +-----+-----+  
-         GTF_ALL_EFFECT            HasUnmanagedCall
-
-*/
-                // op1 could be a sequence of GT_COMMA nodes 
-                // if it is then we traverse down the op2 side 
-                // until we reach a non comma node
-                // and we set splice to the last GT_COMMA node that we visited
-                //
-                GenTreePtr splice = nullptr;
-                GenTreePtr op1Val = op1;
-                while (op1Val->gtOper == GT_COMMA)
-                {
-                    splice = op1;
-                    op1Val = op1->gtOp.gtOp2;
-                }
-
-                // Now op1Val is now the actual target of the assignment 
-                // it could be a GT_IND in which case we just remove the GT_IND
-                // otherwise we take its address by adding a GT_ADDR above it.
-
-                GenTreePtr op1Addr;
-                var_types  addrTyp;
-
-                if (op1Val->gtOper == GT_IND)
-                {
-                    op1Addr = op1Val->gtOp.gtOp1;
-                    addrTyp = op1Addr->TypeGet();
-
-                    // You cannot have a GT_IND on a TYP_REF
-                    assert(addrTyp != TYP_REF);
-                }
-                else
-                {
-                    addrTyp = TYP_BYREF;
-                    op1Addr = gtNewOperNode(GT_ADDR, addrTyp, op1Val); 
-                }
-
-                // addrTyp is the now type of address that we have.
-                //
-                // If we added a GT_ADDR node then we have to assume that we have a TYP_BYREF
-                // if we had a GT_IND then the child node tells us if we have a TYP_BYREF
-                // or an TYP_I_IMPL pointer.
-                //
-
-                // If addrTyp is not a GC type (i.e. TYP_BYREF) we can return
-                //
-                if (addrTyp != TYP_BYREF)
-                    return tree;  // early exit, tree is unmodified
-
-                 // DebugCheckFlags can complain later if we have a GTF_GLOB_REF flag here
-                //
-                if (op1Val->gtOper == GT_FIELD)
-                {
-                    // &clsVar doesn't need GTF_GLOB_REF
-                    op1Addr->gtFlags &= ~GTF_GLOB_REF;
-                }
-
-               // We will transform the tree so that the assignment will not have to 
-                // evaluate op1 and keep it live across the unmanged call in op2
-                // 
-                unsigned   newTempLclNum  = lvaGrabTemp(true DEBUGARG("Force eval op1"));
-                GenTreePtr asgAddr = gtNewTempAssign(newTempLclNum, op1Addr);
-
-                if (splice != nullptr)
-                {
-                    GenTreePtr commaVal = op1;
-                    assert(commaVal->gtOper == GT_COMMA);
-                    while (commaVal->gtOper == GT_COMMA)
-                    {
-                        commaVal->gtType = TYP_VOID;
-                        commaVal = commaVal->gtOp.gtOp2;
-                    }
-                    splice->gtOp.gtOp2 = asgAddr;
-                }
-                else
-                {
-                    op1 = asgAddr;
-                }
-
-                GenTreePtr asgDest = gtNewOperNode(GT_IND, asgTyp, gtNewLclvNode(newTempLclNum, addrTyp));
-
-                op2 = gtNewOperNode(tree->gtOper, tree->gtType, asgDest, op2);
-                op2->gtFlags |= GTF_ASG;
-
-                tree->ChangeOper(GT_COMMA);
-                tree->gtType = TYP_VOID;
-                tree->gtOp.gtOp1 = op1;
-                tree->gtOp.gtOp2 = op2;
-                tree->gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
-                tree->gtFlags |= op1->gtFlags & GTF_ALL_EFFECT;
-                tree->gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
-
-/*
-            +------+-------+ 
-    asgAddr |   GT_ASG     |
-            +------+-------+
-                   |
-                 /   \
-               /       \
-     +-----+-----+    +-----+-----+
-     |  LclVar   |    |  GT_ADDR  |  op1Addr
-     |   lclNum  |    | or GT_ADD |
-     +-----+-----+    +-----+-----+
-
-
-                       +------+-------+ 
-                 tree  |   GT_COMMA*  |  (Mutated from GT_ASG)
-                       +------+-------+
-                              |  
-                            /  \ 
-                          /      \ 
-                        /         \
-             +-----+-----+       +-----+-----+ 
-    old op1  | GT_COMMA  |       |  GT_ASG   | gtNewOperNode
- or asgAddr  |  GT_ASG   |       +-----+-----+
-             +-----+-----+             |        
-                                     /   \
-                                   /       \
-                         +-----+-----+    +-----+-----+
-                 asgDest |  GT_IND   |    |  old op2  | 
-                         +-----+-----+    +-----+-----+
-                               |          HasUnmanagedCall
-                         +-----+-----+
-                         |  LclVar   | 
-                         |   lclNum  |
-                         +-----+-----+  
-*/
-            }
-        }
-    }
-#endif
-    return tree;
-}
-
 
 //Checks to see if we're allowed to optimize Type::op_Equality or Type::op_Inequality on this operand.
 //We're allowed to convert to GT_EQ/GT_NE if one of the operands is:

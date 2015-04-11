@@ -247,6 +247,7 @@ void initRefTypeNames()
     refTypeNames[RefTypeZeroInit] = "RefTypeZeroInit";
     refTypeNames[RefTypeUpperVectorSaveDef] = "RefTypeUpperVectorSaveDef";
     refTypeNames[RefTypeUpperVectorSaveUse] = "RefTypeUpperVectorSaveUse";
+    refTypeNames[RefTypeKillGCRefs] = "RefTypeKillGCRefs";
 
     shortRefTypeNames[RefTypeInvalid]  = "Invl";
     shortRefTypeNames[RefTypeDef]      = "Def ";
@@ -260,6 +261,7 @@ void initRefTypeNames()
     shortRefTypeNames[RefTypeZeroInit] = "Zero";
     shortRefTypeNames[RefTypeUpperVectorSaveDef] = "UVSv";
     shortRefTypeNames[RefTypeUpperVectorSaveUse] = "UVRs";
+    shortRefTypeNames[RefTypeKillGCRefs] = "KlGC";
 }
 #endif // DEBUG
 
@@ -664,7 +666,7 @@ LinearScan::associateRefPosWithInterval(RefPosition *rp)
     } 
     else
     {
-        assert(rp->refType == RefTypeBB);
+        assert((rp->refType == RefTypeBB) || (rp->refType == RefTypeKillGCRefs));
     }
 }
 
@@ -2627,6 +2629,11 @@ LinearScan::buildKillPositionsForNode(GenTree*     tree,
                     assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
                 }
             }
+        }
+
+        if (tree->IsCall() && (tree->gtFlags & GTF_CALL_UNMANAGED) != 0)
+        {
+            RefPosition * pos = newRefPosition((Interval *)nullptr, currentLoc, RefTypeKillGCRefs, tree, (allRegs(TYP_REF) & ~RBM_ARG_REGS));
         }
         return true;
     }
@@ -5131,6 +5138,39 @@ void LinearScan::unassignPhysReg( RegRecord * regRec, RefPosition* spillRefPosit
 }
 
 //------------------------------------------------------------------------
+// spillGCRefs: Spill any GC-type intervals that are currently in registers.a
+//
+// Arguments:
+//    killRefPosition - The RefPosition for the kill
+//
+// Return Value:
+//    None.
+//
+void
+LinearScan::spillGCRefs(RefPosition* killRefPosition)
+{
+    // For each physical register that can hold a GC type,
+    // if it is occupied by an interval of a GC type, spill that interval.
+    regMaskTP candidateRegs = killRefPosition->registerAssignment;
+    while (candidateRegs != RBM_NONE)
+    {
+        regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
+        candidateRegs &= ~nextRegBit;
+        regNumber nextReg = genRegNumFromMask(nextRegBit);
+        RegRecord* regRecord = getRegisterRecord(nextReg);
+        Interval* assignedInterval = regRecord->assignedInterval;
+        if (assignedInterval == nullptr ||
+            (assignedInterval->isActive == false) ||
+            !varTypeIsGC(assignedInterval->registerType))
+        {
+            continue;
+        }
+        unassignPhysReg(regRecord, assignedInterval->recentRefPosition);
+    }
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DONE_KILL_GC_REFS, nullptr, REG_NA, nullptr));
+}
+
+//------------------------------------------------------------------------
 // processBlockEndAllocation: Update var locations after 'currentBlock' has been allocated
 //
 // Arguments:
@@ -5708,7 +5748,7 @@ LinearScan::allocateRegisters()
         } 
         else 
         {
-            assert(refType == RefTypeBB);
+            assert((refType == RefTypeBB) || (refType == RefTypeKillGCRefs));
         }
 
         // For the purposes of register resolution, we handle the DummyDefs before
@@ -5761,6 +5801,12 @@ LinearScan::allocateRegisters()
         if (refType == RefTypeBB)
         {
             handledBlockEnd = false;
+            continue;
+        }
+
+        if (refType == RefTypeKillGCRefs)
+        {
+            spillGCRefs(currentRefPosition);
             continue;
         }
 
@@ -7026,6 +7072,10 @@ LinearScan::resolveRegisters()
                 // mismatch.
                 assert(getNextBlock() == nullptr ||
                        !VarSetOps::IsMember(compiler, getNextBlock()->bbLiveIn, currentRefPosition->getInterval()->getVarIndex(compiler)));
+                currentRefPosition->referent->recentRefPosition = currentRefPosition;
+                continue;
+            case RefTypeKillGCRefs:
+                // No action to take at resolution time, and no interval to update recentRefPosition for.
                 continue;
             case RefTypeDummyDef:
             case RefTypeParamDef:
@@ -9279,6 +9329,11 @@ LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event, Interval* interval, reg
         }
         break;
 
+    // Done with GC Kills
+    case LSRA_EVENT_DONE_KILL_GC_REFS:
+        printf("DoneKillGC ");
+        break;
+
     // Block boundaries
     case LSRA_EVENT_START_BB:
         assert(currentBlock != nullptr);
@@ -9763,10 +9818,17 @@ LinearScan::dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBl
         }
         printf("  %s%c%c ", shortRefTypeNames[refPosition->refType], lastUseChar, delayChar);
     }
-    else
+    else if (refPosition->isPhysRegRef)
     {
         RegRecord* regRecord = refPosition->getReg();
         printf(regNameFormat, getRegName(regRecord->regNum));
+        printf(" %s   ", shortRefTypeNames[refPosition->refType]);
+    }
+    else
+    {
+        assert(refPosition->refType == RefTypeKillGCRefs);
+        // There's no interval or reg name associated with this.
+        printf(regNameFormat, "   ");
         printf(" %s   ", shortRefTypeNames[refPosition->refType]);
     }
 }
@@ -9832,7 +9894,7 @@ LinearScan::verifyFinalAllocation()
                 regRecord->recentRefPosition = currentRefPosition;
                 regNum = regRecord->regNum;
             }
-            else
+            else if (currentRefPosition->isIntervalRef())
             {
                 interval = currentRefPosition->getInterval();
                 interval->recentRefPosition = currentRefPosition;
@@ -10065,6 +10127,25 @@ LinearScan::verifyFinalAllocation()
                 }
             }
             break;
+        case RefTypeKillGCRefs:
+            // No action to take.
+            // However, we will assert that, at resolution time, no registers contain GC refs.
+            {
+                DBEXEC(VERBOSE, printf("           "));
+                regMaskTP candidateRegs = currentRefPosition->registerAssignment;
+                while (candidateRegs != RBM_NONE)
+                {
+                    regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
+                    candidateRegs &= ~nextRegBit;
+                    regNumber nextReg = genRegNumFromMask(nextRegBit);
+                    RegRecord* regRecord = getRegisterRecord(nextReg);
+                    Interval* assignedInterval = regRecord->assignedInterval;
+                    assert (assignedInterval == nullptr ||
+                            !varTypeIsGC(assignedInterval->registerType));
+                }
+            }
+            break;
+
         case RefTypeExpUse:
         case RefTypeDummyDef:
             // Do nothing; these will be handled by the RefTypeBB.

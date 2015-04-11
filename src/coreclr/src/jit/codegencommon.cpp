@@ -5419,9 +5419,11 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
 
 #else // !CPU_LOAD_STORE_ARCH
 
-        // Code size for each instruction. We need this because the 
+        // Code size for each instruction. We need this because the
         // backward branch is hard-coded with the number of bytes to branch.
-
+        // The encoding differs based on the architecture and what register is
+        // used (namely, using RAX has a smaller encoding).
+        //
         // loop:
         // For x86
         //      test [esp + eax], eax       3
@@ -5440,23 +5442,27 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         //      sub rbp, 0x1000             7
         //      cmp rbp, -frameSize         7
         //      jge loop                    2
+
         getEmitter()->emitIns_R_ARR(INS_TEST, EA_PTRSIZE, initReg, REG_SPBASE, initReg, 0);
         inst_RV_IV(INS_sub,  initReg, CORINFO_PAGE_SIZE, EA_PTRSIZE);
         inst_RV_IV(INS_cmp,  initReg, -((ssize_t)frameSize), EA_PTRSIZE);
-        int extraBytesForBackJump = 0;
+
+        int bytesForBackwardJump;
 #ifdef _TARGET_AMD64_
-        extraBytesForBackJump = ((initReg == REG_EAX) ? 3 : 5);
-#endif // _TARGET_AMD64_
-        inst_IV(INS_jge, -15 - extraBytesForBackJump);   // Branch backwards to Start of Loop
+        assert((initReg == REG_EAX) || (initReg == REG_EBP));   // We use RBP as initReg for EH funclets.
+        bytesForBackwardJump = ((initReg == REG_EAX) ? -18 : -20);
+#else // !_TARGET_AMD64_
+        assert(initReg == REG_EAX);
+        bytesForBackwardJump = -15;
+#endif // !_TARGET_AMD64_
+
+        inst_IV(INS_jge, bytesForBackwardJump);   // Branch backwards to start of loop
 
 #endif // !CPU_LOAD_STORE_ARCH
 
         *pInitRegZeroed = false;  // The initReg does not contain zero
 
 #ifdef _TARGET_XARCH_
-        // The backward branch above depends upon using EAX (and for Amd64 funclets EBP)
-        assert((initReg == REG_EAX) AMD64_ONLY(|| (initReg == REG_EBP)));
-
         if (pushedStubParam)
         {
             // pop eax

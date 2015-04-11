@@ -41,9 +41,15 @@
       <ProjectReference>$(ClrSrcDirectory)zap\crossgen\zap_crossgen.nativeproj</ProjectReference>
     </TargetLib>
 
-    <TargetLib Condition="'$(MDILGenerator)' != 'true'" Include="$(ClrLibPath)\jit_crossgen.lib">
-      <ProjectReference Condition="'$(_BuildArch)' != 'amd64' and '$(_BuildArch)' != 'arm64'">$(ClrSrcDirectory)jit32\crossgen\jit_crossgen.nativeproj</ProjectReference>
+    <!-- In the CodeGen branch, we use RyuJIT for all JIT builds -->
+    <TargetLib Condition="'$(MDILGenerator)' != 'true' and '$(_BuildBranch)' == 'CodeGen'" Include="$(ClrLibPath)\jit_crossgen.lib">
+      <ProjectReference>$(ClrSrcDirectory)jit\crossgen\jit_crossgen.nativeproj</ProjectReference>
+    </TargetLib>
+
+    <!-- In other branches, we build RyuJIT only for amd64 and arm64, and use JIT32 for ARM and x86 -->
+    <TargetLib Condition="'$(MDILGenerator)' != 'true' and '$(_BuildBranch)' != 'CodeGen'" Include="$(ClrLibPath)\jit_crossgen.lib">
       <ProjectReference Condition="'$(_BuildArch)' == 'amd64' or  '$(_BuildArch)' == 'arm64'">$(ClrSrcDirectory)jit\crossgen\jit_crossgen.nativeproj</ProjectReference>
+      <ProjectReference Condition="'$(_BuildArch)' != 'amd64' and '$(_BuildArch)' != 'arm64'">$(ClrSrcDirectory)jit32\crossgen\jit_crossgen.nativeproj</ProjectReference>
     </TargetLib>
 
     <TargetLib Condition="'$(MDILGenerator)' == 'true'" Include="$(ClrLibPath)\jitmdil_crossgen.lib">

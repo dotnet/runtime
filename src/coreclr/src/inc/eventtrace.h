@@ -231,18 +231,32 @@ namespace ETW
             // These values are gotten from the gc_reason
             // in gcimpl.h
             typedef  enum _GC_REASON { 
-                GC_ALLOC_SOH = 0 , 
-                GC_INDUCED = 1 , 
+                GC_ALLOC_SOH = 0, 
+                GC_INDUCED = 1, 
                 GC_LOWMEMORY = 2,
                 GC_EMPTY = 3,
                 GC_ALLOC_LOH = 4,
                 GC_OOS_SOH = 5,
                 GC_OOS_LOH = 6,
-                GC_INDUCED_NOFORCE = 7
+                GC_INDUCED_NOFORCE = 7,
+                GC_GCSTRESS = 8,
+                GC_LOWMEMORY_BLOCKING = 9,
+                GC_INDUCED_COMPACTING = 10,
+                GC_LOWMEMORY_HOST = 11
             } GC_REASON;
             typedef  enum _GC_TYPE { 
-                GC_NGC = 0 , GC_BGC = 1 , GC_FGC = 2
+                GC_NGC = 0, 
+                GC_BGC = 1, 
+                GC_FGC = 2
             } GC_TYPE;
+            typedef  enum _GC_ROOT_KIND { 
+              GC_ROOT_STACK = 0,
+              GC_ROOT_FQ = 1,
+              GC_ROOT_HANDLES = 2,
+              GC_ROOT_OLDER = 3,
+              GC_ROOT_SIZEDREF = 4,
+              GC_ROOT_OVERFLOW = 5
+            } GC_ROOT_KIND;
             struct {
                 ULONG Count;
                 ULONG Depth;

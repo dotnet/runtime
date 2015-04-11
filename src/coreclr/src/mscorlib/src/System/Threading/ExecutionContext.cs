@@ -1123,6 +1123,8 @@ namespace System.Threading
                 ec.IllogicalCallContext = (IllogicalCallContext)this.IllogicalCallContext.CreateCopy();
 #endif // #if FEATURE_REMOTING
 
+            ec._localValues = this._localValues;
+            ec._localChangeNotifications = this._localChangeNotifications;
             ec.isFlowSuppressed = this.isFlowSuppressed;
 
             return ec;

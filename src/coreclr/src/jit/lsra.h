@@ -81,6 +81,7 @@ enum RefType : unsigned char
     RefTypeZeroInit            = (0x30 | RefTypeDef),
     RefTypeUpperVectorSaveDef  = (0x40 | RefTypeDef),
     RefTypeUpperVectorSaveUse  = (0x40 | RefTypeUse),
+    RefTypeKillGCRefs          = 0x80,
     RefTypeBound,
 };
 
@@ -722,6 +723,8 @@ private:
 
     void spillInterval(Interval* interval, RefPosition* fromRefPosition, RefPosition* toRefPosition);
 
+    void spillGCRefs(RefPosition* killRefPosition);
+
     /*****************************************************************************
      * For Resolution phase
      ****************************************************************************/
@@ -846,6 +849,7 @@ private:
                          LSRA_EVENT_SPILL_EXTENDED_LIFETIME,
                          LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL,
                          LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL,
+                         LSRA_EVENT_DONE_KILL_GC_REFS,
 
                          // Block boundaries
                          LSRA_EVENT_START_BB,
@@ -1311,7 +1315,7 @@ public:
     unsigned        rpNum;              // The unique RefPosition number, equal to its index in the refPositions list. Only used for debugging dumps.
 #endif // DEBUG
 
-    bool            isIntervalRef() { return !isPhysRegRef; }
+    bool            isIntervalRef() { return (!isPhysRegRef && (referent != nullptr)); }
 
     // isTrueDef indicates that the RefPosition is a non-update def of a non-internal
     // interval

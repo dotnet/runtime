@@ -2316,16 +2316,28 @@ void Compiler::fgDfsInvPostOrder()
     // mark in this step.
     BlockSet_ValRet_T startNodes = fgDomFindStartNodes();
 
-    // Make sure fgFirstBB is still there, even if it participates in a loop.
-    // Review: it might be better to do this:
+    // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
+    // an incoming edge into the block).
+    assert(fgEnterBlksSetValid);
+
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+    //
     //    BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
-    // instead, but this causes problems on ARM, because we for BBJ_CALLFINALLY/BBJ_ALWAYS pairs, we add the BBJ_ALWAYS
+    //
+    // This causes problems on ARM, because we for BBJ_CALLFINALLY/BBJ_ALWAYS pairs, we add the BBJ_ALWAYS
     // to the enter blocks set to prevent flow graph optimizations from removing it and creating retless call finallies
     // (BBF_RETLESS_CALL). This leads to an incorrect DFS ordering in some cases, because we start the recursive walk
     // from the BBJ_ALWAYS, which is reachable from other blocks. A better solution would be to change ARM to avoid
     // creating retless calls in a different way, not by adding BBJ_ALWAYS to fgEnterBlks.
+    //
+    // So, let us make sure at least fgFirstBB is still there, even if it participates in a loop.
     BlockSetOps::AddElemD(this, startNodes, 1);
     assert(fgFirstBB->bbNum == 1);
+#else
+    BlockSetOps::UnionD(this, startNodes, fgEnterBlks);
+#endif
+
+    assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
 
     // Call the recursive helper.
     unsigned postIndex = 1;
@@ -10510,7 +10522,7 @@ void                Compiler::fgRemoveBlock(BasicBlock*   block,
     // If we've cached any mappings from switch blocks to SwitchDesc's (which contain only the
     // *unique* successors of the switch block), invalidate that cache, since an entry in one of
     // the SwitchDescs might be removed.
-    m_switchDescMap = NULL;
+    InvalidateUniqueSwitchSuccMap();
 
     noway_assert((block == fgFirstBB) || (bPrev && (bPrev->bbNext == block)));
     noway_assert(!(block->bbFlags & BBF_DONT_REMOVE));
@@ -11113,6 +11125,9 @@ bool            Compiler::fgRenumberBlocks()
     if (renumbered || newMaxBBNum)
     {
         NewBasicBlockEpoch();
+
+        // The key in the unique switch successor map is dependent on the block number, so invalidate that cache.
+        InvalidateUniqueSwitchSuccMap();
     }
     else
     {
