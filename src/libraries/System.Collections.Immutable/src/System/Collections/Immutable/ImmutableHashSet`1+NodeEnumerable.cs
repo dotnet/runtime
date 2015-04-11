@@ -23,7 +23,7 @@ namespace System.Collections.Immutable
             private readonly SortedInt32KeyNode<HashBucket> _root;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.NodeEnumerable"/> struct.
+            /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.NodeEnumerable"/> struct.
             /// </summary>
             /// <param name="root">The root.</param>
             internal NodeEnumerable(SortedInt32KeyNode<HashBucket> root)

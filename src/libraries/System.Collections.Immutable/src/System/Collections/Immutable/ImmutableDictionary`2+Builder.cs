@@ -67,7 +67,7 @@ namespace System.Collections.Immutable
             private object _syncRoot;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableDictionary&lt;TKey, TValue&gt;.Builder"/> class.
+            /// Initializes a new instance of the <see cref="ImmutableDictionary{TKey, TValue}.Builder"/> class.
             /// </summary>
             /// <param name="map">The map that serves as the basis for this Builder.</param>
             internal Builder(ImmutableDictionary<TKey, TValue> map)
@@ -609,7 +609,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+            /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
             /// </summary>
             public bool TryGetKey(TKey equalKey, out TKey actualKey)
             {
@@ -649,7 +649,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See the <see cref="ICollection&lt;T&gt;"/> interface.
+            /// See the <see cref="ICollection{T}"/> interface.
             /// </summary>
             void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
             {
@@ -741,7 +741,7 @@ namespace System.Collections.Immutable
         private KeyValuePair<TKey, TValue>[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy&lt;TKey, TValue&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="map">The collection to display in the debugger</param>
         public ImmutableDictionaryBuilderDebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)

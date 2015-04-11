@@ -46,7 +46,7 @@ namespace System.Collections.Immutable
         private ImmutableStack<T> _backwardsReversed;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableQueue&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableQueue{T}"/> class.
         /// </summary>
         /// <param name="forward">The forward stack.</param>
         /// <param name="backward">The backward stack.</param>
@@ -264,7 +264,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// A memory allocation-free enumerator of <see cref="ImmutableQueue&lt;T&gt;"/>.
+        /// A memory allocation-free enumerator of <see cref="ImmutableQueue{T}"/>.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public struct Enumerator
@@ -354,7 +354,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// A memory allocation-free enumerator of <see cref="ImmutableQueue&lt;T&gt;"/>.
+        /// A memory allocation-free enumerator of <see cref="ImmutableQueue{T}"/>.
         /// </summary>
         private class EnumeratorObject : IEnumerator<T>
         {
@@ -500,7 +500,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableQueueDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableQueueDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="queue">The collection to display in the debugger</param>
         public ImmutableQueueDebuggerProxy(ImmutableQueue<T> queue)

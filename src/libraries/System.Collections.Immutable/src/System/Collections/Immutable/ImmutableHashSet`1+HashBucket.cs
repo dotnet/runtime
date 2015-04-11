@@ -228,7 +228,7 @@ namespace System.Collections.Immutable
                 private ImmutableList<T>.Enumerator _additionalEnumerator;
 
                 /// <summary>
-                /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.HashBucket.Enumerator"/> struct.
+                /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.HashBucket.Enumerator"/> struct.
                 /// </summary>
                 /// <param name="bucket">The bucket.</param>
                 internal Enumerator(HashBucket bucket)

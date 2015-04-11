@@ -21,7 +21,7 @@ namespace System.Collections.Immutable
     internal struct RefAsValueType<T>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="RefAsValueType&lt;T&gt;"/> struct.
+        /// Initializes a new instance of the <see cref="RefAsValueType{T}"/> struct.
         /// </summary>
         internal RefAsValueType(T value)
         {

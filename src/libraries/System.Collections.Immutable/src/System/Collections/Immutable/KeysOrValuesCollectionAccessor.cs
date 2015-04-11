@@ -40,7 +40,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public bool IsReadOnly
         {
@@ -48,7 +48,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         /// <returns>The number of elements contained in the <see cref="T:System.Collections.Generic.ICollection`1"/>.</returns>
         public int Count
@@ -65,7 +65,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public void Add(T item)
         {
@@ -73,7 +73,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public void Clear()
         {
@@ -81,12 +81,12 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public abstract bool Contains(T item);
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public void CopyTo(T[] array, int arrayIndex)
         {
@@ -101,7 +101,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public bool Remove(T item)
         {
@@ -109,7 +109,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="IEnumerable&lt;T&gt;"/>
+        /// See <see cref="IEnumerable{T}"/>
         /// </summary>
         public IEnumerator<T> GetEnumerator()
         {
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public override bool Contains(TKey item)
         {
@@ -198,7 +198,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See <see cref="ICollection&lt;T&gt;"/>
+        /// See <see cref="ICollection{T}"/>
         /// </summary>
         public override bool Contains(TValue item)
         {

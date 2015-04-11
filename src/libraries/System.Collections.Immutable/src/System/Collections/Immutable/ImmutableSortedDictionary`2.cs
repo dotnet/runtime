@@ -48,7 +48,7 @@ namespace System.Collections.Immutable
         private readonly IEqualityComparer<TValue> _valueComparer;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableSortedDictionary&lt;TKey, TValue&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedDictionary{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="keyComparer">The key comparer.</param>
         /// <param name="valueComparer">The value comparer.</param>
@@ -60,7 +60,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableSortedDictionary&lt;TKey, TValue&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedDictionary{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="root">The root of the tree containing the contents of the map.</param>
         /// <param name="count">The number of elements in this map.</param>
@@ -81,7 +81,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public ImmutableSortedDictionary<TKey, TValue> Clear()
         {
@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public bool IsEmpty
         {
@@ -110,7 +110,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public int Count
         {
@@ -118,7 +118,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public IEnumerable<TKey> Keys
         {
@@ -126,7 +126,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public IEnumerable<TValue> Values
         {
@@ -134,7 +134,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Clear()
         {
@@ -175,7 +175,7 @@ namespace System.Collections.Immutable
         #region ISortKeyCollection<TKey> Properties
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public IComparer<TKey> KeyComparer
         {
@@ -245,7 +245,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedDictionary<TKey, TValue> Add(TKey key, TValue value)
@@ -258,7 +258,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedDictionary<TKey, TValue> SetItem(TKey key, TValue value)
@@ -287,7 +287,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
@@ -300,7 +300,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedDictionary<TKey, TValue> Remove(TKey value)
@@ -313,7 +313,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedDictionary<TKey, TValue> RemoveRange(IEnumerable<TKey> keys)
@@ -338,7 +338,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
@@ -379,7 +379,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey> keyComparer)
@@ -410,7 +410,7 @@ namespace System.Collections.Immutable
         #region IImmutableDictionary<TKey, TValue> Methods
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Add(TKey key, TValue value)
@@ -419,7 +419,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.SetItem(TKey key, TValue value)
@@ -438,7 +438,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
@@ -447,7 +447,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.RemoveRange(IEnumerable<TKey> keys)
@@ -456,7 +456,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Remove(TKey key)
@@ -465,7 +465,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public bool ContainsKey(TKey key)
         {
@@ -474,7 +474,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public bool Contains(KeyValuePair<TKey, TValue> pair)
         {
@@ -482,7 +482,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public bool TryGetValue(TKey key, out TValue value)
         {
@@ -491,7 +491,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableDictionary&lt;TKey, TValue&gt;"/> interface.
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface.
         /// </summary>
         public bool TryGetKey(TKey equalKey, out TKey actualKey)
         {
@@ -785,11 +785,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Attempts to discover an <see cref="ImmutableSortedDictionary&lt;TKey, TValue&gt;"/> instance beneath some enumerable sequence
+        /// Attempts to discover an <see cref="ImmutableSortedDictionary{TKey, TValue}"/> instance beneath some enumerable sequence
         /// if one exists.
         /// </summary>
         /// <param name="sequence">The sequence that may have come from an immutable map.</param>
-        /// <param name="other">Receives the concrete <see cref="ImmutableSortedDictionary&lt;TKey, TValue&gt;"/> typed value if one can be found.</param>
+        /// <param name="other">Receives the concrete <see cref="ImmutableSortedDictionary{TKey, TValue}"/> typed value if one can be found.</param>
         /// <returns><c>true</c> if the cast was successful; <c>false</c> otherwise.</returns>
         private static bool TryCastToImmutableMap(IEnumerable<KeyValuePair<TKey, TValue>> sequence, out ImmutableSortedDictionary<TKey, TValue> other)
         {
@@ -1196,7 +1196,7 @@ namespace System.Collections.Immutable
             private Node _right;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableSortedDictionary&lt;TKey, TValue&gt;.Node"/> class
+            /// Initializes a new instance of the <see cref="ImmutableSortedDictionary{TKey, TValue}.Node"/> class
             /// that is pre-frozen.
             /// </summary>
             private Node()
@@ -1377,7 +1377,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             internal void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex, int dictionarySize)
             {
@@ -1392,7 +1392,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="IDictionary&lt;TKey, TValue&gt;"/>
+            /// See <see cref="IDictionary{TKey, TValue}"/>
             /// </summary>
             internal void CopyTo(Array array, int arrayIndex, int dictionarySize)
             {
@@ -2030,7 +2030,7 @@ namespace System.Collections.Immutable
         private KeyValuePair<TKey, TValue>[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryDebuggerProxy&lt;TKey,TValue&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedDictionaryDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="map">The collection to display in the debugger</param>
         public ImmutableSortedDictionaryDebuggerProxy(ImmutableSortedDictionary<TKey, TValue> map)

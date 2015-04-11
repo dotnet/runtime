@@ -47,7 +47,7 @@ namespace System.Collections.Immutable
         private readonly IComparer<T> _comparer;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}"/> class.
         /// </summary>
         /// <param name="comparer">The comparer.</param>
         internal ImmutableSortedSet(IComparer<T> comparer = null)
@@ -57,7 +57,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}"/> class.
         /// </summary>
         /// <param name="root">The root of the AVL tree with the contents of this set.</param>
         /// <param name="comparer">The comparer.</param>
@@ -72,7 +72,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public ImmutableSortedSet<T> Clear()
         {
@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
         #region IImmutableSet<T> Properties
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public bool IsEmpty
         {
@@ -110,7 +110,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public int Count
         {
@@ -177,7 +177,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Add(T value)
@@ -189,7 +189,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Remove(T value)
@@ -231,7 +231,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Intersect(IEnumerable<T> other)
@@ -251,7 +251,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Except(IEnumerable<T> other)
@@ -301,7 +301,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Union(IEnumerable<T> other)
@@ -343,7 +343,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> WithComparer(IComparer<T> comparer)
@@ -602,7 +602,7 @@ namespace System.Collections.Immutable
         #region IImmutableSet<T> Members
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public bool Contains(T value)
         {
@@ -611,7 +611,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Clear()
@@ -620,7 +620,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Add(T value)
@@ -629,7 +629,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Remove(T value)
@@ -638,7 +638,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Intersect(IEnumerable<T> other)
@@ -647,7 +647,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Except(IEnumerable<T> other)
@@ -667,7 +667,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Union(IEnumerable<T> other)
@@ -1347,7 +1347,7 @@ namespace System.Collections.Immutable
             private readonly Node _root;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;.ReverseEnumerable"/> class.
+            /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.ReverseEnumerable"/> class.
             /// </summary>
             /// <param name="root">The root of the data structure to reverse enumerate.</param>
             internal ReverseEnumerable(Node root)
@@ -1431,7 +1431,7 @@ namespace System.Collections.Immutable
             private Node _right;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;.Node"/> class
+            /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.Node"/> class
             /// that is pre-frozen.
             /// </summary>
             private Node()
@@ -1441,7 +1441,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;.Node"/> class
+            /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.Node"/> class
             /// that is not yet frozen.
             /// </summary>
             /// <param name="key">The value stored by this node.</param>
@@ -2195,7 +2195,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableSortedSetDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSetDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="set">The collection to display in the debugger</param>
         public ImmutableSortedSetDebuggerProxy(ImmutableSortedSet<T> set)

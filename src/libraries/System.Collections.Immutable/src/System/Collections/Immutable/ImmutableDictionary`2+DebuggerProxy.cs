@@ -24,7 +24,7 @@ namespace System.Collections.Immutable
         private KeyValuePair<TKey, TValue>[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableDictionaryDebuggerProxy&lt;TKey, TValue&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableDictionaryDebuggerProxy{TKey, TValue}"/> class.
         /// </summary>
         /// <param name="map">The collection to display in the debugger</param>
         public ImmutableDictionaryDebuggerProxy(ImmutableDictionary<TKey, TValue> map)
