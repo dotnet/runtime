@@ -1881,7 +1881,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
-            /// <returns>The matching node, or the Empty node if no match was found.</returns>
+            /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
             [Pure]
             internal Node Search(T key, IComparer<T> comparer)
             {
@@ -1915,7 +1915,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
-            /// <returns>The matching node, or the Empty node if no match was found.</returns>
+            /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
             [Pure]
             internal int IndexOf(T key, IComparer<T> comparer)
             {
