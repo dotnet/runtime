@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
         /// A shareable container for the comparers used by an immutable dictionary.
         /// </summary>
         /// <remarks>
-        /// To reduce allocations, we directly implement the HashBucket and Key-Only comparers,
+        /// To reduce allocations, we directly implement the <see cref="HashBucket"/> and Key-Only comparers,
         /// but we try to keep this an implementation detail by exposing properties that return
         /// references for these particular facilities, that are implemented as returning "this".
         /// </remarks>

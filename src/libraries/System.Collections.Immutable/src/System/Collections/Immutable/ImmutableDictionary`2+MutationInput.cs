@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner MutationInput class.
+    /// Contains the inner <see cref="ImmutableDictionary{TKey, TValue}.MutationInput"/> class.
     /// </content>
     public partial class ImmutableDictionary<TKey, TValue>
     {

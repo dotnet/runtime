@@ -7,7 +7,7 @@ using System.Globalization;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner HashBucket struct.
+    /// Contains the inner <see cref="ImmutableDictionary{TKey, TValue}.HashBucket"/> struct.
     /// </content>
     public partial class ImmutableDictionary<TKey, TValue>
     {
@@ -107,7 +107,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an exception to catch any errors in comparing HashBucket instances.
+            /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
             /// </summary>
             bool IEquatable<HashBucket>.Equals(HashBucket other)
             {
@@ -123,8 +123,8 @@ namespace System.Collections.Immutable
             /// <param name="keyOnlyComparer">The key comparer.</param>
             /// <param name="valueComparer">The value comparer.</param>
             /// <param name="behavior">The intended behavior for certain cases that may come up during the operation.</param>
-            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
-            /// <returns>A new HashBucket that contains the added value and any values already held by this hashbucket.</returns>
+            /// <param name="result">A description of the effect was on adding an element to this <see cref="HashBucket"/>.</param>
+            /// <returns>A new <see cref="HashBucket"/> that contains the added value and any values already held by this <see cref="HashBucket"/>.</returns>
             internal HashBucket Add(TKey key, TValue value, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, IEqualityComparer<TValue> valueComparer, KeyCollisionBehavior behavior, out OperationResult result)
             {
                 var kv = new KeyValuePair<TKey, TValue>(key, value);
@@ -197,8 +197,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to remove.</param>
             /// <param name="keyOnlyComparer">The equality comparer.</param>
-            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
-            /// <returns>A new HashBucket that does not contain the removed value and any values already held by this hashbucket.</returns>
+            /// <param name="result">A description of the effect was on adding an element to this <see cref="HashBucket"/>.</param>
+            /// <returns>A new <see cref="HashBucket"/> that does not contain the removed value and any values already held by this <see cref="HashBucket"/>.</returns>
             internal HashBucket Remove(TKey key, IEqualityComparer<KeyValuePair<TKey, TValue>> keyOnlyComparer, out OperationResult result)
             {
                 if (this.IsEmpty)
@@ -337,7 +337,7 @@ namespace System.Collections.Immutable
                 private Position _currentPosition;
 
                 /// <summary>
-                /// The enumerator that represents the current position over the additionalValues of the HashBucket.
+                /// The enumerator that represents the current position over the additionalValues of the <see cref="HashBucket"/>.
                 /// </summary>
                 private ImmutableList<KeyValuePair<TKey, TValue>>.Enumerator _additionalEnumerator;
 

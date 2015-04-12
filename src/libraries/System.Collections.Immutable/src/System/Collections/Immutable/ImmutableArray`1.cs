@@ -17,7 +17,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of element stored by the array.</typeparam>
     /// <devremarks>
     /// This type has a documented contract of being exactly one reference-type field in size.
-    /// Our own ImmutableInterlocked class depends on it, as well as others externally.
+    /// Our own <see cref="ImmutableInterlocked"/> class depends on it, as well as others externally.
     /// IMPORTANT NOTICE FOR MAINTAINERS AND REVIEWERS:
     /// This type should be thread-safe. As a struct, it cannot protect its own fields
     /// from being changed from one thread while its members are executing on other threads
@@ -35,7 +35,7 @@ namespace System.Collections.Immutable
     public partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IImmutableList<T>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable
     {
         /// <summary>
-        /// An empty (initialized) instance of ImmutableArray{T}.
+        /// An empty (initialized) instance of <see cref="ImmutableArray{T}"/>.
         /// </summary>
         public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
 
@@ -841,7 +841,7 @@ namespace System.Collections.Immutable
         /// predicate.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
         /// to remove.
         /// </param>
         /// <returns>
@@ -1080,7 +1080,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="TResult">The type to filter the elements of the sequence on.</typeparam>
         /// <returns>
-        /// An System.Collections.Generic.IEnumerable&lt;T&gt; that contains elements from
+        /// An <see cref="IEnumerable{T}"/> that contains elements from
         /// the input sequence of type TResult.
         /// </returns>
         [Pure]
@@ -1394,7 +1394,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the ICollection interface.
+        /// See the <see cref="ICollection"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -1596,7 +1596,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Throws an <see cref="InvalidOperationException"/> if the array field is null, ie. the
         /// <see cref="IsDefault"/> property returns true.  The
-        /// InvalidOperationException message specifies that the operation cannot be performed
+        /// <see cref="InvalidOperationException"/> message specifies that the operation cannot be performed
         /// on a default instance of ImmutableArray.
         /// 
         /// This is intended for explicitly implemented interface method and property implementations.
@@ -1651,7 +1651,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Throws a NullReferenceException if the specified array is uninitialized.
+        /// Throws a <see cref="NullReferenceException"/> if the specified array is uninitialized.
         /// </summary>
         private static void ThrowNullRefIfNotInitialized(ImmutableArray<T> array)
         {

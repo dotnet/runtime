@@ -16,8 +16,8 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     /// <devremarks>
-    /// We implement IReadOnlyList{T} because it adds an ordinal indexer.
-    /// We implement IList{T} because it gives us IndexOf(T), which is important for some folks.
+    /// We implement <see cref="IReadOnlyList{T}"/> because it adds an ordinal indexer.
+    /// We implement <see cref="IList{T}"/> because it gives us IndexOf(T), which is important for some folks.
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableSortedSetDebuggerProxy<>))]
@@ -564,7 +564,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Returns an System.Collections.Generic.IEnumerable&lt;T&gt; that iterates over this
+        /// Returns an <see cref="IEnumerable{T}"/> that iterates over this
         /// collection in reverse order.
         /// </summary>
         /// <returns>
@@ -820,7 +820,7 @@ namespace System.Collections.Immutable
         #region ICollection Properties
 
         /// <summary>
-        /// See ICollection.
+        /// See <see cref="ICollection"/>.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         object ICollection.SyncRoot
@@ -829,7 +829,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the ICollection interface.
+        /// See the <see cref="ICollection"/> interface.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         bool ICollection.IsSynchronized
@@ -1159,8 +1159,8 @@ namespace System.Collections.Immutable
             /// The stack to use for enumerating the binary tree.
             /// </summary>
             /// <remarks>
-            /// We use RefAsValueType{T} as a wrapper to avoid paying the cost of covariant checks whenever
-            /// the underlying array that the Stack{T} class uses is written to. 
+            /// We use <see cref="RefAsValueType{T}"/> as a wrapper to avoid paying the cost of covariant checks whenever
+            /// the underlying array that the <see cref="Stack{T}"/> class uses is written to. 
             /// We've recognized this as a perf win in ETL traces for these stack frames:
             /// clr!JIT_Stelem_Ref
             ///   clr!ArrayStoreCheck
@@ -1179,7 +1179,7 @@ namespace System.Collections.Immutable
             private int _enumeratingBuilderVersion;
 
             /// <summary>
-            /// Initializes an Enumerator structure.
+            /// Initializes an <see cref="Enumerator"/> structure.
             /// </summary>
             /// <param name="root">The root of the set to be enumerated.</param>
             /// <param name="builder">The builder, if applicable.</param>
@@ -1289,7 +1289,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an ObjectDisposedException if this enumerator has been disposed.
+            /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
             /// </summary>
             private void ThrowIfDisposed()
             {
@@ -1958,7 +1958,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Returns an System.Collections.Generic.IEnumerable&lt;T&gt; that iterates over this
+            /// Returns an <see cref="IEnumerable{T}"/> that iterates over this
             /// collection in reverse order.
             /// </summary>
             /// <returns>

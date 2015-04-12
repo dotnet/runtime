@@ -986,7 +986,7 @@ namespace System.Collections.Immutable
             private int _enumeratingBuilderVersion;
 
             /// <summary>
-            /// Initializes an Enumerator structure.
+            /// Initializes an <see cref="Enumerator"/> structure.
             /// </summary>
             /// <param name="root">The root of the set to be enumerated.</param>
             /// <param name="builder">The builder, if applicable.</param>
@@ -1102,7 +1102,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an ObjectDisposedException if this enumerator has been disposed.
+            /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
             /// </summary>
             internal void ThrowIfDisposed()
             {

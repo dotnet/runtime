@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner Enumerator class.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.Enumerator"/> class.
     /// </content>
     public partial class ImmutableHashSet<T>
     {

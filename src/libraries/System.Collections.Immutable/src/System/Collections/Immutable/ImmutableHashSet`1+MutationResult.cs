@@ -6,7 +6,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner MutationResult class.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.MutationResult"/> class.
     /// </content>
     public partial class ImmutableHashSet<T>
     {

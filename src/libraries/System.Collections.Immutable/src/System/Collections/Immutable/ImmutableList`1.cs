@@ -72,8 +72,8 @@ namespace System.Collections.Immutable
         /// </returns>
         /// <exception cref="InvalidOperationException">
         /// The default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default cannot
-        /// find an implementation of the System.IComparable&lt;T&gt; generic interface or
-        /// the System.IComparable interface for type T.
+        /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
+        /// the <see cref="IComparable"/> interface for type T.
         /// </exception>
         public int BinarySearch(T item)
         {
@@ -86,7 +86,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="item">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">
-        /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+        /// The <see cref="IComparer{T}"/> implementation to use when comparing
         /// elements.-or-null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
         /// </param>
         /// <returns>
@@ -97,8 +97,8 @@ namespace System.Collections.Immutable
         /// </returns>
         /// <exception cref="InvalidOperationException">
         /// comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
-        /// cannot find an implementation of the System.IComparable&lt;T&gt; generic interface
-        /// or the System.IComparable interface for type T.
+        /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
+        /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>
         public int BinarySearch(T item, IComparer<T> comparer)
         {
@@ -114,7 +114,7 @@ namespace System.Collections.Immutable
         /// <param name="count"> The length of the range to search.</param>
         /// <param name="item">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">
-        /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+        /// The <see cref="IComparer{T}"/> implementation to use when comparing
         /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
         /// </param>
         /// <returns>
@@ -131,8 +131,8 @@ namespace System.Collections.Immutable
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
-        /// cannot find an implementation of the System.IComparable&lt;T&gt; generic interface
-        /// or the System.IComparable interface for type T.
+        /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
+        /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>
         public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
         {
@@ -180,7 +180,7 @@ namespace System.Collections.Immutable
         #region ICollection Properties
 
         /// <summary>
-        /// See ICollection.
+        /// See <see cref="ICollection"/>.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         object ICollection.SyncRoot
@@ -189,7 +189,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the ICollection interface.
+        /// See the <see cref="ICollection"/> interface.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         bool ICollection.IsSynchronized
@@ -428,7 +428,7 @@ namespace System.Collections.Immutable
         /// predicate.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
         /// to remove.
         /// </param>
         /// <returns>
@@ -481,7 +481,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Reverses the order of the elements in the entire ImmutableList&lt;T&gt;.
+        /// Reverses the order of the elements in the entire <see cref="ImmutableList{T}"/>.
         /// </summary>
         /// <returns>The reversed list.</returns>
         [Pure]
@@ -504,7 +504,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Sorts the elements in the entire ImmutableList&lt;T&gt; using
+        /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
         /// the default comparer.
         /// </summary>
         [Pure]
@@ -515,11 +515,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Sorts the elements in the entire ImmutableList&lt;T&gt; using
-        /// the specified System.Comparison&lt;T&gt;.
+        /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
+        /// the specified <see cref="Comparison{T}"/>.
         /// </summary>
         /// <param name="comparison">
-        /// The System.Comparison&lt;T&gt; to use when comparing elements.
+        /// The <see cref="Comparison{T}"/> to use when comparing elements.
         /// </param>
         /// <returns>The sorted list.</returns>
         [Pure]
@@ -531,11 +531,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Sorts the elements in the entire ImmutableList&lt;T&gt; using
+        /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
         /// the specified comparer.
         /// </summary>
         /// <param name="comparer">
-        /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+        /// The <see cref="IComparer{T}"/> implementation to use when comparing
         /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
         /// </param>
         /// <returns>The sorted list.</returns>
@@ -548,7 +548,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Sorts the elements in a range of elements in ImmutableList&lt;T&gt;
+        /// Sorts the elements in a range of elements in <see cref="ImmutableList{T}"/>
         /// using the specified comparer.
         /// </summary>
         /// <param name="index">
@@ -558,7 +558,7 @@ namespace System.Collections.Immutable
         /// The length of the range to sort.
         /// </param>
         /// <param name="comparer">
-        /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+        /// The <see cref="IComparer{T}"/> implementation to use when comparing
         /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
         /// </param>
         /// <returns>The sorted list.</returns>
@@ -593,12 +593,12 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Copies the entire ImmutableList&lt;T&gt; to a compatible one-dimensional
+        /// Copies the entire <see cref="ImmutableList{T}"/> to a compatible one-dimensional
         /// array, starting at the beginning of the target array.
         /// </summary>
         /// <param name="array">
-        /// The one-dimensional System.Array that is the destination of the elements
-        /// copied from ImmutableList&lt;T&gt;. The System.Array must have
+        /// The one-dimensional <see cref="Array"/> that is the destination of the elements
+        /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
         /// zero-based indexing.
         /// </param>
         public void CopyTo(T[] array)
@@ -609,12 +609,12 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Copies the entire ImmutableList&lt;T&gt; to a compatible one-dimensional
+        /// Copies the entire <see cref="ImmutableList{T}"/> to a compatible one-dimensional
         /// array, starting at the specified index of the target array.
         /// </summary>
         /// <param name="array">
-        /// The one-dimensional System.Array that is the destination of the elements
-        /// copied from ImmutableList&lt;T&gt;. The System.Array must have
+        /// The one-dimensional <see cref="Array"/> that is the destination of the elements
+        /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
         /// zero-based indexing.
         /// </param>
         /// <param name="arrayIndex">
@@ -629,17 +629,17 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Copies a range of elements from the ImmutableList&lt;T&gt; to
+        /// Copies a range of elements from the <see cref="ImmutableList{T}"/> to
         /// a compatible one-dimensional array, starting at the specified index of the
         /// target array.
         /// </summary>
         /// <param name="index">
-        /// The zero-based index in the source ImmutableList&lt;T&gt; at
+        /// The zero-based index in the source <see cref="ImmutableList{T}"/> at
         /// which copying begins.
         /// </param>
         /// <param name="array">
-        /// The one-dimensional System.Array that is the destination of the elements
-        /// copied from ImmutableList&lt;T&gt;. The System.Array must have
+        /// The one-dimensional <see cref="Array"/> that is the destination of the elements
+        /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
         /// zero-based indexing.
         /// </param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
@@ -650,17 +650,17 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates a shallow copy of a range of elements in the source ImmutableList&lt;T&gt;.
+        /// Creates a shallow copy of a range of elements in the source <see cref="ImmutableList{T}"/>.
         /// </summary>
         /// <param name="index">
-        /// The zero-based ImmutableList&lt;T&gt; index at which the range
+        /// The zero-based <see cref="ImmutableList{T}"/> index at which the range
         /// starts.
         /// </param>
         /// <param name="count">
         /// The number of elements in the range.
         /// </param>
         /// <returns>
-        /// A shallow copy of a range of elements in the source ImmutableList&lt;T&gt;.
+        /// A shallow copy of a range of elements in the source <see cref="ImmutableList{T}"/>.
         /// </returns>
         public ImmutableList<T> GetRange(int index, int count)
         {
@@ -671,7 +671,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Converts the elements in the current ImmutableList&lt;T&gt; to
+        /// Converts the elements in the current <see cref="ImmutableList{T}"/> to
         /// another type, and returns a list containing the converted elements.
         /// </summary>
         /// <param name="converter">
@@ -682,8 +682,8 @@ namespace System.Collections.Immutable
         /// The type of the elements of the target array.
         /// </typeparam>
         /// <returns>
-        /// A ImmutableList&lt;T&gt; of the target type containing the converted
-        /// elements from the current ImmutableList&lt;T&gt;.
+        /// A <see cref="ImmutableList{T}"/> of the target type containing the converted
+        /// elements from the current <see cref="ImmutableList{T}"/>.
         /// </returns>
         public ImmutableList<TOutput> ConvertAll<TOutput>(Func<T, TOutput> converter)
         {
@@ -692,15 +692,15 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the ImmutableList&lt;T&gt; contains elements
+        /// Determines whether the <see cref="ImmutableList{T}"/> contains elements
         /// that match the conditions defined by the specified predicate.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
         /// to search for.
         /// </param>
         /// <returns>
-        /// true if the ImmutableList&lt;T&gt; contains one or more elements
+        /// true if the <see cref="ImmutableList{T}"/> contains one or more elements
         /// that match the conditions defined by the specified predicate; otherwise,
         /// false.
         /// </returns>
@@ -712,10 +712,10 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
-        /// predicate, and returns the first occurrence within the entire ImmutableList&lt;T&gt;.
+        /// predicate, and returns the first occurrence within the entire <see cref="ImmutableList{T}"/>.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
         /// to search for.
         /// </param>
         /// <returns>
@@ -733,13 +733,13 @@ namespace System.Collections.Immutable
         /// predicate.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
         /// to search for.
         /// </param>
         /// <returns>
-        /// A ImmutableList&lt;T&gt; containing all the elements that match
+        /// A <see cref="ImmutableList{T}"/> containing all the elements that match
         /// the conditions defined by the specified predicate, if found; otherwise, an
-        /// empty ImmutableList&lt;T&gt;.
+        /// empty <see cref="ImmutableList{T}"/>.
         /// </returns>
         public ImmutableList<T> FindAll(Predicate<T> match)
         {
@@ -750,10 +750,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
         /// predicate, and returns the zero-based index of the first occurrence within
-        /// the entire ImmutableList&lt;T&gt;.
+        /// the entire <see cref="ImmutableList{T}"/>.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
         /// to search for.
         /// </param>
         /// <returns>
@@ -769,11 +769,11 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
         /// predicate, and returns the zero-based index of the first occurrence within
-        /// the range of elements in the ImmutableList&lt;T&gt; that extends
+        /// the range of elements in the <see cref="ImmutableList{T}"/> that extends
         /// from the specified index to the last element.
         /// </summary>
         /// <param name="startIndex">The zero-based starting index of the search.</param>
-        /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
+        /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
         /// conditions defined by match, if found; otherwise, -1.
@@ -789,12 +789,12 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
         /// predicate, and returns the zero-based index of the first occurrence within
-        /// the range of elements in the ImmutableList&lt;T&gt; that starts
+        /// the range of elements in the <see cref="ImmutableList{T}"/> that starts
         /// at the specified index and contains the specified number of elements.
         /// </summary>
         /// <param name="startIndex">The zero-based starting index of the search.</param>
         /// <param name="count">The number of elements in the section to search.</param>
-        /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
+        /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
         /// conditions defined by match, if found; otherwise, -1.
@@ -811,10 +811,10 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
-        /// predicate, and returns the last occurrence within the entire ImmutableList&lt;T&gt;.
+        /// predicate, and returns the last occurrence within the entire <see cref="ImmutableList{T}"/>.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
         /// to search for.
         /// </param>
         /// <returns>
@@ -830,10 +830,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
         /// predicate, and returns the zero-based index of the last occurrence within
-        /// the entire ImmutableList&lt;T&gt;.
+        /// the entire <see cref="ImmutableList{T}"/>.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
         /// to search for.
         /// </param>
         /// <returns>
@@ -849,11 +849,11 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
         /// predicate, and returns the zero-based index of the last occurrence within
-        /// the range of elements in the ImmutableList&lt;T&gt; that extends
+        /// the range of elements in the <see cref="ImmutableList{T}"/> that extends
         /// from the first element to the specified index.
         /// </summary>
         /// <param name="startIndex">The zero-based starting index of the backward search.</param>
-        /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+        /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
         /// to search for.</param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
@@ -870,13 +870,13 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified
         /// predicate, and returns the zero-based index of the last occurrence within
-        /// the range of elements in the ImmutableList&lt;T&gt; that contains
+        /// the range of elements in the <see cref="ImmutableList{T}"/> that contains
         /// the specified number of elements and ends at the specified index.
         /// </summary>
         /// <param name="startIndex">The zero-based starting index of the backward search.</param>
         /// <param name="count">The number of elements in the section to search.</param>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
         /// to search for.
         /// </param>
         /// <returns>
@@ -895,11 +895,11 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// first occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// first occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
         /// that starts at the specified index and contains the specified number of elements.
         /// </summary>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="index">
@@ -914,7 +914,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
-        /// elements in the ImmutableList&lt;T&gt; that starts at index and
+        /// elements in the <see cref="ImmutableList{T}"/> that starts at index and
         /// contains count number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -925,12 +925,12 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// last occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// last occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
         /// that contains the specified number of elements and ends at the specified
         /// index.
         /// </summary>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="index">The zero-based starting index of the backward search.</param>
@@ -940,7 +940,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of item within the range of elements
-        /// in the ImmutableList&lt;T&gt; that contains count number of elements
+        /// in the <see cref="ImmutableList{T}"/> that contains count number of elements
         /// and ends at index, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -950,15 +950,15 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether every element in the ImmutableList&lt;T&gt;
+        /// Determines whether every element in the <see cref="ImmutableList{T}"/>
         /// matches the conditions defined by the specified predicate.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions to check against
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions to check against
         /// the elements.
         /// </param>
         /// <returns>
-        /// true if every element in the ImmutableList&lt;T&gt; matches the
+        /// true if every element in the <see cref="ImmutableList{T}"/> matches the
         /// conditions defined by the specified predicate; otherwise, false. If the list
         /// has no elements, the return value is true.
         /// </returns>
@@ -1219,7 +1219,7 @@ namespace System.Collections.Immutable
         #region ICollection Methods
 
         /// <summary>
-        /// See the ICollection interface.
+        /// See the <see cref="ICollection"/> interface.
         /// </summary>
         void System.Collections.ICollection.CopyTo(Array array, int arrayIndex)
         {
@@ -1366,7 +1366,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Returns the Root Node of the list
+        /// Returns the Root <see cref="Node"/> of the list
         /// </summary>
         internal Node Root
         {
@@ -1544,7 +1544,7 @@ namespace System.Collections.Immutable
             private int _enumeratingBuilderVersion;
 
             /// <summary>
-            /// Initializes an Enumerator structure.
+            /// Initializes an <see cref="Enumerator"/> structure.
             /// </summary>
             /// <param name="root">The root of the set to be enumerated.</param>
             /// <param name="builder">The builder, if applicable.</param>
@@ -1714,7 +1714,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an ObjectDisposedException if this enumerator has been disposed.
+            /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
             /// </summary>
             private void ThrowIfDisposed()
             {
@@ -2195,7 +2195,7 @@ namespace System.Collections.Immutable
             /// predicate.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
             /// to remove.
             /// </param>
             /// <returns>
@@ -2254,7 +2254,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Reverses the order of the elements in the entire ImmutableList&lt;T&gt;.
+            /// Reverses the order of the elements in the entire <see cref="ImmutableList{T}"/>.
             /// </summary>
             /// <returns>The reversed list.</returns>
             internal Node Reverse()
@@ -2293,7 +2293,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Sorts the elements in the entire ImmutableList&lt;T&gt; using
+            /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
             /// the default comparer.
             /// </summary>
             internal Node Sort()
@@ -2303,11 +2303,11 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Sorts the elements in the entire ImmutableList&lt;T&gt; using
-            /// the specified System.Comparison&lt;T&gt;.
+            /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
+            /// the specified <see cref="Comparison{T}"/>.
             /// </summary>
             /// <param name="comparison">
-            /// The System.Comparison&lt;T&gt; to use when comparing elements.
+            /// The <see cref="Comparison{T}"/> to use when comparing elements.
             /// </param>
             /// <returns>The sorted list.</returns>
             internal Node Sort(Comparison<T> comparison)
@@ -2323,11 +2323,11 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Sorts the elements in the entire ImmutableList&lt;T&gt; using
+            /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
             /// the specified comparer.
             /// </summary>
             /// <param name="comparer">
-            /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+            /// The <see cref="IComparer{T}"/> implementation to use when comparing
             /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
             /// </param>
             /// <returns>The sorted list.</returns>
@@ -2339,7 +2339,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Sorts the elements in a range of elements in ImmutableList&lt;T&gt;
+            /// Sorts the elements in a range of elements in <see cref="ImmutableList{T}"/>
             /// using the specified comparer.
             /// </summary>
             /// <param name="index">
@@ -2349,7 +2349,7 @@ namespace System.Collections.Immutable
             /// The length of the range to sort.
             /// </param>
             /// <param name="comparer">
-            /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+            /// The <see cref="IComparer{T}"/> implementation to use when comparing
             /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
             /// </param>
             /// <returns>The sorted list.</returns>
@@ -2376,7 +2376,7 @@ namespace System.Collections.Immutable
             /// <param name="count"> The length of the range to search.</param>
             /// <param name="item">The object to locate. The value can be null for reference types.</param>
             /// <param name="comparer">
-            /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+            /// The <see cref="IComparer{T}"/> implementation to use when comparing
             /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
             /// </param>
             /// <returns>
@@ -2393,8 +2393,8 @@ namespace System.Collections.Immutable
             /// </exception>
             /// <exception cref="InvalidOperationException">
             /// comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
-            /// cannot find an implementation of the System.IComparable&lt;T&gt; generic interface
-            /// or the System.IComparable interface for type T.
+            /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
+            /// or the <see cref="IComparable"/> interface for type T.
             /// </exception>
             internal int BinarySearch(int index, int count, T item, IComparer<T> comparer)
             {
@@ -2452,17 +2452,17 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Searches for the specified object and returns the zero-based index of the
-            /// first occurrence within the range of elements in the ImmutableList&lt;T&gt;
+            /// first occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
             /// that starts at the specified index and contains the specified number of elements.
             /// </summary>
             /// <param name="item">
-            /// The object to locate in the ImmutableList&lt;T&gt;. The value
+            /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
             /// can be null for reference types.
             /// </param>
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
-            /// elements in the ImmutableList&lt;T&gt; that starts at index and
+            /// elements in the <see cref="ImmutableList{T}"/> that starts at index and
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
@@ -2473,11 +2473,11 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Searches for the specified object and returns the zero-based index of the
-            /// first occurrence within the range of elements in the ImmutableList&lt;T&gt;
+            /// first occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
             /// that starts at the specified index and contains the specified number of elements.
             /// </summary>
             /// <param name="item">
-            /// The object to locate in the ImmutableList&lt;T&gt;. The value
+            /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
             /// can be null for reference types.
             /// </param>
             /// <param name="index">
@@ -2490,7 +2490,7 @@ namespace System.Collections.Immutable
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of item within the range of
-            /// elements in the ImmutableList&lt;T&gt; that starts at index and
+            /// elements in the <see cref="ImmutableList{T}"/> that starts at index and
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
@@ -2520,12 +2520,12 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Searches for the specified object and returns the zero-based index of the
-            /// last occurrence within the range of elements in the ImmutableList&lt;T&gt;
+            /// last occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
             /// that contains the specified number of elements and ends at the specified
             /// index.
             /// </summary>
             /// <param name="item">
-            /// The object to locate in the ImmutableList&lt;T&gt;. The value
+            /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
             /// can be null for reference types.
             /// </param>
             /// <param name="index">The zero-based starting index of the backward search.</param>
@@ -2533,7 +2533,7 @@ namespace System.Collections.Immutable
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
             /// The zero-based index of the last occurrence of item within the range of elements
-            /// in the ImmutableList&lt;T&gt; that contains count number of elements
+            /// in the <see cref="ImmutableList{T}"/> that contains count number of elements
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
@@ -2561,12 +2561,12 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Copies the entire ImmutableList&lt;T&gt; to a compatible one-dimensional
+            /// Copies the entire <see cref="ImmutableList{T}"/> to a compatible one-dimensional
             /// array, starting at the beginning of the target array.
             /// </summary>
             /// <param name="array">
-            /// The one-dimensional System.Array that is the destination of the elements
-            /// copied from ImmutableList&lt;T&gt;. The System.Array must have
+            /// The one-dimensional <see cref="Array"/> that is the destination of the elements
+            /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
             /// zero-based indexing.
             /// </param>
             internal void CopyTo(T[] array)
@@ -2582,12 +2582,12 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Copies the entire ImmutableList&lt;T&gt; to a compatible one-dimensional
+            /// Copies the entire <see cref="ImmutableList{T}"/> to a compatible one-dimensional
             /// array, starting at the specified index of the target array.
             /// </summary>
             /// <param name="array">
-            /// The one-dimensional System.Array that is the destination of the elements
-            /// copied from ImmutableList&lt;T&gt;. The System.Array must have
+            /// The one-dimensional <see cref="Array"/> that is the destination of the elements
+            /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
             /// zero-based indexing.
             /// </param>
             /// <param name="arrayIndex">
@@ -2607,17 +2607,17 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Copies a range of elements from the ImmutableList&lt;T&gt; to
+            /// Copies a range of elements from the <see cref="ImmutableList{T}"/> to
             /// a compatible one-dimensional array, starting at the specified index of the
             /// target array.
             /// </summary>
             /// <param name="index">
-            /// The zero-based index in the source ImmutableList&lt;T&gt; at
+            /// The zero-based index in the source <see cref="ImmutableList{T}"/> at
             /// which copying begins.
             /// </param>
             /// <param name="array">
-            /// The one-dimensional System.Array that is the destination of the elements
-            /// copied from ImmutableList&lt;T&gt;. The System.Array must have
+            /// The one-dimensional <see cref="Array"/> that is the destination of the elements
+            /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
             /// zero-based indexing.
             /// </param>
             /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
@@ -2658,7 +2658,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Converts the elements in the current ImmutableList&lt;T&gt; to
+            /// Converts the elements in the current <see cref="ImmutableList{T}"/> to
             /// another type, and returns a list containing the converted elements.
             /// </summary>
             /// <param name="converter">
@@ -2684,15 +2684,15 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Determines whether every element in the ImmutableList&lt;T&gt;
+            /// Determines whether every element in the <see cref="ImmutableList{T}"/>
             /// matches the conditions defined by the specified predicate.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions to check against
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions to check against
             /// the elements.
             /// </param>
             /// <returns>
-            /// true if every element in the ImmutableList&lt;T&gt; matches the
+            /// true if every element in the <see cref="ImmutableList{T}"/> matches the
             /// conditions defined by the specified predicate; otherwise, false. If the list
             /// has no elements, the return value is true.
             /// </returns>
@@ -2710,15 +2710,15 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Determines whether the ImmutableList&lt;T&gt; contains elements
+            /// Determines whether the <see cref="ImmutableList{T}"/> contains elements
             /// that match the conditions defined by the specified predicate.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
             /// to search for.
             /// </param>
             /// <returns>
-            /// true if the ImmutableList&lt;T&gt; contains one or more elements
+            /// true if the <see cref="ImmutableList{T}"/> contains one or more elements
             /// that match the conditions defined by the specified predicate; otherwise,
             /// false.
             /// </returns>
@@ -2739,10 +2739,10 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
-            /// predicate, and returns the first occurrence within the entire ImmutableList&lt;T&gt;.
+            /// predicate, and returns the first occurrence within the entire <see cref="ImmutableList{T}"/>.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
             /// to search for.
             /// </param>
             /// <returns>
@@ -2769,13 +2769,13 @@ namespace System.Collections.Immutable
             /// predicate.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
             /// to search for.
             /// </param>
             /// <returns>
-            /// A ImmutableList&lt;T&gt; containing all the elements that match
+            /// A <see cref="ImmutableList{T}"/> containing all the elements that match
             /// the conditions defined by the specified predicate, if found; otherwise, an
-            /// empty ImmutableList&lt;T&gt;.
+            /// empty <see cref="ImmutableList{T}"/>.
             /// </returns>
             internal ImmutableList<T> FindAll(Predicate<T> match)
             {
@@ -2809,10 +2809,10 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
             /// predicate, and returns the zero-based index of the first occurrence within
-            /// the entire ImmutableList&lt;T&gt;.
+            /// the entire <see cref="ImmutableList{T}"/>.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
             /// to search for.
             /// </param>
             /// <returns>
@@ -2830,11 +2830,11 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
             /// predicate, and returns the zero-based index of the first occurrence within
-            /// the range of elements in the ImmutableList&lt;T&gt; that extends
+            /// the range of elements in the <see cref="ImmutableList{T}"/> that extends
             /// from the specified index to the last element.
             /// </summary>
             /// <param name="startIndex">The zero-based starting index of the search.</param>
-            /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
+            /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
             /// conditions defined by match, if found; otherwise, -1.
@@ -2851,12 +2851,12 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
             /// predicate, and returns the zero-based index of the first occurrence within
-            /// the range of elements in the ImmutableList&lt;T&gt; that starts
+            /// the range of elements in the <see cref="ImmutableList{T}"/> that starts
             /// at the specified index and contains the specified number of elements.
             /// </summary>
             /// <param name="startIndex">The zero-based starting index of the search.</param>
             /// <param name="count">The number of elements in the section to search.</param>
-            /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
+            /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
             /// conditions defined by match, if found; otherwise, -1.
@@ -2887,10 +2887,10 @@ namespace System.Collections.Immutable
 
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
-            /// predicate, and returns the last occurrence within the entire ImmutableList&lt;T&gt;.
+            /// predicate, and returns the last occurrence within the entire <see cref="ImmutableList{T}"/>.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
             /// to search for.
             /// </param>
             /// <returns>
@@ -2918,10 +2918,10 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
             /// predicate, and returns the zero-based index of the last occurrence within
-            /// the entire ImmutableList&lt;T&gt;.
+            /// the entire <see cref="ImmutableList{T}"/>.
             /// </summary>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
             /// to search for.
             /// </param>
             /// <returns>
@@ -2944,11 +2944,11 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
             /// predicate, and returns the zero-based index of the last occurrence within
-            /// the range of elements in the ImmutableList&lt;T&gt; that extends
+            /// the range of elements in the <see cref="ImmutableList{T}"/> that extends
             /// from the first element to the specified index.
             /// </summary>
             /// <param name="startIndex">The zero-based starting index of the backward search.</param>
-            /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+            /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
             /// to search for.</param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
@@ -2971,13 +2971,13 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified
             /// predicate, and returns the zero-based index of the last occurrence within
-            /// the range of elements in the ImmutableList&lt;T&gt; that contains
+            /// the range of elements in the <see cref="ImmutableList{T}"/> that contains
             /// the specified number of elements and ends at the specified index.
             /// </summary>
             /// <param name="startIndex">The zero-based starting index of the backward search.</param>
             /// <param name="count">The number of elements in the section to search.</param>
             /// <param name="match">
-            /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the element
             /// to search for.
             /// </param>
             /// <returns>

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner Enumerator struct.
+    /// Contains the inner <see cref="ImmutableDictionary{TKey, TValue}.Enumerator"/> struct.
     /// </content>
     public partial class ImmutableDictionary<TKey, TValue>
     {
@@ -26,7 +26,7 @@ namespace System.Collections.Immutable
             private SortedInt32KeyNode<HashBucket>.Enumerator _mapEnumerator;
 
             /// <summary>
-            /// The enumerator in use within an individual HashBucket.
+            /// The enumerator in use within an individual <see cref="HashBucket"/>.
             /// </summary>
             private HashBucket.Enumerator _bucketEnumerator;
 

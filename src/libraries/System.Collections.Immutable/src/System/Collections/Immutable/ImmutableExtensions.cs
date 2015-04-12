@@ -95,7 +95,7 @@ namespace System.Collections.Immutable
         /// <returns>The array.</returns>
         /// <remarks>
         /// This is more efficient than the Enumerable.ToArray{T} extension method
-        /// because that only tries to cast the sequence to ICollection{T} to determine
+        /// because that only tries to cast the sequence to <see cref="ICollection{T}"/> to determine
         /// the count before it falls back to reallocating arrays as it enumerates.
         /// </remarks>
         internal static T[] ToArray<T>(this IEnumerable<T> sequence, int count)
