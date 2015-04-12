@@ -160,7 +160,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray"/> struct.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
         /// <param name="items">The array to initialize the array with. A defensive copy is made.</param>
         /// <param name="start">The index of the first element in the source array to include in the resulting array.</param>
@@ -192,7 +192,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray"/> struct.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
         /// <param name="items">The array to initialize the array with.
         /// The selected array segment may be copied into a new array.</param>
@@ -526,7 +526,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray"/> struct.
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
         /// <param name="items">The array to use or copy from. May be null for "default" arrays.</param>
         internal static ImmutableArray<T> CreateDefensiveCopy<T>(T[] items)
