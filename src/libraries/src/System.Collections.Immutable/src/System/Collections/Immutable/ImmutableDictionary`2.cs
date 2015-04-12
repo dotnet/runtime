@@ -677,10 +677,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets an <see cref="ICollection{T}"/> containing the keys of the <see cref="IDictionary{TKey, TValue}" />.
+        /// Gets an <see cref="ICollection{T}"/> containing the keys of the <see cref="IDictionary{TKey, TValue}"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="ICollection{T}"/> containing the keys of the object that implements <see cref="IDictionary{TKey, TValue}" />.
+        /// An <see cref="ICollection{T}"/> containing the keys of the object that implements <see cref="IDictionary{TKey, TValue}"/>.
         ///   </returns>
         ICollection IDictionary.Keys
         {
@@ -688,10 +688,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets an <see cref="ICollection{T}"/> containing the values in the <see cref="IDictionary{TKey, TValue}" />.
+        /// Gets an <see cref="ICollection{T}"/> containing the values in the <see cref="IDictionary{TKey, TValue}"/>.
         /// </summary>
         /// <returns>
-        /// An <see cref="ICollection{T}"/> containing the values in the object that implements <see cref="IDictionary{TKey, TValue}" />.
+        /// An <see cref="ICollection{T}"/> containing the values in the object that implements <see cref="IDictionary{TKey, TValue}"/>.
         ///   </returns>
         ICollection IDictionary.Values
         {
@@ -781,7 +781,7 @@ namespace System.Collections.Immutable
         /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
         /// </summary>
         /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
-        /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+        /// <param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param>
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
             Requires.NotNull(array, "array");

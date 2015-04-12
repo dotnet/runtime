@@ -1280,7 +1280,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
-        /// The index of <paramref name="value" /> if found in the list; otherwise, -1.
+        /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
         /// <exception cref="System.NotImplementedException"></exception>
         int IList.IndexOf(object value)
@@ -1291,7 +1291,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Inserts an item to the <see cref="IList"/> at the specified index.
         /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="value" /> should be inserted.</param>
+        /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotImplementedException"></exception>
         void IList.Insert(int index, object value)
@@ -1331,10 +1331,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="System.Object" /> at the specified index.
+        /// Gets or sets the <see cref="System.Object"/> at the specified index.
         /// </summary>
         /// <value>
-        /// The <see cref="System.Object" />.
+        /// The <see cref="System.Object"/>.
         /// </value>
         /// <param name="index">The index.</param>
         /// <returns></returns>
@@ -2644,7 +2644,7 @@ namespace System.Collections.Immutable
             /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
             /// </summary>
             /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
-            /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+            /// <param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param>
             internal void CopyTo(Array array, int arrayIndex)
             {
                 Requires.NotNull(array, "array");

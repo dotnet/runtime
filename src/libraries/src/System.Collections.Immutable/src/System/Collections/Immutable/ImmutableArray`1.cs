@@ -130,7 +130,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based index of the element to get.</param>
         /// <returns>The element at the specified index in the read-only list.</returns>
         /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         T IList<T>.this[int index]
         {
             get
@@ -183,7 +183,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the number of array in the collection.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         int ICollection<T>.Count
         {
@@ -198,7 +198,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the number of array in the collection.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         int IReadOnlyCollection<T>.Count
         {
@@ -217,7 +217,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The element.
         /// </returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         T IReadOnlyList<T>.this[int index]
         {
             get
@@ -997,11 +997,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
+        /// Determines whether the specified <see cref="System.Object"/> is equal to this instance.
         /// </summary>
-        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <param name="obj">The <see cref="System.Object"/> to compare with this instance.</param>
         /// <returns>
-        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        ///   <c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
         [Pure]
         public override bool Equals(object obj)
@@ -1019,7 +1019,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns>
-        /// true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.
+        /// true if the current object is equal to the <paramref name="other"/> parameter; otherwise, false.
         /// </returns>
         [Pure]
         public bool Equals(ImmutableArray<T> other)
@@ -1131,7 +1131,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator for the contents of the array.
         /// </summary>
         /// <returns>An enumerator.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [Pure]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
@@ -1144,7 +1144,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator for the contents of the array.
         /// </summary>
         /// <returns>An enumerator.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [Pure]
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -1329,7 +1329,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
-        /// The index of <paramref name="value" /> if found in the list; otherwise, -1.
+        /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
         [ExcludeFromCodeCoverage]
         int IList.IndexOf(object value)
@@ -1342,7 +1342,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Inserts an item to the <see cref="IList"/> at the specified index.
         /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="value" /> should be inserted.</param>
+        /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
@@ -1380,7 +1380,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the size of the array.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         int ICollection.Count
@@ -1455,7 +1455,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The index.</param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [ExcludeFromCodeCoverage]
         object IList.this[int index]
         {
@@ -1472,7 +1472,7 @@ namespace System.Collections.Immutable
         /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
         /// </summary>
         /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
-        /// <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+        /// <param name="index">The zero-based index in <paramref name="array"/> at which copying begins.</param>
         [ExcludeFromCodeCoverage]
         void ICollection.CopyTo(Array array, int index)
         {

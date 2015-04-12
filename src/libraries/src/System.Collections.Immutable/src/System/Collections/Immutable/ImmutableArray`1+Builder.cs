@@ -212,7 +212,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Inserts an item to the <see cref="IList{T}"/> at the specified index.
             /// </summary>
-            /// <param name="index">The zero-based index at which <paramref name="item" /> should be inserted.</param>
+            /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
             /// <param name="item">The object to insert into the <see cref="IList{T}"/>.</param>
             public void Insert(int index, T item)
             {
@@ -408,7 +408,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="item">The object to locate in the <see cref="ICollection{T}"/>.</param>
             /// <returns>
-            /// true if <paramref name="item" /> is found in the <see cref="ICollection{T}"/>; otherwise, false.
+            /// true if <paramref name="item"/> is found in the <see cref="ICollection{T}"/>; otherwise, false.
             /// </returns>
             public bool Contains(T item)
             {
@@ -460,7 +460,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="item">The object to locate in the <see cref="IList{T}"/>.</param>
             /// <returns>
-            /// The index of <paramref name="item" /> if found in the list; otherwise, -1.
+            /// The index of <paramref name="item"/> if found in the list; otherwise, -1.
             /// </returns>
             [Pure]
             public int IndexOf(T item)

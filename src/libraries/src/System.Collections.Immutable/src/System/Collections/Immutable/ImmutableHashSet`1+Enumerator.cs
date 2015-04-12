@@ -36,7 +36,7 @@ namespace System.Collections.Immutable
             private int _enumeratingBuilderVersion;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.Enumerator" /> struct.
+            /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.Enumerator"/> struct.
             /// </summary>
             /// <param name="root">The root.</param>
             /// <param name="builder">The builder, if applicable.</param>
