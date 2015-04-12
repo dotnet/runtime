@@ -66,7 +66,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// An array enumerator that implements IEnumerator pattern (including <see cref="IDisposable"/>).
+        /// An array enumerator that implements <see cref="IEnumerator{T}"/> pattern (including <see cref="IDisposable"/>).
         /// </summary>
         private class EnumeratorObject : IEnumerator<T>
         {

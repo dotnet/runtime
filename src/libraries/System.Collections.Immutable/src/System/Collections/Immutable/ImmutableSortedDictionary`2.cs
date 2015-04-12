@@ -388,15 +388,15 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the ImmutableSortedMap&lt;TKey,TValue&gt;
+        /// Determines whether the <see cref="ImmutableSortedDictionary{TKey, TValue}"/>
         /// contains an element with the specified value.
         /// </summary>
         /// <param name="value">
-        /// The value to locate in the ImmutableSortedMap&lt;TKey,TValue&gt;.
+        /// The value to locate in the <see cref="ImmutableSortedDictionary{TKey, TValue}"/>.
         /// The value can be null for reference types.
         /// </param>
         /// <returns>
-        /// true if the ImmutableSortedMap&lt;TKey,TValue&gt; contains
+        /// true if the <see cref="ImmutableSortedDictionary{TKey, TValue}"/> contains
         /// an element with the specified value; otherwise, false.
         /// </returns>
         [Pure]
@@ -934,7 +934,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// This struct can and should be kept in exact sync with the other binary tree enumerators: 
-        /// ImmutableList.Enumerator, ImmutableSortedMap.Enumerator, and ImmutableSortedSet.Enumerator.
+        /// <see cref="ImmutableList{T}.Enumerator"/>, <see cref="ImmutableSortedDictionary{TKey, TValue}.Enumerator"/>, and <see cref="ImmutableSortedSet{T}.Enumerator"/>.
         /// 
         /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable 
         /// or by passing it to another method.  When this enumerator is disposed of it returns a mutable reference type stack to a resource pool,
@@ -1563,16 +1563,16 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Determines whether the ImmutableSortedMap&lt;TKey,TValue&gt;
+            /// Determines whether the <see cref="ImmutableSortedDictionary{TKey, TValue}"/>
             /// contains an element with the specified value.
             /// </summary>
             /// <param name="value">
-            /// The value to locate in the ImmutableSortedMap&lt;TKey,TValue&gt;.
+            /// The value to locate in the <see cref="ImmutableSortedDictionary{TKey, TValue}"/>.
             /// The value can be null for reference types.
             /// </param>
             /// <param name="valueComparer">The value comparer to use.</param>
             /// <returns>
-            /// true if the ImmutableSortedMap&lt;TKey,TValue&gt; contains
+            /// true if the <see cref="ImmutableSortedDictionary{TKey, TValue}"/> contains
             /// an element with the specified value; otherwise, false.
             /// </returns>
             [Pure]

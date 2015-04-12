@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Collections.Immutable
 {
     /// <summary>
-    /// An interface that describes the methods that the ImmutableList and ImmutableList+Builder types have in common.
+    /// An interface that describes the methods that the <see cref="ImmutableList{T}"/> and <see cref="ImmutableList{T}.Builder"/> types have in common.
     /// </summary>
     /// <typeparam name="T">The type of element in the collection.</typeparam>
     internal interface IImmutableListQueries<T> : IReadOnlyList<T>
@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
         /// another type, and returns a list containing the converted elements.
         /// </summary>
         /// <param name="converter">
-        /// A System.Converter&lt;TInput,TOutput&gt; delegate that converts each element from
+        /// A <see cref="Func{T, TResult}"/> delegate that converts each element from
         /// one type to another type.
         /// </param>
         /// <typeparam name="TOutput">
@@ -258,12 +258,12 @@ namespace System.Collections.Immutable
         bool TrueForAll(Predicate<T> match);
 
         /// <summary>
-        /// Searches the entire sorted System.Collections.Generic.List&lt;T&gt; for an element
+        /// Searches the entire sorted <see cref="IReadOnlyList{T}"/> for an element
         /// using the default comparer and returns the zero-based index of the element.
         /// </summary>
         /// <param name="item">The object to locate. The value can be null for reference types.</param>
         /// <returns>
-        /// The zero-based index of item in the sorted System.Collections.Generic.List&lt;T&gt;,
+        /// The zero-based index of item in the sorted <see cref="IReadOnlyList{T}"/>,
         /// if item is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than item or, if there is
         /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
@@ -276,7 +276,7 @@ namespace System.Collections.Immutable
         int BinarySearch(T item);
 
         /// <summary>
-        ///  Searches the entire sorted System.Collections.Generic.List&lt;T&gt; for an element
+        ///  Searches the entire sorted <see cref="IReadOnlyList{T}"/> for an element
         ///  using the specified comparer and returns the zero-based index of the element.
         /// </summary>
         /// <param name="item">The object to locate. The value can be null for reference types.</param>
@@ -285,7 +285,7 @@ namespace System.Collections.Immutable
         /// elements.-or-null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
         /// </param>
         /// <returns>
-        /// The zero-based index of item in the sorted System.Collections.Generic.List&lt;T&gt;,
+        /// The zero-based index of item in the sorted <see cref="IReadOnlyList{T}"/>,
         /// if item is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than item or, if there is
         /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
@@ -298,7 +298,7 @@ namespace System.Collections.Immutable
         int BinarySearch(T item, IComparer<T> comparer);
 
         /// <summary>
-        /// Searches a range of elements in the sorted System.Collections.Generic.List&lt;T&gt;
+        /// Searches a range of elements in the sorted <see cref="IReadOnlyList{T}"/>
         /// for an element using the specified comparer and returns the zero-based index
         /// of the element.
         /// </summary>
@@ -310,7 +310,7 @@ namespace System.Collections.Immutable
         /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
         /// </param>
         /// <returns>
-        /// The zero-based index of item in the sorted System.Collections.Generic.List&lt;T&gt;,
+        /// The zero-based index of item in the sorted <see cref="IReadOnlyList{T}"/>,
         /// if item is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than item or, if there is
         /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
@@ -319,7 +319,7 @@ namespace System.Collections.Immutable
         /// index is less than 0.-or-count is less than 0.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// index and count do not denote a valid range in the System.Collections.Generic.List&lt;T&gt;.
+        /// index and count do not denote a valid range in the <see cref="IReadOnlyList{T}"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default

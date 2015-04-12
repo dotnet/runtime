@@ -554,15 +554,15 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Determines whether the ImmutableSortedMap&lt;TKey,TValue&gt;
+            /// Determines whether the <see cref="ImmutableDictionary{TKey, TValue}"/>
             /// contains an element with the specified value.
             /// </summary>
             /// <param name="value">
-            /// The value to locate in the ImmutableSortedMap&lt;TKey,TValue&gt;.
+            /// The value to locate in the <see cref="ImmutableDictionary{TKey, TValue}"/>.
             /// The value can be null for reference types.
             /// </param>
             /// <returns>
-            /// true if the ImmutableSortedMap&lt;TKey,TValue&gt; contains
+            /// true if the <see cref="ImmutableDictionary{TKey, TValue}"/> contains
             /// an element with the specified value; otherwise, false.
             /// </returns>
             [Pure]

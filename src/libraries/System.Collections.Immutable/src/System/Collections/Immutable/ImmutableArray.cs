@@ -398,9 +398,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Searches an entire one-dimensional sorted System.Array for a specific element,
+        /// Searches an entire one-dimensional sorted <see cref="ImmutableArray{T}"/> for a specific element,
         /// using the <see cref="IComparable{T}"/> generic interface implemented by each element
-        /// of the System.Array and by the specified object.
+        /// of the <see cref="ImmutableArray{T}"/> and by the specified object.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="array">The sorted, one-dimensional array to search.</param>
@@ -425,7 +425,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Searches an entire one-dimensional sorted System.Array for a value using
+        /// Searches an entire one-dimensional sorted <see cref="ImmutableArray{T}"/> for a value using
         /// the specified <see cref="IComparer{T}"/> generic interface.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
@@ -456,9 +456,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Searches a range of elements in a one-dimensional sorted System.Array for
+        /// Searches a range of elements in a one-dimensional sorted <see cref="ImmutableArray{T}"/> for
         /// a value, using the <see cref="IComparable{T}"/> generic interface implemented by
-        /// each element of the System.Array and by the specified value.
+        /// each element of the <see cref="ImmutableArray{T}"/> and by the specified value.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="array">The sorted, one-dimensional array to search.</param>
@@ -485,7 +485,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Searches a range of elements in a one-dimensional sorted System.Array for
+        /// Searches a range of elements in a one-dimensional sorted <see cref="ImmutableArray{T}"/> for
         /// a value, using the specified <see cref="IComparer{T}"/> generic
         /// interface.
         /// </summary>
