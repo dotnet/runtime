@@ -10,7 +10,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <summary>
-    /// A set of initialization methods for instances of <see cref="ImmutableDictionary{TKey, TValue}" />.
+    /// A set of initialization methods for instances of <see cref="ImmutableDictionary{TKey, TValue}"/>.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public static class ImmutableDictionary

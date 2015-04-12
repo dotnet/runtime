@@ -409,7 +409,7 @@ namespace System.Collections.Immutable
             /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
             /// </summary>
             /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
-            /// <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+            /// <param name="index">The zero-based index in <paramref name="array"/> at which copying begins.</param>
             void ICollection.CopyTo(Array array, int index)
             {
                 this.Root.CopyTo(array, index, this.Count);
