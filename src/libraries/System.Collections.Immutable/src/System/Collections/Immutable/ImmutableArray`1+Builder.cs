@@ -659,7 +659,7 @@ namespace System.Collections.Immutable
             public void Sort(int index, int count, IComparer<T> comparer)
             {
                 // Don't rely on Array.Sort's argument validation since our internal array may exceed
-                // the bounds of the publically addressable region.
+                // the bounds of the publicly addressable region.
                 Requires.Range(index >= 0, "index");
                 Requires.Range(count >= 0 && index + count <= this.Count, "count");
 

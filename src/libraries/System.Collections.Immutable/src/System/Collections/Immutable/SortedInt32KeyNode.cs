@@ -233,11 +233,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Freezes this node and all descendent nodes so that any mutations require a new instance of the nodes.
+        /// Freezes this node and all descendant nodes so that any mutations require a new instance of the nodes.
         /// </summary>
         internal void Freeze(Action<KeyValuePair<int, TValue>> freezeAction = null)
         {
-            // If this node is frozen, all its descendents must already be frozen.
+            // If this node is frozen, all its descendants must already be frozen.
             if (!_frozen)
             {
                 if (freezeAction != null)
@@ -779,7 +779,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Pushes this node and all its Left descendents onto the stack.
+            /// Pushes this node and all its Left descendants onto the stack.
             /// </summary>
             /// <param name="node">The starting node to push onto the stack.</param>
             private void PushLeft(SortedInt32KeyNode<TValue> node)
