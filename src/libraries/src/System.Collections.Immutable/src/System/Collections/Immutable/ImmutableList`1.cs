@@ -2461,9 +2461,8 @@ namespace System.Collections.Immutable
             /// </param>
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
-            /// The zero-based index of the first occurrence of item within the range of
-            /// elements in the <see cref="ImmutableList{T}"/> that starts at index and
-            /// contains count number of elements, if found; otherwise, -1.
+            /// The zero-based index of the first occurrence of <paramref name="item"/> within the entire
+            /// <see cref="ImmutableList{T}"/>, if found; otherwise, -1.
             /// </returns>
             [Pure]
             internal int IndexOf(T item, IEqualityComparer<T> equalityComparer)

@@ -445,7 +445,7 @@ namespace System.Collections.Immutable
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
+        /// <paramref name="comparer"/> is null, <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
@@ -477,6 +477,12 @@ namespace System.Collections.Immutable
         /// <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="index"/> and <paramref name="length"/> do not specify a valid range in <paramref name="array"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is less than the lower bound of <paramref name="array"/>. -or- <paramref name="length"/> is less than zero.
         /// </exception>
         [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value)
