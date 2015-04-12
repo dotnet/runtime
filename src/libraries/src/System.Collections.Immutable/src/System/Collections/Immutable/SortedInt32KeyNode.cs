@@ -16,10 +16,10 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <remarks>
     /// This is a trimmed down version of <see cref="ImmutableSortedDictionary{TKey, TValue}.Node"/>
-    /// with TKey fixed to be Int32.  This avoids multiple interface-based dispatches while examining
-    /// each node in the tree during a lookup: an interface call to the comparer's Compare method,
-    /// and then an interface call to Int32's IComparable's CompareTo method as part of
-    /// the GenericComparer{Int32}'s Compare implementation.
+    /// with <c>TKey</c> fixed to be <see cref="int"/>.  This avoids multiple interface-based dispatches while examining
+    /// each node in the tree during a lookup: an interface call to the comparer's <see cref="IComparer{T}.Compare"/> method,
+    /// and then an interface call to <see cref="int"/>'s <see cref="IComparable{T}.CompareTo"/> method as part of
+    /// the <see cref="T:System.Collections.Generic.GenericComparer`1"/>'s <see cref="IComparer{T}.Compare"/> implementation.
     /// </remarks>
     [DebuggerDisplay("{_key} = {_value}")]
     internal sealed class SortedInt32KeyNode<TValue> : IBinaryTree
