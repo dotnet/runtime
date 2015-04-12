@@ -469,6 +469,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		int num = decode_value (p, &p);
 		gboolean has_container = decode_value (p, &p);
 		MonoTypeEnum gshared_constraint = 0;
+		char *par_name = NULL;
 
 		if (has_container) {
 			gboolean is_method = decode_value (p, &p);
@@ -492,6 +493,15 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 			}
 		} else {
 			gshared_constraint = decode_value (p, &p);
+			if (gshared_constraint) {
+				int len = decode_value (p, &p);
+				if (len) {
+					par_name = mono_image_alloc (module->assembly->image, len + 1);
+					memcpy (par_name, p, len);
+					p += len;
+					par_name [len] = '\0';
+				}
+			}
 		}
 
 		t = g_new0 (MonoType, 1);
@@ -507,6 +517,8 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 			// FIXME:
 			par->image = mono_defaults.corlib;
 			t->data.generic_param = par;
+			if (par_name)
+				((MonoGenericParamFull*)par)->info.name = par_name;
 		}
 
 		// FIXME: Maybe use types directly to avoid
