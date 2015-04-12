@@ -1085,7 +1085,7 @@ namespace System.Collections.Immutable
         /// Bulk adds entries to the map.
         /// </summary>
         /// <param name="pairs">The entries to add.</param>
-        /// <param name="avoidToHashMap"><c>true</c> when being called from ToHashMap to avoid <see cref="T:System.StackOverflowException"/>.</param>
+        /// <param name="avoidToHashMap"><c>true</c> when being called from <see cref="WithComparers(IEqualityComparer{TKey}, IEqualityComparer{TValue})"/> to avoid <see cref="T:System.StackOverflowException"/>.</param>
         [Pure]
         private ImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs, bool avoidToHashMap)
         {

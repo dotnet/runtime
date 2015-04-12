@@ -8,7 +8,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <summary>
-    /// A thin wrapper around the Keys or Values enumerators so they look like a collection.
+    /// A thin wrapper around the <see cref="IDictionary{TKey, TValue}.Keys"/> or <see cref="IDictionary{TKey, TValue}.Values"/> enumerators so they look like a collection.
     /// </summary>
     /// <typeparam name="TKey">The type of key in the dictionary.</typeparam>
     /// <typeparam name="TValue">The type of value in the dictionary.</typeparam>

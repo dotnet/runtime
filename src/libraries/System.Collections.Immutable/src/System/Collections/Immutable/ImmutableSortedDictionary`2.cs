@@ -814,7 +814,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The entries to add.</param>
         /// <param name="overwriteOnCollision"><c>true</c> to allow the <paramref name="items"/> sequence to include duplicate keys and let the last one win; <c>false</c> to throw on collisions.</param>
-        /// <param name="avoidToSortedMap"><c>true</c> when being called from ToHashMap to avoid <see cref="T:System.StackOverflowException"/>.</param>
+        /// <param name="avoidToSortedMap"><c>true</c> when being called from <see cref="WithComparers(IComparer{TKey}, IEqualityComparer{TValue})"/> to avoid <see cref="T:System.StackOverflowException"/>.</param>
         [Pure]
         private ImmutableSortedDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items, bool overwriteOnCollision, bool avoidToSortedMap)
         {

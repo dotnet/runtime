@@ -11,17 +11,17 @@ namespace System.Collections.Immutable
     public partial class ImmutableHashSet<T>
     {
         /// <summary>
-        /// Interpretations for a count member.
+        /// Interpretations for a <see cref="MutationResult.Count"/> member.
         /// </summary>
         private enum CountType
         {
             /// <summary>
-            /// The count member describes an adjustment to the previous count of the collection.
+            /// The <see cref="MutationResult.Count"/> member describes an adjustment to the previous count of the collection.
             /// </summary>
             Adjustment,
 
             /// <summary>
-            /// The count member describes the actual count of the collection.
+            /// The <see cref="MutationResult.Count"/> member describes the actual count of the collection.
             /// </summary>
             FinalValue,
         }
