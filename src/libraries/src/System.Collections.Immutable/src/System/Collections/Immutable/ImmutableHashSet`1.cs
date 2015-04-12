@@ -1017,7 +1017,7 @@ namespace System.Collections.Immutable
         /// Bulk adds entries to the set.
         /// </summary>
         /// <param name="items">The entries to add.</param>
-        /// <param name="avoidWithComparer"><c>true</c> when being called from ToHashSet to avoid StackOverflow.</param>
+        /// <param name="avoidWithComparer"><c>true</c> when being called from ToHashSet to avoid <see cref="T:System.StackOverflowException"/>.</param>
         [Pure]
         private ImmutableHashSet<T> Union(IEnumerable<T> items, bool avoidWithComparer)
         {
