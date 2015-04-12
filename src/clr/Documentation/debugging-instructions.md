@@ -1,3 +1,6 @@
+Debugging CoreCLR
+=================
+
 These instructions will lead you through debugging CoreCLR on Windows. They will be expanded to support Linux and OS X when we have good instructions for that.
 
 Debugging CoreCLR
