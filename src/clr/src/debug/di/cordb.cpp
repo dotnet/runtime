@@ -487,7 +487,7 @@ CLRRuntimeHostInternal_GetImageVersionString(
     DWORD *pcchBuffer)
 {
     // Construct the cannoncial version string we're built as - eg. "v4.0.1234"
-    const WCHAR k_wszBuiltFor[] = W("v")VER_PRODUCTVERSION_NO_QFE_STR_L;
+    const WCHAR k_wszBuiltFor[] = W("v") VER_PRODUCTVERSION_NO_QFE_STR_L;
 
     // Copy our buffer in
     HRESULT hr = HRESULT_FROM_WIN32(wcscpy_s(wszBuffer, *pcchBuffer, k_wszBuiltFor));
