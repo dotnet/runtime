@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
         internal T[] array;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray"/> struct
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct
         /// *without making a defensive copy*.
         /// </summary>
         /// <param name="items">The array to use. May be null for "default" arrays.</param>
