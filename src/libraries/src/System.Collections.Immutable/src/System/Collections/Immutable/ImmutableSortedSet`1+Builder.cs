@@ -127,7 +127,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            ///  Gets or sets the <see cref="IComparer{T}"/> object that is used to determine equality for the values in the System.Collections.Generic.SortedSet&lt;T&gt;.
+            ///  Gets or sets the <see cref="IComparer{T}"/> object that is used to determine equality for the values in the <see cref="ImmutableSortedSet{T}"/>.
             /// </summary>
             /// <value>The comparer that is used to determine equality for the values in the set.</value>
             /// <remarks>
@@ -413,7 +413,7 @@ namespace System.Collections.Immutable
             /// collection in reverse order.
             /// </summary>
             /// <returns>
-            /// An enumerator that iterates over the System.Collections.Generic.SortedSet&lt;T&gt;
+            /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}.Builder"/>
             /// in reverse order.
             /// </returns>
             [Pure]

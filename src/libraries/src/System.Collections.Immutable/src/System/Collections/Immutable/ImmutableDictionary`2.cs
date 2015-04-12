@@ -489,15 +489,15 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the ImmutableSortedMap&lt;TKey,TValue&gt;
+        /// Determines whether the <see cref="ImmutableDictionary{TKey, TValue}"/>
         /// contains an element with the specified value.
         /// </summary>
         /// <param name="value">
-        /// The value to locate in the ImmutableSortedMap&lt;TKey,TValue&gt;.
+        /// The value to locate in the <see cref="ImmutableDictionary{TKey, TValue}"/>.
         /// The value can be null for reference types.
         /// </param>
         /// <returns>
-        /// true if the ImmutableSortedMap&lt;TKey,TValue&gt; contains
+        /// true if the <see cref="ImmutableDictionary{TKey, TValue}"/> contains
         /// an element with the specified value; otherwise, false.
         /// </returns>
         [Pure]
@@ -529,7 +529,7 @@ namespace System.Collections.Immutable
         #region IImmutableDictionary<TKey,TValue> Methods
 
         /// <summary>
-        /// See the IImmutableMap{TKey,TValue} interface
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Add(TKey key, TValue value)
@@ -538,7 +538,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the IImmutableMap{TKey,TValue} interface
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.SetItem(TKey key, TValue value)
@@ -557,7 +557,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the IImmutableMap{TKey,TValue} interface
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
@@ -566,7 +566,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the IImmutableMap{TKey,TValue} interface
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.RemoveRange(IEnumerable<TKey> keys)
@@ -575,7 +575,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the IImmutableMap{TKey,TValue} interface
+        /// See the <see cref="IImmutableDictionary{TKey, TValue}"/> interface
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableDictionary<TKey, TValue> IImmutableDictionary<TKey, TValue>.Remove(TKey key)
@@ -1095,7 +1095,7 @@ namespace System.Collections.Immutable
             // Some optimizations may apply if we're an empty list.
             if (this.IsEmpty && !avoidToHashMap)
             {
-                // If the items being added actually come from an ImmutableHashMap<TKey, TValue>
+                // If the items being added actually come from an ImmutableDictionary<TKey, TValue>
                 // then there is no value in reconstructing it.
                 ImmutableDictionary<TKey, TValue> other;
                 if (TryCastToImmutableMap(pairs, out other))

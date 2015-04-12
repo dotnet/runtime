@@ -1597,7 +1597,7 @@ namespace System.Collections.Immutable
         /// Throws an <see cref="InvalidOperationException"/> if the array field is null, ie. the
         /// <see cref="IsDefault"/> property returns true.  The
         /// <see cref="InvalidOperationException"/> message specifies that the operation cannot be performed
-        /// on a default instance of ImmutableArray.
+        /// on a default instance of <see cref="ImmutableArray{T}"/>.
         /// 
         /// This is intended for explicitly implemented interface method and property implementations.
         /// </summary>

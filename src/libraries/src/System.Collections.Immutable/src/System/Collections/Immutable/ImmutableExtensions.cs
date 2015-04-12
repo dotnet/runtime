@@ -312,7 +312,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Wraps a List{T} as an ordered collection.
+        /// Wraps a <see cref="IList{T}"/> as an ordered collection.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
         private class ListOfTWrapper<T> : IOrderedCollection<T>
@@ -372,7 +372,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Wraps any IEnumerable as an ordered, indexable list.
+        /// Wraps any <see cref="IEnumerable{T}"/> as an ordered, indexable list.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
         private class FallbackWrapper<T> : IOrderedCollection<T>

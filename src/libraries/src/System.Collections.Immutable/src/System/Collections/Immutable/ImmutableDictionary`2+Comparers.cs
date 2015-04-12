@@ -7,7 +7,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner HashBucketComparer class.
+    /// Contains the inner <see cref="ImmutableDictionary{TKey, TValue}.Comparers"/> class.
     /// </content>
     public sealed partial class ImmutableDictionary<TKey, TValue>
     {
