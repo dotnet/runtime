@@ -597,7 +597,7 @@ namespace System.Collections.Immutable
             /// Gets the value for a given key if a matching key exists in the dictionary.
             /// </summary>
             /// <param name="key">The key to search for.</param>
-            /// <returns>The value for the key, or <c>default(TValue)</c> if no matching key was found.</returns>
+            /// <returns>The value for the key, or the default value for type <typeparamref name="TValue"/> if no matching key was found.</returns>
             [Pure]
             public TValue GetValueOrDefault(TKey key)
             {

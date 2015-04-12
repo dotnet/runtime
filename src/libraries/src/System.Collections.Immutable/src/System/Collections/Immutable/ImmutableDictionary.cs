@@ -306,7 +306,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="dictionary">The dictionary to retrieve the value from.</param>
         /// <param name="key">The key to search for.</param>
-        /// <returns>The value for the key, or <c>default(TValue)</c> if no matching key was found.</returns>
+        /// <returns>The value for the key, or the default value of type <typeparamref name="TValue"/> if no matching key was found.</returns>
         [Pure]
         public static TValue GetValueOrDefault<TKey, TValue>(this IImmutableDictionary<TKey, TValue> dictionary, TKey key)
         {
