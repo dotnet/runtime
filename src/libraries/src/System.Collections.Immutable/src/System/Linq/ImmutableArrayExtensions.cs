@@ -734,7 +734,7 @@ namespace System.Linq
         #endregion
 
         #region Private Implementation Details
-        /// <summary>Provides the core iterator implementation of SelectMany.</summary>
+        /// <summary>Provides the core iterator implementation of <see cref="SelectMany"/>.</summary>
         private static IEnumerable<TResult> SelectManyIterator<TSource, TCollection, TResult>(
             this ImmutableArray<TSource> immutableArray,
             Func<TSource, IEnumerable<TCollection>> collectionSelector,

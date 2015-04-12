@@ -94,7 +94,7 @@ namespace System.Collections.Immutable
         /// <param name="count">The number of elements in the sequence.</param>
         /// <returns>The array.</returns>
         /// <remarks>
-        /// This is more efficient than the Enumerable.ToArray{T} extension method
+        /// This is more efficient than the <see cref="Enumerable.ToArray{TSource}"/> extension method
         /// because that only tries to cast the sequence to <see cref="ICollection{T}"/> to determine
         /// the count before it falls back to reallocating arrays as it enumerates.
         /// </remarks>
@@ -270,10 +270,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Clears the specified stack.  For empty stacks, it avoids the call to Clear, which
-        /// avoids a call into the runtime's implementation of Array.Clear, helping performance,
-        /// in particular around inlining.  Stack.Count typically gets inlined by today's JIT, while
-        /// stack.Clear and Array.Clear typically don't.
+        /// Clears the specified stack.  For empty stacks, it avoids the call to <see cref="Stack{T}.Clear"/>, which
+        /// avoids a call into the runtime's implementation of <see cref="Array.Clear"/>, helping performance,
+        /// in particular around inlining.  <see cref="Stack{T}.Count"/> typically gets inlined by today's JIT, while
+        /// <see cref="Stack{T}.Clear"/> and <see cref="Array.Clear"/> typically don't.
         /// </summary>
         /// <typeparam name="T">Specifies the type of data in the stack to be cleared.</typeparam>
         /// <param name="stack">The stack to clear.</param>

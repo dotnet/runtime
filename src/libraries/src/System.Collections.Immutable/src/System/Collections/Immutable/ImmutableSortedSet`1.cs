@@ -17,7 +17,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     /// <devremarks>
     /// We implement <see cref="IReadOnlyList{T}"/> because it adds an ordinal indexer.
-    /// We implement <see cref="IList{T}"/> because it gives us IndexOf(T), which is important for some folks.
+    /// We implement <see cref="IList{T}"/> because it gives us <see cref="IList{T}.IndexOf"/>, which is important for some folks.
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableSortedSetDebuggerProxy<>))]
