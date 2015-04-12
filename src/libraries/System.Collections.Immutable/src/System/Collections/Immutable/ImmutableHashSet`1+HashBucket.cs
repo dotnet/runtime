@@ -223,7 +223,7 @@ namespace System.Collections.Immutable
                 private Position _currentPosition;
 
                 /// <summary>
-                /// The enumerator that represents the current position over the additionalValues of the <see cref="HashBucket"/>.
+                /// The enumerator that represents the current position over the <see cref="_additionalElements"/> of the <see cref="HashBucket"/>.
                 /// </summary>
                 private ImmutableList<T>.Enumerator _additionalEnumerator;
 
@@ -250,12 +250,12 @@ namespace System.Collections.Immutable
                     BeforeFirst,
 
                     /// <summary>
-                    /// We're at the firstValue of the containing bucket.
+                    /// We're at the <see cref="_firstValue"/> of the containing bucket.
                     /// </summary>
                     First,
 
                     /// <summary>
-                    /// We're enumerating the additionalValues in the bucket.
+                    /// We're enumerating the <see cref="_additionalElements"/> in the bucket.
                     /// </summary>
                     Additional,
 

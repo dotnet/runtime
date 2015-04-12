@@ -27,7 +27,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <value>
             /// -1 before the first call to <see cref="MoveNext"/>.
-            /// >= this.array.Length after MoveNext returns false.
+            /// >= this.array.Length after <see cref="MoveNext"/> returns false.
             /// </value>
             private int _index;
 

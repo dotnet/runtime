@@ -68,10 +68,10 @@ namespace System.Collections.Immutable
         /// The zero-based index of item in the sorted <see cref="ImmutableList{T}"/>,
         /// if item is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than item or, if there is
-        /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
+        /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        /// The default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default cannot
+        /// The default comparer <see cref="Comparer{T}.Default"/> cannot
         /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
         /// the <see cref="IComparable"/> interface for type T.
         /// </exception>
@@ -87,16 +87,16 @@ namespace System.Collections.Immutable
         /// <param name="item">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">
         /// The <see cref="IComparer{T}"/> implementation to use when comparing
-        /// elements.-or-null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+        /// elements.-or-null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>
         /// The zero-based index of item in the sorted <see cref="ImmutableList{T}"/>,
         /// if item is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than item or, if there is
-        /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
+        /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        /// comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
+        /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>
@@ -115,13 +115,13 @@ namespace System.Collections.Immutable
         /// <param name="item">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">
         /// The <see cref="IComparer{T}"/> implementation to use when comparing
-        /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+        /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>
         /// The zero-based index of item in the sorted <see cref="ImmutableList{T}"/>,
         /// if item is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than item or, if there is
-        /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
+        /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// index is less than 0.-or-count is less than 0.
@@ -130,7 +130,7 @@ namespace System.Collections.Immutable
         /// index and count do not denote a valid range in the <see cref="ImmutableList{T}"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
+        /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>
@@ -536,7 +536,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="comparer">
         /// The <see cref="IComparer{T}"/> implementation to use when comparing
-        /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+        /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>The sorted list.</returns>
         [Pure]
@@ -559,7 +559,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <param name="comparer">
         /// The <see cref="IComparer{T}"/> implementation to use when comparing
-        /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+        /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>The sorted list.</returns>
         [Pure]
@@ -2328,7 +2328,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="comparer">
             /// The <see cref="IComparer{T}"/> implementation to use when comparing
-            /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+            /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>The sorted list.</returns>
             internal Node Sort(IComparer<T> comparer)
@@ -2350,7 +2350,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <param name="comparer">
             /// The <see cref="IComparer{T}"/> implementation to use when comparing
-            /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+            /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>The sorted list.</returns>
             internal Node Sort(int index, int count, IComparer<T> comparer)
@@ -2377,13 +2377,13 @@ namespace System.Collections.Immutable
             /// <param name="item">The object to locate. The value can be null for reference types.</param>
             /// <param name="comparer">
             /// The <see cref="IComparer{T}"/> implementation to use when comparing
-            /// elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
+            /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>
             /// The zero-based index of item in the sorted <see cref="ImmutableList{T}"/>,
             /// if item is found; otherwise, a negative number that is the bitwise complement
             /// of the index of the next element that is larger than item or, if there is
-            /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
+            /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
             /// </returns>
             /// <exception cref="ArgumentOutOfRangeException">
             /// index is less than 0.-or-count is less than 0.
@@ -2392,7 +2392,7 @@ namespace System.Collections.Immutable
             /// index and count do not denote a valid range in the <see cref="ImmutableList{T}"/>.
             /// </exception>
             /// <exception cref="InvalidOperationException">
-            /// comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
+            /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
             /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
             /// or the <see cref="IComparable"/> interface for type T.
             /// </exception>
