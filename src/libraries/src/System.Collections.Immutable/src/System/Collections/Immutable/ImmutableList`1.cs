@@ -73,7 +73,7 @@ namespace System.Collections.Immutable
         /// <exception cref="InvalidOperationException">
         /// The default comparer <see cref="Comparer{T}.Default"/> cannot
         /// find an implementation of the <see cref="IComparable{T}"/> generic interface or
-        /// the <see cref="IComparable"/> interface for type T.
+        /// the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
         public int BinarySearch(T item)
         {
@@ -98,7 +98,7 @@ namespace System.Collections.Immutable
         /// <exception cref="InvalidOperationException">
         /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
-        /// or the <see cref="IComparable"/> interface for type T.
+        /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
         public int BinarySearch(T item, IComparer<T> comparer)
         {
@@ -132,7 +132,7 @@ namespace System.Collections.Immutable
         /// <exception cref="InvalidOperationException">
         /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
-        /// or the <see cref="IComparable"/> interface for type T.
+        /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
         /// </exception>
         public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
         {
@@ -720,7 +720,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The first element that matches the conditions defined by the specified predicate,
-        /// if found; otherwise, the default value for type T.
+        /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
         public T Find(Predicate<T> match)
         {
@@ -819,7 +819,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The last element that matches the conditions defined by the specified predicate,
-        /// if found; otherwise, the default value for type T.
+        /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
         public T FindLast(Predicate<T> match)
         {
@@ -2394,7 +2394,7 @@ namespace System.Collections.Immutable
             /// <exception cref="InvalidOperationException">
             /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
             /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
-            /// or the <see cref="IComparable"/> interface for type T.
+            /// or the <see cref="IComparable"/> interface for type <typeparamref name="T"/>.
             /// </exception>
             internal int BinarySearch(int index, int count, T item, IComparer<T> comparer)
             {
@@ -2747,7 +2747,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The first element that matches the conditions defined by the specified predicate,
-            /// if found; otherwise, the default value for type T.
+            /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
             internal T Find(Predicate<T> match)
             {
@@ -2895,7 +2895,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The last element that matches the conditions defined by the specified predicate,
-            /// if found; otherwise, the default value for type T.
+            /// if found; otherwise, the default value for type <typeparamref name="T"/>.
             /// </returns>
             internal T FindLast(Predicate<T> match)
             {

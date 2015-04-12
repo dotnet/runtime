@@ -1081,7 +1081,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="TResult">The type to filter the elements of the sequence on.</typeparam>
         /// <returns>
         /// An <see cref="IEnumerable{T}"/> that contains elements from
-        /// the input sequence of type TResult.
+        /// the input sequence of type <typeparamref name="TResult"/>.
         /// </returns>
         [Pure]
         public IEnumerable<TResult> OfType<TResult>()
