@@ -67,9 +67,9 @@ namespace System.Collections.Immutable
         /// The equality comparer to use in the search.
         /// </param>
         /// <returns>
-        /// The zero-based index of the last occurrence of item within the range of elements
-        /// in the <see cref="ImmutableList{T}"/> that contains count number of elements
-        /// and ends at index, if found; otherwise, -1.
+        /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements
+        /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
+        /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
         int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer);

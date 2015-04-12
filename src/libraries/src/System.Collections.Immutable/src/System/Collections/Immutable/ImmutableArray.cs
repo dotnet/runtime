@@ -406,15 +406,15 @@ namespace System.Collections.Immutable
         /// <param name="array">The sorted, one-dimensional array to search.</param>
         /// <param name="value">The object to search for.</param>
         /// <returns>
-        /// The index of the specified value in the specified array, if value is found.
-        /// If value is not found and value is less than one or more elements in array,
+        /// The index of the specified <paramref name="value"/> in the specified array, if <paramref name="value"/> is found.
+        /// If <paramref name="value"/> is not found and <paramref name="value"/> is less than one or more elements in array,
         /// a negative number which is the bitwise complement of the index of the first
-        /// element that is larger than value. If value is not found and value is greater
+        /// element that is larger than <paramref name="value"/>. If <paramref name="value"/> is not found and <paramref name="value"/> is greater
         /// than any of the elements in array, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// value does not implement the <see cref="IComparable{T}"/> generic interface, and
+        /// <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
@@ -437,15 +437,15 @@ namespace System.Collections.Immutable
         /// element.
         /// </param>
         /// <returns>
-        /// The index of the specified value in the specified array, if value is found.
-        /// If value is not found and value is less than one or more elements in array,
+        /// The index of the specified <paramref name="value"/> in the specified array, if <paramref name="value"/> is found.
+        /// If <paramref name="value"/> is not found and <paramref name="value"/> is less than one or more elements in array,
         /// a negative number which is the bitwise complement of the index of the first
-        /// element that is larger than value. If value is not found and value is greater
+        /// element that is larger than <paramref name="value"/>. If <paramref name="value"/> is not found and <paramref name="value"/> is greater
         /// than any of the elements in array, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// value does not implement the <see cref="IComparable{T}"/> generic interface, and
+        /// <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
@@ -466,15 +466,15 @@ namespace System.Collections.Immutable
         /// <param name="length">The length of the range to search.</param>
         /// <param name="value">The object to search for.</param>
         /// <returns>
-        /// The index of the specified value in the specified array, if value is found.
-        /// If value is not found and value is less than one or more elements in array,
+        /// The index of the specified <paramref name="value"/> in the specified <paramref name="array"/>, if <paramref name="value"/> is found.
+        /// If <paramref name="value"/> is not found and <paramref name="value"/> is less than one or more elements in <paramref name="array"/>,
         /// a negative number which is the bitwise complement of the index of the first
-        /// element that is larger than value. If value is not found and value is greater
-        /// than any of the elements in array, a negative number which is the bitwise
+        /// element that is larger than <paramref name="value"/>. If <paramref name="value"/> is not found and <paramref name="value"/> is greater
+        /// than any of the elements in <paramref name="array"/>, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// value does not implement the <see cref="IComparable{T}"/> generic interface, and
+        /// <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic interface, and
         /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
@@ -500,24 +500,24 @@ namespace System.Collections.Immutable
         /// element.
         /// </param>
         /// <returns>
-        /// The index of the specified value in the specified array, if value is found.
-        /// If value is not found and value is less than one or more elements in array,
+        /// The index of the specified <paramref name="value"/> in the specified <paramref name="array"/>, if <paramref name="value"/> is found.
+        /// If <paramref name="value"/> is not found and <paramref name="value"/> is less than one or more elements in <paramref name="array"/>,
         /// a negative number which is the bitwise complement of the index of the first
-        /// element that is larger than value. If value is not found and value is greater
-        /// than any of the elements in array, a negative number which is the bitwise
+        /// element that is larger than <paramref name="value"/>. If <paramref name="value"/> is not found and <paramref name="value"/> is greater
+        /// than any of the elements in <paramref name="array"/>, a negative number which is the bitwise
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// comparer is null, value does not implement the <see cref="IComparable{T}"/> generic
+        /// <paramref name="comparer"/> is null, <paramref name="value"/> does not implement the <see cref="IComparable{T}"/> generic
         /// interface, and the search encounters an element that does not implement the
         /// <see cref="IComparable{T}"/> generic interface.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// index and length do not specify a valid range in array.-or-comparer is null,
-        /// and value is of a type that is not compatible with the elements of array.
+        /// <paramref name="index"/> and <paramref name="length"/> do not specify a valid range in <paramref name="array"/>.-or-<paramref name="comparer"/> is null,
+        /// and <paramref name="value"/> is of a type that is not compatible with the elements of <paramref name="array"/>.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// index is less than the lower bound of array. -or- length is less than zero.
+        /// <paramref name="index"/> is less than the lower bound of <paramref name="array"/>. -or- <paramref name="length"/> is less than zero.
         /// </exception>
         [Pure]
         public static int BinarySearch<T>(this ImmutableArray<T> array, int index, int length, T value, IComparer<T> comparer)
