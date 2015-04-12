@@ -51,7 +51,7 @@ namespace System.Linq
         /// <returns>
         /// An <see cref="IEnumerable{T}"/> whose elements are the result
         /// of invoking the one-to-many transform function <paramref name="collectionSelector"/> on each
-        /// element of source and then mapping each of those sequence elements and their
+        /// element of <paramref name="immutableArray"/> and then mapping each of those sequence elements and their
         /// corresponding source element to a result element.
         /// </returns>
         [Pure]
