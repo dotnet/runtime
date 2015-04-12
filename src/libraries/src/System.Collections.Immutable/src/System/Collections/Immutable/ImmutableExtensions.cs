@@ -204,7 +204,7 @@ namespace System.Collections.Immutable
             }
             else
             {
-                // We have to fallback to doing it manually since the underlying collection
+                // We have to fall back to doing it manually since the underlying collection
                 // being compared isn't a (matching) generic type.
                 using (var enumerator = sequence1.GetEnumerator())
                 {

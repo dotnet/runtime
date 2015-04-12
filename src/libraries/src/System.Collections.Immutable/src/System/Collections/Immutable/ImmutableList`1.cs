@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -1366,7 +1366,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Returns the Root <see cref="Node"/> of the list
+        /// Returns the root <see cref="Node"/> of the list
         /// </summary>
         internal Node Root
         {
@@ -1746,7 +1746,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Pushes this node and all its Left descendents onto the stack.
+            /// Pushes this node and all its Left descendants onto the stack.
             /// </summary>
             /// <param name="node">The starting node to push onto the stack.</param>
             private void PushNext(Node node)
@@ -1800,7 +1800,7 @@ namespace System.Collections.Immutable
             /// <remarks>
             /// If this node would benefit from saving 4 bytes, we could have only a few nodes 
             /// scattered throughout the graph actually record the count of nodes beneath them.
-            /// Those without the count could query their descendents, which would often short-circuit
+            /// Those without the count could query their descendants, which would often short-circuit
             /// when they hit a node that *does* include a count field.
             /// </remarks>
             private int _count;
@@ -2421,8 +2421,8 @@ namespace System.Collections.Immutable
                 }
 
                 // We're definitely in the caller's designated range now. 
-                // Any possible match will be a descendent of this node (or this immediate one).
-                // Some descendents may not be in range, but if we hit any it means no match was found,
+                // Any possible match will be a descendant of this node (or this immediate one).
+                // Some descendants may not be in range, but if we hit any it means no match was found,
                 // and a negative response would come back from the above code to the below code.
                 int compare = comparer.Compare(item, _key);
                 if (compare == 0)
@@ -3008,11 +3008,11 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Freezes this node and all descendent nodes so that any mutations require a new instance of the nodes.
+            /// Freezes this node and all descendant nodes so that any mutations require a new instance of the nodes.
             /// </summary>
             internal void Freeze()
             {
-                // If this node is frozen, all its descendents must already be frozen.
+                // If this node is frozen, all its descendants must already be frozen.
                 if (!_frozen)
                 {
                     _left.Freeze();

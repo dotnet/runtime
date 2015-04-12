@@ -1321,7 +1321,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Pushes this node and all its Left (or Right, if reversed) descendents onto the stack.
+            /// Pushes this node and all its Left (or Right, if reversed) descendants onto the stack.
             /// </summary>
             /// <param name="node">The starting node to push onto the stack.</param>
             private void PushNext(Node node)
@@ -1415,7 +1415,7 @@ namespace System.Collections.Immutable
             /// <remarks>
             /// If this node would benefit from saving 4 bytes, we could have only a few nodes 
             /// scattered throughout the graph actually record the count of nodes beneath them.
-            /// Those without the count could query their descendents, which would often short-circuit
+            /// Those without the count could query their descendants, which would often short-circuit
             /// when they hit a node that *does* include a count field.
             /// </remarks>
             private int _count;
@@ -1863,11 +1863,11 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Freezes this node and all descendent nodes so that any mutations require a new instance of the nodes.
+            /// Freezes this node and all descendant nodes so that any mutations require a new instance of the nodes.
             /// </summary>
             internal void Freeze()
             {
-                // If this node is frozen, all its descendents must already be frozen.
+                // If this node is frozen, all its descendants must already be frozen.
                 if (!_frozen)
                 {
                     _left.Freeze();
