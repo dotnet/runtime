@@ -472,7 +472,7 @@ namespace System.Collections.Immutable
             /// Gets the value for a given key if a matching key exists in the dictionary.
             /// </summary>
             /// <param name="key">The key to search for.</param>
-            /// <returns>The value for the key, or <c>default(TValue)</c> if no matching key was found.</returns>
+            /// <returns>The value for the key, or the default value of type <typeparamref name="TValue"/> if no matching key was found.</returns>
             [Pure]
             public TValue GetValueOrDefault(TKey key)
             {
@@ -598,7 +598,7 @@ namespace System.Collections.Immutable
             /// Gets the value associated with the specified key.
             /// </summary>
             /// <param name="key">The key whose value to get.</param>
-            /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value for the type of the <paramref name="value"/> parameter. This parameter is passed uninitialized.</param>
+            /// <param name="value">When this method returns, the value associated with the specified key, if the key is found; otherwise, the default value of the type <typeparamref name="TValue"/>. This parameter is passed uninitialized.</param>
             /// <returns>
             /// true if the object that implements <see cref="IDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, false.
             /// </returns>

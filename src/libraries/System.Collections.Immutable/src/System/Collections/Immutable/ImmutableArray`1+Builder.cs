@@ -87,7 +87,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <remarks>
             /// If the value is decreased, the array contents are truncated.
-            /// If the value is increased, the added elements are initialized to <c>default(T)</c>.
+            /// If the value is increased, the added elements are initialized to the default value of type <typeparamref name="T"/>.
             /// </remarks>
             public int Count
             {
