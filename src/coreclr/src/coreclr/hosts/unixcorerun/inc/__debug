@@ -1,0 +1,16 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
+// This file exists in order to work around an issue with the XCode 6.3 SDK.
+// Some of the system headers that unixcorerun references try to include a 
+// __debug header which does not exist. This provides a dummy implementation
+// of that header so we don't get build errors.
+
+// This will be removed once an updated SDK is available.
+
+#ifndef _LIBCPP_ASSERT
+#define _LIBCPP_ASSERT(x, m) ((void)0)
+#endif
+
