@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner HashBucket struct.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.HashBucket"/> struct.
     /// </content>
     public partial class ImmutableHashSet<T>
     {
@@ -80,8 +80,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="value">The value.</param>
             /// <param name="valueComparer">The value comparer.</param>
-            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
-            /// <returns>A new HashBucket that contains the added value and any values already held by this hashbucket.</returns>
+            /// <param name="result">A description of the effect was on adding an element to this <see cref="HashBucket"/>.</param>
+            /// <returns>A new <see cref="HashBucket"/> that contains the added value and any values already held by this <see cref="HashBucket"/>.</returns>
             internal HashBucket Add(T value, IEqualityComparer<T> valueComparer, out OperationResult result)
             {
                 if (this.IsEmpty)
@@ -101,7 +101,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Determines whether the HashBucket contains the specified value.
+            /// Determines whether the <see cref="HashBucket"/> contains the specified value.
             /// </summary>
             /// <param name="value">The value.</param>
             /// <param name="valueComparer">The value comparer.</param>
@@ -151,8 +151,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="value">The value.</param>
             /// <param name="equalityComparer">The equality comparer.</param>
-            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
-            /// <returns>A new HashBucket that does not contain the removed value and any values already held by this hashbucket.</returns>
+            /// <param name="result">A description of the effect was on adding an element to this <see cref="HashBucket"/>.</param>
+            /// <returns>A new <see cref="HashBucket"/> that does not contain the removed value and any values already held by this <see cref="HashBucket"/>.</returns>
             internal HashBucket Remove(T value, IEqualityComparer<T> equalityComparer, out OperationResult result)
             {
                 if (this.IsEmpty)
@@ -223,7 +223,7 @@ namespace System.Collections.Immutable
                 private Position _currentPosition;
 
                 /// <summary>
-                /// The enumerator that represents the current position over the additionalValues of the HashBucket.
+                /// The enumerator that represents the current position over the additionalValues of the <see cref="HashBucket"/>.
                 /// </summary>
                 private ImmutableList<T>.Enumerator _additionalEnumerator;
 
@@ -354,7 +354,7 @@ namespace System.Collections.Immutable
                 }
 
                 /// <summary>
-                /// Throws an ObjectDisposedException if this enumerator has been disposed.
+                /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
                 /// </summary>
                 private void ThrowIfDisposed()
                 {

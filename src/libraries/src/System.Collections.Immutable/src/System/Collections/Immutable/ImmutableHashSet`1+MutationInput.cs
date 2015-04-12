@@ -7,7 +7,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner MutationInput class.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.MutationInput"/> class.
     /// </content>
     public partial class ImmutableHashSet<T>
     {

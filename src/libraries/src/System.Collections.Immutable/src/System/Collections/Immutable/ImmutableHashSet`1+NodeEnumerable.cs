@@ -8,7 +8,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner NodeEnumerable class.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.NodeEnumerable"/> class.
     /// </content>
     public partial class ImmutableHashSet<T>
     {

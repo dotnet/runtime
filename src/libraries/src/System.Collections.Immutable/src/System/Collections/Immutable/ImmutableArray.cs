@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
         internal static readonly byte[] TwoElementArray = new byte[2];
 
         /// <summary>
-        /// Creates an empty ImmutableArray{T}.
+        /// Creates an empty <see cref="ImmutableArray{T}"/>.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <returns>An empty array.</returns>
@@ -30,7 +30,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates an ImmutableArray{T} with the specified element as its only member.
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified element as its only member.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="item">The element to store in the array.</param>
@@ -43,7 +43,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates an ImmutableArray{T} with the specified elements.
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="item1">The first element to store in the array.</param>
@@ -57,7 +57,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates an ImmutableArray{T} with the specified elements.
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="item1">The first element to store in the array.</param>
@@ -72,7 +72,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates an ImmutableArray{T} with the specified elements.
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="item1">The first element to store in the array.</param>
@@ -88,7 +88,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates an ImmutableArray{T} populated with the contents of the specified sequence.
+        /// Creates an <see cref="ImmutableArray{T}"/> populated with the contents of the specified sequence.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
@@ -139,7 +139,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates an empty ImmutableArray{T}.
+        /// Creates an empty <see cref="ImmutableArray{T}"/>.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
@@ -399,7 +399,7 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches an entire one-dimensional sorted System.Array for a specific element,
-        /// using the System.IComparable&lt;T&gt; generic interface implemented by each element
+        /// using the <see cref="IComparable{T}"/> generic interface implemented by each element
         /// of the System.Array and by the specified object.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
@@ -414,8 +414,8 @@ namespace System.Collections.Immutable
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// value does not implement the System.IComparable&lt;T&gt; generic interface, and
-        /// the search encounters an element that does not implement the System.IComparable&lt;T&gt;
+        /// value does not implement the <see cref="IComparable{T}"/> generic interface, and
+        /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
         [Pure]
@@ -426,14 +426,14 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches an entire one-dimensional sorted System.Array for a value using
-        /// the specified System.Collections.Generic.IComparer&lt;T&gt; generic interface.
+        /// the specified <see cref="IComparer{T}"/> generic interface.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="array">The sorted, one-dimensional array to search.</param>
         /// <param name="value">The object to search for.</param>
         /// <param name="comparer">
-        /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-        /// elements; or null to use the System.IComparable&lt;T&gt; implementation of each
+        /// The <see cref="IComparer{T}"/> implementation to use when comparing
+        /// elements; or null to use the <see cref="IComparable{T}"/> implementation of each
         /// element.
         /// </param>
         /// <returns>
@@ -445,8 +445,8 @@ namespace System.Collections.Immutable
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// value does not implement the System.IComparable&lt;T&gt; generic interface, and
-        /// the search encounters an element that does not implement the System.IComparable&lt;T&gt;
+        /// value does not implement the <see cref="IComparable{T}"/> generic interface, and
+        /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
         [Pure]
@@ -457,7 +457,7 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches a range of elements in a one-dimensional sorted System.Array for
-        /// a value, using the System.IComparable&lt;T&gt; generic interface implemented by
+        /// a value, using the <see cref="IComparable{T}"/> generic interface implemented by
         /// each element of the System.Array and by the specified value.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
@@ -474,8 +474,8 @@ namespace System.Collections.Immutable
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// value does not implement the System.IComparable&lt;T&gt; generic interface, and
-        /// the search encounters an element that does not implement the System.IComparable&lt;T&gt;
+        /// value does not implement the <see cref="IComparable{T}"/> generic interface, and
+        /// the search encounters an element that does not implement the <see cref="IComparable{T}"/>
         /// generic interface.
         /// </exception>
         [Pure]
@@ -486,7 +486,7 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches a range of elements in a one-dimensional sorted System.Array for
-        /// a value, using the specified System.Collections.Generic.IComparer&lt;T&gt; generic
+        /// a value, using the specified <see cref="IComparer{T}"/> generic
         /// interface.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
@@ -495,8 +495,8 @@ namespace System.Collections.Immutable
         /// <param name="length">The length of the range to search.</param>
         /// <param name="value">The object to search for.</param>
         /// <param name="comparer">
-        /// The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-        /// elements; or null to use the System.IComparable&lt;T&gt; implementation of each
+        /// The <see cref="IComparer{T}"/> implementation to use when comparing
+        /// elements; or null to use the <see cref="IComparable{T}"/> implementation of each
         /// element.
         /// </param>
         /// <returns>
@@ -508,9 +508,9 @@ namespace System.Collections.Immutable
         /// complement of (the index of the last element plus 1).
         /// </returns>
         /// <exception cref="System.InvalidOperationException">
-        /// comparer is null, value does not implement the System.IComparable&lt;T&gt; generic
+        /// comparer is null, value does not implement the <see cref="IComparable{T}"/> generic
         /// interface, and the search encounters an element that does not implement the
-        /// System.IComparable&lt;T&gt; generic interface.
+        /// <see cref="IComparable{T}"/> generic interface.
         /// </exception>
         /// <exception cref="ArgumentException">
         /// index and length do not specify a valid range in array.-or-comparer is null,

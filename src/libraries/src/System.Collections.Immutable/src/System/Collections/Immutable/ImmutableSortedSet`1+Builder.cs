@@ -10,7 +10,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner Builder class.
+    /// Contains the inner <see cref="ImmutableSortedSet{T}.Builder"/> class.
     /// </content>
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableSortedSet<T>
@@ -127,7 +127,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            ///  Gets or sets the System.Collections.Generic.IComparer&lt;T&gt; object that is used to determine equality for the values in the System.Collections.Generic.SortedSet&lt;T&gt;.
+            ///  Gets or sets the <see cref="IComparer{T}"/> object that is used to determine equality for the values in the System.Collections.Generic.SortedSet&lt;T&gt;.
             /// </summary>
             /// <value>The comparer that is used to determine equality for the values in the set.</value>
             /// <remarks>
@@ -409,7 +409,7 @@ namespace System.Collections.Immutable
             #endregion
 
             /// <summary>
-            /// Returns an System.Collections.Generic.IEnumerable&lt;T&gt; that iterates over this
+            /// Returns an <see cref="IEnumerable{T}"/> that iterates over this
             /// collection in reverse order.
             /// </summary>
             /// <returns>
