@@ -96,7 +96,7 @@ namespace System.Collections.Immutable
         /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
+        /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>
@@ -124,13 +124,13 @@ namespace System.Collections.Immutable
         /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// index is less than 0.-or-count is less than 0.
+        /// <paramref name="index"/> is less than 0.-or-<paramref name="count"/> is less than 0.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// index and count do not denote a valid range in the <see cref="ImmutableList{T}"/>.
+        /// <paramref name="index"/> and <paramref name="count"/> do not denote a valid range in the <see cref="ImmutableList{T}"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
+        /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>
@@ -758,7 +758,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         public int FindIndex(Predicate<T> match)
         {
@@ -776,7 +776,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         public int FindIndex(int startIndex, Predicate<T> match)
         {
@@ -797,7 +797,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         public int FindIndex(int startIndex, int count, Predicate<T> match)
         {
@@ -838,7 +838,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         public int FindLastIndex(Predicate<T> match)
         {
@@ -857,7 +857,7 @@ namespace System.Collections.Immutable
         /// to search for.</param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         public int FindLastIndex(int startIndex, Predicate<T> match)
         {
@@ -881,7 +881,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         public int FindLastIndex(int startIndex, int count, Predicate<T> match)
         {
@@ -913,9 +913,9 @@ namespace System.Collections.Immutable
         /// The equality comparer to use in the search.
         /// </param>
         /// <returns>
-        /// The zero-based index of the first occurrence of item within the range of
-        /// elements in the <see cref="ImmutableList{T}"/> that starts at index and
-        /// contains count number of elements, if found; otherwise, -1.
+        /// The zero-based index of the first occurrence of <paramref name="item"/> within the range of
+        /// elements in the <see cref="ImmutableList{T}"/> that starts at <paramref name="index"/> and
+        /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -939,9 +939,9 @@ namespace System.Collections.Immutable
         /// The equality comparer to use in the search.
         /// </param>
         /// <returns>
-        /// The zero-based index of the last occurrence of item within the range of elements
-        /// in the <see cref="ImmutableList{T}"/> that contains count number of elements
-        /// and ends at index, if found; otherwise, -1.
+        /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements
+        /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
+        /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -2386,13 +2386,13 @@ namespace System.Collections.Immutable
             /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
             /// </returns>
             /// <exception cref="ArgumentOutOfRangeException">
-            /// index is less than 0.-or-count is less than 0.
+            /// <paramref name="index"/> is less than 0.-or-<paramref name="count"/> is less than 0.
             /// </exception>
             /// <exception cref="ArgumentException">
-            /// index and count do not denote a valid range in the <see cref="ImmutableList{T}"/>.
+            /// <paramref name="index"/> and <paramref name="count"/> do not denote a valid range in the <see cref="ImmutableList{T}"/>.
             /// </exception>
             /// <exception cref="InvalidOperationException">
-            /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
+            /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
             /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
             /// or the <see cref="IComparable"/> interface for type T.
             /// </exception>
@@ -2489,9 +2489,9 @@ namespace System.Collections.Immutable
             /// </param>
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
-            /// The zero-based index of the first occurrence of item within the range of
-            /// elements in the <see cref="ImmutableList{T}"/> that starts at index and
-            /// contains count number of elements, if found; otherwise, -1.
+            /// The zero-based index of the first occurrence of <paramref name="item"/> within the range of
+            /// elements in the <see cref="ImmutableList{T}"/> that starts at <paramref name="index"/> and
+            /// contains <paramref name="count"/> number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
             internal int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -2532,9 +2532,9 @@ namespace System.Collections.Immutable
             /// <param name="count">The number of elements in the section to search.</param>
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
-            /// The zero-based index of the last occurrence of item within the range of elements
-            /// in the <see cref="ImmutableList{T}"/> that contains count number of elements
-            /// and ends at index, if found; otherwise, -1.
+            /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements
+            /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
+            /// and ends at <paramref name="index"/>, if found; otherwise, -1.
             /// </returns>
             [Pure]
             internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer)
@@ -2591,7 +2591,7 @@ namespace System.Collections.Immutable
             /// zero-based indexing.
             /// </param>
             /// <param name="arrayIndex">
-            /// The zero-based index in array at which copying begins.
+            /// The zero-based index in <paramref name="array"/> at which copying begins.
             /// </param>
             internal void CopyTo(T[] array, int arrayIndex)
             {
@@ -2620,7 +2620,7 @@ namespace System.Collections.Immutable
             /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
             /// zero-based indexing.
             /// </param>
-            /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
+            /// <param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param>
             /// <param name="count">The number of elements to copy.</param>
             internal void CopyTo(int index, T[] array, int arrayIndex, int count)
             {
@@ -2817,7 +2817,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, -1.
+            /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
             /// </returns>
             internal int FindIndex(Predicate<T> match)
             {
@@ -2837,7 +2837,7 @@ namespace System.Collections.Immutable
             /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, -1.
+            /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
             /// </returns>
             internal int FindIndex(int startIndex, Predicate<T> match)
             {
@@ -2859,7 +2859,7 @@ namespace System.Collections.Immutable
             /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
             /// <returns>
             /// The zero-based index of the first occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, -1.
+            /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
             /// </returns>
             internal int FindIndex(int startIndex, int count, Predicate<T> match)
             {
@@ -2926,7 +2926,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, -1.
+            /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
             /// </returns>
             internal int FindLastIndex(Predicate<T> match)
             {
@@ -2952,7 +2952,7 @@ namespace System.Collections.Immutable
             /// to search for.</param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, -1.
+            /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
             /// </returns>
             internal int FindLastIndex(int startIndex, Predicate<T> match)
             {
@@ -2982,7 +2982,7 @@ namespace System.Collections.Immutable
             /// </param>
             /// <returns>
             /// The zero-based index of the last occurrence of an element that matches the
-            /// conditions defined by match, if found; otherwise, -1.
+            /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
             /// </returns>
             internal int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {

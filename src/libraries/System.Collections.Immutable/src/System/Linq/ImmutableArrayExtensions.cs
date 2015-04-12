@@ -43,14 +43,14 @@ namespace System.Linq
         /// selector function on each element therein.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="immutableArray"/>.</typeparam>
-        /// <typeparam name="TCollection">The type of the intermediate elements collected by collectionSelector.</typeparam>
+        /// <typeparam name="TCollection">The type of the intermediate elements collected by <paramref name="collectionSelector"/>.</typeparam>
         /// <typeparam name="TResult">The type of the elements of the resulting sequence.</typeparam>
         /// <param name="immutableArray">The immutable array.</param>
         /// <param name="collectionSelector">A transform function to apply to each element of the input sequence.</param>
         /// <param name="resultSelector">A transform function to apply to each element of the intermediate sequence.</param>
         /// <returns>
         /// An <see cref="IEnumerable{T}"/> whose elements are the result
-        /// of invoking the one-to-many transform function collectionSelector on each
+        /// of invoking the one-to-many transform function <paramref name="collectionSelector"/> on each
         /// element of source and then mapping each of those sequence elements and their
         /// corresponding source element to a result element.
         /// </returns>

@@ -70,7 +70,7 @@ namespace System.Collections.Immutable
         /// zero-based indexing.
         /// </param>
         /// <param name="arrayIndex">
-        /// The zero-based index in array at which copying begins.
+        /// The zero-based index in <paramref name="array"/> at which copying begins.
         /// </param>
         void CopyTo(T[] array, int arrayIndex);
 
@@ -88,7 +88,7 @@ namespace System.Collections.Immutable
         /// copied from <see cref="ImmutableList{T}"/>. The <see cref="Array"/> must have
         /// zero-based indexing.
         /// </param>
-        /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
+        /// <param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param>
         /// <param name="count">The number of elements to copy.</param>
         void CopyTo(int index, T[] array, int arrayIndex, int count);
 
@@ -147,7 +147,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         int FindIndex(Predicate<T> match);
 
@@ -161,7 +161,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         int FindIndex(int startIndex, Predicate<T> match);
 
@@ -176,7 +176,7 @@ namespace System.Collections.Immutable
         /// <param name="match">The <see cref="Predicate{T}"/> delegate that defines the conditions of the element to search for.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         int FindIndex(int startIndex, int count, Predicate<T> match);
 
@@ -205,7 +205,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         int FindLastIndex(Predicate<T> match);
 
@@ -220,7 +220,7 @@ namespace System.Collections.Immutable
         /// to search for.</param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         int FindLastIndex(int startIndex, Predicate<T> match);
 
@@ -238,7 +238,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of an element that matches the
-        /// conditions defined by match, if found; otherwise, -1.
+        /// conditions defined by <paramref name="match"/>, if found; otherwise, -1.
         /// </returns>
         int FindLastIndex(int startIndex, int count, Predicate<T> match);
 
@@ -263,9 +263,9 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="item">The object to locate. The value can be null for reference types.</param>
         /// <returns>
-        /// The zero-based index of item in the sorted <see cref="IReadOnlyList{T}"/>,
-        /// if item is found; otherwise, a negative number that is the bitwise complement
-        /// of the index of the next element that is larger than item or, if there is
+        /// The zero-based index of <paramref name="item"/> in the sorted <see cref="IReadOnlyList{T}"/>,
+        /// if <paramref name="item"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="item"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="IReadOnlyCollection{T}.Count"/>.
         /// </returns>
         /// <exception cref="InvalidOperationException">
@@ -285,13 +285,13 @@ namespace System.Collections.Immutable
         /// elements.-or-null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>
-        /// The zero-based index of item in the sorted <see cref="IReadOnlyList{T}"/>,
-        /// if item is found; otherwise, a negative number that is the bitwise complement
-        /// of the index of the next element that is larger than item or, if there is
+        /// The zero-based index of <paramref name="item"/> in the sorted <see cref="IReadOnlyList{T}"/>,
+        /// if <paramref name="item"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="item"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="IReadOnlyCollection{T}.Count"/>.
         /// </returns>
         /// <exception cref="InvalidOperationException">
-        /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
+        /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>
@@ -310,19 +310,19 @@ namespace System.Collections.Immutable
         /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
         /// </param>
         /// <returns>
-        /// The zero-based index of item in the sorted <see cref="IReadOnlyList{T}"/>,
-        /// if item is found; otherwise, a negative number that is the bitwise complement
-        /// of the index of the next element that is larger than item or, if there is
+        /// The zero-based index of <paramref name="item"/> in the sorted <see cref="IReadOnlyList{T}"/>,
+        /// if <paramref name="item"/> is found; otherwise, a negative number that is the bitwise complement
+        /// of the index of the next element that is larger than <paramref name="item"/> or, if there is
         /// no larger element, the bitwise complement of <see cref="IReadOnlyCollection{T}.Count"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// index is less than 0.-or-count is less than 0.
+        /// <paramref name="index"/> is less than 0.-or-<paramref name="count"/> is less than 0.
         /// </exception>
         /// <exception cref="ArgumentException">
-        /// index and count do not denote a valid range in the <see cref="IReadOnlyList{T}"/>.
+        /// <paramref name="index"/> and <paramref name="count"/> do not denote a valid range in the <see cref="IReadOnlyList{T}"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// comparer is null, and the default comparer <see cref="Comparer{T}.Default"/>
+        /// <paramref name="comparer"/> is null, and the default comparer <see cref="Comparer{T}.Default"/>
         /// cannot find an implementation of the <see cref="IComparable{T}"/> generic interface
         /// or the <see cref="IComparable"/> interface for type T.
         /// </exception>

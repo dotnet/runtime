@@ -309,7 +309,7 @@ namespace System.Collections.Immutable
         /// Determines whether the current set is a property (strict) subset of a specified collection.
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
-        /// <returns>true if the current set is a correct subset of other; otherwise, false.</returns>
+        /// <returns>true if the current set is a correct subset of <paramref name="other"/>; otherwise, false.</returns>
         [Pure]
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
@@ -322,7 +322,7 @@ namespace System.Collections.Immutable
         /// Determines whether the current set is a correct superset of a specified collection.
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
-        /// <returns>true if the current set is a correct superset of other; otherwise, false.</returns>
+        /// <returns>true if the current set is a correct superset of <paramref name="other"/>; otherwise, false.</returns>
         [Pure]
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
@@ -335,7 +335,7 @@ namespace System.Collections.Immutable
         /// Determines whether a set is a subset of a specified collection.
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
-        /// <returns>true if the current set is a subset of other; otherwise, false.</returns>
+        /// <returns>true if the current set is a subset of <paramref name="other"/>; otherwise, false.</returns>
         [Pure]
         public bool IsSubsetOf(IEnumerable<T> other)
         {
@@ -348,7 +348,7 @@ namespace System.Collections.Immutable
         /// Determines whether the current set is a superset of a specified collection.
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
-        /// <returns>true if the current set is a superset of other; otherwise, false.</returns>
+        /// <returns>true if the current set is a superset of <paramref name="other"/>; otherwise, false.</returns>
         [Pure]
         public bool IsSupersetOf(IEnumerable<T> other)
         {
@@ -361,7 +361,7 @@ namespace System.Collections.Immutable
         /// Determines whether the current set overlaps with the specified collection.
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
-        /// <returns>true if the current set and other share at least one common element; otherwise, false.</returns>
+        /// <returns>true if the current set and <paramref name="other"/> share at least one common element; otherwise, false.</returns>
         [Pure]
         public bool Overlaps(IEnumerable<T> other)
         {
