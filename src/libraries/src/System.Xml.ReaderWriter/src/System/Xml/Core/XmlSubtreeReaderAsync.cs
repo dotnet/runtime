@@ -508,7 +508,7 @@ namespace System.Xml
                 case State.EndOfFile:
                 case State.Closed:
                 case State.Error:
-                    return Task.FromResult(0);
+                    return AsyncHelper.DoneTaskZero;
 
                 case State.ClearNsAttributes:
                 case State.PopNamespaceScope:
@@ -547,7 +547,7 @@ namespace System.Xml
 
                 default:
                     Debug.Assert(false);
-                    return Task.FromResult(0);
+                    return AsyncHelper.DoneTaskZero;
             }
         }
 
