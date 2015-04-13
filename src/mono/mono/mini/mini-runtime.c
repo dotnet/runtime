@@ -86,8 +86,7 @@ MONO_FAST_TLS_DECLARE(mono_jit_tls);
 gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
 gboolean mono_aot_only = FALSE;
-/* Whenever to use IMT */
-gboolean mono_use_imt = TRUE;
+
 const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
@@ -2984,10 +2983,8 @@ mini_init (const char *filename, const char *runtime_version)
 	callbacks.debug_log_is_enabled = mono_debugger_agent_debug_log_is_enabled;
 	callbacks.tls_key_supported = mini_tls_key_supported;
 
-	if (mono_use_imt) {
-		callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
-		callbacks.get_imt_trampoline = mini_get_imt_trampoline;
-	}
+	callbacks.get_vtable_trampoline = mini_get_vtable_trampoline;
+	callbacks.get_imt_trampoline = mini_get_imt_trampoline;
 
 	mono_install_callbacks (&callbacks);
 
@@ -3096,12 +3093,10 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_marshal_use_aot_wrappers (TRUE);
 	}
 
-	if (mono_use_imt) {
-		if (mono_aot_only)
-			mono_install_imt_thunk_builder (mono_aot_get_imt_thunk);
-		else
-			mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
-	}
+	if (mono_aot_only)
+		mono_install_imt_thunk_builder (mono_aot_get_imt_thunk);
+	else
+		mono_install_imt_thunk_builder (mono_arch_build_imt_thunk);
 
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/
 	mono_arch_finish_init ();
