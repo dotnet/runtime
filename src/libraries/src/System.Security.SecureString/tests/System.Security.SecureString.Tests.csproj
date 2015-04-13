@@ -8,8 +8,8 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Security.SecureString.Tests</RootNamespace>
     <AssemblyName>System.Security.SecureString.Tests</AssemblyName>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UnsupportedPlatforms>Linux</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -19,15 +19,24 @@
   <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="SecureStringTests.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.geteuid.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.SecureString.csproj">
       <Project>{A958BBDD-3238-4E58-AB7F-390AB6D88233}</Project>
       <Name>System.Security.SecureString</Name>
     </ProjectReference>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

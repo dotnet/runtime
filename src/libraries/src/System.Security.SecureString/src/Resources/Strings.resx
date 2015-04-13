@@ -135,4 +135,7 @@
   <data name="InvalidOperation_ReadOnly" xml:space="preserve">
     <value>Instance is read-only.</value>
   </data>
+  <data name="OutOfMemory_MemoryResourceLimits" xml:space="preserve">
+    <value>Memory restrictions are preventing the allocation or locking of additional memory.</value>
+  </data>
 </root>
