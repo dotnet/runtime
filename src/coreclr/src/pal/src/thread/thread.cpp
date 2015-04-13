@@ -35,6 +35,9 @@ Abstract:
 
 #include <signal.h>
 #include <pthread.h>
+#if HAVE_PTHREAD_NP_H
+#include <pthread_np.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 #include <stddef.h>
@@ -2430,7 +2433,13 @@ PAL_GetStackBase()
     
     pthread_t thread = pthread_self();
     
+#if HAVE_PTHREAD_ATTR_GET_NP
+    status = pthread_attr_get_np(thread, &attr);
+#elif HAVE_PTHREAD_GETATTR_NP
     status = pthread_getattr_np(thread, &attr);
+#else
+#error Dont know how to get thread attributes on this platform!
+#endif
     _ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
 
     status = pthread_attr_getstack(&attr, &stackAddr, &stackSize);
@@ -2456,7 +2465,13 @@ PAL_GetStackLimit()
     
     pthread_t thread = pthread_self();
     
+#if HAVE_PTHREAD_ATTR_GET_NP
+    status = pthread_attr_get_np(thread, &attr);
+#elif HAVE_PTHREAD_GETATTR_NP
     status = pthread_getattr_np(thread, &attr);
+#else
+#error Dont know how to get thread attributes on this platform!
+#endif
     _ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
 
     status = pthread_attr_getstack(&attr, &stackAddr, &stackSize);
