@@ -386,7 +386,7 @@ mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer com
  * from JITted and LLVM compiled code.
  */
 static gpointer
-common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp, MonoVTable *vt, gpointer *vtable_slot, gboolean need_rgctx_tramp)
+common_call_trampoline_inner (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp, MonoVTable *vt, gpointer *vtable_slot, gboolean need_rgctx_tramp)
 {
 	gpointer addr, compiled_method;
 	gboolean generic_shared = FALSE;
@@ -695,6 +695,16 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tram
 	}
 
 	return addr;
+}
+
+static gpointer
+common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8* tramp, MonoVTable *vt, gpointer *vtable_slot, gboolean need_rgctx_tramp)
+{
+	gpointer res;
+	MONO_PREPARE_RESET_BLOCKING
+	res = common_call_trampoline_inner (regs, code, m, tramp, vt, vtable_slot, need_rgctx_tramp);
+	MONO_FINISH_RESET_BLOCKING
+	return res;
 }
 
 /**
