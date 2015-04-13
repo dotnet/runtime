@@ -40,7 +40,7 @@ namespace System.Diagnostics
             ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(machineName);
             foreach (ProcessInfo processInfo in processInfos)
             {
-                if (processInfo._processId == processId)
+                if (processInfo.ProcessId == processId)
                 {
                     return processInfo;
                 }
@@ -265,7 +265,7 @@ namespace System.Diagnostics
             ProcessInfo[] infos = GetProcessInfos(machineName, isRemoteMachine);
             int[] ids = new int[infos.Length];
             for (int i = 0; i < infos.Length; i++)
-                ids[i] = infos[i]._processId;
+                ids[i] = infos[i].ProcessId;
             return ids;
         }
 
@@ -597,7 +597,7 @@ namespace System.Diagnostics
                         if (type.ObjectNameTitleIndex == processIndex)
                         {
                             ProcessInfo processInfo = GetProcessInfo(type, (IntPtr)((long)instancePtr + instance.ByteLength), counters);
-                            if (processInfo._processId == 0 && string.Compare(instanceName, "Idle", StringComparison.OrdinalIgnoreCase) != 0)
+                            if (processInfo.ProcessId == 0 && string.Compare(instanceName, "Idle", StringComparison.OrdinalIgnoreCase) != 0)
                             {
                                 // Sometimes we'll get a process structure that is not completely filled in.
                                 // We can catch some of these by looking for non-"idle" processes that have id 0
@@ -608,7 +608,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
-                                if (processInfos.ContainsKey(processInfo._processId))
+                                if (processInfos.ContainsKey(processInfo.ProcessId))
                                 {
                                     // We've found two entries in the perfcounters that claim to be the
                                     // same process.  We throw an exception.  Is this really going to be
@@ -629,8 +629,8 @@ namespace System.Diagnostics
                                         else if (instanceName.EndsWith(".e", StringComparison.Ordinal)) processName = instanceName.Substring(0, 13);
                                         else if (instanceName.EndsWith(".ex", StringComparison.Ordinal)) processName = instanceName.Substring(0, 12);
                                     }
-                                    processInfo._processName = processName;
-                                    processInfos.Add(processInfo._processId, processInfo);
+                                    processInfo.ProcessName = processName;
+                                    processInfos.Add(processInfo.ProcessId, processInfo);
                                 }
                             }
                         }
@@ -739,40 +739,40 @@ namespace System.Diagnostics
                 switch ((ValueId)counter.CounterNameTitlePtr)
                 {
                     case ValueId.ProcessId:
-                        processInfo._processId = (int)value;
+                        processInfo.ProcessId = (int)value;
                         break;
                     case ValueId.HandleCount:
-                        processInfo._handleCount = (int)value;
+                        processInfo.HandleCount = (int)value;
                         break;
                     case ValueId.PoolPagedBytes:
-                        processInfo._poolPagedBytes = value;
+                        processInfo.PoolPagedBytes = value;
                         break;
                     case ValueId.PoolNonpagedBytes:
-                        processInfo._poolNonpagedBytes = value;
+                        processInfo.PoolNonPagedBytes = value;
                         break;
                     case ValueId.VirtualBytes:
-                        processInfo._virtualBytes = value;
+                        processInfo.VirtualBytes = value;
                         break;
                     case ValueId.VirtualBytesPeak:
-                        processInfo._virtualBytesPeak = value;
+                        processInfo.VirtualBytesPeak = value;
                         break;
                     case ValueId.WorkingSetPeak:
-                        processInfo._workingSetPeak = value;
+                        processInfo.WorkingSetPeak = value;
                         break;
                     case ValueId.WorkingSet:
-                        processInfo._workingSet = value;
+                        processInfo.WorkingSet = value;
                         break;
                     case ValueId.PageFileBytesPeak:
-                        processInfo._pageFileBytesPeak = value;
+                        processInfo.PageFileBytesPeak = value;
                         break;
                     case ValueId.PageFileBytes:
-                        processInfo._pageFileBytes = value;
+                        processInfo.PageFileBytes = value;
                         break;
                     case ValueId.PrivateBytes:
-                        processInfo._privateBytes = value;
+                        processInfo.PrivateBytes = value;
                         break;
                     case ValueId.BasePriority:
-                        processInfo._basePriority = (int)value;
+                        processInfo.BasePriority = (int)value;
                         break;
                 }
             }
@@ -949,45 +949,45 @@ namespace System.Diagnostics
                 // get information for a process
                 ProcessInfo processInfo = new ProcessInfo();
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
-                processInfo._processId = pi.UniqueProcessId.ToInt32();
-                processInfo._handleCount = (int)pi.HandleCount;
-                processInfo._sessionId = (int)pi.SessionId;
-                processInfo._poolPagedBytes = (long)pi.QuotaPagedPoolUsage; ;
-                processInfo._poolNonpagedBytes = (long)pi.QuotaNonPagedPoolUsage;
-                processInfo._virtualBytes = (long)pi.VirtualSize;
-                processInfo._virtualBytesPeak = (long)pi.PeakVirtualSize;
-                processInfo._workingSetPeak = (long)pi.PeakWorkingSetSize;
-                processInfo._workingSet = (long)pi.WorkingSetSize;
-                processInfo._pageFileBytesPeak = (long)pi.PeakPagefileUsage;
-                processInfo._pageFileBytes = (long)pi.PagefileUsage;
-                processInfo._privateBytes = (long)pi.PrivatePageCount;
-                processInfo._basePriority = pi.BasePriority;
+                processInfo.ProcessId = pi.UniqueProcessId.ToInt32();
+                processInfo.HandleCount = (int)pi.HandleCount;
+                processInfo.SessionId = (int)pi.SessionId;
+                processInfo.PoolPagedBytes = (long)pi.QuotaPagedPoolUsage; ;
+                processInfo.PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage;
+                processInfo.VirtualBytes = (long)pi.VirtualSize;
+                processInfo.VirtualBytesPeak = (long)pi.PeakVirtualSize;
+                processInfo.WorkingSetPeak = (long)pi.PeakWorkingSetSize;
+                processInfo.WorkingSet = (long)pi.WorkingSetSize;
+                processInfo.PageFileBytesPeak = (long)pi.PeakPagefileUsage;
+                processInfo.PageFileBytes = (long)pi.PagefileUsage;
+                processInfo.PrivateBytes = (long)pi.PrivatePageCount;
+                processInfo.BasePriority = pi.BasePriority;
 
 
                 if (pi.NamePtr == IntPtr.Zero)
                 {
-                    if (processInfo._processId == NtProcessManager.SystemProcessID)
+                    if (processInfo.ProcessId == NtProcessManager.SystemProcessID)
                     {
-                        processInfo._processName = "System";
+                        processInfo.ProcessName = "System";
                     }
-                    else if (processInfo._processId == NtProcessManager.IdleProcessID)
+                    else if (processInfo.ProcessId == NtProcessManager.IdleProcessID)
                     {
-                        processInfo._processName = "Idle";
+                        processInfo.ProcessName = "Idle";
                     }
                     else
                     {
                         // for normal process without name, using the process ID. 
-                        processInfo._processName = processInfo._processId.ToString(CultureInfo.InvariantCulture);
+                        processInfo.ProcessName = processInfo.ProcessId.ToString(CultureInfo.InvariantCulture);
                     }
                 }
                 else
                 {
                     string processName = GetProcessShortName(Marshal.PtrToStringUni(pi.NamePtr, pi.NameLength / sizeof(char)));
-                    processInfo._processName = processName;
+                    processInfo.ProcessName = processName;
                 }
 
                 // get the threads for current process
-                processInfos[processInfo._processId] = processInfo;
+                processInfos[processInfo.ProcessId] = processInfo;
 
                 currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(pi));
                 int i = 0;

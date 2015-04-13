@@ -17,15 +17,7 @@ namespace System.Diagnostics
             get
             {
                 Interop.procfs.ParsedStat stat = GetStat();
-                Debug.Assert(stat.nice >= -20 && stat.nice <= 20);
-                return
-                    stat.nice < -15 ? ThreadPriorityLevel.TimeCritical :
-                    stat.nice < -10 ? ThreadPriorityLevel.Highest :
-                    stat.nice < -5 ? ThreadPriorityLevel.AboveNormal :
-                    stat.nice == 0 ? ThreadPriorityLevel.Normal :
-                    stat.nice <= 5 ? ThreadPriorityLevel.BelowNormal :
-                    stat.nice <= 10 ? ThreadPriorityLevel.Lowest :
-                    ThreadPriorityLevel.Idle;
+                return Interop.libc.GetThreadPriorityFromNiceValue((int)stat.nice);
             }
             set
             {

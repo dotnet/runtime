@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace System.Diagnostics
 {
@@ -14,19 +15,37 @@ namespace System.Diagnostics
     internal sealed class ProcessInfo
     {
         internal readonly List<ThreadInfo> _threadInfoList = new List<ThreadInfo>();
-        internal int _basePriority;
-        internal string _processName;
-        internal int _processId;
-        internal int _handleCount;
-        internal long _poolPagedBytes;
-        internal long _poolNonpagedBytes;
-        internal long _virtualBytes;
-        internal long _virtualBytesPeak;
-        internal long _workingSetPeak;
-        internal long _workingSet;
-        internal long _pageFileBytesPeak;
-        internal long _pageFileBytes;
-        internal long _privateBytes;
-        internal int _sessionId;
+        internal int BasePriority { get; set; }
+        internal string ProcessName { get; set; }
+        internal int ProcessId { get; set; }
+        internal int HandleCount { get; set; }
+        internal long PoolPagedBytes { get; set; }
+        internal long PoolNonPagedBytes { get; set; }
+        internal long VirtualBytes { get; set; }
+        internal long VirtualBytesPeak { get; set; }
+        internal long WorkingSetPeak { get; set; }
+        internal long WorkingSet { get; set; }
+        internal long PageFileBytesPeak { get; set; }
+        internal long PageFileBytes { get; set; }
+        internal long PrivateBytes { get; set; }
+        internal int SessionId { get; set; }
+
+        internal ProcessInfo()
+        {
+            BasePriority = 0;
+            ProcessName = "";
+            ProcessId = 0;
+            HandleCount = 0;
+            PoolPagedBytes = 0;
+            PoolNonPagedBytes = 0;
+            VirtualBytes = 0;
+            VirtualBytesPeak = 0;
+            WorkingSet = 0;
+            WorkingSetPeak = 0;
+            PageFileBytes = 0;
+            PageFileBytesPeak = 0;
+            PrivateBytes = 0;
+            SessionId = 0;
+        }
     }
 }
