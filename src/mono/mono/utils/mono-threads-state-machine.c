@@ -685,3 +685,9 @@ mono_thread_info_suspend_count (MonoThreadInfo *info)
 {
 	return get_thread_suspend_count (info->thread_state);
 }
+
+int
+mono_thread_info_current_state (MonoThreadInfo *info)
+{
+	return get_thread_state (info->thread_state);
+}
