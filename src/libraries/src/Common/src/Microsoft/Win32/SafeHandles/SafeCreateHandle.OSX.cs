@@ -23,11 +23,8 @@ namespace Microsoft.Win32.SafeHandles
         [System.Security.SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            if (IsInvalid == false)
-            {
-                Interop.CoreFoundation.CFRelease(handle);
-            }
-
+            Interop.CoreFoundation.CFRelease(handle);
+            
             return true;
         }
 
@@ -35,7 +32,9 @@ namespace Microsoft.Win32.SafeHandles
         {
             [System.Security.SecurityCritical]
             get
-            { return handle == IntPtr.Zero; }
+            {
+                return handle == IntPtr.Zero;
+            }
         }
     }
 }

@@ -142,6 +142,7 @@ namespace System.IO
                 SafeCreateHandle arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, 1);
                 if (arrPaths.IsInvalid)
                 {
+                    path.Dispose();
                     throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
                 }
 
@@ -157,6 +158,8 @@ namespace System.IO
                     EventStreamFlags);
                 if (_eventStream.IsInvalid)
                 {
+                    arrPaths.Dispose();
+                    path.Dispose();
                     throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
                 }
 
@@ -176,7 +179,7 @@ namespace System.IO
             StopStream();
 
             // Clean up the EventStream, if it exists
-            if (_eventStream.IsInvalid == false)
+            if (!_eventStream.IsInvalid)
             {
                 _eventStream = new SafeEventStreamHandle(IntPtr.Zero);
             }
@@ -199,7 +202,7 @@ namespace System.IO
 
         private void RestartStream()
         {
-            Debug.Assert(_eventStream.IsInvalid == false);
+            Debug.Assert(!_eventStream.IsInvalid);
 
             // We don't need to rebuild the stream since the path is the same so just restart the stream.
             if (Interop.EventStream.FSEventStreamStart(_eventStream) == false)
@@ -215,7 +218,7 @@ namespace System.IO
         {
             // Just stop the EventStream to be optimistic that we'll be restarted with the same path
             // and not have to teardown everything and rebuild.
-            if (_eventStream.IsInvalid == false)
+            if (!_eventStream.IsInvalid)
             {
                 Interop.EventStream.FSEventStreamStop(_eventStream);
             }
