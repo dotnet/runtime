@@ -1923,9 +1923,9 @@ mono_get_aot_cache_config (void)
 void
 mono_domain_lock (MonoDomain *domain)
 {
-	MONO_PREPARE_BLOCKING
+	MONO_TRY_BLOCKING
 	mono_locks_acquire (&(domain)->lock, DomainLock);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_TRY_BLOCKING
 }
 
 void

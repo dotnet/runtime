@@ -148,9 +148,9 @@ static mono_mutex_t type_initialization_section;
 static void
 mono_type_init_lock (TypeInitializationLock *lock)
 {
-	MONO_PREPARE_BLOCKING
+	MONO_TRY_BLOCKING
 	mono_mutex_lock (&lock->initialization_section);
-	MONO_FINISH_BLOCKING
+	MONO_FINISH_TRY_BLOCKING
 }
 
 static void
