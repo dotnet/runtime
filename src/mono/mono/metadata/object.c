@@ -2101,13 +2101,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	
 	//printf ("Initializing VT for class %s (interface_offsets_count = %d)\n",
 	//		class->name, class->interface_offsets_count);
-	
-	/* initialize interface offsets */
-	for (i = 0; i < class->interface_offsets_count; ++i) {
-		int interface_id = class->interfaces_packed [i]->interface_id;
-		int slot = class->interface_offsets_packed [i];
-		interface_offsets [class->max_interface_id - interface_id] = &(vt->vtable [slot]);
-	}
 
 	/* Initialize vtable */
 	if (callbacks.get_vtable_trampoline) {
