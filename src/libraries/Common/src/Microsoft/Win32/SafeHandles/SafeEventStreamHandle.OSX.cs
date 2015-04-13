@@ -24,12 +24,9 @@ namespace Microsoft.Win32.SafeHandles
         [System.Security.SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            if (IsInvalid == false)
-            {
-                Interop.EventStream.FSEventStreamStop(this);
-                Interop.EventStream.FSEventStreamInvalidate(this);
-                Interop.EventStream.FSEventStreamRelease(this);
-            }
+            Interop.EventStream.FSEventStreamStop(this);
+            Interop.EventStream.FSEventStreamInvalidate(this);
+            Interop.EventStream.FSEventStreamRelease(this);
 
             return true;
         }
@@ -38,7 +35,9 @@ namespace Microsoft.Win32.SafeHandles
         {
             [System.Security.SecurityCritical]
             get
-            { return handle == IntPtr.Zero; }
+            {
+                return handle == IntPtr.Zero;
+            }
         }
     }
 }
