@@ -3437,6 +3437,17 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.target = s;
 		break;
 	}
+	case MONO_PATCH_INFO_VIRT_METHOD: {
+		MonoJumpInfoVirtMethod *info = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoVirtMethod));
+
+		info->klass = decode_klass_ref (aot_module, p, &p);
+		g_assert (info->klass);
+		info->method = decode_resolve_method_ref (aot_module, p, &p);
+		g_assert (info->method);
+
+		ji->data.target = info;
+		break;
+	}
 	default:
 		g_warning ("unhandled type %d", ji->type);
 		g_assert_not_reached ();

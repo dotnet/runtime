@@ -1123,6 +1123,14 @@ typedef enum {
 	/* The address of Nullable<T>.Box () */
 	MONO_RGCTX_INFO_NULLABLE_CLASS_BOX,
 	MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX,
+	/* MONO_PATCH_INFO_VCALL_METHOD */
+	MONO_RGCTX_INFO_VIRT_METHOD_CODE,
+	/*
+	 * MONO_PATCH_INFO_VCALL_METHOD
+	 * Same as MONO_RGCTX_INFO_CLASS_BOX_TYPE, but for the class
+	 * which implements the method.
+	 */
+	MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
@@ -1216,6 +1224,17 @@ typedef struct MonoJumpInfoImtTramp {
 
 typedef struct MonoJumpInfoGSharedVtCall MonoJumpInfoGSharedVtCall;
 
+/*
+ * Represents the method which is called when a virtual call is made to METHOD
+ * on a receiver of type KLASS.
+ */
+typedef struct {
+	/* Receiver class */
+	MonoClass *klass;
+	/* Virtual method */
+	MonoMethod *method;
+} MonoJumpInfoVirtMethod;
+
 typedef struct MonoJumpInfo MonoJumpInfo;
 struct MonoJumpInfo {
 	MonoJumpInfo *next;
@@ -1252,10 +1271,16 @@ struct MonoJumpInfo {
 		MonoGSharedVtMethodInfo *gsharedvt_method;
 		MonoMethodSignature *sig;
 		MonoDelegateClassMethodPair *del_tramp;
+		/* MONO_PATCH_INFO_VIRT_METHOD */
+		MonoJumpInfoVirtMethod *virt_method;
 	} data;
 };
  
-/* Contains information describing an rgctx entry */
+/*
+ * Contains information for computing the
+ * property given by INFO_TYPE of the runtime
+ * object described by DATA.
+ */
 struct MonoJumpInfoRgctxEntry {
 	MonoMethod *method;
 	gboolean in_mrgctx;

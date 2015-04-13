@@ -662,7 +662,25 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 		g_assert (mono_error_ok (&error));
 		return isig;
 	}
+	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
+		MonoJumpInfoVirtMethod *info = data;
+		MonoJumpInfoVirtMethod *res;
+		MonoType *t;
+		MonoDomain *domain = mono_domain_get ();
+		MonoError error;
 
+		// FIXME: Temporary
+		res = mono_domain_alloc0 (domain, sizeof (MonoJumpInfoVirtMethod));
+		t = mono_class_inflate_generic_type (&info->klass->byval_arg, context);
+		res->klass = mono_class_from_mono_type (t);
+		mono_metadata_free_type (t);
+
+		res->method = mono_class_inflate_generic_method_checked (info->method, context, &error);
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+
+		return res;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -1262,6 +1280,57 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		addr = mono_compile_method (data);
 		return mini_add_method_trampoline (NULL, data, addr, mono_method_needs_static_rgctx_invoke (data, FALSE), FALSE);
 	}
+	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: {
+		MonoJumpInfoVirtMethod *info = data;
+		MonoClass *iface_class = info->method->klass;
+		MonoMethod *method;
+		int ioffset, slot;
+		gpointer addr;
+
+		mono_class_setup_vtable (info->klass);
+		// FIXME: Check type load
+		if (iface_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			ioffset = mono_class_interface_offset (info->klass, iface_class);
+			g_assert (ioffset != -1);
+		} else {
+			ioffset = 0;
+		}
+		slot = mono_method_get_vtable_slot (info->method);
+		g_assert (slot != -1);
+		g_assert (info->klass->vtable);
+		method = info->klass->vtable [ioffset + slot];
+
+		addr = mono_compile_method (method);
+		return mini_add_method_trampoline (NULL, method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
+	}
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
+		MonoJumpInfoVirtMethod *info = data;
+		MonoClass *iface_class = info->method->klass;
+		MonoMethod *method;
+		MonoClass *impl_class;
+		int ioffset, slot;
+
+		mono_class_setup_vtable (info->klass);
+		// FIXME: Check type load
+		if (iface_class->flags & TYPE_ATTRIBUTE_INTERFACE) {
+			ioffset = mono_class_interface_offset (info->klass, iface_class);
+			g_assert (ioffset != -1);
+		} else {
+			ioffset = 0;
+		}
+		slot = mono_method_get_vtable_slot (info->method);
+		g_assert (slot != -1);
+		g_assert (info->klass->vtable);
+		method = info->klass->vtable [ioffset + slot];
+
+		impl_class = method->klass;
+		if (MONO_TYPE_IS_REFERENCE (&impl_class->byval_arg))
+			return GUINT_TO_POINTER (1);
+		else if (mono_class_is_nullable (impl_class))
+			return GUINT_TO_POINTER (2);
+		else
+			return GUINT_TO_POINTER (0);
+	}
 #ifndef DISABLE_REMOTING
 	case MONO_RGCTX_INFO_REMOTING_INVOKE_WITH_CHECK:
 		return mono_compile_method (mono_marshal_get_remoting_invoke_with_check (data));
@@ -1548,6 +1617,8 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_BZERO: return "BZERO";
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_BOX: return "NULLABLE_CLASS_BOX";
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX: return "NULLABLE_CLASS_UNBOX";
+	case MONO_RGCTX_INFO_VIRT_METHOD_CODE: return "VIRT_METHOD_CODE";
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: return "VIRT_METHOD_BOX_TYPE";
 	default:
 		return "<UNKNOWN RGCTX INFO TYPE>";
 	}
@@ -1643,6 +1714,13 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT:
 	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI:
 		return data1 == data2;
+	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
+		MonoJumpInfoVirtMethod *info1 = data1;
+		MonoJumpInfoVirtMethod *info2 = data2;
+
+		return info1->klass == info2->klass && info1->method == info2->method;
+	}
 	default:
 		g_assert_not_reached ();
 	}

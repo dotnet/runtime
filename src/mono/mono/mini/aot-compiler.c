@@ -5284,6 +5284,10 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		p += len + 1;
 		break;
 	}
+	case MONO_PATCH_INFO_VIRT_METHOD:
+		encode_klass_ref (acfg, patch_info->data.virt_method->klass, p, &p);
+		encode_method_ref (acfg, patch_info->data.virt_method->method, p, &p);
+		break;
 	default:
 		g_warning ("unable to handle jump info %d", patch_info->type);
 		g_assert_not_reached ();

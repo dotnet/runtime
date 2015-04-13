@@ -1108,6 +1108,16 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 		//memcpy (info->locals_types, oinfo->locals_types, info->nlocals * sizeof (MonoType*));
 		break;
 	}
+	case MONO_PATCH_INFO_VIRT_METHOD: {
+		MonoJumpInfoVirtMethod *info;
+		MonoJumpInfoVirtMethod *oinfo;
+
+		oinfo = patch_info->data.virt_method;
+		info = mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoVirtMethod));
+		res->data.virt_method = info;
+		memcpy (info, oinfo, sizeof (MonoJumpInfoVirtMethod));
+		break;
+	}
 	default:
 		break;
 	}
@@ -1180,6 +1190,11 @@ mono_patch_info_hash (gconstpointer data)
 		return (ji->type << 8) | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->virtual;
 	case MONO_PATCH_INFO_LDSTR_LIT:
 		return g_str_hash (ji->data.target);
+	case MONO_PATCH_INFO_VIRT_METHOD: {
+		MonoJumpInfoVirtMethod *info = ji->data.virt_method;
+
+		return (ji->type << 8) | (gssize)info->klass | (gssize)info->method;
+	}
 	default:
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
@@ -1237,6 +1252,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		return ji1->data.del_tramp->klass == ji2->data.del_tramp->klass && ji1->data.del_tramp->method == ji2->data.del_tramp->method && ji1->data.del_tramp->virtual == ji2->data.del_tramp->virtual;
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return ji1->data.index == ji2->data.index;
+	case MONO_PATCH_INFO_VIRT_METHOD:
+		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
@@ -1571,6 +1588,15 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 
 				memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
 			}
+			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
+			break;
+		}
+		case MONO_PATCH_INFO_VIRT_METHOD: {
+			MonoJumpInfoVirtMethod *info;
+			MonoJumpInfoVirtMethod *oinfo = entry->data->data.virt_method;
+
+			info = g_malloc0 (sizeof (MonoJumpInfoVirtMethod));
+			memcpy (info, oinfo, sizeof (MonoJumpInfoVirtMethod));
 			slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
 			break;
 		}

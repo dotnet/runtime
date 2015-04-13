@@ -407,7 +407,7 @@ static MONO_NEVER_INLINE void
 gshared_failure (MonoCompile *cfg, int opcode, const char *file, int line)
 {
 	if (cfg->verbose_level > 2)											\
-		printf ("sharing failed for method %s.%s.%s/%d opcode %s line %d\n", cfg->current_method->klass->name_space, cfg->current_method->klass->name, cfg->current_method->name, cfg->current_method->signature->param_count, mono_opcode_name ((opcode)), __LINE__);
+		printf ("sharing failed for method %s.%s.%s/%d opcode %s line %d\n", cfg->current_method->klass->name_space, cfg->current_method->klass->name, cfg->current_method->name, cfg->current_method->signature->param_count, mono_opcode_name ((opcode)), line);
 	mono_cfg_set_exception (cfg, MONO_EXCEPTION_GENERIC_SHARING_FAILED);
 }
 
@@ -3514,6 +3514,28 @@ emit_get_rgctx_gsharedvt_call (MonoCompile *cfg, int context_used,
 	return emit_rgctx_fetch (cfg, rgctx, entry);
 }
 
+/*
+ * emit_get_rgctx_virt_method:
+ *
+ *   Return data for method VIRT_METHOD for a receiver of type KLASS.
+ */
+static MonoInst*
+emit_get_rgctx_virt_method (MonoCompile *cfg, int context_used,
+							MonoClass *klass, MonoMethod *virt_method, MonoRgctxInfoType rgctx_type)
+{
+	MonoJumpInfoVirtMethod *info;
+	MonoJumpInfoRgctxEntry *entry;
+	MonoInst *rgctx;
+
+	info = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoVirtMethod));
+	info->klass = klass;
+	info->method = virt_method;
+
+	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->current_method, context_used & MONO_GENERIC_CONTEXT_USED_METHOD, MONO_PATCH_INFO_VIRT_METHOD, info, rgctx_type);
+	rgctx = emit_get_rgctx (cfg, cfg->current_method, context_used);
+
+	return emit_rgctx_fetch (cfg, rgctx, entry);
+}
 
 static MonoInst*
 emit_get_rgctx_gsharedvt_method (MonoCompile *cfg, int context_used,
@@ -8846,6 +8868,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean skip_ret = FALSE;
 			gboolean delegate_invoke = FALSE;
 			gboolean direct_icall = FALSE;
+			gboolean constrained_partial_call = FALSE;
 			MonoMethod *cil_method;
 
 			CHECK_OPSIZE (5);
@@ -8860,10 +8883,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if ((constrained_class->byval_arg.type == MONO_TYPE_VAR || constrained_class->byval_arg.type == MONO_TYPE_MVAR) && cfg->generic_sharing_context) {
 					if (!mini_is_gsharedvt_klass (cfg, constrained_class)) {
 						g_assert (!cmethod->klass->valuetype);
-						if (!mini_type_is_reference (cfg, &constrained_class->byval_arg)) {
-							/* FIXME: gshared type constrained to a primitive type */
-							GENERIC_SHARING_FAILURE (CEE_CALL);
-						}
+						if (!mini_type_is_reference (cfg, &constrained_class->byval_arg))
+							constrained_partial_call = TRUE;
 					}
 				}
 
@@ -9003,7 +9024,69 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/*
 				 * We have the `constrained.' prefix opcode.
 				 */
-				if (constrained_class->valuetype && (cmethod->klass == mono_defaults.object_class || cmethod->klass == mono_defaults.enum_class->parent || cmethod->klass == mono_defaults.enum_class)) {
+				if (constrained_partial_call) {
+					gboolean need_box = TRUE;
+
+					/*
+					 * The receiver is a valuetype, but the exact type is not known at compile time. This means the
+					 * called method is not known at compile time either. The called method could end up being
+					 * one of the methods on the parent classes (object/valuetype/enum), in which case we need
+					 * to box the receiver.
+					 * A simple solution would be to box always and make a normal virtual call, but that would
+					 * be bad performance wise.
+					 */
+					if (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE && cmethod->klass->generic_class) {
+						/*
+						 * The parent classes implement no generic interfaces, so the called method will be a vtype method, so no boxing neccessary.
+						 */
+						need_box = FALSE;
+					}
+
+					if (need_box) {
+						MonoInst *box_type;
+						MonoBasicBlock *is_ref_bb, *end_bb;
+						MonoInst *nonbox_call;
+
+						/*
+						 * Determine at runtime whenever the called method is defined on object/valuetype/enum, and emit a boxing call
+						 * if needed.
+						 * FIXME: It is possible to inline the called method in a lot of cases, i.e. for T_INT,
+						 * the no-box case goes to a method in Int32, while the box case goes to a method in Enum.
+						 */
+						addr = emit_get_rgctx_virt_method (cfg, mono_class_check_context_used (constrained_class), constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD_CODE);
+
+						NEW_BBLOCK (cfg, is_ref_bb);
+						NEW_BBLOCK (cfg, end_bb);
+
+						box_type = emit_get_rgctx_virt_method (cfg, mono_class_check_context_used (constrained_class), constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE);
+						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, box_type->dreg, 1);
+						MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, is_ref_bb);
+
+						/* Non-ref case */
+						nonbox_call = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
+
+						MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+						/* Ref case */
+						MONO_START_BB (cfg, is_ref_bb);
+						EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, &constrained_class->byval_arg, sp [0]->dreg, 0);
+						ins->klass = constrained_class;
+						sp [0] = handle_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class), &bblock);
+						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
+
+						MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+						MONO_START_BB (cfg, end_bb);
+						bblock = end_bb;
+
+						nonbox_call->dreg = ins->dreg;
+					} else {
+						g_assert (cmethod->klass->flags & TYPE_ATTRIBUTE_INTERFACE);
+						addr = emit_get_rgctx_virt_method (cfg, mono_class_check_context_used (constrained_class), constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD_CODE);
+						ins = (MonoInst*)mono_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
+					}
+					goto call_end;
+				} else if (constrained_class->valuetype && (cmethod->klass == mono_defaults.object_class || cmethod->klass == mono_defaults.enum_class->parent || cmethod->klass == mono_defaults.enum_class)) {
 					/*
 					 * The type parameter is instantiated as a valuetype,
 					 * but that type doesn't override the method we're

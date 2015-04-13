@@ -1140,6 +1140,56 @@ class Tests
 		MyClass<FooStruct2>.foo ();
 		return 0;
 	}
+
+	enum AnEnum {
+		A,
+		B
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static string constrained_tostring<T> (T t) {
+		return t.ToString ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static bool constrained_equals<T> (T t1, T t2) {
+		var c = EqualityComparer<T>.Default;
+
+		return c.Equals (t1, t2);
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int constrained_gethashcode<T> (T t) {
+		return t.GetHashCode ();
+	}
+
+	public static int test_0_constrained_partial_sharing () {
+		string s;
+
+		s = constrained_tostring<int> (5);
+		if (s != "5")
+			return 1;
+		s = constrained_tostring<AnEnum> (AnEnum.B);
+		if (s != "B")
+			return 2;
+
+		if (!constrained_equals<int> (1, 1))
+			return 3;
+		if (constrained_equals<int> (1, 2))
+			return 4;
+		if (!constrained_equals<AnEnum> (AnEnum.A, AnEnum.A))
+			return 5;
+		if (constrained_equals<AnEnum> (AnEnum.A, AnEnum.B))
+			return 6;
+
+		int i = constrained_gethashcode<int> (5);
+		if (i != 5)
+			return 7;
+		i = constrained_gethashcode<AnEnum> (AnEnum.B);
+		if (i != 1)
+			return 8;
+		return 0;
+	}
 }
 
 #if !MOBILE
