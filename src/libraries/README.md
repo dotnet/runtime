@@ -137,7 +137,7 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.ObjectModel**. Provides types and interfaces that enable the creation of observable types that provide
   notifications to clients when changes are made.
 
-* **System.Reflection.DispatchProxy**. Provides a mechanism for dynamcially creating proxy types that implement a 
+* **System.Reflection.DispatchProxy**. Provides a mechanism for dynamically creating proxy types that implement a 
   specified interface and derive from a specified DispatchProxy type.
 
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
