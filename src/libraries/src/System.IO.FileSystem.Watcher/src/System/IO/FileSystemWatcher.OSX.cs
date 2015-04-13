@@ -7,12 +7,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using CFStringRef = System.IntPtr;
-using CFArrayRef = System.IntPtr;
 using FSEventStreamRef = System.IntPtr;
 using size_t = System.IntPtr;
 using FSEventStreamEventId = System.UInt64;
-using CFTimeInterval = System.Double;
 using CFRunLoopRef = System.IntPtr;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -104,7 +103,7 @@ namespace System.IO
         private Interop.EventStream.FSEventStreamEventFlags _filterFlags = 0;
 
         // The EventStream to listen for events on
-        private FSEventStreamRef _eventStream = IntPtr.Zero;
+        private SafeEventStreamHandle _eventStream = new SafeEventStreamHandle(IntPtr.Zero);
 
         // The background thread to use to monitor events
         private Thread _watcherThread = null;
@@ -125,7 +124,7 @@ namespace System.IO
 
         private void CreateStreamAndStartWatcher()
         {
-            Debug.Assert(_eventStream == IntPtr.Zero);
+            Debug.Assert(_eventStream.IsInvalid);
             Debug.Assert(_watcherRunLoop == IntPtr.Zero);
             Debug.Assert(_callback == null);
 
@@ -133,16 +132,17 @@ namespace System.IO
             if (String.IsNullOrEmpty(_directory) == false)
             {
                 // Get the path to watch and verify we created the CFStringRef
-                CFStringRef path = Interop.CoreFoundation.CFStringCreateWithCString(_directory);
-                if (path == IntPtr.Zero)
+                SafeCreateHandle path = Interop.CoreFoundation.CFStringCreateWithCString(_directory);
+                if (path.IsInvalid)
                 {
                     throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
                 }
 
                 // Take the CFStringRef and put it into an array to pass to the EventStream
-                CFArrayRef arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path }, 1);
-                if (arrPaths == IntPtr.Zero)
+                SafeCreateHandle arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, 1);
+                if (arrPaths.IsInvalid)
                 {
+                    path.Dispose();
                     throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
                 }
 
@@ -156,14 +156,12 @@ namespace System.IO
                     Interop.EventStream.kFSEventStreamEventIdSinceNow,
                     0.2f,
                     EventStreamFlags);
-                if (_eventStream == IntPtr.Zero)
+                if (_eventStream.IsInvalid)
                 {
+                    arrPaths.Dispose();
+                    path.Dispose();
                     throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
                 }
-
-                // The paths are copied inside FSEventStreamCreate so delete our references
-                Interop.CoreFoundation.CFRelease(path);
-                Interop.CoreFoundation.CFRelease(arrPaths);
 
                 // Create and start our watcher thread then wait for the thread to initialize and start 
                 // the RunLoop. We wait for that to prevent this function from returning before the RunLoop
@@ -177,6 +175,15 @@ namespace System.IO
 
         private void CleanupStreamAndWatcher()
         {
+            // If we're currently streaming, stop
+            StopStream();
+
+            // Clean up the EventStream, if it exists
+            if (!_eventStream.IsInvalid)
+            {
+                _eventStream = new SafeEventStreamHandle(IntPtr.Zero);
+            }
+
             // Make sure there's a loop to clear
             if (_watcherRunLoop != IntPtr.Zero)
             {
@@ -184,14 +191,7 @@ namespace System.IO
                 Interop.RunLoop.CFRunLoopStop(_watcherRunLoop);
                 _watcherThread.Join();
                 _watcherRunLoop = IntPtr.Zero;
-            }
-
-            // Clean up the EventStream, if it exists
-            if (_eventStream != IntPtr.Zero)
-            {
-                Interop.CoreFoundation.CFRelease(_eventStream);
-                _eventStream = IntPtr.Zero;
-            }
+            }          
 
             // Cleanup the callback
             if (_callback != null)
@@ -202,7 +202,7 @@ namespace System.IO
 
         private void RestartStream()
         {
-            Debug.Assert(_eventStream != IntPtr.Zero);
+            Debug.Assert(!_eventStream.IsInvalid);
 
             // We don't need to rebuild the stream since the path is the same so just restart the stream.
             if (Interop.EventStream.FSEventStreamStart(_eventStream) == false)
@@ -218,7 +218,7 @@ namespace System.IO
         {
             // Just stop the EventStream to be optimistic that we'll be restarted with the same path
             // and not have to teardown everything and rebuild.
-            if (_eventStream != IntPtr.Zero)
+            if (!_eventStream.IsInvalid)
             {
                 Interop.EventStream.FSEventStreamStop(_eventStream);
             }

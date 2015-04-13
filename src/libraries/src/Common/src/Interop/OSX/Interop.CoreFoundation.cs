@@ -4,9 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
+using Microsoft.Win32.SafeHandles;
+
 using CFStringRef = System.IntPtr;
 using CFArrayRef = System.IntPtr;
-using CFTimeInterval = System.Double;
+
 
 internal static partial class Interop
 {
@@ -43,7 +45,7 @@ internal static partial class Interop
         /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
         [DllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
-        private static extern CFStringRef CFStringCreateWithCString(
+        private static extern SafeCreateHandle CFStringCreateWithCString(
             IntPtr allocator, 
             string str, 
             CFStringBuiltInEncodings encoding);
@@ -52,8 +54,8 @@ internal static partial class Interop
         /// Creates a CFStringRef from a 8-bit String object. Follows the "Create Rule" where if you create it, you delete it.
         /// </summary>
         /// <param name="str">The string to get a CFStringRef for</param>
-        /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
-        internal static CFStringRef CFStringCreateWithCString(string str)
+        /// <returns>Returns a valid SafeCreateHandle to a CFString on success; otherwise, returns an invalid SafeCreateHandle</returns>
+        internal static SafeCreateHandle CFStringCreateWithCString(string str)
         {
             return CFStringCreateWithCString(IntPtr.Zero, str, CFStringBuiltInEncodings.kCFStringEncodingUTF8);
         }
@@ -67,7 +69,7 @@ internal static partial class Interop
         /// <param name="callbacks">Should be IntPtr.Zero</param>
         /// <returns>Returns a pointer to a CFArray on success; otherwise, returns IntPtr.Zero</returns>
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        private static extern CFArrayRef CFArrayCreate(
+        private static extern SafeCreateHandle CFArrayCreate(
             IntPtr allocator,
             [MarshalAs(UnmanagedType.LPArray)]
             IntPtr[] values,
@@ -79,8 +81,8 @@ internal static partial class Interop
         /// </summary>
         /// <param name="values">The values to put in the array</param>
         /// <param name="numValues">The number of values in the array</param>
-        /// <returns>Returns a pointer to a CFArray on success; otherwise, returns IntPtr.Zero</returns>
-        internal static CFArrayRef CFArrayCreate(IntPtr[] values, ulong numValues)
+        /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
+        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, ulong numValues)
         {
             return CFArrayCreate(IntPtr.Zero, values, numValues, IntPtr.Zero);
         }
