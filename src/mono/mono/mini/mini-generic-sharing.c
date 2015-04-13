@@ -2089,7 +2089,6 @@ type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_parti
 	if (allow_partial && !type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)))
 		return TRUE;
 
-	/*
 	if (allow_partial && !type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
 		MonoGenericClass *gclass = type->data.generic_class;
 
@@ -2097,9 +2096,10 @@ type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_parti
 			return FALSE;
 		if (gclass->context.method_inst && !generic_inst_is_sharable (gclass->context.method_inst, allow_type_vars, allow_partial))
 			return FALSE;
+		if (mono_class_is_nullable (mono_class_from_mono_type (type)))
+			return FALSE;
 		return TRUE;
 	}
-	*/
 
 	return FALSE;
 }
@@ -2294,6 +2294,10 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 		return FALSE;
 
 	if (!partial_sharing_supported ())
+		allow_partial = FALSE;
+
+	if (mono_class_is_nullable (method->klass))
+		// FIXME:
 		allow_partial = FALSE;
 
 	if (method->klass->image->dynamic)
@@ -2978,7 +2982,6 @@ get_shared_type (MonoType *t, MonoType *type)
 {
 	MonoTypeEnum ttype;
 
-	/*
 	if (!type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
 		MonoGenericClass *gclass = type->data.generic_class;
 		MonoGenericContext context;
@@ -2994,7 +2997,6 @@ get_shared_type (MonoType *t, MonoType *type)
 
 		return get_shared_gparam (t, &k->byval_arg);
 	}
-	*/
 
 	g_assert (!type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)));
 

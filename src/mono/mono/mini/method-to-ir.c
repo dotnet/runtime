@@ -2286,7 +2286,8 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 			if (arg->type != STACK_VTYPE)
 				return 1;
 			klass = mono_class_from_mono_type (simple_type);
-			if (klass != arg->klass)
+			/* The second cases is needed when doing partial sharing */
+			if (klass != arg->klass && mono_class_from_mono_type (target) != arg->klass)
 				return 1;
 			return 0;
 		} else {

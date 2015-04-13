@@ -1190,6 +1190,33 @@ class Tests
 			return 8;
 		return 0;
 	}
+
+	enum Enum1 {
+		A,
+		B
+	}
+
+	enum Enum2 {
+		A,
+		B
+	}
+
+	public static int test_0_partial_sharing_ginst () {
+		var l1 = new List<KeyValuePair<int, Enum1>> ();
+		l1.Add (new KeyValuePair<int, Enum1>(5, Enum1.A));
+		if (l1 [0].Key != 5)
+			return 1;
+		if (l1 [0].Value != Enum1.A)
+			return 2;
+		var l2 = new List<KeyValuePair<int, Enum2>> ();
+		l2.Add (new KeyValuePair<int, Enum2>(5, Enum2.B));
+		if (l2 [0].Key != 5)
+			return 3;
+		if (l2 [0].Value != Enum2.B)
+			return 4;
+		return 0;
+	}
+
 }
 
 #if !MOBILE
