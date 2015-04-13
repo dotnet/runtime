@@ -94,7 +94,12 @@ thread_func (void *thread_data)
 		gboolean do_idle = idle_working;
 
 		job = get_job_and_set_in_progress ();
-		if (!job && !do_idle) {
+		while (!job && !do_idle) {
+			/*
+			 * pthread_cond_wait() can return successfully despite the condition
+			 * not being signalled, so we have to run this in a loop until we
+			 * really have work to do.
+			 */
 			mono_cond_wait (&work_cond, &lock);
 			do_idle = idle_working;
 			job = get_job_and_set_in_progress ();
