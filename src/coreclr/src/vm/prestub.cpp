@@ -49,6 +49,10 @@
 #include "stacksampler.h"
 #endif
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 #ifndef DACCESS_COMPILE 
 
 EXTERN_C void STDCALL ThePreStub();
@@ -262,6 +266,7 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWO
          m_pszDebugMethodName));
 
     PCODE pCode = NULL;
+    ULONG sizeOfCode = 0;
 #ifdef FEATURE_INTERPRETER
     PCODE pPreviousInterpStub = NULL;
     BOOL fInterpreted = FALSE;
@@ -454,7 +459,7 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWO
 
             EX_TRY
             {
-                pCode = UnsafeJitFunction(this, ILHeader, flags, flags2);
+                pCode = UnsafeJitFunction(this, ILHeader, flags, flags2, &sizeOfCode);
             }
             EX_CATCH
             {
@@ -514,6 +519,11 @@ PCODE MethodDesc::MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, DWORD flags, DWO
             {
                 // Fire an ETW event to mark the end of JIT'ing
                 ETW::MethodLog::MethodJitted(this, &namespaceOrClassName, &methodName, &methodSignature, pCode, 0 /* ReJITID */);
+
+#ifdef FEATURE_PERFMAP
+                // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+                PerfMap::LogMethod(this, pCode, sizeOfCode);
+#endif
                 
                 mcJitManager.GetMulticoreJitCodeStorage().StoreMethodCode(this, pCode);
                 
@@ -593,6 +603,11 @@ GotNewCode:
             {
                 // Fire an ETW event to mark the end of JIT'ing
                 ETW::MethodLog::MethodJitted(this, &namespaceOrClassName, &methodName, &methodSignature, pCode, 0 /* ReJITID */);
+
+#ifdef FEATURE_PERFMAP
+                // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+                PerfMap::LogMethod(this, pCode, sizeOfCode);
+#endif
             }
  
 

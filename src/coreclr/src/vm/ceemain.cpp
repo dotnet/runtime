@@ -252,6 +252,10 @@
 #include <mscoruefwrapper.h>
 #endif // FEATURE_UEF_CHAINMANAGER
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 #ifdef FEATURE_IPCMAN
 static HRESULT InitializeIPCManager(void);
 static void PublishIPCManager(void);
@@ -925,6 +929,10 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifdef ENABLE_PERF_LOG
         PerfLog::PerfLogInitialize();
 #endif //ENABLE_PERF_LOG
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::Initialize();
+#endif
 
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
 
@@ -1906,6 +1914,11 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // allocation sampling data structures.
         ETW::TypeSystemLog::FlushObjectAllocationEvents();
 #endif // FEATURE_EVENT_TRACE
+
+#ifdef FEATURE_PERFMAP
+        // Flush and close the perf map file.
+        PerfMap::Destroy();
+#endif
 
 #ifdef FEATURE_PREJIT
         // If we're doing basic block profiling, we need to write the log files to disk.

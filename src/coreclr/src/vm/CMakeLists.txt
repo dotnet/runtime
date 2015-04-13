@@ -94,6 +94,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     pefile.cpp
     peimage.cpp
     peimagelayout.cpp
+    perfmap.cpp
     precode.cpp
     prestub.cpp
     rejit.cpp
