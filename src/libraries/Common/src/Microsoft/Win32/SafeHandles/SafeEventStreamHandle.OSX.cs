@@ -24,9 +24,9 @@ namespace Microsoft.Win32.SafeHandles
         [System.Security.SecurityCritical]
         protected override bool ReleaseHandle()
         {
-            Interop.EventStream.FSEventStreamStop(this);
-            Interop.EventStream.FSEventStreamInvalidate(this);
-            Interop.EventStream.FSEventStreamRelease(this);
+            Interop.EventStream.FSEventStreamStop(handle);
+            Interop.EventStream.FSEventStreamInvalidate(handle);
+            Interop.EventStream.FSEventStreamRelease(handle);
 
             return true;
         }
