@@ -567,10 +567,10 @@ struct _MonoGenericParam {
 	MonoGenericContainer *owner;
 	guint16 num;
 	/*
-	 * If != 0, this is a generated generic param used by the JIT to implement generic
+	 * If != NULL, this is a generated generic param used by the JIT to implement generic
 	 * sharing.
 	 */
-	MonoTypeEnum gshared_constraint;
+	MonoType *gshared_constraint;
 	/* 
 	 * If owner is NULL, or owner is 'owned' by this gparam,
 	 * then this is the image whose mempool this struct was allocated from.

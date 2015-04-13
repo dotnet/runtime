@@ -468,7 +468,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		int type = decode_value (p, &p);
 		int num = decode_value (p, &p);
 		gboolean has_container = decode_value (p, &p);
-		MonoTypeEnum gshared_constraint = 0;
+		MonoType *gshared_constraint = NULL;
 		char *par_name = NULL;
 
 		if (has_container) {
@@ -492,9 +492,15 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 				container = class_def->generic_container;
 			}
 		} else {
-			gshared_constraint = decode_value (p, &p);
-			if (gshared_constraint) {
-				int len = decode_value (p, &p);
+			gboolean has_gshared_constraint = decode_value (p, &p);
+			if (has_gshared_constraint) {
+				int len;
+
+				gshared_constraint = decode_type (module, p, &p);
+				if (!gshared_constraint)
+					return NULL;
+
+				len = decode_value (p, &p);
 				if (len) {
 					par_name = mono_image_alloc (module->assembly->image, len + 1);
 					memcpy (par_name, p, len);
@@ -508,7 +514,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf)
 		t->type = type;
 		if (container) {
 			t->data.generic_param = mono_generic_container_get_param (container, num);
-			g_assert (gshared_constraint == 0);
+			g_assert (gshared_constraint == NULL);
 		} else {
 			/* Anonymous */
 			MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));

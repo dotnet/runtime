@@ -2498,16 +2498,19 @@ encode_klass_ref_inner (MonoAotCompile *acfg, MonoClass *klass, guint8 *buf, gui
 		encode_value (container ? 1 : 0, p, &p);
 		if (container) {
 			encode_value (container->is_method, p, &p);
-			g_assert (par->gshared_constraint == 0);
+			g_assert (!par->gshared_constraint);
 			if (container->is_method)
 				encode_method_ref (acfg, container->owner.method, p, &p);
 			else
 				encode_klass_ref (acfg, container->owner.klass, p, &p);
 		} else {
-			encode_value (par->gshared_constraint, p, &p);
+			encode_value (par->gshared_constraint ? 1 : 0, p, &p);
 			if (par->gshared_constraint) {
-				const char *name = mono_generic_param_name (par);
+				const char *name;
 
+				encode_type (acfg, par->gshared_constraint, p, &p);
+
+				name = mono_generic_param_name (par);
 				if (name) {
 					int len = strlen (name);
 

@@ -2960,12 +2960,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 }
 #endif
 
-static gboolean
-is_gsharedvt_type (MonoType *t)
-{
-	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE;
-}
-
 /* Return whenever METHOD is a gsharedvt method */
 static gboolean
 is_gsharedvt_method (MonoMethod *method)
@@ -2980,13 +2974,13 @@ is_gsharedvt_method (MonoMethod *method)
 	inst = context->class_inst;
 	if (inst) {
 		for (i = 0; i < inst->type_argc; ++i)
-			if (is_gsharedvt_type (inst->type_argv [i]))
+			if (mini_is_gsharedvt_gparam (inst->type_argv [i]))
 				return TRUE;
 	}
 	inst = context->method_inst;
 	if (inst) {
 		for (i = 0; i < inst->type_argc; ++i)
-			if (is_gsharedvt_type (inst->type_argv [i]))
+			if (mini_is_gsharedvt_gparam (inst->type_argv [i]))
 				return TRUE;
 	}
 	return FALSE;

@@ -1690,12 +1690,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	return (gpointer)target;
 }
 
-static gboolean
-is_gsharedvt_type (MonoType *t)
-{
-	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE;
-}
-
 void
 mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *context, MonoGenericSharingContext *gsctx)
 {
@@ -1716,7 +1710,7 @@ mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *contex
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
-			if (is_gsharedvt_type (type))
+			if (mini_is_gsharedvt_gparam (type))
 				gsctx->var_is_vt [i] = TRUE;
 		}
 	}
@@ -1732,7 +1726,7 @@ mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *contex
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
-			if (is_gsharedvt_type (type))
+			if (mini_is_gsharedvt_gparam (type))
 				gsctx->mvar_is_vt [i] = TRUE;
 		}
 	}
@@ -2702,9 +2696,11 @@ mini_parse_debug_options (void)
 			debug_options.check_pinvoke_callconv = TRUE;
 		else if (!strcmp (arg, "debug-domain-unload"))
 			mono_enable_debug_domain_unload (TRUE);
+		else if (!strcmp (arg, "partial-sharing"))
+			mono_set_partial_sharing_supported (TRUE);
 		else {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
-			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks', 'check-pinvoke-callconv', 'debug-domain-unload'\n");
+			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'dont-free-domains', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'init-stacks', 'check-pinvoke-callconv', 'debug-domain-unload', 'partial-sharing'\n");
 			exit (1);
 		}
 	}

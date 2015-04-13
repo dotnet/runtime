@@ -1642,6 +1642,8 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->thunk_invoke_cache);
 	free_hash (image->var_cache_slow);
 	free_hash (image->mvar_cache_slow);
+	free_hash (image->var_cache_constrained);
+	free_hash (image->mvar_cache_constrained);
 	free_hash (image->wrapper_param_names);
 	free_hash (image->pinvoke_scopes);
 	free_hash (image->pinvoke_scope_filenames);

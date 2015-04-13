@@ -1767,7 +1767,7 @@ mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
-		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint == MONO_TYPE_OBJECT))
+		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint->type == MONO_TYPE_OBJECT))
 		return &mono_defaults.object_class->byval_arg;
 	return type;
 }
@@ -6191,11 +6191,24 @@ make_generic_param_class (MonoGenericParam *param, MonoImage *image, gboolean is
 static MonoClass *
 get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_lock)
 {
-	int n = mono_generic_param_num (param) | ((guint32)param->gshared_constraint << 16);
+	int n = mono_generic_param_num (param);
 	MonoImage *image = param->image;
+	MonoClass *klass = NULL;
 	GHashTable *ht;
 
 	g_assert (image);
+
+	if (param->gshared_constraint) {
+		ht = is_mvar ? image->mvar_cache_constrained : image->var_cache_constrained;
+		if (ht) {
+			if (take_lock)
+				mono_image_lock (image);
+			klass = g_hash_table_lookup (ht, param);
+			if (take_lock)
+				mono_image_unlock (image);
+		}
+		return klass;
+	}
 
 	if (n < FAST_CACHE_SIZE) {
 		if (is_mvar)
@@ -6203,7 +6216,6 @@ get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_
 		else
 			return image->var_cache_fast ? image->var_cache_fast [n] : NULL;
 	} else {
-		MonoClass *klass = NULL;
 		ht = is_mvar ? image->mvar_cache_slow : image->var_cache_slow;
 		if (ht) {
 			if (take_lock)
@@ -6222,12 +6234,23 @@ get_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, gboolean take_
 static void
 set_anon_gparam_class (MonoGenericParam *param, gboolean is_mvar, MonoClass *klass)
 {
-	int n = mono_generic_param_num (param) | ((guint32)param->gshared_constraint << 16);
+	int n = mono_generic_param_num (param);
 	MonoImage *image = param->image;
 
 	g_assert (image);
 
-	if (n < FAST_CACHE_SIZE) {
+	if (param->gshared_constraint) {
+		GHashTable *ht = is_mvar ? image->mvar_cache_constrained : image->var_cache_constrained;
+		if (!ht) {
+			ht = g_hash_table_new ((GHashFunc)mono_metadata_generic_param_hash, (GEqualFunc)mono_metadata_generic_param_equal);
+			mono_memory_barrier ();
+			if (is_mvar)
+				image->mvar_cache_constrained = ht;
+			else
+				image->var_cache_constrained = ht;
+		}
+		g_hash_table_insert (ht, param, klass);
+	} else if (n < FAST_CACHE_SIZE) {
 		if (is_mvar) {
 			/* Requires locking to avoid droping an already published class */
 			if (!image->mvar_cache_fast)

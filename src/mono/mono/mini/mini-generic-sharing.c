@@ -720,49 +720,6 @@ class_uninstantiated (MonoClass *class)
 	return class;
 }
 
-static gboolean
-generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
-						  gboolean allow_partial)
-{
-	int i;
-
-	for (i = 0; i < inst->type_argc; ++i) {
-		MonoType *type = inst->type_argv [i];
-
-		if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
-			continue;
- 
-		/* Allow non ref arguments if they are primitive types or enums (partial sharing). */
-		if (allow_partial && !type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)))
-			continue;
-
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-/*
- * mono_is_partially_sharable_inst:
- *
- *   Return TRUE if INST has ref and non-ref type arguments.
- */
-gboolean
-mono_is_partially_sharable_inst (MonoGenericInst *inst)
-{
-	int i;
-	gboolean has_refs = FALSE, has_non_refs = FALSE;
-
-	for (i = 0; i < inst->type_argc; ++i) {
-		if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
-			has_refs = TRUE;
-		else
-			has_non_refs = TRUE;
-	}
-
-	return has_refs && has_non_refs;
-}
-
 /*
  * get_shared_class:
  *
@@ -2117,6 +2074,71 @@ mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst
 	return mrgctx;
 }
 
+
+static gboolean
+generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
+						  gboolean allow_partial);
+
+static gboolean
+type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_partial)
+{
+	if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
+		return TRUE;
+
+	/* Allow non ref arguments if they are primitive types or enums (partial sharing). */
+	if (allow_partial && !type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)))
+		return TRUE;
+
+	/*
+	if (allow_partial && !type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
+		MonoGenericClass *gclass = type->data.generic_class;
+
+		if (gclass->context.class_inst && !generic_inst_is_sharable (gclass->context.class_inst, allow_type_vars, allow_partial))
+			return FALSE;
+		if (gclass->context.method_inst && !generic_inst_is_sharable (gclass->context.method_inst, allow_type_vars, allow_partial))
+			return FALSE;
+		return TRUE;
+	}
+	*/
+
+	return FALSE;
+}
+
+static gboolean
+generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
+						  gboolean allow_partial)
+{
+	int i;
+
+	for (i = 0; i < inst->type_argc; ++i) {
+		if (!type_is_sharable (inst->type_argv [i], allow_type_vars, allow_partial))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+/*
+ * mono_is_partially_sharable_inst:
+ *
+ *   Return TRUE if INST has ref and non-ref type arguments.
+ */
+gboolean
+mono_is_partially_sharable_inst (MonoGenericInst *inst)
+{
+	int i;
+	gboolean has_refs = FALSE, has_non_refs = FALSE;
+
+	for (i = 0; i < inst->type_argc; ++i) {
+		if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
+			has_refs = TRUE;
+		else
+			has_non_refs = TRUE;
+	}
+
+	return has_refs && has_non_refs;
+}
+
 /*
  * mono_generic_context_is_sharable_full:
  * @context: a generic context
@@ -2627,18 +2649,15 @@ mini_get_basic_type_from_generic (MonoGenericSharingContext *gsctx, MonoType *ty
 	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type_gsctx (gsctx, type))
 		return type;
 	else if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		MonoTypeEnum constraint = type->data.generic_param->gshared_constraint;
+		MonoType *constraint = type->data.generic_param->gshared_constraint;
 		/* The gparam serial encodes the type this gparam can represent */
-		if (constraint == 0) {
+		if (!constraint) {
 			return &mono_defaults.object_class->byval_arg;
 		} else {
-			MonoType t;
 			MonoClass *klass;
 
-			g_assert (constraint != MONO_TYPE_VALUETYPE);
-			memset (&t, 0, sizeof (t));
-			t.type = constraint;
-			klass = mono_class_from_mono_type (&t);
+			g_assert (constraint != &mono_defaults.int_class->parent->byval_arg);
+			klass = mono_class_from_mono_type (constraint);
 			return &klass->byval_arg;
 		}
 	} else {
@@ -2813,11 +2832,17 @@ mini_class_is_generic_sharable (MonoClass *klass)
 	return (klass->generic_class && mono_generic_context_is_sharable (&klass->generic_class->context, FALSE));
 }
 
-
 gboolean
 mini_is_gsharedvt_variable_klass (MonoCompile *cfg, MonoClass *klass)
 {
 	return mini_is_gsharedvt_variable_type (cfg, &klass->byval_arg);
+}
+
+gboolean
+mini_is_gsharedvt_gparam (MonoType *t)
+{
+	/* Matches get_gsharedvt_type () */
+	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint && t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE;
 }
 
 static char*
@@ -2827,6 +2852,8 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 		return g_strdup_printf ("%s_GSHAREDVT", name);
 	} else if (constraint == MONO_TYPE_OBJECT) {
 		return g_strdup_printf ("%s_REF", name);
+	} else if (constraint == MONO_TYPE_GENERICINST) {
+		return g_strdup_printf ("%s_INST", name);
 	} else {
 		MonoType t;
 		char *tname, *tname2, *res;
@@ -2842,19 +2869,56 @@ get_shared_gparam_name (MonoTypeEnum constraint, const char *name)
 	}
 }
 
+typedef struct {
+	MonoGenericParam *par;
+	MonoType *constraint;
+} SharedGParam;
+
+static guint
+shared_gparam_hash (gconstpointer data)
+{
+	SharedGParam *p = (SharedGParam*)data;
+	guint hash;
+
+	hash = mono_metadata_generic_param_hash (p->par);
+	hash = ((hash << 5) - hash) ^ mono_metadata_type_hash (p->constraint);
+
+	return hash;
+}
+
+static gboolean
+shared_gparam_equal (gconstpointer ka, gconstpointer kb)
+{
+	SharedGParam *p1 = (SharedGParam*)ka;
+	SharedGParam *p2 = (SharedGParam*)kb;
+
+	if (p1 == p2)
+		return TRUE;
+	if (p1->par != p2->par)
+		return FALSE;
+	if (!mono_metadata_type_equal (p1->constraint, p2->constraint))
+		return FALSE;
+	return TRUE;
+}
+
 /*
  * get_shared_gparam:
  *
  *   Create an anonymous gparam with a type variable with a constraint which encodes which types can match it.
  */
 static MonoType*
-get_shared_gparam (MonoType *t, MonoTypeEnum constraint)
+get_shared_gparam (MonoType *t, MonoType *constraint)
 {
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGenericParam *copy;
+	SharedGParam key;
 	MonoType *res;
 	MonoImage *image = NULL;
 	char *name;
+
+	memset (&key, 0, sizeof (key));
+	key.par = par;
+	key.constraint = constraint;
 
 	g_assert (mono_generic_param_info (par));
 	/* image might not be set for sre */
@@ -2866,15 +2930,15 @@ get_shared_gparam (MonoType *t, MonoTypeEnum constraint)
 			image->gshared_types_len = MONO_TYPE_INTERNAL;
 			image->gshared_types = g_new0 (GHashTable*, image->gshared_types_len);
 		}
-		if (!image->gshared_types [constraint])
-			image->gshared_types [constraint] = g_hash_table_new (NULL, NULL);
-		res = g_hash_table_lookup (image->gshared_types [constraint], par);
+		if (!image->gshared_types [constraint->type])
+			image->gshared_types [constraint->type] = g_hash_table_new (shared_gparam_hash, shared_gparam_equal);
+		res = g_hash_table_lookup (image->gshared_types [constraint->type], &key);
 		mono_image_unlock (image);
 		if (res)
 			return res;
 		copy = mono_image_alloc0 (image, sizeof (MonoGenericParamFull));
 		memcpy (copy, par, sizeof (MonoGenericParamFull));
-		name = get_shared_gparam_name (constraint, ((MonoGenericParamFull*)copy)->info.name);
+		name = get_shared_gparam_name (constraint->type, ((MonoGenericParamFull*)copy)->info.name);
 		((MonoGenericParamFull*)copy)->info.name = mono_image_strdup (image, name);
 		g_free (name);
 	} else {
@@ -2885,24 +2949,52 @@ get_shared_gparam (MonoType *t, MonoTypeEnum constraint)
 	copy->owner = NULL;
 	// FIXME:
 	copy->image = mono_defaults.corlib;
+
 	copy->gshared_constraint = constraint;
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = copy;
 
 	if (image) {
+		SharedGParam *dkey;
+
+		dkey = mono_image_alloc0 (image, sizeof (SharedGParam));
+		dkey->par = par;
+		dkey->constraint = constraint;
+
 		mono_image_lock (image);
 		/* Duplicates are ok */
-		g_hash_table_insert (image->gshared_types [constraint], par, res);
+		g_hash_table_insert (image->gshared_types [constraint->type], dkey, res);
 		mono_image_unlock (image);
 	}
 
 	return res;
 }
 
+static MonoGenericInst*
+get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGenericContainer *container, gboolean all_vt, gboolean gsharedvt, gboolean partial);
+
 static MonoType*
 get_shared_type (MonoType *t, MonoType *type)
 {
 	MonoTypeEnum ttype;
+
+	/*
+	if (!type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
+		MonoGenericClass *gclass = type->data.generic_class;
+		MonoGenericContext context;
+		MonoClass *k;
+
+		memset (&context, 0, sizeof (context));
+		if (gclass->context.class_inst)
+			context.class_inst = get_shared_inst (gclass->context.class_inst, gclass->container_class->generic_container->context.class_inst, NULL, FALSE, FALSE, TRUE);
+		if (gclass->context.method_inst)
+			context.method_inst = get_shared_inst (gclass->context.method_inst, gclass->container_class->generic_container->context.method_inst, NULL, FALSE, FALSE, TRUE);
+
+		k = mono_class_inflate_generic_class (gclass->container_class, &context);
+
+		return get_shared_gparam (t, &k->byval_arg);
+	}
+	*/
 
 	g_assert (!type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype)));
 
@@ -2910,13 +3002,24 @@ get_shared_type (MonoType *t, MonoType *type)
 	ttype = type->type;
 	if (type->type == MONO_TYPE_VALUETYPE)
 		ttype = mono_class_enum_basetype (type->data.klass)->type;
-	return get_shared_gparam (t, ttype);
+
+	{
+		MonoType t2;
+		MonoClass *klass;
+
+		memset (&t2, 0, sizeof (t2));
+		t2.type = ttype;
+		klass = mono_class_from_mono_type (&t2);
+
+		return get_shared_gparam (t, &klass->byval_arg);
+	}
 }
 
 static MonoType*
 get_gsharedvt_type (MonoType *t)
 {
-	return get_shared_gparam (t, MONO_TYPE_VALUETYPE);
+	/* Use TypeHandle as the constraint type since its a valuetype */
+	return get_shared_gparam (t, &mono_defaults.typehandle_class->byval_arg);
 }
 
 static MonoGenericInst*
@@ -2932,7 +3035,7 @@ get_shared_inst (MonoGenericInst *inst, MonoGenericInst *shared_inst, MonoGeneri
 			type_argv [i] = get_gsharedvt_type (shared_inst->type_argv [i]);
 		} else if ((MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)) {
 			g_assert (shared_inst);
-			type_argv [i] = get_shared_gparam (shared_inst->type_argv [i], MONO_TYPE_OBJECT);
+			type_argv [i] = get_shared_gparam (shared_inst->type_argv [i], &mono_defaults.object_class->byval_arg);
 		} else if (partial) {
 			/* These types match the ones in generic_inst_is_sharable () */
 			type_argv [i] = get_shared_type (shared_inst->type_argv [i], inst->type_argv [i]);

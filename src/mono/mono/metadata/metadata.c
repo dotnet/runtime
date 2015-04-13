@@ -48,7 +48,6 @@ static void free_generic_class (MonoGenericClass *ginst);
 static void free_inflated_method (MonoMethodInflated *method);
 static void free_inflated_signature (MonoInflatedMethodSignature *sig);
 static void mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, MonoMarshalSpec **marshal_spec, gboolean alloc_from_image);
-static guint mono_metadata_generic_param_hash (MonoGenericParam *p);
 
 /*
  * This enumeration is used to describe the data types in the metadata
@@ -4449,12 +4448,12 @@ mono_type_size (MonoType *t, int *align)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (t->data.generic_param->gshared_constraint == 0 || t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE) {
+		if (!t->data.generic_param->gshared_constraint || t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
 			*align = MONO_ABI_ALIGNOF (gpointer);
 			return sizeof (gpointer);
 		} else {
 			/* The gparam can only match types given by gshared_constraint */
-			simple_type = t->data.generic_param->gshared_constraint;
+			return mono_type_size (t->data.generic_param->gshared_constraint, align);
 			goto again;
 		}
 	default:
@@ -4500,7 +4499,6 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	}
 
 	simple_type = t->type;
- again:
 	switch (simple_type) {
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
@@ -4524,13 +4522,12 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_assert (allow_open);
-		if (t->data.generic_param->gshared_constraint == 0 || t->data.generic_param->gshared_constraint == MONO_TYPE_VALUETYPE) {
+		if (!t->data.generic_param->gshared_constraint || t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
 			*align = stack_slot_align;
 			return stack_slot_size;
 		} else {
 			/* The gparam can only match types given by gshared_constraint */
-			simple_type = t->data.generic_param->gshared_constraint;
-			goto again;
+			return mono_type_stack_size_internal (t->data.generic_param->gshared_constraint, align, allow_open);
 		}
 	case MONO_TYPE_TYPEDBYREF:
 		*align = stack_slot_align;
@@ -4719,13 +4716,15 @@ mono_metadata_type_hash (MonoType *t1)
 	}
 }
 
-static guint
+guint
 mono_metadata_generic_param_hash (MonoGenericParam *p)
 {
 	guint hash;
 	MonoGenericParamInfo *info;
 
-	hash = (mono_generic_param_num (p) << 2) | p->gshared_constraint;
+	hash = (mono_generic_param_num (p) << 2);
+	if (p->gshared_constraint)
+		hash = ((hash << 5) - hash) ^ mono_metadata_type_hash (p->gshared_constraint);
 	info = mono_generic_param_info (p);
 	/* Can't hash on the owner klass/method, since those might not be set when this is called */
 	if (info)
@@ -4734,14 +4733,19 @@ mono_metadata_generic_param_hash (MonoGenericParam *p)
 }
 
 static gboolean
-mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, gboolean signature_only)
+mono_metadata_generic_param_equal_internal (MonoGenericParam *p1, MonoGenericParam *p2, gboolean signature_only)
 {
 	if (p1 == p2)
 		return TRUE;
 	if (mono_generic_param_num (p1) != mono_generic_param_num (p2))
 		return FALSE;
-	if (p1->gshared_constraint != p2->gshared_constraint)
-		return FALSE;
+	if (p1->gshared_constraint && p2->gshared_constraint) {
+		if (!mono_metadata_type_equal (p1->gshared_constraint, p2->gshared_constraint))
+			return FALSE;
+	} else {
+		if (p1->gshared_constraint != p2->gshared_constraint)
+			return FALSE;
+	}
 
 	/*
 	 * We have to compare the image as well because if we didn't,
@@ -4767,6 +4771,12 @@ mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2, g
 	return signature_only;
 }
 
+gboolean
+mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2)
+{
+	return mono_metadata_generic_param_equal_internal (p1, p2, TRUE);
+}
+
 static gboolean
 mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only)
 {
@@ -4779,10 +4789,10 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 	if (c1->generic_container && c2->generic_class)
 		return _mono_metadata_generic_class_container_equal (c2->generic_class, c1, signature_only);
 	if ((c1->byval_arg.type == MONO_TYPE_VAR) && (c2->byval_arg.type == MONO_TYPE_VAR))
-		return mono_metadata_generic_param_equal (
+		return mono_metadata_generic_param_equal_internal (
 			c1->byval_arg.data.generic_param, c2->byval_arg.data.generic_param, signature_only);
 	if ((c1->byval_arg.type == MONO_TYPE_MVAR) && (c2->byval_arg.type == MONO_TYPE_MVAR))
-		return mono_metadata_generic_param_equal (
+		return mono_metadata_generic_param_equal_internal (
 			c1->byval_arg.data.generic_param, c2->byval_arg.data.generic_param, signature_only);
 	if (signature_only &&
 	    (c1->byval_arg.type == MONO_TYPE_SZARRAY) && (c2->byval_arg.type == MONO_TYPE_SZARRAY))
@@ -4872,10 +4882,10 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 		return _mono_metadata_generic_class_equal (
 			t1->data.generic_class, t2->data.generic_class, signature_only);
 	case MONO_TYPE_VAR:
-		return mono_metadata_generic_param_equal (
+		return mono_metadata_generic_param_equal_internal (
 			t1->data.generic_param, t2->data.generic_param, signature_only);
 	case MONO_TYPE_MVAR:
-		return mono_metadata_generic_param_equal (
+		return mono_metadata_generic_param_equal_internal (
 			t1->data.generic_param, t2->data.generic_param, signature_only);
 	case MONO_TYPE_FNPTR:
 		return mono_metadata_fnptr_equal (t1->data.method, t2->data.method, signature_only);

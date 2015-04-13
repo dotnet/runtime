@@ -333,6 +333,8 @@ struct _MonoImage {
 	MonoClass **mvar_cache_fast;
 	GHashTable *var_cache_slow;
 	GHashTable *mvar_cache_slow;
+	GHashTable *var_cache_constrained;
+	GHashTable *mvar_cache_constrained;
 
 	/* Maps malloc-ed char* pinvoke scope -> MonoDl* */
 	GHashTable *pinvoke_scopes;
@@ -714,6 +716,12 @@ mono_metadata_lookup_generic_class          (MonoClass		   *gclass,
 					     gboolean		    is_dynamic);
 
 MonoGenericInst * mono_metadata_inflate_generic_inst  (MonoGenericInst *ginst, MonoGenericContext *context, MonoError *error);
+
+guint
+mono_metadata_generic_param_hash (MonoGenericParam *p);
+
+gboolean
+mono_metadata_generic_param_equal (MonoGenericParam *p1, MonoGenericParam *p2);
 
 void mono_dynamic_stream_reset  (MonoDynamicStream* stream);
 void mono_assembly_addref       (MonoAssembly *assembly);

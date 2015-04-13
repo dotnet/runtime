@@ -105,7 +105,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 112
+#define MONO_AOT_FILE_VERSION 113
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -2809,6 +2809,9 @@ mini_class_is_generic_sharable (MonoClass *klass);
 
 gboolean
 mono_is_partially_sharable_inst (MonoGenericInst *inst);
+
+gboolean
+mini_is_gsharedvt_gparam (MonoType *t);
 
 MonoGenericSharingContext* mono_get_generic_context_from_code (guint8 *code);
 
