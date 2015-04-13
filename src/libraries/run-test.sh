@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+wait_on_pids()
+{
+  # Wait on the last processes
+  for job in $1
+  do
+    wait $job
+    if [ "$?" -ne 0 ]
+    then
+      TestsFailed=$(($TestsFailed+1))
+    fi
+  done
+}
+
 usage()
 {
     echo "Runs tests on linux/mac that don't have native build support"
@@ -135,14 +148,14 @@ runtest()
   if grep "UnsupportedPlatforms.*$OS.*" $1
   then
     echo "Test project file $1 indicates this test is not supported on $OS, skipping"
-    return
+    exit 0
   fi
   
   # Check for project restrictions
   
   if [[ ! $testProject =~ $TestSelection ]]; then
     echo "Skipping $testProject"
-    return
+    exit 0
   fi
 
   # Grab the directory name that would correspond to this test
@@ -159,7 +172,7 @@ runtest()
   if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
   then
     echo "Did not find corresponding test dll for $testProject at $dirName/$testDllName"
-    return
+    exit 1
   fi
 
   copy_test_overlay $dirName
@@ -172,11 +185,9 @@ runtest()
   echo "./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory"
   echo
   ./corerun xunit.console.netcore.exe $testDllName -xml testResults.xml -notrait category=failing -notrait category=OuterLoop -notrait category=$xunitOSCategory
-  if [ $? ]
-  then
-    TestsFailed=1
-  fi
+  exitCode=$?
   popd > /dev/null
+  exit $exitCode
 }
 
 # Parse arguments
@@ -255,16 +266,27 @@ create_test_overlay
 
 # Walk the directory tree rooted at src bin/tests/Windows_NT.AnyCPU.$Configuration/
 
+TestsFailed=0
 numberOfProcesses=0
 maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
 for file in src/**/tests/*.Tests.csproj
 do
   runtest $file &
+  pids="$pids $!"
   numberOfProcesses=$(($numberOfProcesses+1))
   if [ "$numberOfProcesses" -ge $maxProcesses ]; then
-    wait
+    wait_on_pids "$pids"
     numberOfProcesses=0
+    pids=""
   fi
 done
 
+# Wait on the last processes
+wait_on_pids "$pids"
+
+if [ "$TestsFailed" -gt 0 ]
+then
+  echo "$TestsFailed test(s) failed"
+fi
 exit $TestsFailed
+
