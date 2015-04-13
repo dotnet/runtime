@@ -830,6 +830,7 @@ monitor_thread (gpointer unused)
 	while (1) {
 		ms = SAMPLES_PERIOD;
 		i = 10; //number of spurious awakes we tolerate before doing a round of rebalancing.
+		mono_gc_set_skip_thread (TRUE);
 		do {
 			guint32 ts;
 			ts = mono_msec_ticks ();
@@ -838,9 +839,9 @@ monitor_thread (gpointer unused)
 			ms -= (mono_msec_ticks () - ts);
 			if (mono_runtime_is_shutting_down ())
 				break;
-			if (THREAD_WANTS_A_BREAK (thread))
-				mono_thread_interruption_checkpoint ();
+			check_for_interruption_critical ();
 		} while (ms > 0 && i--);
+		mono_gc_set_skip_thread (FALSE);
 
 		if (mono_runtime_is_shutting_down ())
 			break;
