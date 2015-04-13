@@ -47,6 +47,9 @@ Want to chat with other members of the CoreFX community?
 
 The repo contains the following components. More libraries are coming soon. ['Watch'](https://github.com/dotnet/corefx/subscription) the repo to be notified.
 
+* **System.Collections**. Provides classes that define generic collections, which allow developers to create 
+  strongly-typed collections.
+
 * **System.Collections.Concurrent**.  Provides a set of thread-safe collection types, instances of which may be used 
   concurrently from multiple threads.
 
@@ -95,6 +98,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string 
   comparisons and support the use of non-ASCII characters for Internet domain names.
 
+* **System.IO.Compression**. Provides classes that support the compression and decompression of streams.
+
 * **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
   file system objects and for reading and writing files via streams.
 
@@ -132,11 +137,13 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.ObjectModel**. Provides types and interfaces that enable the creation of observable types that provide
   notifications to clients when changes are made.
 
+* **System.Reflection.DispatchProxy**. Provides a mechanism for dynamcially creating proxy types that implement a 
+  specified interface and derive from a specified DispatchProxy type.
+
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
 
-* **System.Resources.ResourceWriter**. Provides the System.Resources.ResourceWriter class, which writes resources in the 
-  system-default format to an output stream.
+* **System.Resources.ReaderWriter**. Provides classes for reading and writing resources in the system-default format.
 
 * **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
 
@@ -153,6 +160,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Runtime.Serialization.Xml**. Provides classes for serializing objects to the Extensible Markup Language (XML) 
   and deserializing XML data to objects.
+
+* **System.Security.SecureString**. Provides support for accessing and modifying text that should be kept confidential.
 
 * **System.ServiceProcess.ServiceController**. Provides the ServiceController class that represents a Windows service
   and allows you to connect to a running or stopped service, manipulate it, or get information about it.
@@ -186,11 +195,11 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **Microsoft.CSharp**. Provides support for compilation and code generation, including dynamic, using the C# language.
 
+* **Microsoft.VisualBasic**. Provides types that support the Visual Basic runtime.
+
 * **Microsoft.Win32.Primitives**. Provides common types supporting the implementation of Win32-based libraries.
 
 * **Microsoft.Win32.Registry**. Provides support for accessing and modifying the Windows Registry.
-
-* **System.Security.SecureString**. Provides support for accessing and modifying text that should be kept confidential.
 
 * The overall list of items we currently plan to move onto GitHub is [here][typelist].
 
