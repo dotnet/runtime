@@ -1504,9 +1504,9 @@ static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex
 
 	if (!alertable) {
 		/*
-		 * FIXME: This is likely incorrect.  pthread_cond_(timed)wait() can return 0
-		 * even if the condition was not signalled.  This happens at least on
-		 * Darwin.
+		 * pthread_cond_(timed)wait() can return 0 even if the condition was not
+		 * signalled.  This happens at least on Darwin.  We surface this, i.e., we
+		 * get spurious wake-ups.
 		 *
 		 * http://pubs.opengroup.org/onlinepubs/007908775/xsh/pthread_cond_wait.html
 		 */
