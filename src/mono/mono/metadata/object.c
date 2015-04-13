@@ -530,8 +530,7 @@ default_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 static MonoTrampoline arch_create_jit_trampoline = default_trampoline;
 static MonoJumpTrampoline arch_create_jump_trampoline = default_jump_trampoline;
 static MonoDelegateTrampoline arch_create_delegate_trampoline = default_delegate_trampoline;
-static MonoImtThunkBuilder imt_thunk_builder = NULL;
-#define ARCH_USE_IMT (imt_thunk_builder != NULL)
+static MonoImtThunkBuilder imt_thunk_builder;
 #if (MONO_IMT_SIZE > 32)
 #error "MONO_IMT_SIZE cannot be larger than 32"
 #endif
@@ -1965,16 +1964,12 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	if (class_size)
 		vtable_slots++;
 
-	if (ARCH_USE_IMT) {
-		if (class->interface_offsets_count) {
-			imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
-			mono_stats.imt_number_of_tables++;
-			mono_stats.imt_tables_size += imt_table_bytes;
-		} else {
-			imt_table_bytes = 0;
-		}
+	if (class->interface_offsets_count) {
+		imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
+		mono_stats.imt_number_of_tables++;
+		mono_stats.imt_tables_size += imt_table_bytes;
 	} else {
-		imt_table_bytes = sizeof (gpointer) * (class->max_interface_id + 1);
+		imt_table_bytes = 0;
 	}
 
 	vtable_size = imt_table_bytes + MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer);
@@ -2107,13 +2102,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	//printf ("Initializing VT for class %s (interface_offsets_count = %d)\n",
 	//		class->name, class->interface_offsets_count);
 	
-	if (! ARCH_USE_IMT) {
-		/* initialize interface offsets */
-		for (i = 0; i < class->interface_offsets_count; ++i) {
-			int interface_id = class->interfaces_packed [i]->interface_id;
-			int slot = class->interface_offsets_packed [i];
-			interface_offsets [class->max_interface_id - interface_id] = &(vt->vtable [slot]);
-		}
+	/* initialize interface offsets */
+	for (i = 0; i < class->interface_offsets_count; ++i) {
+		int interface_id = class->interfaces_packed [i]->interface_id;
+		int slot = class->interface_offsets_packed [i];
+		interface_offsets [class->max_interface_id - interface_id] = &(vt->vtable [slot]);
 	}
 
 	/* Initialize vtable */
@@ -2133,7 +2126,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		}
 	}
 
-	if (ARCH_USE_IMT && imt_table_bytes) {
+	if (imt_table_bytes) {
 		/* Now that the vtable is full, we can actually fill up the IMT */
 		if (callbacks.get_imt_trampoline) {
 			/* lazy construction of the IMT entries enabled */
@@ -2297,13 +2290,9 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		if (iclass->max_interface_id > max_interface_id) max_interface_id = iclass->max_interface_id;
 	}
 
-	if (ARCH_USE_IMT) {
-		imt_table_bytes = sizeof (gpointer) * MONO_IMT_SIZE;
-		mono_stats.imt_number_of_tables++;
-		mono_stats.imt_tables_size += imt_table_bytes;
-	} else {
-		imt_table_bytes = sizeof (gpointer) * (max_interface_id + 1);
-	}
+	imt_table_bytes = sizeof (gpointer) * MONO_IMT_SIZE;
+	mono_stats.imt_number_of_tables++;
+	mono_stats.imt_tables_size += imt_table_bytes;
 
 	vtsize = imt_table_bytes + MONO_SIZEOF_VTABLE + class->vtable_size * sizeof (gpointer);
 
@@ -2349,14 +2338,6 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	bitmap = mono_domain_alloc0 (domain, bsize);
 #endif
 
-	if (! ARCH_USE_IMT) {
-		/* initialize interface offsets */
-		for (i = 0; i < class->interface_offsets_count; ++i) {
-			int interface_id = class->interfaces_packed [i]->interface_id;
-			int slot = class->interface_offsets_packed [i];
-			interface_offsets [class->max_interface_id - interface_id] = &(pvt->vtable [slot]);
-		}
-	}
 	for (i = 0; i < class->interface_offsets_count; ++i) {
 		int interface_id = class->interfaces_packed [i]->interface_id;
 		bitmap [interface_id >> 3] |= (1 << (interface_id & 7));
@@ -2373,9 +2354,6 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 		for (list_item = extra_interfaces; list_item != NULL; list_item=list_item->next) {
 			interf = list_item->data;
 			
-			if (! ARCH_USE_IMT) {
-				interface_offsets [max_interface_id - interf->interface_id] = &pvt->vtable [slot];
-			}
 			bitmap [interf->interface_id >> 3] |= (1 << (interf->interface_id & 7));
 
 			iter = NULL;
@@ -2385,17 +2363,12 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 			
 			slot += mono_class_num_methods (interf);
 		}
-		if (! ARCH_USE_IMT) {
-			g_slist_free (extra_interfaces);
-		}
 	}
 
-	if (ARCH_USE_IMT) {
-		/* Now that the vtable is full, we can actually fill up the IMT */
-		build_imt (class, pvt, domain, interface_offsets, extra_interfaces);
-		if (extra_interfaces) {
-			g_slist_free (extra_interfaces);
-		}
+	/* Now that the vtable is full, we can actually fill up the IMT */
+	build_imt (class, pvt, domain, interface_offsets, extra_interfaces);
+	if (extra_interfaces) {
+		g_slist_free (extra_interfaces);
 	}
 
 #ifdef COMPRESSED_INTERFACE_BITMAP

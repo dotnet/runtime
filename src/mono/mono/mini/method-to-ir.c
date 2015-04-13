@@ -2898,18 +2898,10 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			vtable_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_FAULT (cfg, vtable_reg, this_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 			if (method->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-				slot_reg = -1;
-				if (mono_use_imt) {
-					guint32 imt_slot = mono_method_get_imt_slot (method);
-					emit_imt_argument (cfg, call, call->method, imt_arg);
-					slot_reg = vtable_reg;
-					offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
-				}
-				if (slot_reg == -1) {
-					slot_reg = alloc_preg (cfg);
-					mini_emit_load_intf_reg_vtable (cfg, slot_reg, vtable_reg, method->klass);
-					offset = mono_method_get_vtable_index (method) * SIZEOF_VOID_P;
-				}
+				guint32 imt_slot = mono_method_get_imt_slot (method);
+				emit_imt_argument (cfg, call, call->method, imt_arg);
+				slot_reg = vtable_reg;
+				offset = ((gint32)imt_slot - MONO_IMT_SIZE) * SIZEOF_VOID_P;
 			} else {
 				slot_reg = vtable_reg;
 				offset = MONO_STRUCT_OFFSET (MonoVTable, vtable) +
@@ -9180,7 +9172,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					GSHAREDVT_FAILURE (*ip);
 
 #if MONO_ARCH_HAVE_GENERALIZED_IMT_THUNK && defined(MONO_ARCH_GSHARED_SUPPORTED)
-				if (cmethod->wrapper_type == MONO_WRAPPER_NONE && mono_use_imt)
+				if (cmethod->wrapper_type == MONO_WRAPPER_NONE)
 					use_imt = TRUE;
 #endif
 
@@ -9333,7 +9325,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						GSHAREDVT_FAILURE (*ip);
 					if (fsig->generic_param_count) {
 						/* virtual generic call */
-						g_assert (mono_use_imt);
 						g_assert (!imt_arg);
 						/* Same as the virtual generic case above */
 						imt_arg = emit_get_rgctx_method (cfg, context_used,
