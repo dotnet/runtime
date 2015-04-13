@@ -843,6 +843,10 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_VistaAndAboveETWEnabled, W("ETWEnabled"), 1
 RETAIL_CONFIG_STRING_INFO_EX(UNSUPPORTED_ETW_ObjectAllocationEventsPerTypePerSec, W("ETW_ObjectAllocationEventsPerTypePerSec"), "Desired number of GCSampledObjectAllocation ETW events to be logged per type per second.  If 0, then the default built in to the implementation for the enabled event (e.g., High, Low), will be used.", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ProfAPI_ValidateNGENInstrumentation, W("ProfAPI_ValidateNGENInstrumentation"), 0, "This flag enables additional validations when using the IMetaDataEmit APIs for NGEN'ed images to ensure only supported edits are made.")
 
+#ifdef FEATURE_PERFMAP
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux to enable writing /tmp/perf-$pid.map. It is disabled by default", CLRConfig::REGUTIL_default)
+#endif
+
 //
 // Shim
 //
