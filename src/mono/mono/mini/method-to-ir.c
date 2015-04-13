@@ -2872,7 +2872,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			 * and then we can call the method directly.
 			 */
 #ifndef DISABLE_REMOTING
-			if ((mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+			if (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class) {
 				/* 
 				 * The check above ensures method is not gshared, this is needed since
 				 * gshared methods can't have wrappers.
