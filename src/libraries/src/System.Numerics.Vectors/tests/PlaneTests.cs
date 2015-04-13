@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -325,6 +326,19 @@ namespace System.Numerics.Tests
             Assert.Equal(40, sizeof(PlanePlusFloat_2x));
         }
         */
+
+        [Fact]
+        public void PlaneToStringTest()
+        {
+            Plane target = new Plane(1, 2, 3, 4);
+            string expected = string.Format(
+                CultureInfo.CurrentCulture,
+                "{{Normal:{0:G} D:{1}}}",
+                target.Normal,
+                target.D);
+
+            Assert.Equal(expected, target.ToString());
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         struct Plane_2x
