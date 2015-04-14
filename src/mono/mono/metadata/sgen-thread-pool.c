@@ -34,10 +34,10 @@ static MonoNativeThreadId thread;
 
 /* Only accessed with the lock held. */
 static SgenPointerQueue job_queue;
-static volatile gboolean idle_working;
 
 static SgenThreadPoolThreadInitFunc thread_init_func;
 static SgenThreadPoolIdleJobFunc idle_job_func;
+static SgenThreadPoolContinueIdleJobFunc continue_idle_job_func;
 
 enum {
 	STATE_WAITING,
@@ -83,6 +83,14 @@ remove_job (SgenThreadPoolJob *job)
 	sgen_thread_pool_job_free (job);
 }
 
+static gboolean
+continue_idle_job (void)
+{
+	if (!continue_idle_job_func)
+		return FALSE;
+	return continue_idle_job_func ();
+}
+
 static mono_native_thread_return_t
 thread_func (void *thread_data)
 {
@@ -90,19 +98,23 @@ thread_func (void *thread_data)
 
 	mono_mutex_lock (&lock);
 	for (;;) {
-		SgenThreadPoolJob *job;
-		gboolean do_idle = idle_working;
+		/*
+		 * It's important that we check the continue idle flag with the lock held.
+		 * Suppose we didn't check with the lock held, and the result is FALSE.  The
+		 * main thread might then set continue idle and signal us before we can take
+		 * the lock, and we'd lose the signal.
+		 */
+		gboolean do_idle = continue_idle_job ();
+		SgenThreadPoolJob *job = get_job_and_set_in_progress ();
 
-		job = get_job_and_set_in_progress ();
-		while (!job && !do_idle) {
+		if (!job && !do_idle) {
 			/*
 			 * pthread_cond_wait() can return successfully despite the condition
 			 * not being signalled, so we have to run this in a loop until we
 			 * really have work to do.
 			 */
 			mono_cond_wait (&work_cond, &lock);
-			do_idle = idle_working;
-			job = get_job_and_set_in_progress ();
+			continue;
 		}
 
 		mono_mutex_unlock (&lock);
@@ -124,21 +136,20 @@ thread_func (void *thread_data)
 			SGEN_ASSERT (0, do_idle, "Why did we unlock if we still have to wait for idle?");
 			SGEN_ASSERT (0, idle_job_func, "Why do we have idle work when there's no idle job function?");
 			do {
-				do_idle = idle_job_func (thread_data);
+				idle_job_func (thread_data);
+				do_idle = continue_idle_job ();
 			} while (do_idle && !job_queue.next_slot);
 
 			mono_mutex_lock (&lock);
 
-			if (!do_idle) {
-				idle_working = FALSE;
+			if (!do_idle)
 				mono_cond_signal (&done_cond);
-			}
 		}
 	}
 }
 
 void
-sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, void **thread_datas)
+sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, void **thread_datas)
 {
 	SGEN_ASSERT (0, num_threads == 1, "We only support 1 thread pool thread for now.");
 
@@ -148,7 +159,7 @@ sgen_thread_pool_init (int num_threads, SgenThreadPoolThreadInitFunc init_func, 
 
 	thread_init_func = init_func;
 	idle_job_func = idle_func;
-	idle_working = idle_func != NULL;
+	continue_idle_job_func = continue_idle_func;
 
 	mono_native_thread_create (&thread, thread_func, thread_datas ? thread_datas [0] : NULL);
 }
@@ -203,13 +214,10 @@ sgen_thread_pool_idle_signal (void)
 {
 	SGEN_ASSERT (0, idle_job_func, "Why are we signaling idle without an idle function?");
 
-	if (idle_working)
-		return;
-
 	mono_mutex_lock (&lock);
 
-	idle_working = TRUE;
-	mono_cond_signal (&work_cond);
+	if (continue_idle_job_func ())
+		mono_cond_signal (&work_cond);
 
 	mono_mutex_unlock (&lock);
 }
@@ -219,12 +227,9 @@ sgen_thread_pool_idle_wait (void)
 {
 	SGEN_ASSERT (0, idle_job_func, "Why are we waiting for idle without an idle function?");
 
-	if (!idle_working)
-		return;
-
 	mono_mutex_lock (&lock);
 
-	while (idle_working)
+	while (continue_idle_job_func ())
 		mono_cond_wait (&done_cond, &lock);
 
 	mono_mutex_unlock (&lock);

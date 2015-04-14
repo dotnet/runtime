@@ -33,9 +33,27 @@ static WorkerData *workers_data;
 static SgenSectionGrayQueue workers_distribute_gray_queue;
 static gboolean workers_distribute_gray_queue_inited;
 
+/*
+ * Allowed transitions:
+ *
+ * | from \ to          | NOT WORKING | WORKING | WORK ENQUEUED | NURSERY COLLECTION |
+ * |--------------------+-------------+---------+---------------+--------------------|
+ * | NOT WORKING        | -           | -       | main          | main               |
+ * | WORKING            | worker      | -       | main          | main               |
+ * | WORK ENQUEUED      | -           | worker  | -             | main               |
+ * | NURSERY COLLECTION | -           | -       | main          | -                  |
+ *
+ * The WORK ENQUEUED state guarantees that the worker thread will inspect the queue again at
+ * least once.  Only after looking at the queue will it go back to WORKING, and then,
+ * eventually, to NOT WORKING.  After enqueuing work the main thread transitions the state
+ * to WORK ENQUEUED.  Signalling the worker thread to wake up is only necessary if the old
+ * state was NOT WORKING.
+ */
+
 enum {
 	STATE_NOT_WORKING,
 	STATE_WORKING,
+	STATE_WORK_ENQUEUED,
 	STATE_NURSERY_COLLECTION
 } WorkersStateName;
 
@@ -48,22 +66,15 @@ static guint64 stat_workers_num_finished;
 static gboolean
 set_state (State old_state, State new_state)
 {
-	if (old_state == STATE_NURSERY_COLLECTION)
-		SGEN_ASSERT (0, new_state != STATE_NOT_WORKING, "Can't go from nursery collection to not working");
+	SGEN_ASSERT (0, old_state != new_state, "Why are we transitioning to the same state?");
+	if (new_state == STATE_NOT_WORKING)
+		SGEN_ASSERT (0, old_state == STATE_WORKING, "We can only transition to NOT WORKING from WORKING");
+	else if (new_state == STATE_WORKING)
+		SGEN_ASSERT (0, old_state == STATE_WORK_ENQUEUED, "We can only transition to WORKING from WORK ENQUEUED");
+	if (new_state == STATE_NOT_WORKING || new_state == STATE_WORKING)
+		SGEN_ASSERT (6, sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Only the worker thread is allowed to transition to NOT_WORKING or WORKING");
 
 	return InterlockedCompareExchange (&workers_state, new_state, old_state) == old_state;
-}
-
-static void
-assert_not_working (State state)
-{
-	SGEN_ASSERT (0, state == STATE_NOT_WORKING, "Can only signal enqueue work when in no work state");
-}
-
-static void
-assert_working (State state)
-{
-	SGEN_ASSERT (0, state == STATE_WORKING, "A worker can't wait without being in working state");
 }
 
 static void
@@ -72,46 +83,47 @@ assert_nursery_collection (State state)
 	SGEN_ASSERT (0, state == STATE_NURSERY_COLLECTION, "Must be in the nursery collection state");
 }
 
-static void
-assert_working_or_nursery_collection (State state)
+static gboolean
+state_is_working_or_enqueued (State state)
 {
-	if (state != STATE_WORKING)
-		assert_nursery_collection (state);
+	return state == STATE_WORKING || state == STATE_WORK_ENQUEUED;
 }
 
 static void
 workers_signal_enqueue_work (gboolean from_nursery_collection)
 {
-	State old_state = workers_state;
+	State old_state;
 	gboolean did_set_state;
 
-	if (from_nursery_collection)
-		assert_nursery_collection (old_state);
-	else
-		assert_not_working (old_state);
+	do {
+		old_state = workers_state;
 
-	did_set_state = set_state (old_state, STATE_WORKING);
-	SGEN_ASSERT (0, did_set_state, "Nobody else should be mutating the state");
+		if (from_nursery_collection)
+			assert_nursery_collection (old_state);
+		else
+			SGEN_ASSERT (0, old_state != STATE_NURSERY_COLLECTION, "If we're not in a nursery collection, how come the state is NURSERY COLLECTION?");
 
-	sgen_thread_pool_idle_signal ();
-}
+		if (old_state == STATE_WORK_ENQUEUED)
+			break;
 
-static void
-workers_signal_enqueue_work_if_necessary (void)
-{
-	if (workers_state == STATE_NOT_WORKING)
-		workers_signal_enqueue_work (FALSE);
+		did_set_state = set_state (old_state, STATE_WORK_ENQUEUED);
+		if (from_nursery_collection)
+			SGEN_ASSERT (0, did_set_state, "Nobody else should be mutating the state");
+	} while (!did_set_state);
+
+	if (!state_is_working_or_enqueued (old_state))
+		sgen_thread_pool_idle_signal ();
 }
 
 void
 sgen_workers_ensure_awake (void)
 {
 	SGEN_ASSERT (0, workers_state != STATE_NURSERY_COLLECTION, "Can't wake workers during nursery collection");
-	workers_signal_enqueue_work_if_necessary ();
+	workers_signal_enqueue_work (FALSE);
 }
 
 static void
-worker_finish (void)
+worker_try_finish (void)
 {
 	State old_state;
 
@@ -120,9 +132,12 @@ worker_finish (void)
 	do {
 		old_state = workers_state;
 
-		assert_working_or_nursery_collection (old_state);
+		SGEN_ASSERT (0, old_state != STATE_NOT_WORKING, "How did we get from doing idle work to NOT WORKING without setting it ourselves?");
 		if (old_state == STATE_NURSERY_COLLECTION)
 			return;
+		if (old_state == STATE_WORK_ENQUEUED)
+			return;
+		SGEN_ASSERT (0, old_state == STATE_WORKING, "What other possibility is there?");
 
 		/* We are the last thread to go to sleep. */
 	} while (!set_state (old_state, STATE_NOT_WORKING));
@@ -161,7 +176,7 @@ sgen_workers_signal_start_nursery_collection_and_wait (void)
 		old_state = workers_state;
 
 		if (old_state != STATE_NOT_WORKING)
-			assert_working (old_state);
+			SGEN_ASSERT (0, old_state != STATE_NURSERY_COLLECTION, "Why are we transitioning to NURSERY COLLECTION when we're already there?");
 	} while (!set_state (old_state, STATE_NURSERY_COLLECTION));
 
 	sgen_thread_pool_idle_wait ();
@@ -228,15 +243,26 @@ thread_pool_init_func (void *data_untyped)
 }
 
 static gboolean
+continue_idle_func (void)
+{
+	return state_is_working_or_enqueued (workers_state);
+}
+
+static void
 marker_idle_func (void *data_untyped)
 {
 	WorkerData *data = data_untyped;
 	SgenMajorCollector *major = sgen_get_major_collector ();
 
-	if (workers_state != STATE_WORKING)
-		return FALSE;
+	if (!continue_idle_func ())
+		return;
 
 	SGEN_ASSERT (0, sgen_get_current_collection_generation () != GENERATION_NURSERY, "Why are we doing work while there's a nursery collection happening?");
+
+	if (workers_state == STATE_WORK_ENQUEUED) {
+		set_state (STATE_WORK_ENQUEUED, STATE_WORKING);
+		SGEN_ASSERT (0, workers_state != STATE_NOT_WORKING, "How did we get from WORK ENQUEUED to NOT WORKING?");
+	}
 
 	if (!sgen_gray_object_queue_is_empty (&data->private_gray_queue) || workers_get_work (data)) {
 		SgenObjectOperations *ops = sgen_concurrent_collection_in_progress ()
@@ -247,13 +273,9 @@ marker_idle_func (void *data_untyped)
 		SGEN_ASSERT (0, !sgen_gray_object_queue_is_empty (&data->private_gray_queue), "How is our gray queue empty if we just got work?");
 
 		sgen_drain_gray_stack (32, ctx);
-
-		return TRUE;
+	} else {
+		worker_try_finish ();
 	}
-
-	worker_finish ();
-
-	return FALSE;
 }
 
 static void
@@ -285,7 +307,7 @@ sgen_workers_init (int num_workers)
 	void *workers_data_ptrs [num_workers];
 
 	if (!sgen_get_major_collector ()->is_concurrent) {
-		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL);
+		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL, NULL);
 		return;
 	}
 
@@ -301,7 +323,7 @@ sgen_workers_init (int num_workers)
 	for (i = 0; i < workers_num; ++i)
 		workers_data_ptrs [i] = &workers_data [i];
 
-	sgen_thread_pool_init (num_workers, thread_pool_init_func, marker_idle_func, workers_data_ptrs);
+	sgen_thread_pool_init (num_workers, thread_pool_init_func, marker_idle_func, continue_idle_func, workers_data_ptrs);
 
 	mono_counters_register ("# workers finished", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_num_finished);
 }
@@ -320,33 +342,20 @@ sgen_workers_join (void)
 {
 	int i;
 
+	SGEN_ASSERT (0, workers_state != STATE_NURSERY_COLLECTION, "Can't be in nursery collection when joining");
+
 	if (!collection_needs_workers ())
 		return;
 
 	sgen_thread_pool_wait_for_all_jobs ();
-
-	for (;;) {
-		SGEN_ASSERT (0, workers_state != STATE_NURSERY_COLLECTION, "Can't be in nursery collection when joining");
-		sgen_thread_pool_idle_wait ();
-		assert_not_working (workers_state);
-
-		/*
-		 * Checking whether there is still work left and, if not, going to sleep,
-		 * are two separate actions that are not performed atomically by the
-		 * workers.  Therefore there's a race condition where work can be added
-		 * after they've checked for work, and before they've gone to sleep.
-		 */
-		if (sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue))
-			break;
-
-		workers_signal_enqueue_work (FALSE);
-	}
+	sgen_thread_pool_idle_wait ();
+	SGEN_ASSERT (0, workers_state == STATE_NOT_WORKING, "Can only signal enqueue work when in no work state");
 
 	/* At this point all the workers have stopped. */
 
-	g_assert (sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue));
+	SGEN_ASSERT (0, sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue), "Why is there still work left to do?");
 	for (i = 0; i < workers_num; ++i)
-		g_assert (sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue));
+		SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue), "Why is there still work left to do?");
 }
 
 gboolean
@@ -355,10 +364,11 @@ sgen_workers_all_done (void)
 	return workers_state == STATE_NOT_WORKING;
 }
 
+/* Must only be used for debugging */
 gboolean
 sgen_workers_are_working (void)
 {
-	return workers_state == STATE_WORKING;
+	return state_is_working_or_enqueued (workers_state);
 }
 
 void
