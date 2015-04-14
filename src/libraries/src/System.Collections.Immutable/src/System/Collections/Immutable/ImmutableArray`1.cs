@@ -1414,14 +1414,7 @@ namespace System.Collections.Immutable
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         object ICollection.SyncRoot
         {
-            get
-            {
-                // As a struct, this instance will be boxed in order to call this property getter.
-                // We will return the boxed instance. If the caller boxes and reboxes repeatedly,
-                // they'll get a different SyncRoot each time.
-                // No real alternative, but we don't anticipate this will be much problem anyway.
-                return this;
-            }
+            get { throw new NotSupportedException(); }
         }
 
         /// <summary>
