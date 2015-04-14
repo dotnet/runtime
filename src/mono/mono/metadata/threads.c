@@ -126,8 +126,8 @@ typedef struct {
 #define UICULTURES_START_IDX NUM_CACHED_CULTURES
 
 /* Controls access to the 'threads' hash table */
-#define mono_threads_lock() mono_mutex_lock (&threads_mutex)
-#define mono_threads_unlock() mono_mutex_unlock (&threads_mutex)
+static void mono_threads_lock (void);
+static void mono_threads_unlock (void);
 static mono_mutex_t threads_mutex;
 
 /* Controls access to context static data */
@@ -227,6 +227,22 @@ static HANDLE background_change_event;
 static gboolean shutting_down = FALSE;
 
 static gint32 managed_thread_id_counter = 0;
+
+
+static void
+mono_threads_lock (void)
+{
+	MONO_TRY_BLOCKING
+	mono_locks_acquire (&threads_mutex, ThreadsLock);
+	MONO_FINISH_TRY_BLOCKING
+}
+
+static void
+mono_threads_unlock (void)
+{
+	mono_locks_release (&threads_mutex, ThreadsLock);
+}
+
 
 static guint32
 get_next_managed_thread_id (void)
