@@ -45,7 +45,7 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.Text.Encodings.Web.csproj">
       <Project>{1dd0ff15-6234-4bd6-850a-317f05479554}</Project>
-      <Name>System.Text.Encodingss.Web</Name>
+      <Name>System.Text.Encodings.Web</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
