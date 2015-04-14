@@ -2829,6 +2829,9 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 			ei->flags = ec->flags;
 
+			if (G_UNLIKELY (cfg->verbose_level >= 4))
+				printf ("IL clause: try 0x%x-0x%x handler 0x%x-0x%x filter 0x%x\n", ec->try_offset, ec->try_offset + ec->try_len, ec->handler_offset, ec->handler_offset + ec->handler_len, ec->flags == MONO_EXCEPTION_CLAUSE_FILTER ? ec->data.filter_offset : 0);
+
 			/*
 			 * The spvars are needed by mono_arch_install_handler_block_guard ().
 			 */
