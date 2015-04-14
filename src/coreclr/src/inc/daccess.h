@@ -1864,6 +1864,9 @@ public: name(TADDR addr, TADDR vtAddr);                         \
 #define VPTR_ABSTRACT_VTABLE_CLASS(name, base)                  \
 public: name(TADDR addr, TADDR vtAddr) : base(addr, vtAddr) {}
 
+#define VPTR_ABSTRACT_VTABLE_CLASS_AND_CTOR(name, base) \
+        VPTR_ABSTRACT_VTABLE_CLASS(name, base)
+
 #define VPTR_ABSTRACT_VTABLE_CLASS_NO_CTOR_BODY(name, base)     \
 public: name(TADDR addr, TADDR vtAddr);
 
@@ -2131,6 +2134,10 @@ public: name(int dummy) {}
         friend struct _DacGlobals; \
 public: name(int dummy) : base(dummy) {}
 
+#define VPTR_ABSTRACT_VTABLE_CLASS_AND_CTOR(name, base) \
+        VPTR_ABSTRACT_VTABLE_CLASS(name, base) \
+        name() : base() {}
+
 #else // FEATURE_PAL
 
 #define VPTR_VTABLE_CLASS(name, base)
@@ -2140,6 +2147,7 @@ public: name(int dummy) : base(dummy) {}
 #define VPTR_BASE_VTABLE_CLASS(name)
 #define VPTR_BASE_VTABLE_CLASS_AND_CTOR(name)
 #define VPTR_ABSTRACT_VTABLE_CLASS(name, base)
+#define VPTR_ABSTRACT_VTABLE_CLASS_AND_CTOR(name, base)
 
 #endif // FEATURE_PAL
 
