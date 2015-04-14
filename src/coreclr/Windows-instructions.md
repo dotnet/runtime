@@ -1,125 +1,185 @@
+These instructions will lead you through building CoreCLR and running a "Hello World" demo on Windows. 
+
 Environment
 ===========
 
-- Visual Studio must be installed. Supported versions:
-    - [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284) - **Free** for Open Source development!
-    - [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) (Pro, Premium, Ultimate)
-    - Visual Studio Express isn't supported.
-    - Visual Studio 2015 is not yet support.
-- Install [Cmake](http://www.cmake.org/download/ "CMake") 3.0.2 for Windows and make sure it is present in PATH environment variable for the system.
-- Powershell should be installed.
-- Tools required to work with Git are installed (e.g. [Git for Windows](http://msysgit.github.io/), [GitHub for Windows](https://windows.github.com/))
+You must install several components to build the CoreCLR and CoreFX repos.These instructions were tested on Windows 7+. 
+
+Visual Studio
+-------------
+
+Visual Studio must be installed. Supported versions:
+
+- [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284) - **Free** for Open Source development!
+- [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) (Pro, Premium, Ultimate)
+
+Visual Studio Express is not supported. Visual Studio 2015 isn't supported yet.
 
 **Known Issues**
 
-If you installed VS 2013 after VS 2012, then DIA SDK gets incorrectly installed to the VS 2012 install folder instead of VS 2013 install folder. This will result in a build break. To workaround this [issue](https://connect.microsoft.com/VisualStudio/feedback/details/814147/dia-sdk-installed-into-wrong-directory), copy `%program files (x86)%\Microsoft Visual Studio 11.0\DIA SDK` to  `%program files (x86)%\Microsoft Visual Studio 12.0\DIA SDK` and restart the build. More details are [here](http://support.microsoft.com/kb/3035999).
+The DIA SDK gets incorrectly installed when VS 2013 is installed after VS 2012. To [workaround this issue](http://support.microsoft.com/kb/3035999)), copy `%program files (x86)%\Microsoft Visual Studio 11.0\DIA SDK` to  `%program files (x86)%\Microsoft Visual Studio 12.0\DIA SDK`. You can then build CoreCLR.
 
-**Git Configuration**
+CMake
+-----
+
+The CoreCLR build relies on CMake for the build. We are currently using CMake 3.0.2, although later versions likely work.
+
+- Install [CMake](http://www.cmake.org/download) for Windows.
+- Add it to the PATH environment variable.
+
+Git Setup
+---------
+
+Clone the CoreCLR and CoreFX repositories (either upstream or a fork).
+
+    C:\git>git clone https://github.com/dotnet/coreclr
+    C:\git>git clone https://github.com/dotnet/corefx
+
+This guide assumes that you've cloned the CoreCLR and CoreFX repositories into C:\git using the default repo names. If your setup is different, you'll need to pay attention to the commands you run. The guide will always show you the current directory.
 
 The repository is configured to allow Git to make the right decision about handling CRLF. Specifically, if you are working on **Windows**, please ensure that **core.autocrlf** is set to **true**. On **non-Windows** platforms, please set it to **input**.
 
-Building the repository
-=======================
+Demo directory
+--------------
 
-1. Clone CoreCLR.
-    - `git clone https://github.com/dotnet/coreclr`
-    - Alternatively, clone a fork. This is the best approach if you plan to contribute to the repo.
-3. Open a new command prompt and navigate to the root of the cloned repo.
-4. Invoke "build.cmd clean"
+In order to keep everything tidy, create a new directory for the files that you will build or acquire.
 
-This will do a clean x64/Debug build of CoreCLR, its native components, Mscorlib and the tests. 
+	c:\git>mkdir \coreclr-demo\runtime
+	c:\git>mkdir \coreclr-demo\packages
 
+NuGet
+-----
 
-- Product Binaries will be dropped in `<repo_root>\Binaries\Product\<arch>\<flavor>` folder. 
-- A Nuget package, Microsoft.Dotnet.CoreCLR, will also be created under `<repo_root>\Binaries\Product\<arch>\<flavor>\.nuget` folder. 
-- Test binaries will be dropped under `<repo_root>\Binaries\Tests\<arch>\<flavor>` folder
+NuGet is required to acquire any .NET assembly dependency that is not built by these instructions.
+
+Download the [NuGet client](https://nuget.org/nuget.exe) and copy to c:\coreclr-demo. Alteratively, you can make download nuget.exe, put it somewhere else and make it part of your path.
+
+Build the Runtime
+=================
+
+To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This will do a clean x64/Debug build of CoreCLR, its native components, mscorlib and the tests. 
+
+	C:\git\coreclr>build clean
+
+	[Lots of build spew]
+
+	Repo successfully built.
+
+	Product binaries are available at C:\git\coreclr\binaries\Product\Windows_NT.x64.debug
+	Test binaries are available at C:\git\coreclr\binaries\tests\Windows_NT.x64.debug
 
 **build /?** will list supported parameters.
 
-## Building and running tests ##
+Check the build output.
 
-**Building Tests**        
+- Product binaries will be dropped in `Binaries\Product\<arch>\<flavor>` folder. 
+- A NuGet package, Microsoft.Dotnet.CoreCLR, will be created under `Binaries\Product\<arch>\<flavor>\.nuget` folder. 
+- Test binaries will be dropped under `Binaries\Tests\<arch>\<flavor>` folder
 
-In a clean command prompt, issue the following command: 
+You will see several files. The interesting ones are:
 
-    <repo_root>\tests\buildtest.cmd clean
+- `corerun`: The command line host. This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
+- `coreclr.dll`:  The CoreCLR runtime itself.
+- `mscorlib.dll`: The core managed library for CoreCLR, which contains all of the fundamental data types and functionality.
 
-**buildtest /?** will list supported parameters.
+Copy these files into the demo directory.
 
-**Note:** The above command (or building from the repo_root) must be done once, at the least, to ensure that all test dependencies are initialized correctly. 
+	C:\git\coreclr>copy binaries\Product\Windows_NT.x64.debug\CoreRun.exe \coreclr-demo\runtime
+	C:\git\coreclr>copy binaries\Product\Windows_NT.x64.debug\coreclr.dll \coreclr-demo\runtime
+	C:\git\coreclr>copy binaries\Product\Windows_NT.x64.debug\mscorlib.dll \coreclr-demo\runtime
 
-In Visual Studio, open `<repo_root>\tests\src\AllTestProjects.sln`, build all the test projects or the one required.
+Build the Framework
+===================
 
-**Running Tests**
+Build the framework out of the corefx directory.
 
-In a clean command prompt: `<repo_root>\tests\runtest.cmd`
+	c:\git\corefx>build.cmd
 
-**runtest /?** will list supported parameters.
+	[Lots of build spew]
 
-This will generate the report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_x64__release.html`) in the current folder. It will also copy all the test dependencies to the folder passed at the command line.
+    0 Warning(s)
+    0 Error(s)
+	Time Elapsed 00:03:14.53
+	Build Exit Code = 0
 
-**Investigating Test Failures**
+It's also possible to add /t:rebuild to build.cmd to force it to delete the previously built assemblies.
 
-Upon completing a test run, you may find one or more tests have failed.
+For the purposes of this demo, you need to copy a few required assemblies to the demo folder.
 
-The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\binaries\tests\x64\debug\Reports\Exceptions\Finalization`.
+	C:\git\corefx>copy bin\Windows.AnyCPU.Debug\System.Console\System.Console.dll \coreclr-demo
+	C:\git\corefx>copy bin\Windows.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll \coreclr-demo
 
-There are 2 files of interest: 
+The runtime directory should now look like the following:
 
-- `Finalizer.output.txt` - Contains all the information logged by the test.
-- `Finalizer.error.txt`  - Contains the information reported by CoreRun.exe (which executed the test) when the test process crashes.
+	c:\git\corefx>dir \coreclr-demo
 
-**Rerunning a failed test**
+Restore NuGet Packages
+======================
 
-If you wish to re-run a failed test, please follow the following steps:
+You need to restore/download the rest of the demo dependencies via NuGet, as they are not yet part of the CoreFX repo. At present, these NuGet dependencies contain facades (type forwarders) that point to mscorlib.
 
-1. Set an environment variable, `CORE_ROOT`, pointing to the path to product binaries that was passed to runtest.cmd. The command to set this environment variable is also specified in the test report for a failed test.
-2. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd`.
+Make a packages/packages.config file with the following XML. These packages are the required dependencies of this particular app. Different apps will have different dependencies and require different packages.config - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
 
-If you wish to run the test under a debugger (e.g. [WinDbg](http://msdn.microsoft.com/en-us/library/windows/hardware/ff551063(v=vs.85).aspx)), append `-debug <debuggerFullPath>` to the test command. For example:
+	<?xml version="1.0" encoding="utf-8"?>
+	<packages>
+	  <package id="System.Console" version="4.0.0-beta-22703" />
+	  <package id="System.Diagnostics.Contracts" version="4.0.0-beta-22703" />
+	  <package id="System.Diagnostics.Debug" version="4.0.10-beta-22703" />
+	  <package id="System.Diagnostics.Tools" version="4.0.0-beta-22703" />
+	  <package id="System.Globalization" version="4.0.10-beta-22703" />
+	  <package id="System.IO" version="4.0.10-beta-22703" />
+	  <package id="System.IO.FileSystem.Primitives" version="4.0.0-beta-22703" />
+	  <package id="System.Reflection" version="4.0.10-beta-22703" />
+	  <package id="System.Resources.ResourceManager" version="4.0.0-beta-22703" />
+	  <package id="System.Runtime" version="4.0.20-beta-22703" />
+	  <package id="System.Runtime.Extensions" version="4.0.10-beta-22703" />
+	  <package id="System.Runtime.Handles" version="4.0.0-beta-22703" />
+	  <package id="System.Runtime.InteropServices" version="4.0.20-beta-22703" />
+	  <package id="System.Text.Encoding" version="4.0.10-beta-22703" />
+	  <package id="System.Text.Encoding.Extensions" version="4.0.10-beta-22703" />
+	  <package id="System.Threading" version="4.0.10-beta-22703" />
+	  <package id="System.Threading.Tasks" version="4.0.10-beta-22703" />
+	</packages>
+
+And restore the packages with the packages.config:
+
+	C:\coreclr-demo>nuget restore packages\packages.config -Source https://www.myget.org/F/dotnet-corefx/ -PackagesDirectory packages
+
+Compile the Demo
+================
+
+Now you need a Hello World application to run. You can write your own, if you'd like. Here's a very simple one:
 
 
-     <repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
-    
-**Modifying a test**
+	using System;
 
-If test changes are needed, make the change and build the test project. This will binplace the binaries in test binaries folder (e.g. `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization`). At this point, follow the steps to re-run a failed test to re-run the modified test.
+	public class Program
+	{
+	    public static void Main (string[] args)
+	    {
+	        Console.WriteLine("Hello, Windows");
+	        Console.WriteLine("Love from CoreCLR.");
+	    }   
+	} 
 
-**Authoring Tests (in VS)**
+Personally, I'm partial to the one on corefxlab which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to `\coreclr-demo`.
 
-1. Use an existing test such as `<repo_root>\tests\src\Exceptions\Finalization\Finalizer.csproj` as a template and copy it to a new folder under `<repo_root>\tests\src`.
-2. Add the project of the new test to `<repo_root>\tests\src\AllTestProjects.sln` in VS
-3. Add source files to this newly added project.
-4. Indicate the success of the test by returning `100`.
-5. Add the .NET CoreFX contract references, as required, via the Nuget Package Manager in Visual Studio. *Make sure this does not change the csproj. If it does, then undo the change in the csproj.*
-6. Add any other projects as a dependency, if needed.
-7. Build the test.
-8. Follow the steps to re-run a failed test to validate the new test.
+Then you just need to build it, with csc, the .NET Framework C# compiler. It may be easier to do this step within the "Developer Command Prompt for VS2013", if csc is not in your path. Because you need to compile the app against the .NET Core surface area, you need to pass references to the contract assemblies you restored using NuGet:
 
+	C:\coreclr-demo>csc /nostdlib /noconfig /r:packages\System.Runtime.4.0.20-beta-2
+	2703\lib\contract\System.Runtime.dll /r:packages\System.Console.4.0.0-beta-22703
+	\lib\contract\System.Console.dll /out:runtime\HelloWorld.exe HelloWorld.cs
 
-## Debugging ##
+Run the demo
+============
 
-**Debugging CoreCLR**
+You need to copy the NuGet package assemblies over to the runtime folder. 
+The easiest way to do this is with a little batch magic. Say "no" to any requests to overwrite files, to avoid overwriting the CoreFX files you just built.
 
+	for /f %k in ('dir /s /b packages\*.dll') do echo %k | findstr "\aspnetcore50" && copy /-Y %k runtime
 
+You're ready to run Hello World! To do that, run corerun, passing the path to the managed exe, plus any arguments. In this case, no arguments are necessary.
 
-1. Perform a build of the repo.
-2. Open <repo_root>\binaries\Cmake\CoreCLR.sln in VS.
-3. Right click the INSTALL project and choose ‘Set as StartUp Project’
-4. Bring up the properties page for the INSTALL project
-5. Select Configuration Properties->Debugging from the left side tree control
-6. Set Command=`$(SolutionDir)..\product\$(Platform)\$(Configuration)\corerun.exe`
-	1. This points to the folder where the built runtime binaries are present.
-7. Set Command Arguments=`<managed app you wish to run>` (e.g. HelloWorld.exe)
-8. Set Working Directory=`$(SolutionDir)..\product\$(Platform)\$(Configuration)`
-	1. This points to the folder containing CoreCLR binaries.
-9. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
-	1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
+	CoreRun.exe HelloWorld.exe
 
-Steps 1-8 only need to be done once, and then (9) can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2013.
-
-**Debugging Mscorlib and/or managed application**
-
-To step into and debug managed code of Mscorlib.dll (or the managed application being executed by the runtime you built), using Visual Studio, is something that will be supported with Visual Studio 2015. We are actively working to enable this support. 
-
-Until then, you can use [WinDbg](https://msdn.microsoft.com/en-us/library/windows/hardware/ff551063(v=vs.85).aspx) and [SOS](https://msdn.microsoft.com/en-us/library/bb190764(v=vs.110).aspx) (an extension to WinDbg to support managed debugging) to step in and debug the generated managed code. This is what we do on the .NET Runtime team as well :)
+Over time, this process will get easier. Thanks for trying out CoreCLR. Feel free to try a more interesting demo.
