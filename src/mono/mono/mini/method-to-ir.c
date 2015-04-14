@@ -5690,7 +5690,7 @@ static MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins = NULL;
-	
+
 	static MonoClass *runtime_helpers_class = NULL;
 	if (! runtime_helpers_class)
 		runtime_helpers_class = mono_class_from_name (mono_defaults.corlib,
@@ -6523,12 +6523,16 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		 * all inputs:
 		 * http://everything2.com/?node_id=1051618
 		 */
-	} else if ((!strcmp (cmethod->klass->image->assembly->aname.name, "MonoMac") ||
+	} else if (((!strcmp (cmethod->klass->image->assembly->aname.name, "MonoMac") ||
 	            !strcmp (cmethod->klass->image->assembly->aname.name, "monotouch")) &&
-	           !strcmp (cmethod->klass->name_space, "XamCore.ObjCRuntime") &&
-	           !strcmp (cmethod->klass->name, "Selector")) {
+				!strcmp (cmethod->klass->name_space, "XamCore.ObjCRuntime") &&
+				!strcmp (cmethod->klass->name, "Selector")) ||
+			   (!strcmp (cmethod->klass->image->assembly->aname.name, "Xamarin.iOS") &&
+				!strcmp (cmethod->klass->name_space, "ObjCRuntime") &&
+				!strcmp (cmethod->klass->name, "Selector"))
+			   ) {
 #ifdef MONO_ARCH_HAVE_OBJC_GET_SELECTOR
-		if (!strcmp (cmethod->klass->name, "GetHandle") && fsig->param_count == 1 &&
+		if (!strcmp (cmethod->name, "GetHandle") && fsig->param_count == 1 &&
 		    (args [0]->opcode == OP_GOT_ENTRY || args [0]->opcode == OP_AOTCONST) &&
 		    cfg->compile_aot) {
 			MonoInst *pi;

@@ -8565,6 +8565,7 @@ static void
 emit_objc_selectors (MonoAotCompile *acfg)
 {
 	int i;
+	char symbol [128];
 
 	if (!acfg->objc_selectors || acfg->objc_selectors->len == 0)
 		return;
@@ -8584,8 +8585,11 @@ emit_objc_selectors (MonoAotCompile *acfg)
 	fprintf (acfg->fp, ".section	__DATA,__objc_selrefs,literal_pointers,no_dead_strip\n");
 	fprintf (acfg->fp, ".align	3\n");
 	for (i = 0; i < acfg->objc_selectors->len; ++i) {
-		fprintf (acfg->fp, "L_OBJC_SELECTOR_REFERENCES_%d:\n", i);
-		fprintf (acfg->fp, ".long	L_OBJC_METH_VAR_NAME_%d\n", i);
+		sprintf (symbol, "L_OBJC_SELECTOR_REFERENCES_%d", i);
+		emit_label (acfg, symbol);
+		sprintf (symbol, "L_OBJC_METH_VAR_NAME_%d", i);
+		emit_pointer (acfg, symbol);
+
 	}
 	fprintf (acfg->fp, ".section	__TEXT,__cstring,cstring_literals\n");
 	for (i = 0; i < acfg->objc_selectors->len; ++i) {
