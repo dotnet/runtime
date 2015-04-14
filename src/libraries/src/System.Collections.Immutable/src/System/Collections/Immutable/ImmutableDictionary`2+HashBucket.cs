@@ -112,7 +112,7 @@ namespace System.Collections.Immutable
             bool IEquatable<HashBucket>.Equals(HashBucket other)
             {
                 // This should never be called, as hash buckets don't know how to equate themselves.
-                throw new Exception();
+                throw new NotSupportedException();
             }
 
             /// <summary>
