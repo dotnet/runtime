@@ -150,18 +150,18 @@ set(SOURCES
 )
 
 add_library(CoreClrPal
-  STATIC
+  SHARED
   ${SOURCES}
   ${PLATFORM_SOURCES}
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-target_link_libraries(CoreClrPal
-  pthread
-  rt
-  dl
-  unwind
-)
+  target_link_libraries(CoreClrPal
+    pthread
+    rt
+    dl
+    unwind
+  )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
@@ -178,3 +178,5 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 add_subdirectory(examples)
+
+install(TARGETS CoreClrPal DESTINATION .)

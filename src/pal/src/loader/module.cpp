@@ -1397,7 +1397,11 @@ static HMODULE LOADLoadLibrary(LPCSTR ShortAsciiName, BOOL fDynamic)
     {
         // See GetProcAddress for an explanation why we leave the PAL.
         PAL_LeaveHolder holder;
-        dl_handle = dlopen(ShortAsciiName, RTLD_LAZY);
+        dl_handle = dlopen(ShortAsciiName, RTLD_LAZY | RTLD_NOLOAD); 
+        if (!dl_handle)
+        {
+            dl_handle = dlopen(ShortAsciiName, RTLD_LAZY);
+        }
 
         // P/Invoke calls are often defined without an extension in the name of the 
         // target library. So if we failed to load the specified library, try adding
@@ -1406,7 +1410,11 @@ static HMODULE LOADLoadLibrary(LPCSTR ShortAsciiName, BOOL fDynamic)
         {
             if (snprintf(fullLibraryName, MAX_PATH, "%s%s", ShortAsciiName, PAL_SHLIB_SUFFIX) < MAX_PATH)
             {
-                dl_handle = dlopen(fullLibraryName, RTLD_LAZY);
+                dl_handle = dlopen(fullLibraryName, RTLD_LAZY | RTLD_NOLOAD); 
+                if (!dl_handle)
+                {
+                    dl_handle = dlopen(fullLibraryName, RTLD_LAZY);
+                }
                 if (dl_handle)
                 {
                     ShortAsciiName = fullLibraryName;
