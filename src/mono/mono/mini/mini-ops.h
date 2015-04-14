@@ -640,6 +640,11 @@ MINI_OP(OP_CALL_HANDLER  , "call_handler", NONE, NONE, NONE)
 MINI_OP(OP_START_HANDLER  , "start_handler", NONE, NONE, NONE)
 MINI_OP(OP_ENDFILTER,  "endfilter", NONE, IREG, NONE)
 MINI_OP(OP_ENDFINALLY,  "endfinally", NONE, NONE, NONE)
+/*
+ * Returns the exception object passed to catch clauses in
+ * by the EH code in a register.
+ */
+MINI_OP(OP_GET_EX_OBJ, "get_ex_obj", IREG, NONE, NONE)
 
 /* inline (long)int * (long)int */
 MINI_OP(OP_BIGMUL, "bigmul", LREG, IREG, IREG)

@@ -1490,8 +1490,12 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 						g_assert_not_reached ();
 #endif
 					} else {
+#ifdef MONO_ARCH_HAVE_OP_GET_EX_OBJ
+						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+#else
 						/* store the exception object in bp + ei->exvar_offset */
 						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
+#endif
 					}
 
 #ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
@@ -1795,8 +1799,12 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 						g_assert_not_reached ();
 #endif
 					} else {
+#ifdef MONO_ARCH_HAVE_OP_GET_EX_OBJ
+						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+#else
 						/* store the exception object in bp + ei->exvar_offset */
 						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
+#endif
 					}
 				}
 

@@ -4994,7 +4994,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_ret (code);
 			break;
 		}
-
+		case OP_GET_EX_OBJ:
+			if (ins->dreg != AMD64_RAX)
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, sizeof (gpointer));
+			break;
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;

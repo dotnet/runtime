@@ -109,6 +109,8 @@ rethrow: src1:i len:18 nacl:50
 start_handler: len:16
 endfinally: len:9 nacl:22
 endfilter: src1:a len:9 nacl:19
+get_ex_obj: dest:a len:16
+
 ckfinite: dest:f src1:f len:43
 ceq: dest:c len:8
 cgt: dest:c len:8

@@ -7974,7 +7974,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					tblock->flags |= BB_EXCEPTION_UNSAFE;
 			}
 
-
 			/*printf ("clause try IL_%04x to IL_%04x handler %d at IL_%04x to IL_%04x\n", clause->try_offset, clause->try_offset + clause->try_len, clause->flags, clause->handler_offset, clause->handler_offset + clause->handler_len);
 			  while (p < end) {
 			  printf ("%s", mono_disasm_code_one (NULL, method, p, &p));
@@ -7982,7 +7981,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* catch and filter blocks get the exception object on the stack */
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE ||
 			    clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-				MonoInst *dummy_use;
 
 				/* mostly like handle_stack_args (), but just sets the input args */
 				/* printf ("handling clause at IL_%04x\n", clause->handler_offset); */
@@ -7990,12 +7988,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				tblock->in_stack = mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*));
 				tblock->in_stack [0] = mono_create_exvar_for_offset (cfg, clause->handler_offset);
 
+				cfg->cbb = tblock;
+
+#ifdef MONO_ARCH_HAVE_OP_GET_EX_OBJ
+				/* The EH code passes in the exception in a register */
+				if (!cfg->compile_llvm) {
+					MONO_INST_NEW (cfg, ins, OP_GET_EX_OBJ);
+					ins->dreg = tblock->in_stack [0]->dreg;
+					MONO_ADD_INS (tblock, ins);
+				}
+#else
+				MonoInst *dummy_use;
+
 				/* 
 				 * Add a dummy use for the exvar so its liveness info will be
 				 * correct.
 				 */
-				cfg->cbb = tblock;
 				EMIT_NEW_DUMMY_USE (cfg, dummy_use, tblock->in_stack [0]);
+#endif
 				
 				if (clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 					GET_BBLOCK (cfg, tblock, ip + clause->data.filter_offset);
