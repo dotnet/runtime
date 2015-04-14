@@ -231,7 +231,6 @@ typedef struct {
 	guint8 *ret;
 } DynCallArgs;
 
-
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->rax = (gsize)exc; } while (0)
 #define MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG(ctx, sel) do { (ctx)->rdx = (gsize)(sel); } while (0)
 
@@ -320,6 +319,7 @@ typedef struct {
  * clobbered across method call boundaries.
  */
 #define MONO_ARCH_RGCTX_REG MONO_ARCH_IMT_REG
+#define MONO_ARCH_EXC_REG AMD64_RAX
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 #define MONO_ARCH_HAVE_NOTIFY_PENDING_EXC 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1

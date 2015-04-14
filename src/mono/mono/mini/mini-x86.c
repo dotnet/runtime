@@ -3382,6 +3382,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_ret (code);
 			break;
 		}
+		case OP_GET_EX_OBJ:
+			if (ins->dreg != X86_EAX)
+				x86_mov_reg_reg (code, ins->dreg, X86_EAX, sizeof (gpointer));
+			break;
 
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
