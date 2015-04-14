@@ -65,6 +65,7 @@ start_handler: len:20
 endfinally: len:32
 call_handler: len:16 clob:c
 endfilter: src1:i len:16
+get_ex_obj: dest:i len:16
 
 ckfinite: dest:f src1:f len:112
 ceq: dest:i len:12

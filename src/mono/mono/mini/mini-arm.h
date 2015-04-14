@@ -288,6 +288,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #endif
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
+#define MONO_ARCH_HAVE_OP_GET_EX_OBJ 1
 
 #if defined(__native_client__)
 #undef MONO_ARCH_SOFT_DEBUG_SUPPORTED
@@ -304,6 +305,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
 /* First argument reg */
 #define MONO_ARCH_VTABLE_REG ARMREG_R0
+#define MONO_ARCH_EXC_REG ARMREG_R0
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->regs [0] = (gsize)exc; } while (0)
 

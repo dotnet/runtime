@@ -5256,6 +5256,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_arm_patchable_bl (code, ARMCOND_AL);
 			mono_cfg_add_try_hole (cfg, ins->inst_eh_block, code, bb);
 			break;
+		case OP_GET_EX_OBJ:
+			if (ins->dreg != ARMREG_R0)
+				ARM_MOV_REG_REG (code, ins->dreg, ARMREG_R0);
+			break;
+
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
 			break;
