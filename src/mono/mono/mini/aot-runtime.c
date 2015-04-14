@@ -2717,7 +2717,13 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 			ei->flags = decode_value (p, &p);
 
+#ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
+			/* Not used for catch clauses */
+			if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+				ei->exvar_offset = decode_value (p, &p);
+#else
 			ei->exvar_offset = decode_value (p, &p);
+#endif
 
 			if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER || ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
 				ei->data.filter = code + decode_value (p, &p);
