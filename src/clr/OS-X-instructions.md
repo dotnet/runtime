@@ -182,7 +182,7 @@ Personally, I'm partial to the one on corefxlab which will print a  picture for 
     dotnet-mbp:coreclr-demo richlander$ curl -O https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs
 
 
-Then you just need to build it, with `mcs`, the Mono C# compiler. FYI: The Roslyn C# compiler will soon be available on Linux.  Because you need to compile the app against the .NET Core surface area, you need to pass references to the contract assemblies you restored using NuGet:
+Then you just need to build it, with `mcs`, the Mono C# compiler. FYI: The Roslyn C# compiler will soon be available on OS X.  Because you need to compile the app against the .NET Core surface area, you need to pass references to the contract assemblies you restored using NuGet:
 
     dotnet-mbp:coreclr-demo richlander$ mcs /nostdlib /noconfig /r:packages/System.Console.4.0.0-beta-22703/lib/contract/System.Console.dll /r:packages/System.Runtime.4.0.20-beta-22703/lib/contract/System.Runtime.dll -out:runtime/HelloWorld.exe HelloWorld.cs 
 
@@ -195,6 +195,6 @@ You're ready to run Hello World!  To do that, run corerun, passing the path to t
     dotnet-mbp:runtime richlander$ ./corerun HelloWorld.exe mac
 
 
-Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and Linux versions of an assembly, so you can simply nuget restore the dependencies. 
+Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include  Windows, Linux and OS X versions of an assembly, so you can simply nuget restore the dependencies. 
 
-Pull Requests to enable building CoreFX and mscorlib on Linux via Mono would be very welcome. A sample that builds Hello World on Linux using the correct references but via XBuild or MonoDevelop would also be great! Some of our processes (e.g. the mscorlib build) rely on Windows specific tools, but we want to figure out how to solve these problems for Linux as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
+Pull Requests to enable building CoreFX and mscorlib on OS X via Mono would be very welcome. A sample that builds Hello World on OS X using the correct references but via XBuild or MonoDevelop would also be great! Some of our processes (e.g. the mscorlib build) rely on Windows specific tools, but we want to figure out how to solve these problems for OS X as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
