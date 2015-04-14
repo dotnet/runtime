@@ -1113,7 +1113,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 *jump_obj_null, *jump_have_waiters, *jump_sync_null, *jump_not_owned, *jump_cmpxchg_failed;
-	guint8 *jump_next;
+	guint8 *jump_next, *jump_sync_thin_hash = NULL;
 	int tramp_size;
 	int status_offset, nest_offset;
 	MonoJumpInfo *ji = NULL;
@@ -1151,6 +1151,7 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 			/*if bit zero is set it's a thin hash*/
 			/*FIXME use testb encoding*/
 			amd64_test_reg_imm (code, sync_reg, 0x01);
+			jump_sync_thin_hash = code;
 			amd64_branch8 (code, X86_CC_NE, -1, 1);
 
 			/*clear bits used by the gc*/
@@ -1208,6 +1209,8 @@ mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
 		amd64_dec_membase_size (code, sync_reg, nest_offset, 4);
 		amd64_ret (code);
 
+		if (jump_sync_thin_hash)
+			x86_patch (jump_sync_thin_hash, code);
 		x86_patch (jump_obj_null, code);
 		x86_patch (jump_have_waiters, code);
 		x86_patch (jump_not_owned, code);
