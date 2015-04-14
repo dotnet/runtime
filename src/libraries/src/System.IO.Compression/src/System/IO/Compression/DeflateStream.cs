@@ -209,6 +209,14 @@ namespace System.IO.Compression
             return;
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            EnsureNotDisposed();
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotSupportedException(SR.NotSupported);
