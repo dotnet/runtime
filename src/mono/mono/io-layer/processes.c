@@ -839,7 +839,6 @@ gboolean CreateProcess (const gunichar2 *appname, const gunichar2 *cmdline,
 	} else {
 		if (!is_executable (prog)) {
 			DEBUG ("%s: Executable permisson not set on %s", __func__, prog);
-			g_free (prog);
 			SetLastError (ERROR_ACCESS_DENIED);
 			goto free_strings;
 		}
