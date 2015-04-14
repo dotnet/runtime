@@ -18,10 +18,10 @@ namespace System.Text.RegularExpressions
         // the empty group object
         internal static Group _emptygroup = new Group(String.Empty, Array.Empty<int>(), 0, string.Empty);
 
-        internal int[] _caps;
+        internal readonly int[] _caps;
         internal int _capcount;
         internal CaptureCollection _capcoll;
-        internal string _name;
+        internal readonly string _name;
 
         internal Group(String text, int[] caps, int capcount, string name)
 
