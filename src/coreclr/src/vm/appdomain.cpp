@@ -2908,10 +2908,8 @@ void SystemDomain::LoadBaseSystemClasses()
     MscorlibBinder::GetClass(CLASS__IENUMERABLEGENERIC);
     MscorlibBinder::GetClass(CLASS__ICOLLECTIONGENERIC);
     MscorlibBinder::GetClass(CLASS__ILISTGENERIC);
-#if !defined(FEATURE_CORECLR) || defined(FEATURE_COMINTEROP)
     MscorlibBinder::GetClass(CLASS__IREADONLYCOLLECTIONGENERIC);
     MscorlibBinder::GetClass(CLASS__IREADONLYLISTGENERIC);
-#endif
 
     // Load String
     g_pStringClass = MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_STRING);
