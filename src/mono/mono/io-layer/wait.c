@@ -18,6 +18,7 @@
 #include <mono/io-layer/misc-private.h>
 
 #include <mono/utils/mono-mutex.h>
+#include <mono/utils/mono-threads.h>
 
 #if 0
 #define DEBUG(...) g_message(__VA_ARGS__)
@@ -69,6 +70,8 @@ static gboolean own_if_owned(gpointer handle)
 	return(ret);
 }
 
+static guint32 WaitForSingleObjectEx_inner(gpointer handle, guint32 timeout, gboolean alertable);
+
 /**
  * WaitForSingleObjectEx:
  * @handle: an object to wait for
@@ -89,6 +92,16 @@ static gboolean own_if_owned(gpointer handle)
  * occurred. %WAIT_IO_COMPLETION - the wait was ended by an APC.
  */
 guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
+			      gboolean alertable)
+{
+	guint32 res;
+	MONO_PREPARE_BLOCKING
+	res = WaitForSingleObjectEx_inner (handle, timeout, alertable);
+	MONO_FINISH_BLOCKING
+	return res;
+}
+
+static guint32 WaitForSingleObjectEx_inner(gpointer handle, guint32 timeout,
 			      gboolean alertable)
 {
 	guint32 ret, waited;
@@ -456,6 +469,10 @@ static gboolean test_and_own (guint32 numobjects, gpointer *handles,
 	return(done);
 }
 
+static guint32 WaitForMultipleObjectsEx_inner(guint32 numobjects, gpointer *handles,
+				 gboolean waitall, guint32 timeout,
+				gboolean alertable);
+
 /**
  * WaitForMultipleObjectsEx:
  * @numobjects: The number of objects in @handles. The maximum allowed
@@ -490,6 +507,17 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 				 gboolean waitall, guint32 timeout,
 				 gboolean alertable)
 {
+	guint32 res;
+	MONO_PREPARE_BLOCKING
+	res = WaitForMultipleObjectsEx_inner (numobjects, handles, waitall, timeout, alertable);
+	MONO_FINISH_BLOCKING
+	return res;
+}
+
+static guint32 WaitForMultipleObjectsEx_inner(guint32 numobjects, gpointer *handles,
+				 gboolean waitall, guint32 timeout,
+				 gboolean alertable)
+{
 	gboolean duplicate = FALSE, bogustype = FALSE, done;
 	guint32 count, lowest;
 	struct timespec abstime;
@@ -513,7 +541,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 	}
 	
 	if (numobjects == 1) {
-		return WaitForSingleObjectEx (handles [0], timeout, alertable);
+		return WaitForSingleObjectEx_inner (handles [0], timeout, alertable);
 	}
 
 	/* Check for duplicates */
