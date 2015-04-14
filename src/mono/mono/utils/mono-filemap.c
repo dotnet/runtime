@@ -67,7 +67,7 @@ mono_file_map_close (MonoFileMap *fmap)
 #ifdef WIN32
 	return fclose ((FILE*)fmap);
 #else
-	close (mono_file_map_fd (fmap));
+	return close (mono_file_map_fd (fmap));
 #endif
 }
 
