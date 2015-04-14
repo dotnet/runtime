@@ -132,16 +132,17 @@ protected:
     //--------------------
 #ifndef DACCESS_COMPILE
     inline SecurityDescriptor(AppDomain *pAppDomain, DomainAssembly *pAssembly, PEFile* pPEFile, LoaderAllocator *pLoaderAllocator);    
-#endif // #ifndef DACCESS_COMPILE
+#ifdef FEATURE_PAL
+    SecurityDescriptor() {}
+#endif // FEATURE_PAL
+#endif // !DACCESS_COMPILE
 };
 
 template<typename IT>
 class SecurityDescriptorBase : public IT, public SecurityDescriptor
 {
 public:
-#ifndef FEATURE_PAL
     VPTR_ABSTRACT_VTABLE_CLASS(SecurityDescriptorBase, IT) // needed for the DAC
-#endif
 
     inline SecurityDescriptorBase(AppDomain *pAppDomain, DomainAssembly *pAssembly, PEFile* pPEFile, LoaderAllocator *pLoaderAllocator);
 
