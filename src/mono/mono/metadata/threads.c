@@ -378,7 +378,10 @@ lock_thread (MonoInternalThread *thread)
 		ensure_synch_cs_set (thread);
 
 	g_assert (thread->synch_cs);
+
+	MONO_TRY_BLOCKING
 	mono_mutex_lock (thread->synch_cs);
+	MONO_FINISH_TRY_BLOCKING
 }
 
 static inline void

@@ -1448,7 +1448,9 @@ try_steal (MonoWSQ *local_wsq, gpointer *data, gboolean retry)
 		if (mono_runtime_is_shutting_down ())
 			return;
 
+		MONO_PREPARE_BLOCKING
 		mono_mutex_lock (&wsqs_lock);
+		MONO_FINISH_BLOCKING
 		for (i = 0; wsqs != NULL && i < wsqs->len; i++) {
 			MonoWSQ *wsq;
 
