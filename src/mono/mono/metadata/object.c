@@ -1416,7 +1416,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 				 * The IMT thunk might be called with an instance of one of the 
 				 * generic virtual methods, so has to fallback to the IMT trampoline.
 				 */
-				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline ? callbacks.get_imt_trampoline (i) : NULL);
+				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], callbacks.get_imt_trampoline (i));
 			} else {
 				imt [i] = initialize_imt_slot (vt, domain, imt_builder [i], NULL);
 			}
@@ -2121,13 +2121,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 
 	if (imt_table_bytes) {
 		/* Now that the vtable is full, we can actually fill up the IMT */
-		if (callbacks.get_imt_trampoline) {
-			/* lazy construction of the IMT entries enabled */
 			for (i = 0; i < MONO_IMT_SIZE; ++i)
 				interface_offsets [i] = callbacks.get_imt_trampoline (i);
-		} else {
-			build_imt (class, vt, domain, interface_offsets, NULL);
-		}
 	}
 
 	/*
