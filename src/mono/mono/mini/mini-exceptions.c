@@ -1483,20 +1483,13 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 					if (is_user_frame)
 						setup_managed_stacktrace_information ();
 
-					if (ji->from_llvm) {
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
-						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+					MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
 #else
-						g_assert_not_reached ();
+					g_assert (!ji->from_llvm);
+					/* store the exception object in bp + ei->exvar_offset */
+					*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
 #endif
-					} else {
-#ifdef MONO_ARCH_HAVE_OP_GET_EX_OBJ
-						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
-#else
-						/* store the exception object in bp + ei->exvar_offset */
-						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
-#endif
-					}
 
 #ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG
 					/*
@@ -1792,20 +1785,13 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 					ex_obj = obj;
 
 				if (((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER))) {
-					if (ji->from_llvm) {
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
-						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+					MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
 #else
-						g_assert_not_reached ();
+					g_assert (!ji->from_llvm);
+					/* store the exception object in bp + ei->exvar_offset */
+					*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
 #endif
-					} else {
-#ifdef MONO_ARCH_HAVE_OP_GET_EX_OBJ
-						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
-#else
-						/* store the exception object in bp + ei->exvar_offset */
-						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
-#endif
-					}
 				}
 
 #ifdef MONO_CONTEXT_SET_LLVM_EH_SELECTOR_REG

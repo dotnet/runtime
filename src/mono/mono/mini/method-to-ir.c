@@ -7990,8 +7990,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				cfg->cbb = tblock;
 
-#ifdef MONO_ARCH_HAVE_OP_GET_EX_OBJ
-				/* The EH code passes in the exception in a register */
+#ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
+				/* The EH code passes in the exception in a register to both JITted and LLVM compiled code */
 				if (!cfg->compile_llvm) {
 					MONO_INST_NEW (cfg, ins, OP_GET_EX_OBJ);
 					ins->dreg = tblock->in_stack [0]->dreg;

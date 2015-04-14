@@ -257,7 +257,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
-#define MONO_ARCH_HAVE_OP_GET_EX_OBJ 1
 
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)

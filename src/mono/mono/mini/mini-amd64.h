@@ -355,7 +355,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_TRANSLATE_TLS_OFFSET 1
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
-#define MONO_ARCH_HAVE_OP_GET_EX_OBJ 1
 
 #if defined(TARGET_OSX) || defined(__linux__)
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
