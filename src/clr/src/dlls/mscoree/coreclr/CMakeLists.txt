@@ -94,9 +94,7 @@ if(WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available 
         CoreClrPal
-        ${END_WHOLE_ARCHIVE}
         palrt
     )
 endif(WIN32)
