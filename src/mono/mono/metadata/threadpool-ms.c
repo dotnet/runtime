@@ -32,6 +32,7 @@
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threadpool-ms.h>
@@ -702,7 +703,9 @@ worker_thread (gpointer data)
 
 				if (park) {
 					mono_mutex_unlock (&threadpool->domains_lock);
+					mono_gc_set_skip_thread (TRUE);
 					worker_park ();
+					mono_gc_set_skip_thread (FALSE);
 					mono_mutex_lock (&threadpool->domains_lock);
 
 					COUNTER_ATOMIC (counter, {
@@ -823,6 +826,8 @@ monitor_thread (void)
 
 		g_assert (monitor_status != MONITOR_STATUS_NOT_RUNNING);
 
+		mono_gc_set_skip_thread (TRUE);
+
 		do {
 			guint32 ts;
 
@@ -837,6 +842,8 @@ monitor_thread (void)
 			if ((current_thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
 				mono_thread_interruption_checkpoint ();
 		} while (interval_left > 0 && ++awake < 10);
+
+		mono_gc_set_skip_thread (FALSE);
 
 		if (threadpool->suspended)
 			continue;
