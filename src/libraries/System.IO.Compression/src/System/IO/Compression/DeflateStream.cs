@@ -607,23 +607,22 @@ namespace System.IO.Compression
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
 
-            Interlocked.Increment(ref _asyncOperations);
+            return WriteAsyncCore(array, offset, count, cancellationToken);
+        }
 
+        private async Task WriteAsyncCore(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _asyncOperations);
             try
             {
-                return base.WriteAsync(array, offset, count, cancellationToken).ContinueWith(
-                        (t) => Interlocked.Decrement(ref _asyncOperations),
-                        cancellationToken,
-                        TaskContinuationOptions.ExecuteSynchronously,
-                        TaskScheduler.Default
-                    );
+                await base.WriteAsync(array, offset, count, cancellationToken).ConfigureAwait(false);
             }
-            catch
+            finally
             {
                 Interlocked.Decrement(ref _asyncOperations);
-                throw;
             }
         }
+
     }  // public class DeflateStream
 }  // namespace System.IO.Compression
 
