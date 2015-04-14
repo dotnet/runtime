@@ -1328,12 +1328,9 @@ BOOL IsImplicitInterfaceOfSZArray(MethodTable *pInterfaceMT)
     // Is target interface IList<T> or one of its ancestors, or IReadOnlyList<T>?
     return (rid == MscorlibBinder::GetExistingClass(CLASS__ILISTGENERIC)->GetTypeDefRid() ||
             rid == MscorlibBinder::GetExistingClass(CLASS__ICOLLECTIONGENERIC)->GetTypeDefRid() ||
-            rid == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)->GetTypeDefRid()
-#if !defined(FEATURE_CORECLR) || defined(FEATURE_COMINTEROP)
-            || rid == MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)->GetTypeDefRid()
-            || rid == MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)->GetTypeDefRid()
-#endif
-            );
+            rid == MscorlibBinder::GetExistingClass(CLASS__IENUMERABLEGENERIC)->GetTypeDefRid() ||
+            rid == MscorlibBinder::GetExistingClass(CLASS__IREADONLYCOLLECTIONGENERIC)->GetTypeDefRid() ||
+            rid == MscorlibBinder::GetExistingClass(CLASS__IREADONLYLISTGENERIC)->GetTypeDefRid());
 }
 
 //---------------------------------------------------------------------
