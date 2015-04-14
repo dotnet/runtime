@@ -181,8 +181,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	unw_dyn_region_info_t *r_pro;
 
 	g_assert (!aot);
-	if (info)
-		*info = NULL;
+	*info = NULL;
 
 	/* 
 	 * Since jump trampolines are not patched, this trampoline is executed every
