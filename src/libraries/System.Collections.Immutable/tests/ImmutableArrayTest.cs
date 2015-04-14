@@ -1265,6 +1265,13 @@ namespace System.Collections.Immutable.Test
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create(1, 2, 3));  // verify non-empty
         }
 
+        [Fact]
+        public void ICollectionSyncRoot_NotSupported()
+        {
+            ICollection c = ImmutableArray.Create(1, 2, 3);
+            Assert.Throws<NotSupportedException>(() => c.SyncRoot);
+        }
+
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
             return ImmutableArray.Create(contents);
