@@ -1,5 +1,5 @@
-#ifndef _MONO_THREADPOOL_IO_MS_H_
-#define _MONO_THREADPOOL_IO_MS_H_
+#ifndef _MONO_THREADPOOL_MS_IO_H_
+#define _MONO_THREADPOOL_MS_IO_H_
 
 #include <config.h>
 #include <glib.h>
@@ -19,4 +19,4 @@ mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain);
 void
 mono_threadpool_ms_io_cleanup (void);
 
-#endif /* _MONO_THREADPOOL_IO_MS_H_ */
+#endif /* _MONO_THREADPOOL_MS_IO_H_ */
