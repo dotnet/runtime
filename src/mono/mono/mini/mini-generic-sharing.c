@@ -728,52 +728,6 @@ class_uninstantiated (MonoClass *class)
 static MonoClass*
 get_shared_class (MonoClass *class)
 {
-	/*
-	 * FIXME: This conflicts with normal instances. Also, some code in this file
-	 * like class_get_rgctx_template_oti treats these as normal generic instances
-	 * instead of generic classes.
-	 */
-	//g_assert_not_reached ();
-
-#if 0
-	/* The gsharedvt changes break this */
-	if (ALLOW_PARTIAL_SHARING)
-		g_assert_not_reached ();
-#endif
-
-#if 0
-	if (class->is_inflated) {
-		MonoGenericContext *context = &class->generic_class->context;
-		MonoGenericContext *container_context;
-		MonoGenericContext shared_context;
-		MonoGenericInst *inst;
-		MonoType **type_argv;
-		int i;
-
-		inst = context->class_inst;
-		if (mono_is_partially_sharable_inst (inst)) {
-			container_context = &class->generic_class->container_class->generic_container->context;
-			type_argv = g_new0 (MonoType*, inst->type_argc);
-			for (i = 0; i < inst->type_argc; ++i) {
-				if (MONO_TYPE_IS_REFERENCE (inst->type_argv [i]) || inst->type_argv [i]->type == MONO_TYPE_VAR || inst->type_argv [i]->type == MONO_TYPE_MVAR)
-					type_argv [i] = container_context->class_inst->type_argv [i];
-				else
-					type_argv [i] = inst->type_argv [i];
-			}
-
-			memset (&shared_context, 0, sizeof (MonoGenericContext));
-			shared_context.class_inst = mono_metadata_get_generic_inst (inst->type_argc, type_argv);
-			g_free (type_argv);
-
-			return mono_class_inflate_generic_class (class->generic_class->container_class, &shared_context);
-		} else if (!generic_inst_is_sharable (inst, TRUE, FALSE)) {
-			/* Happens for partially shared methods of nono-sharable generic class */
-			return class;
-		}
-	}
-#endif
-
-	// FIXME: Use this in all cases can be problematic wrt domain/assembly unloading
 	return class_uninstantiated (class);
 }
 
