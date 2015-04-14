@@ -1484,7 +1484,11 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 						setup_managed_stacktrace_information ();
 
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
-					MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+					if (ji->from_llvm)
+						MONO_CONTEXT_SET_LLVM_EXC_REG (ctx, ex_obj);
+					else
+						/* Can't pass the ex object in a register yet to filter clauses, because call_filter () might not support it */
+						*((gpointer *)(gpointer)((char *)MONO_CONTEXT_GET_BP (ctx) + ei->exvar_offset)) = ex_obj;
 #else
 					g_assert (!ji->from_llvm);
 					/* store the exception object in bp + ei->exvar_offset */

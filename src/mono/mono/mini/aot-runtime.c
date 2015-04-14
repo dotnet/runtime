@@ -2719,7 +2719,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 
 #ifdef MONO_CONTEXT_SET_LLVM_EXC_REG
 			/* Not used for catch clauses */
-			if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
+			if (ei->flags != MONO_EXCEPTION_CLAUSE_NONE)
 				ei->exvar_offset = decode_value (p, &p);
 #else
 			ei->exvar_offset = decode_value (p, &p);

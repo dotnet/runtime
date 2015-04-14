@@ -271,6 +271,8 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	amd64_mov_reg_membase (code, AMD64_RDI, AMD64_ARG_REG1,  MONO_STRUCT_OFFSET (MonoContext, rdi), 8);
 	amd64_mov_reg_membase (code, AMD64_RSI, AMD64_ARG_REG1,  MONO_STRUCT_OFFSET (MonoContext, rsi), 8);
 #endif
+	/* load exc register */
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_ARG_REG1,  MONO_STRUCT_OFFSET (MonoContext, rax), 8);
 
 	/* call the handler */
 	amd64_call_reg (code, AMD64_ARG_REG2);
