@@ -5646,7 +5646,11 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
         // fast calls.
         if (!canFastTailCall)
         {
+#ifndef FEATURE_PAL
             fgMorphTailCall(call);
+#else // FEATURE_PAL
+            goto NO_TAIL_CALL;
+#endif // FEATURE_PAL
         }
 
         // Implementation note : If we optimize tailcall to do a direct jump
