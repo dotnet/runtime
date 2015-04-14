@@ -189,6 +189,12 @@ namespace System.IO.Compression
             return _deflateStream.WriteAsync(array, offset, count, cancellationToken);
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            CheckDeflateStream();
+            return _deflateStream.FlushAsync(cancellationToken);
+        }
+
         private void CheckDeflateStream()
         {
             if (_deflateStream == null)
