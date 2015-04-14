@@ -30,16 +30,16 @@ namespace Microsoft.Framework.WebEncoders
             Assert.Same(retVal1, retVal2);
         }
 
-        // TODO: fix xUnit escaping and then uncomment
-        //[Theory]
-        //[InlineData(1, "a", (int)'a')] // normal BMP char, end of string
-        //[InlineData(2, "ab", (int)'a')] // normal BMP char, not end of string
-        //[InlineData(3, "\uDFFF", UnicodeReplacementChar)] // trailing surrogate, end of string
-        //[InlineData(4, "\uDFFFx", UnicodeReplacementChar)] // trailing surrogate, not end of string
-        //[InlineData(5, "\uD800", UnicodeReplacementChar)] // leading surrogate, end of string
-        //[InlineData(6, "\uD800x", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by non-surrogate
-        //[InlineData(7, "\uD800\uD800", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by leading surrogate
-        //[InlineData(8, "\uD800\uDFFF", 0x103FF)] // leading surrogate, not end of string, followed by trailing surrogate
+        
+        [Theory]
+        [InlineData(1, "a", (int)'a')] // normal BMP char, end of string
+        [InlineData(2, "ab", (int)'a')] // normal BMP char, not end of string
+        [InlineData(3, "\uDFFF", UnicodeReplacementChar)] // trailing surrogate, end of string
+        [InlineData(4, "\uDFFFx", UnicodeReplacementChar)] // trailing surrogate, not end of string
+        [InlineData(5, "\uD800", UnicodeReplacementChar)] // leading surrogate, end of string
+        [InlineData(6, "\uD800x", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by non-surrogate
+        [InlineData(7, "\uD800\uD800", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by leading surrogate
+        [InlineData(8, "\uD800\uDFFF", 0x103FF)] // leading surrogate, not end of string, followed by trailing surrogate
         public void GetScalarValueFromUtf16(int unused, string input, int expectedResult)
         {
             // The 'unused' parameter exists because the xunit runner can't distinguish
