@@ -1299,6 +1299,9 @@ MONO_API void mono_object_describe_fields (MonoObject *obj);
 MONO_API void mono_value_describe_fields  (MonoClass* klass, const char* addr);
 MONO_API void mono_class_describe_statics (MonoClass* klass);
 
+/* method debugging functions, for use inside gdb */
+MONO_API void mono_method_print_code (MonoMethod *method);
+
 /*Enum validation related functions*/
 MONO_API gboolean
 mono_type_is_valid_enum_basetype (MonoType * type);

@@ -5612,11 +5612,17 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	return delegate;
 }
 
-ICALL_EXPORT void
-ves_icall_System_Delegate_SetMulticastInvoke (MonoDelegate *this)
+ICALL_EXPORT MonoMulticastDelegate *
+ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegate *delegate)
 {
-	/* Reset the invoke impl to the default one */
-	this->invoke_impl = mono_runtime_create_delegate_trampoline (this->object.vtable->klass);
+	MonoMulticastDelegate *ret;
+
+	g_assert (mono_class_has_parent (mono_object_class (delegate), mono_defaults.multicastdelegate_class));
+
+	ret = (MonoMulticastDelegate*) mono_object_new (mono_object_domain (delegate), mono_object_class (delegate));
+	ret->delegate.invoke_impl = mono_runtime_create_delegate_trampoline (mono_object_class (delegate));
+
+	return ret;
 }
 
 /* System.Buffer */

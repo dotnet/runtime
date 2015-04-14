@@ -1048,6 +1048,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 
 	/* Obtain the delegate object according to the calling convention */
 	delegate = mono_arch_get_this_arg_from_call (regs, code);
+	g_assert (mono_class_has_parent (mono_object_class (delegate), mono_defaults.multicastdelegate_class));
 
 	if (delegate->method) {
 		method = delegate->method;
@@ -1167,7 +1168,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 	/* Necessary for !code condition to fallback to slow path */
 	code = NULL;
 
-	multicast = ((MonoMulticastDelegate*)delegate)->prev != NULL;
+	multicast = ((MonoMulticastDelegate*)delegate)->delegates != NULL;
 	if (!multicast && !callvirt) {
 		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature (method)->param_count == mono_method_signature (invoke)->param_count + 1)
 			/* Closed static delegate */

@@ -796,7 +796,7 @@ struct _MonoDelegate {
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
 struct _MonoMulticastDelegate {
 	MonoDelegate delegate;
-	MonoMulticastDelegate *prev;
+	MonoArray *delegates;
 };
 
 struct _MonoReflectionField {

@@ -2061,7 +2061,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 
 	g_assert (delegate);
 	mcast_delegate = (MonoMulticastDelegate *) delegate;
-	if (mcast_delegate->prev != NULL)
+	if (mcast_delegate->delegates != NULL)
 		mono_raise_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
 
 #ifndef DISABLE_REMOTING
@@ -3027,8 +3027,8 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	gpointer cache_key = NULL;
 	SignaturePointerPair key;
 	SignaturePointerPair *new_key;
-	int local_prev, local_target;
-	int pos0;
+	int local_i, local_len, local_delegates, local_d, local_target, local_res;
+	int pos0, pos1, pos2;
 	char *name;
 	MonoClass *target_class = NULL;
 	gboolean closed_over_null = FALSE;
@@ -3038,6 +3038,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	WrapperInfo *info;
 	WrapperSubtype subtype = WRAPPER_SUBTYPE_NONE;
 	gboolean found;
+	gboolean void_ret;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
@@ -3153,53 +3154,50 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	g_free (name);
 
 #ifndef DISABLE_JIT
+	void_ret = sig->ret->type == MONO_TYPE_VOID && !method->string_ctor;
+
 	/* allocate local 0 (object) */
+	local_i = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	local_len = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	local_delegates = mono_mb_add_local (mb, &mono_defaults.array_class->byval_arg);
+	local_d = mono_mb_add_local (mb, &mono_defaults.multicastdelegate_class->byval_arg);
 	local_target = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-	local_prev = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+	if (!void_ret)
+		local_res = mono_mb_add_local (mb, &mono_class_from_mono_type (sig->ret)->byval_arg);
 
 	g_assert (sig->hasthis);
-	
+
 	/*
-	 * if (prev != null)
-         *	prev.Invoke( args .. );
-	 * return this.<target>( args .. );
-         */
-	
+	 * {type: sig->ret} res;
+	 * if (delegates == null) {
+	 *     return this.<target> ( args .. );
+	 * } else {
+	 *     int i = 0, len = this.delegates.Length;
+	 *     do {
+	 *         res = this.delegates [i].Invoke ( args .. );
+	 *     } while (++i < len);
+	 *     return res;
+	 * }
+	 */
+
 	/* this wrapper can be used in unmanaged-managed transitions */
 	emit_thread_interrupt_checkpoint (mb);
-	
-	/* get this->prev */
+
+	/* delegates = this.delegates */
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoMulticastDelegate, prev));
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoMulticastDelegate, delegates));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_stloc (mb, local_prev);
-	mono_mb_emit_ldloc (mb, local_prev);
+	mono_mb_emit_stloc (mb, local_delegates);
 
-	/* if prev != null */
-	pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-	/* then recurse */
+	/* if (delegates == null) */
+	mono_mb_emit_ldloc (mb, local_delegates);
+	pos2 = mono_mb_emit_branch (mb, CEE_BRTRUE);
 
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_NOT_TAKEN);
+	/* return target.<target_method|method_ptr> ( args .. ); */
 
-	mono_mb_emit_ldloc (mb, local_prev);
-	for (i = 0; i < sig->param_count; i++)
-		mono_mb_emit_ldarg (mb, i + 1);
-	if (ctx) {
-		MonoError error;
-		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, &error));
-		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
-	} else {
-		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
-	}
-	if (sig->ret->type != MONO_TYPE_VOID)
-		mono_mb_emit_byte (mb, CEE_POP);
-
-	/* continued or prev == null */
-	mono_mb_patch_branch (mb, pos0);
-
-	/* get this->target */
+	/* target = d.target; */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, target));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -3260,6 +3258,54 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
+	/* else [delegates != null] */
+	mono_mb_patch_branch (mb, pos2);
+
+	/* len = delegates.Length; */
+	mono_mb_emit_ldloc (mb, local_delegates);
+	mono_mb_emit_byte (mb, CEE_LDLEN);
+	mono_mb_emit_byte (mb, CEE_CONV_I4);
+	mono_mb_emit_stloc (mb, local_len);
+
+	/* i = 0; */
+	mono_mb_emit_icon (mb, 0);
+	mono_mb_emit_stloc (mb, local_i);
+
+	pos1 = mono_mb_get_label (mb);
+
+	/* d = delegates [i]; */
+	mono_mb_emit_ldloc (mb, local_delegates);
+	mono_mb_emit_ldloc (mb, local_i);
+	mono_mb_emit_byte (mb, CEE_LDELEM_REF);
+	mono_mb_emit_stloc (mb, local_d);
+
+	/* res = d.Invoke ( args .. ); */
+	mono_mb_emit_ldloc (mb, local_d);
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + 1);
+	if (!ctx) {
+		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
+	} else {
+		MonoError error;
+		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, &error));
+		g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */
+	}
+	if (!void_ret)
+		mono_mb_emit_stloc (mb, local_res);
+
+	/* i += 1 */
+	mono_mb_emit_add_to_local (mb, local_i, 1);
+
+	/* i < l */
+	mono_mb_emit_ldloc (mb, local_i);
+	mono_mb_emit_ldloc (mb, local_len);
+	mono_mb_emit_branch_label (mb, CEE_BLT, pos1);
+
+	/* return res */
+	if (!void_ret)
+		mono_mb_emit_ldloc (mb, local_res);
+	mono_mb_emit_byte (mb, CEE_RET);
+
 	mb->skip_visibility = 1;
 #endif /* DISABLE_JIT */
 
@@ -3283,6 +3329,8 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		res = mono_mb_create_and_cache_full (cache, cache_key, mb, sig, sig->param_count + 16, info, NULL);
 	}
 	mono_mb_free (mb);
+
+	/* mono_method_print_code (res); */
 
 	return res;	
 }
@@ -7168,13 +7216,6 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 }
 #endif /* DISABLE_JIT */
 
-
-G_GNUC_UNUSED static void
-code_for (MonoMethod *method) {
-	MonoMethodHeader *header = mono_method_get_header (method);
-	printf ("CODE FOR %s: \n%s.\n", mono_method_full_name (method, TRUE), mono_disasm_code (0, method, header->code, header->code + header->code_size));
-}
-
 /**
  * mono_marshal_get_native_wrapper:
  * @method: The MonoMethod to wrap.
@@ -7397,7 +7438,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	g_free (mspecs);
 #endif
 
-	/* code_for (res); */
+	/* mono_method_print_code (res); */
 
 	return res;
 }
@@ -7972,7 +8013,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
 
-	/* code_for (res); */
+	/* mono_method_print_code (res); */
 
 	return res;
 }
@@ -8866,7 +8907,7 @@ mono_marshal_get_unbox_wrapper (MonoMethod *method)
 										 mb, sig, sig->param_count + 16);
 	mono_mb_free (mb);
 
-	/* code_for (res); */
+	/* mono_method_print_code (res); */
 
 	return res;	
 }

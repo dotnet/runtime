@@ -6335,6 +6335,8 @@ mono_delegate_ctor_with_method (MonoObject *this, MonoObject *target, gpointer a
 	g_assert (this);
 	g_assert (addr);
 
+	g_assert (mono_class_has_parent (mono_object_class (this), mono_defaults.multicastdelegate_class));
+
 	if (method)
 		delegate->method = method;
 

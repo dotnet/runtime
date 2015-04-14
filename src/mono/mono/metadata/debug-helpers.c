@@ -1022,3 +1022,25 @@ mono_class_describe_statics (MonoClass* klass)
 		}
 	}
 }
+
+/**
+ * mono_print_method_code
+ * @MonoMethod: a pointer to the method
+ *
+ * This method is used from a debugger to print the code of the method.
+ *
+ * This prints the IL code of the method in the standard output.
+ */
+void
+mono_method_print_code (MonoMethod *method)
+{
+	char *code;
+	MonoMethodHeader *header = mono_method_get_header (method);
+	if (!header) {
+		printf ("METHOD HEADER NOT FOUND\n");
+		return;
+	}
+	code = mono_disasm_code (0, method, header->code, header->code + header->code_size);
+	printf ("CODE FOR %s:\n%s\n", mono_method_full_name (method, TRUE), code);
+	g_free (code);
+}
