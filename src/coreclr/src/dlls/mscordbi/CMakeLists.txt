@@ -57,7 +57,8 @@ if(WIN32)
 elseif(CLR_CMAKE_PLATFORM_UNIX)
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
-        mscordaccore
+        CoreClrPal
+        palrt
     )
 
     # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
