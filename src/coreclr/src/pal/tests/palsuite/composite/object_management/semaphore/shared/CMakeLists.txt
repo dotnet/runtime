@@ -11,11 +11,11 @@ add_executable(paltest_semaphore_shared
   ${SOURCES}
 )
 
-add_dependencies(paltest_semaphore_shared CoreClrPal)
+add_dependencies(paltest_semaphore_shared coreclrpal)
 
 target_link_libraries(paltest_semaphore_shared
   pthread
   rt
   m
-  CoreClrPal
+  coreclrpal
 )

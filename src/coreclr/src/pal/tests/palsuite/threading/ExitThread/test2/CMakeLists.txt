@@ -10,12 +10,12 @@ add_executable(paltest_exitthread_test2
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_exitthread_test2 CoreClrPal)
+add_dependencies(paltest_exitthread_test2 coreclrpal)
 
 target_link_libraries(paltest_exitthread_test2
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_exitthread_test2_child
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_exitthread_test2_child CoreClrPal)
+add_dependencies(paltest_exitthread_test2_child coreclrpal)
 
 target_link_libraries(paltest_exitthread_test2_child
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

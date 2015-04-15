@@ -94,7 +94,7 @@ if(WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
-        CoreClrPal
+        coreclrpal
         palrt
     )
 endif(WIN32)

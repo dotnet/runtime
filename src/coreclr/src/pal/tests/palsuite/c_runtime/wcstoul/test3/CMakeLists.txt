@@ -10,10 +10,10 @@ add_executable(paltest_wcstoul_test3
   ${SOURCES}
 )
 
-add_dependencies(paltest_wcstoul_test3 CoreClrPal)
+add_dependencies(paltest_wcstoul_test3 coreclrpal)
 
 target_link_libraries(paltest_wcstoul_test3
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

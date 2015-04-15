@@ -11,8 +11,8 @@ add_executable(palexmpl
   ${SOURCES}
 )
 
-add_dependencies(palexmpl CoreClrPal)
+add_dependencies(palexmpl coreclrpal)
 
 target_link_libraries(palexmpl
-  CoreClrPal
+  coreclrpal
 )

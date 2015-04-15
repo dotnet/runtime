@@ -10,10 +10,10 @@ add_executable(paltest_lockfile_test7
   ${SOURCES}
 )
 
-add_dependencies(paltest_lockfile_test7 CoreClrPal)
+add_dependencies(paltest_lockfile_test7 coreclrpal)
 
 target_link_libraries(paltest_lockfile_test7
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
