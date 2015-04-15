@@ -15,8 +15,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="TestTraceFilter.cs" />
     <Compile Include="CommonUtilities.cs" />
     <Compile Include="CtorsDelimiterTests.cs" />
+    <Compile Include="TextWriterTraceListener_WriteTests.cs" />
     <Compile Include="CtorsStreamTests.cs" />
     <Compile Include="DelimiterWriteMethodTests.cs" />
   </ItemGroup>
