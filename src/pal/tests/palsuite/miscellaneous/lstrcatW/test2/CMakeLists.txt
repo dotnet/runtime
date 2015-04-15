@@ -10,10 +10,10 @@ add_executable(paltest_lstrcatw_test2
   ${SOURCES}
 )
 
-add_dependencies(paltest_lstrcatw_test2 CoreClrPal)
+add_dependencies(paltest_lstrcatw_test2 coreclrpal)
 
 target_link_libraries(paltest_lstrcatw_test2
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

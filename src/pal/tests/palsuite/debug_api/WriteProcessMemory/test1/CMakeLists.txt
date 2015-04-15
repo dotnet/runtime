@@ -10,12 +10,12 @@ add_executable(paltest_writeprocessmemory_test1
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_writeprocessmemory_test1 CoreClrPal)
+add_dependencies(paltest_writeprocessmemory_test1 coreclrpal)
 
 target_link_libraries(paltest_writeprocessmemory_test1
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_writeprocessmemory_test1_helper
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_writeprocessmemory_test1_helper CoreClrPal)
+add_dependencies(paltest_writeprocessmemory_test1_helper coreclrpal)
 
 target_link_libraries(paltest_writeprocessmemory_test1_helper
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
