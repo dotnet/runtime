@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -19,6 +19,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
@@ -80,9 +81,7 @@
     <Compile Include="UnseekableFileStream.cs" />
     <Compile Include="FSAssert.cs" />
     <Compile Include="FileSystemTest.cs" />
-    
     <!-- Ported -->
-
     <Compile Include="PortedCommon\CommonUtilities.cs" />
     <Compile Include="PortedCommon\DllImports.cs" />
     <Compile Include="PortedCommon\EnumerableUtils.cs" />
@@ -209,10 +208,8 @@
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo_str.cs" />
     <Compile Include="FileInfo\CopyTo_str_b.cs" />
-    
     <!-- Helpers -->
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
-    
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Directory\" />
@@ -221,4 +218,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
-

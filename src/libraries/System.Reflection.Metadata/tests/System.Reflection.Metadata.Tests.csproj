@@ -65,6 +65,7 @@
     <Compile Include="Utilities\MemoryBlockTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="project.json" />
     <None Include="Resources\Namespace\NamespaceForwardedCS.cs" />
     <None Include="Resources\Namespace\NamespaceTests.cs" />
     <None Include="Resources\Interop\Interop.Mock01.cs" />
