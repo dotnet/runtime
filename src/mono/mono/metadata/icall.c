@@ -2525,14 +2525,12 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *ref_type)
 	return mono_method_get_object (mono_object_domain (ref_type), method, method->klass);
 }
 
-ICALL_EXPORT MonoReflectionDllImportAttribute*
-ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
+ICALL_EXPORT void
+ves_icall_MonoMethod_GetPInvoke (MonoReflectionMethod *method, int* flags, MonoString** entry_point, MonoString** dll_name)
 {
-	static MonoClass *DllImportAttributeClass = NULL;
 	MonoDomain *domain = mono_domain_get ();
-	MonoReflectionDllImportAttribute *attr;
-	MonoImage *image = method->klass->image;
-	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
+	MonoImage *image = method->method->klass->image;
+	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method->method;
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
 	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
@@ -2540,22 +2538,10 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 	guint32 scope_token;
 	const char *import = NULL;
 	const char *scope = NULL;
-	guint32 flags;
 
-	if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-		return NULL;
-
-	if (!DllImportAttributeClass) {
-		DllImportAttributeClass = 
-			mono_class_from_name (mono_defaults.corlib,
-								  "System.Runtime.InteropServices", "DllImportAttribute");
-		g_assert (DllImportAttributeClass);
-	}
-														
-	if (image_is_dynamic (method->klass->image)) {
+	if (image_is_dynamic (image)) {
 		MonoReflectionMethodAux *method_aux = 
-			g_hash_table_lookup (
-									  ((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+			g_hash_table_lookup (((MonoDynamicImage*)image)->method_aux_hash, method->method);
 		if (method_aux) {
 			import = method_aux->dllentry;
 			scope = method_aux->dll;
@@ -2563,7 +2549,7 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 
 		if (!import || !scope) {
 			mono_set_pending_exception (mono_get_exception_argument ("method", "System.Reflection.Emit method with invalid pinvoke information"));
-			return NULL;
+			return;
 		}
 	}
 	else {
@@ -2576,23 +2562,10 @@ ves_icall_MonoMethod_GetDllImportAttribute (MonoMethod *method)
 			scope = mono_metadata_string_heap (image, scope_token);
 		}
 	}
-	flags = piinfo->piflags;
 	
-	attr = (MonoReflectionDllImportAttribute*)mono_object_new (domain, DllImportAttributeClass);
-
-	MONO_OBJECT_SETREF (attr, dll, mono_string_new (domain, scope));
-	MONO_OBJECT_SETREF (attr, entry_point, mono_string_new (domain, import));
-	attr->call_conv = (flags & 0x700) >> 8;
-	attr->charset = ((flags & 0x6) >> 1) + 1;
-	if (attr->charset == 1)
-		attr->charset = 2;
-	attr->exact_spelling = (flags & 0x1) != 0;
-	attr->set_last_error = (flags & 0x40) != 0;
-	attr->best_fit_mapping = (flags & 0x30) == 0x10;
-	attr->throw_on_unmappable = (flags & 0x3000) == 0x1000;
-	attr->preserve_sig = FALSE;
-
-	return attr;
+	*flags = piinfo->piflags;
+	*entry_point = mono_string_new (domain, import);
+	*dll_name = mono_string_new (domain, scope);
 }
 
 ICALL_EXPORT MonoReflectionMethod *

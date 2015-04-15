@@ -1280,27 +1280,13 @@ typedef struct {
 	gint16 size_param_index;
 } MonoReflectionMarshalAsAttribute;
 
-
 typedef struct {
 	MonoObject object;
 	gint32 call_conv;
 	gint32 charset;
-	MonoString *dll;
-	MonoString *entry_point;
-	MonoBoolean exact_spelling;
-	MonoBoolean preserve_sig;
-	MonoBoolean set_last_error;
 	MonoBoolean best_fit_mapping;
 	MonoBoolean throw_on_unmappable;
-} MonoReflectionDllImportAttribute;
-
-typedef struct {
-	MonoObject object;
-	gint32 call_conv;
-	gint32 charset;
 	MonoBoolean set_last_error;
-	MonoBoolean best_fit_mapping;
-	MonoBoolean throw_on_unmappable;
 } MonoReflectionUnmanagedFunctionPointerAttribute;
 
 typedef struct {
