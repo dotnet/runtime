@@ -10,10 +10,10 @@ add_executable(paltest_sscanf_test8
   ${SOURCES}
 )
 
-add_dependencies(paltest_sscanf_test8 CoreClrPal)
+add_dependencies(paltest_sscanf_test8 coreclrpal)
 
 target_link_libraries(paltest_sscanf_test8
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

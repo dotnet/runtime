@@ -89,7 +89,7 @@ else(WIN32)
   )
 
   set(SOS_LIBRARY
-    CoreClrPal
+    coreclrpal
     corguids
     debugshim
     dbgutil

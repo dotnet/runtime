@@ -10,10 +10,10 @@ add_executable(paltest_getcpinfo_test3
   ${SOURCES}
 )
 
-add_dependencies(paltest_getcpinfo_test3 CoreClrPal)
+add_dependencies(paltest_getcpinfo_test3 coreclrpal)
 
 target_link_libraries(paltest_getcpinfo_test3
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

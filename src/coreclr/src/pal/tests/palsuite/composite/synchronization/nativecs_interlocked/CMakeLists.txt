@@ -13,10 +13,10 @@ add_executable(paltest_synchronization_nativecs_interlocked
   ${SOURCES}
 )
 
-add_dependencies(paltest_synchronization_nativecs_interlocked CoreClrPal)
+add_dependencies(paltest_synchronization_nativecs_interlocked coreclrpal)
 
 target_link_libraries(paltest_synchronization_nativecs_interlocked
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
