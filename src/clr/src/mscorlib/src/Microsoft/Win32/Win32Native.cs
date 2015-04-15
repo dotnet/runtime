@@ -697,9 +697,9 @@ namespace Microsoft.Win32 {
         internal const String USER32   = "user32.dll";
         internal const String OLE32    = "ole32.dll";
 #else //FEATURE_PAL
-        internal const String KERNEL32 = "libcoreclr";
-        internal const String USER32   = "libcoreclr";
-        internal const String OLE32    = "libcoreclr";
+        internal const String KERNEL32 = "libcoreclrpal";
+        internal const String USER32   = "libcoreclrpal";
+        internal const String OLE32    = "libcoreclrpal";
 #endif //FEATURE_PAL         
         internal const String ADVAPI32 = "advapi32.dll";
         internal const String OLEAUT32 = "oleaut32.dll";

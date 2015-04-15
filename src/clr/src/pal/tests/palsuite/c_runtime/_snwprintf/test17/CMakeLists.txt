@@ -10,10 +10,10 @@ add_executable(paltest_snwprintf_test17
   ${SOURCES}
 )
 
-add_dependencies(paltest_snwprintf_test17 CoreClrPal)
+add_dependencies(paltest_snwprintf_test17 coreclrpal)
 
 target_link_libraries(paltest_snwprintf_test17
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

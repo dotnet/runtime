@@ -10,10 +10,10 @@ add_executable(paltest_getdateformatw_getdateformatw_neg2
   ${SOURCES}
 )
 
-add_dependencies(paltest_getdateformatw_getdateformatw_neg2 CoreClrPal)
+add_dependencies(paltest_getdateformatw_getdateformatw_neg2 coreclrpal)
 
 target_link_libraries(paltest_getdateformatw_getdateformatw_neg2
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

@@ -800,7 +800,7 @@ int LOADGetLibRotorPalSoFileName(LPSTR pszBuf)
         SetLastError(ERROR_INTERNAL_ERROR);
         goto Done;
     }
-    iRetVal = FindLibrary((CHAR*)MAKEDLLNAME_A("CoreClrPal"), &pszFileName);
+    iRetVal = FindLibrary((CHAR*)MAKEDLLNAME_A("coreclrpal"), &pszFileName);
     if (pszFileName)
     {
         UINT cchFileName = strlen(pszFileName);
