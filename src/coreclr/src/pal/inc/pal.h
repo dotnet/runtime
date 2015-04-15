@@ -600,12 +600,6 @@ PAL_CleanupDacTableAddress(
     );
 
 
-PALIMPORT
-BOOL
-PALAPI
-PAL_RegisterMacEHPort();
-
-
 /******************* winuser.h Entrypoints *******************************/
 
 PALIMPORT
@@ -5849,18 +5843,18 @@ public:
 class PAL_EnterHolder {
 public:
     // using constructor to suppress the "unused variable" warnings
-    PAL_EnterHolder(){}
+    PAL_EnterHolder() {}
 };
 class PAL_LeaveHolder {
 public:
     // using constructor to suppress the "unused variable" warnings
-    PAL_LeaveHolder(){}
+    PAL_LeaveHolder() {}
 };
 #endif // __cplusplus
 
 #endif // FEATURE_PAL_SXS
 
-#if FEATURE_PAL_SXS
+#ifdef __cplusplus
 
 #include "pal_unwind.h"
 
@@ -5889,8 +5883,6 @@ typedef EXCEPTION_DISPOSITION (*PFN_PAL_EXCEPTION_FILTER)(
     PAL_DISPATCHER_CONTEXT *DispatcherContext,
     void *pvParam);
 
-#ifdef __cplusplus
-
 struct PAL_SEHException
 {
 public:
@@ -5916,16 +5908,34 @@ typedef VOID (PALAPI *PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
 PALIMPORT
 VOID
 PALAPI
-PAL_SetHardwareExceptionHandler(IN PHARDWARE_EXCEPTION_HANDLER handler);
+PAL_SetHardwareExceptionHandler(
+    IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler);
 
-#endif // __cplusplus
+class PAL_CatchHardwareExceptionHolder
+{
+public:
+    PAL_CatchHardwareExceptionHolder();
+
+    ~PAL_CatchHardwareExceptionHolder();
+
+    static bool IsEnabled();
+};
+
+#ifdef FEATURE_ENABLE_HARDWARE_EXCEPTIONS
+#define HardwareExceptionHolder PAL_CatchHardwareExceptionHolder __catchHardwareException;
+#else
+#define HardwareExceptionHolder
+#endif // FEATURE_ENABLE_HARDWARE_EXCEPTIONS
+
+#ifdef FEATURE_PAL_SXS
 
 // Start of a try block for exceptions raised by RaiseException
 #define PAL_TRY(__ParamType, __paramDef, __paramRef)                            \
 {                                                                               \
     __ParamType __param = __paramRef;                                           \
     auto tryBlock = [](__ParamType __paramDef)                                  \
-    {
+    {                                                                           \
+        HardwareExceptionHolder
 
 // Start of an exception handler. If an exception raised by the RaiseException 
 // occurs in the try block and the disposition is EXCEPTION_EXECUTE_HANDLER, 
@@ -5948,7 +5958,6 @@ PAL_SetHardwareExceptionHandler(IN PHARDWARE_EXCEPTION_HANDLER handler);
         {                                                                       \
             throw;                                                              \
         }
-
 
 // Start of an exception handler. It works the same way as the PAL_EXCEPT except
 // that the disposition is obtained by calling the specified filter.
@@ -5984,7 +5993,7 @@ PAL_SetHardwareExceptionHandler(IN PHARDWARE_EXCEPTION_HANDLER handler);
 
 #define PAL_CPP_THROW(type, obj) { throw obj; }
 #define PAL_CPP_RETHROW { throw; }
-#define PAL_CPP_TRY                     try {
+#define PAL_CPP_TRY                     try { HardwareExceptionHolder
 #define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) { PAL_Reenter(PAL_BoundaryBottom);
 #define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) { PAL_Reenter(PAL_BoundaryBottom);
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) { PAL_Reenter(PAL_BoundaryBottom);
@@ -6005,17 +6014,23 @@ PAL_SetHardwareExceptionHandler(IN PHARDWARE_EXCEPTION_HANDLER handler);
     {                                                                   \
         ParamType __param = paramRef;                                   \
         ParamType paramDef; paramDef = __param;                         \
-        try {
+        try {                                                           \
+            HardwareExceptionHolder
+
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason)     \
     {                                                                   \
         ParamType __param = paramRef;                                   \
         ParamType paramDef; paramDef = __param;                         \
-        try {
+        try {                                                           \
+            HardwareExceptionHolder
+
 #define PAL_ENDTRY                                                      \
         }                                                               \
     }
 
 #endif // FEATURE_PAL_SXS
+
+#endif // __cplusplus
 
 #define EXCEPTION_CONTINUE_SEARCH   0
 #define EXCEPTION_EXECUTE_HANDLER   1

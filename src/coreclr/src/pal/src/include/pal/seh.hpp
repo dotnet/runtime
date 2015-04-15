@@ -25,8 +25,6 @@ Abstract:
 #include "pal/palinternal.h"
 #include "pal/corunix.hpp"
 
-extern PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler;
-
 // Uncomment this define to turn off the signal handling thread.
 // #define DO_NOT_USE_SIGNAL_HANDLING_THREAD
 
@@ -45,7 +43,8 @@ Return value:
     FALSE otherwise
 
 --*/
-BOOL SEHInitialize(CorUnix::CPalThread *pthrCurrent, DWORD flags);
+BOOL 
+SEHInitialize(CorUnix::CPalThread *pthrCurrent, DWORD flags);
 
 /*++
 Function :
@@ -58,7 +57,24 @@ Parameters:
 
     (no return value)
 --*/
-void SEHCleanup(DWORD flags);
+VOID 
+SEHCleanup(DWORD flags);
+
+/*++
+Function:
+    SEHProcessException
+
+    Build the PAL exception and sent it to any handler registered.
+
+Parameters:
+    None
+
+Return value:
+    Does not return
+--*/
+PAL_NORETURN
+VOID 
+SEHProcessException(PEXCEPTION_POINTERS pointers);
 
 /*++
 Function :

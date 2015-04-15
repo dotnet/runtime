@@ -532,20 +532,11 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
     }
 #endif // FEATURE_PAL_SXS
 
-    if (g_hardwareExceptionHandler != NULL)
-    {
-        PAL_SEHException exception(pExRecord, pContext);
+    EXCEPTION_POINTERS pointers;
+    pointers.ExceptionRecord = pExRecord;
+    pointers.ContextRecord = pContext;
 
-        g_hardwareExceptionHandler(&exception);
-
-        ASSERT("HandleHardwareException has returned, it should not.\n");
-    }
-    else
-    {
-        ASSERT("Unhandled hardware exception\n");
-    }
-
-    ExitProcess(pExRecord->ExceptionCode);
+    SEHProcessException(&pointers);
 }
 
 #if defined(_X86_) || defined(_AMD64_)
