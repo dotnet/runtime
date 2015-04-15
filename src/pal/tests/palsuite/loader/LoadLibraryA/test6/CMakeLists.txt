@@ -10,12 +10,12 @@ add_executable(paltest_loadlibrarya_test6
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_loadlibrarya_test6 CoreClrPal)
+add_dependencies(paltest_loadlibrarya_test6 coreclrpal)
 
 target_link_libraries(paltest_loadlibrarya_test6
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_loadlibrarya_test6_dlltest
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_loadlibrarya_test6_dlltest CoreClrPal)
+add_dependencies(paltest_loadlibrarya_test6_dlltest coreclrpal)
 
 target_link_libraries(paltest_loadlibrarya_test6_dlltest
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

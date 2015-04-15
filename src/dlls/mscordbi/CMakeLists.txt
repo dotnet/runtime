@@ -57,7 +57,7 @@ if(WIN32)
 elseif(CLR_CMAKE_PLATFORM_UNIX)
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
-        CoreClrPal
+        coreclrpal
         palrt
     )
 

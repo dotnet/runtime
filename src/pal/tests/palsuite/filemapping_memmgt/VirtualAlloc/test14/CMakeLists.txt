@@ -10,10 +10,10 @@ add_executable(paltest_virtualalloc_test14
   ${SOURCES}
 )
 
-add_dependencies(paltest_virtualalloc_test14 CoreClrPal)
+add_dependencies(paltest_virtualalloc_test14 coreclrpal)
 
 target_link_libraries(paltest_virtualalloc_test14
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

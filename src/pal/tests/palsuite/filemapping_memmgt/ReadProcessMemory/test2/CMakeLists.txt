@@ -10,12 +10,12 @@ add_executable(paltest_readprocessmemory_test2
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_readprocessmemory_test2 CoreClrPal)
+add_dependencies(paltest_readprocessmemory_test2 coreclrpal)
 
 target_link_libraries(paltest_readprocessmemory_test2
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_readprocessmemory_test2_helper
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_readprocessmemory_test2_helper CoreClrPal)
+add_dependencies(paltest_readprocessmemory_test2_helper coreclrpal)
 
 target_link_libraries(paltest_readprocessmemory_test2_helper
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
