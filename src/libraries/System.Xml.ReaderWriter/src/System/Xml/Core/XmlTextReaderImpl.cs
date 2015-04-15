@@ -929,6 +929,9 @@ namespace System.Xml
         {
             switch (_laterInitParam.initType)
             {
+                case InitInputType.UriString:
+                    FinishInitUriString();
+                    break;
                 case InitInputType.Stream:
                     FinishInitStream();
                     break;
