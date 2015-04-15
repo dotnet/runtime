@@ -92,8 +92,17 @@ typedef HANDLE mono_cond_t;
 
 
 #define mono_cond_init(cond,attr) do{*(cond) = CreateEvent(NULL,FALSE,FALSE,NULL); } while (0)
-#define mono_cond_wait(cond,mutex) WaitForSingleObject(*(cond),INFINITE)
-#define mono_cond_timedwait(cond,mutex,timeout) WaitForSingleObject(*(cond),timeout)
+
+static inline int mono_cond_timedwait(mono_cond_t *cond, mono_mutex_t *mutex, DWORD timeout)
+{
+	DWORD wait_result;
+	mono_mutex_unlock(mutex);
+	wait_result = WaitForSingleObject(*cond, timeout);
+	mono_mutex_lock(mutex);
+	return wait_result != WAIT_OBJECT_0;
+}
+
+#define mono_cond_wait(cond,mutex) mono_cond_timedwait(cond, mutex, INFINITE)
 #define mono_cond_signal(cond) SetEvent(*(cond))
 #define mono_cond_broadcast(cond) (!SetEvent(*(cond)))
 #define mono_cond_destroy(cond) CloseHandle(*(cond))
