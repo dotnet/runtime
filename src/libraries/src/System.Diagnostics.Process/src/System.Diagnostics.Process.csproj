@@ -37,7 +37,7 @@
     <Compile Include="System\Diagnostics\ThreadPriorityLevel.cs" />
     <Compile Include="System\Diagnostics\ThreadState.cs" />
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
-	<Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
+    <Compile Include="$(CommonPath)\System\Text\EncodingHelper.cs">
       <Link>Common\System\Text\EncodingHelper.cs</Link>
     </Compile>
   </ItemGroup>
@@ -206,7 +206,6 @@
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Unix.cs" />
     <Compile Include="System\Diagnostics\Process.Unix.cs" />
@@ -267,7 +266,6 @@
       <Link>Common\Interop\Unix\Interop.ResourceLimits.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
@@ -282,24 +280,22 @@
       <Link>Common\Interop\Linux\Interop.prioritywhich.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.OSX.cs" />
-    <Compile Include="System\Diagnostics\ProcessThread.OSX.cs" /> 
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.libproc.cs" >
+    <Compile Include="System\Diagnostics\ProcessThread.OSX.cs" />
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.libproc.cs">
       <Link>Common\Interop\OSX\Interop.libproc.cs</Link>
-    </Compile> 
-    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs" >
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.prioritywhich.cs">
       <Link>Common\Interop\OSX\Interop.prioritywhich.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

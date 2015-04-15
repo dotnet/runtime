@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "System.Runtime": "4.0.20-beta-22809",
+    "System.Collections": "4.0.10-beta-22809",
+    "System.IO": "4.0.10-beta-22809",
+    "System.Threading.Tasks": "4.0.10-beta-22809"
+  }
+}

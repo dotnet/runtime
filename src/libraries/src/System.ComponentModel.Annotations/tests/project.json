@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "System.Collections": "4.0.10-beta-22809",
+    "System.ComponentModel": "4.0.0-beta-22809",
+    "System.Linq": "4.0.0-beta-22809",
+    "System.Runtime": "4.0.20-beta-22809",
+    "System.Runtime.Extensions": "4.0.10-beta-22809",
+    "System.Threading.Tasks": "4.0.10-beta-22809"
+  }
+}

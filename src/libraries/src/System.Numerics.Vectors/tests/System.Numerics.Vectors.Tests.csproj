@@ -67,6 +67,7 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
     </None>
+    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

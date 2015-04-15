@@ -20,7 +20,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <!-- References are resolved from packages.config -->
-
   <ItemGroup>
     <Compile Include="System\IO\DriveInfo.cs" />
     <Compile Include="System\IO\DriveNotFoundException.cs" />
@@ -29,7 +28,6 @@
       <Link>Common\System\__HResults.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="System\IO\__Error.cs" />
     <Compile Include="System\IO\DriveInfo.Windows.cs" />
@@ -73,7 +71,6 @@
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -91,7 +88,6 @@
       <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.statvfs.cs">
@@ -107,16 +103,15 @@
       <Link>Common\Interop\Unix\Interop.setmntent.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.OSX.cs" />
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs"> <!-- TODO: Remove once implemented -->
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
+      <!-- TODO: Remove once implemented -->
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

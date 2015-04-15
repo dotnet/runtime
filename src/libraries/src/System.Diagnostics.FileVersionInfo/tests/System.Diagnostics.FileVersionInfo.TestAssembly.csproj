@@ -27,6 +27,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.Assembly1.config" />
+    <None Include="packages.config" />
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

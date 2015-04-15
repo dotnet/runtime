@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "System.Linq": "4.0.0-beta-22809",
+    "System.Runtime": "4.0.20-beta-22809",
+    "System.Runtime.Extensions": "4.0.10-beta-22809",
+    "System.Threading": "4.0.10-beta-22809",
+    "System.Threading.Tasks": "4.0.10-beta-22809",
+    "System.Xml.ReaderWriter": "4.0.10-beta-22809",
+    "System.Collections": "4.0.10-beta-22809",
+    "System.IO": "4.0.10-beta-22809",
+    "System.Diagnostics.Debug": "4.0.10-beta-22809",
+    "System.Globalization": "4.0.10-beta-22809"
+  }
+}

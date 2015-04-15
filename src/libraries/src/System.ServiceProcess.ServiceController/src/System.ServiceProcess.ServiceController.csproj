@@ -52,7 +52,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.StartService.cs">
       <Link>Common\Interop\Windows\Interop.StartService.cs</Link>
     </Compile>
-
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ENUM_SERVICE_STATUS.cs">
       <Link>Common\Interop\Windows\Interop.ENUM_SERVICE_STATUS.cs</Link>
     </Compile>
@@ -73,7 +72,7 @@
     <Compile Include="System\ServiceProcess\TimeoutException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
