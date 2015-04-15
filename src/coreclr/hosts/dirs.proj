@@ -10,7 +10,6 @@
 
   <!--The following projects will build during PHASE 1-->
   <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(FeatureCoreClr)' == 'true'">
-    <ProjectFile Include="UAP\dirs.proj" />
     <ProjectFile Include="coreRun\coreRun.nativeproj" />
     <ProjectFile Include="fxprun\fxprun.nativeproj" />
     <ProjectFile Include="coreconsole\CoreConsole.nativeproj" />
