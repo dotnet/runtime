@@ -10,12 +10,12 @@ add_executable(paltest_duplicatehandle_test11
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_duplicatehandle_test11 CoreClrPal)
+add_dependencies(paltest_duplicatehandle_test11 coreclrpal)
 
 target_link_libraries(paltest_duplicatehandle_test11
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_duplicatehandle_test11_child
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_duplicatehandle_test11_child CoreClrPal)
+add_dependencies(paltest_duplicatehandle_test11_child coreclrpal)
 
 target_link_libraries(paltest_duplicatehandle_test11_child
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

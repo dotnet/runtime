@@ -10,10 +10,10 @@ add_executable(paltest_reg_unreg_libraryw_neg
   ${SOURCES}
 )
 
-add_dependencies(paltest_reg_unreg_libraryw_neg CoreClrPal)
+add_dependencies(paltest_reg_unreg_libraryw_neg coreclrpal)
 
 target_link_libraries(paltest_reg_unreg_libraryw_neg
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

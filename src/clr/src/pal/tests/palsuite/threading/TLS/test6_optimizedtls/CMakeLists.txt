@@ -10,10 +10,10 @@ add_executable(paltest_tls_test6_optimizedtls
   ${SOURCES}
 )
 
-add_dependencies(paltest_tls_test6_optimizedtls CoreClrPal)
+add_dependencies(paltest_tls_test6_optimizedtls coreclrpal)
 
 target_link_libraries(paltest_tls_test6_optimizedtls
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

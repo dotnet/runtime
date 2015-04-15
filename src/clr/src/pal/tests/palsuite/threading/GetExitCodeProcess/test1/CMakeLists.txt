@@ -10,12 +10,12 @@ add_executable(paltest_getexitcodeprocess_test1
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_getexitcodeprocess_test1 CoreClrPal)
+add_dependencies(paltest_getexitcodeprocess_test1 coreclrpal)
 
 target_link_libraries(paltest_getexitcodeprocess_test1
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_getexitcodeprocess_test1_child
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_getexitcodeprocess_test1_child CoreClrPal)
+add_dependencies(paltest_getexitcodeprocess_test1_child coreclrpal)
 
 target_link_libraries(paltest_getexitcodeprocess_test1_child
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

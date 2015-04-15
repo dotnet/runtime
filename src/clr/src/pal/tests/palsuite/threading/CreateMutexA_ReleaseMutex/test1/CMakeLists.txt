@@ -10,10 +10,10 @@ add_executable(paltest_createmutexa_releasemutex_test1
   ${SOURCES}
 )
 
-add_dependencies(paltest_createmutexa_releasemutex_test1 CoreClrPal)
+add_dependencies(paltest_createmutexa_releasemutex_test1 coreclrpal)
 
 target_link_libraries(paltest_createmutexa_releasemutex_test1
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
