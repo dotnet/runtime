@@ -10,10 +10,10 @@ add_executable(paltest_vswprintf_test6
   ${SOURCES}
 )
 
-add_dependencies(paltest_vswprintf_test6 CoreClrPal)
+add_dependencies(paltest_vswprintf_test6 coreclrpal)
 
 target_link_libraries(paltest_vswprintf_test6
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

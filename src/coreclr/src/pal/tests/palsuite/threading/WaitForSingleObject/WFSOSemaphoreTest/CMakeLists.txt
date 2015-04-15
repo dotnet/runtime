@@ -10,10 +10,10 @@ add_executable(paltest_waitforsingleobject_wfsosemaphoretest
   ${SOURCES}
 )
 
-add_dependencies(paltest_waitforsingleobject_wfsosemaphoretest CoreClrPal)
+add_dependencies(paltest_waitforsingleobject_wfsosemaphoretest coreclrpal)
 
 target_link_libraries(paltest_waitforsingleobject_wfsosemaphoretest
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

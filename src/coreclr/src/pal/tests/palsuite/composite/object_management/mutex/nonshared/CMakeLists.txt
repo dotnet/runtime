@@ -11,11 +11,11 @@ add_executable(paltest_mutex_nonshared
   ${SOURCES}
 )
 
-add_dependencies(paltest_mutex_nonshared CoreClrPal)
+add_dependencies(paltest_mutex_nonshared coreclrpal)
 
 target_link_libraries(paltest_mutex_nonshared
   pthread
   rt
   m
-  CoreClrPal
+  coreclrpal
 )

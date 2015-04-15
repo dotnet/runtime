@@ -10,12 +10,12 @@ add_executable(paltest_waitformultipleobjectsex_test6
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_waitformultipleobjectsex_test6 CoreClrPal)
+add_dependencies(paltest_waitformultipleobjectsex_test6 coreclrpal)
 
 target_link_libraries(paltest_waitformultipleobjectsex_test6
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_waitformultipleobjectsex_test6_child
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_waitformultipleobjectsex_test6_child CoreClrPal)
+add_dependencies(paltest_waitformultipleobjectsex_test6_child coreclrpal)
 
 target_link_libraries(paltest_waitformultipleobjectsex_test6_child
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

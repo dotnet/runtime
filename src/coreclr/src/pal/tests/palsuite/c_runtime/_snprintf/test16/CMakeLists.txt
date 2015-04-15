@@ -10,10 +10,10 @@ add_executable(paltest_snprintf_test16
   ${SOURCES}
 )
 
-add_dependencies(paltest_snprintf_test16 CoreClrPal)
+add_dependencies(paltest_snprintf_test16 coreclrpal)
 
 target_link_libraries(paltest_snprintf_test16
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
