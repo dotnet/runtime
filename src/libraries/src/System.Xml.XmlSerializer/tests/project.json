@@ -22,6 +22,6 @@
     "System.Threading.Thread": "4.0.0-beta-22809",
     "System.Xml.ReaderWriter": "4.0.10-beta-22809",
     "System.Xml.XmlDocument": "4.0.0-beta-22809",
-    "System.Xml.XDocument": "4.0.0-beta-22809"
+    "System.Xml.XDocument": "4.0.10-beta-22809"
   }
 }
