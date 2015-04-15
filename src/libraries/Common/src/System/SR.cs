@@ -15,7 +15,7 @@ namespace System
             {
                 if (SR.s_resourceManager == null)
                 {
-                    SR.s_resourceManager = new ResourceManager(typeof(SR));
+                    SR.s_resourceManager = new ResourceManager(SR.ResourceType);
                 }
                 return SR.s_resourceManager;
             }
