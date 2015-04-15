@@ -225,13 +225,13 @@ int LOADGetLibRotorPalSoFileName(LPSTR pszBuf);
     mscorwks).
 
 Parameters:
-    void
+    Core CLR path
 
 Return value:
     TRUE if successful
     FALSE if failure
 --*/
-BOOL LOADInitCoreCLRModules();
+BOOL LOADInitCoreCLRModules(const char *szCoreCLRPath);
 
 #if defined(CORECLR) && defined(__APPLE__)
 // Abstract the API used to load and query for functions in the CoreCLR binary to make it easier to change the

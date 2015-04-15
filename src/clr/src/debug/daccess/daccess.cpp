@@ -37,15 +37,6 @@ HINSTANCE g_thisModule;
 
 extern VOID STDMETHODCALLTYPE TLS_FreeMasterSlotIndex();
 
-#ifdef FEATURE_PAL
-
-VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
-{
-    throw *ex;
-}
-
-#endif // FEATURE_PAL
-
 EXTERN_C BOOL WINAPI
 DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 {
@@ -73,8 +64,6 @@ DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         {
             return FALSE;
         }
-        // Register handler of hardware exceptions like null reference in PAL
-        PAL_SetHardwareExceptionHandler(HandleHardwareException);
 #endif
         InitializeCriticalSection(&g_dacCritSec);
 

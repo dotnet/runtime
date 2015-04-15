@@ -4985,8 +4985,6 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             }
             UNREACHABLE();
         }
-
-        _ASSERTE(!"HandleHardwareException: Hardware exception happened out of managed code");        
     }
     else 
     {
@@ -5015,7 +5013,6 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             }
         }
     }
-    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
 
 #endif // FEATURE_PAL
