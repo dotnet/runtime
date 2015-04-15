@@ -4,7 +4,7 @@
   <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
   <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
     <ParameterGroup>
-      <Address ParameterType="System.String" Required="true"/>
+      <Address ParameterType="System.String" Required="true" />
       <FileName ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
@@ -17,7 +17,30 @@
 
             var tempFile = Path.Combine(directory, Path.GetRandomFileName());
             var client = new System.Net.WebClient();
-            client.DownloadFile(Address, tempFile);
+            var tryCount = 1;
+            var maxTries = 3;
+
+            while (tryCount <= maxTries)
+            {
+                try
+                {
+                    Log.LogMessage("Attempting to download {0}...", Address);
+                    client.DownloadFile(Address, tempFile);
+                    break;
+                }
+                catch (System.Net.WebException e)
+                {
+                    tryCount++;
+                    if (tryCount > maxTries)
+                    {
+                        throw;
+                    }
+                    else
+                    {
+                        Log.LogMessage(MessageImportance.High, "Download failed, retrying: {0}", e.Message);
+                    }
+                }
+            }
 
             try
             {
