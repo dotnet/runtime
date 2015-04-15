@@ -90,7 +90,7 @@ if(WIN32)
     )
 else(WIN32)
     list(APPEND COREDAC_LIBRARIES
-        CoreClrPal
+        coreclrpal
         palrt
     )
 endif(WIN32)

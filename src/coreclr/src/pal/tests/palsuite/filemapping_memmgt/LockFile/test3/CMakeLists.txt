@@ -10,12 +10,12 @@ add_executable(paltest_lockfile_test3
   ${TESTSOURCES}
 )
 
-add_dependencies(paltest_lockfile_test3 CoreClrPal)
+add_dependencies(paltest_lockfile_test3 coreclrpal)
 
 target_link_libraries(paltest_lockfile_test3
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
 
 
@@ -27,10 +27,10 @@ add_executable(paltest_lockfile_test3_helper
   ${HELPERSOURCES}
 )
 
-add_dependencies(paltest_lockfile_test3_helper CoreClrPal)
+add_dependencies(paltest_lockfile_test3_helper coreclrpal)
 
 target_link_libraries(paltest_lockfile_test3_helper
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )

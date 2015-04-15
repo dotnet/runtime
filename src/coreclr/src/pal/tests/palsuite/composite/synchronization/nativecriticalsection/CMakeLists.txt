@@ -12,10 +12,10 @@ add_executable(paltest_synchronization_nativecriticalsection
   ${SOURCES}
 )
 
-add_dependencies(paltest_synchronization_nativecriticalsection CoreClrPal)
+add_dependencies(paltest_synchronization_nativecriticalsection coreclrpal)
 
 target_link_libraries(paltest_synchronization_nativecriticalsection
   pthread
   m
-  CoreClrPal
+  coreclrpal
 )
