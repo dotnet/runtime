@@ -7,7 +7,7 @@ internal static partial class Interop
     {
         internal const string Libc = "libc";             // C library
         internal const string LibRt = "librt";           // POSIX Realtime Extensions library
-        internal const string LibCoreClr = "libcoreclr"; // CoreCLR runtime
+        internal const string LibCoreClrPal = "libcoreclrpal"; // CoreCLR runtime
         internal const string LibCrypto = "libcrypto";   // OpenSSL crypto library
     }
 }

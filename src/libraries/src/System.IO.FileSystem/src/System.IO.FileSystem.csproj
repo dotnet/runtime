@@ -311,7 +311,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
       <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclrpal\Interop.GetFileInformation.cs">
       <Link>Common\Interop\Unix\Interop.GetInformation.cs</Link>
     </Compile>
   </ItemGroup>
