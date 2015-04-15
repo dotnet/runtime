@@ -84,7 +84,7 @@ echo "Commencing CoreCLR Repo build"
 
 # Argument types supported by this script:
 #
-# Build architecture - valid value is: Amd64.
+# Build architecture - valid value is: x64.
 # Build Type         - valid values are: Debug, Release
 #
 # Set the default arguments for build
@@ -138,7 +138,7 @@ for i in "$@"
         usage
         exit 1
         ;;
-        amd64)
+        x64)
         __BuildArch=x64
         __MSBuildBuildArch=x64
         ;;
