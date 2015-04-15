@@ -8705,6 +8705,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 	MonoCustomAttrInfo *ainfo;
 	GList *tmp, *list = NULL;
 	const char *data;
+	MonoCustomAttrEntry* attr;
 
 	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
 
@@ -8724,7 +8725,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 	ainfo = g_malloc0 (MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * len);
 	ainfo->num_attrs = len;
 	ainfo->image = image;
-	for (i = 0, tmp = list; i < len; ++i, tmp = tmp->next) {
+	for (i = len, tmp = list; i != 0; --i, tmp = tmp->next) {
 		mono_metadata_decode_row (ca, GPOINTER_TO_UINT (tmp->data), cols, MONO_CUSTOM_ATTR_SIZE);
 		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
 		switch (cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
@@ -8738,8 +8739,9 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 			g_error ("Unknown table for custom attr type %08x", cols [MONO_CUSTOM_ATTR_TYPE]);
 			break;
 		}
-		ainfo->attrs [i].ctor = mono_get_method (image, mtoken, NULL);
-		if (!ainfo->attrs [i].ctor) {
+		attr = &ainfo->attrs [i - 1];
+		attr->ctor = mono_get_method (image, mtoken, NULL);
+		if (!attr->ctor) {
 			g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x", image->name, mtoken);
 			g_list_free (list);
 			g_free (ainfo);
@@ -8754,8 +8756,8 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 			return NULL;
 		}
 		data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
-		ainfo->attrs [i].data_size = mono_metadata_decode_value (data, &data);
-		ainfo->attrs [i].data = (guchar*)data;
+		attr->data_size = mono_metadata_decode_value (data, &data);
+		attr->data = (guchar*)data;
 	}
 	g_list_free (list);
 
