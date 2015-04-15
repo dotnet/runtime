@@ -208,7 +208,7 @@ namespace System.Diagnostics
             // is used to fork/execve as executing managed code in a forked process is not safe (only
             // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
             int childPid, stdinFd, stdoutFd, stderrFd;
-            if (Interop.libcoreclr.ForkAndExecProcess(
+            if (Interop.libcoreclrpal.ForkAndExecProcess(
                 filename, argv, envp, cwd,
                 startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                 out childPid, 
