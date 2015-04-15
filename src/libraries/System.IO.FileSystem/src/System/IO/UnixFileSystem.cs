@@ -63,8 +63,8 @@ namespace System.IO
             }
 
             // Now copy over relevant read/write/execute permissions from the source to the destination
-            Interop.libcoreclr.fileinfo fileinfo;
-            while (Interop.CheckIo(Interop.libcoreclr.GetFileInformationFromPath(sourceFullPath, out fileinfo), sourceFullPath)) ;
+            Interop.libcoreclrpal.fileinfo fileinfo;
+            while (Interop.CheckIo(Interop.libcoreclrpal.GetFileInformationFromPath(sourceFullPath, out fileinfo), sourceFullPath)) ;
             int newMode = fileinfo.mode & (int)Interop.libc.Permissions.Mask;
             while (Interop.CheckIo(Interop.libc.chmod(destFullPath, newMode), destFullPath)) ;
         }
@@ -315,22 +315,22 @@ namespace System.IO
 
         private bool DirectoryExists(string fullPath, out int errno)
         {
-            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFDIR, out errno);
+            return FileExists(fullPath, Interop.libcoreclrpal.FileTypes.S_IFDIR, out errno);
         }
 
         public override bool FileExists(string fullPath)
         {
             int errno;
-            return FileExists(fullPath, Interop.libcoreclr.FileTypes.S_IFREG, out errno);
+            return FileExists(fullPath, Interop.libcoreclrpal.FileTypes.S_IFREG, out errno);
         }
 
         private bool FileExists(string fullPath, int fileType, out int errno)
         {
-            Interop.libcoreclr.fileinfo fileinfo;
+            Interop.libcoreclrpal.fileinfo fileinfo;
             while (true)
             {
                 errno = 0;
-                int result = Interop.libcoreclr.GetFileInformationFromPath(fullPath, out fileinfo);
+                int result = Interop.libcoreclrpal.GetFileInformationFromPath(fullPath, out fileinfo);
                 if (result < 0)
                 {
                     errno = Marshal.GetLastWin32Error();
@@ -340,7 +340,7 @@ namespace System.IO
                     }
                     return false;
                 }
-                return (fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == fileType;
+                return (fileinfo.mode & Interop.libcoreclrpal.FileTypes.S_IFMT) == fileType;
             }
         }
 
@@ -483,10 +483,10 @@ namespace System.IO
                                 case Interop.libc.DType.DT_LNK:
                                 case Interop.libc.DType.DT_UNKNOWN:
                                     string fullPath = Path.Combine(dirPath.FullPath, name);
-                                    Interop.libcoreclr.fileinfo fileinfo;
-                                    while (Interop.CheckIo(Interop.libcoreclr.GetFileInformationFromPath(fullPath, out fileinfo), fullPath)) ;
-                                    isDir = (fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFDIR;
-                                    isFile = (fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFREG;
+                                    Interop.libcoreclrpal.fileinfo fileinfo;
+                                    while (Interop.CheckIo(Interop.libcoreclrpal.GetFileInformationFromPath(fullPath, out fileinfo), fullPath)) ;
+                                    isDir = (fileinfo.mode & Interop.libcoreclrpal.FileTypes.S_IFMT) == Interop.libcoreclrpal.FileTypes.S_IFDIR;
+                                    isFile = (fileinfo.mode & Interop.libcoreclrpal.FileTypes.S_IFMT) == Interop.libcoreclrpal.FileTypes.S_IFREG;
                                     break;
                             }
                             bool matchesSearchPattern =

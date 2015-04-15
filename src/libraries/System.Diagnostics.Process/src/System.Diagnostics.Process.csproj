@@ -260,7 +260,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.waitpid.cs">
       <Link>Common\Interop\Unix\Interop.waitpid.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.ForkAndExecProcess.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclrpal\Interop.ForkAndExecProcess.cs">
       <Link>Common\Interop\Unix\Interop.ForkAndExecProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ResourceLimits.cs">
