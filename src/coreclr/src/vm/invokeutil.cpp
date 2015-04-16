@@ -630,11 +630,13 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
                 COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
 
             type = th.GetVerifierCorElementType();
-            if (IsPrimitiveType(type)) 
+            if (IsPrimitiveType(type))
+            {
                 if (CanPrimitiveWiden(type, oType)) 
                     return;
                 else 
                     COMPlusThrow(kArgumentException,W("Arg_ObjObj"));
+            }
         }
 
         if (!ObjIsInstanceOf(OBJECTREFToObject(*value), th)) {
