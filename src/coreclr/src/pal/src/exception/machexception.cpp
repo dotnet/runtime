@@ -514,107 +514,6 @@ BOOL SEHDisableMachExceptions()
 void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord)
 #else // defined(_AMD64_)
 
-//
-// REX prefix byte
-//
-#define REX_PREFIX_BASE         0x40        // 0100xxxx
-#define REX_OPERAND_SIZE_64BIT  0x08        // xxxx1xxx
-#define REX_MODRM_REG_EXT       0x04        // xxxxx1xx     // use for 'middle' 3 bit field of mod/r/m
-#define REX_SIB_INDEX_EXT       0x02        // xxxxxx10
-#define REX_MODRM_RM_EXT        0x01        // XXXXXXX1     // use for low 3 bit field of mod/r/m
-#define REX_SIB_BASE_EXT        0x01        // XXXXXXX1
-#define REX_OPCODE_REG_EXT      0x01        // XXXXXXX1
-
-bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord)
-{
-    _ASSERTE(pExRecord->ExceptionCode  == EXCEPTION_INT_DIVIDE_BY_ZERO);
-
-    BYTE * pCode = (BYTE*)(size_t)pContext->Rip;
-    INT64  divisor  = 0;
-    bool fIsOperand64bit = false;
-    bool fCanUseExtendedRegisters = false;
-    
-    // Check if RIP points at a "idiv ..." instruction
-    if (*pCode != 0xF7)
-    {
-        // Its possible that we may have the REX byte at RIP.
-        if (*pCode & REX_PREFIX_BASE)
-        {
-            fIsOperand64bit = (*pCode & REX_OPERAND_SIZE_64BIT)?true:false;
-            fCanUseExtendedRegisters = (*pCode & REX_MODRM_REG_EXT)?true:false;
-            
-            // Move to the next instruction byte and see if it represents IDIV instruction.
-            pCode++;
-            if (*pCode != 0xF7)
-            {
-                return false;
-            }
-        }
-        else
-        {
-             return false;
-        }
-    }
-
-    pCode++;
-
-    switch (*pCode++)
-    {
-        /* idiv reg        F7 F8..FF */
-    case 0xF8:
-        divisor = (DWORD64) pContext->Rax;
-        break;
-
-    case 0xF9:
-        divisor = (DWORD64) pContext->Rcx;
-        break;
-
-    case 0xFA:
-        divisor = (DWORD64) pContext->Rdx;
-        break;
-
-    case 0xFB:
-        divisor = (DWORD64) pContext->Rbx;
-        break;
-
-#ifdef _DEBUG
-    case 0xFC: //div esp will not be issued
-        _ASSERTE(FALSE);
-#endif // _DEBUG
-
-    case 0xFD:
-        divisor = (DWORD64) pContext->Rbp;
-        break;
-
-    case 0xFE:
-        divisor = (DWORD64) pContext->Rsi;
-        break;
-
-    case 0xFF:
-        divisor = (DWORD64) pContext->Rdi;
-        break;
-
-    default:
-        break;
-    }
-
-    if ((divisor != -1) && (fCanUseExtendedRegisters == true))
-    {
-    	// None of the regular registers indicated a divisor of -1.
-    	// Check if R12-R15 hold that value as the REX prefix indicated
-    	// that they could have been used.
-    	if ((pContext->R12 == (DWORD64)-1) || (pContext->R13 == (DWORD64)-1) || (pContext->R14 == (DWORD64)-1) || (pContext->R15 == (DWORD64)-1))
-    	{
-             divisor = -1;
-    	}
-    }
-    
-    if (divisor != -1)
-        return false;
-
-    return true;
-}
-
 // Since catch_exception_raise pushed the context and exception record on the stack, we need to adjust the signature
 // of PAL_DispatchException such that the corresponding arguments are considered to be on the stack per GCC64 calling
 // convention rules. Hence, the first 6 dummy arguments (corresponding to RDI, RSI, RDX,RCX, R8, R9).
@@ -632,25 +531,6 @@ void PAL_DispatchException(DWORD64 dwRDI, DWORD64 dwRSI, DWORD64 dwRDX, DWORD64 
         PAL_Reenter(PAL_BoundaryBottom);
     }
 #endif // FEATURE_PAL_SXS
-
-#if defined(_AMD64_)
-    // MACTODO_Future: Pull the x86 version here as well.
-    if (pExRecord->ExceptionCode == EXCEPTION_INT_DIVIDE_BY_ZERO)
-    {
-        // Its possible that an overflow may also have been mapped to a divide-by-zero
-        // exception. This happens when we try to divide the maximum negative value of a
-        // signed integer with -1. For such a case, Mach kernel is not documented to leave
-        // any hint of whether it was a real divide-by-zero or an integer overflow.
-        //
-        // Thus, we will attempt to decode the instruction @ RIP to determine if that
-        // is the case using the faulting context.
-        if (IsDivByZeroAnIntegerOverflow(pContext, pExRecord))
-        {
-            // Yes, it is. So change the exception code to reflect that.
-            pExRecord->ExceptionCode = EXCEPTION_INT_OVERFLOW;
-        }
-    }
-#endif // defined(_AMD64_)
 
     if (g_hardwareExceptionHandler != NULL)
     {
