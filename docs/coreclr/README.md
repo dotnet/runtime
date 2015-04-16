@@ -19,6 +19,7 @@ Book of the Runtime
 - [Book of the Runtime FAQ](botr-faq.md)
 - [Introduction to the Common Language Runtime](intro-to-clr.md)
 - [Garbage Collection Design](garbage-collection.md)
+- [Type System](type-system.md)
 - [Type Loader](type-loader.md)
 - [Method Descriptor](method-descriptor.md)
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md)
