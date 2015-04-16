@@ -2,7 +2,8 @@
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
   <!-- Build Tools Version -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00030</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00031</BuildToolsVersion>
+    <DnxVersion>1.0.0-beta5-11482</DnxVersion>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -29,11 +30,22 @@
 
     <NugetRestoreCommand>"$(NuGetToolPath)"</NugetRestoreCommand>
     <NugetRestoreCommand>$(NugetRestoreCommand) install</NugetRestoreCommand>
-    <NugetRestoreCommand>$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('\'))"</NugetRestoreCommand>
+    <NugetRestoreCommand>$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('/'))"</NugetRestoreCommand>
     <NugetRestoreCommand>$(NugetRestoreCommand) $(NuGetConfigCommandLine)</NugetRestoreCommand>
     <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DnuToolPath Condition="'$(DnuToolPath)' == ''">$(PackagesDir)dnx-clr-win-x86.$(DnxVersion)\bin\dnu.cmd</DnuToolPath>
+
+    <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
+    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
+    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/'))"</DnuRestoreCommand>
+
+    <!-- Current version of DNX does not support all semantics used in our packages, 
+         so we ignore the pre-calculation in the lock file and calculate asset applicability in the build task -->
+    <NuGetIngoreLockFile>true</NuGetIngoreLockFile>
+  </PropertyGroup>
   <!-- 
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even

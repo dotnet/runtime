@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "System.Collections": "4.0.10-beta-22809",
+    "System.Diagnostics.Debug": "4.0.10-beta-22809",
+    "System.Globalization": "4.0.10-beta-22809",
+    "System.IO": "4.0.10-beta-22809",
+    "System.Reflection": "4.0.10-beta-22809",
+    "System.Reflection.Primitives": "4.0.0-beta-22809",
+    "System.Resources.ResourceManager": "4.0.0-beta-22809",
+    "System.Runtime": "4.0.20-beta-22809",
+    "System.Runtime.Extensions": "4.0.10-beta-22809",
+    "System.Text.Encoding": "4.0.10-beta-22809",
+    "System.Threading.Tasks": "4.0.10-beta-22809"
+  }
+}

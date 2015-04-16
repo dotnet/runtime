@@ -38,12 +38,10 @@
     <Compile Include="Properties\GlobalSuppressions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
+    <EmbeddedResource Include="Resources\unicode-7.0.0-defined-characters.bin" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\unicode-7.0.0-defined-characters.bin" />
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

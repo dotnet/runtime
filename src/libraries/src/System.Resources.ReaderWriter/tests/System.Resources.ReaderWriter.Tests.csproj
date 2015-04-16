@@ -21,6 +21,7 @@
     </None>
     <Compile Include="ResourceWriterUnitTest.cs" />
     <Compile Include="ResourceReaderUnitTest.cs" />
+    <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Resources.ReaderWriter.csproj">

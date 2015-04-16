@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "System.Console": "4.0.0-beta-22809",
+    "System.Diagnostics.Process": "4.0.0-beta-22809",
+    "System.IO": "4.0.10-beta-22809",
+    "System.IO.FileSystem": "4.0.0-beta-22809",
+    "System.IO.FileSystem.Primitives": "4.0.0-beta-22809",
+    "System.IO.UnmanagedMemoryStream": "4.0.0-beta-22809",
+    "System.Reflection": "4.0.10-beta-22809",
+    "System.Reflection.Primitives": "4.0.0-beta-22809",
+    "System.Reflection.TypeExtensions": "4.0.0-beta-22809",
+    "System.Runtime": "4.0.20-beta-22809",
+    "System.Runtime.Extensions": "4.0.10-beta-22809",
+    "System.Runtime.Handles": "4.0.0-beta-22809",
+    "System.Runtime.InteropServices": "4.0.20-beta-22809",
+    "System.Text.Encoding": "4.0.10-beta-22809",
+    "System.Threading.Overlapped": "4.0.0-beta-22809",
+    "System.Threading.Tasks": "4.0.10-beta-22809",
+    "System.Threading.ThreadPool": "4.0.10-beta-22809"
+  }
+}
