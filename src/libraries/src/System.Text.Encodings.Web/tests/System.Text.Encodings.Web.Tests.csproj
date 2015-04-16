@@ -30,6 +30,7 @@
     <Compile Include="CodePointFilterTests.cs" />
     <Compile Include="CommonTestEncoder.cs" />
     <Compile Include="EncoderCommonTests.cs" />
+    <Compile Include="EncoderExtensionsTests.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="HtmlEncoderTests.cs" />
     <Compile Include="JavaScriptStringEncoderTests.cs" />
