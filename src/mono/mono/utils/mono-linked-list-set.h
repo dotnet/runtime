@@ -81,7 +81,7 @@ Requires the world to be stoped
 static inline MonoLinkedListSetNode*
 mono_lls_info_step (MonoLinkedListSetNode *val, MonoThreadHazardPointers *hp)
 {
-	val = mono_lls_pointer_unmask (val);
+	val = (MonoLinkedListSetNode *) mono_lls_pointer_unmask (val);
 	mono_hazard_pointer_set (hp, 1, val);
 	return val;
 }
@@ -92,20 +92,20 @@ Provides snapshot iteration
 #define MONO_LLS_FOREACH_SAFE(list, element, type) {\
 	MonoThreadHazardPointers *__hp = mono_hazard_pointer_get ();	\
 	MonoLinkedListSetNode *__cur, *__next;	\
-	for (__cur = mono_lls_pointer_unmask (get_hazardous_pointer ((gpointer volatile*)&(list)->head, __hp, 1)); \
+	for (__cur = (MonoLinkedListSetNode *) mono_lls_pointer_unmask (get_hazardous_pointer ((gpointer volatile*)&(list)->head, __hp, 1)); \
 		__cur;	\
-		__cur = mono_lls_info_step (__next, __hp)) {	\
-		__next = get_hazardous_pointer_with_mask ((gpointer volatile*)&__cur->next, __hp, 0);	\
+		__cur = (MonoLinkedListSetNode *) mono_lls_info_step (__next, __hp)) {	\
+		__next = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer volatile*)&__cur->next, __hp, 0);	\
 		if (!mono_lls_pointer_get_mark (__next)) {	\
 			(element) = (type)__cur;
 
 #define MONO_LLS_FOREACH_FILTERED_SAFE(list, element, filter_func, type) {\
 	MonoThreadHazardPointers *__hp = mono_hazard_pointer_get ();	\
 	MonoLinkedListSetNode *__cur, *__next;	\
-	for (__cur = mono_lls_pointer_unmask (get_hazardous_pointer ((gpointer volatile*)&(list)->head, __hp, 1)); \
+	for (__cur = (MonoLinkedListSetNode *) mono_lls_pointer_unmask (get_hazardous_pointer ((gpointer volatile*)&(list)->head, __hp, 1)); \
 		__cur;	\
-		__cur = mono_lls_info_step (__next, __hp)) {	\
-		__next = get_hazardous_pointer_with_mask ((gpointer volatile*)&__cur->next, __hp, 0);	\
+		__cur = (MonoLinkedListSetNode *) mono_lls_info_step (__next, __hp)) {	\
+		__next = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer volatile*)&__cur->next, __hp, 0);	\
 		if (!mono_lls_pointer_get_mark (__next)) {	\
 			(element) = (type)__cur;	\
 			if (!filter_func (element)) continue;

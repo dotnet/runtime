@@ -57,9 +57,9 @@
 
 #include <mono/utils/lock-free-queue.h>
 
-#define INVALID_NEXT	((void*)-1)
-#define END_MARKER	((void*)-2)
-#define FREE_NEXT	((void*)-3)
+#define INVALID_NEXT	((MonoLockFreeQueueNode *volatile)-1)
+#define END_MARKER	((MonoLockFreeQueueNode *volatile)-2)
+#define FREE_NEXT	((MonoLockFreeQueueNode *volatile)-3)
 
 void
 mono_lock_free_queue_init (MonoLockFreeQueue *q)
@@ -113,7 +113,7 @@ mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node)
 	for (;;) {
 		MonoLockFreeQueueNode *next;
 
-		tail = get_hazardous_pointer ((gpointer volatile*)&q->tail, hp, 0);
+		tail = (MonoLockFreeQueueNode *) get_hazardous_pointer ((gpointer volatile*)&q->tail, hp, 0);
 		mono_memory_read_barrier ();
 		/*
 		 * We never dereference next so we don't need a
@@ -157,7 +157,7 @@ mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node)
 static void
 free_dummy (gpointer _dummy)
 {
-	MonoLockFreeQueueDummy *dummy = _dummy;
+	MonoLockFreeQueueDummy *dummy = (MonoLockFreeQueueDummy *) _dummy;
 	mono_lock_free_queue_node_free (&dummy->node);
 	g_assert (dummy->in_use);
 	mono_memory_write_barrier ();
@@ -218,7 +218,7 @@ mono_lock_free_queue_dequeue (MonoLockFreeQueue *q)
 	for (;;) {
 		MonoLockFreeQueueNode *tail, *next;
 
-		head = get_hazardous_pointer ((gpointer volatile*)&q->head, hp, 0);
+		head = (MonoLockFreeQueueNode *) get_hazardous_pointer ((gpointer volatile*)&q->head, hp, 0);
 		tail = (MonoLockFreeQueueNode*)q->tail;
 		mono_memory_read_barrier ();
 		next = head->next;

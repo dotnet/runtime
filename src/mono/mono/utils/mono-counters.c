@@ -165,7 +165,7 @@ register_internal (const char *name, int type, void *addr, int size)
 		}
 	}
 
-	counter = malloc (sizeof (MonoCounter));
+	counter = (MonoCounter *) malloc (sizeof (MonoCounter));
 	if (!counter) {
 		mono_mutex_unlock (&counters_mutex);
 		return;
@@ -292,7 +292,7 @@ mono_counters_on_register (MonoCounterRegisterCallback callback)
 	}
 
 	mono_mutex_lock (&counters_mutex);
-	register_callbacks = g_slist_append (register_callbacks, callback);
+	register_callbacks = g_slist_append (register_callbacks, (gpointer) callback);
 	mono_mutex_unlock (&counters_mutex);
 }
 
@@ -406,16 +406,16 @@ cpu_load_15min (void)
 static void
 initialize_system_counters (void)
 {
-	register_internal ("User Time", SYSCOUNTER_TIME, &user_time, sizeof (gint64));
-	register_internal ("System Time", SYSCOUNTER_TIME, &system_time, sizeof (gint64));
-	register_internal ("Total Time", SYSCOUNTER_TIME, &total_time, sizeof (gint64));
-	register_internal ("Working Set", SYSCOUNTER_BYTES, &working_set, sizeof (gint64));
-	register_internal ("Private Bytes", SYSCOUNTER_BYTES, &private_bytes, sizeof (gint64));
-	register_internal ("Virtual Bytes", SYSCOUNTER_BYTES, &virtual_bytes, sizeof (gint64));
-	register_internal ("Page Faults", SYSCOUNTER_COUNT, &page_faults, sizeof (gint64));
-	register_internal ("CPU Load Average - 1min", SYSCOUNTER_LOAD, &cpu_load_1min, sizeof (double));
-	register_internal ("CPU Load Average - 5min", SYSCOUNTER_LOAD, &cpu_load_5min, sizeof (double));
-	register_internal ("CPU Load Average - 15min", SYSCOUNTER_LOAD, &cpu_load_15min, sizeof (double));
+	register_internal ("User Time", SYSCOUNTER_TIME, (gpointer) &user_time, sizeof (gint64));
+	register_internal ("System Time", SYSCOUNTER_TIME, (gpointer) &system_time, sizeof (gint64));
+	register_internal ("Total Time", SYSCOUNTER_TIME, (gpointer) &total_time, sizeof (gint64));
+	register_internal ("Working Set", SYSCOUNTER_BYTES, (gpointer) &working_set, sizeof (gint64));
+	register_internal ("Private Bytes", SYSCOUNTER_BYTES, (gpointer) &private_bytes, sizeof (gint64));
+	register_internal ("Virtual Bytes", SYSCOUNTER_BYTES, (gpointer) &virtual_bytes, sizeof (gint64));
+	register_internal ("Page Faults", SYSCOUNTER_COUNT, (gpointer) &page_faults, sizeof (gint64));
+	register_internal ("CPU Load Average - 1min", SYSCOUNTER_LOAD, (gpointer) &cpu_load_1min, sizeof (double));
+	register_internal ("CPU Load Average - 5min", SYSCOUNTER_LOAD, (gpointer) &cpu_load_5min, sizeof (double));
+	register_internal ("CPU Load Average - 15min", SYSCOUNTER_LOAD, (gpointer) &cpu_load_15min, sizeof (double));
 }
 
 /**
@@ -497,7 +497,7 @@ sample_internal (MonoCounter *counter, void *buffer, int buffer_size)
 				size = 0;
 			} else {
 				size = counter->size;
-				strncpy (buffer, strval, size - 1);
+				strncpy ((char *) buffer, strval, size - 1);
 				((char*)buffer)[size - 1] = '\0';
 			}
 		}

@@ -106,7 +106,7 @@ mono_process_list (int *size)
 		res = sysctl (mib, 4, NULL, &data_len, NULL, 0);
 		if (res)
 			return NULL;
-		processes = malloc (data_len);
+		processes = (struct kinfo_proc *) malloc (data_len);
 		res = sysctl (mib, 4, processes, &data_len, NULL, 0);
 		if (res < 0) {
 			free (processes);
@@ -124,7 +124,7 @@ mono_process_list (int *size)
 #else
 	res = data_len/sizeof (struct kinfo_proc);
 #endif /* KERN_PROC2 */
-	buf = g_realloc (buf, res * sizeof (void*));
+	buf = (void **) g_realloc (buf, res * sizeof (void*));
 	for (i = 0; i < res; ++i)
 		buf [i] = GINT_TO_POINTER (processes [i].kinfo_pid_member);
 	free (processes);

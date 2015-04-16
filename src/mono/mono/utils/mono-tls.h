@@ -49,7 +49,7 @@ typedef enum {
 static inline int
 mono_native_tls_alloc (MonoNativeTlsKey *key, void *destructor)
 {
-	return pthread_key_create (key, destructor) == 0;
+	return pthread_key_create (key, (void (*)(void*)) destructor) == 0;
 }
 
 static inline void

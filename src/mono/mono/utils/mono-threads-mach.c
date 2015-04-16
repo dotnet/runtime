@@ -122,7 +122,8 @@ mono_threads_core_begin_async_resume (MonoThreadInfo *info)
 		mcontext_t mctx;
 
 		mono_threads_get_runtime_callbacks ()->setup_async_callback (&tmp, info->async_target, info->user_data);
-		info->async_target = info->user_data = NULL;
+		info->user_data = NULL;
+		info->async_target = (void (*)(void *)) info->user_data;
 
 		state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 		mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());

@@ -250,7 +250,7 @@ STATE_ASYNC_SUSPEND_REQUESTED: Since there can only be one async suspend in prog
 	default:
 		g_error ("Cannot transition thread %p from %s with ASYNC_SUSPEND_REQUESTED", info, state_name (cur_state));
 	}
-	return FALSE;
+	return (MonoRequestAsyncSuspendResult) FALSE;
 }
 
 /*

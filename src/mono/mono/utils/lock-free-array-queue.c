@@ -37,7 +37,7 @@ alloc_chunk (MonoLockFreeArray *arr)
 {
 	int size = mono_pagesize ();
 	int num_entries = (size - (sizeof (Chunk) - arr->entry_size * MONO_ZERO_LEN_ARRAY)) / arr->entry_size;
-	Chunk *chunk = mono_valloc (0, size, MONO_MMAP_READ | MONO_MMAP_WRITE);
+	Chunk *chunk = (Chunk *) mono_valloc (0, size, MONO_MMAP_READ | MONO_MMAP_WRITE);
 	g_assert (chunk);
 	chunk->num_entries = num_entries;
 	return chunk;
@@ -137,7 +137,7 @@ mono_lock_free_array_queue_push (MonoLockFreeArrayQueue *q, gpointer entry_data_
 
 	do {
 		index = InterlockedIncrement (&q->num_used_entries) - 1;
-		entry = mono_lock_free_array_nth (&q->array, index);
+		entry = (Entry *) mono_lock_free_array_nth (&q->array, index);
 	} while (InterlockedCompareExchange (&entry->state, STATE_BUSY, STATE_FREE) != STATE_FREE);
 
 	mono_memory_write_barrier ();
@@ -172,7 +172,7 @@ mono_lock_free_array_queue_pop (MonoLockFreeArrayQueue *q, gpointer entry_data_p
 				return FALSE;
 		} while (InterlockedCompareExchange (&q->num_used_entries, index - 1, index) != index);
 
-		entry = mono_lock_free_array_nth (&q->array, index - 1);
+		entry = (Entry *) mono_lock_free_array_nth (&q->array, index - 1);
 	} while (InterlockedCompareExchange (&entry->state, STATE_BUSY, STATE_USED) != STATE_USED);
 
 	/* Reading the item must happen before CASing the state. */
