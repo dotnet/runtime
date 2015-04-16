@@ -45,6 +45,8 @@ BEGIN {
         cmd = "echo $(("expression"))";
         cmd | getline var;
         close(cmd);
+        # in case shell returned the result as a string, ensure the var has numeric type
+        var = var + 0;
         # sprintf can only handle signed ints, so we need to convert
         # values >= 0x80000000 to negative values
         if (var >= 2147483648)
