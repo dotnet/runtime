@@ -4616,6 +4616,330 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex)
     }
 }
 
+#ifdef _AMD64_
+
+/*++
+Function :
+    GetRegisterAddressByIndex
+
+    Get address of a register in a context
+
+Parameters:
+    PCONTEXT pContext : context containing the registers
+    UINT index :        index of the register (Rax=0 .. R15=15)
+
+Return value :
+    Pointer to the context member represeting the register
+--*/
+VOID* GetRegisterAddressByIndex(PCONTEXT pContext, UINT index)
+{
+    _ASSERTE(index < 16);
+    return &((&pContext->Rax)[index]);
+}
+
+/*++
+Function :
+    GetRegisterValueByIndex
+
+    Get value of a register in a context
+
+Parameters:
+    PCONTEXT pContext : context containing the registers
+    UINT index :        index of the register (Rax=0 .. R15=15)
+
+Return value :
+    Value of the context member represeting the register
+--*/
+DWORD64 GetRegisterValueByIndex(PCONTEXT pContext, UINT index)
+{
+    _ASSERTE(index < 16);
+    return *(DWORD64*)GetRegisterAddressByIndex(pContext, index);
+}
+
+/*++
+Function :
+    GetModRMOperandValue
+
+    Get value of an instruction operand represented by the ModR/M field
+
+Parameters:
+    BYTE rex :              REX prefix, 0 if there was none
+    BYTE* ip :              instruction pointer pointing to the ModR/M field
+    PCONTEXT pContext :     context containing the registers
+    bool is8Bit :           true if the operand size is 8 bit
+    bool hasOpSizePrefix :  true if the instruction has op size prefix (0x66)
+
+Return value :
+    Value of the context member represeting the register
+--*/
+DWORD64 GetModRMOperandValue(BYTE rex, BYTE* ip, PCONTEXT pContext, bool is8Bit, bool hasOpSizePrefix)
+{
+    DWORD64 result;
+
+    BYTE rex_b = (rex & 0x1);       // high bit to modrm r/m field or SIB base field
+    BYTE rex_x = (rex & 0x2) >> 1;  // high bit to sib index field
+    BYTE rex_r = (rex & 0x4) >> 2;  // high bit to modrm reg field
+    BYTE rex_w = (rex & 0x8) >> 3;  // 1 = 64 bit operand size, 0 = operand size determined by hasOpSizePrefix
+
+    BYTE modrm = *ip++;
+
+    _ASSERTE(modrm != 0);
+
+    BYTE mod = (modrm & 0xC0) >> 6;
+    BYTE reg = (modrm & 0x38) >> 3;
+    BYTE rm = (modrm & 0x07);
+
+    reg |= (rex_r << 3);
+    rm |= (rex_b << 3);
+
+    // 8 bit idiv without the REX prefix uses registers AH, CH, DH, BH for rm 4..8
+    // which is an exception from the regular register indexes.
+    bool isAhChDhBh = is8Bit && (rex == 0) && (rm >= 4);
+
+    // See: Tables A-15,16,17 in AMD Dev Manual 3 for information
+    //      about how the ModRM/SIB/REX bytes interact.
+
+    switch (mod)
+    {
+    case 0:
+    case 1:
+    case 2:
+        if (rm == 4) // we have an SIB byte following
+        {
+            //
+            // Get values from the SIB byte
+            //
+            BYTE sib = *ip++;
+
+            _ASSERTE(sib != 0);
+
+            BYTE ss = (sib & 0xC0) >> 6;
+            BYTE index = (sib & 0x38) >> 3;
+            BYTE base = (sib & 0x07);
+
+            index |= (rex_x << 3);
+            base |= (rex_b << 3);
+
+            //
+            // Get starting value
+            //
+            if ((mod == 0) && (base == 5))
+            {
+                result = 0;
+            }
+            else
+            {
+                result = GetRegisterValueByIndex(pContext, base);
+            }
+
+            //
+            // Add in the [index]
+            //
+            if (index != 4)
+            {
+                result += GetRegisterValueByIndex(pContext, index) << ss;
+            }
+
+            //
+            // Finally add in the offset
+            //
+            if (mod == 0)
+            {
+                if (base == 5)
+                {
+                    result += *((INT32*)ip);
+                }
+            }
+            else if (mod == 1)
+            {
+                result += *((INT8*)ip);
+            }
+            else // mod == 2
+            {
+                result += *((INT32*)ip);
+            }
+
+        }
+        else
+        {
+            //
+            // Get the value we need from the register.
+            //
+
+            // Check for RIP-relative addressing mode.
+            if ((mod == 0) && (rm == 5))
+            {
+                result = (DWORD64)ip + sizeof(INT32) + *(INT32*)ip;
+            }
+            else
+            {
+                result = GetRegisterValueByIndex(pContext, rm);
+
+                if (mod == 1)
+                {
+                    result += *((INT8*)ip);
+                }
+                else if (mod == 2)
+                {
+                    result += *((INT32*)ip);
+                }
+            }
+        }
+
+        break;
+
+    case 3:
+    default:
+        // The operand is stored in a register.
+        if (isAhChDhBh)
+        {
+            // 8 bit idiv without the REX prefix uses registers AH, CH, DH or BH for rm 4..8.
+            // So we shift the register index to get the real register index.
+            rm -= 4;
+        }
+
+        result = (DWORD64)GetRegisterAddressByIndex(pContext, rm);
+
+        if (isAhChDhBh)
+        {
+            // Move one byte higher to get an address of the AH, CH, DH or BH
+            result++;
+        }
+
+        break;
+
+    }
+
+    //
+    // Now dereference thru the result to get the resulting value.
+    //
+    if (is8Bit)
+    {
+        result = *((BYTE*)result);
+    }
+    else if (rex_w != 0)
+    {
+        result = *((DWORD64*)result);
+    }
+    else if (hasOpSizePrefix)
+    {
+        result = *((USHORT*)result);
+    }
+    else
+    {
+        result = *((UINT32*)result);
+    }
+
+    return result;
+}
+
+/*++
+Function :
+    SkipPrefixes
+
+    Skip all prefixes until the instruction code or the REX prefix is found
+
+Parameters:
+    BYTE** ip :             Pointer to the current instruction pointer. Updated 
+                            as the function walks the codes.
+    bool* hasOpSizePrefix : Pointer to bool, on exit set to true if a op size prefix
+                            was found.
+
+Return value :
+    Code of the REX prefix or the instruction code after the prefixes.
+--*/
+BYTE SkipPrefixes(BYTE **ip, bool* hasOpSizePrefix)
+{
+    *hasOpSizePrefix = false;
+
+    while (true)
+    {
+        BYTE code = *(*ip)++;
+
+        switch (code)
+        {
+        case 0x66: // Operand-Size
+            *hasOpSizePrefix = true;
+            break;
+            
+            // Segment overrides
+        case 0x26: // ES
+        case 0x2E: // CS
+        case 0x36: // SS
+        case 0x3E: // DS 
+        case 0x64: // FS
+        case 0x65: // GS
+
+            // Size overrides
+        case 0x67: // Address-Size
+
+            // Lock
+        case 0xf0:
+
+            // String REP prefixes
+        case 0xf2: // REPNE/REPNZ
+        case 0xf3:
+            break;
+
+        default:
+            // Return address of the nonprefix code
+            return code;
+        }
+    }
+}
+
+/*++
+Function :
+    IsDivByZeroAnIntegerOverflow
+
+    Check if a division by zero exception is in fact a division overflow. The
+    x64 processor generate the same exception in both cases for the IDIV 
+    instruction. So we need to decode the instruction argument and check
+    whether it was zero or not.
+
+Parameters:
+    PCONTEXT pContext :           context containing the registers
+    PEXCEPTION_RECORD pExRecord : exception record of the exception
+
+Return value :
+    true if the division error was an overflow
+--*/
+bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
+{
+    BYTE * ip = (BYTE*)pContext->Rip;
+    BYTE rex = 0;
+    bool hasOpSizePrefix = false;
+
+    BYTE code = SkipPrefixes(&ip, &hasOpSizePrefix);
+
+    // The REX prefix must directly preceed the instruction code
+    if ((code & 0xF0) == 0x40)
+    {
+        rex = code;
+        code = *ip++;
+    }
+
+    DWORD64 divisor = 0;
+
+    // Check if the instruction is IDIV. The instruction code includes the three
+    // 'reg' bits in the ModRM byte.
+    if ((code == 0xF7 || code == 0xF6) && (((*ip & 0x38) >> 3) == 7))
+    {
+        bool is8Bit = (code == 0xF6);
+        divisor = GetModRMOperandValue(rex, ip, pContext, is8Bit, hasOpSizePrefix);
+    }
+    else
+    {
+        _ASSERTE(!"Invalid instruction (expected IDIV)");
+    }
+
+    // If the division operand is zero, it was division by zero. Otherwise the failure 
+    // must have been an overflow.
+    return divisor != 0;
+}
+#endif //_AMD64_
+
+
 VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 {
     if (ex->ExceptionRecord.ExceptionCode != STATUS_BREAKPOINT && ex->ExceptionRecord.ExceptionCode != STATUS_SINGLE_STEP)
@@ -4632,6 +4956,21 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 #endif // WIN64EXCEPTIONS
             GCX_COOP();
             fef.InitAndLink(&ex->ContextRecord);
+
+#ifdef _AMD64_
+            // It is possible that an overflow was mapped to a divide-by-zero exception. 
+            // This happens when we try to divide the maximum negative value of a
+            // signed integer with -1. 
+            //
+            // Thus, we will attempt to decode the instruction @ RIP to determine if that
+            // is the case using the faulting context.
+            if ((ex->ExceptionRecord.ExceptionCode == EXCEPTION_INT_DIVIDE_BY_ZERO) &&
+                IsDivByZeroAnIntegerOverflow(&ex->ContextRecord))
+            {
+                // The exception was an integer overflow, so augment the exception code.
+                ex->ExceptionRecord.ExceptionCode = EXCEPTION_INT_OVERFLOW;
+            }
+#endif //_AMD64_
 
             // We throw the exception and catch it right away so that in case the DispatchManagedException
             // needs to cross managed to native stack frames boundary, there is an exception that can
