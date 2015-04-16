@@ -368,7 +368,7 @@ alloc_from_active_or_partial (MonoLockFreeAllocator *heap)
 		unsigned int next;
 		volatile Anchor* value;
 		value = (volatile Anchor*)&desc->anchor.value;
-		old_anchor = *(Anchor*)&value;
+		old_anchor = *(Anchor*)value;
 		new_anchor = old_anchor;
 		if (old_anchor.data.state == STATE_EMPTY) {
 			/* We must free it because we own it. */
@@ -476,7 +476,7 @@ mono_lock_free_free (gpointer ptr, size_t block_size)
 	do {
 		volatile Anchor* value;
 		value = (volatile Anchor*)&desc->anchor.value;
-		old_anchor = *(Anchor*)&value;
+		old_anchor = *(Anchor*)value;
 		new_anchor = old_anchor;
 		*(unsigned int*)ptr = old_anchor.data.avail;
 		new_anchor.data.avail = ((char*)ptr - (char*)sb) / desc->slot_size;
