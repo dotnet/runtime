@@ -62,18 +62,9 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 
 
 /* temporary work-around for compiler without 64-bit support */
-#ifndef _SAFECRT_IMPL
-extern "C"
-{
-#endif  /* _SAFECRT_IMPL */
 #ifndef _INTEGRAL_MAX_BITS
 #define _INTEGRAL_MAX_BITS  64
 #endif  /* _INTEGRAL_MAX_BITS */
-
-#ifdef POSITIONAL_PARAMETERS
-#error DO NOT use POSITIONAL_PARAMETERS without validating code! -steshaw 7/3/07
-#define FORMAT_VALIDATIONS
-#endif  /* POSITIONAL_PARAMETERS */
 
 #include <limits.h>
 #include <string.h>
@@ -85,8 +76,6 @@ extern "C"
 
 #define _MBTOWC(x,y,z) _minimal_chartowchar( x, y )
 
-#ifdef _SAFECRT_IMPL
-
 #undef _malloc_crt
 #define _malloc_crt malloc
 
@@ -94,7 +83,6 @@ extern "C"
 #define _free_crt free
 
 // SNIP -srs 7/3/07
-#endif  /* _SAFECRT_IMPL */
 
 #ifndef _CFLTCVT
 #define _CFLTCVT _cfltcvt
@@ -216,10 +204,6 @@ extern "C"
 #define FL_WIDECHAR   0x00800   /* wide characters */
 #define FL_LONGLONG   0x01000   /* long long value given */
 #define FL_I64        0x08000   /* __int64 value given */
-#ifdef POSITIONAL_PARAMETERS
-/* We set this flag if %I is passed without I32 or I64 */
-#define FL_PTRSIZE 0x10000   /* platform dependent number */
-#endif  /* POSITIONAL_PARAMETERS */
 
 /* state definitions */
 enum STATE {
@@ -312,11 +296,7 @@ const char __lookuptable[] = {
  /* '>' */  0x00,
  /* '?' */  0x00,
  /* '@' */  0x00,
-#if defined (_SAFECRT_IMPL)
  /* 'A' */  0x20,       // Disable %A format
-#else  /* defined (_SAFECRT_IMPL) */
- /* 'A' */  0x28,
-#endif  /* defined (_SAFECRT_IMPL) */
  /* 'B' */  0x20,
  /* 'C' */  0x38,
  /* 'D' */  0x50,
@@ -348,11 +328,7 @@ const char __lookuptable[] = {
  /* '^' */  0x60,
  /* '_' */  0x00,
  /* '`' */  0x00,
-#if defined (_SAFECRT_IMPL)
  /* 'a' */  0x70,       // Disable %a format
-#else  /* defined (_SAFECRT_IMPL) */
- /* 'a' */  0x78,
-#endif  /* defined (_SAFECRT_IMPL) */
  /* 'b' */  0x70,
  /* 'c' */  0x78,
  /* 'd' */  0x78,
@@ -365,11 +341,7 @@ const char __lookuptable[] = {
  /* 'k' */  0x00,
  /* 'l' */  0x07,
  /* 'm' */  0x00,
-#if defined (_SAFECRT_IMPL)
  /* 'n' */  0x00,       // Disable %n format
-#else  /* defined (_SAFECRT_IMPL) */
- /* 'n' */  0x08,
-#endif  /* defined (_SAFECRT_IMPL) */
  /* 'o' */  0x08,
  /* 'p' */  0x08,
  /* 'q' */  0x00,
@@ -388,149 +360,6 @@ const char __lookuptable[] = {
 // SNIP -srs 7/3/07
 #error code has been removed 
 #endif  /* FORMAT_VALIDATIONS */
-
-#ifdef POSITIONAL_PARAMETERS
-#error DO NOT use POSITIONAL_PARAMETERS without validating code! -steshaw 7/3/07
-
-#define POSITION_CHAR _T('$')
-
-#define FORMAT_POSSCAN_PASS 0
-#define FORMAT_OUTPUT_PASS 1
-
-#define FMT_TYPE_NOTSET -1
-#define FMT_TYPE_NONPOSITIONAL 0
-#define FMT_TYPE_POSITIONAL 1
-
-enum ARG_TYPE{
-eblank,
-e_int_arg,
-#ifndef _UNICODE
-e_short_arg,
-#endif  /* _UNICODE */
-e_ptr_arg,
-e_int64_arg,
-e_long_long_arg,
-e_long_arg,
-e_double_arg
-};
-
-struct positional_param
-{
-    enum ARG_TYPE arg_type;
-    va_list arg_ptr;
-    TCHAR type;
-    int flags;
-};
-
-
-
-#ifndef _UNICODE
-#define _IS_FMTTYPE_WIDE(fl) ((fl & (FL_LONG|FL_WIDECHAR)) != 0)
-#else  /* _UNICODE */
-#define _IS_FMTTYPE_WIDE(fl) ((fl & FL_SHORT) == 0)
-#endif  /* _UNICODE */
-
-#define _IS_FMTTYPE_PTRSIZE(fl) ((fl & FL_PTRSIZE) != 0)
-#define _IS_FMTTYPE_SHORT(fl) ((fl & FL_SHORT) != 0)
-
-#define _IS_FMTTYPE_POINTER(type) (type == _T('p'))
-#define _IS_FMTTYPE_STRING(type) ( (type == _T('s')) || (type == _T('S')) )
-#define _IS_FMTTYPE_NUMERIC(type) ( (type == _T('d')) || (type == _T('i')) || (type == _T('o')) || \
-                              (type == _T('u')) || (type == _T('x')) || (type == _T('X')) )
-
-#ifdef _UNICODE
-#define _tvalidate_param_reuse _validate_param_reuseW
-#else  /* _UNICODE */
-#define _tvalidate_param_reuse _validate_param_reuseA
-#endif  /* _UNICODE */
-
- 
-/***
-*int _tvalidate_param_reuse(struct positional_param * pos, enum ARG_TYPE get_fn_type, TCHAR cur_type, int cur_flags)
-*
-*Purpose:
-*   Validates if the reused positional parameter is doesn't breaking any rules.
-*   a) %p - shouldn't be mixed with other format types.
-*   b) Wide & Ansi strings shouldn't be mixed
-*   c) Numeric types shouldn't mix if their sizes are different
-*   d) %I (without I32 or I64) shouldn't mix with other numeric types
-*
-*Entry:
-*   struct positional_param * pos
-*   enum ARG_TYPE get_fn_type
-*   TCHAR cur_type
-*   int cur_flags
-*
-*Exit:
-*   Returns 0 if any non-allowed reuse is happening otherwise 1
-*
-*******************************************************************************/
-
-#ifndef CPRFLAG
-
-int _tvalidate_param_reuse(struct positional_param * pos, enum ARG_TYPE get_fn_type, TCHAR cur_type, int cur_flags)
-{
-    int stored_value = 0 ;
-    int new_value = 0 ;
-
-    if(_IS_FMTTYPE_POINTER(pos->type) || _IS_FMTTYPE_POINTER(cur_type))
-    {
-        /* %p param shouldn't be mixed with other types. If both are %p,
-        then we don't need to do any more validations */
-        return (pos->type == cur_type) ;
-    }
-
-    stored_value = _IS_FMTTYPE_STRING(pos->type);
-    new_value = _IS_FMTTYPE_STRING(cur_type);
-
-    if(stored_value || new_value)
-    {
-        /* If one type is a string, then the other also should be a string. Also
-           Wide & Ansi String parameters shouldn't be interchangebly used.
-           If these conditions are met, we don't need to do any more validations.
-        */
-        return ( (stored_value == new_value) && (_IS_FMTTYPE_WIDE(pos->flags) == _IS_FMTTYPE_WIDE(cur_flags)) );
-    }
-
-    if( _IS_FMTTYPE_NUMERIC(pos->type) || _IS_FMTTYPE_NUMERIC(cur_type))
-    {
-        /* If one type is numeric, then the other should also be numeric. */
-        if (_IS_FMTTYPE_NUMERIC(pos->type) != _IS_FMTTYPE_NUMERIC(cur_type))
-            return 0;
-
-        /* For Numeric Types, we should allow mixing only if the size is the
-        same. Also, we shouldn't allow %I (without 32/64) which is platform
-        dependent to mix with other fixed numeric types */
-        if( (_IS_FMTTYPE_PTRSIZE(pos->flags) != _IS_FMTTYPE_PTRSIZE(cur_flags)) ||
-            (_IS_FMTTYPE_SHORT(pos->flags) != _IS_FMTTYPE_SHORT(cur_flags)) )
-        {
-            return 0;
-        }
-    }
-
-    return (pos->arg_type == get_fn_type);
-}
-#else  /* CPRFLAG */
-
-int _tvalidate_param_reuse(struct positional_param * pos, enum ARG_TYPE get_fn_type, TCHAR cur_type, int cur_flags);
-#endif  /* CPRFLAG */
-
-#define STORE_ARGPTR(pos_struct, get_fn_type, pos, cur_type, cur_flags) \
-        if(pos_struct[pos].arg_type == eblank) \
-        { \
-            pos_struct[pos].arg_type = get_fn_type; \
-            pos_struct[pos].type = cur_type; \
-            pos_struct[pos].flags = cur_flags; \
-        } \
-        else \
-        { \
-            _VALIDATE_RETURN(_tvalidate_param_reuse(&pos_struct[pos], get_fn_type, cur_type, cur_flags), EINVAL, -1); \
-        }
-
-
-#define GET_ARG(get_fn_type, arg_ptr, lhs, type) { va_list lst = arg_ptr ;lhs = type get_fn_type(&lst);}
-
-#endif  /* POSITIONAL_PARAMETERS */
 
 #define FIND_CHAR_CLASS(lookuptbl, c)      \
         ((c) < _T(' ') || (c) > _T('x') ? \
@@ -605,10 +434,6 @@ __inline long long __cdecl get_long_long_arg(va_list *pargptr);
 __inline __int64 __cdecl get_int64_arg(va_list *pargptr);
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
 
-#ifdef POSITIONAL_PARAMETERS
-__inline _CRT_DOUBLE __cdecl get_crtdouble_arg(va_list *pargptr);
-#endif  /* POSITIONAL_PARAMETERS */
-
 #endif  // __GNUC_VA_LIST
 
 #ifdef CPRFLAG
@@ -641,19 +466,11 @@ _CRTIMP int __cdecl _tcprintf_l (
         ...
         )
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-_CRTIMP int __cdecl _tcprintf_p_l (
-        const _TCHAR * format,
-        _locale_t plocinfo,
-        ...
-        )
-#else  /* POSITIONAL_PARAMETERS */
 _CRTIMP int __cdecl _tcprintf_s_l (
         const _TCHAR * format,
         _locale_t plocinfo,
         ...
         )
-#endif  /* POSITIONAL_PARAMETERS */
 #endif  /* FORMAT_VALIDATIONS */
 
 {
@@ -664,11 +481,7 @@ _CRTIMP int __cdecl _tcprintf_s_l (
 #ifndef FORMAT_VALIDATIONS
         ret = _vtcprintf_l(format, plocinfo, arglist);
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-        ret = _vtcprintf_p_l(format, plocinfo, arglist);
-#else  /* POSITIONAL_PARAMETERS */
         ret = _vtcprintf_s_l(format, plocinfo, arglist);
-#endif  /* POSITIONAL_PARAMETERS */
 
 #endif  /* FORMAT_VALIDATIONS */
 
@@ -683,17 +496,10 @@ _CRTIMP int __cdecl _tcprintf (
         ...
         )
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-_CRTIMP int __cdecl _tcprintf_p (
-        const _TCHAR * format,
-        ...
-        )
-#else  /* POSITIONAL_PARAMETERS */
 _CRTIMP int __cdecl _tcprintf_s (
         const _TCHAR * format,
         ...
         )
-#endif  /* POSITIONAL_PARAMETERS */
 #endif  /* FORMAT_VALIDATIONS */
 
 {
@@ -705,11 +511,7 @@ _CRTIMP int __cdecl _tcprintf_s (
 #ifndef FORMAT_VALIDATIONS
         ret = _vtcprintf_l(format, NULL, arglist);
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-        ret = _vtcprintf_p_l(format, NULL, arglist);
-#else  /* POSITIONAL_PARAMETERS */
         ret = _vtcprintf_s_l(format, NULL, arglist);
-#endif  /* POSITIONAL_PARAMETERS */
 
 #endif  /* FORMAT_VALIDATIONS */
 
@@ -763,16 +565,6 @@ _CRTIMP int __cdecl _vtcprintf (
 }
 
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-_CRTIMP int __cdecl _vtcprintf_p (
-    const _TCHAR *format,
-    va_list argptr
-    )
-{
-    return _vtcprintf_p_l(format, NULL, argptr);
-}
-
-#else  /* POSITIONAL_PARAMETERS */
 _CRTIMP int __cdecl _vtcprintf_s (
     const _TCHAR *format,
     va_list argptr
@@ -781,7 +573,6 @@ _CRTIMP int __cdecl _vtcprintf_s (
     return _vtcprintf_s_l(format, NULL, argptr);
 }
 
-#endif  /* POSITIONAL_PARAMETERS */
 #endif  /* FORMAT_VALIDATIONS */
 #endif  /* CPRFLAG */
 
@@ -789,72 +580,31 @@ _CRTIMP int __cdecl _vtcprintf_s (
 #ifndef FORMAT_VALIDATIONS
 _CRTIMP int __cdecl _vtcprintf_l (
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-_CRTIMP int __cdecl _vtcprintf_p_l (
-#else  /* POSITIONAL_PARAMETERS */
 _CRTIMP int __cdecl _vtcprintf_s_l (
-#endif  /* POSITIONAL_PARAMETERS */
 #endif  /* FORMAT_VALIDATIONS */
 #else  /* CPRFLAG */
 
 #ifdef _UNICODE
 #ifndef FORMAT_VALIDATIONS
-#ifdef _SAFECRT_IMPL
 int __cdecl _woutput (
-#else  /* _SAFECRT_IMPL */
-int __cdecl _woutput_l (
-#endif  /* _SAFECRT_IMPL */
     miniFILE *stream,
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-#ifdef _SAFECRT_IMPL
-int __cdecl _woutput_p (
-#else  /* _SAFECRT_IMPL */
-int __cdecl _woutput_p_l (
-#endif  /* _SAFECRT_IMPL */
-    miniFILE *stream,
-#else  /* POSITIONAL_PARAMETERS */
-#ifdef _SAFECRT_IMPL
 int __cdecl _woutput_s (
-#else  /* _SAFECRT_IMPL */
-int __cdecl _woutput_s_l (
-#endif  /* _SAFECRT_IMPL */
     miniFILE *stream,
-#endif  /* POSITIONAL_PARAMETERS */
 #endif  /* FORMAT_VALIDATIONS */
 #else  /* _UNICODE */
 #ifndef FORMAT_VALIDATIONS
-#ifdef _SAFECRT_IMPL
 int __cdecl _output (
-#else  /* _SAFECRT_IMPL */
-int __cdecl _output_l (
-#endif  /* _SAFECRT_IMPL */
     miniFILE *stream,
 #else  /* FORMAT_VALIDATIONS */
-#ifdef POSITIONAL_PARAMETERS
-#ifdef _SAFECRT_IMPL
-    int __cdecl _output_p (
-#else  /* _SAFECRT_IMPL */
-    int __cdecl _output_p_l (
-#endif  /* _SAFECRT_IMPL */
-    miniFILE *stream,
-#else  /* POSITIONAL_PARAMETERS */
-#ifdef _SAFECRT_IMPL
     int __cdecl _output_s (
-#else  /* _SAFECRT_IMPL */
-    int __cdecl _output_s_l (
-#endif  /* _SAFECRT_IMPL */
     miniFILE *stream,
-#endif  /* POSITIONAL_PARAMETERS */
 
 #endif  /* FORMAT_VALIDATIONS */
 #endif  /* _UNICODE */
 
 #endif  /* CPRFLAG */
     const _TCHAR *format,
-#ifndef _SAFECRT_IMPL
-    _locale_t plocinfo,
-#endif  /* _SAFECRT_IMPL */
     va_list argptr
     )
 {
@@ -888,65 +638,15 @@ int __cdecl _output_l (
     int buffersize;                     /* size of text.sz (used only for the call to _cfltcvt) */
     int bufferiswide=0;         /* non-zero = buffer contains wide chars already */
 
-#ifndef _SAFECRT_IMPL
-    _LocaleUpdate _loc_update(plocinfo);
-#endif  /* _SAFECRT_IMPL */
-
-#ifdef POSITIONAL_PARAMETERS
-    /* Used for parsing the format */
-    const _TCHAR * saved_format = NULL;
-    _TCHAR * end_pos = NULL;
-
-    /* This is the structure which stores the values corresponding to
-    each positional param */
-    struct positional_param pos_value[_ARGMAX];
-
-    int pass = 0;        /* Ctr for scanning the format string in diff passes */
-    int noofpasses = 0;  /* Set to 2 for positional formats, otherwise 1      */
-    int max_pos = -1;    /* Keeping track of the current max positional arg   */
-    int type_pos = -1;   /* position of an arg denoting a type                */
-    int width_pos = -1;  /* position of an arg denoting width                 */
-    int precis_pos = -1; /* position of an arg denoting precision             */
-    int format_type = FMT_TYPE_NOTSET; /* type of format string               */
-#endif  /* POSITIONAL_PARAMETERS */
-
 #ifndef CPRFLAG
     _VALIDATE_RETURN( (stream != NULL), EINVAL, -1);
 #endif  /* CPRFLAG */
     _VALIDATE_RETURN( (format != NULL), EINVAL, -1);
 
     charsout = 0;       /* no characters written yet */
-#ifdef POSITIONAL_PARAMETERS
-
-    saved_format = format;
-
-    for(pass = 0 ; pass < 2; ++pass)
-    {
-
-        if((pass == FORMAT_OUTPUT_PASS) && (format_type == FMT_TYPE_NONPOSITIONAL))
-        {
-            /* If in pass2, we still have format_type isn't positional, it means
-            that we do not need a 2nd pass */
-            break;
-        }
-#endif  /* POSITIONAL_PARAMETERS */
     textlen = 0;        /* no text yet */
     state = ST_NORMAL;  /* starting state */
     buffersize = 0;
-#ifdef POSITIONAL_PARAMETERS
-    max_pos = -1;
-    fldwidth = 0;
-    precision = 0;
-    format = saved_format;
-    type_pos = -1;
-    width_pos = -1;
-    precis_pos = -1;
-
-    /* All chars before the first format specifier get output in the first
-    pass itself. Hence we have to reset format_type to FMT_TYPE_NOTSET to ensure
-    that they do not get output again in the 2nd pass */
-    format_type = FMT_TYPE_NOTSET;
-#endif  /* POSITIONAL_PARAMETERS */
 
     /* main loop -- loop while format character exist and no I/O errors */
     while ((ch = *format++) != _T('\0') && charsout >= 0) {
@@ -957,50 +657,7 @@ int __cdecl _output_l (
         chclass = FIND_CHAR_CLASS(__lookuptable_s, ch);  /* find character class */
         state = FIND_NEXT_STATE(__lookuptable_s, chclass, state); /* find next state */
 
-#ifdef POSITIONAL_PARAMETERS
-        if((state == ST_PERCENT) && (*format != _T('%')))
-        {
-            if(format_type == FMT_TYPE_NOTSET)
-            {
-                /* We set the value of format_type when we hit the first type specifier */
-                if(_tcstol(format, &end_pos, 10) > 0 && (*end_pos == POSITION_CHAR))
-                {
-                    if(pass == FORMAT_POSSCAN_PASS)
-                    {
-                        memset(pos_value,0,sizeof(pos_value));
-                    }
-                    format_type = FMT_TYPE_POSITIONAL;
-                }
-                else
-                {
-                    format_type = FMT_TYPE_NONPOSITIONAL;
-                }
-            }
-
-            if(format_type == FMT_TYPE_POSITIONAL)
-            {
-                type_pos = _tcstol(format, &end_pos, 10) - 1;
-                format = end_pos + 1;
-
-                if(pass == FORMAT_POSSCAN_PASS)
-                {
-                    /* We don't redo the validations in the 2nd pass */
-                    _VALIDATE_RETURN(((type_pos >= 0) && (*end_pos == POSITION_CHAR) && (type_pos < _ARGMAX)), EINVAL, -1);
-
-                    /* Update max_pos with the current maximum pos argument */
-                    max_pos = type_pos > max_pos ? type_pos : max_pos;
-                }
-            }
-
-        }
-        else
-        {
-            /* If state is ST_INVALID, that means an invalid format specifier */
-            _VALIDATE_RETURN((state != ST_INVALID), EINVAL, -1);
-        }
-#else  /* POSITIONAL_PARAMETERS */
         _VALIDATE_RETURN((state != ST_INVALID), EINVAL, -1);
-#endif  /* POSITIONAL_PARAMETERS */
 
 #endif  /* FORMAT_VALIDATIONS */
 
@@ -1009,19 +666,6 @@ int __cdecl _output_l (
 
         case ST_NORMAL:
 
-#ifdef POSITIONAL_PARAMETERS
-            if(((pass == FORMAT_POSSCAN_PASS) && (format_type == FMT_TYPE_POSITIONAL))
-            || ((pass == FORMAT_OUTPUT_PASS) && (format_type == FMT_TYPE_NOTSET)))
-            {
-
-                /* Do not output in the 1st pass, if we have already come across
-                a positional format specifier. All chars before the first format
-                specifier get output in the first pass itself. Hence we need to
-                check the format_type to make sure that they don't get output
-                again in the 2nd pass */
-                    break;
-            }
-#endif  /* POSITIONAL_PARAMETERS */
         NORMAL_STATE:
 
             /* normal state -- just write character */
@@ -1066,37 +710,7 @@ int __cdecl _output_l (
             /* update width value */
             if (ch == _T('*')) {
                 /* get width from arg list */
-#ifdef POSITIONAL_PARAMETERS
-                if(format_type == FMT_TYPE_NONPOSITIONAL)
-                {
-#endif  /* POSITIONAL_PARAMETERS */
                 fldwidth = get_int_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                }
-                else
-                {
-                    width_pos = _tcstol(format, &end_pos, 10) - 1;
-                    format = end_pos + 1;
-
-                    if(pass == FORMAT_POSSCAN_PASS)
-                    {
-                        _VALIDATE_RETURN(((width_pos >= 0) && (*end_pos == POSITION_CHAR) && (type_pos < _ARGMAX)), EINVAL, -1);
-
-                        /* Update max_pos with the current maximum pos argument */
-                        max_pos = width_pos > max_pos ? width_pos : max_pos;
-
-                        STORE_ARGPTR(pos_value, e_int_arg, width_pos, ch, flags)
-                        break;
-
-                    }
-                    else
-                    {
-                        /* get width from arg list */
-                        GET_ARG(get_int_arg,pos_value[width_pos].arg_ptr, fldwidth, )
-                    }
-
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 if (fldwidth < 0) {
                     /* ANSI says neg fld width means '-' flag and pos width */
                     flags |= FL_LEFT;
@@ -1119,35 +733,7 @@ int __cdecl _output_l (
             /* update precison value */
             if (ch == _T('*')) {
                 /* get precision from arg list */
-#ifdef POSITIONAL_PARAMETERS
-                if(format_type == FMT_TYPE_NONPOSITIONAL)
-                {
-#endif  /* POSITIONAL_PARAMETERS */
                 precision = get_int_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                }
-                else
-                {
-                    precis_pos = _tcstol(format, &end_pos, 10) - 1;
-                    format = end_pos + 1;
-
-                    if(pass == FORMAT_POSSCAN_PASS)
-                    {
-                        _VALIDATE_RETURN(((precis_pos >= 0) && (*end_pos == POSITION_CHAR) && (type_pos < _ARGMAX)), EINVAL, -1);
-
-                        /* Update max_pos with the current maximum pos argument */
-                        max_pos = precis_pos > max_pos ? precis_pos : max_pos;
-
-                        STORE_ARGPTR(pos_value, e_int_arg, precis_pos, ch, flags)
-                        break;
-                    }
-                    else
-                    {
-                        /* get width from arg list */
-                        GET_ARG(get_int_arg,pos_value[precis_pos].arg_ptr, precision, )
-                    }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 if (precision < 0)
                     precision = -1; /* neg precision means default */
             }
@@ -1203,17 +789,11 @@ int __cdecl _output_l (
                           (*format == _T('x')) ||
                           (*format == _T('X')) )
                 {
-#ifdef POSITIONAL_PARAMETERS
-    /* %I without 32/64 is platform dependent. We set FL_PTRSIZE to indicate
-    this - this is used in the positional parameter reuse validation */
-                    flags |= FL_PTRSIZE;
-#else  /* POSITIONAL_PARAMETERS */
                    /*
                     * Nothing further needed.  %Id (et al) is
                     * handled just like %d, except that it defaults to 64 bits
                     * on WIN64.  Fall through to the next iteration.
                     */
-#endif  /* POSITIONAL_PARAMETERS */
                 }
                 else {
                     state = ST_NORMAL;
@@ -1257,28 +837,7 @@ int __cdecl _output_l (
                 /* print a single character specified by int argument */
 #ifdef _UNICODE
                 bufferiswide = 1;
-#ifdef POSITIONAL_PARAMETERS
-                if(format_type == FMT_TYPE_NONPOSITIONAL)
-                {
-#endif  /* POSITIONAL_PARAMETERS */
                         wchar = (wchar_t) get_int_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                }
-                else
-                {
-                        _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                        if (pass == FORMAT_POSSCAN_PASS)
-                        {
-                                STORE_ARGPTR(pos_value, e_int_arg, type_pos, ch, flags)
-                                break;
-                        }
-                        else
-                        {
-                                GET_ARG(get_int_arg,pos_value[type_pos].arg_ptr, wchar, (wchar_t))
-                        }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 if (flags & FL_SHORT) {
                     /* format multibyte character */
                     /* this is an extension of ANSI */
@@ -1288,14 +847,7 @@ int __cdecl _output_l (
                         tempchar[1] = '\0';
                     }
 
-#ifdef _SAFECRT_IMPL
                     if (_MBTOWC(buffer.wz,tempchar, MB_CUR_MAX) < 0)
-#else  /* _SAFECRT_IMPL */
-                    if (_mbtowc_l(buffer.wz,
-                                  tempchar,
-                                  _loc_update.GetLocaleT()->locinfo->mb_cur_max,
-                                  _loc_update.GetLocaleT()) < 0)
-#endif  /* _SAFECRT_IMPL */
                     {
                         /* ignore if conversion was unsuccessful */
                         no_output = 1;
@@ -1307,56 +859,14 @@ int __cdecl _output_l (
                 textlen = 1;    /* print just a single character */
 #else  /* _UNICODE */
                 if (flags & (FL_LONG|FL_WIDECHAR)) {
-#ifdef POSITIONAL_PARAMETERS
-                    if(format_type == FMT_TYPE_NONPOSITIONAL)
-                    {
-#endif  /* POSITIONAL_PARAMETERS */
                     wchar = (wchar_t) get_short_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                    }
-                    else
-                    {
-                        _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                        if (pass == FORMAT_POSSCAN_PASS)
-                        {
-                            STORE_ARGPTR(pos_value, e_short_arg, type_pos, ch, flags)
-                            break;
-                        }
-                        else
-                        {
-                            GET_ARG(get_short_arg,pos_value[type_pos].arg_ptr, wchar, (wchar_t))
-                        }
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
                         no_output = 1;
                 } else {
                     /* format multibyte character */
                     /* this is an extension of ANSI */
                     unsigned short temp;
-#ifdef POSITIONAL_PARAMETERS
-                    if(format_type == FMT_TYPE_NONPOSITIONAL)
-                    {
-#endif  /* POSITIONAL_PARAMETERS */
                         wchar = (wchar_t)get_int_arg(&argptr);
                         temp = (unsigned short)wchar;
-#ifdef POSITIONAL_PARAMETERS
-                    }
-                    else
-                    {
-                        _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                        if (pass == FORMAT_POSSCAN_PASS)
-                        {
-                            STORE_ARGPTR(pos_value, e_int_arg, type_pos, ch, flags)
-                            break;
-                        }
-                        else
-                        {
-                            GET_ARG(get_int_arg,pos_value[type_pos].arg_ptr, temp, (unsigned short))
-                        }
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
                     {
                         buffer.sz[0] = (char) temp;
                         textlen = 1;
@@ -1375,28 +885,7 @@ int __cdecl _output_l (
                     char *Buffer;
                 } *pstr;
 
-#ifdef POSITIONAL_PARAMETERS
-                if(format_type == FMT_TYPE_NONPOSITIONAL)
-                {
-#endif  /* POSITIONAL_PARAMETERS */
                 pstr = (struct _count_string *)get_ptr_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                }
-                else
-                {
-                    _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                    if (pass == FORMAT_POSSCAN_PASS)
-                    {
-                        STORE_ARGPTR(pos_value, e_ptr_arg, type_pos, ch, flags)
-                        break;
-                    }
-                    else
-                    {
-                        GET_ARG(get_ptr_arg,pos_value[type_pos].arg_ptr, pstr, (struct _count_string *) )
-                    }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 if (pstr == NULL || pstr->Buffer == NULL) {
                     /* null ptr passed, use special string */
                     text.sz = __nullstring;
@@ -1441,28 +930,7 @@ int __cdecl _output_l (
                 /* at all.  Thus, we must do our own scan.           */
 
                 i = (precision == -1) ? INT_MAX : precision;
-#ifdef POSITIONAL_PARAMETERS
-                if(format_type == FMT_TYPE_NONPOSITIONAL)
-                {
-#endif  /* POSITIONAL_PARAMETERS */
                 text.sz = (char *)get_ptr_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                }
-                else
-                {
-                    _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                    if (pass == FORMAT_POSSCAN_PASS)
-                    {
-                        STORE_ARGPTR(pos_value, e_ptr_arg, type_pos, ch, flags)
-                        break;
-                    }
-                    else
-                    {
-                        GET_ARG(get_ptr_arg,pos_value[type_pos].arg_ptr, text.sz,(char *))
-                    }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
 
                 /* scan for null upto i characters */
 #ifdef _UNICODE
@@ -1514,28 +982,7 @@ int __cdecl _output_l (
 
                 void *p;        /* temp */
 
-#ifdef POSITIONAL_PARAMETERS
-                if(format_type == FMT_TYPE_NONPOSITIONAL)
-                {
-#endif  /* POSITIONAL_PARAMETERS */
                 p = get_ptr_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                }
-                else
-                {
-                    _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                    if (pass == FORMAT_POSSCAN_PASS)
-                    {
-                        STORE_ARGPTR(pos_value, e_ptr_arg, type_pos, ch, flags)
-                        break;
-                    }
-                    else
-                    {
-                        GET_ARG(get_ptr_arg,pos_value[type_pos].arg_ptr,p,)
-                    }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
 
                 /* %n is disabled */
                     _VALIDATE_RETURN(("'n' format specifier disabled" && 0), EINVAL, -1);
@@ -1572,15 +1019,6 @@ int __cdecl _output_l (
                 /* floating point conversion -- we call cfltcvt routines */
                 /* to do the work for us.                                */
                 flags |= FL_SIGNED;         /* floating point is signed conversion */
-#ifdef POSITIONAL_PARAMETERS
-                if((format_type == FMT_TYPE_POSITIONAL) && (pass == FORMAT_POSSCAN_PASS))
-                {
-                    _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-                    STORE_ARGPTR(pos_value, e_double_arg, type_pos, ch, flags)
-
-                    break;
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 text.sz = buffer.sz;        /* put result in buffer */
                 buffersize = BUFFERSIZE;
 
@@ -1596,58 +1034,17 @@ int __cdecl _output_l (
                         precision = BUFFERSIZE - _CVTBUFSIZE;
                 }
 
-#ifdef _SAFECRT_IMPL
                 /* for safecrt, we pass along the FL_ALTERNATE flag to _safecrt_cfltcvt */
                 if (flags & FL_ALTERNATE)
                 {
                     capexp |= FL_ALTERNATE;
                 }
-#endif  /* _SAFECRT_IMPL */
 
                 _CRT_DOUBLE tmp;
-#ifdef POSITIONAL_PARAMETERS
-                if(format_type == FMT_TYPE_NONPOSITIONAL)
-                {
-#endif  /* POSITIONAL_PARAMETERS */
                 tmp=va_arg(argptr, _CRT_DOUBLE);
-#ifdef POSITIONAL_PARAMETERS
-                }
-                else
-                {
-                    /* Will get here only for pass == FORMAT_OUTPUT_PASS because
-                    pass == FORMAT_POSSCAN_PASS has a break Above */
-                    va_list tmp_arg;
-
-                    _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                                            _ASSERTE(pass == FORMAT_OUTPUT_PASS);
-                    tmp_arg = pos_value[type_pos].arg_ptr;
-                    tmp=va_arg(tmp_arg, _CRT_DOUBLE);
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 /* Note: assumes ch is in ASCII range */
                 /* In safecrt, we provide a special version of _cfltcvt which internally calls printf (see safecrt_output_s.c) */
-#ifndef _SAFECRT_IMPL
-                _cfltcvt_l(&tmp.x, buffer.sz, buffersize, (char)ch, precision, capexp, _loc_update.GetLocaleT());
-#else  /* _SAFECRT_IMPL */
                 _CFLTCVT(&tmp, buffer.sz, buffersize, (char)ch, precision, capexp);
-#endif  /* _SAFECRT_IMPL */
-
-#ifndef _SAFECRT_IMPL
-                /* For safecrt, this is done already in _safecrt_cfltcvt */
-
-                /* '#' and precision == 0 means force a decimal point */
-                if ((flags & FL_ALTERNATE) && precision == 0)
-                {
-                    _forcdecpt_l(text.sz, _loc_update.GetLocaleT());
-                }
-
-                /* 'g' format means crop zero unless '#' given */
-                if (ch == _T('g') && !(flags & FL_ALTERNATE))
-                {
-                    _cropzeros_l(text.sz, _loc_update.GetLocaleT());
-                }
-#endif  /* _SAFECRT_IMPL */
 
                 /* check if result was negative, save '-' for later */
                 /* and point to positive part (this is for '0' padding) */
@@ -1734,196 +1131,34 @@ int __cdecl _output_l (
                 /* 1. read argument into l, sign extend as needed */
 #if _INTEGRAL_MAX_BITS >= 64       
                 if (flags & FL_I64)
-#ifdef POSITIONAL_PARAMETERS
-                {
-                    if(format_type == FMT_TYPE_NONPOSITIONAL)
-                    {
-#endif  /* POSITIONAL_PARAMETERS */
                     l = get_int64_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                    }
-                    else
-                    {
-                        _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                        if (pass == FORMAT_POSSCAN_PASS)
-                        {
-                            STORE_ARGPTR(pos_value, e_int64_arg, type_pos, ch, flags)
-                            break;
-                        }
-                        else
-                        {
-                            GET_ARG(get_int64_arg,pos_value[type_pos].arg_ptr,l,)
-                        }
-                    }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 else
 #endif  /* _INTEGRAL_MAX_BITS >= 64        */
 
                 if (flags & FL_LONGLONG)
-#ifdef POSITIONAL_PARAMETERS
-                {
-                    if(format_type == FMT_TYPE_NONPOSITIONAL)
-                    {
-#endif  /* POSITIONAL_PARAMETERS */
                     l = get_long_long_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                    }
-                    else
-                    {
-                        _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                        if (pass == FORMAT_POSSCAN_PASS)
-                        {
-                            STORE_ARGPTR(pos_value, e_long_long_arg, type_pos, ch, flags)
-                            break;
-                        }
-                        else
-                        {
-                            GET_ARG(get_long_long_arg,pos_value[type_pos].arg_ptr,l,)
-                        }
-                    }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
-
                 else
 
 #if !LONG_IS_INT
                 if (flags & FL_LONG)
-#ifdef POSITIONAL_PARAMETERS
-                {
-                    if(format_type == FMT_TYPE_NONPOSITIONAL)
-                    {
-#endif  /* POSITIONAL_PARAMETERS */
                     l = get_long_arg(&argptr);
-#ifdef POSITIONAL_PARAMETERS
-                    }
-                    else
-                    {
-                        _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                        if (pass == FORMAT_POSSCAN_PASS)
-                        {
-                            STORE_ARGPTR(pos_value, e_long_arg, type_pos, ch, flags)
-                            break;
-                        }
-                        else
-                        {
-                            l = GETARG(get_long_arg,pos_value[type_pos].arg_ptr);
-                        }
-                    }
-                }
-#endif  /* POSITIONAL_PARAMETERS */
                 else
 #endif  /* !LONG_IS_INT */
 
 #if !SHORT_IS_INT
                 if (flags & FL_SHORT) {
                     if (flags & FL_SIGNED)
-#ifdef POSITIONAL_PARAMETERS
-                    {
-                        if(format_type == FMT_TYPE_NONPOSITIONAL)
-                        {
-#endif  /* POSITIONAL_PARAMETERS */
                         l = (short) get_int_arg(&argptr); /* sign extend */
-#ifdef POSITIONAL_PARAMETERS
-                        }
-                        else
-                        {
-                            _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                            if (pass == FORMAT_POSSCAN_PASS)
-                            {
-                                STORE_ARGPTR(pos_value, e_int_arg, type_pos, ch, flags)
-                                break;
-                            }
-                            else
-                            {
-                                GET_ARG(get_int_arg,pos_value[type_pos].arg_ptr,l, (short)) /* sign extend */
-                            }
-                        }
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
                     else
-#ifdef POSITIONAL_PARAMETERS
-                    {
-                        if(format_type == FMT_TYPE_NONPOSITIONAL)
-                        {
-#endif  /* POSITIONAL_PARAMETERS */
                         l = (unsigned short) get_int_arg(&argptr);    /* zero-extend*/
-#ifdef POSITIONAL_PARAMETERS
-                        }
-                        else
-                        {
-                            _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                            if (pass == FORMAT_POSSCAN_PASS)
-                            {
-                                STORE_ARGPTR(pos_value, e_int_arg, type_pos, ch, flags)
-                                break;
-                            }
-                            else
-                            {
-                                GET_ARG(get_int_arg,pos_value[type_pos].arg_ptr,l, (unsigned short)) /* zero-extend*/
-                            }
-                        }
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
 
                 } else
 #endif  /* !SHORT_IS_INT */
                 {
                     if (flags & FL_SIGNED)
-#ifdef POSITIONAL_PARAMETERS
-                    {
-                        if(format_type == FMT_TYPE_NONPOSITIONAL)
-                        {
-#endif  /* POSITIONAL_PARAMETERS */
                         l = get_int_arg(&argptr); /* sign extend */
-#ifdef POSITIONAL_PARAMETERS
-                        }
-                        else
-                        {
-                            _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                            if (pass == FORMAT_POSSCAN_PASS)
-                            {
-                                STORE_ARGPTR(pos_value, e_int_arg, type_pos, ch, flags)
-                                break;
-                            }
-                            else
-                            {
-                                GET_ARG(get_int_arg,pos_value[type_pos].arg_ptr, l, ) /* sign extend */
-                            }
-                        }
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
                     else
-#ifdef POSITIONAL_PARAMETERS
-                    {
-                        if(format_type == FMT_TYPE_NONPOSITIONAL)
-                        {
-#endif  /* POSITIONAL_PARAMETERS */
                         l = (unsigned int) get_int_arg(&argptr);    /* zero-extend*/
-#ifdef POSITIONAL_PARAMETERS
-                        }
-                        else
-                        {
-                            _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                            if (pass == FORMAT_POSSCAN_PASS)
-                            {
-                                STORE_ARGPTR(pos_value, e_int_arg, type_pos, ch, flags)
-                                break;
-                            }
-                            else
-                            {
-                                GET_ARG(get_int_arg,pos_value[type_pos].arg_ptr, l, (unsigned int)) /* zero-extend*/
-                            }
-                        }
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
 
                 }
 
@@ -1991,13 +1226,6 @@ int __cdecl _output_l (
             break;
             }
 
-#ifdef POSITIONAL_PARAMETERS
-            if((format_type == FMT_TYPE_POSITIONAL) && (pass == FORMAT_POSSCAN_PASS))
-            {
-                break;
-            }
-#endif  /* POSITIONAL_PARAMETERS */
-
 
             /* At this point, we have done the specific conversion, and */
             /* 'text' points to text to print; 'textlen' is length.  Now we */
@@ -2060,14 +1288,7 @@ int __cdecl _output_l (
                     p = text.sz;
                     count = textlen;
                     while (count-- > 0) {
-#ifdef _SAFECRT_IMPL
                         retval = _MBTOWC(&wchar, p, MB_CUR_MAX);
-#else  /* _SAFECRT_IMPL */
-                        retval = _mbtowc_l(&wchar,
-                                           p,
-                                           _loc_update.GetLocaleT()->locinfo->mb_cur_max,
-                                           _loc_update.GetLocaleT());
-#endif  /* _SAFECRT_IMPL */
                         if (retval <= 0) {
                             charsout = -1;
                             break;
@@ -2098,62 +1319,6 @@ int __cdecl _output_l (
         the format string was incomplete */
     _VALIDATE_RETURN(((state == ST_NORMAL) || (state == ST_TYPE)), EINVAL, -1);
 #endif  /* FORMAT_VALIDATIONS */
-
-#ifdef POSITIONAL_PARAMETERS
-    if((format_type == FMT_TYPE_POSITIONAL) && (pass == FORMAT_POSSCAN_PASS))
-    {
-        /* At the end of the 1st pass, we have the types filled into the
-        arg_type member of the struct. We now need to get argument pointer on
-        the stack & store it into the arg_ptr member */
-        for(type_pos = 0; type_pos <= max_pos; ++type_pos)
-        {
-            switch(pos_value[type_pos].arg_type)
-            {
-                case e_int_arg :
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_int_arg(&argptr);
-                    break;
-#ifndef _UNICODE
-                case e_short_arg:
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_short_arg(&argptr);
-                    break;
-#endif  /* _UNICODE */
-                case e_ptr_arg:
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_ptr_arg(&argptr);
-                    break;
-
-                case e_int64_arg:
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_int64_arg(&argptr);
-                    break;
-
-                case e_long_long_arg:
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_long_long_arg(&argptr);
-                    break;
-
-                case e_long_arg:
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_long_arg(&argptr);
-                    break;
-
-                case e_double_arg :
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_crtdouble_arg(&argptr);
-                    break;
-                default:
-                    /* Should never get here */
-                    _VALIDATE_RETURN(("Missing position in the format string", 0), EINVAL, -1);
-                    break;
-            }
-        }
-    }
-
-
-    }
-#endif  /* POSITIONAL_PARAMETERS */
 
     return charsout;        /* return value = number of characters written */
 }
@@ -2458,17 +1623,7 @@ __inline short __cdecl get_short_arg (
 }
 #endif  /* !SHORT_IS_INT */
 
-#ifdef POSITIONAL_PARAMETERS
-__inline _CRT_DOUBLE __cdecl get_crtdouble_arg(va_list *pargptr)
-{
-    return va_arg(*pargptr, _CRT_DOUBLE);
-}
-#endif  /* POSITIONAL_PARAMETERS */
 #endif  /* _UNICODE */
 
 #endif // __GNUC_VA_LIST
-
-#ifndef _SAFECRT_IMPL
-}
-#endif  /* _SAFECRT_IMPL */
 
