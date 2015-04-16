@@ -93,7 +93,7 @@ typedef __SafeToReturn __ReturnOK;
 // The call is dead, and does not appear in the generated code, even in a checked
 // build.  (And, in fastchecked, there is no penalty at all.)
 //
-#define return if (0 && __ReturnOK::safe_to_return()) { } else return
+#define return for (;1;__ReturnOK::safe_to_return()) return
 
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg) { typedef __YouCannotUseAReturnStatementHere __ReturnOK; if (0 && __ReturnOK::used()) { } else {
 #define DEBUG_ASSURE_NO_RETURN_END(arg)   } }
