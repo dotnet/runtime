@@ -19,6 +19,7 @@
 
 #ifdef USE_COOP_BACKEND
 
+volatile size_t mono_polling_required;
 
 void
 mono_threads_state_poll (void)
@@ -247,6 +248,18 @@ void
 mono_threads_platform_register (MonoThreadInfo *info)
 {
 	//See the above for what's wrong here.
+}
+
+void
+mono_threads_core_begin_global_suspend (void)
+{
+	mono_polling_required = 1;
+}
+
+void
+mono_threads_core_end_global_suspend (void)
+{
+	mono_polling_required = 0;
 }
 
 

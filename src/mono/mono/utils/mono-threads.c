@@ -123,6 +123,7 @@ mono_threads_begin_global_suspend (void)
 {
 	g_assert (pending_suspends == 0);
 	THREADS_SUSPEND_DEBUG ("------ BEGIN GLOBAL OP sp %d rp %d wd %d po %d\n", suspend_posts, resume_posts, waits_done, pending_ops);
+	mono_threads_core_begin_global_suspend ();
 }
 
 void
@@ -130,6 +131,7 @@ mono_threads_end_global_suspend (void)
 {
 	g_assert (pending_suspends == 0);
 	THREADS_SUSPEND_DEBUG ("------ END GLOBAL OP sp %d rp %d wd %d po %d\n", suspend_posts, resume_posts, waits_done, pending_ops);
+	mono_threads_core_end_global_suspend ();
 }
 
 static void

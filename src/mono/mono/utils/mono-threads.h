@@ -483,6 +483,9 @@ HANDLE mono_threads_core_open_handle (void);
 HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name);
 
+void mono_threads_core_begin_global_suspend (void);
+void mono_threads_core_end_global_suspend (void);
+
 /* Internal API between mono-threads and its backends. */
 
 /* Backend functions - a backend must implement all of the following */

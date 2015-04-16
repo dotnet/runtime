@@ -635,6 +635,16 @@ mono_threads_platform_free (MonoThreadInfo *info)
 {
 }
 
+void
+mono_threads_core_begin_global_suspend (void)
+{
+}
+
+void
+mono_threads_core_end_global_suspend (void)
+{
+}
+
 #endif /*defined (USE_POSIX_BACKEND)*/
 
 #endif

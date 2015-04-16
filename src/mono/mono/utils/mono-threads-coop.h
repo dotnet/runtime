@@ -58,6 +58,9 @@ void mono_threads_reset_blocking_end (void* cookie);
 void* mono_threads_try_prepare_blocking (void);
 void mono_threads_finish_try_blocking (void* cookie);
 
+/* JIT specific interface */
+extern volatile size_t mono_polling_required ;
+
 #else
 
 #define MONO_SUSPEND_CHECK do {	} while (0);
