@@ -1978,18 +1978,11 @@ struct CORINFO_Object
     CORINFO_MethodPtr      *methTable;      // the vtable for the object
 };
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4200)     // disable zero-sized array warning
-#endif
 struct CORINFO_String : public CORINFO_Object
 {
     unsigned                stringLen;
-    const wchar_t           chars[0];       // actually of variable size
+    const wchar_t           chars[1];       // actually of variable size
 };
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 struct CORINFO_Array : public CORINFO_Object
 {
