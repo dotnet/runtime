@@ -188,17 +188,15 @@ namespace System.IO.Compression
             // If the ctor completes without throwing, we know fs has been successfully stores in the archive;
             // If the ctor throws, we need to close it here.
 
-            FileStream fs = null;
+            FileStream fs = File.Open(archiveFileName, fileMode, access, fileShare);
 
             try
             {
-                fs = File.Open(archiveFileName, fileMode, access, fileShare);
                 return new ZipArchive(fs, mode, leaveOpen: false, entryNameEncoding: entryNameEncoding);
             }
             catch
             {
-                if (fs != null)
-                    fs.Dispose();
+                fs.Dispose();
                 throw;
             }
         }
