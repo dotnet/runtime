@@ -295,7 +295,7 @@ move_f_to_i8: dest:i src1:f len:5
 move_i8_to_f: dest:f src1:i len:5
 call_handler: len:14 clob:c nacl:52
 aot_const: dest:i len:10
-nacl_gc_safe_point: clob:c
+gc_safe_point: clob:c src1:i len:40
 x86_test_null: src1:i len:5
 x86_compare_membase_reg: src1:b src2:i len:9
 x86_compare_membase_imm: src1:b len:13

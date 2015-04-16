@@ -29,6 +29,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-hwcap-x86.h>
+#include <mono/utils/mono-threads.h>
 
 #include "trace.h"
 #include "mini-x86.h"
@@ -5023,19 +5024,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MONO_VARINFO (cfg, ins->inst_c0)->live_range_end = code - cfg->native_code;
 			break;
 		}
-		case OP_NACL_GC_SAFE_POINT: {
-#if defined(__native_client_codegen__) && defined(__native_client_gc__)
-			if (cfg->compile_aot)
-				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)mono_nacl_gc);
-			else {
-				guint8 *br [1];
+		case OP_GC_SAFE_POINT: {
+			gpointer polling_func = NULL;
+			int compare_val;
+			guint8 *br [1];
 
-				x86_test_mem_imm8 (code, (gpointer)&__nacl_thread_suspension_needed, 0xFFFFFFFF);
-				br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)mono_nacl_gc);
-				x86_patch (br[0], code);
-			}
+#if defined (USE_COOP_GC)
+			polling_func = (gpointer)mono_threads_state_poll;
+			compare_val = 1;
+#elif defined(__native_client_codegen__) && defined(__native_client_gc__)
+			polling_func = (gpointer)mono_nacl_gc;
+			compare_val = 0xFFFFFFFF;
 #endif
+			if (!polling_func)
+				break;
+
+			x86_test_membase_imm (code, ins->sreg1, 0, compare_val);
+			br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, polling_func);
+			x86_patch (br [0], code);
+
 			break;
 		}
 		case OP_GC_LIVENESS_DEF:

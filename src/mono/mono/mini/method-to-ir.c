@@ -7919,11 +7919,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->bb_entry = start_bblock;
 		start_bblock->cil_code = NULL;
 		start_bblock->cil_length = 0;
-#if defined(__native_client_codegen__)
-		MONO_INST_NEW (cfg, ins, OP_NACL_GC_SAFE_POINT);
-		ins->dreg = alloc_dreg (cfg, STACK_I4);
-		MONO_ADD_INS (start_bblock, ins);
-#endif
 
 		/* EXIT BLOCK */
 		NEW_BBLOCK (cfg, end_bblock);

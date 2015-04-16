@@ -3005,6 +3005,71 @@ is_open_method (MonoMethod *method)
 }
 
 #ifndef DISABLE_JIT
+
+static void
+mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
+{
+#if defined(__native_client_codegen__) || USE_COOP_GC
+
+	MonoInst *poll_addr, *ins;
+	if (cfg->verbose_level)
+		printf ("ADDING SAFE POINT TO BB %d\n", bblock->block_num);
+
+#if defined(__native_client_codegen__)
+	NEW_AOTCONST (cfg, poll_addr, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, (gpointer)&__nacl_thread_suspension_needed);
+#else
+	NEW_AOTCONST (cfg, poll_addr, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, (gpointer)&mono_polling_required);
+#endif
+
+	MONO_INST_NEW (cfg, ins, OP_GC_SAFE_POINT);
+	ins->sreg1 = poll_addr->dreg;
+
+	 if (bblock->flags & BB_EXCEPTION_HANDLER) {
+		MonoInst *eh_op = bblock->code;
+
+		// we only skip the ops that start EH blocks.
+		if (eh_op && eh_op->opcode != OP_START_HANDLER && eh_op->opcode != OP_GET_EX_OBJ)
+			eh_op = NULL;
+
+		mono_bblock_insert_after_ins (bblock, eh_op, poll_addr);
+		mono_bblock_insert_after_ins (bblock, poll_addr, ins);
+	} else if (bblock == cfg->bb_entry) {
+		mono_bblock_insert_after_ins (bblock, bblock->last_ins, poll_addr);
+		mono_bblock_insert_after_ins (bblock, poll_addr, ins);
+
+	} else {
+		mono_bblock_insert_before_ins (bblock, NULL, poll_addr);
+		mono_bblock_insert_after_ins (bblock, poll_addr, ins);
+	}
+
+#endif
+}
+
+/*
+This code inserts safepoints into managed code at important code paths.
+Those are:
+
+-the first basic block
+-landing BB for exception handlers
+-loop body starts.
+
+*/
+static void
+mono_insert_safepoints (MonoCompile *cfg)
+{
+#if defined(__native_client_codegen__) || defined(USE_COOP_GC)
+	MonoBasicBlock *bb;
+
+	if (cfg->verbose_level)
+		printf ("INSERTING SAFEPOINTS\n");
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		if (bb->loop_body_start || bb == cfg->bb_entry || bb->flags & BB_EXCEPTION_HANDLER)
+			mono_create_gc_safepoint (cfg, bb);
+	}
+#endif
+}
+
 /*
  * mini_method_compile:
  * @method: the method to compile
@@ -3125,6 +3190,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->gen_seq_points = FALSE;
 		cfg->gen_sdb_seq_points = FALSE;
 	}
+#endif
+	/* coop / nacl requires loop detection to happen */
+#if defined(__native_client_codegen__) || defined(USE_COOP_GC)
+	cfg->opt |= MONO_OPT_LOOP;
 #endif
 
 	cfg->explicit_null_checks = debug_options.explicit_null_checks;
@@ -3549,6 +3618,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		mono_compile_dominator_info (cfg, MONO_COMP_DOM | MONO_COMP_IDOM);
 		mono_compute_natural_loops (cfg);
 	}
+
+	mono_insert_safepoints (cfg);
 
 	/* after method_to_ir */
 	if (parts == 1) {
