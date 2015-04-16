@@ -17,8 +17,6 @@
 
 #ifndef DISABLE_JIT
 
-//#define DEBUG_DOMINATORS
-
 /*
  * bb->dfn == 0 means either the bblock is ignored by the dfn calculation, or
  * it is the entry bblock.
@@ -48,16 +46,17 @@ compute_dominators (MonoCompile *cfg)
 	doms = g_new0 (MonoBasicBlock*, cfg->num_bblocks);
 	doms [entry->dfn] = entry;
 
-#ifdef DEBUG_DOMINATORS
-	for (i = 0; i < cfg->num_bblocks; ++i) {
-		MonoBasicBlock *bb = cfg->bblocks [i];
+	if (cfg->verbose_level > 1) {
+		for (i = 0; i < cfg->num_bblocks; ++i) {
+			int j;
+			MonoBasicBlock *bb = cfg->bblocks [i];
 
-		printf ("BB%d IN: ", bb->block_num);
-		for (j = 0; j < bb->in_count; ++j) 
-			printf ("%d ", bb->in_bb [j]->block_num);
-		printf ("\n");
+			printf ("BB%d IN: ", bb->block_num);
+			for (j = 0; j < bb->in_count; ++j)
+				printf ("%d ", bb->in_bb [j]->block_num);
+			printf ("\n");
+		}
 	}
-#endif
 
 	changed = TRUE;
 	while (changed) {
@@ -142,15 +141,15 @@ compute_dominators (MonoCompile *cfg)
 
 	cfg->comp_done |= MONO_COMP_DOM | MONO_COMP_IDOM;
 
-#ifdef DEBUG_DOMINATORS
-	printf ("DTREE %s %d\n", mono_method_full_name (cfg->method, TRUE), 
-		cfg->header->num_clauses);
-	for (i = 0; i < cfg->num_bblocks; ++i) {
-		MonoBasicBlock *bb = cfg->bblocks [i];
-		printf ("BB%d(dfn=%d) (IDOM=BB%d): ", bb->block_num, bb->dfn, bb->idom ? bb->idom->block_num : -1);
-		mono_blockset_print (cfg, bb->dominators, NULL, -1);
+	if (cfg->verbose_level > 1) {
+		printf ("DTREE %s %d\n", mono_method_full_name (cfg->method, TRUE),
+			cfg->header->num_clauses);
+		for (i = 0; i < cfg->num_bblocks; ++i) {
+			MonoBasicBlock *bb = cfg->bblocks [i];
+			printf ("BB%d(dfn=%d) (IDOM=BB%d): ", bb->block_num, bb->dfn, bb->idom ? bb->idom->block_num : -1);
+			mono_blockset_print (cfg, bb->dominators, NULL, -1);
+		}
 	}
-#endif
 }
 
 #if 0
@@ -296,8 +295,6 @@ mono_compile_dominator_info (MonoCompile *cfg, int dom_flags)
 		compute_dominance_frontier (cfg);
 }
 
-//#define DEBUG_NATURAL_LOOPS
-
 /*
  * code to detect loops and loop nesting level
  */
@@ -316,8 +313,13 @@ mono_compute_natural_loops (MonoCompile *cfg)
 
 		for (j = 0; j < n->out_count; j++) {
 			MonoBasicBlock *h = n->out_bb [j];
+			/* check for single block loops */
+			if (n == h) {
+				h->loop_blocks = g_list_prepend_mempool (cfg->mempool, h->loop_blocks, h);
+				h->nesting++;
+			}
 			/* check for back-edge from n to h */
-			if (n != h && mono_bitset_test_fast (n->dominators, h->dfn)) {
+			else if (n != h && mono_bitset_test_fast (n->dominators, h->dfn)) {
 				GSList *todo;
 
 				/* already in loop_blocks? */
@@ -385,9 +387,6 @@ mono_compute_natural_loops (MonoCompile *cfg)
 			/* The loop body start is the first bblock in the order they will be emitted */
 			MonoBasicBlock *h = cfg->bblocks [i];
 			MonoBasicBlock *body_start = h;
-#if defined(__native_client_codegen__)
-			MonoInst *inst;
-#endif
 			GList *l;
 
 			for (l = h->loop_blocks; l; l = l->next) {
@@ -398,31 +397,24 @@ mono_compute_natural_loops (MonoCompile *cfg)
 				}
 			}
 
-#if defined(__native_client_codegen__)
-			/* Instrument the loop (GC back branch safe point) */
-			MONO_INST_NEW (cfg, inst, OP_NACL_GC_SAFE_POINT);
-			inst->dreg = mono_alloc_dreg (cfg, STACK_I4);
-			mono_bblock_insert_before_ins (body_start, NULL, inst);
-#endif
 			body_start->loop_body_start = 1;
 		}
 	}
 	g_free (bb_indexes);
 
-#ifdef DEBUG_NATURAL_LOOPS
-	for (i = 0; i < cfg->num_bblocks; ++i) {
-		if (cfg->bblocks [i]->loop_blocks) {
-			MonoBasicBlock *h = (MonoBasicBlock *)cfg->bblocks [i]->loop_blocks->data;
-			GList *l;
-			printf ("LOOP START %d\n", h->block_num);
-			for (l = h->loop_blocks; l; l = l->next) {
-				MonoBasicBlock *cb = (MonoBasicBlock *)l->data;
-				printf (" BB%d %d %p\n", cb->block_num, cb->nesting, cb->loop_blocks);
+	if (cfg->verbose_level > 1) {
+		for (i = 0; i < cfg->num_bblocks; ++i) {
+			if (cfg->bblocks [i]->loop_blocks) {
+				MonoBasicBlock *h = (MonoBasicBlock *)cfg->bblocks [i]->loop_blocks->data;
+				GList *l;
+				printf ("LOOP START %d\n", h->block_num);
+				for (l = h->loop_blocks; l; l = l->next) {
+					MonoBasicBlock *cb = (MonoBasicBlock *)l->data;
+					printf ("\tBB%d %d %p\n", cb->block_num, cb->nesting, cb->loop_blocks);
+				}
 			}
 		}
 	}
-#endif
-
 }
 
 static void
