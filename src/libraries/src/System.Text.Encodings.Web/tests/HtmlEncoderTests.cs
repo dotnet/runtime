@@ -81,14 +81,13 @@ namespace Microsoft.Framework.WebEncoders
             Assert.Same(encoder1, encoder2);
         }
 
-        // TODO: fix xUnit escaping and then uncomment
-        //[Theory]
-        //[InlineData("<", "&lt;")]
-        //[InlineData(">", "&gt;")]
-        //[InlineData("&", "&amp;")]
-        //[InlineData("'", "&#x27;")]
-        //[InlineData("\"", "&quot;")]
-        //[InlineData("+", "&#x2B;")]
+        [Theory]
+        [InlineData("<", "&lt;")]
+        [InlineData(">", "&gt;")]
+        [InlineData("&", "&amp;")]
+        [InlineData("'", "&#x27;")]
+        [InlineData("\"", "&quot;")]
+        [InlineData("+", "&#x2B;")]
         public void HtmlEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple(string input, string expected)
         {
             // Arrange

@@ -81,21 +81,28 @@ namespace Microsoft.Framework.WebEncoders
             Assert.Same(encoder1, encoder2);
         }
 
-        // TODO: fix xUnit escaping and then uncomment
-        //[Theory]
-        //[InlineData("<", @"\u003C")]
-        //[InlineData(">", @"\u003E")]
-        //[InlineData("&", @"\u0026")]
-        //[InlineData("'", @"\u0027")]
-        //[InlineData("\"", @"\u0022")]
-        //[InlineData("+", @"\u002B")]
-        //[InlineData("\\", @"\\")]
-        //[InlineData("/", @"\/")]
-        //[InlineData("\b", @"\b")]
-        //[InlineData("\f", @"\f")]
-        //[InlineData("\n", @"\n")]
-        //[InlineData("\t", @"\t")]
-        //[InlineData("\r", @"\r")]
+        [Fact]
+        public void JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple_Escaping() {
+            // The following two calls could be simply InlineData to the Theory below
+            // Unfortunatelly, the xUnit logger fails to escape the inputs when logging the test results,
+            // and so the suite fails despite all tests passing. 
+            // TODO: I will try to fix it in xUnit, but for now this is a workaround to enable these tests.
+            JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple("\b", @"\b");
+            JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple("\f", @"\f");
+        }
+
+        [Theory]
+        [InlineData("<", @"\u003C")]
+        [InlineData(">", @"\u003E")]
+        [InlineData("&", @"\u0026")]
+        [InlineData("'", @"\u0027")]
+        [InlineData("\"", @"\u0022")]
+        [InlineData("+", @"\u002B")]
+        [InlineData("\\", @"\\")]
+        [InlineData("/", @"\/")]
+        [InlineData("\n", @"\n")]
+        [InlineData("\t", @"\t")]
+        [InlineData("\r", @"\r")]
         public void JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple(string input, string expected)
         {
             // Arrange
@@ -281,10 +288,9 @@ namespace Microsoft.Framework.WebEncoders
             Assert.Equal(@"lo\u002Bwo", output.ToString());
         }
 
-        // TODO: fix xUnit escaping and then uncomment
-        //[Theory]
-        //[InlineData("\"", @"\u0022")]
-        //[InlineData("'", @"\u0027")]
+        [Theory]
+        [InlineData("\"", @"\u0022")]
+        [InlineData("'", @"\u0027")]
         public void JavaScriptStringEncode_Quotes(string input, string expected)
         {
             // Per the design document, we provide additional defense-in-depth
