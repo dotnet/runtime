@@ -101,7 +101,7 @@ mono_thread_small_id_alloc (void)
 		int num_pages = (hazard_table_size * sizeof (MonoThreadHazardPointers) + pagesize - 1) / pagesize;
 
 		if (hazard_table == NULL) {
-			hazard_table = mono_valloc (NULL,
+			hazard_table = (MonoThreadHazardPointers *volatile) mono_valloc (NULL,
 				sizeof (MonoThreadHazardPointers) * HAZARD_TABLE_MAX_SIZE,
 				MONO_MMAP_NONE);
 		}

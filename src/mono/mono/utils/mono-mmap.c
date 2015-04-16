@@ -56,7 +56,7 @@ static void*
 malloc_shared_area (int pid)
 {
 	int size = mono_pagesize ();
-	SAreaHeader *sarea = g_malloc0 (size);
+	SAreaHeader *sarea = (SAreaHeader *) g_malloc0 (size);
 	sarea->size = size;
 	sarea->pid = pid;
 	sarea->stats_start = sizeof (SAreaHeader);
@@ -605,7 +605,7 @@ mono_shared_area (void)
 	}
 	/* we don't need the file descriptor anymore */
 	close (fd);
-	header = res;
+	header = (SAreaHeader *) res;
 	header->size = size;
 	header->pid = pid;
 	header->stats_start = sizeof (SAreaHeader);
@@ -716,7 +716,7 @@ void*
 mono_valloc_aligned (size_t size, size_t alignment, int flags)
 {
 	/* Allocate twice the memory to be able to put the block on an aligned address */
-	char *mem = mono_valloc (NULL, size + alignment, flags);
+	char *mem = (char *) mono_valloc (NULL, size + alignment, flags);
 	char *aligned;
 
 	if (!mem)
@@ -741,13 +741,17 @@ mono_pages_not_faulted (void *addr, size_t size)
 	gint64 count;
 	int pagesize = mono_pagesize ();
 	int npages = (size + pagesize - 1) / pagesize;
-	char *faulted = g_malloc0 (sizeof (char*) * npages);
+	char *faulted = (char *) g_malloc0 (sizeof (char*) * npages);
 
 	/*
 	 * We cast `faulted` to void* because Linux wants an unsigned
 	 * char* while BSD wants a char*.
 	 */
-	if (mincore (addr, size, (void*)faulted) != 0) {
+#ifdef __linux__
+	if (mincore (addr, size, (unsigned char *)faulted) != 0) {
+#else
+	if (mincore (addr, size, (char *)faulted) != 0) {
+#endif
 		count = -1;
 	} else {
 		count = 0;

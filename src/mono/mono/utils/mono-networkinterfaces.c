@@ -46,7 +46,7 @@ mono_networkinterface_list (int *size)
 				count *= 2;
 		}
 
-		nilist = g_realloc (nilist, count * sizeof (void*));
+		nilist = (void **) g_realloc (nilist, count * sizeof (void*));
 		nilist [i++] = g_strdup (name);
 	}
 
@@ -56,7 +56,7 @@ mono_networkinterface_list (int *size)
 		*size = i;
 
 	if (!nilist)
-		nilist = g_malloc (sizeof (void*));
+		nilist = (void **) g_malloc (sizeof (void*));
 	nilist [i] = NULL;
 	return nilist;
 }

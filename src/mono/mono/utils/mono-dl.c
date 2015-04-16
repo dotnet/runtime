@@ -55,7 +55,7 @@ read_string (char *p, FILE *file)
 		if (!endp)
 			return NULL;
 		*endp = 0;
-		return g_memdup (startp, (endp - startp) + 1);
+		return (char *) g_memdup (startp, (endp - startp) + 1);
 	}
 	if (*p == 0)
 		return NULL;
@@ -63,7 +63,7 @@ read_string (char *p, FILE *file)
 	while (*p && !isspace (*p))
 		++p;
 	*p = 0;
-	return g_memdup (startp, (p - startp) + 1);
+	return (char *) g_memdup (startp, (p - startp) + 1);
 }
 
 /*
@@ -139,7 +139,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	if (error_msg)
 		*error_msg = NULL;
 
-	module = malloc (sizeof (MonoDl));
+	module = (MonoDl *) malloc (sizeof (MonoDl));
 	if (!module) {
 		if (error_msg)
 			*error_msg = g_strdup ("Out of memory");

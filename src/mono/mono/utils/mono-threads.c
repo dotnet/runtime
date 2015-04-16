@@ -217,7 +217,7 @@ mono_thread_info_lookup (MonoNativeThreadId id)
 	} 
 
 	mono_hazard_pointer_clear_all (hp, 1);
-	return mono_hazard_pointer_get_val (hp, 1);
+	return (MonoThreadInfo *) mono_hazard_pointer_get_val (hp, 1);
 }
 
 static gboolean
@@ -249,7 +249,7 @@ mono_thread_info_remove (MonoThreadInfo *info)
 static void
 free_thread_info (gpointer mem)
 {
-	MonoThreadInfo *info = mem;
+	MonoThreadInfo *info = (MonoThreadInfo *) mem;
 
 	MONO_SEM_DESTROY (&info->resume_semaphore);
 	mono_threads_platform_free (info);
@@ -320,7 +320,7 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 static void
 unregister_thread (void *arg)
 {
-	MonoThreadInfo *info = arg;
+	MonoThreadInfo *info = (MonoThreadInfo *) arg;
 	int small_id = info->small_id;
 	g_assert (info);
 
@@ -490,9 +490,9 @@ mono_thread_info_attach (void *baseptr)
 		THREADS_DEBUG ("mono_thread_info_attach called before mono_threads_init\n");
 		return NULL;
 	}
-	info = mono_native_tls_get_value (thread_info_key);
+	info = (MonoThreadInfo *) mono_native_tls_get_value (thread_info_key);
 	if (!info) {
-		info = g_malloc0 (thread_info_size);
+		info = (MonoThreadInfo *) g_malloc0 (thread_info_size);
 		THREADS_DEBUG ("attaching %p\n", info);
 		if (!register_thread (info, baseptr))
 			return NULL;
@@ -513,7 +513,7 @@ mono_thread_info_detach (void)
 		THREADS_DEBUG ("mono_thread_info_detach called before mono_threads_init\n");
 		return;
 	}
-	info = mono_native_tls_get_value (thread_info_key);
+	info = (MonoThreadInfo *) mono_native_tls_get_value (thread_info_key);
 	if (info) {
 		THREADS_DEBUG ("detaching %p\n", info);
 		unregister_thread (info);
@@ -547,8 +547,8 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t info_size)
 	res = mono_native_tls_alloc (&thread_info_key, NULL);
 	res = mono_native_tls_alloc (&thread_exited_key, NULL);
 #else
-	res = mono_native_tls_alloc (&thread_info_key, unregister_thread);
-	res = mono_native_tls_alloc (&thread_exited_key, thread_exited_dtor);
+	res = mono_native_tls_alloc (&thread_info_key, (void *) unregister_thread);
+	res = mono_native_tls_alloc (&thread_exited_key, (void *) thread_exited_dtor);
 #endif
 	g_assert (res);
 
@@ -798,8 +798,8 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 		return TRUE;
 
 	ji = mono_jit_info_table_find (
-		state->unwind_data [MONO_UNWIND_DATA_DOMAIN],
-		MONO_CONTEXT_GET_IP (&state->ctx));
+		(MonoDomain *) state->unwind_data [MONO_UNWIND_DATA_DOMAIN],
+		(char *) MONO_CONTEXT_GET_IP (&state->ctx));
 
 	if (!ji)
 		return FALSE;
@@ -1205,7 +1205,7 @@ mono_threads_add_async_job (MonoThreadInfo *info, MonoAsyncJob job)
 {
 	MonoAsyncJob old_job;
 	do {
-		old_job = info->service_requests;
+		old_job = (MonoAsyncJob) info->service_requests;
 		if (old_job & job)
 			return FALSE;
 	} while (InterlockedCompareExchange (&info->service_requests, old_job | job, old_job) != old_job);
@@ -1218,7 +1218,7 @@ mono_threads_consume_async_jobs (void)
 	MonoThreadInfo *info = (MonoThreadInfo*)mono_native_tls_get_value (thread_info_key);
 
 	if (!info)
-		return 0;
+		return (MonoAsyncJob) 0;
 
-	return InterlockedExchange (&info->service_requests, 0);
+	return (MonoAsyncJob) InterlockedExchange (&info->service_requests, 0);
 }

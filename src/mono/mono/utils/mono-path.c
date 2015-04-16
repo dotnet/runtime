@@ -95,7 +95,7 @@ mono_path_canonicalize (const char *path)
 	 * result */
 	if (strchr (abspath, G_DIR_SEPARATOR) == NULL) {
 		int len = strlen (abspath);
-		abspath = g_realloc (abspath, len + 2);
+		abspath = (gchar *) g_realloc (abspath, len + 2);
 		abspath [len] = G_DIR_SEPARATOR;
 		abspath [len+1] = 0;
 	}

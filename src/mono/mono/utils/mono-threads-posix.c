@@ -51,7 +51,7 @@ typedef struct {
 static void*
 inner_start_thread (void *arg)
 {
-	StartInfo *start_info = arg;
+	StartInfo *start_info = (StartInfo *) arg;
 	void *t_arg = start_info->arg;
 	int res;
 	void *(*start_func)(void*) = start_info->start_routine;
@@ -146,7 +146,7 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 #endif
 
 	memset (&start_info, 0, sizeof (StartInfo));
-	start_info.start_routine = (gpointer)start_routine;
+	start_info.start_routine = (void *(*)(void *)) start_routine;
 	start_info.arg = arg;
 	start_info.flags = creation_flags;
 	MONO_SEM_INIT (&(start_info.registered), 0);
@@ -312,7 +312,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
-	return pthread_create (tid, NULL, func, arg) == 0;
+	return pthread_create (tid, NULL, (void *(*)(void *)) func, arg) == 0;
 }
 
 void

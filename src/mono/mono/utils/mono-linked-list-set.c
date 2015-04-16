@@ -94,12 +94,12 @@ try_again:
 	 */
 	mono_hazard_pointer_set (hp, 2, prev);
 
-	cur = get_hazardous_pointer_with_mask ((gpointer*)prev, hp, 1);
+	cur = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer*)prev, hp, 1);
 
 	while (1) {
 		if (cur == NULL)
 			return FALSE;
-		next = get_hazardous_pointer_with_mask ((gpointer*)&cur->next, hp, 0);
+		next = (MonoLinkedListSetNode *) get_hazardous_pointer_with_mask ((gpointer*)&cur->next, hp, 0);
 		cur_key = cur->key;
 
 		/*
@@ -119,7 +119,7 @@ try_again:
 			prev = &cur->next;
 			mono_hazard_pointer_set (hp, 2, cur);
 		} else {
-			next = mono_lls_pointer_unmask (next);
+			next = (MonoLinkedListSetNode *) mono_lls_pointer_unmask (next);
 			if (InterlockedCompareExchangePointer ((volatile gpointer*)prev, next, cur) == cur) {
 				/* The hazard pointer must be cleared after the CAS. */
 				mono_memory_write_barrier ();
@@ -129,7 +129,7 @@ try_again:
 			} else
 				goto try_again;
 		}
-		cur = mono_lls_pointer_unmask (next);
+		cur = (MonoLinkedListSetNode *) mono_lls_pointer_unmask (next);
 		mono_hazard_pointer_set (hp, 1, cur);
 	}
 }
@@ -152,8 +152,8 @@ mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 	while (1) {
 		if (mono_lls_find (list, hp, value->key))
 			return FALSE;
-		cur = mono_hazard_pointer_get_val (hp, 1);
-		prev = mono_hazard_pointer_get_val (hp, 2);
+		cur = (MonoLinkedListSetNode *) mono_hazard_pointer_get_val (hp, 1);
+		prev = (MonoLinkedListSetNode **) mono_hazard_pointer_get_val (hp, 2);
 
 		value->next = cur;
 		mono_hazard_pointer_set (hp, 0, value);
@@ -178,9 +178,9 @@ mono_lls_remove (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLink
 		if (!mono_lls_find (list, hp, value->key))
 			return FALSE;
 
-		next = mono_hazard_pointer_get_val (hp, 0);
-		cur = mono_hazard_pointer_get_val (hp, 1);
-		prev = mono_hazard_pointer_get_val (hp, 2);
+		next = (MonoLinkedListSetNode *) mono_hazard_pointer_get_val (hp, 0);
+		cur = (MonoLinkedListSetNode *) mono_hazard_pointer_get_val (hp, 1);
+		prev = (MonoLinkedListSetNode **) mono_hazard_pointer_get_val (hp, 2);
 
 		g_assert (cur == value);
 

@@ -140,7 +140,7 @@ mono_mutex_init_suspend_safe (mono_mutex_t *mutex)
 	static int (*setpolicy_np) (pthread_mutexattr_t *, int);
 
 	if (!inited) {
-		setpolicy_np = dlsym (RTLD_NEXT, "pthread_mutexattr_setpolicy_np");
+		setpolicy_np = (int (*) (pthread_mutexattr_t *, int)) dlsym (RTLD_NEXT, "pthread_mutexattr_setpolicy_np");
 		mono_atomic_store_release (&inited, TRUE);
 	}
 
