@@ -1,3 +1,8 @@
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
 #define FX_VER_FILEDESCRIPTION_STR "Microsoft Common Language Runtime native cross compiler\0"
 
 #include "..\..\dlls\mscorrc\mscorrc.rc"
