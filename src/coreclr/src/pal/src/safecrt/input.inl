@@ -80,13 +80,9 @@
 #define _istspace(x)    isspace(x)
 #endif
 
-#ifdef _SAFECRT_IMPL
-
 #define _malloc_crt PAL_malloc
 #define _realloc_crt PAL_realloc
 #define _free_crt PAL_free
-
-#endif  /* _SAFECRT_IMPL */
 
 #define _FASSIGN(flag, argument, number, dec_point, locale) _safecrt_fassign((flag), (argument), (number))
 #define _WFASSIGN(flag, argument, number, dec_point, locale) _safecrt_wfassign((flag), (argument), (number))
@@ -243,14 +239,7 @@ static int __check_float_string(size_t nFloatStrUsed,
 *
 *******************************************************************************/
 
-#ifdef _SAFECRT_IMPL
     #define _INTRN_LOCALE_CONV( x ) localeconv()
-#else  /* _SAFECRT_IMPL */
-    inline const lconv* _INTRN_LOCALE_CONV( _LocaleUpdate& l )
-    {
-        return l.GetLocaleT()->locinfo->lconv;
-    }
-#endif  /* _SAFECRT_IMPL */
 
 #ifndef _UNICODE
         int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist)
@@ -329,10 +318,6 @@ static int __check_float_string(size_t nFloatStrUsed,
 #ifndef CPRFLAG
     _VALIDATE_RETURN( (stream != NULL), EINVAL, EOF);
 #endif  /* CPRFLAG */
-
-#ifndef _SAFECRT_IMPL
-    _LocaleUpdate _loc_update(plocinfo);
-#endif  /* _SAFECRT_IMPL */
 
     /*
     count = # fields assigned
@@ -700,14 +685,7 @@ scanit:
                                             temp[1] = (char) INC();
                                         }
 #endif  /* 0 */
-#ifdef _SAFECRT_IMPL
                                         _MBTOWC(&wctemp, temp, MB_CUR_MAX);
-#else  /* _SAFECRT_IMPL */
-                                        _mbtowc_l(&wctemp,
-                                                  temp,
-                                                  _loc_update.GetLocaleT()->locinfo->mb_cur_max,
-                                                  _loc_update.GetLocaleT());
-#endif  /* _SAFECRT_IMPL */
                                         *(wchar_t UNALIGNED *)pointer = wctemp;
                                         /* just copy L'?' if mbtowc fails, errno is set by mbtowc */
                                         pointer = (wchar_t *)pointer + 1;
@@ -742,7 +720,6 @@ scanit:
                                     }
 #else  /* _SECURE_SCANF */
                                     /* convert wide to multibyte */
-#ifdef _SAFECRT_IMPL
                                     if (array_width >= ((size_t)MB_CUR_MAX))
                                     {
 _BEGIN_SECURE_CRT_DEPRECATION_DISABLE
@@ -763,13 +740,6 @@ _END_SECURE_CRT_DEPRECATION_DISABLE
                                         }
                                         memcpy(pointer, tmpbuf, temp);
                                     }
-#else  /* _SAFECRT_IMPL */
-                                    if(wctomb_s(&temp,(char *)pointer, array_width, ch) == ERANGE) {
-                                        /* We have exhausted the user's buffer */
-                                        enomem = 1;
-                                        break;
-                                    }
-#endif  /* _SAFECRT_IMPL */
                                     if (temp > 0)
                                     {
                                         /* do nothing if wctomb fails, errno will be set to EILSEQ */
@@ -1081,14 +1051,7 @@ f_incwidth:
                         /* convert decimal point to wide-char */
                         /* if mbtowc fails (should never happen), we use L'.' */
                         decimal = L'.';
-#ifdef _SAFECRT_IMPL
                         _MBTOWC(&decimal, _INTRN_LOCALE_CONV(_loc_update)->decimal_point, MB_CUR_MAX);
-#else  /* _SAFECRT_IMPL */
-                        _mbtowc_l(&decimal,
-                                  _INTRN_LOCALE_CONV(_loc_update)->decimal_point,
-                                  _loc_update.GetLocaleT()->locinfo->mb_cur_max,
-                                  _loc_update.GetLocaleT());
-#endif  /* _SAFECRT_IMPL */
 #else  /* _UNICODE */
                        
                         decimal=*((_INTRN_LOCALE_CONV(_loc_update))->decimal_point);

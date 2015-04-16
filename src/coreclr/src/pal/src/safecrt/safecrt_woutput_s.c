@@ -19,7 +19,10 @@
 *
 ****/
 
+#define _SAFECRT_IMPL
+
 #define __STDC_LIMIT_MACROS
+
 #include "pal/palinternal.h"
 #include <string.h>
 #include <errno.h>
@@ -36,8 +39,6 @@
 #ifndef UNICODE     /* NT flag */
 #define UNICODE 1
 #endif
-
-#define _SAFECRT_IMPL
 
 #define FORMAT_VALIDATIONS
 #if defined(_NTSUBSET_)
