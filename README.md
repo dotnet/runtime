@@ -1,5 +1,5 @@
 .NET Core Runtime (CoreCLR)
-===
+===========================
 
 |   |Linux|Windows|Mac OS X|
 |:-:|:-:|:-:|:-:|
@@ -16,15 +16,18 @@ Want to chat with other members of the CoreCLR community?
 
 [![Join the chat at https://gitter.im/dotnet/coreclr](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/coreclr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## Learn about CoreCLR
-Historically, new devs to the CLR team would be encouraged to read the "Book of the Runtime" (BotR) before making substative changes to the product. We have released the meaningful BotR chapters and other documents, for the same goal with new contributors.
+Learn about CoreCLR
+-------------------
 
+The best ways to learn about CoreCLR are to try out the product instructions and to read the "Book of the Runtime" architecture documents that describe the inner workings of the product. New devs to the CLR team are encouraged to read these documents before making substative changes to the product. They are equally useful for open source contributors.
+
+- [Product instructions](Documentation/README.md#product-instructions)
 - [Introduction to the Common Language Runtime](Documentation/intro-to-clr.md)
 - [Book of the Runtime](Documentation/README.md#book-of-the-runtime)
-- [CLR Coding Guide](Documentation/clr-code-guide.md)
-- [Documents Index](Documentation)
+- [CoreCLR Documents](Documentation)
 
-## How to Engage, Contribute and Provide Feedback
+Engage, Contribute and Provide Feedback
+---------------------------------------
 
 Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. 
 
@@ -33,40 +36,27 @@ Want to get more familiar with what's going on in the code?
 
 Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
 
-* [Contributing Guide][Contributing Guide]
-* [Developer Guide]
+* [Contributing Guide](https://github.com/dotnet/coreclr/wiki/Contributing)
+* [Developer Guide](https://github.com/dotnet/coreclr/wiki/Developer-Guide)
 
 You are encouraged to start a discussion by filing an issue, creating a
 gist or starting a thread in the [.NET Foundation forums]. For broader topics, please use the forums.
 
-[Contributing Guide]: https://github.com/dotnet/coreclr/wiki/Contribution-Overview
-[Developer Guide]: https://github.com/dotnet/coreclr/wiki/Developer-Guide
-
 [.NET Foundation forums]: http://forums.dotnetfoundation.org/
 
-## CoreCLR Build Artifacts
-The build for this repo will produce the following artifacts:
-
-1. coreclr.dll and required native binaries
-2. mscorlib.dll
-3. Tests that are required for validating any changes to the product
-
-## Code Flow
-CoreCLR is a subset of the .NET Framework CLR. They share the same codebase and are updated together. For example, an update to the .NET GC improves both CoreCLR and the .NET Framework CLR.
-
-We setup a live 2-way mirror between the coreclr repo on GitHub and the .NET Framework TFS server within Microsoft. The latency of the mirror is low, measurable in minutes.
-
-Contributions made to the coreclr repo are integrated to the Microsoft TFS server automatically and will become part of both the .NET Framework and .NET Core products. The same is true in reverse, that .NET Framework CLR changes (within the CoreCLR subset) are mirrored to the CoreCLR repo. These changes will sometimes result in large commits to unrelated components.
-
-## License
+License
+-------
 
 .NET Core (including the coreclr repo) is licensed under the [MIT license](LICENSE.TXT).
 
-## .NET Foundation
+.NET Foundation
+---------------
 
 .NET Core is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
 
-## Related Projects
+Related Projects
+----------------
+
 There are many .NET projects on GitHub.
 
 - The
