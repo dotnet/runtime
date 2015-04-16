@@ -62,13 +62,6 @@ typedef struct miniFILE_struct
 #define _IOREAD 4
 #define _IOMYBUF 8
 
-typedef struct {
-        /*
-         * Assume there is a long double type
-         */
-        long double x;
-} _LONGDOUBLE;
-
 int _putc_nolock( char inChar, miniFILE* inStream );
 int _putwc_nolock( wchar_t inChar, miniFILE* inStream );
 int _getc_nolock( miniFILE* inStream );
