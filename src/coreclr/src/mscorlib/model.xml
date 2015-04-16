@@ -10582,8 +10582,8 @@
       <Member Name="MakeVersionSafeName(System.String,System.Runtime.Versioning.ResourceScope,System.Runtime.Versioning.ResourceScope)" />
       <Member Name="MakeVersionSafeName(System.String,System.Runtime.Versioning.ResourceScope,System.Runtime.Versioning.ResourceScope,System.Type)" />
     </Type>
-    <Type Status="ApiFxInternal" Name="System.Runtime.Serialization.FormatterServices">
-        <Member Status="ApiFxInternal" Name="GetUninitializedObject(System.Type)" />
+    <Type Name="System.Runtime.Serialization.FormatterServices">
+        <Member Name="GetUninitializedObject(System.Type)" />
     </Type>
     <Type Name="System.Runtime.Serialization.SerializationException">
       <Member Name="#ctor" />
