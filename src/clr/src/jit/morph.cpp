@@ -5638,6 +5638,13 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
             compCurBB->bbJumpKind = BBJ_RETURN;
 #endif
 
+#ifdef FEATURE_PAL
+        if (!canFastTailCall)
+        {
+            goto NO_TAIL_CALL;
+        }
+#endif // FEATURE_PAL
+
         // Set this flag before calling fgMorphCall() to prevent inlining this call.
         call->gtCallMoreFlags |=  GTF_CALL_M_TAILCALL;
 
@@ -5646,11 +5653,7 @@ GenTreePtr          Compiler::fgMorphCall(GenTreeCall* call)
         // fast calls.
         if (!canFastTailCall)
         {
-#ifndef FEATURE_PAL
             fgMorphTailCall(call);
-#else // FEATURE_PAL
-            goto NO_TAIL_CALL;
-#endif // FEATURE_PAL
         }
 
         // Implementation note : If we optimize tailcall to do a direct jump
