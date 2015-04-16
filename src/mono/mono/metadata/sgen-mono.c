@@ -36,6 +36,7 @@
 #include "metadata/gc-internals.h"
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internals.h"
+#include "sgen/sgen-thread-pool.h"
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;
@@ -2991,6 +2992,7 @@ mono_gc_base_init (void)
 void
 mono_gc_base_cleanup (void)
 {
+	sgen_thread_pool_shutdown ();
 }
 
 gboolean
