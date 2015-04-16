@@ -195,20 +195,7 @@ int __cdecl _swoutput_s(wchar_t *_Dst, size_t _Size, const wchar_t *_Format, va_
     CASSERT(sizeof(long) == sizeof(int));
 #endif
 
-#if (defined(__DARWIN_LONG_DOUBLE_IS_DOUBLE) && !__DARWIN_LONG_DOUBLE_IS_DOUBLE) || defined(__LINUX__) || defined(__APPLE__)
-    #ifdef MBUSAFECRT_SUPPORTS_LONGDOUBLE   // we do not have _cldcvt function to convert long double.
-        #define LONGDOUBLE_IS_DOUBLE 0  /* 1 means long double is same as double */
-        CASSERT(sizeof(long double) != sizeof(double));
-    #else
-        #define LONGDOUBLE_IS_DOUBLE 1
-    #endif
-#else
-    #define LONGDOUBLE_IS_DOUBLE 1  /* 1 means long double is same as double */
-    CASSERT(sizeof(long double) == sizeof(double));
-#endif
-
 #define SHORT_IS_INT     0      /* 1 means short is same size as int */
-#define LONGDOUBLE_IS_DOUBLE 1  /* 1 means long double is same as double */
 #define LONGLONG_IS_INT64 1     /* 1 means long long is same as int64 */
 #if defined (_WIN64)
     #define PTR_IS_INT       0      /* 1 means ptr is same size as int */
@@ -580,7 +567,6 @@ e_ptr_arg,
 e_int64_arg,
 e_long_long_arg,
 e_long_arg,
-e_longdouble_arg,
 e_double_arg
 };
 
@@ -743,7 +729,6 @@ LOCAL(void) write_string(const _TCHAR *string, int len, miniFILE *f, int *numwri
     #define get_long_arg(list)          va_arg(*list, long)
     #define get_long_long_arg(list)     va_arg(*list, long long)
     #define get_int64_arg(list)         va_arg(*list, __int64)
-    #define get_longdouble_arg(list)    va_arg(*list, long double)
     #define get_crtdouble_arg(list)     va_arg(*list, _CRT_DOUBLE)
     #define get_ptr_arg(list)           va_arg(*list, void *)
 
@@ -764,11 +749,7 @@ __inline __int64 __cdecl get_int64_arg(va_list *pargptr);
 #endif  /* _INTEGRAL_MAX_BITS >= 64    */
 
 #ifdef POSITIONAL_PARAMETERS
-#if !LONGDOUBLE_IS_DOUBLE
-__inline _LONGDOUBLE __cdecl get_longdouble_arg(va_list *pargptr);
-#else  /* !LONGDOUBLE_IS_DOUBLE */
 __inline _CRT_DOUBLE __cdecl get_crtdouble_arg(va_list *pargptr);
-#endif  /* !LONGDOUBLE_IS_DOUBLE */
 #endif  /* POSITIONAL_PARAMETERS */
 
 #endif // __GNUC_VA_LIST
@@ -1738,18 +1719,7 @@ int __cdecl _output_l (
                 if((format_type == FMT_TYPE_POSITIONAL) && (pass == FORMAT_POSSCAN_PASS))
                 {
                     _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-#if !LONGDOUBLE_IS_DOUBLE
-
-                    if (flags & FL_LONGDOUBLE)
-                    {
-                        STORE_ARGPTR(pos_value, e_longdouble_arg, type_pos, ch, flags)
-                    }
-                    else
-#endif  /* !LONGDOUBLE_IS_DOUBLE */
-                    {
-                        STORE_ARGPTR(pos_value, e_double_arg, type_pos, ch, flags)
-                    }
+                    STORE_ARGPTR(pos_value, e_double_arg, type_pos, ch, flags)
 
                     break;
                 }
@@ -1778,61 +1748,34 @@ int __cdecl _output_l (
                 }
 #endif  /* _SAFECRT_IMPL */
 
-#if !LONGDOUBLE_IS_DOUBLE
-                /* do the conversion */
-                if (flags & FL_LONGDOUBLE) {
-                    _LONGDOUBLE tmp;
+                _CRT_DOUBLE tmp;
 #ifdef POSITIONAL_PARAMETERS
-                    if(format_type == FMT_TYPE_NONPOSITIONAL)
-                    {
-#endif  /* POSITIONAL_PARAMETERS */
-                    tmp=va_arg(argptr, _LONGDOUBLE);
-#ifdef POSITIONAL_PARAMETERS
-                    }
-                    else
-                    {
-                        /* Will get here only for pass == FORMAT_OUTPUT_PASS because
-                        pass == FORMAT_POSSCAN_PASS has a break Above */
-                        va_list tmp_arg;
-                        _ASSERTE(pass == FORMAT_OUTPUT_PASS);
-                        tmp_arg = pos_value[type_pos].arg_ptr;
-                        tmp=va_arg(tmp_arg, _LONGDOUBLE);
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
-                    /* Note: assumes ch is in ASCII range */
-                    _CLDCVT(&tmp, buffer.sz, buffersize, (char)ch, precision, capexp);
-                } else
-#endif  /* !LONGDOUBLE_IS_DOUBLE */
+                if(format_type == FMT_TYPE_NONPOSITIONAL)
                 {
-                    _CRT_DOUBLE tmp;
-#ifdef POSITIONAL_PARAMETERS
-                    if(format_type == FMT_TYPE_NONPOSITIONAL)
-                    {
 #endif  /* POSITIONAL_PARAMETERS */
-                    tmp=va_arg(argptr, _CRT_DOUBLE);
+                tmp=va_arg(argptr, _CRT_DOUBLE);
 #ifdef POSITIONAL_PARAMETERS
-                    }
-                    else
-                    {
-                        /* Will get here only for pass == FORMAT_OUTPUT_PASS because
-                        pass == FORMAT_POSSCAN_PASS has a break Above */
-                        va_list tmp_arg;
-
-                        _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
-
-                                                _ASSERTE(pass == FORMAT_OUTPUT_PASS);
-                        tmp_arg = pos_value[type_pos].arg_ptr;
-                        tmp=va_arg(tmp_arg, _CRT_DOUBLE);
-                    }
-#endif  /* POSITIONAL_PARAMETERS */
-                    /* Note: assumes ch is in ASCII range */
-                    /* In safecrt, we provide a special version of _cfltcvt which internally calls printf (see safecrt_output_s.c) */
-#ifndef _SAFECRT_IMPL
-                    _cfltcvt_l(&tmp.x, buffer.sz, buffersize, (char)ch, precision, capexp, _loc_update.GetLocaleT());
-#else  /* _SAFECRT_IMPL */
-                    _CFLTCVT(&tmp, buffer.sz, buffersize, (char)ch, precision, capexp);
-#endif  /* _SAFECRT_IMPL */
                 }
+                else
+                {
+                    /* Will get here only for pass == FORMAT_OUTPUT_PASS because
+                    pass == FORMAT_POSSCAN_PASS has a break Above */
+                    va_list tmp_arg;
+
+                    _VALIDATE_RETURN(((type_pos>=0) && (type_pos<_ARGMAX)), EINVAL, -1);
+
+                                            _ASSERTE(pass == FORMAT_OUTPUT_PASS);
+                    tmp_arg = pos_value[type_pos].arg_ptr;
+                    tmp=va_arg(tmp_arg, _CRT_DOUBLE);
+                }
+#endif  /* POSITIONAL_PARAMETERS */
+                /* Note: assumes ch is in ASCII range */
+                /* In safecrt, we provide a special version of _cfltcvt which internally calls printf (see safecrt_output_s.c) */
+#ifndef _SAFECRT_IMPL
+                _cfltcvt_l(&tmp.x, buffer.sz, buffersize, (char)ch, precision, capexp, _loc_update.GetLocaleT());
+#else  /* _SAFECRT_IMPL */
+                _CFLTCVT(&tmp, buffer.sz, buffersize, (char)ch, precision, capexp);
+#endif  /* _SAFECRT_IMPL */
 
 #ifndef _SAFECRT_IMPL
                 /* For safecrt, this is done already in _safecrt_cfltcvt */
@@ -2342,17 +2285,10 @@ int __cdecl _output_l (
                     get_long_arg(&argptr);
                     break;
 
-#if !LONGDOUBLE_IS_DOUBLE
-                case e_longdouble_arg:
-                    pos_value[type_pos].arg_ptr = argptr;
-                    get_longdouble_arg(&argptr);
-                    break;
-#else  /* !LONGDOUBLE_IS_DOUBLE */
                 case e_double_arg :
                     pos_value[type_pos].arg_ptr = argptr;
                     get_crtdouble_arg(&argptr);
                     break;
-#endif  /* !LONGDOUBLE_IS_DOUBLE */
                 default:
                     /* Should never get here */
                     _VALIDATE_RETURN(("Missing position in the format string", 0), EINVAL, -1);
@@ -2641,17 +2577,10 @@ __inline __int64 __cdecl get_int64_arg (
 #ifndef _UNICODE
 
 #ifdef POSITIONAL_PARAMETERS
-#if !LONGDOUBLE_IS_DOUBLE
-__inline _LONGDOUBLE __cdecl get_longdouble_arg(va_list *pargptr)
-{
-    return va_arg(*pargptr, _LONGDOUBLE);
-}
-#else  /* !LONGDOUBLE_IS_DOUBLE */
 __inline _CRT_DOUBLE __cdecl get_crtdouble_arg(va_list *pargptr)
 {
     return va_arg(*pargptr, _CRT_DOUBLE);
 }
-#endif  /* !LONGDOUBLE_IS_DOUBLE */
 #endif  /* POSITIONAL_PARAMETERS */
 #endif  /* _UNICODE */
 
