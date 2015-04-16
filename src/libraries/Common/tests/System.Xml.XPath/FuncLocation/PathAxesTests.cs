@@ -6085,7 +6085,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// //*[last()]/preceding::processing-instruction()
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesTest1138()
         {
             var xml = "books_2.xml";
@@ -8505,7 +8504,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// following::book/preceding::book
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesTest1202()
         {
             var xml = "books.xml";
@@ -10083,7 +10081,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// preceding::book/preceding::book
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesTest1216()
         {
             var xml = "books.xml";
@@ -11579,7 +11576,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// ancestor::*/preceding::book
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesTest1244()
         {
             var xml = "books.xml";
@@ -12143,7 +12139,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// //*[last()]/preceding::processing-instruction()
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesTest1256()
         {
             var xml = "books_2.xml";
