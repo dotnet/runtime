@@ -2372,6 +2372,8 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 	gchar this_hostname [256];
 	MonoAddressInfo *info = NULL;
 	char *hostname = mono_string_to_utf8 (host);
+	int hint = get_addrinfo_family_hint ();
+
 	MONO_PREPARE_BLOCKING
 
 	if (*hostname == '\0') {
@@ -2385,7 +2387,7 @@ MonoBoolean ves_icall_System_Net_Dns_GetHostByName_internal(MonoString *host, Mo
 		}
 	}
 
-	if (*hostname && mono_get_address_info (hostname, 0, MONO_HINT_CANONICAL_NAME | get_addrinfo_family_hint (), &info))
+	if (*hostname && mono_get_address_info (hostname, 0, MONO_HINT_CANONICAL_NAME | hint, &info))
 		add_info_ok = FALSE;
 
 	g_free(hostname);
@@ -2405,6 +2407,10 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 	gint32 family;
 	char hostname[NI_MAXHOST] = {0};
 	int flags = 0;
+	int hint = get_addrinfo_family_hint ();
+	gboolean add_info_ok;
+
+	MONO_PREPARE_BLOCKING
 
 	address = mono_string_to_utf8 (addr);
 
@@ -2445,10 +2451,13 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 		}
 	}
 
-	if (mono_get_address_info (hostname, 0, get_addrinfo_family_hint () | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info))
-		return FALSE;
+	add_info_ok = mono_get_address_info (hostname, 0, hint | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info);
+	MONO_FINISH_BLOCKING
 
-	return(addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, FALSE));
+	if (add_info_ok)
+		return addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, FALSE);
+
+	return FALSE;
 }
 
 extern MonoBoolean ves_icall_System_Net_Dns_GetHostName_internal(MonoString **h_name)
