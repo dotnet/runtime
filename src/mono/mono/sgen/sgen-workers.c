@@ -180,30 +180,6 @@ sgen_workers_wait_for_jobs_finished (void)
 	sgen_workers_ensure_awake ();
 }
 
-void
-sgen_workers_signal_start_nursery_collection_and_wait (void)
-{
-	State old_state;
-
-	do {
-		old_state = workers_state;
-
-		if (old_state != STATE_NOT_WORKING)
-			SGEN_ASSERT (0, old_state != STATE_NURSERY_COLLECTION, "Why are we transitioning to NURSERY COLLECTION when we're already there?");
-	} while (!set_state (old_state, STATE_NURSERY_COLLECTION));
-
-	sgen_thread_pool_idle_wait ();
-
-	assert_nursery_collection (workers_state);
-}
-
-void
-sgen_workers_signal_finish_nursery_collection (void)
-{
-	assert_nursery_collection (workers_state);
-	workers_signal_enqueue_work (TRUE);
-}
-
 static gboolean
 workers_get_work (WorkerData *data)
 {
@@ -270,7 +246,6 @@ marker_idle_func (void *data_untyped)
 		return;
 
 	SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "The worker should only mark in concurrent collections.");
-	SGEN_ASSERT (0, sgen_get_current_collection_generation () != GENERATION_NURSERY, "Why are we doing work while there's a nursery collection happening?");
 
 	if (workers_state == STATE_WORK_ENQUEUED) {
 		set_state (STATE_WORK_ENQUEUED, STATE_WORKING);
