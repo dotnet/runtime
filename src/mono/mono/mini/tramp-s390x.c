@@ -48,9 +48,11 @@
 
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/tabledefs.h>
+#include <mono/metadata/monitor.h>
 #include <mono/metadata/profiler-private.h>
+#include <mono/metadata/tabledefs.h>
 #include <mono/arch/s390x/s390x-codegen.h>
 
 #include "mini.h"
@@ -358,7 +360,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	else
 		s390_lg (buf, s390_r4, 0, STK_BASE, METHOD_SAVE_OFFSET);
 
-	/* Arg 4: trampoline address. Ignore for now */
+	/* Arg 4: trampoline address. */
+	S390_SET (buf, s390_r5, buf);
 		
 	/* Calculate call address and call the C trampoline. Return value will be in r2 */
 	tramp = (guint8*)mono_get_trampoline_func (tramp_type);
@@ -463,7 +466,18 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	/*----------------------------------------------------------*/
 	code = buf = mono_domain_code_reserve (domain, SPECIFIC_TRAMPOLINE_SIZE);
 
-	S390_SET  (buf, s390_r1, arg1);
+	switch (tramp_type) {
+	/*
+	 * Monitor tramps have the object in r2
+	 */
+	case MONO_TRAMPOLINE_MONITOR_ENTER:
+	case MONO_TRAMPOLINE_MONITOR_ENTER_V4:
+	case MONO_TRAMPOLINE_MONITOR_EXIT:
+		s390_lgr (buf, s390_r1, s390_r2);
+		break;
+	default :
+		S390_SET  (buf, s390_r1, arg1);
+	}
 	displace = (tramp - buf) / 2;
 	s390_jg   (buf, displace);
 
@@ -764,3 +778,299 @@ mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean a
 }
 
 /*========================= End of Function ========================*/
+
+#ifdef MONO_ARCH_MONITOR_OBJECT_REG
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_create_monitor_enter_trampoline         */
+/*                                                                  */
+/* Function	- 						    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_create_monitor_enter_trampoline (MonoTrampInfo **info, gboolean is_v4, gboolean aot)
+{
+	guint8	*tramp,
+		*code, *buf;
+	gint16	*jump_obj_null, 
+		*jump_sync_null, 
+		*jump_cs_failed, 
+		*jump_other_owner, 
+		*jump_tid, 
+		*jump_sync_thin_hash = NULL,
+		*jump_lock_taken_true = NULL;
+	int tramp_size,
+	    status_reg = s390_r0,
+	    lock_taken_reg = s390_r1,
+	    obj_reg = s390_r2,
+	    sync_reg = s390_r3,
+	    tid_reg = s390_r4,
+	    status_offset,
+	    nest_offset;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	g_assert (MONO_ARCH_MONITOR_OBJECT_REG == obj_reg);
+#ifdef MONO_ARCH_MONITOR_LOCK_TAKEN_REG
+	g_assert (MONO_ARCH_MONITOR_LOCK_TAKEN_REG == lock_taken_reg);
+#else
+	g_assert (!is_v4);
+#endif
+
+	mono_monitor_threads_sync_members_offset (&status_offset, &nest_offset);
+	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (status_offset) == sizeof (guint32));
+	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (nest_offset) == sizeof (guint32));
+	status_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (status_offset);
+	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
+
+	tramp_size = 160;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	if (mono_thread_get_tls_offset () != -1) {
+		/* MonoObject* obj is in obj_reg */
+		/* is obj null? */
+		s390_ltgr (code, obj_reg, obj_reg);
+		/* if yes, jump to actual trampoline */
+		s390_jz (code, 0); CODEPTR(code, jump_obj_null);
+
+		if (is_v4) {
+			s390_cli (code, lock_taken_reg, 0, 1);
+			/* if *lock_taken is 1, jump to actual trampoline */
+			s390_je (code, 0); CODEPTR(code, jump_lock_taken_true);
+		}
+
+		/* load obj->synchronization to sync_reg */
+		s390_lg (code, sync_reg, 0, obj_reg, MONO_STRUCT_OFFSET (MonoObject, synchronisation));
+
+		if (mono_gc_is_moving ()) {
+			/*if bit zero is set it's a thin hash*/
+			s390_tmll (code, sync_reg, 1);
+			s390_jo  (code, 0); CODEPTR(code, jump_sync_thin_hash);
+
+			/* Clear bits used by the gc */
+			s390_nill (code, sync_reg, ~0x3);
+		}
+
+		/* is synchronization null? */
+		s390_ltgr (code, sync_reg, sync_reg);
+		/* if yes, jump to actual trampoline */
+		s390_jz (code, 0); CODEPTR(code, jump_sync_null);
+
+		/* load MonoInternalThread* into tid_reg */
+		s390_ear (code, s390_r5, 0);
+		s390_sllg(code, s390_r5, s390_r5, 0, 32);
+		s390_ear (code, s390_r5, 1);
+		/* load tid */
+		s390_lg  (code, tid_reg, 0, s390_r5, mono_thread_get_tls_offset ());
+		s390_lgf (code, tid_reg, 0, tid_reg, MONO_STRUCT_OFFSET (MonoInternalThread, small_id));
+
+		/* is synchronization->owner free */
+		s390_lgf  (code, status_reg, 0, sync_reg, status_offset);
+		s390_nilf (code, status_reg, OWNER_MASK);
+		/* if not, jump to next case */
+		s390_jnz  (code, 0); CODEPTR(code, jump_tid);
+
+		/* if yes, try a compare-exchange with the TID */
+		/* Form new status in tid_reg */
+		s390_xr (code, tid_reg, status_reg);
+		/* compare and exchange */
+		s390_cs (code, status_reg, tid_reg, sync_reg, status_offset);
+		s390_jnz (code, 0); CODEPTR(code, jump_cs_failed);
+		/* if successful, return */
+		if (is_v4)
+			s390_mvi (code, lock_taken_reg, 0, 1);
+		s390_br (code, s390_r14);
+
+		/* next case: synchronization->owner is not null */
+		PTRSLOT(code, jump_tid);
+		/* is synchronization->owner == TID? */
+		s390_nilf (code, status_reg, OWNER_MASK);
+		s390_cr (code, status_reg, tid_reg);
+		/* if not, jump to actual trampoline */
+		s390_jnz (code, 0); CODEPTR(code, jump_other_owner);
+		/* if yes, increment nest */
+		s390_lgf (code, s390_r5, 0, sync_reg, nest_offset);
+		s390_ahi (code, s390_r5, 1);
+		s390_st  (code, s390_r5, 0, sync_reg, nest_offset);
+		/* return */
+		if (is_v4)
+			s390_mvi (code, lock_taken_reg, 0, 1);
+		s390_br (code, s390_r14);
+
+		PTRSLOT (code, jump_obj_null);
+		if (jump_sync_thin_hash)
+			PTRSLOT (code, jump_sync_thin_hash);
+		PTRSLOT (code, jump_sync_null);
+		PTRSLOT (code, jump_cs_failed);
+		PTRSLOT (code, jump_other_owner);
+		if (is_v4)
+			PTRSLOT (code, jump_lock_taken_true);
+	}
+
+	/* jump to the actual trampoline */
+	if (is_v4)
+		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER_V4, mono_get_root_domain (), NULL);
+	else
+		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_ENTER, mono_get_root_domain (), NULL);
+
+	/* jump to the actual trampoline */
+	S390_SET (code, s390_r1, tramp);
+	s390_br (code, s390_r1);
+
+	mono_arch_flush_icache (code, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_MONITOR, NULL);
+	g_assert (code - buf <= tramp_size);
+
+	if (info) {
+		if (is_v4)
+			*info = mono_tramp_info_create ("monitor_enter_v4_trampoline", buf, code - buf, ji, unwind_ops);
+		else
+			*info = mono_tramp_info_create ("monitor_enter_trampoline", buf, code - buf, ji, unwind_ops);
+	}
+
+	return buf;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_create_monitor_exit_trampoline          */
+/*                                                                  */
+/* Function	- 						    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_create_monitor_exit_trampoline (MonoTrampInfo **info, gboolean aot)
+{
+	guint8	*tramp,
+		*code, *buf;
+	gint16	*jump_obj_null, 
+		*jump_have_waiters, 
+		*jump_sync_null, 
+		*jump_not_owned, 
+		*jump_cs_failed,
+		*jump_next,
+		*jump_sync_thin_hash = NULL;
+	int	tramp_size,
+		status_offset, nest_offset;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+	int	obj_reg = s390_r2,
+		sync_reg = s390_r3,
+		status_reg = s390_r4;
+
+	g_assert (obj_reg == MONO_ARCH_MONITOR_OBJECT_REG);
+
+	mono_monitor_threads_sync_members_offset (&status_offset, &nest_offset);
+	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (status_offset) == sizeof (guint32));
+	g_assert (MONO_THREADS_SYNC_MEMBER_SIZE (nest_offset) == sizeof (guint32));
+	status_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (status_offset);
+	nest_offset = MONO_THREADS_SYNC_MEMBER_OFFSET (nest_offset);
+
+	tramp_size = 160;
+
+	code = buf = mono_global_codeman_reserve (tramp_size);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	if (mono_thread_get_tls_offset () != -1) {
+		/* MonoObject* obj is in obj_reg */
+		/* is obj null? */
+		s390_ltgr (code, obj_reg, obj_reg);
+		/* if yes, jump to actual trampoline */
+		s390_jz (code, 0); CODEPTR(code, jump_obj_null);
+
+		/* load obj->synchronization to RCX */
+		s390_lg (code, sync_reg, 0, obj_reg, MONO_STRUCT_OFFSET (MonoObject, synchronisation));
+
+		if (mono_gc_is_moving ()) {
+			/*if bit zero is set it's a thin hash*/
+			s390_tmll (code, sync_reg, 1);
+			s390_jo   (code, 0); CODEPTR(code, jump_sync_thin_hash);
+
+			/* Clear bits used by the gc */
+			s390_nill (code, sync_reg, ~0x3);
+		}
+
+		/* is synchronization null? */
+		s390_ltgr (code, sync_reg, sync_reg);
+		/* if yes, jump to actual trampoline */
+		s390_jz (code, 0); CODEPTR(code, jump_sync_null);
+
+		/* next case: synchronization is not null */
+		/* load MonoInternalThread* into r5 */
+		s390_ear (code, s390_r5, 0);
+		s390_sllg(code, s390_r5, s390_r5, 0, 32);
+		s390_ear (code, s390_r5, 1);
+		/* load TID into r1 */
+		s390_lg  (code, s390_r1, 0, s390_r5, mono_thread_get_tls_offset ());
+		s390_lgf (code, s390_r1, 0, s390_r1, MONO_STRUCT_OFFSET (MonoInternalThread, small_id));
+		/* is synchronization->owner == TID */
+		s390_lgf (code, status_reg, 0, sync_reg, status_offset);
+		s390_xr  (code, s390_r1, status_reg);
+		s390_tmlh (code, s390_r1, OWNER_MASK);
+		/* if not, jump to actual trampoline */
+		s390_jno (code, 0); CODEPTR(code, jump_not_owned);
+
+		/* next case: synchronization->owner == TID */
+		/* is synchronization->nest == 1 */
+		s390_lgf (code, s390_r0, 0, sync_reg, nest_offset);
+		s390_chi (code, s390_r0, 1);
+		/* if not, jump to next case */
+		s390_jne (code, 0); CODEPTR(code, jump_next);
+		/* if yes, is synchronization->entry_count greater than zero */
+		s390_cfi (code, status_reg, ENTRY_COUNT_WAITERS);
+		/* if not, jump to actual trampoline */
+		s390_jnz (code, 0); CODEPTR(code, jump_have_waiters);
+		/* if yes, try to set synchronization->owner to null and return */
+		/* old status in s390_r0 */
+		s390_lgfr (code, s390_r0, status_reg);
+		/* form new status */
+		s390_nilf (code, status_reg, ENTRY_COUNT_MASK);
+		/* compare and exchange */
+		s390_cs (code, s390_r0, status_reg, sync_reg, status_offset);
+		/* if not successful, jump to actual trampoline */
+		s390_jnz (code, 0); CODEPTR(code, jump_cs_failed);
+		s390_br  (code, s390_r14);
+
+		/* next case: synchronization->nest is not 1 */
+		PTRSLOT (code, jump_next);
+		/* decrease synchronization->nest and return */
+		s390_lgf (code, s390_r0, 0, sync_reg, nest_offset);
+		s390_ahi (code, s390_r0, -1);
+		s390_st  (code, s390_r0, 0, sync_reg, nest_offset);
+		s390_br  (code, s390_r14);
+
+		PTRSLOT (code, jump_obj_null);
+		if (jump_sync_thin_hash)
+			PTRSLOT (code, jump_sync_thin_hash);
+		PTRSLOT (code, jump_have_waiters);
+		PTRSLOT (code, jump_not_owned);
+		PTRSLOT (code, jump_cs_failed);
+		PTRSLOT (code, jump_sync_null);
+	}
+
+	/* jump to the actual trampoline */
+	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_MONITOR_EXIT, mono_get_root_domain (), NULL);
+
+	S390_SET (code, s390_r1, tramp);
+	s390_br (code, s390_r1);
+
+	mono_arch_flush_icache (code, code - buf);
+	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_MONITOR, NULL);
+	g_assert (code - buf <= tramp_size);
+
+	if (info)
+		*info = mono_tramp_info_create ("monitor_exit_trampoline", buf, code - buf, ji, unwind_ops);
+
+	return buf;
+}
+
+/*========================= End of Function ========================*/
+#endif
