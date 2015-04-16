@@ -1083,10 +1083,17 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 			}
 
 			if (sig->hasthis && method->klass->valuetype) {
-				if (mono_aot_only)
-					need_unbox_tramp = TRUE;
-				else
-					method = mono_marshal_get_unbox_wrapper (method);
+				gboolean need_unbox = TRUE;
+
+				if (tramp_info->invoke_sig->param_count > sig->param_count && tramp_info->invoke_sig->params [0]->byref)
+					need_unbox = FALSE;
+
+				if (need_unbox) {
+					if (mono_aot_only)
+						need_unbox_tramp = TRUE;
+					else
+						method = mono_marshal_get_unbox_wrapper (method);
+				}
 			}
 		}
 	} else {
