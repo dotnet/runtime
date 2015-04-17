@@ -5471,7 +5471,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	}
 
 	seq_points = cfg->seq_point_info;
-	seq_points_size = (store_seq_points)? seq_point_info_get_write_size (seq_points) : 0;
+	seq_points_size = (store_seq_points)? mono_seq_point_info_get_write_size (seq_points) : 0;
 
 	buf_size = header->num_clauses * 256 + debug_info_size + 2048 + seq_points_size + cfg->gc_map_size;
 
@@ -5685,7 +5685,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	}
 
 	if (seq_points_size)
-		p += seq_point_info_write (seq_points, p);
+		p += mono_seq_point_info_write (seq_points, p);
 
 	g_assert (debug_info_size < buf_size);
 
@@ -7932,10 +7932,10 @@ emit_exception_info (MonoAotCompile *acfg)
 
 			if (method_seq_points_to_file) {
 				if (!seq_points_to_file) {
-					seq_point_data_init (&sp_data, acfg->nmethods);
+					mono_seq_point_data_init (&sp_data, acfg->nmethods);
 					seq_points_to_file = TRUE;
 				}
-				seq_point_data_add (&sp_data, cfg->method->token, cfg->method_index, cfg->seq_point_info);
+				mono_seq_point_data_add (&sp_data, cfg->method->token, cfg->method_index, cfg->seq_point_info);
 			}
 		} else {
 			offsets [i] = 0;
@@ -7945,8 +7945,8 @@ emit_exception_info (MonoAotCompile *acfg)
 	if (seq_points_to_file) {
 		char *seq_points_aot_file;
 		mono_image_get_aot_seq_point_path (acfg->image, &seq_points_aot_file);
-		seq_point_data_write (&sp_data, seq_points_aot_file);
-		seq_point_data_free (&sp_data);
+		mono_seq_point_data_write (&sp_data, seq_points_aot_file);
+		mono_seq_point_data_free (&sp_data);
 		g_free (seq_points_aot_file);
 	}
 

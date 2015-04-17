@@ -7072,7 +7072,7 @@ ves_icall_System_StackFrame_GetILOffsetFromFile (MonoString *path, guint32 metho
 	guint32 il_offset;
 	char *path_str = mono_string_to_utf8 (path);
 
-	if (!seq_point_data_get_il_offset (path_str, method_token, method_index, native_offset, &il_offset))
+	if (!mono_seq_point_data_get_il_offset (path_str, method_token, method_index, native_offset, &il_offset))
 		il_offset = -1;
 
 	g_free (path_str);
