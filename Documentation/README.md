@@ -26,6 +26,7 @@ Book of the Runtime
 - [Stack Walking](stackwalking.md)
 - [Mscorlib and Calling Into the Runtime](mscorlib.md)
 - [Implementing Profilability](profilability.md)
+- [What Every Dev needs to Know About Exceptions in the Runtime](exceptions.md)
 
 .NET Runtime Specs
 ==================
