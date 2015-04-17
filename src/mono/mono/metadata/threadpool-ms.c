@@ -238,7 +238,7 @@ rand_free (gpointer handle)
 }
 
 static void
-ensure_initialized (gboolean *enable_worker_tracking)
+ensure_initialized (MonoBoolean *enable_worker_tracking)
 {
 	ThreadPoolHillClimbing *hc;
 	const char *threads_per_cpu_env;
@@ -419,7 +419,7 @@ mono_threadpool_ms_enqueue_work_item (MonoDomain *domain, MonoObject *work_item)
 	f = FALSE;
 
 	args [0] = (gpointer) work_item;
-	args [1] = (gpointer) mono_value_box (domain, mono_defaults.boolean_class, &f);
+	args [1] = (gpointer) &f;
 
 	current_domain = mono_domain_get ();
 	if (current_domain == domain) {
@@ -1484,7 +1484,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint worker
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_InitializeVMTp (gboolean *enable_worker_tracking)
+ves_icall_System_Threading_Microsoft_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking)
 {
 	ensure_initialized (enable_worker_tracking);
 }

@@ -68,7 +68,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint worker
 gboolean
 ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint worker_threads, gint completion_port_threads);
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_InitializeVMTp (gboolean *enable_worker_tracking);
+ves_icall_System_Threading_Microsoft_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking);
 gboolean
 ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemComplete (void);
 void
