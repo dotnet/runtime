@@ -164,6 +164,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
+if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+  find_library(UNWIND unwind)
+  find_library(INTL intl)
+  target_link_libraries(coreclrpal
+    pthread
+    rt
+    ${UNWIND}
+    ${INTL}
+  )
+endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
