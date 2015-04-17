@@ -8,7 +8,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner NodeEnumerable class.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.NodeEnumerable"/> class.
     /// </content>
     public partial class ImmutableHashSet<T>
     {
@@ -23,7 +23,7 @@ namespace System.Collections.Immutable
             private readonly SortedInt32KeyNode<HashBucket> _root;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.NodeEnumerable"/> struct.
+            /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.NodeEnumerable"/> struct.
             /// </summary>
             /// <param name="root">The root.</param>
             internal NodeEnumerable(SortedInt32KeyNode<HashBucket> root)
@@ -36,7 +36,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             public Enumerator GetEnumerator()
             {
@@ -47,7 +47,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             [ExcludeFromCodeCoverage] // never called internal member, but here for the interface.
             IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through a collection.
             /// </summary>
             /// <returns>
-            /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+            /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
             /// </returns>
             [ExcludeFromCodeCoverage] // never called internal member, but here for the interface.
             IEnumerator IEnumerable.GetEnumerator()

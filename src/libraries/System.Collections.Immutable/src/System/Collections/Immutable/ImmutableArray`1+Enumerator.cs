@@ -11,7 +11,7 @@ namespace System.Collections.Immutable
         /// An array enumerator.
         /// </summary>
         /// <remarks>
-        /// It is important that this enumerator does NOT implement IDisposable.
+        /// It is important that this enumerator does NOT implement <see cref="IDisposable"/>.
         /// We want the iterator to inline when we do foreach and to not result in
         /// a try/finally frame in the client.
         /// </remarks>
@@ -27,7 +27,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <value>
             /// -1 before the first call to <see cref="MoveNext"/>.
-            /// >= this.array.Length after MoveNext returns false.
+            /// >= this.array.Length after <see cref="MoveNext"/> returns false.
             /// </value>
             private int _index;
 
@@ -66,7 +66,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// An array enumerator that implements IEnumerator pattern (including IDisposable).
+        /// An array enumerator that implements <see cref="IEnumerator{T}"/> pattern (including <see cref="IDisposable"/>).
         /// </summary>
         private class EnumeratorObject : IEnumerator<T>
         {

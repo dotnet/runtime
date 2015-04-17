@@ -7,7 +7,7 @@ namespace System.Collections.Immutable
 {
     /// <summary>
     /// An adapter that allows a single foreach loop in C# to avoid
-    /// boxing an enumerator when possible, but fallback to boxing when necessary.
+    /// boxing an enumerator when possible, but fall back to boxing when necessary.
     /// </summary>
     /// <typeparam name="T">The type of value to be enumerated.</typeparam>
     /// <typeparam name="TEnumerator">The type of the enumerator struct.</typeparam>

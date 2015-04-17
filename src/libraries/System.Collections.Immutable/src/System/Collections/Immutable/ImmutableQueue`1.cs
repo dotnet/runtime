@@ -46,7 +46,7 @@ namespace System.Collections.Immutable
         private ImmutableStack<T> _backwardsReversed;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableQueue&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableQueue{T}"/> class.
         /// </summary>
         /// <param name="forward">The forward stack.</param>
         /// <param name="backward">The backward stack.</param>
@@ -231,7 +231,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:Enumerator"/> that can be used to iterate through the collection.
+        /// An <see cref="Enumerator"/> that can be used to iterate through the collection.
         /// </returns>
         [Pure]
         public Enumerator GetEnumerator()
@@ -243,7 +243,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         [Pure]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -255,7 +255,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+        /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
         [Pure]
         IEnumerator IEnumerable.GetEnumerator()
@@ -264,7 +264,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// A memory allocation-free enumerator of <see cref="ImmutableQueue&lt;T&gt;"/>.
+        /// A memory allocation-free enumerator of <see cref="ImmutableQueue{T}"/>.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public struct Enumerator
@@ -354,7 +354,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// A memory allocation-free enumerator of <see cref="ImmutableQueue&lt;T&gt;"/>.
+        /// A memory allocation-free enumerator of <see cref="ImmutableQueue{T}"/>.
         /// </summary>
         private class EnumeratorObject : IEnumerator<T>
         {
@@ -500,7 +500,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableQueueDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableQueueDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="queue">The collection to display in the debugger</param>
         public ImmutableQueueDebuggerProxy(ImmutableQueue<T> queue)

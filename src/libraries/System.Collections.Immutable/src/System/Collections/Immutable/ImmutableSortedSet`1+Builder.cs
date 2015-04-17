@@ -10,7 +10,7 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner Builder class.
+    /// Contains the inner <see cref="ImmutableSortedSet{T}.Builder"/> class.
     /// </content>
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableSortedSet<T>
@@ -21,7 +21,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// <para>
-        /// While <see cref="ImmutableSortedSet&lt;T&gt;.Union"/> and other bulk change methods
+        /// While <see cref="ImmutableSortedSet{T}.Union"/> and other bulk change methods
         /// already provide fast bulk change operations on the collection, this class allows
         /// multiple combinations of changes to be made to a set with equal efficiency.
         /// </para>
@@ -127,7 +127,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            ///  Gets or sets the System.Collections.Generic.IComparer&lt;T&gt; object that is used to determine equality for the values in the System.Collections.Generic.SortedSet&lt;T&gt;.
+            ///  Gets or sets the <see cref="IComparer{T}"/> object that is used to determine equality for the values in the <see cref="ImmutableSortedSet{T}"/>.
             /// </summary>
             /// <value>The comparer that is used to determine equality for the values in the set.</value>
             /// <remarks>
@@ -360,7 +360,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// See <see cref="ICollection&lt;T&gt;"/>
+            /// See <see cref="ICollection{T}"/>
             /// </summary>
             void ICollection<T>.CopyTo(T[] array, int arrayIndex)
             {
@@ -409,11 +409,11 @@ namespace System.Collections.Immutable
             #endregion
 
             /// <summary>
-            /// Returns an System.Collections.Generic.IEnumerable&lt;T&gt; that iterates over this
+            /// Returns an <see cref="IEnumerable{T}"/> that iterates over this
             /// collection in reverse order.
             /// </summary>
             /// <returns>
-            /// An enumerator that iterates over the System.Collections.Generic.SortedSet&lt;T&gt;
+            /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}.Builder"/>
             /// in reverse order.
             /// </returns>
             [Pure]
@@ -446,10 +446,10 @@ namespace System.Collections.Immutable
             #region ICollection members
 
             /// <summary>
-            /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+            /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
             /// </summary>
-            /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
-            /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+            /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
+            /// <param name="arrayIndex">The zero-based index in <paramref name="array"/> at which copying begins.</param>
             /// <exception cref="System.NotImplementedException"></exception>
             void ICollection.CopyTo(Array array, int arrayIndex)
             {
@@ -457,9 +457,9 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets a value indicating whether access to the <see cref="T:System.Collections.ICollection" /> is synchronized (thread safe).
+            /// Gets a value indicating whether access to the <see cref="ICollection"/> is synchronized (thread safe).
             /// </summary>
-            /// <returns>true if access to the <see cref="T:System.Collections.ICollection" /> is synchronized (thread safe); otherwise, false.</returns>
+            /// <returns>true if access to the <see cref="ICollection"/> is synchronized (thread safe); otherwise, false.</returns>
             /// <exception cref="System.NotImplementedException"></exception>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             bool ICollection.IsSynchronized
@@ -468,9 +468,9 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Gets an object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection" />.
+            /// Gets an object that can be used to synchronize access to the <see cref="ICollection"/>.
             /// </summary>
-            /// <returns>An object that can be used to synchronize access to the <see cref="T:System.Collections.ICollection" />.</returns>
+            /// <returns>An object that can be used to synchronize access to the <see cref="ICollection"/>.</returns>
             /// <exception cref="System.NotImplementedException"></exception>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             object ICollection.SyncRoot
@@ -505,7 +505,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableSortedSetBuilderDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSetBuilderDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="builder">The collection to display in the debugger</param>
         public ImmutableSortedSetBuilderDebuggerProxy(ImmutableSortedSet<T>.Builder builder)
