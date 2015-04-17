@@ -167,16 +167,17 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowSO();
 
 #define GOT_EXCEPTION() __EEparam.GotException
 
-#define EE_FINALLY                                                      \
-            __pEEParam->GotException = FALSE;                           \
-    } PAL_FINALLY {                                                     \
-            if (__EEparam.GotException) {                               \
-                if (__EEparam.fGCDisabled != GetThread()->PreemptiveGCDisabled()) \
-                    if (__EEparam.fGCDisabled)                          \
-                    GetThread()->DisablePreemptiveGC();                 \
-                else                                                    \
-                    GetThread()->EnablePreemptiveGC();                  \
-        }
+#define EE_FINALLY                                                                  \
+            __pEEParam->GotException = FALSE;                                       \
+        } PAL_FINALLY {                                                             \
+            if (__EEparam.GotException) {                                           \
+                if (__EEparam.fGCDisabled != GetThread()->PreemptiveGCDisabled()) { \
+                    if (__EEparam.fGCDisabled)                                      \
+                        GetThread()->DisablePreemptiveGC();                         \
+                    else                                                            \
+                        GetThread()->EnablePreemptiveGC();                          \
+                }                                                                   \
+            }
 
 #define EE_END_FINALLY                                                  \
         }                                                               \
