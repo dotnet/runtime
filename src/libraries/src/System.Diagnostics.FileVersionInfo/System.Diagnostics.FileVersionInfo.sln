@@ -9,7 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVers
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{E89555F6-03BA-4E34-B6A7-0454CE173581}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.TestAssembly", "tests\System.Diagnostics.FileVersionInfo.TestAssembly.csproj", "{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestAssembly", "TestAssembly", "{A850245D-C81C-47FF-AFFA-FA4F92B7D4D9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.FileVersionInfo.TestAssembly", "testAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj", "{28EB14BE-3BC9-4543-ABA6-A932424DFBD0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
 EndProject
@@ -82,6 +84,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6DFDB760-CC88-48AE-BD81-C64844EA3CBC} = {E89555F6-03BA-4E34-B6A7-0454CE173581}
-		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0} = {E89555F6-03BA-4E34-B6A7-0454CE173581}
+		{28EB14BE-3BC9-4543-ABA6-A932424DFBD0} = {A850245D-C81C-47FF-AFFA-FA4F92B7D4D9}
 	EndGlobalSection
 EndGlobal
