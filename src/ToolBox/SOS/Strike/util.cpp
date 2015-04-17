@@ -4720,9 +4720,6 @@ HRESULT InitCorDebugInterface()
         return hr;
     }
 
-
-
-
     // SOS now has a statically linked version of the loader code that is normally found in mscoree/mscoreei.dll
     // Its not much code and takes a big step towards 0 install dependencies
     // Need to pick the appropriate SKU of CLR to detect
@@ -4741,6 +4738,7 @@ HRESULT InitCorDebugInterface()
         return hr;
     }
 
+#ifndef FEATURE_PAL
     ULONG cLoadedModules;
     ULONG cUnloadedModules;
     hr = g_ExtSymbols->GetNumberModules(&cLoadedModules, &cUnloadedModules);
@@ -4750,8 +4748,7 @@ HRESULT InitCorDebugInterface()
     }
 
     ULONG64 ulBase;
-
-    for (ULONG i=0; i < cLoadedModules; i++)
+    for (ULONG i = 0; i < cLoadedModules; i++)
     {
         hr = g_ExtSymbols->GetModuleByIndex(i, &ulBase);
         if (FAILED(hr))
@@ -4775,6 +4772,15 @@ HRESULT InitCorDebugInterface()
     // Still here?  Didn't find the right module.
     // TODO: Anything useful to return or log here?
     return E_FAIL;
+#else
+    ULONG64 ulBase;
+    hr = g_ExtSymbols->GetModuleByModuleName(MAIN_CLR_DLL_NAME_A, 0, NULL, &ulBase);
+    if (SUCCEEDED(hr))
+    {
+        hr = InitCorDebugInterfaceFromModule(ulBase, pClrDebugging);
+    }
+    return hr;
+#endif // FEATURE_PAL
 }
 
 
