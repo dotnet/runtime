@@ -7,11 +7,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedFiles
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{10E9121A-7350-4AB7-BB05-A543BE1EB19B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedFiles.Tests", "tests\System.IO.MemoryMappedFiles.Tests.csproj", "{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedFiles.Tests", "tests\MemoryMappedFile\System.IO.MemoryMappedFiles.Tests.csproj", "{9D6F6254-B5A3-40FF-8925-68AA8D1CE933}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedViewAccessor.Tests", "tests\System.IO.MemoryMappedViewAccessor.Tests.csproj", "{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedViewAccessor.Tests", "tests\MemoryMappedViewAccessor\System.IO.MemoryMappedViewAccessor.Tests.csproj", "{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedViewStream.Tests", "tests\System.IO.MemoryMappedViewStream.Tests.csproj", "{688496E1-A7B3-41AE-9E32-C6F1A1127F91}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.MemoryMappedViewStream.Tests", "tests\MemoryMappedViewStream\System.IO.MemoryMappedViewStream.Tests.csproj", "{688496E1-A7B3-41AE-9E32-C6F1A1127F91}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
 EndProject
