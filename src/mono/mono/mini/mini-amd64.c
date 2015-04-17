@@ -6559,6 +6559,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_GC_SAFE_POINT: {
 			gpointer polling_func = NULL;
 			int compare_val;
+			guint8 *br [1];
+
 #if defined (USE_COOP_GC)
 			polling_func = (gpointer)mono_threads_state_poll;
 			compare_val = 1;
