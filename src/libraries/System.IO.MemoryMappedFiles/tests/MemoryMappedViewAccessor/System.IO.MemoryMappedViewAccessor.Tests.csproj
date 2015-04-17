@@ -32,13 +32,13 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MemoryMappedViewAccessor\Dispose.cs" />
-    <Compile Include="MemoryMappedViewAccessor\Flush.cs" />
-    <Compile Include="MemoryMappedViewAccessor\ReadX.cs" />
-    <Compile Include="MemoryMappedViewAccessor\SafeMemoryMappedViewHandle.cs" />
-    <Compile Include="MemoryMappedViewAccessor\WriteX.cs" />
-    <Compile Include="Common\SystemInfoHelpers.cs" />
-    <Compile Include="Common\TestBase.cs" />
+    <Compile Include="Dispose.cs" />
+    <Compile Include="Flush.cs" />
+    <Compile Include="ReadX.cs" />
+    <Compile Include="SafeMemoryMappedViewHandle.cs" />
+    <Compile Include="WriteX.cs" />
+    <Compile Include="..\Common\SystemInfoHelpers.cs" />
+    <Compile Include="..\Common\TestBase.cs" />
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -51,7 +51,7 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.MemoryMappedFiles.csproj">
+    <ProjectReference Include="..\..\src\System.IO.MemoryMappedFiles.csproj">
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.IO.MemoryMappedFiles</Name>
     </ProjectReference>
