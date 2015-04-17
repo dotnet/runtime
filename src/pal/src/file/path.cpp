@@ -480,24 +480,23 @@ GetTempPathA(
          * if the entire value was successfully retrieved, or it'll be the length
          * required to store the value with null termination.
          */
-        if (dwPathLen + 1 < nBufferLength)
+        if (dwPathLen < nBufferLength)
         {
-            /* We have enough space for the value whether it's '/'-terminated or not, so make sure it is. */
+            /* The environment variable fit in the buffer. Make sure it ends with '/'. */
             if (lpBuffer[dwPathLen - 1] != '/')
             {
-                lpBuffer[dwPathLen++] = '/';
-                lpBuffer[dwPathLen] = '\0';
-            }
-        }
-        else if (dwPathLen < nBufferLength)
-        {
-            /* We have enough space for the value, but only if it's already '/'-terminated. 
-             * If it's not, we need to report enough space to hold the value, plus the '/'
-             * and a null terminator, which is not included in the originally reported length.
-             */
-            if (lpBuffer[dwPathLen - 1] != '/')
-            {
-                dwPathLen += 2;
+                /* If adding the slash would still fit in our provided buffer, do it.  Otherwise, 
+                 * let the caller know how much space would be needed.
+                 */
+                if (dwPathLen + 2 <= nBufferLength)
+                {
+                    lpBuffer[dwPathLen++] = '/';
+                    lpBuffer[dwPathLen] = '\0';
+                }
+                else
+                {
+                    dwPathLen += 2;
+                }
             }
         }
         else /* dwPathLen >= nBufferLength */
