@@ -21,6 +21,7 @@
     <Compile Include="System\Text\Encodings\Web\AllowedCharsBitmap.cs" />
     <Compile Include="System\Text\Encodings\Web\CodePointFilter.cs" />
     <Compile Include="System\Text\Encodings\Web\EncoderCommon.cs" />
+    <Compile Include="System\Text\Encodings\Web\EncoderExtensions.cs" />
     <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\ICodePointFilter.cs" />
