@@ -63,28 +63,28 @@ void
 ves_icall_System_Threading_Microsoft_ThreadPool_GetMinThreadsNative (gint *worker_threads, gint *completion_port_threads);
 void
 ves_icall_System_Threading_Microsoft_ThreadPool_GetMaxThreadsNative (gint *worker_threads, gint *completion_port_threads);
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint worker_threads, gint completion_port_threads);
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint worker_threads, gint completion_port_threads);
 void
 ves_icall_System_Threading_Microsoft_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking);
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemComplete (void);
 void
 ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemProgressNative (void);
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_ReportThreadStatus (gboolean is_working);
-gboolean
+ves_icall_System_Threading_Microsoft_ThreadPool_ReportThreadStatus (MonoBoolean is_working);
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_RequestWorkerThread (void);
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped);
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle);
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_IsThreadPoolHosted (void);
 
 /* Internals */

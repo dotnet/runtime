@@ -1449,7 +1449,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_GetMaxThreadsNative (gint *worke
 	*completion_port_threads = threadpool->limit_io_max;
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint worker_threads, gint completion_port_threads)
 {
 	ensure_initialized (NULL);
@@ -1465,7 +1465,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint worker
 	return TRUE;
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint worker_threads, gint completion_port_threads)
 {
 	gint cpu_count = mono_cpu_count ();
@@ -1489,7 +1489,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_InitializeVMTp (MonoBoolean *ena
 	ensure_initialized (enable_worker_tracking);
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemComplete (void)
 {
 	ThreadPoolCounter counter;
@@ -1516,19 +1516,19 @@ ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemProgressNative (vo
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_ReportThreadStatus (gboolean is_working)
+ves_icall_System_Threading_Microsoft_ThreadPool_ReportThreadStatus (MonoBoolean is_working)
 {
 	// TODO
 	mono_raise_exception (mono_get_exception_not_implemented (NULL));
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Microsoft_ThreadPool_RequestWorkerThread (void)
 {
 	return worker_request (mono_domain_get ());
 }
 
-gboolean G_GNUC_UNUSED
+MonoBoolean G_GNUC_UNUSED
 ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped)
 {
 	/* This copy the behavior of the current Mono implementation */
@@ -1536,14 +1536,14 @@ ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (Mono
 	return FALSE;
 }
 
-gboolean G_GNUC_UNUSED
+MonoBoolean G_GNUC_UNUSED
 ves_icall_System_Threading_Microsoft_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle)
 {
 	/* This copy the behavior of the current Mono implementation */
 	return TRUE;
 }
 
-gboolean G_GNUC_UNUSED
+MonoBoolean G_GNUC_UNUSED
 ves_icall_System_Threading_Microsoft_ThreadPool_IsThreadPoolHosted (void)
 {
 	return FALSE;
