@@ -458,12 +458,12 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary.NodeSetFunctions
             Utils.XPathMatchTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
+#if FEATURE_XML_XPATH_ID
         /// <summary>
         /// Data file has no DTD, so no element has an ID, expected empty node-set
         /// id("1")
         /// </summary>
         [Fact]
-        [ActiveIssue(20)]
         public static void MatchesTest2352()
         {
             var xml = "id4.xml";
@@ -473,5 +473,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary.NodeSetFunctions
 
             Utils.XPathMatchTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
+#endif
     }
 }

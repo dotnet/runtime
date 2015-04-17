@@ -867,12 +867,12 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                 startingNodePath: startingNodePath);
         }
 
+#if FEATURE_XML_XPATH_ID
         /// <summary>
         /// Data file has no DTD, so no element has an ID, expected empty node-set
         /// id("1")
         /// </summary>
         [Fact]
-        [ActiveIssue(20)]
         public static void NodeSetFunctionsTest2267()
         {
             var xml = "id4.xml";
@@ -882,6 +882,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
+#endif
 
         /// <summary>
         /// Expected: empty namespace uri
