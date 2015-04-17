@@ -22,15 +22,12 @@ typedef struct {
 } SHA1_CTX;
 
 G_BEGIN_DECLS
-void SHA1Init(SHA1_CTX *);
-void SHA1Pad(SHA1_CTX *);
-void SHA1Transform(guint32 [5], const guint8 [SHA1_BLOCK_LENGTH]);
-void SHA1Update(SHA1_CTX *, const guint8 *, size_t);
-void SHA1Final(guint8 [SHA1_DIGEST_LENGTH], SHA1_CTX *);
-char *SHA1End(SHA1_CTX *, char *);
-char *SHA1File(const char *, char *);
-char *SHA1FileChunk(const char *, char *, off_t, off_t);
-char *SHA1Data(const guint8 *, size_t, char *);
+void mono_SHA1Init(SHA1_CTX *);
+void mono_SHA1Pad(SHA1_CTX *);
+void mono_SHA1Transform(guint32 [5], const guint8 [SHA1_BLOCK_LENGTH]);
+void mono_SHA1Update(SHA1_CTX *, const guint8 *, size_t);
+void mono_SHA1Final(guint8 [SHA1_DIGEST_LENGTH], SHA1_CTX *);
+char *mono_SHA1End(SHA1_CTX *, char *);
 G_END_DECLS
 
 #define HTONDIGEST(x) do {                                              \

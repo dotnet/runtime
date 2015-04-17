@@ -52,7 +52,7 @@ typedef union {
  * Hash a single 512-bit block. This is the core of the algorithm.
  */
 void
-SHA1Transform(guint32 state[5], const guint8 buffer[SHA1_BLOCK_LENGTH])
+mono_SHA1Transform(guint32 state[5], const guint8 buffer[SHA1_BLOCK_LENGTH])
 {
 	guint32 a, b, c, d, e;
 	guint8 workspace[SHA1_BLOCK_LENGTH];
@@ -105,7 +105,7 @@ SHA1Transform(guint32 state[5], const guint8 buffer[SHA1_BLOCK_LENGTH])
  * SHA1Init - Initialize new context
  */
 void
-SHA1Init(SHA1_CTX *context)
+mono_SHA1Init(SHA1_CTX *context)
 {
 
 	/* SHA1 initialization constants */
@@ -122,7 +122,7 @@ SHA1Init(SHA1_CTX *context)
  * Run your data through this.
  */
 void
-SHA1Update(SHA1_CTX *context, const guint8 *data, size_t len)
+mono_SHA1Update(SHA1_CTX *context, const guint8 *data, size_t len)
 {
 	size_t i, j;
 
@@ -130,9 +130,9 @@ SHA1Update(SHA1_CTX *context, const guint8 *data, size_t len)
 	context->count += (len << 3);
 	if ((j + len) > 63) {
 		(void)memcpy(&context->buffer[j], data, (i = 64-j));
-		SHA1Transform(context->state, context->buffer);
+		mono_SHA1Transform(context->state, context->buffer);
 		for ( ; i + 63 < len; i += 64)
-			SHA1Transform(context->state, (guint8 *)&data[i]);
+			mono_SHA1Transform(context->state, (guint8 *)&data[i]);
 		j = 0;
 	} else {
 		i = 0;
@@ -145,7 +145,7 @@ SHA1Update(SHA1_CTX *context, const guint8 *data, size_t len)
  * Add padding and return the message digest.
  */
 void
-SHA1Pad(SHA1_CTX *context)
+mono_SHA1Pad(SHA1_CTX *context)
 {
 	guint8 finalcount[8];
 	guint i;
@@ -154,18 +154,18 @@ SHA1Pad(SHA1_CTX *context)
 		finalcount[i] = (guint8)((context->count >>
 		    ((7 - (i & 7)) * 8)) & 255);	/* Endian independent */
 	}
-	SHA1Update(context, (guint8 *)"\200", 1);
+	mono_SHA1Update(context, (guint8 *)"\200", 1);
 	while ((context->count & 504) != 448)
-		SHA1Update(context, (guint8 *)"\0", 1);
-	SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
+		mono_SHA1Update(context, (guint8 *)"\0", 1);
+	mono_SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
 }
 
 void
-SHA1Final(guint8 digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context)
+mono_SHA1Final(guint8 digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context)
 {
 	guint i;
 
-	SHA1Pad(context);
+	mono_SHA1Pad(context);
 	if (digest) {
 		for (i = 0; i < SHA1_DIGEST_LENGTH; i++) {
 			digest[i] = (guint8)
