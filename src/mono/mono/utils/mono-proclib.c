@@ -348,11 +348,17 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	thread_array_t th_array;
 	size_t i;
 
-	if (task_for_pid(mach_task_self(), pid, &task) != KERN_SUCCESS)
-		RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
+	if (pid == getpid ()) {
+		/* task_for_pid () doesn't work on ios, even for the current process */
+		task = mach_task_self ();
+	} else {
+		if (task_for_pid (mach_task_self (), pid, &task) != KERN_SUCCESS)
+			RET_ERROR (MONO_PROCESS_ERROR_NOT_FOUND);
+	}
 
-	if (task_info(task, TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count) != KERN_SUCCESS) {
-		mach_port_deallocate (mach_task_self (), task);
+	if (task_info (task, TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count) != KERN_SUCCESS) {
+		if (pid != getpid ())
+			mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	}
 	
