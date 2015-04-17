@@ -1291,7 +1291,7 @@ if NACL_CODEGEN
 test-generic-sharing:
 else
 test-generic-sharing:
-	@if test x$(M) != x; then $(MAKE) test-generic-sharing-managed; else $(MAKE) test-generic-sharing-normal; fi
+	@if test x$(M) != x0; then $(MAKE) test-generic-sharing-managed; else $(MAKE) test-generic-sharing-normal; fi
 endif
 
 EXTRA_DIST += async-exceptions.cs
