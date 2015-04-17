@@ -26,11 +26,11 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// first occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// first occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
         /// that starts at the specified index and contains the specified number of elements.
         /// </summary>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="index">
@@ -45,7 +45,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
-        /// elements in the ImmutableList&lt;T&gt; that starts at index and
+        /// elements in the <see cref="ImmutableList{T}"/> that starts at index and
         /// contains count number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -53,12 +53,12 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// last occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// last occurrence within the range of elements in the <see cref="ImmutableList{T}"/>
         /// that contains the specified number of elements and ends at the specified
         /// index.
         /// </summary>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="index">The starting position of the search. The search proceeds from <paramref name="index"/> toward the beginning of this instance.</param>
@@ -67,9 +67,9 @@ namespace System.Collections.Immutable
         /// The equality comparer to use in the search.
         /// </param>
         /// <returns>
-        /// The zero-based index of the last occurrence of item within the range of elements
-        /// in the ImmutableList&lt;T&gt; that contains count number of elements
-        /// and ends at index, if found; otherwise, -1.
+        /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements
+        /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
+        /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
         int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer);
@@ -124,7 +124,7 @@ namespace System.Collections.Immutable
         /// predicate.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
         /// to remove.
         /// </param>
         /// <returns>

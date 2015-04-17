@@ -17,7 +17,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="T">The type of element stored by the array.</typeparam>
     /// <devremarks>
     /// This type has a documented contract of being exactly one reference-type field in size.
-    /// Our own ImmutableInterlocked class depends on it, as well as others externally.
+    /// Our own <see cref="ImmutableInterlocked"/> class depends on it, as well as others externally.
     /// IMPORTANT NOTICE FOR MAINTAINERS AND REVIEWERS:
     /// This type should be thread-safe. As a struct, it cannot protect its own fields
     /// from being changed from one thread while its members are executing on other threads
@@ -35,7 +35,7 @@ namespace System.Collections.Immutable
     public partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IImmutableList<T>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable
     {
         /// <summary>
-        /// An empty (initialized) instance of ImmutableArray{T}.
+        /// An empty (initialized) instance of <see cref="ImmutableArray{T}"/>.
         /// </summary>
         public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
 
@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
         internal T[] array;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray"/> struct
+        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct
         /// *without making a defensive copy*.
         /// </summary>
         /// <param name="items">The array to use. May be null for "default" arrays.</param>
@@ -130,7 +130,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based index of the element to get.</param>
         /// <returns>The element at the specified index in the read-only list.</returns>
         /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         T IList<T>.this[int index]
         {
             get
@@ -183,7 +183,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the number of array in the collection.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         int ICollection<T>.Count
         {
@@ -198,7 +198,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the number of array in the collection.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         int IReadOnlyCollection<T>.Count
         {
@@ -217,7 +217,7 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The element.
         /// </returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         T IReadOnlyList<T>.this[int index]
         {
             get
@@ -841,7 +841,7 @@ namespace System.Collections.Immutable
         /// predicate.
         /// </summary>
         /// <param name="match">
-        /// The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
+        /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
         /// to remove.
         /// </param>
         /// <returns>
@@ -997,11 +997,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.
+        /// Determines whether the specified <see cref="System.Object"/> is equal to this instance.
         /// </summary>
-        /// <param name="obj">The <see cref="System.Object" /> to compare with this instance.</param>
+        /// <param name="obj">The <see cref="System.Object"/> to compare with this instance.</param>
         /// <returns>
-        ///   <c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.
+        ///   <c>true</c> if the specified <see cref="System.Object"/> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
         [Pure]
         public override bool Equals(object obj)
@@ -1019,7 +1019,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns>
-        /// true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.
+        /// true if the current object is equal to the <paramref name="other"/> parameter; otherwise, false.
         /// </returns>
         [Pure]
         public bool Equals(ImmutableArray<T> other)
@@ -1080,8 +1080,8 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <typeparam name="TResult">The type to filter the elements of the sequence on.</typeparam>
         /// <returns>
-        /// An System.Collections.Generic.IEnumerable&lt;T&gt; that contains elements from
-        /// the input sequence of type TResult.
+        /// An <see cref="IEnumerable{T}"/> that contains elements from
+        /// the input sequence of type <typeparamref name="TResult"/>.
         /// </returns>
         [Pure]
         public IEnumerable<TResult> OfType<TResult>()
@@ -1131,7 +1131,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator for the contents of the array.
         /// </summary>
         /// <returns>An enumerator.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [Pure]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
@@ -1144,7 +1144,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator for the contents of the array.
         /// </summary>
         /// <returns>An enumerator.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [Pure]
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -1286,9 +1286,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Adds an item to the <see cref="T:System.Collections.IList" />.
+        /// Adds an item to the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to add to the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to add to the <see cref="IList"/>.</param>
         /// <returns>
         /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
         /// </returns>
@@ -1300,7 +1300,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes all items from the <see cref="T:System.Collections.Generic.ICollection`1" />.
+        /// Removes all items from the <see cref="ICollection{T}"/>.
         /// </summary>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
@@ -1310,11 +1310,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the <see cref="T:System.Collections.IList" /> contains a specific value.
+        /// Determines whether the <see cref="IList"/> contains a specific value.
         /// </summary>
-        /// <param name="value">The object to locate in the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
-        /// true if the <see cref="T:System.Object" /> is found in the <see cref="T:System.Collections.IList" />; otherwise, false.
+        /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
         [ExcludeFromCodeCoverage]
         bool IList.Contains(object value)
@@ -1325,11 +1325,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines the index of a specific item in the <see cref="T:System.Collections.IList" />.
+        /// Determines the index of a specific item in the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to locate in the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
-        /// The index of <paramref name="value" /> if found in the list; otherwise, -1.
+        /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
         [ExcludeFromCodeCoverage]
         int IList.IndexOf(object value)
@@ -1340,10 +1340,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Inserts an item to the <see cref="T:System.Collections.IList" /> at the specified index.
+        /// Inserts an item to the <see cref="IList"/> at the specified index.
         /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="value" /> should be inserted.</param>
-        /// <param name="value">The object to insert into the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
+        /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
         void IList.Insert(int index, object value)
@@ -1380,7 +1380,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Gets the size of the array.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         int ICollection.Count
@@ -1394,7 +1394,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the ICollection interface.
+        /// See the <see cref="ICollection"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -1418,9 +1418,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.IList" />.
+        /// Removes the first occurrence of a specific object from the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to remove from the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         [ExcludeFromCodeCoverage]
         void IList.Remove(object value)
@@ -1429,7 +1429,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes the <see cref="T:System.Collections.Generic.IList`1" /> item at the specified index.
+        /// Removes the <see cref="IList{T}"/> item at the specified index.
         /// </summary>
         /// <param name="index">The zero-based index of the item to remove.</param>
         /// <exception cref="System.NotSupportedException"></exception>
@@ -1448,7 +1448,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The index.</param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault" /> property returns true.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
         [ExcludeFromCodeCoverage]
         object IList.this[int index]
         {
@@ -1462,10 +1462,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+        /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
-        /// <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+        /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
+        /// <param name="index">The zero-based index in <paramref name="array"/> at which copying begins.</param>
         [ExcludeFromCodeCoverage]
         void ICollection.CopyTo(Array array, int index)
         {
@@ -1587,10 +1587,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Throws an <see cref="InvalidOperationException"/> if the array field is null, ie. the
+        /// Throws an <see cref="InvalidOperationException"/> if the <see cref="array"/> field is null, i.e. the
         /// <see cref="IsDefault"/> property returns true.  The
-        /// InvalidOperationException message specifies that the operation cannot be performed
-        /// on a default instance of ImmutableArray.
+        /// <see cref="InvalidOperationException"/> message specifies that the operation cannot be performed
+        /// on a default instance of <see cref="ImmutableArray{T}"/>.
         /// 
         /// This is intended for explicitly implemented interface method and property implementations.
         /// </summary>
@@ -1644,7 +1644,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Throws a NullReferenceException if the specified array is uninitialized.
+        /// Throws a <see cref="NullReferenceException"/> if the specified array is uninitialized.
         /// </summary>
         private static void ThrowNullRefIfNotInitialized(ImmutableArray<T> array)
         {

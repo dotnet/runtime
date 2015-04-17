@@ -133,16 +133,16 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// first occurrence within the ImmutableList&lt;T&gt;
+        /// first occurrence within the <see cref="IImmutableList{T}"/>.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
-        /// elements in the ImmutableList&lt;T&gt; that extends from index
+        /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -154,17 +154,17 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// first occurrence within the ImmutableList&lt;T&gt;
+        /// first occurrence within the <see cref="IImmutableList{T}"/>.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="equalityComparer">The equality comparer to use in the search.</param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
-        /// elements in the ImmutableList&lt;T&gt; that extends from index
+        /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -176,12 +176,12 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// first occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// first occurrence within the range of elements in the <see cref="IImmutableList{T}"/>
         /// that extends from the specified index to the last element.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="startIndex">
@@ -190,7 +190,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
-        /// elements in the ImmutableList&lt;T&gt; that extends from index
+        /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -202,12 +202,12 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// first occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// first occurrence within the range of elements in the <see cref="IImmutableList{T}"/>
         /// that extends from the specified index to the last element.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="startIndex">
@@ -219,7 +219,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the first occurrence of item within the range of
-        /// elements in the ImmutableList&lt;T&gt; that extends from index
+        /// elements in the <see cref="IImmutableList{T}"/> that extends from index
         /// to the last element, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -231,16 +231,16 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// last occurrence within the entire ImmutableList&lt;T&gt;.
+        /// last occurrence within the entire <see cref="IImmutableList{T}"/>.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of item within the entire the
-        /// ImmutableList&lt;T&gt;, if found; otherwise, -1.
+        /// <see cref="IImmutableList{T}"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item)
@@ -258,17 +258,17 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// last occurrence within the entire ImmutableList&lt;T&gt;.
+        /// last occurrence within the entire <see cref="IImmutableList{T}"/>.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="equalityComparer">The equality comparer to use in the search.</param>
         /// <returns>
         /// The zero-based index of the last occurrence of item within the entire the
-        /// ImmutableList&lt;T&gt;, if found; otherwise, -1.
+        /// <see cref="IImmutableList{T}"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
         public static int LastIndexOf<T>(this IImmutableList<T> list, T item, IEqualityComparer<T> equalityComparer)
@@ -286,12 +286,12 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// last occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// last occurrence within the range of elements in the <see cref="IImmutableList{T}"/>
         /// that extends from the first element to the specified index.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="startIndex">
@@ -299,7 +299,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of item within the range of elements
-        /// in the ImmutableList&lt;T&gt; that extends from the first element
+        /// in the <see cref="IImmutableList{T}"/> that extends from the first element
         /// to index, if found; otherwise, -1.
         /// </returns>
         [Pure]
@@ -317,12 +317,12 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
-        /// last occurrence within the range of elements in the ImmutableList&lt;T&gt;
+        /// last occurrence within the range of elements in the <see cref="IImmutableList{T}"/>
         /// that extends from the first element to the specified index.
         /// </summary>
         /// <param name="list">The list to search.</param>
         /// <param name="item">
-        /// The object to locate in the ImmutableList&lt;T&gt;. The value
+        /// The object to locate in the <see cref="IImmutableList{T}"/>. The value
         /// can be null for reference types.
         /// </param>
         /// <param name="startIndex">
@@ -333,7 +333,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>
         /// The zero-based index of the last occurrence of item within the range of elements
-        /// in the ImmutableList&lt;T&gt; that extends from the first element
+        /// in the <see cref="IImmutableList{T}"/> that extends from the first element
         /// to index, if found; otherwise, -1.
         /// </returns>
         [Pure]

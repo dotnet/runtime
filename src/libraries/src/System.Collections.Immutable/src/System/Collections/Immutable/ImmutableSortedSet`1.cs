@@ -16,8 +16,8 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
     /// <devremarks>
-    /// We implement IReadOnlyList{T} because it adds an ordinal indexer.
-    /// We implement IList{T} because it gives us IndexOf(T), which is important for some folks.
+    /// We implement <see cref="IReadOnlyList{T}"/> because it adds an ordinal indexer.
+    /// We implement <see cref="IList{T}"/> because it gives us <see cref="IList{T}.IndexOf"/>, which is important for some folks.
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableSortedSetDebuggerProxy<>))]
@@ -47,7 +47,7 @@ namespace System.Collections.Immutable
         private readonly IComparer<T> _comparer;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}"/> class.
         /// </summary>
         /// <param name="comparer">The comparer.</param>
         internal ImmutableSortedSet(IComparer<T> comparer = null)
@@ -57,7 +57,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}"/> class.
         /// </summary>
         /// <param name="root">The root of the AVL tree with the contents of this set.</param>
         /// <param name="comparer">The comparer.</param>
@@ -72,7 +72,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public ImmutableSortedSet<T> Clear()
         {
@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
         #region IImmutableSet<T> Properties
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public bool IsEmpty
         {
@@ -110,7 +110,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public int Count
         {
@@ -177,7 +177,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Add(T value)
@@ -189,7 +189,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Remove(T value)
@@ -231,7 +231,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Intersect(IEnumerable<T> other)
@@ -251,7 +251,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Except(IEnumerable<T> other)
@@ -301,7 +301,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> Union(IEnumerable<T> other)
@@ -343,7 +343,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
         public ImmutableSortedSet<T> WithComparer(IComparer<T> comparer)
@@ -564,11 +564,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Returns an System.Collections.Generic.IEnumerable&lt;T&gt; that iterates over this
+        /// Returns an <see cref="IEnumerable{T}"/> that iterates over this
         /// collection in reverse order.
         /// </summary>
         /// <returns>
-        /// An enumerator that iterates over the System.Collections.Generic.SortedSet&lt;T&gt;
+        /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}"/>
         /// in reverse order.
         /// </returns>
         [Pure]
@@ -602,7 +602,7 @@ namespace System.Collections.Immutable
         #region IImmutableSet<T> Members
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public bool Contains(T value)
         {
@@ -611,7 +611,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Clear()
@@ -620,7 +620,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Add(T value)
@@ -629,7 +629,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Remove(T value)
@@ -638,7 +638,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Intersect(IEnumerable<T> other)
@@ -647,7 +647,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Except(IEnumerable<T> other)
@@ -667,7 +667,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the <see cref="IImmutableSet&lt;T&gt;"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [ExcludeFromCodeCoverage]
         IImmutableSet<T> IImmutableSet<T>.Union(IEnumerable<T> other)
@@ -797,18 +797,18 @@ namespace System.Collections.Immutable
         #region IList properties
 
         /// <summary>
-        /// Gets a value indicating whether the <see cref="T:System.Collections.IList" /> has a fixed size.
+        /// Gets a value indicating whether the <see cref="IList"/> has a fixed size.
         /// </summary>
-        /// <returns>true if the <see cref="T:System.Collections.IList" /> has a fixed size; otherwise, false.</returns>
+        /// <returns>true if the <see cref="IList"/> has a fixed size; otherwise, false.</returns>
         bool IList.IsFixedSize
         {
             get { return true; }
         }
 
         /// <summary>
-        /// Gets a value indicating whether the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only.
+        /// Gets a value indicating whether the <see cref="ICollection{T}"/> is read-only.
         /// </summary>
-        /// <returns>true if the <see cref="T:System.Collections.Generic.ICollection`1" /> is read-only; otherwise, false.
+        /// <returns>true if the <see cref="ICollection{T}"/> is read-only; otherwise, false.
         ///   </returns>
         bool IList.IsReadOnly
         {
@@ -820,7 +820,7 @@ namespace System.Collections.Immutable
         #region ICollection Properties
 
         /// <summary>
-        /// See ICollection.
+        /// See <see cref="ICollection"/>.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         object ICollection.SyncRoot
@@ -829,7 +829,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// See the ICollection interface.
+        /// See the <see cref="ICollection"/> interface.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         bool ICollection.IsSynchronized
@@ -846,9 +846,9 @@ namespace System.Collections.Immutable
         #region IList methods
 
         /// <summary>
-        /// Adds an item to the <see cref="T:System.Collections.IList" />.
+        /// Adds an item to the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to add to the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to add to the <see cref="IList"/>.</param>
         /// <returns>
         /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
         /// </returns>
@@ -868,11 +868,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines whether the <see cref="T:System.Collections.IList" /> contains a specific value.
+        /// Determines whether the <see cref="IList"/> contains a specific value.
         /// </summary>
-        /// <param name="value">The object to locate in the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
-        /// true if the <see cref="T:System.Object" /> is found in the <see cref="T:System.Collections.IList" />; otherwise, false.
+        /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
         bool IList.Contains(object value)
         {
@@ -880,11 +880,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Determines the index of a specific item in the <see cref="T:System.Collections.IList" />.
+        /// Determines the index of a specific item in the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to locate in the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to locate in the <see cref="IList"/>.</param>
         /// <returns>
-        /// The index of <paramref name="value" /> if found in the list; otherwise, -1.
+        /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
         int IList.IndexOf(object value)
         {
@@ -892,10 +892,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Inserts an item to the <see cref="T:System.Collections.IList" /> at the specified index.
+        /// Inserts an item to the <see cref="IList"/> at the specified index.
         /// </summary>
-        /// <param name="index">The zero-based index at which <paramref name="value" /> should be inserted.</param>
-        /// <param name="value">The object to insert into the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
+        /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         void IList.Insert(int index, object value)
         {
@@ -903,9 +903,9 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Removes the first occurrence of a specific object from the <see cref="T:System.Collections.IList" />.
+        /// Removes the first occurrence of a specific object from the <see cref="IList"/>.
         /// </summary>
-        /// <param name="value">The object to remove from the <see cref="T:System.Collections.IList" />.</param>
+        /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
         void IList.Remove(object value)
         {
@@ -923,10 +923,10 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="System.Object" /> at the specified index.
+        /// Gets or sets the <see cref="System.Object"/> at the specified index.
         /// </summary>
         /// <value>
-        /// The <see cref="System.Object" />.
+        /// The <see cref="System.Object"/>.
         /// </value>
         /// <param name="index">The index.</param>
         /// <exception cref="System.NotSupportedException"></exception>
@@ -941,10 +941,10 @@ namespace System.Collections.Immutable
         #region ICollection Methods
 
         /// <summary>
-        /// Copies the elements of the <see cref="T:System.Collections.ICollection" /> to an <see cref="T:System.Array" />, starting at a particular <see cref="T:System.Array" /> index.
+        /// Copies the elements of the <see cref="ICollection"/> to an <see cref="Array"/>, starting at a particular <see cref="Array"/> index.
         /// </summary>
-        /// <param name="array">The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from <see cref="T:System.Collections.ICollection" />. The <see cref="T:System.Array" /> must have zero-based indexing.</param>
-        /// <param name="index">The zero-based index in <paramref name="array" /> at which copying begins.</param>
+        /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ICollection"/>. The <see cref="Array"/> must have zero-based indexing.</param>
+        /// <param name="index">The zero-based index in <paramref name="array"/> at which copying begins.</param>
         void ICollection.CopyTo(Array array, int index)
         {
             _root.CopyTo(array, index);
@@ -958,7 +958,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         [ExcludeFromCodeCoverage]
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -974,7 +974,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through a collection.
         /// </summary>
         /// <returns>
-        /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+        /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
         /// </returns>
         [ExcludeFromCodeCoverage]
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -988,7 +988,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         /// <remarks>
         /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable 
@@ -1114,7 +1114,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// This struct can and should be kept in exact sync with the other binary tree enumerators: 
-        /// ImmutableList.Enumerator, ImmutableSortedMap.Enumerator, and ImmutableSortedSet.Enumerator.
+        /// <see cref="ImmutableList{T}.Enumerator"/>, <see cref="ImmutableSortedDictionary{TKey, TValue}.Enumerator"/>, and <see cref="ImmutableSortedSet{T}.Enumerator"/>.
         /// 
         /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable 
         /// or by passing it to another method.  When this enumerator is disposed of it returns a mutable reference type stack to a resource pool,
@@ -1159,8 +1159,8 @@ namespace System.Collections.Immutable
             /// The stack to use for enumerating the binary tree.
             /// </summary>
             /// <remarks>
-            /// We use RefAsValueType{T} as a wrapper to avoid paying the cost of covariant checks whenever
-            /// the underlying array that the Stack{T} class uses is written to. 
+            /// We use <see cref="RefAsValueType{T}"/> as a wrapper to avoid paying the cost of covariant checks whenever
+            /// the underlying array that the <see cref="Stack{T}"/> class uses is written to. 
             /// We've recognized this as a perf win in ETL traces for these stack frames:
             /// clr!JIT_Stelem_Ref
             ///   clr!ArrayStoreCheck
@@ -1179,7 +1179,7 @@ namespace System.Collections.Immutable
             private int _enumeratingBuilderVersion;
 
             /// <summary>
-            /// Initializes an Enumerator structure.
+            /// Initializes an <see cref="Enumerator"/> structure.
             /// </summary>
             /// <param name="root">The root of the set to be enumerated.</param>
             /// <param name="builder">The builder, if applicable.</param>
@@ -1289,7 +1289,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an ObjectDisposedException if this enumerator has been disposed.
+            /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
             /// </summary>
             private void ThrowIfDisposed()
             {
@@ -1321,7 +1321,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Pushes this node and all its Left (or Right, if reversed) descendents onto the stack.
+            /// Pushes this node and all its Left (or Right, if reversed) descendants onto the stack.
             /// </summary>
             /// <param name="node">The starting node to push onto the stack.</param>
             private void PushNext(Node node)
@@ -1347,7 +1347,7 @@ namespace System.Collections.Immutable
             private readonly Node _root;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;.ReverseEnumerable"/> class.
+            /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.ReverseEnumerable"/> class.
             /// </summary>
             /// <param name="root">The root of the data structure to reverse enumerate.</param>
             internal ReverseEnumerable(Node root)
@@ -1360,7 +1360,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             public IEnumerator<T> GetEnumerator()
             {
@@ -1371,7 +1371,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through a collection.
             /// </summary>
             /// <returns>
-            /// An <see cref="T:System.Collections.IEnumerator"/> object that can be used to iterate through the collection.
+            /// An <see cref="IEnumerator"/> object that can be used to iterate through the collection.
             /// </returns>
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -1415,7 +1415,7 @@ namespace System.Collections.Immutable
             /// <remarks>
             /// If this node would benefit from saving 4 bytes, we could have only a few nodes 
             /// scattered throughout the graph actually record the count of nodes beneath them.
-            /// Those without the count could query their descendents, which would often short-circuit
+            /// Those without the count could query their descendants, which would often short-circuit
             /// when they hit a node that *does* include a count field.
             /// </remarks>
             private int _count;
@@ -1431,7 +1431,7 @@ namespace System.Collections.Immutable
             private Node _right;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;.Node"/> class
+            /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.Node"/> class
             /// that is pre-frozen.
             /// </summary>
             private Node()
@@ -1441,7 +1441,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableSortedSet&lt;T&gt;.Node"/> class
+            /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}.Node"/> class
             /// that is not yet frozen.
             /// </summary>
             /// <param name="key">The value stored by this node.</param>
@@ -1628,7 +1628,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             public Enumerator GetEnumerator()
             {
@@ -1639,7 +1639,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             [ExcludeFromCodeCoverage] // internal and never called, but here for the interface.
             IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -1651,7 +1651,7 @@ namespace System.Collections.Immutable
             /// Returns an enumerator that iterates through the collection.
             /// </summary>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             [ExcludeFromCodeCoverage] // internal and never called, but here for the interface.
             IEnumerator IEnumerable.GetEnumerator()
@@ -1666,7 +1666,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="builder">The builder, if applicable.</param>
             /// <returns>
-            /// A <see cref="T:System.Collections.Generic.IEnumerator`1" /> that can be used to iterate through the collection.
+            /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             internal Enumerator GetEnumerator(Builder builder)
             {
@@ -1863,11 +1863,11 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Freezes this node and all descendent nodes so that any mutations require a new instance of the nodes.
+            /// Freezes this node and all descendant nodes so that any mutations require a new instance of the nodes.
             /// </summary>
             internal void Freeze()
             {
-                // If this node is frozen, all its descendents must already be frozen.
+                // If this node is frozen, all its descendants must already be frozen.
                 if (!_frozen)
                 {
                     _left.Freeze();
@@ -1881,7 +1881,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
-            /// <returns>The matching node, or the Empty node if no match was found.</returns>
+            /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
             [Pure]
             internal Node Search(T key, IComparer<T> comparer)
             {
@@ -1915,7 +1915,7 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="key">The key to search for.</param>
             /// <param name="comparer">The comparer.</param>
-            /// <returns>The matching node, or the Empty node if no match was found.</returns>
+            /// <returns>The matching node, or <see cref="EmptyNode"/> if no match was found.</returns>
             [Pure]
             internal int IndexOf(T key, IComparer<T> comparer)
             {
@@ -1958,11 +1958,11 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Returns an System.Collections.Generic.IEnumerable&lt;T&gt; that iterates over this
+            /// Returns an <see cref="IEnumerable{T}"/> that iterates over this
             /// collection in reverse order.
             /// </summary>
             /// <returns>
-            /// An enumerator that iterates over the System.Collections.Generic.SortedSet&lt;T&gt;
+            /// An enumerator that iterates over the <see cref="ImmutableSortedSet{T}"/>
             /// in reverse order.
             /// </returns>
             [Pure]
@@ -2195,7 +2195,7 @@ namespace System.Collections.Immutable
         private T[] _contents;
 
         /// <summary>   
-        /// Initializes a new instance of the <see cref="ImmutableSortedSetDebuggerProxy&lt;T&gt;"/> class.
+        /// Initializes a new instance of the <see cref="ImmutableSortedSetDebuggerProxy{T}"/> class.
         /// </summary>
         /// <param name="set">The collection to display in the debugger</param>
         public ImmutableSortedSetDebuggerProxy(ImmutableSortedSet<T> set)

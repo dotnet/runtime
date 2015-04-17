@@ -6,22 +6,22 @@ using Validation;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner MutationResult class.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.MutationResult"/> class.
     /// </content>
     public partial class ImmutableHashSet<T>
     {
         /// <summary>
-        /// Interpretations for a count member.
+        /// Interpretations for a <see cref="MutationResult.Count"/> member.
         /// </summary>
         private enum CountType
         {
             /// <summary>
-            /// The count member describes an adjustment to the previous count of the collection.
+            /// The <see cref="MutationResult.Count"/> member describes an adjustment to the previous count of the collection.
             /// </summary>
             Adjustment,
 
             /// <summary>
-            /// The count member describes the actual count of the collection.
+            /// The <see cref="MutationResult.Count"/> member describes the actual count of the collection.
             /// </summary>
             FinalValue,
         }
@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
             private readonly CountType _countType;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.MutationResult"/> struct.
+            /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.MutationResult"/> struct.
             /// </summary>
             /// <param name="root">The root node of the result.</param>
             /// <param name="count">The total element count or a count adjustment.</param>

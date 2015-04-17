@@ -16,10 +16,10 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <remarks>
     /// This is a trimmed down version of <see cref="ImmutableSortedDictionary{TKey, TValue}.Node"/>
-    /// with TKey fixed to be Int32.  This avoids multiple interface-based dispatches while examining
-    /// each node in the tree during a lookup: an interface call to the comparer's Compare method,
-    /// and then an interface call to Int32's IComparable's CompareTo method as part of
-    /// the GenericComparer{Int32}'s Compare implementation.
+    /// with <c>TKey</c> fixed to be <see cref="int"/>.  This avoids multiple interface-based dispatches while examining
+    /// each node in the tree during a lookup: an interface call to the comparer's <see cref="IComparer{T}.Compare"/> method,
+    /// and then an interface call to <see cref="int"/>'s <see cref="IComparable{T}.CompareTo"/> method as part of
+    /// the <see cref="T:System.Collections.Generic.GenericComparer`1"/>'s <see cref="IComparer{T}.Compare"/> implementation.
     /// </remarks>
     [DebuggerDisplay("{_key} = {_value}")]
     internal sealed class SortedInt32KeyNode<TValue> : IBinaryTree
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>
-        /// A <see cref="T:System.Collections.Generic.IEnumerator`1"/> that can be used to iterate through the collection.
+        /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
         /// </returns>
         public Enumerator GetEnumerator()
         {
@@ -233,11 +233,11 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Freezes this node and all descendent nodes so that any mutations require a new instance of the nodes.
+        /// Freezes this node and all descendant nodes so that any mutations require a new instance of the nodes.
         /// </summary>
         internal void Freeze(Action<KeyValuePair<int, TValue>> freezeAction = null)
         {
-            // If this node is frozen, all its descendents must already be frozen.
+            // If this node is frozen, all its descendants must already be frozen.
             if (!_frozen)
             {
                 if (freezeAction != null)
@@ -609,7 +609,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <remarks>
         /// This struct can and should be kept in exact sync with the other binary tree enumerators: 
-        /// ImmutableList.Enumerator, ImmutableSortedMap.Enumerator, and ImmutableSortedSet.Enumerator.
+        /// <see cref="ImmutableList{T}.Enumerator"/>, <see cref="ImmutableSortedDictionary{TKey, TValue}.Enumerator"/>, and <see cref="ImmutableSortedSet{T}.Enumerator"/>.
         /// 
         /// CAUTION: when this enumerator is actually used as a valuetype (not boxed) do NOT copy it by assigning to a second variable 
         /// or by passing it to another method.  When this enumerator is disposed of it returns a mutable reference type stack to a resource pool,
@@ -651,7 +651,7 @@ namespace System.Collections.Immutable
             private SortedInt32KeyNode<TValue> _current;
 
             /// <summary>
-            /// Initializes an Enumerator structure.
+            /// Initializes an <see cref="Enumerator"/> structure.
             /// </summary>
             /// <param name="root">The root of the set to be enumerated.</param>
             internal Enumerator(SortedInt32KeyNode<TValue> root)
@@ -762,7 +762,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Throws an ObjectDisposedException if this enumerator has been disposed.
+            /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
             /// </summary>
             internal void ThrowIfDisposed()
             {
@@ -779,7 +779,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Pushes this node and all its Left descendents onto the stack.
+            /// Pushes this node and all its Left descendants onto the stack.
             /// </summary>
             /// <param name="node">The starting node to push onto the stack.</param>
             private void PushLeft(SortedInt32KeyNode<TValue> node)

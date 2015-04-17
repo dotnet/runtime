@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Collections.Immutable
 {
     /// <content>
-    /// Contains the inner HashBucket struct.
+    /// Contains the inner <see cref="ImmutableHashSet{T}.HashBucket"/> struct.
     /// </content>
     public partial class ImmutableHashSet<T>
     {
@@ -80,8 +80,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="value">The value.</param>
             /// <param name="valueComparer">The value comparer.</param>
-            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
-            /// <returns>A new HashBucket that contains the added value and any values already held by this hashbucket.</returns>
+            /// <param name="result">A description of the effect was on adding an element to this <see cref="HashBucket"/>.</param>
+            /// <returns>A new <see cref="HashBucket"/> that contains the added value and any values already held by this <see cref="HashBucket"/>.</returns>
             internal HashBucket Add(T value, IEqualityComparer<T> valueComparer, out OperationResult result)
             {
                 if (this.IsEmpty)
@@ -101,7 +101,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Determines whether the HashBucket contains the specified value.
+            /// Determines whether the <see cref="HashBucket"/> contains the specified value.
             /// </summary>
             /// <param name="value">The value.</param>
             /// <param name="valueComparer">The value comparer.</param>
@@ -151,8 +151,8 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="value">The value.</param>
             /// <param name="equalityComparer">The equality comparer.</param>
-            /// <param name="result">A description of the effect was on adding an element to this HashBucket.</param>
-            /// <returns>A new HashBucket that does not contain the removed value and any values already held by this hashbucket.</returns>
+            /// <param name="result">A description of the effect was on adding an element to this <see cref="HashBucket"/>.</param>
+            /// <returns>A new <see cref="HashBucket"/> that does not contain the removed value and any values already held by this <see cref="HashBucket"/>.</returns>
             internal HashBucket Remove(T value, IEqualityComparer<T> equalityComparer, out OperationResult result)
             {
                 if (this.IsEmpty)
@@ -223,12 +223,12 @@ namespace System.Collections.Immutable
                 private Position _currentPosition;
 
                 /// <summary>
-                /// The enumerator that represents the current position over the additionalValues of the HashBucket.
+                /// The enumerator that represents the current position over the <see cref="_additionalElements"/> of the <see cref="HashBucket"/>.
                 /// </summary>
                 private ImmutableList<T>.Enumerator _additionalEnumerator;
 
                 /// <summary>
-                /// Initializes a new instance of the <see cref="ImmutableHashSet&lt;T&gt;.HashBucket.Enumerator"/> struct.
+                /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.HashBucket.Enumerator"/> struct.
                 /// </summary>
                 /// <param name="bucket">The bucket.</param>
                 internal Enumerator(HashBucket bucket)
@@ -250,12 +250,12 @@ namespace System.Collections.Immutable
                     BeforeFirst,
 
                     /// <summary>
-                    /// We're at the firstValue of the containing bucket.
+                    /// We're at the <see cref="_firstValue"/> of the containing bucket.
                     /// </summary>
                     First,
 
                     /// <summary>
-                    /// We're enumerating the additionalValues in the bucket.
+                    /// We're enumerating the <see cref="_additionalElements"/> in the bucket.
                     /// </summary>
                     Additional,
 
@@ -299,7 +299,7 @@ namespace System.Collections.Immutable
                 /// <returns>
                 /// true if the enumerator was successfully advanced to the next element; false if the enumerator has passed the end of the collection.
                 /// </returns>
-                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                /// <exception cref="InvalidOperationException">The collection was modified after the enumerator was created. </exception>
                 public bool MoveNext()
                 {
                     this.ThrowIfDisposed();
@@ -336,7 +336,7 @@ namespace System.Collections.Immutable
                 /// <summary>
                 /// Sets the enumerator to its initial position, which is before the first element in the collection.
                 /// </summary>
-                /// <exception cref="T:System.InvalidOperationException">The collection was modified after the enumerator was created. </exception>
+                /// <exception cref="InvalidOperationException">The collection was modified after the enumerator was created. </exception>
                 public void Reset()
                 {
                     this.ThrowIfDisposed();
@@ -354,7 +354,7 @@ namespace System.Collections.Immutable
                 }
 
                 /// <summary>
-                /// Throws an ObjectDisposedException if this enumerator has been disposed.
+                /// Throws an <see cref="ObjectDisposedException"/> if this enumerator has been disposed.
                 /// </summary>
                 private void ThrowIfDisposed()
                 {
