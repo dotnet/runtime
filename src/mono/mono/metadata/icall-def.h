@@ -721,6 +721,10 @@ ICALL(REMSER_1, "InternalExecute", ves_icall_InternalExecute)
 ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
 #endif
 
+ICALL_TYPE(RVH, "System.Runtime.Versioning.VersioningHelper", RVH_1)
+ICALL(RVH_1, "GetCurrentProcessId", ves_icall_System_Diagnostics_Process_GetPid_internal)
+ICALL(RVH_2, "GetRuntimeId", ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId)
+
 ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
 ICALL(RFH_1, "SetValueDirect", ves_icall_System_RuntimeFieldHandle_SetValueDirect)
 ICALL(RFH_2, "SetValueInternal", ves_icall_MonoField_SetValueInternal)

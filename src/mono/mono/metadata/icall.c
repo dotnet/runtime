@@ -6441,6 +6441,12 @@ ves_icall_System_Environment_BroadcastSettingChange (void)
 #endif
 }
 
+ICALL_EXPORT gint32
+ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (void)
+{
+	return 9;
+}
+
 ICALL_EXPORT void
 ves_icall_MonoMethodMessage_InitMessage (MonoMethodMessage *this, 
 					 MonoReflectionMethod *method,
