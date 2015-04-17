@@ -104,7 +104,7 @@ is_ip_in_managed_allocator (MonoDomain *domain, gpointer ip)
 	 * missing methods (#13951). To work around this, we disable the AOT fallback. For this to work, the JIT needs
 	 * to register the jit info for all GC critical methods after they are JITted/loaded.
 	 */
-	ji = mono_jit_info_table_find_internal (domain, ip, FALSE);
+	ji = mono_jit_info_table_find_internal (domain, ip, FALSE, FALSE);
 	if (!ji)
 		return FALSE;
 

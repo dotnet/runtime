@@ -226,28 +226,27 @@ mono_print_method_from_ip (void *ip)
 	FindTrampUserData user_data;
 	MonoGenericSharingContext*gsctx;
 	const char *shared_type;
-	GSList *l;
 
-	ji = mini_jit_info_table_find (domain, ip, &target_domain);
+	ji = mini_jit_info_table_find_ext (domain, ip, TRUE, &target_domain);
+	if (ji && ji->is_trampoline) {
+		MonoTrampInfo *tinfo = ji->d.tramp_info;
+
+		printf ("IP %p is at offset 0x%x of trampoline '%s'.\n", ip, (int)((guint8*)ip - tinfo->code), tinfo->name);
+		return;
+	}
+
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;
 		mono_domain_lock (domain);
 		g_hash_table_foreach (domain_jit_info (domain)->jit_trampoline_hash, find_tramp, &user_data);
 		mono_domain_unlock (domain);
+
 		if (user_data.method) {
 			char *mname = mono_method_full_name (user_data.method, TRUE);
 			printf ("IP %p is a JIT trampoline for %s\n", ip, mname);
 			g_free (mname);
 			return;
-		}
-		for (l = tramp_infos; l; l = l->next) {
-			MonoTrampInfo *tinfo = l->data;
-
-			if ((guint8*)ip >= tinfo->code && (guint8*)ip <= tinfo->code + tinfo->code_size) {
-				printf ("IP %p is at offset 0x%x of trampoline '%s'.\n", ip, (int)((guint8*)ip - tinfo->code), tinfo->name);
-				return;
-			}
 		}
 
 		g_print ("No method at %p\n", ip);
@@ -471,6 +470,20 @@ mono_tramp_info_free (MonoTrampInfo *info)
 	g_free (info);
 }
 
+static void
+register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
+{
+	MonoJitInfo *ji;
+
+	ji = mono_domain_alloc0 (domain, mono_jit_info_size (0, 0, 0));
+	mono_jit_info_init (ji, NULL, info->code, info->code_size, 0, 0, 0);
+	ji->d.tramp_info = info;
+	ji->is_trampoline = TRUE;
+	// FIXME: Unwind info
+
+	mono_jit_info_table_add (domain, ji);
+}
+
 /*
  * mono_tramp_info_register:
  *
@@ -497,6 +510,9 @@ mono_tramp_info_register (MonoTrampInfo *info)
 
 	mono_save_trampoline_xdebug_info (info);
 
+	if (mono_get_root_domain ())
+		register_trampoline_jit_info (mono_get_root_domain (), copy);
+
 	if (mono_jit_map_is_enabled ())
 		mono_emit_jit_tramp (info->code, info->code_size, info->name);
 
@@ -514,6 +530,19 @@ mono_tramp_info_cleanup (void)
 		mono_tramp_info_free (info);
 	}
 	g_slist_free (tramp_infos);
+}
+
+/* Register trampolines created before the root domain was created in the jit info tables */
+static void
+register_trampolines (MonoDomain *domain)
+{
+	GSList *l;
+
+	for (l = tramp_infos; l; l = l->next) {
+		MonoTrampInfo *info = l->data;
+
+		register_trampoline_jit_info (domain, info);
+	}
 }
 
 G_GNUC_UNUSED static void
@@ -3140,6 +3169,8 @@ mini_init (const char *filename, const char *runtime_version)
 #if MONO_SUPPORT_TASKLETS
 	mono_tasklets_init ();
 #endif
+
+	register_trampolines (domain);
 
 	if (mono_compile_aot)
 		/*

@@ -210,6 +210,7 @@ struct _MonoJitInfo {
 		MonoMethod *method;
 		MonoImage *image;
 		gpointer aot_info;
+		gpointer tramp_info;
 	} d;
 	struct _MonoJitInfo *next_jit_code_hash;
 	gpointer    code_start;
@@ -230,6 +231,11 @@ struct _MonoJitInfo {
 	gboolean    async:1;
 	gboolean    dbg_step_through:1;
 	gboolean    dbg_non_user_code:1;
+	/*
+	 * Whenever this jit info refers to a trampoline.
+	 * d.tramp_info contains additional data in this case.
+	 */
+	gboolean    is_trampoline:1;
 
 	/* FIXME: Embed this after the structure later*/
 	gpointer    gc_info; /* Currently only used by SGen */
@@ -685,7 +691,7 @@ void mono_reflection_cleanup_domain (MonoDomain *domain);
 
 void mono_assembly_cleanup_domain_bindings (guint32 domain_id);
 
-MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot);
+MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot, gboolean allow_trampolines);
 
 void mono_enable_debug_domain_unload (gboolean enable);
 

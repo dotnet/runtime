@@ -1169,14 +1169,14 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 }
 
 /*
- * mini_jit_info_table_find:
+ * mini_jit_info_table_find_ext:
  *
  *   Same as mono_jit_info_table_find, but search all the domains of the current thread
  * if ADDR is not found in DOMAIN. The domain where the method was found is stored into
  * OUT_DOMAIN if it is not NULL.
  */
 MonoJitInfo*
-mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domain)
+mini_jit_info_table_find_ext (MonoDomain *domain, char *addr, gboolean allow_trampolines, MonoDomain **out_domain)
 {
 	MonoJitInfo *ji;
 	MonoInternalThread *t = mono_thread_internal_current ();
@@ -1185,7 +1185,7 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 	if (out_domain)
 		*out_domain = NULL;
 
-	ji = mono_jit_info_table_find (domain, addr);
+	ji = mono_jit_info_table_find_internal (domain, addr, TRUE, allow_trampolines);
 	if (ji) {
 		if (out_domain)
 			*out_domain = domain;
@@ -1194,7 +1194,7 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 
 	/* maybe it is shared code, so we also search in the root domain */
 	if (domain != mono_get_root_domain ()) {
-		ji = mono_jit_info_table_find (mono_get_root_domain (), addr);
+		ji = mono_jit_info_table_find_internal (mono_get_root_domain (), addr, TRUE, allow_trampolines);
 		if (ji) {
 			if (out_domain)
 				*out_domain = mono_get_root_domain ();
@@ -1208,7 +1208,7 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 	refs = (t->appdomain_refs) ? *(gpointer *) t->appdomain_refs : NULL;
 	for (; refs && *refs; refs++) {
 		if (*refs != domain && *refs != mono_get_root_domain ()) {
-			ji = mono_jit_info_table_find ((MonoDomain*) *refs, addr);
+			ji = mono_jit_info_table_find_internal ((MonoDomain*) *refs, addr, TRUE, allow_trampolines);
 			if (ji) {
 				if (out_domain)
 					*out_domain = (MonoDomain*) *refs;
@@ -1218,6 +1218,12 @@ mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domai
 	}
 
 	return NULL;
+}
+
+MonoJitInfo*
+mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domain)
+{
+	return mini_jit_info_table_find_ext (domain, addr, FALSE, out_domain);
 }
 
 /*
