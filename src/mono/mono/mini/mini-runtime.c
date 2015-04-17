@@ -1359,8 +1359,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 #if defined(__native_client_codegen__)
 		target = (gpointer)&__nacl_thread_suspension_needed;
-#else
+#elif defined (USE_COOP_GC)
 		target = (gpointer)&mono_polling_required;
+#else
+		g_error ("Unsuported patch target");
 #endif
 		break;
 	case MONO_PATCH_INFO_SWITCH: {

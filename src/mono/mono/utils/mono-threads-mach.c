@@ -166,6 +166,16 @@ mono_threads_platform_free (MonoThreadInfo *info)
 	mach_port_deallocate (current_task (), info->native_handle);
 }
 
+void
+mono_threads_core_begin_global_suspend (void)
+{
+}
+
+void
+mono_threads_core_end_global_suspend (void)
+{
+}
+
 #endif /* USE_MACH_BACKEND */
 
 #ifdef __MACH__
