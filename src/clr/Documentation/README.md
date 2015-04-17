@@ -26,6 +26,7 @@ Book of the Runtime
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 - [Stack Walking](stackwalking.md)
 - [Mscorlib and Calling Into the Runtime](mscorlib.md)
+- [Data Access Component (DAC) Notes](dac-notes.md)
 - [Profiling](profiling.md)
 - [Implementing Profilability](profilability.md)
 - [What Every Dev needs to Know About Exceptions in the Runtime](exceptions.md)
