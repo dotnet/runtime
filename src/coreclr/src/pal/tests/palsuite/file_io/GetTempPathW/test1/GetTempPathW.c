@@ -14,128 +14,91 @@
 
 #include <palsuite.h>
 
-static void SetEnvVar(WCHAR tmpValue[], WCHAR tempPath[])
+static void SetTmpDir(WCHAR path[])
 {
-    BOOL checkValue=FALSE;
-    
-    /* see if the environment variable is created correctly */
-    checkValue = SetEnvironmentVariableW(tmpValue, tempPath);
-    if(!checkValue)
+    DWORD result = SetEnvironmentVariableW(W("TMPDIR"), path);
+    if (!result)
     {
-        if (tempPath == NULL)
-        {
-            if (SetEnvironmentVariableW(tmpValue, convert("")) &&
-                SetEnvironmentVariableW(tmpValue, NULL))
-            {
-                return;
-            }
-        }
-        
-        Fail("GetTempPathA: ERROR -> Failed to set the environment "
-            "variable correctly.\n");
-    }  
+        Fail("ERROR -> SetEnvironmentVariableW failed with result %d and error code %d.\n",
+             result, GetLastError());
+    }
+}
+
+static void SetAndCompare(WCHAR tmpDirPath[], WCHAR expected[])
+{
+    DWORD dwBufferLength = _MAX_DIR;
+    WCHAR path[dwBufferLength];
+
+    SetTmpDir(tmpDirPath);
+
+    DWORD dwResultLen = GetTempPathW(dwBufferLength, path);
+    if (dwResultLen <= 0)
+    {
+        Fail("ERROR: GetTempPathW returned %d with error code %d.\n", dwResultLen, GetLastError());
+    }
+    if (dwResultLen >= dwBufferLength)
+    {
+        Fail("ERROR: Buffer of length %d passed to GetTempPathA was too small to hold %d chars..\n", dwBufferLength, dwResultLen);
+    }
+    if (wcscmp(expected, path) != 0)
+    {
+        Fail("ERROR: GetTempPathW expected to get '%S' but instead got '%S'.\n", expected, path);
+    }
+    if (expected[dwResultLen - 1] != '/')
+    {
+        Fail("ERROR: GetTempPathW returned '%S', which should have ended in '/'.\n", path);
+    }
+}
+
+static void SetAndCheckLength(WCHAR tmpDirPath [], int bufferLength, int expectedResultLength)
+{
+    WCHAR path[bufferLength];
+
+    SetTmpDir(tmpDirPath);
+    DWORD dwResultLen = GetTempPathW(bufferLength, path);
+
+    if (dwResultLen != expectedResultLength)
+    {
+        Fail("GetTempPathW(%d, %S) expected to return %d but returned %d.\n",
+             bufferLength, tmpDirPath?tmpDirPath:W("NULL"), expectedResultLength, dwResultLen);
+    }
 }
 
 int __cdecl main(int argc, char *argv[])
 {
-    DWORD dwBuffLength = _MAX_DIR;
-    WCHAR wPath[_MAX_DIR];
-    WCHAR tmpValue[] = {'T','M','P','\0'};
-    WCHAR tempValue[] = {'T','E','M','P','\0'};
-#if WIN32
-    WCHAR tempPath[] = {'C',':','\\','t','e','m','p','\\','\0'};
-    WCHAR tmpPath[] = {'C',':','\\','t','m','p','\\','\0'}; 
-#else
-    WCHAR tempPath[] = {'.','\\','t','e','m','p','\\','\0'};
-    WCHAR tmpPath[] = {'.','\\','t','m','p','\\','\0'};
-#endif
-
-
-    if (0 != PAL_Initialize(argc,argv))
+    if (0 != PAL_Initialize(argc, argv))
     {
         return FAIL;
     }
 
-    if (GetTempPathW(dwBuffLength, wPath) == 0)
+    SetAndCompare(W("/tmp"), W("/tmp/"));
+    SetAndCompare(W("/tmp/"), W("/tmp/"));
+    SetAndCompare(W(""), W("/tmp/"));
+    SetAndCompare(NULL, W("/tmp/"));
+    SetAndCompare(W("/"), W("/"));
+    SetAndCompare(W("/var/tmp"), W("/var/tmp/"));
+    SetAndCompare(W("/var/tmp/"), W("/var/tmp/"));
+    SetAndCompare(W("~"), W("~/"));
+    SetAndCompare(W("~/"), W("~/"));
+    SetAndCompare(W(".tmp"), W(".tmp/"));
+    SetAndCompare(W("./tmp"), W("./tmp/"));
+    SetAndCompare(W("/home/someuser/sometempdir"), W("/home/someuser/sometempdir/"));
+    SetAndCompare(NULL, W("/tmp/"));
+
+    DWORD dwResultLen = GetTempPathA(0, NULL);
+    if (dwResultLen != 0 || GetLastError() != ERROR_INVALID_PARAMETER)
     {
-        Fail("GetTempPathW: ERROR -> Failed to return a temporary path. "
-            "error code: %ld\n", GetLastError());
-    }
-    else
-    {
-        // CreateDirectory should fail on an existing directory
-        if (CreateDirectoryW(wPath, NULL) != 0)
-        {
-            Fail("GetTempPathW: ERROR -> The path returned is apparently "
-                "invalid since CreateDirectory succeeded whereas it should "
-                "have failed.\n");
-        }
+        Fail("GetTempPathW(NULL, ...) returned %d with error code %d but "
+             "should have failed with ERROR_INVALID_PARAMETER (%d).\n",
+             dwResultLen, GetLastError(), ERROR_INVALID_PARAMETER);
     }
 
-    /* set both tmp and temp to null and check that gettemppathw returns
-    a non zero value*/
-    SetEnvVar(tmpValue, NULL);
-
-    /* create the environment variable */
-    SetEnvVar(tempValue, tempPath);  
-    
-    /* set the environment variable to NULL */
-    SetEnvVar(tempValue, NULL);  
-    
-    if(GetTempPathW(dwBuffLength, wPath) == 0)
-    {
-        Fail("GetTempPathW: ERROR -> Failed to return a temporary path. "
-            "error code: %ld\n", GetLastError());
-    }
-
-    /* set temp, and gettemppathw should return value of temp */
-    SetEnvVar(tempValue, tempPath);
-    
-    if(GetTempPathW(dwBuffLength, wPath) == 0)
-    {
-        Fail("GetTempPathW: ERROR -> Failed to return a temporary path. "
-            "error code: %ld\n", GetLastError());
-    }
-    
-    if(wcscmp(wPath, tempPath) != 0)
-    {
-        Fail("GetTempPathW: ERROR -> Failed to return correct temporary path. "
-            "Expected path %s but got %s.\n", tempPath, wPath);
-    }
-
-    /* set temp to null, and set temp to a proper value,
-    gettemppathw should return value stored in tmp */
-    SetEnvVar(tempValue, NULL);
-    SetEnvVar(tmpValue, tmpPath);
-    
-    if(GetTempPathW(dwBuffLength, wPath) == 0)
-    {
-        Fail("GetTempPathW: ERROR -> Failed to return a temporary path. "
-            "error code: %ld\n", GetLastError());
-    }
-    
-    if(wcscmp(wPath, tmpPath) != 0)
-    {
-        Fail("GetTempPathW: ERROR -> Failed to return correct temporary path. "
-            "Expected path %s but got %s.\n", tmpPath, wPath);
-    }
-
-    /* set temp and gettemppathw should return value stored in tmp */
-    SetEnvVar(tempValue, tempPath);
-    
-    if(GetTempPathW(dwBuffLength, wPath) == 0)
-    {
-        Fail("GetTempPathW: ERROR -> Failed to return a temporary path. "
-            "error code: %ld\n", GetLastError());
-    }
-    
-    if(wcscmp(wPath, tmpPath) != 0)
-    {
-        Fail("GetTempPathW: ERROR -> Failed to return correct temporary path. "
-            "Expected path %s but got %s.\n", tmpPath, wPath);
-    }
+    SetAndCheckLength(W("abc/"), 5, 4);
+    SetAndCheckLength(W("abcd"), 5, 6);
+    SetAndCheckLength(W("abcde"), 5, 7);
+    SetAndCheckLength(W("abcdef/"), 5, 9);
+    SetAndCheckLength(NULL, 5, 6);
 
     PAL_Terminate();
     return PASS;
 }
-
