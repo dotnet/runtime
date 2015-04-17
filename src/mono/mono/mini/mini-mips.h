@@ -17,7 +17,7 @@
 #endif
 
 
-#define MONO_ARCH_CPU_SPEC mips_desc
+#define MONO_ARCH_CPU_SPEC mono_mips_desc
 
 #define MONO_MAX_IREGS 32
 #define MONO_MAX_FREGS 32

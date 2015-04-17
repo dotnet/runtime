@@ -8,9 +8,9 @@
 #include <glib.h>
 
 #ifdef __mono_ppc64__
-#define MONO_ARCH_CPU_SPEC ppc64_cpu_desc
+#define MONO_ARCH_CPU_SPEC mono_ppc64_cpu_desc
 #else
-#define MONO_ARCH_CPU_SPEC ppcg4
+#define MONO_ARCH_CPU_SPEC mono_ppcg4
 #endif
 
 #define MONO_MAX_IREGS 32

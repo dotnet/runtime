@@ -41,7 +41,7 @@
 
 #define MONO_ARCH_ARCHITECTURE ARM_ARCHITECTURE "," ARM_FP_MODEL
 
-#define MONO_ARCH_CPU_SPEC arm_cpu_desc
+#define MONO_ARCH_CPU_SPEC mono_arm_cpu_desc
 
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define ARM_LSW_REG ARMREG_R0

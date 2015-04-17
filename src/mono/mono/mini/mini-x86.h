@@ -89,7 +89,7 @@ struct sigcontext {
 #endif
 #define MONO_ARCH_HAVE_RESTORE_STACK_SUPPORT 1
 
-#define MONO_ARCH_CPU_SPEC x86_desc
+#define MONO_ARCH_CPU_SPEC mono_x86_desc
 
 #define MONO_MAX_IREGS 8
 #define MONO_MAX_FREGS 8

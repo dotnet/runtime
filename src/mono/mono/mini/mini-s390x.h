@@ -5,7 +5,7 @@
 #include <mono/utils/mono-context.h>
 #include <signal.h>
 
-#define MONO_ARCH_CPU_SPEC s390x_cpu_desc
+#define MONO_ARCH_CPU_SPEC mono_s390x_cpu_desc
 
 #define MONO_MAX_IREGS 16
 #define MONO_MAX_FREGS 16
