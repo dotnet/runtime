@@ -26,72 +26,72 @@ typedef struct _MonoImageWriter MonoImageWriter;
 #define R_ARM_JUMP24 29
 #define R_ARM_ALU_PC_G0_NC 59
 
-gboolean bin_writer_supported (void);
+gboolean mono_bin_writer_supported (void);
 
-MonoImageWriter* img_writer_create (FILE *fp, gboolean use_bin_writer);
+MonoImageWriter* mono_img_writer_create (FILE *fp, gboolean use_bin_writer);
 
-void img_writer_destroy (MonoImageWriter *w);
+void mono_img_writer_destroy (MonoImageWriter *w);
 
-void img_writer_emit_start (MonoImageWriter *w);
+void mono_img_writer_emit_start (MonoImageWriter *w);
 
-int img_writer_emit_writeout (MonoImageWriter *w);
+int mono_img_writer_emit_writeout (MonoImageWriter *w);
 
-guint8* img_writer_get_output (MonoImageWriter *acfg, guint32 *size);
+guint8* mono_img_writer_get_output (MonoImageWriter *acfg, guint32 *size);
 
-void img_writer_emit_section_change (MonoImageWriter *w, const char *section_name, int subsection_index);
+void mono_img_writer_emit_section_change (MonoImageWriter *w, const char *section_name, int subsection_index);
 
-void img_writer_emit_push_section (MonoImageWriter *w, const char *section_name, int subsection);
+void mono_img_writer_emit_push_section (MonoImageWriter *w, const char *section_name, int subsection);
 
-void img_writer_emit_pop_section (MonoImageWriter *w);
+void mono_img_writer_emit_pop_section (MonoImageWriter *w);
 
-void img_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr);
+void mono_img_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr);
 
-void img_writer_emit_global (MonoImageWriter *w, const char *name, gboolean func);
+void mono_img_writer_emit_global (MonoImageWriter *w, const char *name, gboolean func);
 
-void img_writer_emit_local_symbol (MonoImageWriter *w, const char *name, const char *end_label, gboolean func);
+void mono_img_writer_emit_local_symbol (MonoImageWriter *w, const char *name, const char *end_label, gboolean func);
 
-void img_writer_emit_symbol_size (MonoImageWriter *w, const char *start, const char *end_label);
+void mono_img_writer_emit_symbol_size (MonoImageWriter *w, const char *start, const char *end_label);
 
-void img_writer_emit_label (MonoImageWriter *w, const char *name);
+void mono_img_writer_emit_label (MonoImageWriter *w, const char *name);
 
-void img_writer_emit_bytes (MonoImageWriter *w, const guint8* buf, int size);
+void mono_img_writer_emit_bytes (MonoImageWriter *w, const guint8* buf, int size);
 
-void img_writer_emit_string (MonoImageWriter *w, const char *value);
+void mono_img_writer_emit_string (MonoImageWriter *w, const char *value);
 
-void img_writer_emit_line (MonoImageWriter *w);
+void mono_img_writer_emit_line (MonoImageWriter *w);
 
-void img_writer_emit_alignment (MonoImageWriter *w, int size);
+void mono_img_writer_emit_alignment (MonoImageWriter *w, int size);
 
-void img_writer_emit_alignment_fill (MonoImageWriter *w, int size, int fill);
+void mono_img_writer_emit_alignment_fill (MonoImageWriter *w, int size, int fill);
 
 #ifdef __native_client_codegen__
-void img_writer_emit_nacl_call_alignment (MonoImageWriter *w);
+void mono_img_writer_emit_nacl_call_alignment (MonoImageWriter *w);
 #endif
 
-void img_writer_emit_pointer_unaligned (MonoImageWriter *w, const char *target);
+void mono_img_writer_emit_pointer_unaligned (MonoImageWriter *w, const char *target);
 
-void img_writer_emit_pointer (MonoImageWriter *w, const char *target);
+void mono_img_writer_emit_pointer (MonoImageWriter *w, const char *target);
 
-void img_writer_emit_int16 (MonoImageWriter *w, int value);
+void mono_img_writer_emit_int16 (MonoImageWriter *w, int value);
 
-void img_writer_emit_int32 (MonoImageWriter *w, int value);
+void mono_img_writer_emit_int32 (MonoImageWriter *w, int value);
 
-void img_writer_emit_symbol_diff (MonoImageWriter *w, const char *end, const char* start, int offset);
+void mono_img_writer_emit_symbol_diff (MonoImageWriter *w, const char *end, const char* start, int offset);
 
-void img_writer_emit_zero_bytes (MonoImageWriter *w, int num);
+void mono_img_writer_emit_zero_bytes (MonoImageWriter *w, int num);
 
-void img_writer_emit_global (MonoImageWriter *w, const char *name, gboolean func);
+void mono_img_writer_emit_global (MonoImageWriter *w, const char *name, gboolean func);
 
-void img_writer_emit_byte (MonoImageWriter *w, guint8 val);
+void mono_img_writer_emit_byte (MonoImageWriter *w, guint8 val);
 
-void img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *symbol, int addend);
+void mono_img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *symbol, int addend);
 
-void img_writer_emit_unset_mode (MonoImageWriter *acfg);
+void mono_img_writer_emit_unset_mode (MonoImageWriter *acfg);
 
-gboolean img_writer_subsections_supported (MonoImageWriter *acfg);
+gboolean mono_img_writer_subsections_supported (MonoImageWriter *acfg);
 
-FILE * img_writer_get_fp (MonoImageWriter *acfg);
+FILE * mono_img_writer_get_fp (MonoImageWriter *acfg);
 
-const char *img_writer_get_temp_label_prefix (MonoImageWriter *acfg);
+const char *mono_img_writer_get_temp_label_prefix (MonoImageWriter *acfg);
 
 #endif

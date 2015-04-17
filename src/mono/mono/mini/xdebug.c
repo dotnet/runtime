@@ -158,15 +158,15 @@ mono_xdebug_init (const char *options)
 	unlink ("xdb.s");
 	xdebug_fp = fopen ("xdb.s", "w");
 	
-	w = img_writer_create (xdebug_fp, FALSE);
+	w = mono_img_writer_create (xdebug_fp, FALSE);
 
-	img_writer_emit_start (w);
+	mono_img_writer_emit_start (w);
 
 	xdebug_writer = mono_dwarf_writer_create (w, il_file, 0, TRUE, TRUE);
 
 	/* Emit something so the file has a text segment */
-	img_writer_emit_section_change (w, ".text", 0);
-	img_writer_emit_string (w, "");
+	mono_img_writer_emit_section_change (w, ".text", 0);
+	mono_img_writer_emit_string (w, "");
 
 	mono_dwarf_writer_emit_base_info (xdebug_writer, "JITted code", mono_unwind_get_cie_program ());
 }
@@ -177,9 +177,9 @@ xdebug_begin_emit (MonoImageWriter **out_w, MonoDwarfWriter **out_dw)
 	MonoImageWriter *w;
 	MonoDwarfWriter *dw;
 
-	w = img_writer_create (NULL, TRUE);
+	w = mono_img_writer_create (NULL, TRUE);
 
-	img_writer_emit_start (w);
+	mono_img_writer_emit_start (w);
 
 	/* This file will contain the IL code for methods which don't have debug info */
 	if (!il_file)
@@ -204,11 +204,11 @@ xdebug_end_emit (MonoImageWriter *w, MonoDwarfWriter *dw, MonoMethod *method)
 	il_file_line_index = mono_dwarf_writer_get_il_file_line_index (dw);
 	mono_dwarf_writer_close (dw);
 
-	img_writer_emit_writeout (w);
+	mono_img_writer_emit_writeout (w);
 
-	img = img_writer_get_output (w, &img_size);
+	img = mono_img_writer_get_output (w, &img_size);
 
-	img_writer_destroy (w);
+	mono_img_writer_destroy (w);
 
 	if (FALSE) {
 		/* Save the symbol files to help debugging */
@@ -302,14 +302,14 @@ mono_save_xdebug_info (MonoCompile *cfg)
 		 * FIXME: This doesn't work when multiple methods are emitted into the same file.
 		 */
 		sym = get_debug_sym (cfg->jit_info->method, "", xdebug_syms);
-		img_writer_emit_section_change (w, ".text", 0);
+		mono_img_writer_emit_section_change (w, ".text", 0);
 		if (!xdebug_text_addr) {
 			xdebug_text_addr = cfg->jit_info->code_start;
-			img_writer_set_section_addr (w, (gssize)xdebug_text_addr);
+			mono_img_writer_set_section_addr (w, (gssize)xdebug_text_addr);
 		}
-		img_writer_emit_global_with_size (w, sym, cfg->jit_info->code_size, TRUE);
-		img_writer_emit_label (w, sym);
-		img_writer_emit_bytes (w, cfg->jit_info->code_start, cfg->jit_info->code_size);
+		mono_img_writer_emit_global_with_size (w, sym, cfg->jit_info->code_size, TRUE);
+		mono_img_writer_emit_label (w, sym);
+		mono_img_writer_emit_bytes (w, cfg->jit_info->code_start, cfg->jit_info->code_size);
 		g_free (sym);
 #endif
 		

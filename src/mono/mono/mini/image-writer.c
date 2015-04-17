@@ -2001,7 +2001,7 @@ asm_writer_emit_zero_bytes (MonoImageWriter *acfg, int num)
 /* EMIT FUNCTIONS */
 
 void
-img_writer_emit_start (MonoImageWriter *acfg)
+mono_img_writer_emit_start (MonoImageWriter *acfg)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2014,7 +2014,7 @@ img_writer_emit_start (MonoImageWriter *acfg)
 }
 
 void
-img_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name, int subsection_index)
+mono_img_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name, int subsection_index)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2030,26 +2030,26 @@ img_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 }
 
 void
-img_writer_emit_push_section (MonoImageWriter *acfg, const char *section_name, int subsection)
+mono_img_writer_emit_push_section (MonoImageWriter *acfg, const char *section_name, int subsection)
 {
 	g_assert (acfg->stack_pos < 16 - 1);
 	acfg->section_stack [acfg->stack_pos] = acfg->current_section;
 	acfg->subsection_stack [acfg->stack_pos] = acfg->current_subsection;
 	acfg->stack_pos ++;
 
-	img_writer_emit_section_change (acfg, section_name, subsection);
+	mono_img_writer_emit_section_change (acfg, section_name, subsection);
 }
 
 void
-img_writer_emit_pop_section (MonoImageWriter *acfg)
+mono_img_writer_emit_pop_section (MonoImageWriter *acfg)
 {
 	g_assert (acfg->stack_pos > 0);
 	acfg->stack_pos --;
-	img_writer_emit_section_change (acfg, acfg->section_stack [acfg->stack_pos], acfg->subsection_stack [acfg->stack_pos]);
+	mono_img_writer_emit_section_change (acfg, acfg->section_stack [acfg->stack_pos], acfg->subsection_stack [acfg->stack_pos]);
 }
 
 void
-img_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr)
+mono_img_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr)
 {
 #ifdef USE_BIN_WRITER
 	if (!acfg->use_bin_writer)
@@ -2062,7 +2062,7 @@ img_writer_set_section_addr (MonoImageWriter *acfg, guint64 addr)
 }
 
 void
-img_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
+mono_img_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2075,7 +2075,7 @@ img_writer_emit_global (MonoImageWriter *acfg, const char *name, gboolean func)
 }
 
 void
-img_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const char *end_label, gboolean func)
+mono_img_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const char *end_label, gboolean func)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2088,14 +2088,14 @@ img_writer_emit_local_symbol (MonoImageWriter *acfg, const char *name, const cha
 }
 
 void
-img_writer_emit_symbol_size (MonoImageWriter *acfg, const char *name, const char *end_label)
+mono_img_writer_emit_symbol_size (MonoImageWriter *acfg, const char *name, const char *end_label)
 {
 	if (!acfg->use_bin_writer)
 		asm_writer_emit_symbol_size (acfg, name, end_label);
 }
 
 void
-img_writer_emit_label (MonoImageWriter *acfg, const char *name)
+mono_img_writer_emit_label (MonoImageWriter *acfg, const char *name)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2108,7 +2108,7 @@ img_writer_emit_label (MonoImageWriter *acfg, const char *name)
 }
 
 void
-img_writer_emit_bytes (MonoImageWriter *acfg, const guint8* buf, int size)
+mono_img_writer_emit_bytes (MonoImageWriter *acfg, const guint8* buf, int size)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2121,7 +2121,7 @@ img_writer_emit_bytes (MonoImageWriter *acfg, const guint8* buf, int size)
 }
 
 void
-img_writer_emit_string (MonoImageWriter *acfg, const char *value)
+mono_img_writer_emit_string (MonoImageWriter *acfg, const char *value)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2134,7 +2134,7 @@ img_writer_emit_string (MonoImageWriter *acfg, const char *value)
 }
 
 void
-img_writer_emit_line (MonoImageWriter *acfg)
+mono_img_writer_emit_line (MonoImageWriter *acfg)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2147,7 +2147,7 @@ img_writer_emit_line (MonoImageWriter *acfg)
 }
 
 void
-img_writer_emit_alignment (MonoImageWriter *acfg, int size)
+mono_img_writer_emit_alignment (MonoImageWriter *acfg, int size)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2160,7 +2160,7 @@ img_writer_emit_alignment (MonoImageWriter *acfg, int size)
 }
 
 void
-img_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
+mono_img_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2174,7 +2174,7 @@ img_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
 
 #ifdef __native_client_codegen__
 void
-img_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
+mono_img_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
 		bin_writer_emit_nacl_call_alignment (acfg);
@@ -2187,7 +2187,7 @@ img_writer_emit_nacl_call_alignment (MonoImageWriter *acfg) {
 #endif  /* __native_client_codegen__ */
 
 void
-img_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
+mono_img_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2200,7 +2200,7 @@ img_writer_emit_pointer_unaligned (MonoImageWriter *acfg, const char *target)
 }
 
 void
-img_writer_emit_pointer (MonoImageWriter *acfg, const char *target)
+mono_img_writer_emit_pointer (MonoImageWriter *acfg, const char *target)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2213,7 +2213,7 @@ img_writer_emit_pointer (MonoImageWriter *acfg, const char *target)
 }
 
 void
-img_writer_emit_int16 (MonoImageWriter *acfg, int value)
+mono_img_writer_emit_int16 (MonoImageWriter *acfg, int value)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2226,7 +2226,7 @@ img_writer_emit_int16 (MonoImageWriter *acfg, int value)
 }
 
 void
-img_writer_emit_int32 (MonoImageWriter *acfg, int value)
+mono_img_writer_emit_int32 (MonoImageWriter *acfg, int value)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2239,7 +2239,7 @@ img_writer_emit_int32 (MonoImageWriter *acfg, int value)
 }
 
 void
-img_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char* start, int offset)
+mono_img_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char* start, int offset)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2252,7 +2252,7 @@ img_writer_emit_symbol_diff (MonoImageWriter *acfg, const char *end, const char*
 }
 
 void
-img_writer_emit_zero_bytes (MonoImageWriter *acfg, int num)
+mono_img_writer_emit_zero_bytes (MonoImageWriter *acfg, int num)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2265,7 +2265,7 @@ img_writer_emit_zero_bytes (MonoImageWriter *acfg, int num)
 }
 
 int
-img_writer_emit_writeout (MonoImageWriter *acfg)
+mono_img_writer_emit_writeout (MonoImageWriter *acfg)
 {
 #ifdef USE_BIN_WRITER
 	if (acfg->use_bin_writer)
@@ -2278,9 +2278,9 @@ img_writer_emit_writeout (MonoImageWriter *acfg)
 }
 
 void
-img_writer_emit_byte (MonoImageWriter *acfg, guint8 val)
+mono_img_writer_emit_byte (MonoImageWriter *acfg, guint8 val)
 {
-	img_writer_emit_bytes (acfg, &val, 1);
+	mono_img_writer_emit_bytes (acfg, &val, 1);
 }
 
 /* 
@@ -2288,7 +2288,7 @@ img_writer_emit_byte (MonoImageWriter *acfg, guint8 val)
  * Do not advance PC.
  */
 void
-img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *symbol, int addend)
+mono_img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *symbol, int addend)
 {
 	/* This is only supported by the bin writer */
 #ifdef USE_BIN_WRITER
@@ -2302,26 +2302,26 @@ img_writer_emit_reloc (MonoImageWriter *acfg, int reloc_type, const char *symbol
 }
 
 /*
- * img_writer_emit_unset_mode:
+ * mono_img_writer_emit_unset_mode:
  *
  *   Flush buffered data so it is safe to write to the output file from outside this
  * module. This is a nop for the binary writer.
  */
 void
-img_writer_emit_unset_mode (MonoImageWriter *acfg)
+mono_img_writer_emit_unset_mode (MonoImageWriter *acfg)
 {
 	if (!acfg->use_bin_writer)
 		asm_writer_emit_unset_mode (acfg);
 }
 
 /*
- * img_writer_get_output:
+ * mono_img_writer_get_output:
  *
  *   Return the output buffer of a binary writer emitting to memory. The returned memory
  * is from malloc, and it is owned by the caller.
  */
 guint8*
-img_writer_get_output (MonoImageWriter *acfg, guint32 *size)
+mono_img_writer_get_output (MonoImageWriter *acfg, guint32 *size)
 {
 #ifdef USE_BIN_WRITER
 	guint8 *buf;
@@ -2342,7 +2342,7 @@ img_writer_get_output (MonoImageWriter *acfg, guint32 *size)
  * Return whenever the binary writer is supported on this platform.
  */
 gboolean
-bin_writer_supported (void)
+mono_bin_writer_supported (void)
 {
 #ifdef USE_BIN_WRITER
 	return TRUE;
@@ -2352,14 +2352,14 @@ bin_writer_supported (void)
 }
 
 /*
- * img_writer_create:
+ * mono_img_writer_create:
  *
  *   Create an image writer writing to FP. If USE_BIN_WRITER is TRUE, FP can be NULL,
  * in this case the image writer will write to a memory buffer obtainable by calling
- * img_writer_get_output ().
+ * mono_img_writer_get_output ().
  */
 MonoImageWriter*
-img_writer_create (FILE *fp, gboolean use_bin_writer)
+mono_img_writer_create (FILE *fp, gboolean use_bin_writer)
 {
 	MonoImageWriter *w = g_new0 (MonoImageWriter, 1);
 	
@@ -2378,7 +2378,7 @@ img_writer_create (FILE *fp, gboolean use_bin_writer)
 }
 
 void
-img_writer_destroy (MonoImageWriter *w)
+mono_img_writer_destroy (MonoImageWriter *w)
 {
 	// FIXME: Free all the stuff
 	mono_mempool_destroy (w->mempool);
@@ -2386,7 +2386,7 @@ img_writer_destroy (MonoImageWriter *w)
 }
 
 gboolean
-img_writer_subsections_supported (MonoImageWriter *acfg)
+mono_img_writer_subsections_supported (MonoImageWriter *acfg)
 {
 #ifdef TARGET_ASM_APPLE
 	return acfg->use_bin_writer;
@@ -2396,13 +2396,13 @@ img_writer_subsections_supported (MonoImageWriter *acfg)
 }
 
 FILE *
-img_writer_get_fp (MonoImageWriter *acfg)
+mono_img_writer_get_fp (MonoImageWriter *acfg)
 {
 	return acfg->fp;
 }
 
 const char *
-img_writer_get_temp_label_prefix (MonoImageWriter *acfg)
+mono_img_writer_get_temp_label_prefix (MonoImageWriter *acfg)
 {
 	return AS_TEMP_LABEL_PREFIX;
 }
