@@ -249,4 +249,20 @@ class Tests
 			return 2;
 		return 0;
 	}
+
+	public static int test_0_multi_dim_array_ctor () {
+        var type1 = Type.GetType ("System.Char[,]").GetTypeInfo ();
+
+		ConstructorInfo ci = null;
+		foreach (var c in type1.DeclaredConstructors) {
+			if (c.GetParameters ().Length == 4)
+				ci = c;
+		}
+        var res = ci.Invoke (new object[] { 1, 5, -10, 7 });
+		var a = (Array)res;
+		if (a.GetLength (0) != 5 || a.GetLowerBound (0) != 1 || a.GetLength (1) != 7 || a.GetLowerBound (1) != -10)
+			return 1;
+		return 0;
+	}
+
 }

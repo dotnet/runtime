@@ -2763,15 +2763,19 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this, MonoAr
 
 		if (m->klass->rank == pcount) {
 			/* Only lengths provided. */
-			lower_bounds = NULL;
+			return (MonoObject*)mono_array_new_full (mono_object_domain (params), m->klass, lengths, NULL);
 		} else {
 			g_assert (pcount == (m->klass->rank * 2));
-			/* lower bounds are first. */
-			lower_bounds = (intptr_t*)lengths;
-			lengths += m->klass->rank;
-		}
+			/* The arguments are lower-bound-length pairs */
+			lower_bounds = g_alloca (sizeof (intptr_t) * pcount);
 
-		return (MonoObject*)mono_array_new_full (mono_object_domain (params), m->klass, lengths, lower_bounds);
+			for (i = 0; i < pcount / 2; ++i) {
+				lower_bounds [i] = *(int32_t*) ((char*)mono_array_get (params, gpointer, (i * 2)) + sizeof (MonoObject));
+				lengths [i] = *(int32_t*) ((char*)mono_array_get (params, gpointer, (i * 2) + 1) + sizeof (MonoObject));
+			}
+
+			return (MonoObject*)mono_array_new_full (mono_object_domain (params), m->klass, lengths, lower_bounds);
+		}
 	}
 	return mono_runtime_invoke_array (m, obj, params, NULL);
 }
