@@ -141,10 +141,6 @@ mono_debug_symfile_lookup_location (MonoDebugMethodInfo      *minfo,
 MONO_API void
 mono_debug_symfile_free_location   (MonoDebugSourceLocation  *location);
 
-int32_t
-_mono_debug_address_from_il_offset (MonoDebugMethodJitInfo   *jit,
-				    uint32_t                  il_offset);
-
 MONO_API MonoDebugMethodInfo *
 mono_debug_symfile_lookup_method   (MonoDebugHandle          *handle,
 				    MonoMethod               *method);

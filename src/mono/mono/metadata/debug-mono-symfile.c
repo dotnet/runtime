@@ -739,24 +739,6 @@ mono_debug_symfile_get_line_numbers (MonoDebugMethodInfo *minfo, char **source_f
 {
 	mono_debug_symfile_get_line_numbers_full (minfo, source_file, NULL, n_il_offsets, il_offsets, line_numbers, NULL, NULL, NULL, NULL);
 }
-	
-int32_t
-_mono_debug_address_from_il_offset (MonoDebugMethodJitInfo *jit, uint32_t il_offset)
-{
-	int i;
-
-	if (!jit || !jit->line_numbers)
-		return -1;
-
-	for (i = jit->num_line_numbers - 1; i >= 0; i--) {
-		MonoDebugLineNumberEntry lne = jit->line_numbers [i];
-
-		if (lne.il_offset <= il_offset)
-			return lne.native_offset;
-	}
-
-	return 0;
-}
 
 static int
 compare_method (const void *key, const void *object)
