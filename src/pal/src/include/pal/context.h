@@ -137,11 +137,7 @@ typedef ucontext_t native_context_t;
 #define FPREG_DataSelector(uc)  *((WORD*) &(FPSTATE(uc)->sv_env.en_rdp) + 2)
 
 #define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->sv_xmm[index])
-
-// TODO: port this register to FreeBSD.
-// #define FPREG_St(uc, index)     *(M128A*)&((uc)->mc_fpstate[index])
-// something like this?
-// #define FPREG_St(uc, index)     *(M128A*)&(FPSTATE(uc)->sv_xstate.sx_ymm[index])
+#define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->sv_fp[index].fp_acc)
 
 #else // BIT64
 
