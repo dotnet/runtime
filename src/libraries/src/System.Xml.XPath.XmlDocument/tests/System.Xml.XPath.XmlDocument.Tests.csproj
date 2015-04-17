@@ -8,6 +8,7 @@
     <ProjectGuid>{7B57D5F1-4E6C-4280-AD5B-C71C73B66B11}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.XPath.XmlDocument.Tests</AssemblyName>
+    <DefineConstants>$(DefineConstants);FEATURE_XML_XPATH_ID</DefineConstants>
     <RootNamespace>System.Xml.XPath.XmlDocument.Tests</RootNamespace>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
   </PropertyGroup>
