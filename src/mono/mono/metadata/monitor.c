@@ -1133,7 +1133,9 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		/* Poll the event again, just in case it was signalled
 		 * while we were trying to regain the monitor lock
 		 */
+		MONO_PREPARE_BLOCKING
 		ret = WaitForSingleObjectEx (event, 0, FALSE);
+		MONO_FINISH_BLOCKING
 	}
 
 	/* Pulse will have popped our event from the queue if it signalled

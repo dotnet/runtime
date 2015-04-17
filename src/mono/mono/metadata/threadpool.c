@@ -1074,7 +1074,9 @@ mono_thread_pool_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObject
 			wait_event = mono_wait_handle_get_handle ((MonoWaitHandle *) ares->handle);
 		}
 		mono_monitor_exit ((MonoObject *) ares);
+		MONO_PREPARE_BLOCKING
 		WaitForSingleObjectEx (wait_event, INFINITE, TRUE);
+		MONO_FINISH_BLOCKING
 	} else {
 		mono_monitor_exit ((MonoObject *) ares);
 	}
@@ -1349,7 +1351,9 @@ mono_thread_pool_remove_domain_jobs (MonoDomain *domain, int timeout)
 	if (domain->threadpool_jobs && timeout != -1)
 		start_time = mono_msec_ticks ();
 	while (domain->threadpool_jobs) {
+		MONO_PREPARE_BLOCKING
 		WaitForSingleObject (sem_handle, timeout);
+		MONO_FINISH_BLOCKING
 		if (timeout != -1 && (mono_msec_ticks () - start_time) > timeout) {
 			result = FALSE;
 			break;

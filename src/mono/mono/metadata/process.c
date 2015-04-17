@@ -692,12 +692,15 @@ MonoBoolean ves_icall_System_Diagnostics_Process_WaitForExit_internal (MonoObjec
 {
 	guint32 ret;
 	
+	MONO_PREPARE_BLOCKING
 	if(ms<0) {
 		/* Wait forever */
 		ret=WaitForSingleObjectEx (process, INFINITE, TRUE);
 	} else {
 		ret=WaitForSingleObjectEx (process, ms, TRUE);
 	}
+	MONO_FINISH_BLOCKING
+
 	if(ret==WAIT_OBJECT_0) {
 		return(TRUE);
 	} else {

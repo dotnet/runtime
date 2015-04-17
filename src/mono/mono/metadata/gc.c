@@ -86,6 +86,18 @@ static HANDLE shutdown_event;
 
 GCStats gc_stats;
 
+static guint32
+guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
+{
+	guint32 result;
+
+	MONO_PREPARE_BLOCKING
+	result = WaitForSingleObjectEx (handle, timeout, alertable);
+	MONO_FINISH_BLOCKING
+
+	return result;
+}
+
 static void
 add_thread_to_finalize (MonoInternalThread *thread)
 {
@@ -399,7 +411,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		timeout = INFINITE;
 
 	while (TRUE) {
-		res = WaitForSingleObjectEx (done_event, timeout, TRUE);
+		res = guarded_wait (done_event, timeout, TRUE);
 		/* printf ("WAIT RES: %d.\n", res); */
 
 		if (res == WAIT_IO_COMPLETION) {
@@ -497,7 +509,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	ResetEvent (pending_done_event);
 	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
-	WaitForSingleObjectEx (pending_done_event, INFINITE, TRUE);
+	guarded_wait (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
 #endif
 }
@@ -1210,7 +1222,7 @@ mono_gc_cleanup (void)
 			mono_gc_finalize_notify ();
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds */
-			if (WaitForSingleObjectEx (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
+			if (guarded_wait (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
 				int ret;
 
 				/* Set a flag which the finalizer thread can check */
@@ -1220,7 +1232,7 @@ mono_gc_cleanup (void)
 				mono_thread_internal_stop (gc_thread);
 
 				/* Wait for it to stop */
-				ret = WaitForSingleObjectEx (gc_thread->handle, 100, TRUE);
+				ret = guarded_wait (gc_thread->handle, 100, TRUE);
 
 				if (ret == WAIT_TIMEOUT) {
 					/* 
@@ -1237,7 +1249,7 @@ mono_gc_cleanup (void)
 				int ret;
 
 				/* Wait for the thread to actually exit */
-				ret = WaitForSingleObjectEx (gc_thread->handle, INFINITE, TRUE);
+				ret = guarded_wait (gc_thread->handle, INFINITE, TRUE);
 				g_assert (ret == WAIT_OBJECT_0);
 
 				mono_thread_join (GUINT_TO_POINTER (gc_thread->tid));

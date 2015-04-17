@@ -2723,7 +2723,9 @@ static void wait_for_tids (struct wait_data *wait, guint32 timeout)
 	
 	THREAD_DEBUG (g_message("%s: %d threads to wait for in this batch", __func__, wait->num));
 
+	MONO_PREPARE_BLOCKING
 	ret=WaitForMultipleObjectsEx(wait->num, wait->handles, TRUE, timeout, TRUE);
+	MONO_FINISH_BLOCKING
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
@@ -2784,7 +2786,9 @@ static void wait_for_tids_or_state_change (struct wait_data *wait, guint32 timeo
 		count++;
 	}
 
+	MONO_PREPARE_BLOCKING
 	ret=WaitForMultipleObjectsEx (count, wait->handles, FALSE, timeout, TRUE);
+	MONO_FINISH_BLOCKING
 
 	if(ret==WAIT_FAILED) {
 		/* See the comment in build_wait_tids() */
@@ -3182,7 +3186,10 @@ void mono_thread_suspend_all_other_threads (void)
 
 		/*Only wait on the suspend event if we are using the old path */
 		if (eventidx > 0 && !mono_thread_info_new_interrupt_enabled ()) {
+			MONO_PREPARE_BLOCKING
 			WaitForMultipleObjectsEx (eventidx, events, TRUE, 100, FALSE);
+			MONO_FINISH_BLOCKING
+
 			for (i = 0; i < wait->num; ++i) {
 				MonoInternalThread *thread = wait->threads [i];
 
@@ -4793,8 +4800,10 @@ self_suspend_internal (MonoInternalThread *thread)
 			for (;;)
 				Sleep (1000);
 		}
-		
+
+		MONO_PREPARE_BLOCKING
 		WaitForSingleObject (thread->suspend_event, INFINITE);
+		MONO_FINISH_BLOCKING
 		
 		LOCK_THREAD (thread);
 
@@ -4835,7 +4844,10 @@ resume_thread_internal (MonoInternalThread *thread)
 		UNLOCK_THREAD (thread);
 
 		/* Wait for the thread to awake */
+		MONO_PREPARE_BLOCKING
 		WaitForSingleObject (thread->resume_event, INFINITE);
+		MONO_FINISH_BLOCKING
+
 		CloseHandle (thread->resume_event);
 		thread->resume_event = NULL;
 		return TRUE;

@@ -1324,7 +1324,9 @@ mono_threadpool_ms_finish (MonoAsyncResult *ares, MonoArray **out_args, MonoObje
 			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) mono_wait_handle_new (mono_object_domain (ares), wait_event));
 		}
 		mono_monitor_exit ((MonoObject*) ares);
+		MONO_PREPARE_BLOCKING
 		WaitForSingleObjectEx (wait_event, INFINITE, TRUE);
+		MONO_FINISH_BLOCKING
 	}
 
 	ac = (MonoAsyncCall*) ares->object_data;
@@ -1370,7 +1372,9 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 	mono_memory_write_barrier ();
 
 	while (domain->threadpool_jobs) {
+		MONO_PREPARE_BLOCKING
 		WaitForSingleObject (sem, timeout);
+		MONO_FINISH_BLOCKING
 		if (timeout != -1) {
 			timeout -= mono_msec_ticks () - start;
 			if (timeout <= 0) {
