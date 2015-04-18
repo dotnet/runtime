@@ -440,18 +440,16 @@ Function:
 See MSDN.
 
 Notes:
-    On Windows NT/2000, the temp path is determined by the following steps:
+    On Windows, the temp path is determined by the following steps:
     1. The value of the "TMP" environment variable, or if it doesn't exist,
     2. The value of the "TEMP" environment variable, or if it doesn't exist,
     3. The Windows directory.
-    
-    On the Mac, in the default environment, none of the above variables are
-    set, so the Temporary Items folder is used instead. 
-	    
-    Also note that dwPathLen will always be the proper return value, since
-    GetEnvironmentVariable and MultiByteToWideChar will both return the
-    required size of the buffer if they fail, which is what this function
-    should do also.
+
+    On Unix, we follow in spirit:
+    1. The value of the "TMPDIR" environment variable, or if it doesn't exist,
+    2. The /tmp directory.
+    This is the same approach employed by mktemp.
+
 --*/
 DWORD
 PALAPI
@@ -474,24 +472,65 @@ GetTempPathA(
         return 0;
     }
 
-	// GetTempPath is supposed to include the trailing slash.
-    const char *defaultDir = "/tmp/";
-
-    /* still no luck, use /tmp */
-    if ( strlen(defaultDir) < nBufferLength )
+    /* Try the TMPDIR environment variable. This is the same env var checked by mktemp. */
+    dwPathLen = GetEnvironmentVariableA("TMPDIR", lpBuffer, nBufferLength);
+    if (dwPathLen > 0)
     {
-        dwPathLen = strlen(defaultDir);
-        strcpy_s(lpBuffer, nBufferLength, defaultDir);
+        /* The env var existed. dwPathLen will be the length without null termination 
+         * if the entire value was successfully retrieved, or it'll be the length
+         * required to store the value with null termination.
+         */
+        if (dwPathLen < nBufferLength)
+        {
+            /* The environment variable fit in the buffer. Make sure it ends with '/'. */
+            if (lpBuffer[dwPathLen - 1] != '/')
+            {
+                /* If adding the slash would still fit in our provided buffer, do it.  Otherwise, 
+                 * let the caller know how much space would be needed.
+                 */
+                if (dwPathLen + 2 <= nBufferLength)
+                {
+                    lpBuffer[dwPathLen++] = '/';
+                    lpBuffer[dwPathLen] = '\0';
+                }
+                else
+                {
+                    dwPathLen += 2;
+                }
+            }
+        }
+        else /* dwPathLen >= nBufferLength */
+        {
+            /* The value is too long for the supplied buffer.  dwPathLen will now be the
+             * length required to hold the value, but we don't know whether that value
+             * is going to be '/' terminated.  Since we'll need enough space for the '/', and since
+             * a caller would assume that the dwPathLen we return will be sufficient, 
+             * we make sure to account for it in dwPathLen even if that means we end up saying
+             * one more byte of space is needed than actually is.
+             */
+            dwPathLen++;
+        }
     }
-    else
+    else /* env var not found or was empty */
     {
-        /* get the required length */
-        dwPathLen = strlen(defaultDir) + 1;
+        /* no luck, use /tmp/ */
+        const char *defaultDir = "/tmp/";
+        int defaultDirLen = strlen(defaultDir);
+        if (defaultDirLen < nBufferLength)
+        {
+            dwPathLen = defaultDirLen;
+            strcpy_s(lpBuffer, nBufferLength, defaultDir);
+        }
+        else
+        {
+            /* get the required length */
+            dwPathLen = defaultDirLen + 1;
+        }
     }
 
-    if ( dwPathLen > nBufferLength )
+    if ( dwPathLen >= nBufferLength )
     {
-        ERROR("Buffer is too small, need %d characters\n", dwPathLen);
+        ERROR("Buffer is too small, need space for %d characters including null termination\n", dwPathLen);
         SetLastError( ERROR_INSUFFICIENT_BUFFER );
     }
 
@@ -513,26 +552,24 @@ GetTempPathW(
 	     IN DWORD nBufferLength,
 	     OUT LPWSTR lpBuffer)
 {
-    char TempBuffer[ MAX_PATH ];
-    DWORD dwRetVal = 0;
-
     PERF_ENTRY(GetTempPathW);
-    ENTRY( "GetTempPathW(nBufferLength=%u, lpBuffer=%p)\n",
-           nBufferLength, lpBuffer);
+    ENTRY("GetTempPathW(nBufferLength=%u, lpBuffer=%p)\n",
+          nBufferLength, lpBuffer);
 
-    dwRetVal = GetTempPathA( MAX_PATH, TempBuffer );
-   
-    // MAX_PATH should be big enough to hold whatever path, but due to concerns about multiple platforms, implememtation change inside GetTempPathA, and security attacks, adding checks for dwRetVal > MAX_PATH is better
-    if ( dwRetVal > MAX_PATH )
+    if (!lpBuffer)
     {
-        // If dwRetVal > MAX_PATH, dwRetVal = required number of TCHARs for TempBuffer, including NULL
-        ERROR( "internal TempBuffer was not large enough.\n " )
-        SetLastError( ERROR_INSUFFICIENT_BUFFER );
-        *lpBuffer = '\0';
+        ERROR("lpBuffer was not a valid pointer.\n")
+        SetLastError(ERROR_INVALID_PARAMETER);
+        LOGEXIT("GetTempPathW returns DWORD 0\n");
+        PERF_EXIT(GetTempPathW);
+        return 0;
     }
-    else if ( dwRetVal + 1 > nBufferLength )
+
+    char TempBuffer[nBufferLength > 0 ? nBufferLength : 1];
+    DWORD dwRetVal = GetTempPathA( nBufferLength, TempBuffer );
+   
+    if ( dwRetVal >= nBufferLength )
     {
-        // if dwRetVal < MAX_PATH, dwRetVal = number of TCHARs in TempBuffer, not including NULL
         ERROR( "lpBuffer was not large enough.\n" )
         SetLastError( ERROR_INSUFFICIENT_BUFFER );
         *lpBuffer = '\0';
