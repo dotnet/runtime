@@ -2,128 +2,61 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
-using Microsoft.Win32;
 using System;
-using System.Text;
-using System.Threading;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_DeleteSubKey_str : IDisposable
+    public class RegistryKey_DeleteSubKey_str : TestSubKey
     {
-        // Variables needed
-        private RegistryKey _rk1, _rk2;
-        private string _testKeyName = "REG_TEST_3";
-        private static int s_keyCount = 0;
-
-        public void TestInitialize()
-        {
-            var counter = Interlocked.Increment(ref s_keyCount);
-            _testKeyName = _testKeyName + counter.ToString();
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-            if (_rk1.OpenSubKey(_testKeyName) != null)
-                _rk1.DeleteSubKeyTree(_testKeyName);
-        }
+        private const string TestKey = "REG_TEST_3";
 
         public RegistryKey_DeleteSubKey_str()
+            : base(TestKey)
         {
-            TestInitialize();
         }
 
         [Fact]
-        public void Test01()
+        public void NegativeTests()
         {
-            // [] Passing in null should throw ArgumentNullException
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-            Action a = () => { _rk1.DeleteSubKey(null); };
-            Assert.Throws<ArgumentNullException>(() => { a(); });
+            const string name = "Test";
+
+            // Should throw if passed subkey name is null
+            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.DeleteSubKey(null));
+
+            // Should throw because subkey doesn't exists
+            Assert.Throws<ArgumentException>(() => _testRegistryKey.DeleteSubKey(name));
+
+            // Should throw if subkey has child subkeys
+            using (var rk = _testRegistryKey.CreateSubKey(name))
+            {
+                rk.CreateSubKey(name);
+                Assert.Throws<InvalidOperationException>(() => _testRegistryKey.DeleteSubKey(name));
+            }
+
+            // Should throw because RegistryKey is readonly
+            using (var rk = _testRegistryKey.OpenSubKey(string.Empty, false))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteSubKey(name));
+            }
+
+            // Should throw if RegistryKey is closed
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                _testRegistryKey.Dispose();
+                _testRegistryKey.DeleteSubKey(name);
+            });
         }
 
         [Fact]
-        public void Test02()
+        public void DeleteSubKeyTest()
         {
-            // [] Delete a sub that doesn't exists. //To improve code coverage
-            String strTemp = "This is the key name that doesn't exist currently";
-            Action a = () => { _rk1.DeleteSubKey(strTemp); };
-            Assert.Throws<ArgumentException>(() => { a(); });
-        }
+            Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
+            Assert.NotNull(_testRegistryKey.CreateSubKey(TestKey));
+            Assert.Equal(expected: 1, actual: _testRegistryKey.SubKeyCount);
 
-        [Fact]
-        public void Test03()
-        {
-            // [] Creating new SubKey and then deleting it
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-            _rk1.CreateSubKey(_testKeyName);
-            if (_rk1.OpenSubKey(_testKeyName) == null)
-            {
-                Assert.False(true, "Error SubKey does not exist.");
-            }
-
-            _rk1.DeleteSubKey(_testKeyName);
-            if (_rk1.OpenSubKey(_testKeyName) != null)
-            {
-                Assert.False(true, "Error SubKey not removed properly");
-            }
-        }
-
-        [Fact]
-        public void Test04()
-        {
-            // CreateSubKey should just open a SubKeyIfIt already exists
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-            _rk2.CreateSubKey("BLAH");
-            if (_rk1.OpenSubKey(_testKeyName).OpenSubKey("BLAH") == null)
-            {
-                Assert.False(true, "Error Expected get not returned");
-            }
-            _rk2.DeleteSubKey("BLAH");
-            if (_rk2.OpenSubKey("BLAH") != null)
-            {
-                Assert.False(true, "Error SubKey was not deleted");
-            }
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-            for (int i = 0; i < 10; i++)
-                _rk2.CreateSubKey("BLAH_" + i.ToString());
-
-            // [] Should throw invalid operation if I now try to delete parent key with values or subkeys
-            Action a = () => { _rk1.DeleteSubKey(_testKeyName); };
-            Assert.Throws<InvalidOperationException>(() => { a(); });
-
-            _rk2.DeleteSubKey("blah_9");
-
-            if (_rk2.SubKeyCount != 9)
-            {
-                Assert.False(true, "Error Incorrect number of subkeys , count==" + _rk2.SubKeyCount);
-            }
-            for (int i = 0; i < 9; i++)
-            {
-                if (!_rk2.GetSubKeyNames()[i].Equals("BLAH_" + i.ToString()))
-                {
-                    Assert.False(true, "Error" + i.ToString() + "! Incorrect name of subKey");
-                }
-            }
-
-            _rk1.DeleteSubKeyTree(_testKeyName);
-        }
-
-        [Fact]
-        public void Test05()
-        {
-            StringBuilder sb = new StringBuilder("");
-            for (int i = 0; i < 256; i++)
-                sb.Append(",");
-            Action a = () => { _rk1.CreateSubKey(sb.ToString());  };
-            Assert.Throws<ArgumentException>(() => { a(); });
-        }
-
-        public void Dispose()
-        {
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-            if (_rk1.OpenSubKey(_testKeyName) != null)
-                _rk1.DeleteSubKeyTree(_testKeyName);
-            if (_rk1.GetValue(_testKeyName) != null)
-                _rk1.DeleteValue(_testKeyName);
+            _testRegistryKey.DeleteSubKey(TestKey);
+            Assert.Null(_testRegistryKey.OpenSubKey(TestKey));
+            Assert.Equal(expected: 0, actual: _testRegistryKey.SubKeyCount);
         }
     }
 }

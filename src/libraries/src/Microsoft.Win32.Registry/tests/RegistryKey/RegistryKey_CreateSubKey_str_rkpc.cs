@@ -1,184 +1,110 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using Microsoft.Win32;
 using System;
-using System.Threading;
+using System.IO;
+using System.Linq;
+using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_CreateSubKey_str_rkpc : IDisposable
+    public class RegistryKey_CreateSubKey_str_rkpc : TestSubKey
     {
-        // Variables needed
-        private RegistryKey _rk1, _rk2;
-        private String _testKeyName, _testValueName, _testStringName, _testString;
-        private int s_testValue;
-        private static int s_keyCount = 0;
-
-        public void TestInitialize()
-        {
-            var counter = Interlocked.Increment(ref s_keyCount);
-            _testKeyName = "REG_TEST_2" + counter.ToString();
-            _testValueName = "TestValue";
-            _testStringName = "TestString" + counter.ToString();
-            _testString = "Hello World!†þ";
-
-            s_testValue = 11;
-
-            _rk1 = Registry.CurrentUser;
-            if (_rk1.OpenSubKey(_testKeyName) != null)
-                _rk1.DeleteSubKeyTree(_testKeyName);
-
-        }
+        private const string TestKey = "REG_TEST_2";
 
         public RegistryKey_CreateSubKey_str_rkpc()
+            : base(TestKey)
         {
-            TestInitialize();
         }
 
         [Fact]
-        public void Test01()
+        public void CreateWriteableSubkeyAndWrite()
         {
             // [] Vanilla; create a new subkey in read/write mode and write to it
+            const string testValueName = "TestValue";
+            const string testStringValueName = "TestString";
+            const string testStringValue = "Hello World!†þ";
+            const int testValue = 42;
 
-            try
+            using (var rk = _testRegistryKey.CreateSubKey(TestKey, writable: true))
             {
-                _rk2 = _rk1.CreateSubKey(_testKeyName, true /* write */);
-                _rk2.SetValue(_testValueName, s_testValue);
-                if (_rk2.ValueCount != 1)
-                {
-                    Assert.False(true, "Error Value not correctly created.");
-                }
-            }
-            catch (Exception exc)
-            {
-                Assert.False(true, "Error Unexpected Exception: " + exc.ToString());
-            }
-            // [] Vanilla; create a new subkey in default mode and write to it
+                Assert.NotNull(rk);
 
-            try
-            {
-                _rk2.SetValue(_testStringName, _testString);
-                if (_rk2.ValueCount != 2)
-                {
-                    Assert.False(true, "Error Value not correctly created.");
-                }
-            }
-            catch (Exception exc)
-            {
-                Assert.False(true, "ErrorUnexpected Exception: " + exc.ToString());
-            }
+                rk.SetValue(testValueName, testValue);
+                Assert.Equal(1, rk.ValueCount);
 
-            // [] Vanilla; read those values (here, create subkey should open the key)
-
-            try
-            {
-                if (((int)(_rk2.GetValue(_testValueName)) != s_testValue) || ((string)(_rk2.GetValue(_testStringName)) != _testString))
-                {
-                    Assert.False(true, "Error Value not correctly created.");
-                }
-                _rk2.Dispose();
-            }
-            catch (Exception exc)
-            {
-                Assert.False(true, "Error!Unexpected Exception: " + exc.ToString());
+                rk.SetValue(testStringValueName, testStringValue);
+                Assert.Equal(2, rk.ValueCount);
+                
+                Assert.Equal(testValue, rk.GetValue(testValueName));
+                Assert.Equal(testStringValue, rk.GetValue(testStringValueName).ToString());
             }
         }
 
         [Fact]
-        public void Test02()
+        public void NegativeTests()
         {
-            // [] Create with the read permissions only and try to create a value
-            Action a = () =>
-            {
-                _rk2 = _rk1.CreateSubKey(_testKeyName, false);
-                _rk2.SetValue(_testValueName, s_testValue);
-            };
+            // Should throw if passed subkey name is null
+            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.CreateSubKey(null, true));
 
-            Assert.Throws<UnauthorizedAccessException>(() => { a(); });
+            // Should throw if passed option is invalid
+            Assert.Throws<ArgumentException>(() => _testRegistryKey.CreateSubKey(TestKey, true, options: (RegistryOptions)(-1)));
+            Assert.Throws<ArgumentException>(() => _testRegistryKey.CreateSubKey(TestKey, true, options: (RegistryOptions)3));
+
+            // Should throw if key length above 255 characters
+            const int maxValueNameLength = 255;
+            Assert.Throws<ArgumentException>(() => _testRegistryKey.CreateSubKey(new string('a', maxValueNameLength + 1)));
+
+            //According to msdn documetation max nesting level exceeds is 510 but actual is 508
+            const int maxNestedLevel = 508;
+            string exceedsNestedSubkeyName = string.Join(@"\", Enumerable.Repeat("a", maxNestedLevel));
+            Assert.Throws<IOException>(() => _testRegistryKey.CreateSubKey(exceedsNestedSubkeyName, true));
+
+            // Should throw if RegistryKey is readonly
+            const string name = "FooBar";
+            _testRegistryKey.SetValue(name, 42);
+            using (var rk = Registry.CurrentUser.CreateSubKey(TestKey, writable: false, options: RegistryOptions.None))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteValue(name));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteSubKey(name));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteSubKeyTree(name));
+            }
+
+            // Should throw if RegistryKey closed
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                _testRegistryKey.Dispose();
+                _testRegistryKey.CreateSubKey(TestKey, true);
+            });
         }
 
         [Fact]
-        public void Test03()
-        {
-            // [] Create a subkey with a null name
-            Action a = () =>
-            {
-                _rk2 = _rk1.CreateSubKey(null, true);
-            };
-
-            Assert.Throws<ArgumentNullException>(() => { a(); });
-        }
-
-        [Fact]
-        public void Test04()
+        public void CreateSubkeyWithEmptyName()
         {
             // [] Let the name of the created subkey be empty
-
-            int prevValCount = 0;
-            try
-            {
-                if ((_rk2 = _rk1.OpenSubKey("", true)) != null)
-                {
-                    _rk2.DeleteValue(_testStringName, false);
-                    prevValCount = _rk2.ValueCount;
-                    _rk2.Dispose();
-                }
-                _rk2 = _rk1.CreateSubKey("", true);
-                _rk2.SetValue(_testStringName, _testString);
-                if (_rk2.ValueCount != prevValCount + 1)
-                {
-                    Assert.False(true, "Error Value not correctly created.");
-                }
-                _rk2.Dispose();
-            }
-            catch (Exception exc)
-            {
-                Assert.False(true, "Error!Unexpected Exception: " + exc.ToString());
-            }
+            string expectedName = _testRegistryKey.Name + @"\";
+            var rk = _testRegistryKey.CreateSubKey(string.Empty, true);
+            Assert.NotNull(rk);
+            Assert.Equal(expectedName, rk.Name);
         }
 
-        [Fact]
-        public void Test05()
+        [Theory]
+        [InlineData(false, RegistryOptions.Volatile)]
+        [InlineData(true, RegistryOptions.Volatile)]
+        [InlineData(false, RegistryOptions.None)]
+        [InlineData(true, RegistryOptions.None)]
+        public void RegistryOptionsTestsValid(bool alreadyExists, RegistryOptions options)
         {
-            // [] Read from the subkey created in the previous test
+            string subkey = "TEST_" + options.ToString();
 
-            try
+            if (alreadyExists)
             {
-                _rk2 = _rk1.CreateSubKey("", true);
-                _rk2.SetValue(_testStringName, _testString);
-                if ((string)(_rk2.GetValue(_testStringName)) != _testString)
-                {
-                    Assert.False(true, "Error! Value not correctly created.");
-                }
-                _rk2.Dispose();
+                _testRegistryKey.CreateSubKey(subkey);
             }
-            catch (Exception exc)
-            {
-                Assert.False(true, string.Format("Error!Unexpected Exception: " + exc.ToString()));
-            }
-        }
 
-
-        [Fact]
-        public void Test06()
-        {
-            // [] Create a subkey with a name greater than 255 chars
-            Action a = () =>
-            {
-                _rk2 = _rk1.CreateSubKey("0abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", true);
-            };
-
-            Assert.Throws<ArgumentException>(() => { a(); });
-        }
-
-        public void Dispose()
-        {
-            if (_rk1.GetValue(_testStringName) != null)
-                _rk1.DeleteValue(_testStringName);
-            if (_rk1.OpenSubKey(_testKeyName) != null)
-                _rk1.DeleteSubKeyTree(_testKeyName);
+            Assert.NotNull(_testRegistryKey.CreateSubKey(subkey));
         }
     }
 }
