@@ -19,12 +19,17 @@ Book of the Runtime
 - [Book of the Runtime FAQ](botr-faq.md)
 - [Introduction to the Common Language Runtime](intro-to-clr.md)
 - [Garbage Collection Design](garbage-collection.md)
+- [Threading](threading.md)
+- [Type System](type-system.md)
 - [Type Loader](type-loader.md)
 - [Method Descriptor](method-descriptor.md)
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 - [Stack Walking](stackwalking.md)
 - [Mscorlib and Calling Into the Runtime](mscorlib.md)
+- [Data Access Component (DAC) Notes](dac-notes.md)
+- [Profiling](profiling.md)
 - [Implementing Profilability](profilability.md)
+- [What Every Dev needs to Know About Exceptions in the Runtime](exceptions.md)
 
 .NET Runtime Specs
 ==================
