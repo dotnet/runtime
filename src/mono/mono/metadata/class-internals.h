@@ -1407,9 +1407,6 @@ MonoClass *
 mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error);
 
 MonoClass *
-mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
-
-MonoClass *
 mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
 MonoClassField*
