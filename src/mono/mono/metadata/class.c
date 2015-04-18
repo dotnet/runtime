@@ -196,13 +196,13 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		The defacto behavior is that it's just a typedef in disguise.
 		*/
 		/* a typedef in disguise */
-		res = mono_class_from_name (image, nspace, name); /*FIXME proper error handling*/
+		res = mono_class_from_name_checked (image, nspace, name, error);
 		goto done;
 
 	case MONO_RESOLUTION_SCOPE_MODULEREF:
 		module = mono_image_load_module (image, idx);
 		if (module)
-			res = mono_class_from_name (module, nspace, name); /*FIXME proper error handling*/
+			res = mono_class_from_name_checked (module, nspace, name, error);
 		goto done;
 
 	case MONO_RESOLUTION_SCOPE_TYPEREF: {
@@ -266,8 +266,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		return NULL;
 	}
 
-	/* FIXME this leaks loader errors */
-	res = mono_class_from_name (image->references [idx - 1]->image, nspace, name);
+	res = mono_class_from_name_checked (image->references [idx - 1]->image, nspace, name, error);
 
 done:
 	/* Generic case, should be avoided for when a better error is possible. */
@@ -7705,23 +7704,9 @@ search_modules (MonoImage *image, const char *name_space, const char *name)
 	return NULL;
 }
 
-/**
- * mono_class_from_name:
- * @image: The MonoImage where the type is looked up in
- * @name_space: the type namespace
- * @name: the type short name.
- *
- * Obtains a MonoClass with a given namespace and a given name which
- * is located in the given MonoImage.
- *
- * To reference nested classes, use the "/" character as a separator.
- * For example use "Foo/Bar" to reference the class Bar that is nested
- * inside Foo, like this: "class Foo { class Bar {} }".
- */
 MonoClass *
-mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
+mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
 {
-	MonoError error;
 	GHashTable *nspace_table;
 	MonoImage *loaded_image;
 	guint32 token = 0;
@@ -7729,6 +7714,8 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 	MonoClass *class;
 	char *nested;
 	char buf [1024];
+
+	mono_error_init (error);
 
 	if ((nested = strchr (name, '/'))) {
 		int pos = nested - name;
@@ -7823,14 +7810,37 @@ mono_class_from_name (MonoImage *image, const char* name_space, const char *name
 
 	token = MONO_TOKEN_TYPE_DEF | token;
 
-	class = mono_class_get_checked (image, token, &error);
+	class = mono_class_get_checked (image, token, error);
+	if (nested)
+		return return_nested_in (class, nested);
+	return class;
+}
+
+/**
+ * mono_class_from_name:
+ * @image: The MonoImage where the type is looked up in
+ * @name_space: the type namespace
+ * @name: the type short name.
+ *
+ * Obtains a MonoClass with a given namespace and a given name which
+ * is located in the given MonoImage.
+ *
+ * To reference nested classes, use the "/" character as a separator.
+ * For example use "Foo/Bar" to reference the class Bar that is nested
+ * inside Foo, like this: "class Foo { class Bar {} }".
+ */
+MonoClass *
+mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
+{
+	MonoError error;
+	MonoClass *klass;
+
+	klass = mono_class_from_name_checked (image, name_space, name, &error);
 	if (!mono_error_ok (&error)) {
 		mono_loader_set_error_from_mono_error (&error);
 		mono_error_cleanup (&error); /* FIXME Don't swallow the error */
 	}
-	if (nested)
-		return return_nested_in (class, nested);
-	return class;
+	return klass;
 }
 
 /**
