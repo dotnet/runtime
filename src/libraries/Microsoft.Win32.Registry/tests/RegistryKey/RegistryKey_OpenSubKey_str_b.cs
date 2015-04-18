@@ -1,125 +1,63 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Xunit;
-using Microsoft.Win32;
 using System;
-using System.Threading;
+using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_OpenSubKey_str_b : IDisposable
+    public class RegistryKey_OpenSubKey_str_b : TestSubKey
     {
-        private RegistryKey _rk1, _rk2;
-        private String _testKeyName = "BCL_TEST_9";
-        private string _testStringName = "TestString";
-        private static int s_keyCount = 0;
-
-        public void TestInitialize()
-        {
-            var counter = Interlocked.Increment(ref s_keyCount);
-            _testKeyName += counter.ToString();
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-            if (_rk1.OpenSubKey(_testKeyName) != null)
-                _rk1.DeleteSubKeyTree(_testKeyName);
-            if (_rk1.GetValue(_testKeyName) != null)
-                _rk1.DeleteValue(_testKeyName);
-        }
+        private const string TestKey = "BCL_TEST_9";
 
         public RegistryKey_OpenSubKey_str_b()
+            : base(TestKey)
         {
-            TestInitialize();
         }
 
         [Fact]
-        public void Test01()
+        public void NegativeTests()
         {
-            // [] Passing in null should throw ArgumentNullException
+            // Should throw if passed subkey name is null
+            Assert.Throws<ArgumentNullException>(() => _testRegistryKey.OpenSubKey(name: null, writable: false));
 
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-            Action a = () => { _rk1.OpenSubKey(null, false); };
-            Assert.Throws<ArgumentNullException>(() => { a(); });
+            // Should throw if subkey name greater than 255 chars
+            Assert.Throws<ArgumentException>(() => _testRegistryKey.OpenSubKey(new string('a', 256), true));
+
+            // OpenSubKey should be read only
+            const string name = "FooBar";
+            _testRegistryKey.SetValue(name, 42);
+            _testRegistryKey.CreateSubKey(name);
+            using (var rk = Registry.CurrentUser.OpenSubKey(name: TestKey, writable: false))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => rk.CreateSubKey(name));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.SetValue(name, "String"));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteValue(name));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteSubKey(name));
+                Assert.Throws<UnauthorizedAccessException>(() => rk.DeleteSubKeyTree(name));
+            }
+
+            // Should throw if RegistryKey closed
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                _testRegistryKey.Dispose();
+                _testRegistryKey.OpenSubKey(TestKey, true);
+            });
         }
 
         [Fact]
-        public void Test02()
-        {
-            // [] Should not be able to modify values when false is passed
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-            _rk2.SetValue(_testStringName, "TestValue");
-
-            _rk2 = _rk1.OpenSubKey(_testKeyName, false);
-            Action a = () => { _rk2.DeleteValue(_testStringName); };
-            Assert.Throws<UnauthorizedAccessException>(() => { a(); });
-        }
-
-        [Fact]
-        public void Test03()
+        public void OpenSubKeyTest()
         {
             // [] Should have write rights when true is passed
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-            if (_rk2.GetValue(_testStringName) != null)
+            const int testValue = 32;
+            using (var rk = _testRegistryKey.OpenSubKey("", true))
             {
-                Assert.False(true, "Error Value not deleted");
+                rk.CreateSubKey(TestKey);
+                rk.SetValue(TestKey, testValue);
+
+                Assert.NotNull(rk.OpenSubKey(TestKey));
+                Assert.Equal(testValue, (int)rk.GetValue(TestKey));
             }
-
-            _rk2 = _rk1.OpenSubKey("", true);
-            _rk2.SetValue(_testStringName, "Test");
-            if (!_rk1.GetValue(_testStringName).Equals("Test"))
-            {
-                Assert.False(true, "Error Value not set properly");
-            }
-        }
-
-        [Fact]
-        public void Test04()
-        {
-            // [] Open one length subkey
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-            _rk2.SetValue("StringTest", "BeforeTest");
-            _rk2 = _rk1.OpenSubKey(_testKeyName, false);
-            Action a = () => { _rk2.SetValue("StringTest", "Test"); };
-            Assert.Throws<UnauthorizedAccessException>(() => { a(); });
-        }
-
-        [Fact]
-        public void Test05()
-        {
-            // [] Check that I can read
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-            _rk2.SetValue("StringTest", "BeforeTest");
-            if (!_rk2.GetValue("StringTest").Equals("BeforeTest"))
-            {
-                Assert.False(true, "Error Expected==BeforeTest , value==" + _rk2.GetValue("StringTest").ToString());
-            }
-        }
-
-        [Fact]
-        public void Test06()
-        {
-            // [] Same thing for true
-
-            _rk2 = _rk1.CreateSubKey(_testKeyName);
-            _rk2.SetValue(_testStringName, "BeforeTest");
-            _rk2 = _rk1.OpenSubKey(_testKeyName, true);
-            _rk2.SetValue(_testStringName, "Test");
-            if (!_rk2.GetValue(_testStringName).Equals("Test"))
-            {
-                Assert.False(true, "Error Incorrect value set");
-            }
-        }
-
-
-        public void Dispose()
-        {
-            _rk1 = Microsoft.Win32.Registry.CurrentUser;
-            if (_rk1.OpenSubKey(_testKeyName) != null)
-                _rk1.DeleteSubKeyTree(_testKeyName);
-            if (_rk1.GetValue(_testStringName) != null)
-                _rk1.DeleteValue(_testStringName);
         }
     }
 }
