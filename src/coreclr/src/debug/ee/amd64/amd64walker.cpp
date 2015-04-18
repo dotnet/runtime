@@ -205,7 +205,7 @@ void NativeWalker::Decode()
                     {
                         if ((base & 0x07) == 5) 
                         {
-                            result = result + *((UINT32*)ip);
+                            result = result + *((INT32*)ip);
                             displace = 7;
                         } 
                         else 
@@ -215,12 +215,12 @@ void NativeWalker::Decode()
                     } 
                     else if (mod == 1) 
                     {
-                        result = result + *((UINT8*)ip);
+                        result = result + *((INT8*)ip);
                         displace = 4;
                     } 
                     else // mod == 2
                     {
-                        result = result + *((UINT32*)ip);
+                        result = result + *((INT32*)ip);
                         displace = 7;
                     }
 
@@ -247,12 +247,12 @@ void NativeWalker::Decode()
                         } 
                         else if (mod == 1) 
                         {
-                            result = result + *((UINT8*)ip);
+                            result = result + *((INT8*)ip);
                             displace = 3;
                         } 
                         else // mod == 2
                         {
-                            result = result + *((UINT32*)ip);
+                            result = result + *((INT32*)ip);
                             displace = 6;
                         }
                     }
