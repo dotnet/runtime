@@ -577,6 +577,8 @@ file_io/GetTempFileNameA/test1/paltest_gettempfilenamea_test1
 file_io/GetTempFileNameA/test2/paltest_gettempfilenamea_test2
 file_io/GetTempFileNameA/test3/paltest_gettempfilenamea_test3
 file_io/GetTempFileNameW/test3/paltest_gettempfilenamew_test3
+file_io/gettemppatha/test1/paltest_gettemppatha_test1
+file_io/GetTempPathW/test1/paltest_gettemppathw_test1
 file_io/ReadFile/test2/paltest_readfile_test2
 file_io/ReadFile/test3/paltest_readfile_test3
 file_io/ReadFile/test4/paltest_readfile_test4
