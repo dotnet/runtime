@@ -1745,20 +1745,18 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 	return pattrs;
 }
 
+
 /*
- * mono_metadata_parse_signature_full:
+ * mono_metadata_parse_signature:
  * @image: metadata context
- * @generic_container: generic container
  * @toke: metadata token
  *
  * Decode a method signature stored in the STANDALONESIG table
  *
- * LOCKING: Assumes the loader lock is held.
- *
  * Returns: a MonoMethodSignature describing the signature.
  */
 MonoMethodSignature*
-mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *generic_container, guint32 token)
+mono_metadata_parse_signature (MonoImage *image, guint32 token)
 {
 	MonoError error;
 	MonoMethodSignature *ret;
@@ -1777,27 +1775,9 @@ mono_metadata_parse_signature_full (MonoImage *image, MonoGenericContainer *gene
 	ptr = mono_metadata_blob_heap (image, sig);
 	mono_metadata_decode_blob_size (ptr, &ptr);
 
-	ret = mono_metadata_parse_method_signature_full (image, generic_container, 0, ptr, NULL, &error);
-	if (!ret) {
-		mono_loader_set_error_from_mono_error (&error);
-		mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
-	}
+	ret = mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, &error);
+	mono_error_cleanup (&error); /*FIXME don't swallow the error message*/
 	return ret;
-}
-
-/*
- * mono_metadata_parse_signature:
- * @image: metadata context
- * @toke: metadata token
- *
- * Decode a method signature stored in the STANDALONESIG table
- *
- * Returns: a MonoMethodSignature describing the signature.
- */
-MonoMethodSignature*
-mono_metadata_parse_signature (MonoImage *image, guint32 token)
-{
-	return mono_metadata_parse_signature_full (image, NULL, token);
 }
 
 /*

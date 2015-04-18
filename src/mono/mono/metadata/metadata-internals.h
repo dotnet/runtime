@@ -668,11 +668,6 @@ mono_metadata_parse_type_full               (MonoImage             *image,
 					     const char            *ptr,
 					     const char           **rptr);
 
-MonoMethodSignature *
-mono_metadata_parse_signature_full          (MonoImage             *image,
-					     MonoGenericContainer  *generic_container,
-					     guint32                token);
-
 MONO_API MonoMethodSignature *
 mono_metadata_parse_method_signature_full   (MonoImage             *image,
 					     MonoGenericContainer  *generic_container,
