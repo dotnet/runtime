@@ -84,6 +84,9 @@ namespace Tools
                     return new BigInteger(Negate(bytes1).ToArray());
                 case "u+":
                     return num1;
+                case "uMultiply":
+                case "u*":
+                    return new BigInteger(Multiply(bytes1, bytes1).ToArray());
                 default:
                     Assert.True(false, String.Format("Invalid operation found: {0}", op));
                     break;
