@@ -2451,7 +2451,7 @@ extern MonoBoolean ves_icall_System_Net_Dns_GetHostByAddr_internal(MonoString *a
 		}
 	}
 
-	add_info_ok = mono_get_address_info (hostname, 0, hint | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info);
+	add_info_ok = !mono_get_address_info (hostname, 0, hint | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info);
 	MONO_FINISH_BLOCKING
 
 	if (add_info_ok)
