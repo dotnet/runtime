@@ -1618,12 +1618,46 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
-            int sign = +1;
-            BigIntegerBuilder reg1 = new BigIntegerBuilder(left, ref sign);
-            BigIntegerBuilder reg2 = new BigIntegerBuilder(right, ref sign);
+            uint[] result;
 
-            reg1.Mul(ref reg2);
-            return reg1.GetInteger(sign);
+            if (left._bits != null)
+            {
+                if (right._bits != null)
+                {
+                    if (left._bits == right._bits)
+                    {
+                        result = BigIntegerCalculator.Square(left._bits);
+                    }
+                    else
+                    {
+                        if (left._bits.Length < right._bits.Length)
+                        {
+                            result = BigIntegerCalculator.Multiply(right._bits, left._bits);
+                        }
+                        else
+                        {
+                            result = BigIntegerCalculator.Multiply(left._bits, right._bits);
+                        }
+                    }
+                }
+                else
+                {
+                    result = BigIntegerCalculator.Multiply(left._bits, NumericsHelpers.Abs(right._sign));
+                }
+            }
+            else
+            {
+                if (right._bits != null)
+                {
+                    result = BigIntegerCalculator.Multiply(right._bits, NumericsHelpers.Abs(left._sign));
+                }
+                else
+                {
+                    result = BigIntegerCalculator.Multiply(NumericsHelpers.Abs(left._sign), NumericsHelpers.Abs(right._sign));
+                }
+            }
+
+            return new BigInteger(result, (left._sign < 0) ^ (right._sign < 0));
         }
 
         public static BigInteger operator /(BigInteger dividend, BigInteger divisor)
