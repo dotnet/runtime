@@ -5537,70 +5537,66 @@ add_intrinsics (LLVMModuleRef module)
 	 * type doesn't seem to do any locking.
 	 */
 	{
-		LLVMTypeRef memset_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
+		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMInt8Type (), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
 		memset_param_count = 5;
 		memset_func_name = "llvm.memset.p0i8.i32";
 
-		LLVMAddFunction (module, memset_func_name, LLVMFunctionType (LLVMVoidType (), memset_params, memset_param_count, FALSE));
+		AddFunc (module, memset_func_name, LLVMVoidType (), params, memset_param_count);
 	}
 
 	{
-		LLVMTypeRef memcpy_params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
+		LLVMTypeRef params [] = { LLVMPointerType (LLVMInt8Type (), 0), LLVMPointerType (LLVMInt8Type (), 0), LLVMInt32Type (), LLVMInt32Type (), LLVMInt1Type () };
 
 		memcpy_param_count = 5;
 		memcpy_func_name = "llvm.memcpy.p0i8.p0i8.i32";
 
-		LLVMAddFunction (module, memcpy_func_name, LLVMFunctionType (LLVMVoidType (), memcpy_params, memcpy_param_count, FALSE));
+		AddFunc (module, memcpy_func_name, LLVMVoidType (), params, memcpy_param_count);
 	}
 
 	{
 		LLVMTypeRef params [] = { LLVMDoubleType () };
 
-		LLVMAddFunction (module, "llvm.sin.f64", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
-		LLVMAddFunction (module, "llvm.cos.f64", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
-		LLVMAddFunction (module, "llvm.sqrt.f64", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
+		AddFunc (module, "llvm.sin.f64", LLVMDoubleType (), params, 1);
+		AddFunc (module, "llvm.cos.f64", LLVMDoubleType (), params, 1);
+		AddFunc (module, "llvm.sqrt.f64", LLVMDoubleType (), params, 1);
 
 		/* This isn't an intrinsic, instead llvm seems to special case it by name */
-		LLVMAddFunction (module, "fabs", LLVMFunctionType (LLVMDoubleType (), params, 1, FALSE));
+		AddFunc (module, "fabs", LLVMDoubleType (), params, 1);
 	}
 
 	{
 		LLVMTypeRef ovf_res_i32 [] = { LLVMInt32Type (), LLVMInt1Type () };
-		LLVMTypeRef ovf_params_i32 [] = { LLVMInt32Type (), LLVMInt32Type () };
+		LLVMTypeRef params [] = { LLVMInt32Type (), LLVMInt32Type () };
+		LLVMTypeRef ret_type = LLVMStructType (ovf_res_i32, 2, FALSE);
 
-		LLVMAddFunction (module, "llvm.sadd.with.overflow.i32", LLVMFunctionType (LLVMStructType (ovf_res_i32, 2, FALSE), ovf_params_i32, 2, FALSE));
-		LLVMAddFunction (module, "llvm.uadd.with.overflow.i32", LLVMFunctionType (LLVMStructType (ovf_res_i32, 2, FALSE), ovf_params_i32, 2, FALSE));
-		LLVMAddFunction (module, "llvm.ssub.with.overflow.i32", LLVMFunctionType (LLVMStructType (ovf_res_i32, 2, FALSE), ovf_params_i32, 2, FALSE));
-		LLVMAddFunction (module, "llvm.usub.with.overflow.i32", LLVMFunctionType (LLVMStructType (ovf_res_i32, 2, FALSE), ovf_params_i32, 2, FALSE));
-		LLVMAddFunction (module, "llvm.smul.with.overflow.i32", LLVMFunctionType (LLVMStructType (ovf_res_i32, 2, FALSE), ovf_params_i32, 2, FALSE));
-		LLVMAddFunction (module, "llvm.umul.with.overflow.i32", LLVMFunctionType (LLVMStructType (ovf_res_i32, 2, FALSE), ovf_params_i32, 2, FALSE));
+		AddFunc (module, "llvm.sadd.with.overflow.i32", ret_type, params, 2);
+		AddFunc (module, "llvm.sadd.with.overflow.i32", ret_type, params, 2);
+		AddFunc (module, "llvm.uadd.with.overflow.i32", ret_type, params, 2);
+		AddFunc (module, "llvm.ssub.with.overflow.i32", ret_type, params, 2);
+		AddFunc (module, "llvm.usub.with.overflow.i32", ret_type, params, 2);
+		AddFunc (module, "llvm.smul.with.overflow.i32", ret_type, params, 2);
+		AddFunc (module, "llvm.umul.with.overflow.i32", ret_type, params, 2);
 	}
 
 	{
 		LLVMTypeRef ovf_res_i64 [] = { LLVMInt64Type (), LLVMInt1Type () };
-		LLVMTypeRef ovf_params_i64 [] = { LLVMInt64Type (), LLVMInt64Type () };
+		LLVMTypeRef params [] = { LLVMInt64Type (), LLVMInt64Type () };
+		LLVMTypeRef ret_type = LLVMStructType (ovf_res_i64, 2, FALSE);
 
-		LLVMAddFunction (module, "llvm.sadd.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
-		LLVMAddFunction (module, "llvm.uadd.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
-		LLVMAddFunction (module, "llvm.ssub.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
-		LLVMAddFunction (module, "llvm.usub.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
-		LLVMAddFunction (module, "llvm.smul.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
-		LLVMAddFunction (module, "llvm.umul.with.overflow.i64", LLVMFunctionType (LLVMStructType (ovf_res_i64, 2, FALSE), ovf_params_i64, 2, FALSE));
+		AddFunc (module, "llvm.sadd.with.overflow.i64", ret_type, params, 2);
+		AddFunc (module, "llvm.uadd.with.overflow.i64", ret_type, params, 2);
+		AddFunc (module, "llvm.ssub.with.overflow.i64", ret_type, params, 2);
+		AddFunc (module, "llvm.usub.with.overflow.i64", ret_type, params, 2);
+		AddFunc (module, "llvm.smul.with.overflow.i64", ret_type, params, 2);
+		AddFunc (module, "llvm.umul.with.overflow.i64", ret_type, params, 2);
 	}
 
 	/* EH intrinsics */
 	{
-		LLVMTypeRef arg_types [2];
-		LLVMTypeRef ret_type;
+		AddFunc (module, "mono_personality", LLVMVoidType (), NULL, 0);
 
-		arg_types [0] = LLVMPointerType (LLVMInt8Type (), 0);
-		arg_types [1] = LLVMPointerType (LLVMInt8Type (), 0);
-		ret_type = LLVMInt32Type ();
-
-		LLVMAddFunction (module, "mono_personality", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
-
-		LLVMAddFunction (module, "llvm_resume_unwind_trampoline", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
+		AddFunc (module, "llvm_resume_unwind_trampoline", LLVMVoidType (), NULL, 0);
 	}
 
 	/* SSE intrinsics */
@@ -5763,7 +5759,7 @@ add_intrinsics (LLVMModuleRef module)
 			arg_types [2] = LLVMInt1Type ();
 			arg_types [3] = LLVMInt32Type ();
 			sprintf (name, "llvm.mono.load.i%d.p0i%d", i * 8, i * 8);
-			LLVMAddFunction (module, name, LLVMFunctionType (LLVMIntType (i * 8), arg_types, 4, FALSE));
+			AddFunc (module, name, LLVMIntType (i * 8), arg_types, 4);
 
 			arg_types [0] = LLVMIntType (i * 8);
 			arg_types [1] = LLVMPointerType (LLVMIntType (i * 8), 0);
@@ -5771,7 +5767,7 @@ add_intrinsics (LLVMModuleRef module)
 			arg_types [3] = LLVMInt1Type ();
 			arg_types [4] = LLVMInt32Type ();
 			sprintf (name, "llvm.mono.store.i%d.p0i%d", i * 8, i * 8);
-			LLVMAddFunction (module, name, LLVMFunctionType (LLVMVoidType (), arg_types, 5, FALSE));
+			AddFunc (module, name, LLVMVoidType (), arg_types, 5);
 		}
 	}
 }
