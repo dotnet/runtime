@@ -16,16 +16,10 @@
 #include <palsuite.h>
 
 /* 
- * NOTE: The only supported code page on FreeBSD is 1252, Windows 3.1 Latin 1 
- *       (U.S., Western Europe), so that is the only thing we test against.
- *       On Darwin, we only support code page 65001 (UTF-8).
+ * NOTE: We only support code page 65001 (UTF-8).
  */
 
-#if __APPLE__
 #define EXPECTED_CP     65001
-#else
-#define EXPECTED_CP     1252
-#endif
 
 int __cdecl main(int argc, char *argv[])
 {
