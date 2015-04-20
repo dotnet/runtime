@@ -831,6 +831,7 @@ monitor_thread (gpointer unused)
 		ms = SAMPLES_PERIOD;
 		i = 10; //number of spurious awakes we tolerate before doing a round of rebalancing.
 		mono_gc_set_skip_thread (TRUE);
+		MONO_PREPARE_BLOCKING
 		do {
 			guint32 ts;
 			ts = mono_msec_ticks ();
@@ -841,6 +842,7 @@ monitor_thread (gpointer unused)
 				break;
 			check_for_interruption_critical ();
 		} while (ms > 0 && i--);
+		MONO_FINISH_BLOCKING
 		mono_gc_set_skip_thread (FALSE);
 
 		if (mono_runtime_is_shutting_down ())
@@ -853,6 +855,7 @@ monitor_thread (gpointer unused)
 		if (async_tp.pool_status == 2 || async_io_tp.pool_status == 2)
 			break;
 
+		MONO_PREPARE_BLOCKING
 		switch (monitor_state) {
 		case MONITOR_STATE_AWAKE:
 			num_waiting_iterations = 0;
@@ -871,6 +874,7 @@ monitor_thread (gpointer unused)
 		case MONITOR_STATE_SLEEPING:
 			g_assert_not_reached ();
 		}
+		MONO_FINISH_BLOCKING
 
 		for (i = 0; i < 2; i++) {
 			ThreadPool *tp;
@@ -1658,6 +1662,7 @@ async_invoke_thread (gpointer data)
 			}
 
 			mono_gc_set_skip_thread (TRUE);
+			MONO_PREPARE_BLOCKING
 
 #if defined(__OpenBSD__)
 			while (mono_cq_count (tp->queue) == 0 && (res = mono_sem_wait (&tp->new_job, TRUE)) == -1) {// && errno == EINTR) {
@@ -1670,6 +1675,7 @@ async_invoke_thread (gpointer data)
 			}
 			InterlockedDecrement (&tp->waiting);
 
+			MONO_FINISH_BLOCKING
 			mono_gc_set_skip_thread (FALSE);
 
 			if (mono_runtime_is_shutting_down ())
