@@ -63,342 +63,20 @@ static CP_MAPPING CP_TO_NATIVE_TABLE[] = {
     { 950, kCFStringEncodingDOSChineseTrad, 2, { 129, 254, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
 };
 
-// We hardcode the system's default codepage to be UTF-8.
-// There are several reasons for this:
-// - HFS+ file names are encoded as UTF-8.
-// - When writing strings to the console, the Terminal.app will interpret them as UTF-8.
-static const UINT PAL_ACP = 65001;
-
 #else // HAVE_COREFOUNDATION
 
-// The following outlines the process to add a new codepage support in PAL:
-// 1. Type "locale" on a localized Unix machine to find out the value of "LC_TYPE",
-//    e.g., on a Russian FreeBSD machine, LC_TYPE is ru_RU.KOI8-R.
-// 2. Add a new entry to the CP_TO_NATIVE_TABLE in pal/corunix/locale/unicode.c file such as:
-//    { 20866, "ru_RU.KOI8-R", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
-//    where 20866 is the Code-Page Identifier and "ru_RU.KOI8-R" is the locale on Unix.
-//    Check MSDN documentation for the mapping between code page identifier and locale.
-// 3. Add a new entry to the LANGID_map table in pal/corunix/locale/locale.c file such as:
-//    {"ru_RU.KOI8-R", 0x0419}, /* Russian */
-//    where 0x0419 is the Windows language ID.
-//    Check MSDN documentation for mapping between locale and language ID.
-// 4. Note that since locale is not named consistently on various Unix systems,
-//    additional modification to configure.in may be needed to find out the
-//    correct locale name for each Unix system.
-//    Type "locale -a" to list all available installed locales on a Unix Machine.
-// 5. If you need to use resources files for locale testing, use MS Word to create .txt file in
-//    UTF-8 or UTF-16 encoding so that clix resgen.exe can convert them to .resources files.
-// 6. Follow the comments in CODEPAGEInit function for hints to debug locale problem.
-
-// Don't rely on Unix to map CodePage 1252, since there's no charset that
-// matches perfectly. (Even ISO 8859-1 doesn't match.)
-static const WCHAR PAL_CP_1252[] = {
-    0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 0x0008, 0x0009, 
-    0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F, 0x0010, 0x0011, 0x0012, 0x0013, 
-    0x0014, 0x0015, 0x0016, 0x0017, 0x0018, 0x0019, 0x001A, 0x001B, 0x001C, 0x001D, 
-    0x001E, 0x001F, 0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027, 
-    0x0028, 0x0029, 0x002A, 0x002B, 0x002C, 0x002D, 0x002E, 0x002F, 0x0030, 0x0031, 
-    0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039, 0x003A, 0x003B, 
-    0x003C, 0x003D, 0x003E, 0x003F, 0x0040, 0x0041, 0x0042, 0x0043, 0x0044, 0x0045, 
-    0x0046, 0x0047, 0x0048, 0x0049, 0x004A, 0x004B, 0x004C, 0x004D, 0x004E, 0x004F, 
-    0x0050, 0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056, 0x0057, 0x0058, 0x0059, 
-    0x005A, 0x005B, 0x005C, 0x005D, 0x005E, 0x005F, 0x0060, 0x0061, 0x0062, 0x0063, 
-    0x0064, 0x0065, 0x0066, 0x0067, 0x0068, 0x0069, 0x006A, 0x006B, 0x006C, 0x006D, 
-    0x006E, 0x006F, 0x0070, 0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 
-    0x0078, 0x0079, 0x007A, 0x007B, 0x007C, 0x007D, 0x007E, 0x007F, 0x20AC, 0x003F, 
-    0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030, 0x0160, 0x2039, 
-    0x0152, 0x003F, 0x017D, 0x003F, 0x003F, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 
-    0x2013, 0x2014, 0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x003F, 0x017E, 0x0178, 
-    0x00A0, 0x00A1, 0x00A2, 0x00A3, 0x00A4, 0x00A5, 0x00A6, 0x00A7, 0x00A8, 0x00A9, 
-    0x00AA, 0x00AB, 0x00AC, 0x00AD, 0x00AE, 0x00AF, 0x00B0, 0x00B1, 0x00B2, 0x00B3, 
-    0x00B4, 0x00B5, 0x00B6, 0x00B7, 0x00B8, 0x00B9, 0x00BA, 0x00BB, 0x00BC, 0x00BD, 
-    0x00BE, 0x00BF, 0x00C0, 0x00C1, 0x00C2, 0x00C3, 0x00C4, 0x00C5, 0x00C6, 0x00C7, 
-    0x00C8, 0x00C9, 0x00CA, 0x00CB, 0x00CC, 0x00CD, 0x00CE, 0x00CF, 0x00D0, 0x00D1, 
-    0x00D2, 0x00D3, 0x00D4, 0x00D5, 0x00D6, 0x00D7, 0x00D8, 0x00D9, 0x00DA, 0x00DB, 
-    0x00DC, 0x00DD, 0x00DE, 0x00DF, 0x00E0, 0x00E1, 0x00E2, 0x00E3, 0x00E4, 0x00E5, 
-    0x00E6, 0x00E7, 0x00E8, 0x00E9, 0x00EA, 0x00EB, 0x00EC, 0x00ED, 0x00EE, 0x00EF, 
-    0x00F0, 0x00F1, 0x00F2, 0x00F3, 0x00F4, 0x00F5, 0x00F6, 0x00F7, 0x00F8, 0x00F9, 
-    0x00FA, 0x00FB, 0x00FC, 0x00FD, 0x00FE,
-    0x00FF};
-
 static const CP_MAPPING CP_TO_NATIVE_TABLE[] = {
-
-    { 1252, ISO_NAME("en_US", "8859", "1"), 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1252, "C", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1252, "POSIX", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-
-    /* Minor differences. */
-    // Not present on Solaris 8.
-    // { 1250, "la_LN.ISO_8859-2", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-
-    // Available on FreeBSD and Solaris only.
-    { 20866, "ru_RU.KOI8-R", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-
-    /* Minor differences. */
-    { 1253, ISO_NAME("el_GR", "8859", "7"), 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    { 1254, ISO_NAME("tr_TR", "8859", "9"), 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-
-    /*
-    * Not present on default FreeBSD 4.5 installation.
-    * { 1255, "ISO-8859-5", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    * { 1251, "bg_BG.CP1251", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    *
-    */
-
-    /* 
-    * Not compatible.
-    * { 1256, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    *
-    */
-
-    /*
-    * Not in FreeBSD 4.5
-    * { 1257, "ISO_8859-13", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    *
-    */
-
-    /* Close but different */
-    // This is actually Windows Vietnamese, which doesn't have much to do
-    // with U.S. ISO 8859-1.
-    { 1258, ISO_NAME("en_US", "8859", "1"), 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-
-    { 932, JA_JP_LOCALE_NAME, 2, { 129, 159, 224, 252, 0, 0, 0, 0, 0, 0, 0, 0 } },
-
-    { 949, KO_KR_LOCALE_NAME, 2, { 129, 254, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-
-    /*
-    * No mapping
-    * { 936, "POSIX", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    *
-    */
-
-    { 950, ZH_TW_LOCALE_NAME, 2, { 129, 254, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
-
-    /*
-    * No mapping.
-    * { 437, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    *
-    */
-
-    /*
-    * No mapping.
-    * { 850, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    *
-    */
-
-    /*
-    * Old DOS Code pages. No equivent on BSD
-    * { 852, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 855, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
-    * { 874, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 737, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 775, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 857, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 860, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 861, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 862, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 863, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 864, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 865, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }, 
-    * { 869, "---", 1, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } } 
-    *
-    */
-    
+    { 65001, "utf8", 4, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } }
 };
-
-static const LPCSTR c_lpszPalDefaultLctype = "C";
-static LPSTR lpszPalOriginalLctype = NULL;
-
-/* What the system's code page is. */
-static UINT PAL_ACP = 0;
-static const UINT PAL_DEFAULT_CP = 1252;
 
 #endif // HAVE_COREFOUNDATION
 
-#if !HAVE_COREFOUNDATION || ENABLE_DOWNLEVEL_FOR_NLS
-
-static pthread_rwlock_t lock;
-
-/*++
-Function :
-CODEPAGEInit -
-
-    Initializes PAL_ACP to the systems current code page, 
-    based on the LC_CYTPE locale identifier, and inits the 
-    read/write lock.
---*/
-
-BOOL CODEPAGEInit( void )
-{
-    BOOL bRetVal = FALSE;
-
-    TRACE( "CODEPAGEInit( void )\n" );
-    /* Init the rwlock. */
-    if ( 0 != pthread_rwlock_init( &lock, NULL ) )
-    {
-    ERROR( "Unable to init the read write lock! Reason %s(%d)\n",
-        strerror( errno ), errno );
-    }
-#if !HAVE_COREFOUNDATION
-    else
-    {
-        // Set the locale for string resources to en_US
-        // UNIXTODO: After we add localized resources, change this to check the current 
-        // locale and set it to en_US only if we don't have resources for the current locale.
-        setlocale(LC_MESSAGES, "en_US.UTF-8");
-
-        /* get the systems code page. */
-        LPSTR lpCodePage = setlocale( LC_CTYPE, "" );
-        // Use the following steps to check if a particular locale works properly:
-        // 1. Use MS Word to create a localized resource file in your locale of interest, e.g.,
-        //    for ru_RU.KOI8-R locale, save a localized resource file as a plain text file by 
-        //    choosing "Cyrillic(KOI8-R)" encoding in save file menu.
-        // 2. Temporarily set lpCodePage to your locale of interest here such as
-        //    lpCodePage = "ru_RU.KOI8-R";
-        // 3. Rebuild PAL and then run you program and save the console output to a file.
-        // 4. Use "od -a" to compare the string encoding in the output file with
-        //    the localized resource file.
-        if ( lpCodePage )
-        {
-            UINT nSize = sizeof( CP_TO_NATIVE_TABLE ) / sizeof( CP_TO_NATIVE_TABLE[ 0 ] );
-            UINT nIndex;
-
-            /* Check to see if it is supported. */
-            for (nIndex = 0; nIndex < nSize; nIndex++)
-            {
-                if ( 0 == strcmp( lpCodePage, CP_TO_NATIVE_TABLE[ nIndex ].lpBSDEquivalent ) )
-                {
-                    lpszPalOriginalLctype = PAL__strdup(lpCodePage);
-                    PAL_ACP = CP_TO_NATIVE_TABLE[ nIndex ].nCodePage;
-                    bRetVal = TRUE;
-                    break;
-                }
-            }
-
-            if ( !bRetVal )
-            {
-                WARN( "Code page is not supported. Defaulting to \"C\"(1252)\n" );
-                if ( NULL == setlocale( LC_CTYPE, c_lpszPalDefaultLctype ) )
-                {
-                    ERROR( "Unable to set the LC_CTYPE to %s\n", 
-                        c_lpszPalDefaultLctype );
-                        pthread_rwlock_destroy( &lock );
-                }
-                else
-                {   
-                    lpszPalOriginalLctype = PAL__strdup(lpCodePage);
-                    PAL_ACP = PAL_DEFAULT_CP;
-                    bRetVal = TRUE;
-                }
-            }
-        }
-    }
-#else // !HAVE_COREFOUNDATION
-    bRetVal = TRUE;
-#endif // !HAVE_COREFOUNDATION
-    return bRetVal;
-}
-
-/*++
-Function :
-
-CODEPAGEAcquireReadLock - Sets the read lock.
-
-Returns TRUE on success, FALSE otherwise.
---*/
-BOOL 
-CODEPAGEAcquireReadLock( void )
-{
-    UINT nRet = 0;
-    CPalThread *pthrCurrent = InternalGetCurrentThread();
-    pthrCurrent->suspensionInfo.EnterUnsafeRegion();
-    if (0 != (nRet = pthread_rwlock_rdlock(&lock)))
-    {
-        pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
-        ERROR("Unable to Acquire a readlock! Reason %s(%d)\n",
-            strerror(nRet), nRet);
-        return FALSE;
-    }
-    return TRUE;
-}
-
-/*++
-Function :
-
-CODEPAGEAcquireWriteLock - Sets the write lock.
-
-Returns TRUE on success, FALSE otherwise.
---*/
-BOOL 
-CODEPAGEAcquireWriteLock( void )
-{
-    UINT nRet = 0;
-    CPalThread *pthrCurrent = InternalGetCurrentThread();
-    pthrCurrent->suspensionInfo.EnterUnsafeRegion();
-    if (0 != (nRet = pthread_rwlock_wrlock(&lock)))
-    {
-        pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
-        ERROR("Unable to Acquire a writelock! Reason %s(%d)\n",
-            strerror(nRet), nRet);
-        return FALSE;
-    }
-    return TRUE;
-}
-
-/*++
-Function :
-
-CODEPAGEReleaseLock - Releases the lock.
-
-Returns TRUE on success, FALSE otherwise.
---*/
-BOOL 
-CODEPAGEReleaseLock( void )
-{
-    UINT nRet = 0;
-    CPalThread *pthrCurrent = InternalGetCurrentThread();
-    if (0 != (nRet = pthread_rwlock_unlock(&lock)))
-    {
-        ERROR("Unable to release the lock! Reason %s(%d)\n",
-            strerror(nRet), nRet);
-        return FALSE;
-    }
-    pthrCurrent->suspensionInfo.LeaveUnsafeRegion();
-    return TRUE;
-}
-
-/*++
-Function :
-
-CODEPAGECleanup - Destroys the lock.
-
---*/
-void CODEPAGECleanup( void )
-{
-    UINT nRet = 0;
-    if ( 0 != ( nRet = pthread_rwlock_destroy( &lock ) ) )
-    {
-        ERROR( "Unable to destroy the lock! Reason %s(%d)\n",
-            strerror( nRet ), nRet );
-    }
-#if !HAVE_COREFOUNDATION
-    else
-    {
-        if (lpszPalOriginalLctype) 
-        {
-            if ( NULL == setlocale( LC_CTYPE, lpszPalOriginalLctype ) )
-            {
-                ERROR( "Unable to restore the LC_CTYPE.\n" );
-            }
-            PAL_free(lpszPalOriginalLctype);
-            lpszPalOriginalLctype = NULL;
-        }
-    }
-#endif // !HAVE_COREFOUNDATION
-}
-
-#endif // !HAVE_COREFOUNDATION || ENABLE_DOWNLEVEL_FOR_NLS
-
+// We hardcode the system's default codepage to be UTF-8.
+// There are several reasons for this:
+// - On OSX, HFS+ file names are encoded as UTF-8.
+// - On OSX, When writing strings to the console, the Terminal.app will interpret them as UTF-8.
+// - We want Ansi marshalling to mean marshal to UTF-8 on Mac and Linux
+static const UINT PAL_ACP = 65001;
 
 #if !HAVE_COREFOUNDATION
 /*++
@@ -993,10 +671,7 @@ MultiByteToWideChar(
         IN int cchWideChar)
 {
     INT retval =0;
-#if !HAVE_COREFOUNDATION
-    LPSTR lpLCType = NULL;
-    LPSTR lpCurrentUnixLCType = NULL;
-#else /* HAVE_COREFOUNDATION */
+#if HAVE_COREFOUNDATION
     CFStringRef cfString = NULL;
     CFStringEncoding cfEncoding;
     int bytesToConvert;
@@ -1038,170 +713,11 @@ MultiByteToWideChar(
         retval = UTF8ToUnicode(lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar, dwFlags);
         goto EXIT;
     }
+
 #if !HAVE_COREFOUNDATION
-    if ( (CP_ACP == CodePage && 1252 == GetACP()) || 1252 == CodePage )
-    {
-        UINT nIndex = 0;
-
-        if ( cbMultiByte == -1)
-        {
-            cbMultiByte = strlen(lpMultiByteStr) + 1;
-        }
-
-        if (cchWideChar == 0)
-        {
-            retval = cbMultiByte;
-            goto EXIT;
-        }
-
-        if ( cbMultiByte > cchWideChar )
-        {
-            ERROR( "The output buffer is too small\n" );
-            SetLastError( ERROR_INSUFFICIENT_BUFFER );
-            retval = 0;
-            goto EXIT;
-        }
-
-        for (nIndex=0; nIndex < cbMultiByte; nIndex++ )
-        {
-            /* we must implicitely convert lpMultiByteStr[nIndex]. 
-                  here what happens : lpMultiByteStr contains chars (which are signed), 
-                  we have to prevent values above 127 from becoming negative numbers */
-            lpWideCharStr[nIndex] =  PAL_CP_1252[ (unsigned char)lpMultiByteStr[nIndex] ];
-        }
-
-        retval = nIndex;
-        goto EXIT;
-    }
-    else 
-    {
-        wchar_t wchar_temp;
-        int num_wchars;
-
-        if ( CodePage == CP_ACP || CodePage == GetACP() )
-        {
-            /* Need the read lock */
-            if ( !CODEPAGEAcquireReadLock() )
-            {
-                /* 
-                * Could not get the readlock. 
-                * Errors printed in the helper function.
-                */  
-                SetLastError( ERROR_INTERNAL_ERROR );
-                goto EXIT;
-            }
-        }
-        else
-        {
-            const CP_MAPPING * lpCPStruct;
-
-            /* We require the write lock. */
-            if ( !CODEPAGEAcquireWriteLock() )
-            {
-                /* 
-                * Could not get a write lock.
-                * Errors printed in the helper function.
-                */  
-                SetLastError( ERROR_INTERNAL_ERROR );
-                goto EXIT;
-            }
-
-            lpLCType = setlocale( LC_CTYPE, NULL );
-            if (lpLCType)
-            {
-                lpCurrentUnixLCType = PAL__strdup(lpLCType);
-                if (NULL == lpCurrentUnixLCType)
-                {
-                    ERROR( "Cannot allocate buffer for storing current locale string\n" );
-                    SetLastError( ERROR_INTERNAL_ERROR );
-                    goto ReleaseLock;
-                }
-            }
-
-            if( NULL != ( lpCPStruct = CODEPAGEGetData( CodePage ) ) )
-            {
-                if ( NULL == setlocale( LC_CTYPE, lpCPStruct->lpBSDEquivalent ) )
-                {
-                    /* Error. Locale not supported. */
-                    ERROR( "This locale code page is not in the system.\n" );
-                    SetLastError( ERROR_INVALID_PARAMETER );
-                    goto ReleaseLock;
-                }
-            }
-            else
-            {
-                ERROR( "This locale code page is not in the system.\n" );
-                SetLastError( ERROR_INVALID_PARAMETER );
-                goto ReleaseLock;
-            }
-    }
-
-        /* if no byte count is specified, figure it out ourselves */
-        if (cbMultiByte == -1)
-        {
-            /* cbMultiByte is in bytes, not in characters. don't use _mbslen */
-            cbMultiByte = strlen(lpMultiByteStr)+1;
-        }
-
-        num_wchars = 0;
-        while(0<cbMultiByte && (num_wchars<cchWideChar || 0 == cchWideChar))
-        {
-            int bytes_processed;
-
-            /* mbtowc will not convert '\0', so do it manually */
-            if('\0' == *lpMultiByteStr)
-            {
-                if(0 != cchWideChar)
-                {
-                    lpWideCharStr[num_wchars] = 0;
-                }
-                num_wchars++;
-                cbMultiByte--;
-                lpMultiByteStr++;
-                continue;
-            } 
-            bytes_processed = mbtowc(&wchar_temp,lpMultiByteStr,cbMultiByte);
-            if(0 >= bytes_processed)
-            {
-                ASSERT("mbtowc() returned unexpected value %d\n", bytes_processed);
-                SetLastError(ERROR_INTERNAL_ERROR);
-                goto ReleaseLock;
-            }
-            cbMultiByte-=bytes_processed;
-            if(0 != cchWideChar)
-            {
-                lpWideCharStr[num_wchars] = (WCHAR)wchar_temp;
-            }
-            num_wchars++;
-            lpMultiByteStr+=bytes_processed;
-        }
-
-        if (0 != cbMultiByte)
-        {
-            ERROR("conversion failed : insufficient buffer\n");
-            SetLastError(ERROR_INSUFFICIENT_BUFFER);
-            retval = 0;
-        }
-        else
-        {
-            retval = num_wchars;
-        }
-    }
-
-ReleaseLock:
-
-    if ( CP_ACP != CodePage && GetACP() != CodePage )
-    {
-        if ( NULL == setlocale( LC_CTYPE, lpCurrentUnixLCType ) )
-        {
-            ASSERT( "Unable to reset the original code!!!\n" );
-            SetLastError( ERROR_INTERNAL_ERROR );
-        }
-    }
-    if( !CODEPAGEReleaseLock() )
-    {
-        ERROR( "Unable to release the readwrite lock\n" );
-    }
+    ERROR( "This code page is not in the system.\n" );
+    SetLastError( ERROR_INVALID_PARAMETER );
+    goto EXIT;
 #else /* !HAVE_COREFOUNDATION */
     bytesToConvert = cbMultiByte;
     if (bytesToConvert == -1)
@@ -1254,15 +770,9 @@ ReleaseString:
     {
         CFRelease(cfString);
     }
-
 #endif /* !HAVE_COREFOUNDATION */
 
 EXIT:
-
-#if !HAVE_COREFOUNDATION
-    if (lpCurrentUnixLCType)
-    PAL_free(lpCurrentUnixLCType);
-#endif /* !HAVE_COREFOUNDATION */
 
     LOGEXIT("MultiByteToWideChar returns %d.\n",retval);
     PERF_EXIT(MultiByteToWideChar);
@@ -1292,10 +802,7 @@ WideCharToMultiByte(
     INT retval =0;
     char defaultChar = '?';
     BOOL usedDefaultChar = FALSE;
-#if !HAVE_COREFOUNDATION
-    LPSTR lpLCType = NULL;
-    LPSTR lpCurrentUnixLCType = NULL;
-#else /* !HAVE_COREFOUNDATION */
+#if HAVE_COREFOUNDATION
     CFStringRef cfString = NULL;
     CFStringEncoding cfEncoding;
     int charsToConvert;
@@ -1351,201 +858,8 @@ WideCharToMultiByte(
         retval = UnicodeToUTF8(lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte);
         goto EXIT;
     }
-#if !HAVE_COREFOUNDATION
-    if ((CodePage == CP_ACP && 1252 == GetACP())  || 1252 == CodePage )
-    {
-        UINT nIndex = 0;
 
-        if ( cchWideChar == -1)
-        {
-            cchWideChar = PAL_wcslen(lpWideCharStr) + 1; 
-        }
-
-        if (cbMultiByte == 0)
-        {
-            /* cbMultiByte is 0, we must return the length of 
-            the destination buffer in bytes */
-            retval = cchWideChar; 
-            goto EXIT;
-        }
-
-        if ( cchWideChar > cbMultiByte )
-        {
-            ERROR( "The output buffer is too small\n" );
-            SetLastError( ERROR_INSUFFICIENT_BUFFER );
-            retval = 0;
-            goto EXIT;
-        }
-
-        /* perform a reverse lookup on the PAL_CP_1252 table */
-        for (nIndex=0 ; nIndex < cchWideChar; nIndex++ )
-        {  
-            int i;
-            if ((lpWideCharStr[nIndex] < 0x80) || 
-            (lpWideCharStr[nIndex] >= 0xA0 && lpWideCharStr[nIndex] <= 0xFF))
-            {
-                lpMultiByteStr[nIndex] = (unsigned char) lpWideCharStr[nIndex];
-            }
-            else
-            {
-                for(i=0x80;i<0xA0;i++)
-                {
-                    if( lpWideCharStr[nIndex] == PAL_CP_1252[i])
-                    {
-                        break;
-                    }
-                }
-                if (i == 0xA0)
-                {
-                    TRACE("Unable to convert wide character 0x%x, using \'%c\'\n", 
-                    lpWideCharStr[nIndex], defaultChar);
-                    lpMultiByteStr[nIndex] = defaultChar;
-                    usedDefaultChar = TRUE;
-                }
-                else
-                {
-                    lpMultiByteStr[nIndex] = i;
-                }
-            }
-        }
-         
-        retval = nIndex;
-        goto EXIT;
-    } 
-    else
-    {
-        int num_bytes;
-        char temp_bytes[8]; /* should always be enough */
-
-        if ( CodePage == CP_ACP || CodePage == GetACP() )
-        {
-            /* Need the read lock */
-            if ( !CODEPAGEAcquireReadLock() )
-            {
-                /* 
-                * Could not get the readlock. 
-                * Errors printed in the helper function.
-                */  
-                SetLastError( ERROR_INTERNAL_ERROR );
-                goto EXIT;
-            }
-        }        
-        else
-        {
-            const CP_MAPPING * lpCPStruct;
-
-            /* We require the write lock. */
-            if ( !CODEPAGEAcquireWriteLock() )
-                {
-                /* 
-                * Could not get the writelock. 
-                * Errors printed in the helper function.
-                */  
-                SetLastError( ERROR_INTERNAL_ERROR );
-                goto EXIT;
-            }
-
-            lpLCType = setlocale( LC_CTYPE, NULL );
-            if (lpLCType)
-            {
-                lpCurrentUnixLCType = PAL__strdup(lpLCType);
-                if (NULL == lpCurrentUnixLCType)
-                {
-                    ERROR( "Cannot allocate buffer for storing current locale string.\n" );
-                    SetLastError( ERROR_INTERNAL_ERROR );
-                    goto ReleaseLock;
-                }
-            }
-
-            if( NULL != ( lpCPStruct = CODEPAGEGetData( CodePage ) ) )
-            {
-                if ( NULL == setlocale( LC_CTYPE, lpCPStruct->lpBSDEquivalent ) )
-                {
-                    /* Error. Locale not supported. */
-                    ERROR( "This locale code page is not in the system.\n" );
-                    SetLastError( ERROR_INVALID_PARAMETER );
-                    goto ReleaseLock;
-                }
-            }
-            else
-            {
-                ERROR( "This locale code page is not in the system.\n" );
-                SetLastError( ERROR_INVALID_PARAMETER );
-                goto ReleaseLock;
-            }
-        }
-
-        if (cchWideChar == -1)
-        {
-            cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
-        }
-
-        num_bytes = 0;
-        while(0<cchWideChar && (num_bytes < cbMultiByte || 0 == cbMultiByte))
-        {
-            int bytes_processed;
-            int i;
-
-            bytes_processed = wctomb(temp_bytes, (wchar_t)*lpWideCharStr);
-            if(0 >= bytes_processed)
-            {
-                TRACE("Unable to convert wide character 0x%x, using \'%c\'\n", 
-                      *lpWideCharStr, defaultChar);
-                bytes_processed = 1;
-                temp_bytes[0] = defaultChar;
-                usedDefaultChar = TRUE;
-            }
-            if(bytes_processed > 2)
-            {
-                ASSERT("wchar expands to more than 2 bytes!?\n");
-                SetLastError(ERROR_INTERNAL_ERROR);
-                goto ReleaseLock;
-            }
-            if( 0 != cbMultiByte )
-            {
-                if( bytes_processed+num_bytes > cbMultiByte )
-                {
-                    /* not enough room! */
-                    break;
-                }
-                for(i=0; i<bytes_processed; i++)
-                {
-                lpMultiByteStr[i] = temp_bytes[i];
-                }
-                lpMultiByteStr += bytes_processed;
-            }
-
-            num_bytes += bytes_processed;
-
-            cchWideChar--;
-            lpWideCharStr++;
-        }
-
-        if (0 != cchWideChar)
-        {
-            SetLastError(ERROR_INSUFFICIENT_BUFFER);
-            retval = 0;
-        }
-        else
-        {
-            retval = num_bytes;
-        }
-    }
-
-ReleaseLock:
-    if ( CP_ACP != CodePage && GetACP() != CodePage )
-    {
-        if ( NULL == setlocale( LC_CTYPE, lpCurrentUnixLCType ) )
-        {
-            ASSERT( "Unable to reset the original code!!!\n" );
-            SetLastError( ERROR_INTERNAL_ERROR );
-        }
-    }
-    if( !CODEPAGEReleaseLock() )
-    {
-        ERROR( "Unable to release the readwrite lock\n" );
-    }
-#else /* !HAVE_COREFOUNDATION */
+#if HAVE_COREFOUNDATION
     charsToConvert = cchWideChar;
     if (charsToConvert == -1)
     {
@@ -1612,7 +926,7 @@ ReleaseString:
     {
         CFRelease(cfString);
     }
-#endif /* !HAVE_COREFOUNDATION */
+#endif /* HAVE_COREFOUNDATION */
 
 EXIT:
 
@@ -1631,11 +945,6 @@ EXIT:
           "WideCharToMultiByte found a string which doesn't round trip: (%p)%S "
           "and WC_NO_BEST_FIT_CHARS was not specified\n", 
           lpWideCharStr, lpWideCharStr);
-
-#if !HAVE_COREFOUNDATION
-    if (lpCurrentUnixLCType)
-    PAL_free(lpCurrentUnixLCType);
-#endif /* !HAVE_COREFOUNDATION */
 
     LOGEXIT("WideCharToMultiByte returns INT %d\n", retval);
     PERF_EXIT(WideCharToMultiByte);
