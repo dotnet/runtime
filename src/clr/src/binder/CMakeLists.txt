@@ -28,11 +28,14 @@ set(BINDER_SOURCES
     fusionhelpers.cpp
 )
 
+convert_to_absolute_path(BINDER_SOURCES ${BINDER_SOURCES})
+
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-add_library(v3binder
-    STATIC
-    ${BINDER_SOURCES}
-)
+add_subdirectory(v3binder)
+if(WIN32)
+  add_subdirectory(v3binder_crossgen)
+endif()
+
