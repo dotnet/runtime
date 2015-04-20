@@ -11,26 +11,22 @@ namespace System.IO
     internal static class PathInternal
     {
         /// <summary>
-        ///     Returns a value indicating if the given path contains invalid characters (", &lt;, &gt;, | 
-        ///     NUL, or any ASCII char whose integer representation is in the range of 1 through 31), 
-        ///     optionally checking for ? and *.
+        ///     Returns a value indicating if the given path contains invalid characters.
         /// </summary>
         internal static bool HasIllegalCharacters(string path, bool checkAdditional = false)
         {
-            // See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
-
             Contract.Requires(path != null);
 
             foreach (char c in path)
             {
-                // Note: Same as Path.InvalidPathChars, unrolled here for performance
-                if (c == '\"' || c == '<' || c == '>' || c == '|' || c < 32)
+                // Same as Path.InvalidPathChars, unrolled here for performance
+                if (c == '\0')
                     return true;
 
-                // used when path cannot contain search strings.
-                if (checkAdditional &&
-                    (c == '?' || c == '*'))
-                    return true;
+                // checkAdditional is meant to check for additional characters 
+                // permitted in a search path but disallowed in a normal path.
+                // In Windows this is * and ?,but Linux and OSX permit such characters
+                // in the filename so checkAdditional is ignored.
             }
 
             return false;
@@ -41,7 +37,7 @@ namespace System.IO
         /// </summary>
         internal static StringComparison GetComparison()
         {
-            return StringComparison.OrdinalIgnoreCase;
+            return StringComparison.Ordinal;
         }
     }
 }

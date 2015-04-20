@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -215,9 +215,6 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
-      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
@@ -317,14 +314,18 @@
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="System\IO\UnixFileSystem.Linux.cs" />
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Linux.cs">
+      <Link>Common\System\IO\PathInternal.Linux.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.readdir.cs">
       <Link>Common\Interop\Linux\Interop.readdir.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
-    <Compile Include="System\IO\UnixFileSystem.OSX.cs" />
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.OSX.cs">
+      <Link>Common\System\IO\PathInternal.OSX.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.readdir.cs">
       <Link>Common\Interop\OSX\Interop.readdir.cs</Link>
     </Compile>

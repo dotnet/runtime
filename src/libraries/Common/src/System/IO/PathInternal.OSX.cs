@@ -25,11 +25,19 @@ namespace System.IO
 
                 // checkAdditional is meant to check for additional characters 
                 // permitted in a search path but disallowed in a normal path.
-                // In Windows this is * and ?,but Unix permits such characters
+                // In Windows this is * and ?,but Linux and OSX permit such characters
                 // in the filename so checkAdditional is ignored.
             }
 
             return false;
+        }
+        
+        /// <summary>
+        ///   Returns a comparison that can be used to compare file and directory names for equality.
+        /// </summary>
+        internal static StringComparison GetComparison()
+        {
+            return StringComparison.OrdinalIgnoreCase;
         }
     }
 }

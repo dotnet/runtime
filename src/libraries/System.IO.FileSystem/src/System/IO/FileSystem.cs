@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
@@ -42,6 +42,5 @@ namespace System.IO
         public abstract void SetCurrentDirectory(string fullPath);
         public abstract int MaxPath { get; }
         public abstract int MaxDirectoryPath { get; }
-        public abstract bool CaseSensitive { get; }
     }
 }
