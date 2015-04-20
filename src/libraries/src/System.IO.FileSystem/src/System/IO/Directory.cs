@@ -576,7 +576,7 @@ namespace System.IO
             if (destPath.Length >= maxDirectoryPath)
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            StringComparison pathComparison = PathHelpers.GetComparison(FileSystem.Current.CaseSensitive);
+            StringComparison pathComparison = PathInternal.GetComparison();
 
             if (String.Compare(sourcePath, destPath, pathComparison) == 0)
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);

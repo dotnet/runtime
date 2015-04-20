@@ -140,7 +140,7 @@ namespace System.IO.Compression
             {
                 String fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, entry.FullName));
 
-                if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, StringComparison.OrdinalIgnoreCase))
+                if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.GetComparison()))
                     throw new IOException(SR.IO_ExtractingResultsInOutside);
 
                 if (Path.GetFileName(fileDestinationPath).Length == 0)

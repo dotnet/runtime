@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Microsoft.Win32.SafeHandles;
@@ -12,7 +12,6 @@ namespace System.IO
     {
         public override int MaxPath { get { return Interop.mincore.MAX_PATH; } }
         public override int MaxDirectoryPath { get { return Interop.mincore.MAX_DIRECTORY_PATH; } }
-        public override bool CaseSensitive { get { return false; } }
 
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {

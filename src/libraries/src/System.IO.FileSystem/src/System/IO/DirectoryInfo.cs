@@ -109,7 +109,7 @@ namespace System.IO
             String newDirs = Path.Combine(FullPath, path);
             String fullPath = Path.GetFullPath(newDirs);
 
-            if (0 != String.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathHelpers.GetComparison(FileSystem.Current.CaseSensitive)))
+            if (0 != String.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathInternal.GetComparison()))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, DisplayPath));
             }
@@ -417,7 +417,7 @@ namespace System.IO
             else
                 fullSourcePath = FullPath + PathHelpers.DirectorySeparatorCharAsString;
 
-            StringComparison pathComparison = PathHelpers.GetComparison(FileSystem.Current.CaseSensitive);
+            StringComparison pathComparison = PathInternal.GetComparison();
             if (String.Compare(fullSourcePath, fullDestDirName, pathComparison) == 0)
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
