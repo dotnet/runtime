@@ -16,6 +16,8 @@ static struct epoll_event *epoll_events;
 static gboolean
 epoll_init (gint wakeup_pipe_fd)
 {
+	struct epoll_event event;
+
 #ifdef EPOOL_CLOEXEC
 	epoll_fd = epoll_create1 (EPOLL_CLOEXEC);
 #else
@@ -32,7 +34,9 @@ epoll_init (gint wakeup_pipe_fd)
 		return FALSE;
 	}
 
-	if (epoll_ctl (epoll_fd, EPOLL_CTL_ADD, wakeup_pipe_fd, EPOLLIN) == -1) {
+	event.events = EPOLLIN;
+	event.data.fd = wakeup_pipe_fd;
+	if (epoll_ctl (epoll_fd, EPOLL_CTL_ADD, event.data.fd, &event) == -1) {
 		g_warning ("epoll_init: epoll_ctl () failed, error (%d) %s", errno, g_strerror (errno));
 		close (epoll_fd);
 		return FALSE;
