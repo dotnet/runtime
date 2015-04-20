@@ -1,0 +1,124 @@
+include(${CLR_DIR}/crossgen.cmake)
+
+set(VM_CROSSGEN_SOURCES
+    ../class.cpp
+    ../AppDomain.cpp
+    ../array.cpp
+    ../Assembly.cpp
+    ../AssemblySpec.cpp
+    ../binder.cpp
+    ../ceeload.cpp
+    ../ceemain.cpp
+    ../classhash.cpp
+    ../clrex.cpp
+    ../CLRPrivBinderUtil.cpp
+    ../CLRPrivBinderWinRT.cpp
+    ../CLRPrivTypeCacheWinRT.cpp
+    ../clsload.cpp
+    ../comdelegate.cpp
+    ../codeman.cpp
+    ../compile.cpp
+    ../ConstrainedExecutionRegion.cpp
+    ../CustomMarshalerInfo.cpp
+    ../Domainfile.cpp
+    ../BaseAssemblySpec.cpp
+    ../corebindresult.cpp
+    ../coreassemblyspec.cpp
+    ../crossdomaincalls.cpp
+    ../dataimage.cpp
+    ../decodeMD.cpp
+    ../DebugInfoStore.cpp
+    ../ecall.cpp
+    ../eeconfig.cpp
+    ../eehash.cpp
+    ../eetwain.cpp
+    ../excep.cpp
+    ../Field.cpp
+    ../Fieldmarshaler.cpp
+    ../formattype.cpp
+    ../TypeEquivalenceHash.cpp
+    ../GCDecode.cpp
+    ../genericdict.cpp
+    ../generics.cpp
+    ../genmeth.cpp
+    ../hash.cpp
+    ../ILMarshalers.cpp
+    ../ILStubCache.cpp
+    ../ILStubResolver.cpp
+    ../instmethhash.cpp
+    ../interoputil.cpp
+    ../invokeutil.cpp
+    ../inlinetracking.cpp
+    ../contractImpl.cpp
+    ../JITInterface.cpp
+    ../LoaderAllocator.cpp
+    ../ListLock.cpp
+    ../memberload.cpp
+    ../Method.cpp
+    ../MethodImpl.cpp
+    ../MethodTable.cpp
+    ../methodtablebuilder.cpp
+    ../mscorlib.cpp
+    ../stubcache.cpp
+    ../mlinfo.cpp
+    ../DllImport.cpp
+    ../DllImportCallback.cpp
+    ../PEFile.cpp
+    ../PEFingerprint.cpp
+    ../PEImage.cpp
+    ../PEImageLayout.cpp
+    ../pendingload.cpp
+    ../Precode.cpp
+    ../olevariant.cpp
+    ../security.cpp
+    ../securitypolicy.cpp
+    ../securityAttributes.cpp
+    ../SecurityDeclarative.cpp
+    ../SecurityDeclarativeCache.cpp
+    ../SecurityDescriptor.cpp
+    ../SecurityDescriptorAppdomain.cpp
+    ../SecurityDescriptorAssembly.cpp
+    ../securitymeta.cpp
+    ../SecurityTransparentAssembly.cpp
+    ../siginfo.cpp
+    ../SigFormat.cpp
+    ../SimpleRWLock.cpp
+    ../spinlock.cpp
+    ../StackingAllocator.cpp
+    ../stubgen.cpp
+    ../stublink.cpp
+    ../typectxt.cpp
+    ../typedesc.cpp
+    ../typehandle.cpp
+    ../typehash.cpp
+    ../typeparse.cpp
+    ../typestring.cpp
+    ../util.cpp
+    ../vars.cpp
+    ../zapsig.cpp
+    ../classcompat.cpp
+    ../COMtoCLRCall.cpp
+    ../CLRtoCOMCall.cpp
+    ../RuntimeCallableWrapper.cpp
+    ../WinRTHelpers.cpp
+    ../WinRTTypeNameConverter.cpp
+    ../DbgGcInfoDecoder.cpp
+    ../GcInfoDecoder.cpp
+    ../SHA1.cpp
+    ../amd64/StubLinkerAMD64.cpp
+    ../crossgencompile.cpp
+    ../CrossgenRoParseTypeName.cpp
+    ../CrossgenRoResolveNamespace.cpp
+)
+
+include_directories(BEFORE ..)
+include_directories(${CLR_DIR}/src/gc)
+include_directories(../amd64)
+
+if (WIN32)
+  add_precompiled_header(common.h ../common.cpp VM_CROSSGEN_SOURCES)
+  # mscorlib.cpp does not compile with precompiled header file
+  set_source_files_properties(../mscorlib.cpp PROPERTIES COMPILE_FLAGS "/Y-")
+endif (WIN32)
+
+add_library(cee_crossgen ${VM_CROSSGEN_SOURCES})

@@ -1,2 +1,3 @@
+add_subdirectory(crossgen)
 add_subdirectory(GenClrDebugResource)
 add_subdirectory(InjectResource)
