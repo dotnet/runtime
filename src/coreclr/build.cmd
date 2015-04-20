@@ -164,10 +164,22 @@ set "__MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__Buil
 %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__MScorlibBuildLog%" /p:OS=%__BuildOS% %__AdditionalMSBuildArgs%
 IF NOT ERRORLEVEL 1 (
   if defined __MscorlibOnly goto :eof
-  goto PerformTestBuild
+  goto CrossGenMscorlib
 )
 
 echo MScorlib build failed. Refer !__MScorlibBuildLog! for details.
+goto :eof
+
+:CrossGenMscorlib
+echo Generating native image of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
+echo.
+set "__CrossGenMScorlibLog=%__LogsDir%\CrossgenMScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+%__BinDir%\crossgen.exe %__BinDir%\mscorlib.dll > "%__CrossGenMScorlibLog%" 2>&1
+IF NOT ERRORLEVEL 1 (
+  goto PerformTestBuild
+)
+
+echo CrossGen mscorlib failed. Refer !__CrossGenMScorlibLog! for details.
 goto :eof
 
 :PerformTestBuild
