@@ -290,7 +290,7 @@ public class Directory_GetFiles_str
 
             filArr = dir2.GetFiles("*BB*");
             iCountTestcases++;
-            if (filArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
+            if (filArr.Length != (Interop.IsWindows ? 2 : 1))
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + filArr.Length);
@@ -308,7 +308,7 @@ public class Directory_GetFiles_str
                 iCountErrors++;
                 printerr("Error_956yb! Incorrect name==" + filArr[0].Name);
             }
-            if (!Interop.IsLinux) // Linux is case-sensitive
+            if (Interop.IsWindows)
             {
                 iCountTestcases++;
                 if (Array.IndexOf(names, "aaabbcc") < 0)

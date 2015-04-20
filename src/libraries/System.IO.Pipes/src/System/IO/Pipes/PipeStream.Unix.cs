@@ -287,24 +287,9 @@ namespace System.IO.Pipes
                 int fd = (int)handle.DangerousGetHandle();
                 Debug.Assert(fd >= 0);
 
-                // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
-                while (true)
-                {
-                    long result = sysCall(fd, arg1, arg2);
-                    if (result < 0)
-                    {
-                        int errno = Marshal.GetLastWin32Error();
-                        if (errno == Interop.Errors.EINTR)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            throw Interop.GetExceptionForIoErrno(errno);
-                        }
-                    }
-                    return result;
-                }
+                long result;
+                while (Interop.CheckIo(result = sysCall(fd, arg1, arg2))) ;
+                return result;
             }
             finally
             {

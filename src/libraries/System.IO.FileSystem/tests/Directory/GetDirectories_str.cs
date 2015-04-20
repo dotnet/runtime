@@ -279,7 +279,7 @@ public class Directory_GetDirectories_str
 
             dirArr = dir2.GetDirectories("*BB*");
             iCountTestcases++;
-            if (dirArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
+            if (dirArr.Length != (Interop.IsWindows ? 2 : 1))
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of directories==" + dirArr.Length);
@@ -296,7 +296,7 @@ public class Directory_GetDirectories_str
                 printerr("Error_956yb! Incorrect name==" + dirArr[0]);
             }
 
-            if (!Interop.IsLinux) // linux is case-sensitive
+            if (Interop.IsWindows)
             {
                 iCountTestcases++;
                 if (Array.IndexOf(names, "aaabbcc") < 0)

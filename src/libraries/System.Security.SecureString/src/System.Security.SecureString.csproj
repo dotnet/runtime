@@ -59,6 +59,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
       <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.MemoryMappedProtections.cs">
+      <Link>Common\Interop\Unix\Interop.MemoryMappedProtections.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mlock.cs">
       <Link>Common\Interop\Unix\Interop.mlock.cs</Link>
     </Compile>
@@ -76,6 +79,22 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
       <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.MemoryMappedFlags.cs">
+      <Link>Common\Interop\Linux\Interop.MemoryMappedFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SysConfNames.cs">
+      <Link>Common\Interop\Linux\Interop.SysConfNames.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.MemoryMappedFlags.cs">
+      <Link>Common\Interop\OSX\Interop.MemoryMappedFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
+      <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

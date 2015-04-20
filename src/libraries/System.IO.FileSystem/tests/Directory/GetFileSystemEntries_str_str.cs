@@ -433,7 +433,7 @@ public class Directory_GetFileSystemEntries_str_str
             strArr = Directory.GetFileSystemEntries(dir2.Name, "*BB*");
 
             iCountTestcases++;
-            if (strArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
+            if (strArr.Length != (Interop.IsWindows ? 2 : 1))
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + strArr.Length);
@@ -441,7 +441,7 @@ public class Directory_GetFileSystemEntries_str_str
             for (int iLoop = 0; iLoop < strArr.Length; iLoop++)
                 strArr[iLoop] = Path.GetFileName(strArr[iLoop]);
 
-            if (!Interop.IsLinux) // Linux is case-sensitive
+            if (Interop.IsWindows)
             {
                 iCountTestcases++;
                 if (Array.IndexOf(strArr, "aaabbcc") < 0)

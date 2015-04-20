@@ -98,7 +98,7 @@ namespace System
             string locale = null;
             foreach (string envVar in LocaleEnvVars)
             {
-                locale = Interop.libc.getenv(envVar);
+                locale = Environment.GetEnvironmentVariable(envVar);
                 if (!string.IsNullOrWhiteSpace(locale)) break;
             }
 
@@ -433,7 +433,7 @@ namespace System
                 /// <returns>The database, or null if it could not be found.</returns>
                 private static Database ReadDatabase()
                 {
-                    string term = Interop.libc.getenv("TERM");
+                    string term = Environment.GetEnvironmentVariable("TERM");
                     return !string.IsNullOrEmpty(term) ? ReadDatabase(term) : null;
                 }
 
@@ -456,14 +456,14 @@ namespace System
                     Database db;
 
                     // First try a location specified in the TERMINFO environment variable.
-                    string terminfo = Interop.libc.getenv("TERMINFO");
+                    string terminfo = Environment.GetEnvironmentVariable("TERMINFO");
                     if (!string.IsNullOrWhiteSpace(terminfo) && (db = ReadDatabase(term, terminfo)) != null)
                     {
                         return db;
                     }
 
                     // Then try in the user's home directory.
-                    string home = Interop.libc.getenv("HOME");
+                    string home = Environment.GetEnvironmentVariable("HOME");
                     if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) != null)
                     {
                         return db;
@@ -546,15 +546,7 @@ namespace System
                     }
                     finally
                     {
-                        int result = Interop.libc.close(fd);
-                        if (result < 0)
-                        {
-                            int errno = Marshal.GetLastWin32Error();
-                            if (errno != Interop.Errors.EINTR) // Avoid retrying close on EINTR, e.g. https://lkml.org/lkml/2005/9/11/49
-                            {
-                                throw Interop.GetExceptionForIoErrno(errno);
-                            }
-                        }
+                        Interop.CheckIo(Interop.libc.close(fd)); // Avoid retrying close on EINTR, e.g. https://lkml.org/lkml/2005/9/11/49
                     }
                 }
 
