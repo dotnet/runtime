@@ -167,7 +167,7 @@ runtest()
   xunitOSCategory="non$lowerOS"
   xunitOSCategory+="tests"
 
-  dirName="$CoreFxTests/$fileNameWithoutExtension/aspnetcore50"
+  dirName="$CoreFxTests/$fileNameWithoutExtension/dnxcore50"
 
   if [ ! -d "$dirName" ] || [ ! -f "$dirName/$testDllName" ]
   then
