@@ -3,11 +3,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information. 
 //
 
-// ==++==
-//
- 
-//
-// ==--==
 //
 // TO DO: we currently use raw printf() for output. Maybe we need to pick up something like ngen's Output() handling
 // to handle multiple code pages, etc, better.
@@ -143,9 +138,11 @@ void PrintUsageHelper()
        W("    /Platform_Resource_Roots <path[;path]>\n")
        W("                         - List of paths containing localized assembly directories\n")
        W("    /App_Paths <path>    - List of paths containing user-application assemblies and resources\n")
+#ifndef NO_NGENPDB
        W("    /App_Ni_Paths <path[;path]>\n")
        W("                         - List of paths containing user-application native images\n")
        W("                         - Must be used with /CreatePDB switch\n")
+#endif // NO_NGENPDB
 #endif // FEATURE_CORECLR
 
        W("    /Platform_Assemblies_Paths\n")
@@ -192,10 +189,12 @@ void PrintUsageHelper()
 #ifdef FEATURE_CORECLR
        W(" Size on Disk Parameters\n")
        W("    /NoMetaData     - Do not copy metadata and IL into native image.\n")
+#ifndef NO_NGENPDB
        W(" Debugging Parameters\n")
        W("    /CreatePDB <Dir to store PDB> [/lines [<search path for managed PDB>] ]\n")
        W("        When specifying /CreatePDB, the native image should be created\n")
        W("        first, and <assembly name> should be the path to the NI.")
+#endif // NO_NGENPDB
 #endif // FEATURE_CORECLR
        );
 }
@@ -636,6 +635,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv++;
             argc--;
         }
+#ifndef NO_NGENPDB
         else if (MatchParameter(*argv, W("App_Ni_Paths")) && (argc > 1))
         {
             pwzAppNiPaths = argv[1];
@@ -644,6 +644,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv++;
             argc--;
         }
+#endif // NO_NGENPDB
 #endif // FEATURE_CORECLR
         else if (MatchParameter(*argv, W("Platform_Assemblies_Paths")) && (argc > 1))
         {
@@ -663,7 +664,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argc--;
         }
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_CORECLR
+#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
         else if (MatchParameter(*argv, W("CreatePDB")) && (argc > 1))
         {
             // syntax: /CreatePDB <directory to store PDB> [/lines  [<search path for managed PDB>] ]
@@ -735,7 +736,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv--;
             argc++;
         }
-#endif // FEATURE_CORECLR
+#endif // FEATURE_CORECLR && !NO_NGENPDB
         else
         {
             if (argc == 1)
