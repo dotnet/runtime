@@ -26,6 +26,7 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        [ActiveIssue(1434)]
         public void ValidFileOptions()
         {
             foreach(FileOptions option in Enum.GetValues(typeof(FileOptions)))
