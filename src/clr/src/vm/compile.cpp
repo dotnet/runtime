@@ -67,7 +67,9 @@
 #include "crossgenroresolvenamespace.h"
 #endif
 
+#ifndef NO_NGENPDB
 #include <cvinfo.h>
+#endif
 
 #ifdef MDIL
 #include <mdil.h>
@@ -2624,6 +2626,26 @@ BOOL CEECompileInfo::AreAllClassesFullyLoaded(CORINFO_MODULE_HANDLE moduleHandle
 // public\devdiv\inc\corsym.h and debugger\sh\symwrtr\ngenpdbwriter.h,cpp
 // ----------------------------------------------------------------------------
 
+#ifdef NO_NGENPDB
+BOOL CEECompileInfo::GetIsGeneratingNgenPDB() 
+{
+    return FALSE; 
+}
+
+void CEECompileInfo::SetIsGeneratingNgenPDB(BOOL fGeneratingNgenPDB) 
+{
+}
+
+BOOL IsNgenPDBCompilationProcess()
+{
+    return FALSE;
+}
+
+HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath)
+{
+    return E_NOTIMPL;
+}
+#else // NO_NGENPDB
 
 BOOL CEECompileInfo::GetIsGeneratingNgenPDB() 
 {
@@ -4421,6 +4443,7 @@ HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImage
     return S_OK;
 }
 
+#endif // NO_NGENPDB
 
 // End of PDB writing code
 // ----------------------------------------------------------------------------
