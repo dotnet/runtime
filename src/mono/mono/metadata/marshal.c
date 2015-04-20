@@ -133,6 +133,9 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params);
 static void
 mono_marshal_set_last_error_windows (int error);
 
+static MonoObject *
+mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache);
+
 static void init_safe_handle (void);
 
 /* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
@@ -245,6 +248,7 @@ mono_marshal_init (void)
 		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
 		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
+		register_icall (mono_marshal_isinst_with_cache, "mono_marshal_isinst_with_cache", "object object ptr ptr", FALSE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
@@ -8195,6 +8199,23 @@ mono_marshal_get_castclass_with_cache (void)
 	return cached;
 }
 
+static MonoObject *
+mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache)
+{
+	MonoObject *isinst = mono_object_isinst (obj, klass);
+
+	if (obj->vtable->klass == mono_defaults.transparent_proxy_class)
+		return isinst;
+
+	uintptr_t cache_update = (uintptr_t)obj->vtable;
+	if (!isinst)
+		cache_update = cache_update | 0x1;
+
+	*cache = cache_update;
+
+	return isinst;
+}
+
 /*
  * This does the equivalent of mono_object_isinst_with_cache.
  * The wrapper info for the wrapper is a WrapperInfo structure.
@@ -8206,7 +8227,7 @@ mono_marshal_get_isinst_with_cache (void)
 	MonoMethod *res;
 	MonoMethodBuilder *mb;
 	MonoMethodSignature *sig;
-	int return_null_pos, cache_miss_pos, cache_hit_pos, not_an_instance_pos, negative_cache_hit_pos;
+	int return_null_pos, cache_miss_pos, cache_hit_pos, negative_cache_hit_pos;
 	WrapperInfo *info;
 
 	if (cached)
@@ -8214,8 +8235,11 @@ mono_marshal_get_isinst_with_cache (void)
 
 	mb = mono_mb_new (mono_defaults.object_class, "__isinst_with_cache", MONO_WRAPPER_CASTCLASS);
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+	// The object
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
+	// The class
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
+	// The cache
 	sig->params [2] = &mono_defaults.int_class->byval_arg;
 	sig->ret = &mono_defaults.object_class->byval_arg;
 	sig->pinvoke = 0;
@@ -8261,45 +8285,23 @@ mono_marshal_get_isinst_with_cache (void)
 	mono_mb_emit_ldarg (mb, 0);
 	cache_hit_pos = mono_mb_emit_branch (mb, CEE_BR);
 
-	/*NULL*/
-	mono_mb_patch_branch (mb, negative_cache_hit_pos);
-	mono_mb_emit_byte (mb, CEE_LDNULL);
-
-	mono_mb_patch_branch (mb, cache_hit_pos);
-	mono_mb_emit_byte (mb, CEE_RET);
-
+	// slow path
 	mono_mb_patch_branch (mb, cache_miss_pos);
-	/*if (mono_object_isinst (obj, klass)) */
+
+	// if isinst
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
-	mono_mb_emit_icall (mb, mono_object_isinst);
-	not_an_instance_pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-	/**cache = obj_vtable;*/
 	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_ldloc (mb, 0);
-	mono_mb_emit_byte (mb, CEE_STIND_I);
-
-	/*return obj;*/
-	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_icall (mb, mono_marshal_isinst_with_cache);
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	/*not an instance*/
-	mono_mb_patch_branch (mb, not_an_instance_pos);
-	/* *cache = (gpointer)(obj_vtable | 0x1);*/
-	mono_mb_emit_ldarg (mb, 2);
-	/*obj_vtable | 0x1*/
-	mono_mb_emit_ldloc (mb, 0);
-	mono_mb_emit_byte(mb, CEE_LDC_I4_1);
-	mono_mb_emit_byte (mb, CEE_CONV_U);
-	mono_mb_emit_byte (mb, CEE_OR);
-
-	/* *cache = ... */
-	mono_mb_emit_byte (mb, CEE_STIND_I);
-
-	/*return null*/
+	// else NULL;
+	mono_mb_patch_branch (mb, negative_cache_hit_pos);
 	mono_mb_patch_branch (mb, return_null_pos);
 	mono_mb_emit_byte (mb, CEE_LDNULL);
+
+	// return
+	mono_mb_patch_branch (mb, cache_hit_pos);
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
