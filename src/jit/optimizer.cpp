@@ -6710,7 +6710,12 @@ void                Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         {
                             heapHavoc = true;
                         }
+                        break;
                     }
+
+                default:
+                    // All other gtOper node kinds, leave 'heapHavoc' unchanged (i.e. false)
+                    break;
                 }
             }
         }

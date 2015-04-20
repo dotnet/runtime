@@ -6267,6 +6267,10 @@ bool       Compiler::gtCompareTree(GenTree *      op1,
                 return true;
             }
             break;
+
+        default:
+            // we return false for these unhandled 'oper' kinds
+            break;
         }
     }
     return false;

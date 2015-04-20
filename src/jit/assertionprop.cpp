@@ -1449,6 +1449,10 @@ void Compiler::optDebugCheckAssertions(unsigned index)
                }
            }
            break;
+
+        default:
+            // for all other 'assertion->op2.kind' values we don't check anything
+           break;
         }
     }
 }
@@ -1743,7 +1747,7 @@ void Compiler::optAssertionGen(GenTreePtr tree)
     // For most of the assertions that we create below 
     // the assertion is true after the tree is processed
     bool assertionProven = true;
-    unsigned assertionIndex  = 0;  
+    unsigned assertionIndex = NO_ASSERTION_INDEX; 
     switch (tree->gtOper)
     {
     case GT_ASG:
@@ -1813,6 +1817,10 @@ void Compiler::optAssertionGen(GenTreePtr tree)
 
     case GT_JTRUE:
         assertionIndex = optAssertionGenJtrue(tree);
+        break;
+
+    default:
+        // All other gtOper node kinds, leave 'assertionIndex' = NO_ASSERTION_INDEX
         break;
     }
 
@@ -3771,6 +3779,10 @@ EXPSET_TP Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion)
             usable = ((impAssertion->assertionKind == OAK_EQUAL) && (impAssertion->op2.u1.iconVal == iconVal)) ||
                      ((impAssertion->assertionKind == OAK_NOT_EQUAL) && (impAssertion->op2.u1.iconVal != iconVal));
             break;
+
+        default:
+            // leave 'usable' = false;
+            break;
         }
 
         if (usable)
@@ -3931,6 +3943,10 @@ EXPSET_TP Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, Asser
                 usable = ((copyAssertLclNum == impAssertion->op2.lcl.lclNum && copyAssertSsaNum == impAssertion->op2.lcl.ssaNum) && 
                           (depAssertLclNum == impAssertion->op1.lcl.lclNum && depAssertSsaNum == impAssertion->op1.lcl.ssaNum));
             }
+            break;
+
+        default:
+            // leave 'usable' = false;
             break;
         }
             

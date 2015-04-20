@@ -5517,6 +5517,10 @@ public:
             case O2K_SUBRANGE:
                 return ((op2.u2.loBound == that->op2.u2.loBound) &&
                         (op2.u2.hiBound == that->op2.u2.hiBound));
+
+            case O2K_INVALID:
+                // we will return false
+                break;
             }
             return false;
         }
