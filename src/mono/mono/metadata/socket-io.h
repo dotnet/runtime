@@ -96,6 +96,8 @@ typedef enum {
 	SocketOptionName_ReuseAddress=4,
 	SocketOptionName_KeepAlive=8,
 	SocketOptionName_DontRoute=16,
+	SocketOptionName_IPProtectionLevel = 23,
+	SocketOptionName_IPv6Only = 27,
 	SocketOptionName_Broadcast=32,
 	SocketOptionName_UseLoopback=64,
 	SocketOptionName_Linger=128,

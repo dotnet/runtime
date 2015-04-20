@@ -532,6 +532,13 @@ static gint32 convert_sockopt_level_and_name(MonoSocketOptionLevel mono_level,
 		case SocketOptionName_DropMembership:
 			*system_name = IPV6_LEAVE_GROUP;
 			break;
+		case SocketOptionName_IPv6Only:
+#ifdef IPV6_V6ONLY
+			*system_name = IPV6_V6ONLY;
+#else
+			return -1;
+#endif
+			break;
 		case SocketOptionName_PacketInformation:
 #ifdef HAVE_IPV6_PKTINFO
 			*system_name = IPV6_PKTINFO;
