@@ -726,7 +726,12 @@ static gboolean buffer_replies;
 static ReplyPacket reply_packets [128];
 int nreply_packets;
 
-#define dbg_lock() mono_mutex_lock (&debug_mutex)
+#define dbg_lock() do {	\
+	MONO_TRY_BLOCKING	\
+	mono_mutex_lock (&debug_mutex); \
+	MONO_FINISH_TRY_BLOCKING	\
+} while (0)
+
 #define dbg_unlock() mono_mutex_unlock (&debug_mutex)
 static mono_mutex_t debug_mutex;
 
@@ -1093,7 +1098,9 @@ finish_agent_init (gboolean on_startup)
 		}
 	}
 
+	MONO_PREPARE_BLOCKING
 	transport_connect (agent_config.address);
+	MONO_FINISH_BLOCKING
 
 	if (!on_startup) {
 		/* Do some which is usually done after sending the VMStart () event */
@@ -1325,7 +1332,9 @@ socket_transport_connect (const char *address)
 			}
 		}
 
+		MONO_PREPARE_BLOCKING
 		conn_fd = socket_transport_accept (sfd);
+		MONO_FINISH_BLOCKING
 		if (conn_fd == -1)
 			exit (1);
 
@@ -1544,13 +1553,19 @@ transport_handshake (void)
 	
 	/* Write handshake message */
 	sprintf (handshake_msg, "DWP-Handshake");
+	/* Must use try blocking as this can nest into code that runs blocking */
+	MONO_TRY_BLOCKING
 	do {
 		res = transport_send (handshake_msg, strlen (handshake_msg));
 	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+	MONO_FINISH_TRY_BLOCKING
+
 	g_assert (res != -1);
 
 	/* Read answer */
+	MONO_TRY_BLOCKING
 	res = transport_recv (buf, strlen (handshake_msg));
+	MONO_FINISH_TRY_BLOCKING
 	if ((res != strlen (handshake_msg)) || (memcmp (buf, handshake_msg, strlen (handshake_msg)) != 0)) {
 		fprintf (stderr, "debugger-agent: DWP handshake failed.\n");
 		return FALSE;
@@ -1593,7 +1608,9 @@ stop_debugger_thread (void)
 	if (!inited)
 		return;
 
+	MONO_PREPARE_BLOCKING
 	transport_close1 ();
+	MONO_FINISH_BLOCKING
 
 	/* 
 	 * Wait for the thread to exit.
@@ -1606,6 +1623,7 @@ stop_debugger_thread (void)
 	//WaitForSingleObject (debugger_thread_handle, INFINITE);
 	if (GetCurrentThreadId () != debugger_thread_id) {
 		do {
+			MONO_TRY_BLOCKING
 			mono_mutex_lock (&debugger_thread_exited_mutex);
 			if (!debugger_thread_exited) {
 #ifdef HOST_WIN32
@@ -1619,10 +1637,13 @@ stop_debugger_thread (void)
 #endif
 			}
 			mono_mutex_unlock (&debugger_thread_exited_mutex);
+			MONO_FINISH_TRY_BLOCKING
 		} while (!debugger_thread_exited);
 	}
 
+	MONO_PREPARE_BLOCKING
 	transport_close2 ();
+	MONO_FINISH_BLOCKING
 }
 
 static void
@@ -1816,7 +1837,9 @@ send_packet (int command_set, int command, Buffer *data)
 	buffer_add_byte (&buf, command);
 	memcpy (buf.buf + 11, data->buf, data->p - data->buf);
 
+	MONO_PREPARE_BLOCKING
 	res = transport_send (buf.buf, len);
+	MONO_FINISH_BLOCKING
 
 	buffer_free (&buf);
 
@@ -1842,7 +1865,10 @@ send_reply_packets (int npackets, ReplyPacket *packets)
 		buffer_add_byte (&buf, packets [i].error);
 		buffer_add_buffer (&buf, packets [i].data);
 	}
+
+	MONO_PREPARE_BLOCKING
 	res = transport_send (buf.buf, len);
+	MONO_FINISH_BLOCKING
 
 	buffer_free (&buf);
 
@@ -2851,7 +2877,9 @@ suspend_vm (void)
 {
 	mono_loader_lock ();
 
+	MONO_TRY_BLOCKING
 	mono_mutex_lock (&suspend_mutex);
+	MONO_FINISH_TRY_BLOCKING
 
 	suspend_count ++;
 
@@ -2889,7 +2917,9 @@ resume_vm (void)
 
 	mono_loader_lock ();
 
+	MONO_TRY_BLOCKING
 	mono_mutex_lock (&suspend_mutex);
+	MONO_FINISH_TRY_BLOCKING
 
 	g_assert (suspend_count > 0);
 	suspend_count --;
@@ -2933,7 +2963,9 @@ resume_thread (MonoInternalThread *thread)
 	tls = mono_g_hash_table_lookup (thread_to_tls, thread);
 	g_assert (tls);
 	
+	MONO_TRY_BLOCKING
 	mono_mutex_lock (&suspend_mutex);
+	MONO_FINISH_TRY_BLOCKING
 
 	g_assert (suspend_count > 0);
 
@@ -3010,7 +3042,9 @@ suspend_current (void)
  	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
 
+	MONO_TRY_BLOCKING
 	mono_mutex_lock (&suspend_mutex);
+	MONO_FINISH_TRY_BLOCKING
 
 	tls->suspending = FALSE;
 	tls->really_suspended = TRUE;
@@ -3022,6 +3056,7 @@ suspend_current (void)
 
 	DEBUG_PRINTF (1, "[%p] Suspended.\n", (gpointer)GetCurrentThreadId ());
 
+	MONO_TRY_BLOCKING
 	while (suspend_count - tls->resume_count > 0) {
 #ifdef HOST_WIN32
 		if (WAIT_TIMEOUT == WaitForSingleObject(suspend_cond, 0))
@@ -3038,6 +3073,7 @@ suspend_current (void)
 		g_assert (err == 0);
 #endif
 	}
+	MONO_FINISH_TRY_BLOCKING
 
 	tls->suspended = FALSE;
 	tls->really_suspended = FALSE;
@@ -9588,7 +9624,10 @@ wait_for_attach (void)
 	}
 
 	/* Block and wait for client connection */
+	MONO_PREPARE_BLOCKING
 	conn_fd = socket_transport_accept (listen_fd);
+	MONO_FINISH_BLOCKING
+
 	DEBUG_PRINTF (1, "Accepted connection on %d\n", conn_fd);
 	if (conn_fd == -1) {
 		DEBUG_PRINTF (1, "[dbg] Bad client connection\n");
@@ -9646,7 +9685,9 @@ debugger_thread (void *arg)
 	}
 	
 	while (!attach_failed) {
+		MONO_PREPARE_BLOCKING
 		res = transport_recv (header, HEADER_LENGTH);
+		MONO_FINISH_BLOCKING
 
 		/* This will break if the socket is closed during shutdown too */
 		if (res != HEADER_LENGTH) {
@@ -9681,7 +9722,9 @@ debugger_thread (void *arg)
 		data = g_malloc (len - HEADER_LENGTH);
 		if (len - HEADER_LENGTH > 0)
 		{
+			MONO_PREPARE_BLOCKING
 			res = transport_recv (data, len - HEADER_LENGTH);
+			MONO_FINISH_BLOCKING
 			if (res != len - HEADER_LENGTH) {
 				DEBUG_PRINTF (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, len - HEADER_LENGTH);
 				break;
@@ -9771,10 +9814,12 @@ debugger_thread (void *arg)
 
 	mono_set_is_debugger_attached (FALSE);
 	
+	MONO_TRY_BLOCKING
 	mono_mutex_lock (&debugger_thread_exited_mutex);
 	debugger_thread_exited = TRUE;
 	mono_cond_signal (&debugger_thread_exited_cond);
 	mono_mutex_unlock (&debugger_thread_exited_mutex);
+	MONO_FINISH_TRY_BLOCKING
 
 	DEBUG_PRINTF (1, "[dbg] Debugger thread exited.\n");
 	
