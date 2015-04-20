@@ -2368,6 +2368,24 @@ else
 		AC_MSG_RESULT(no)
 	])
 
+	dnl **********************************
+	dnl *** Check for inet_pton ***
+	dnl **********************************
+	AC_MSG_CHECKING(for inet_pton)
+		AC_TRY_LINK([
+		#include <stdio.h>
+		#include <winsock2.h>
+		#include <ws2tcpip.h>
+	], [
+		inet_pton (0, NULL, NULL);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_INET_PTON, 1, [Have inet_pton])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
 	AC_CHECK_DECLS(InterlockedExchange64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedCompareExchange64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedDecrement64, [], [], [[#include <windows.h>]])
