@@ -25,27 +25,7 @@ namespace System.IO.Pipes
             {
                 fixed (int* fdsptr = fds)
                 {
-                    bool created = false;
-                    
-                    // If the caller asked for the handle to be non-inheritable, try to use pipe2 to create the pipe.
-                    // Depending on the OS, it may not exist.
-                    if ((inheritability & HandleInheritability.Inheritable) == 0)
-                    {
-                        try
-                        {
-                            while (Interop.CheckIo(Interop.libc.pipe2(fdsptr, (int)Interop.libc.OpenFlags.O_CLOEXEC))) ;
-                            created = true;
-                        }
-                        catch (MissingMethodException) { } // pipe2 is Linux only
-                    }
-
-                    // Fall back to using pipe if either the handle can be inherited or if pipe2 wasn't available to 
-                    // create it as non-inheritable.  We don't just want to fail if we can't make the handle
-                    // non-inheritable as non-inheritance is the default.
-                    if (!created)
-                    {
-                        while (Interop.CheckIo(Interop.libc.pipe(fdsptr))) ;
-                    }
+                    CreatePipe(inheritability, fdsptr);
                 }
             }
 

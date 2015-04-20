@@ -102,12 +102,18 @@
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.setmntent.cs">
       <Link>Common\Interop\Unix\Interop.setmntent.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
+      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.OSX.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <!-- TODO: Remove once implemented -->
       <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
+      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

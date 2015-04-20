@@ -43,7 +43,8 @@ namespace Microsoft.Win32.SafeHandles
 
                 // Open the file.
                 int fd;
-                while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode), path, isDirectory: enoentDueToDirectory)) ;
+                while (Interop.CheckIo(fd = Interop.libc.open(path, flags, mode), path, isDirectory: enoentDueToDirectory,
+                    errorRewriter: errno => (errno == Interop.Errors.EISDIR) ? Interop.Errors.EACCES : errno)) ;
                 Debug.Assert(fd >= 0);
                 handle.SetHandle((IntPtr)fd);
                 Debug.Assert(!handle.IsInvalid);

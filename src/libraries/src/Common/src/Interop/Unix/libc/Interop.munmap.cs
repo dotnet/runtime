@@ -11,6 +11,6 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int munmap(IntPtr __addr, size_t __len);
+        internal static extern int munmap(IntPtr addr, size_t len);
     }
 }

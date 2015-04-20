@@ -330,7 +330,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
 
             fsArr = dir2.GetFileSystemInfos("*BB*");
             iCountTestcases++;
-            if (fsArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
+            if (fsArr.Length != (Interop.IsWindows ? 2 : 1))
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + fsArr.Length);
@@ -340,7 +340,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
             foreach (FileSystemInfo fs in fsArr)
                 names[i++] = fs.Name;
 
-            if (!Interop.IsLinux) // Linux is case-sensitive
+            if (Interop.IsWindows)
             {
 
                 iCountTestcases++;

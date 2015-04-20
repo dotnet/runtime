@@ -29,7 +29,7 @@ public class FileInfo_GetSetTimes
         
         foreach(TimeProperty timeProperty in Enum.GetValues(typeof(TimeProperty)))
         {
-            if (Interop.IsLinux && timeProperty == TimeProperty.CreationTime) // birthtime not supported on Linux
+            if (!Interop.IsWindows && timeProperty == TimeProperty.CreationTime) // birthtime not supported on Linux
             {
                 continue;
             }

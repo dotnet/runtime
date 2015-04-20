@@ -294,6 +294,9 @@ namespace System.IO
                     case Interop.Errors.EINTR: // interrupted; try again
                         continue;
                     case Interop.Errors.EACCES:
+                    case Interop.Errors.EPERM:
+                    case Interop.Errors.EROFS:
+                    case Interop.Errors.EISDIR:
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath)); // match Win32 exception
                     case Interop.Errors.ENOENT:
                         if (!throwOnTopLevelDirectoryNotFound)
