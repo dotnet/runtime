@@ -152,6 +152,16 @@ mono_threads_platform_free (MonoThreadInfo *info)
 {
 }
 
+void
+mono_threads_core_begin_global_suspend (void)
+{
+}
+
+void
+mono_threads_core_end_global_suspend (void)
+{
+}
+
 #endif
 
 #if defined (HOST_WIN32)
@@ -404,16 +414,6 @@ mono_threads_core_self_interrupt (void)
 
 void
 mono_threads_core_clear_interruption (void)
-{
-}
-
-void
-mono_threads_core_begin_global_suspend (void)
-{
-}
-
-void
-mono_threads_core_end_global_suspend (void)
 {
 }
 
