@@ -2814,6 +2814,12 @@ private:
     bool                impIsThis               (GenTreePtr     obj);
     bool                impIsLDFTN_TOKEN        (const BYTE * delegateCreateStart, const BYTE * newobjCodeAddr);
     bool                impIsDUP_LDVIRTFTN_TOKEN(const BYTE * delegateCreateStart, const BYTE * newobjCodeAddr);
+    bool                impIsAnySTLOC           (OPCODE         opcode)
+    {
+        return     ((opcode == CEE_STLOC)   ||
+                    (opcode == CEE_STLOC_S) ||
+                    ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
+    }
 
     GenTreeArgList*     impPopList              (unsigned       count,
                                                  unsigned *     flagsPtr,
