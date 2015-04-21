@@ -63,6 +63,8 @@ namespace System.Xml
         {
             switch (_laterInitParam.initType)
             {
+                case InitInputType.UriString:
+                    return FinishInitUriStringAsync();
                 case InitInputType.Stream:
                     return FinishInitStreamAsync();
                 case InitInputType.TextReader:
@@ -74,6 +76,37 @@ namespace System.Xml
             }
         }
 
+        private async Task FinishInitUriStringAsync()
+        {
+            Stream stream = (Stream)_laterInitParam.inputUriResolver.GetEntity(_laterInitParam.inputbaseUri, string.Empty, typeof(Stream));
+
+            if (stream == null)
+            {
+                throw new XmlException(SR.Xml_CannotResolveUrl, _laterInitParam.inputUriStr);
+            }
+
+            using (stream)
+            {
+                Encoding enc = null;
+                // get Encoding from XmlParserContext
+                if (_laterInitParam.inputContext != null)
+                {
+                    enc = _laterInitParam.inputContext.Encoding;
+                }
+
+                // init ParsingState
+                await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, stream, null, 0, enc).ConfigureAwait(false);
+
+                _reportedEncoding = _ps.encoding;
+
+                // parse DTD
+                if (_laterInitParam.inputContext != null && _laterInitParam.inputContext.HasDtdInfo)
+                {
+                    await ProcessDtdFromParserContextAsync(_laterInitParam.inputContext).ConfigureAwait(false);
+                }
+            }
+            _laterInitParam = null;
+        }
 
         private async Task FinishInitStreamAsync()
         {

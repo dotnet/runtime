@@ -16,6 +16,7 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="AsyncReaderLateInitTests.cs" />
     <Compile Include="DisposeTests.cs" />
   </ItemGroup>
   <ItemGroup>
