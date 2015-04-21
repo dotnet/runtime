@@ -93,6 +93,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Diagnostics.TextWriterTraceListener**. Provides trace listeners for directing tracing output to a text writer, 
   such as System.IO.StreamWriter.
 
+* **System.Dynamic.Runtime**. Provides classes and interfaces that support the Dynamic Language Runtime (DLR).
+
 * **System.Diagnostics.TraceSource**. Provides classes that help you trace the execution of your code.
 
 * **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string 
@@ -168,6 +170,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Text.Encoding.CodePages**. Provides the ability to access existing encoding types for string manipulation 
   across common cultural standards, as well as support to create custom Encoding Providers.
+
+* **System.Text.Encodings.Web**.  Provides support for encodings related to HTML, JavaScript, and URLs.
 
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
