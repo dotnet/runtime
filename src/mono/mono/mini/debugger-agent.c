@@ -37,10 +37,6 @@
 #include <pthread.h>
 #endif
 
-#ifdef HAVE_UCONTEXT_H
-#include <ucontext.h>
-#endif
-
 #ifdef HOST_WIN32
 #ifdef _MSC_VER
 #include <winsock2.h>
@@ -77,8 +73,8 @@
 #include "seq-points.h"
 
 /*
-On iOS we can't use System.Environment.Exit () as it will do the wrong
-shutdown sequence.
+ * On iOS we can't use System.Environment.Exit () as it will do the wrong
+ * shutdown sequence.
 */
 #if !defined (TARGET_IOS)
 #define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
@@ -97,9 +93,6 @@ shutdown sequence.
 
 #include <mono/utils/mono-mutex.h>
 
-/* Definitions to make backporting to 2.6 easier */
-//#define MonoInternalThread MonoThread
-//#define mono_thread_internal_current mono_thread_current
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
 typedef struct {
@@ -9743,12 +9736,6 @@ mono_debugger_agent_single_step_event (void *sigctx)
 void
 mono_debugger_agent_free_domain_info (MonoDomain *domain)
 {
-}
-
-gboolean
-mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
-{
-	return FALSE;
 }
 
 void
