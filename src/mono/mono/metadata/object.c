@@ -6061,6 +6061,16 @@ mono_async_result_invoke (MonoAsyncResult *ares, MonoObject **exc)
 	return res;
 }
 
+MonoObject *
+ves_icall_System_Runtime_Remoting_Messaging_AsyncResult_Invoke (MonoAsyncResult *this)
+{
+	MonoObject *exc = NULL;
+	MonoObject *res = mono_async_result_invoke (this, &exc);
+	if (exc)
+		mono_raise_exception ((MonoException*) exc);
+	return res;
+}
+
 void
 mono_message_init (MonoDomain *domain,
 		   MonoMethodMessage *this, 
