@@ -20,9 +20,12 @@
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
-    <Compile Include="NamedPipesSimpleTest.cs" />
     <Compile Include="AnonymousPipesSimpleTest.cs" />
+    <Compile Include="AnonymousPipesThrowsTests.cs" />
+    <Compile Include="NamedPipesSimpleTest.cs" />
+    <Compile Include="NamedPipesThrowsTests.cs" />
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
+    
   </ItemGroup>
   <!-- Automatically added by VS -->
   <ItemGroup>
