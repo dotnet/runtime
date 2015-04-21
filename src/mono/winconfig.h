@@ -16,9 +16,9 @@
 #error Unknown architecture
 #endif
 
-#if _WIN32_WINNT < 0x0502
-#error "Mono requires WinXP SP2 or later"
-#endif /* _WIN32_WINNT < 0x0502 */
+#if _WIN32_WINNT < 0x0600
+#error "Mono requires Windows Vista or later"
+#endif /* _WIN32_WINNT < 0x0600 */
 
 /*
  * Features that are not required in the Windows port
@@ -231,7 +231,7 @@
 /* #undef HAVE_INET_ATON */
 
 /* Define to 1 if you have the `inet_pton' function. */
-/* #undef HAVE_INET_PTON */
+#define HAVE_INET_PTON 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
