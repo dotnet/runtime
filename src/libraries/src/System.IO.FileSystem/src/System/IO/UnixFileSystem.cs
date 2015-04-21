@@ -106,6 +106,8 @@ namespace System.IO
                 }
                 else
                 {
+                    if (errno == Interop.Errors.EISDIR)
+                        errno = Interop.Errors.EACCES;
                     throw Interop.GetExceptionForIoErrno(errno, fullPath);
                 }
             }
