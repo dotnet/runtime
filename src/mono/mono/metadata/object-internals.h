@@ -395,7 +395,6 @@ struct _MonoInternalThread {
 	HANDLE	    start_notify;
 	gpointer stack_ptr;
 	gpointer *static_data;
-	gpointer dead_field_remove_me; /* This used to be jit_data, but that was moved to MonoThreadInfo. */
 	void *thread_info; /*This is MonoThreadInfo*, but to simplify dependencies, let's make it a void* here. */
 	MonoAppContext *current_appcontext;
 	MonoException *pending_exception;
@@ -405,14 +404,9 @@ struct _MonoInternalThread {
 	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 interruption_requested;
-	gpointer dead_field_remove_me_2;
-	gpointer dead_field_remove_me_3;
-	gpointer dead_field_remove_me_4;
 	mono_mutex_t *synch_cs;
 	MonoBoolean threadpool_thread;
-	MonoBoolean thread_dump_requested;
 	MonoBoolean thread_interrupt_requested;
-	gpointer end_stack; /* This is only used when running in the debugger. */
 	int stack_size;
 	guint8	apartment_state;
 	gint32 critical_region_level;
@@ -421,9 +415,7 @@ struct _MonoInternalThread {
 	MonoThreadManageCallback manage_callback;
 	gpointer interrupt_on_stop;
 	gsize    flags;
-	gpointer dead_field_remove_me_5;
 	gpointer thread_pinning_ref;
-	gint32 dead_field_remove_me_6;
 	MonoMethod *async_invoke_method;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
