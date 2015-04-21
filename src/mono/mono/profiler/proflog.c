@@ -3284,7 +3284,7 @@ mono_profiler_startup (const char *desc)
 		return;
 	init_thread ();
 
-	mono_profiler_install (prof, log_shutdown);
+	mono_profiler_install (prof, MONO_PROFILER_VERSION, log_shutdown);
 	mono_profiler_install_gc (gc_event, gc_resize);
 	mono_profiler_install_allocation (gc_alloc);
 	mono_profiler_install_gc_moves (gc_moves);

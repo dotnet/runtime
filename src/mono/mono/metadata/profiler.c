@@ -116,6 +116,7 @@ MonoProfileFlags mono_profiler_events;
 /**
  * mono_profiler_install:
  * @prof: a MonoProfiler structure pointer, or a pointer to a derived structure.
+ * @version: profiler API version (see profiler.h)
  * @callback: the function to invoke at shutdown
  *
  * Use mono_profiler_install to activate profiling in the Mono runtime.
@@ -125,8 +126,11 @@ MonoProfileFlags mono_profiler_events;
  *
  */
 void
-mono_profiler_install (MonoProfiler *prof, MonoProfileFunc callback)
+mono_profiler_install (MonoProfiler *prof, int version, MonoProfileFunc callback)
 {
+	if (version != MONO_PROFILER_VERSION)
+		g_warning ("Profiler module API version (%i) potentially incompatible with current API version (%i)", version, MONO_PROFILER_VERSION);
+
 	ProfilerDesc *desc = g_new0 (ProfilerDesc, 1);
 	if (!prof_list)
 		mono_mutex_init_recursive (&profiler_coverage_mutex);

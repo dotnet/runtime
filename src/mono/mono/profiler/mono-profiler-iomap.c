@@ -537,7 +537,7 @@ void mono_profiler_startup (const char *desc)
 	prof->saved_strings_hash = g_hash_table_new (NULL, NULL);
 	prof->string_locations_hash = g_hash_table_new (mismatched_files_guint32_hash, mismatched_files_guint32_equal);
 
-	mono_profiler_install (prof, profiler_shutdown);
+	mono_profiler_install (prof, MONO_PROFILER_VERSION, profiler_shutdown);
 	mono_profiler_install_runtime_initialized (runtime_initialized_cb);
 	mono_profiler_install_iomap (mono_portability_iomap_event);
 	mono_profiler_install_allocation (mono_portability_remember_alloc);

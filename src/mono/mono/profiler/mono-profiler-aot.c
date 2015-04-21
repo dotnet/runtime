@@ -145,7 +145,7 @@ mono_profiler_startup (const char *desc)
 	prof = g_new0 (MonoProfiler, 1);
 	prof->images = g_hash_table_new (NULL, NULL);
 
-	mono_profiler_install (prof, prof_shutdown);
+	mono_profiler_install (prof, MONO_PROFILER_VERSION, prof_shutdown);
 	
 	mono_profiler_install_jit_compile (prof_jit_enter, prof_jit_leave);
 

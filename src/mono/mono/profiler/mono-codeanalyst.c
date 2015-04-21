@@ -73,7 +73,7 @@ mono_profiler_startup (const char *desc)
 {
 	CAJIT_Initialize ();
 
-	mono_profiler_install (NULL, codeanalyst_shutdown);
+	mono_profiler_install (NULL, MONO_PROFILER_VERSION, codeanalyst_shutdown);
 	mono_profiler_install_jit_end (method_jit_result);
 	mono_profiler_set_events (MONO_PROFILE_JIT_COMPILATION);
 }
