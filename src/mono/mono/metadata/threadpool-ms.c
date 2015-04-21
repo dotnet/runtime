@@ -32,7 +32,6 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threadpool-ms.h>
 #include <mono/metadata/threadpool-ms-io.h>
-#include <mono/metadata/threadpool-internals.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-complex.h>
@@ -583,7 +582,7 @@ worker_thread (gpointer data)
 	g_assert (status >= STATUS_INITIALIZED);
 
 	if (!threadpool_wait_callback_class)
-		threadpool_wait_callback_class = mono_class_from_name (mono_defaults.corlib, "System.Threading.Microsoft", "_ThreadPoolWaitCallback");
+		threadpool_wait_callback_class = mono_class_from_name (mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");
 	g_assert (threadpool_wait_callback_class);
 
 	if (!perform_wait_callback_method)
@@ -649,7 +648,7 @@ worker_thread (gpointer data)
 			MonoObject *exc = NULL;
 			MonoObject *res = mono_runtime_invoke (perform_wait_callback_method, NULL, NULL, &exc);
 			if (exc)
-				mono_internal_thread_unhandled_exception (exc);
+				mono_thread_internal_unhandled_exception (exc);
 			else if (res && *(MonoBoolean*) mono_object_unbox (res) == FALSE)
 				retire = TRUE;
 
@@ -1379,7 +1378,7 @@ mono_threadpool_ms_resume (void)
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_GetAvailableThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
+ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
 {
 	if (!worker_threads || !completion_port_threads)
 		return;
@@ -1391,7 +1390,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_GetAvailableThreadsNative (gint3
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_GetMinThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
+ves_icall_System_Threading_ThreadPool_GetMinThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
 {
 	if (!worker_threads || !completion_port_threads)
 		return;
@@ -1403,7 +1402,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_GetMinThreadsNative (gint32 *wor
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_GetMaxThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
+ves_icall_System_Threading_ThreadPool_GetMaxThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
 {
 	if (!worker_threads || !completion_port_threads)
 		return;
@@ -1415,7 +1414,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_GetMaxThreadsNative (gint32 *wor
 }
 
 MonoBoolean
-ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
+ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
 {
 	ensure_initialized (NULL);
 
@@ -1431,7 +1430,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint32 work
 }
 
 MonoBoolean
-ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
+ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
 {
 	gint cpu_count = mono_cpu_count ();
 
@@ -1449,13 +1448,13 @@ ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint32 work
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking)
+ves_icall_System_Threading_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking)
 {
 	ensure_initialized (enable_worker_tracking);
 }
 
 MonoBoolean
-ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemComplete (void)
+ves_icall_System_Threading_ThreadPool_NotifyWorkItemComplete (void)
 {
 	ThreadPoolCounter counter;
 
@@ -1472,7 +1471,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemComplete (void)
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemProgressNative (void)
+ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative (void)
 {
 	heuristic_notify_work_completed ();
 
@@ -1481,20 +1480,20 @@ ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemProgressNative (vo
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_ReportThreadStatus (MonoBoolean is_working)
+ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working)
 {
 	// TODO
 	mono_raise_exception (mono_get_exception_not_implemented (NULL));
 }
 
 MonoBoolean
-ves_icall_System_Threading_Microsoft_ThreadPool_RequestWorkerThread (void)
+ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 {
 	return worker_request (mono_domain_get ());
 }
 
 MonoBoolean G_GNUC_UNUSED
-ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped)
+ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped)
 {
 	/* This copy the behavior of the current Mono implementation */
 	mono_raise_exception (mono_get_exception_not_implemented (NULL));
@@ -1502,14 +1501,14 @@ ves_icall_System_Threading_Microsoft_ThreadPool_PostQueuedCompletionStatus (Mono
 }
 
 MonoBoolean G_GNUC_UNUSED
-ves_icall_System_Threading_Microsoft_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle)
+ves_icall_System_Threading_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle)
 {
 	/* This copy the behavior of the current Mono implementation */
 	return TRUE;
 }
 
 MonoBoolean G_GNUC_UNUSED
-ves_icall_System_Threading_Microsoft_ThreadPool_IsThreadPoolHosted (void)
+ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (void)
 {
 	return FALSE;
 }

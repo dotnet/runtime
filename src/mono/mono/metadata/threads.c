@@ -20,7 +20,6 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/environment.h>
@@ -4654,4 +4653,44 @@ mono_thread_join (gpointer tid)
 	thread = (pthread_t)tid;
 	pthread_join (thread, NULL);
 #endif
+}
+
+void
+mono_thread_internal_check_for_interruption_critical (MonoInternalThread *thread)
+{
+	if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
+		mono_thread_interruption_checkpoint ();
+}
+
+static inline gboolean
+is_appdomainunloaded_exception (MonoClass *klass)
+{
+	static MonoClass *app_domain_unloaded_exception_klass = NULL;
+
+	if (!app_domain_unloaded_exception_klass)
+		app_domain_unloaded_exception_klass = mono_class_from_name (mono_defaults.corlib, "System", "AppDomainUnloadedException");
+	g_assert (app_domain_unloaded_exception_klass);
+
+	return klass == app_domain_unloaded_exception_klass;
+}
+
+static inline gboolean
+is_threadabort_exception (MonoClass *klass)
+{
+	return klass == mono_defaults.threadabortexception_class;
+}
+
+void
+mono_thread_internal_unhandled_exception (MonoObject* exc)
+{
+	if (mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_CURRENT) {
+		MonoClass *klass = exc->vtable->klass;
+		if (is_threadabort_exception (klass)) {
+			mono_thread_internal_reset_abort (mono_thread_internal_current ());
+		} else if (!is_appdomainunloaded_exception (klass)) {
+			mono_unhandled_exception (exc);
+			if (mono_environment_exitcode_get () == 1)
+				exit (255);
+		}
+	}
 }

@@ -27,7 +27,6 @@
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/marshal.h>
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/marshal.h"

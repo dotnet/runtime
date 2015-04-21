@@ -39,13 +39,13 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/threads.h>
+#include <mono/metadata/threadpool-ms.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/attach.h>
@@ -232,7 +232,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	
 	mono_gc_base_init ();
 	mono_monitor_init ();
-	mono_thread_pool_init ();
 	mono_marshal_init ();
 
 	mono_install_assembly_preload_hook (mono_domain_assembly_preload, GUINT_TO_POINTER (FALSE));
@@ -2277,7 +2276,7 @@ unload_thread_main (void *arg)
 		goto failure;
 	}
 
-	if (!mono_thread_pool_remove_domain_jobs (domain, -1)) {
+	if (!mono_threadpool_ms_remove_domain_jobs (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Cleanup of threadpool jobs of domain %s timed out.", domain->friendly_name);
 		goto failure;
 	}

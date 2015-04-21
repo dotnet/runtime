@@ -57,10 +57,10 @@
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/threadpool-ms.h>
 #include <mono/metadata/socket-io.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/runtime.h>
-#include <mono/metadata/threadpool.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-error-internals.h>
@@ -2764,7 +2764,7 @@ suspend_vm (void)
 		/*
 		 * Suspend creation of new threadpool threads, since they cannot run
 		 */
-		mono_thread_pool_suspend ();
+		mono_threadpool_ms_suspend ();
 
 	mono_loader_unlock ();
 }
@@ -2807,7 +2807,7 @@ resume_vm (void)
 	//g_assert (err == 0);
 
 	if (suspend_count == 0)
-		mono_thread_pool_resume ();
+		mono_threadpool_ms_resume ();
 
 	mono_loader_unlock ();
 }

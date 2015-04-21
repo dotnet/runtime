@@ -22,9 +22,8 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-mlist.h>
-#include <mono/metadata/threadpool.h>
-#include <mono/metadata/threadpool-internals.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/threadpool-ms.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/metadata/gc-internal.h>
@@ -242,7 +241,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Returned from finalizer.", o->vtable->klass->name, o);
 
 	if (exc)
-		mono_internal_thread_unhandled_exception (exc);
+		mono_thread_internal_unhandled_exception (exc);
 
 	mono_domain_set_internal (caller_domain);
 }
@@ -421,7 +420,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	CloseHandle (done_event);
 
 	if (domain == mono_get_root_domain ()) {
-		mono_thread_pool_cleanup ();
+		mono_threadpool_ms_cleanup ();
 		mono_gc_finalize_threadpool_threads ();
 	}
 

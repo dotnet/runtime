@@ -68,7 +68,7 @@ kqueue_event_wait (void)
 	if (ready == -1) {
 		switch (errno) {
 		case EINTR:
-			check_for_interruption_critical ();
+			mono_thread_internal_check_for_interruption_critical (mono_thread_internal_current ());
 			ready = 0;
 			break;
 		default:
