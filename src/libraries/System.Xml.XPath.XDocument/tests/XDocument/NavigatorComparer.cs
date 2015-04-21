@@ -1,8 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 // Uncomment for more asserts (slows down tests)
+// This will add additional asserts to help debugging issues
 //#define ASSERT_VERBOSE
-//#define ASSERT_ATTRIBUTE_ORDER
+// This will trigger comparison between attributes and namespaces
+// Currently XDocument is sorting attributes while other XPathNavigators aren't
+//#define CHECK_ATTRIBUTE_ORDER
 
 using System;
 using System.Collections.Generic;
@@ -19,14 +23,22 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
         private static void CompareNavigators(XPathNavigator a, XPathNavigator b)
         {
 #if ASSERT_VERBOSE
-            Assert.Equal(a.Value, b.Value);
-            Assert.Equal(a.Name, b.Name);
+            Assert.NotNull(a);
+            Assert.NotNull(b);
+            CompareNodeTypes(a.NodeType, b.NodeType);
+
+            if (AreComparableNodes(a.NodeType, b.NodeType))
+            {
+                Assert.Equal(a.Value, b.Value);
+                Assert.Equal(a.Value, b.Value);
+                Assert.Equal(a.Name, b.Name);
+            }
 #endif
         }
 
         private static bool IsWhitespaceOrText(XPathNodeType nodeType)
         {
-            return nodeType == XPathNodeType.Whitespace || nodeType == XPathNodeType.Text;
+            return nodeType == XPathNodeType.Whitespace || nodeType == XPathNodeType.Text || nodeType == XPathNodeType.SignificantWhitespace;
         }
 
         private static bool IsNamespaceOrAttribute(XPathNodeType nodeType)
@@ -34,11 +46,25 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             return nodeType == XPathNodeType.Namespace || nodeType == XPathNodeType.Attribute;
         }
 
+        private static bool AreComparableNodes(XPathNodeType a, XPathNodeType b)
+        {
+            bool areBothTextOrWhitespaces = IsWhitespaceOrText(a) && IsWhitespaceOrText(b);
+            bool areBothNamespacesOrAttributes = IsNamespaceOrAttribute(a) && IsNamespaceOrAttribute(b);
+#if CHECK_ATTRIBUTE_ORDER
+            areBothNamespacesOrAttributes = false
+#endif
+
+            return !areBothTextOrWhitespaces && !areBothNamespacesOrAttributes;
+        }
+
         private static void CompareNodeTypes(XPathNodeType a, XPathNodeType b)
         {
             // XPath.XDocument interprets whitespaces as XPathNodeType.Text
             // while other XPath navigators do it properly
-            if (!IsWhitespaceOrText(a) && !IsWhitespaceOrText(b))
+            Assert.Equal(IsWhitespaceOrText(a), IsWhitespaceOrText(b));
+            Assert.Equal(IsNamespaceOrAttribute(a), IsNamespaceOrAttribute(b));
+
+            if (!IsWhitespaceOrText(a) && !IsNamespaceOrAttribute(a))
             {
                 Assert.Equal(a, b);
             }
@@ -216,7 +242,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             {
                 var r1 = _nav1.LocalName;
                 var r2 = _nav2.LocalName;
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
                 Assert.Equal(r1, r2);
 #else
                 CompareNodeTypes(_nav1.NodeType, _nav2.NodeType);
@@ -235,7 +261,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             {
                 var r1 = _nav1.Name;
                 var r2 = _nav2.Name;
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
                 Assert.Equal(r1, r2);
 #else
                 CompareNodeTypes(_nav1.NodeType, _nav2.NodeType);
@@ -355,7 +381,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             var r1 = _nav1.MoveToFirstAttribute();
             var r2 = _nav2.MoveToFirstAttribute();
             Assert.Equal(r1, r2);
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
             CompareNavigators(nav1, nav2);
 #endif
             return r1;
@@ -366,7 +392,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             var r1 = _nav1.MoveToNextAttribute();
             var r2 = _nav2.MoveToNextAttribute();
             Assert.Equal(r1, r2);
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
             CompareNavigators(nav1, nav2);
 #endif
             return r1;
@@ -394,7 +420,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             var r1 = _nav1.MoveToFirstNamespace(value);
             var r2 = _nav2.MoveToFirstNamespace(value);
             Assert.Equal(r1, r2);
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
             CompareNavigators(nav1, nav2);
 #endif
             return r1;
@@ -405,7 +431,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             var r1 = _nav1.MoveToNextNamespace(value);
             var r2 = _nav2.MoveToNextNamespace(value);
             Assert.Equal(r1, r2);
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
             CompareNavigators(nav1, nav2);
 #endif
             return r1;
@@ -471,8 +497,8 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
                 throw new NotSupportedException("MoveTo(XPathNavigator) not supported.");
             }
 
-            var r1 = _nav1.MoveTo(value);
-            var r2 = _nav2.MoveTo(value);
+            var r1 = _nav1.MoveTo(comp._nav1);
+            var r2 = _nav2.MoveTo(comp._nav2);
             Assert.Equal(r1, r2);
             CompareNavigators(_nav1, _nav2);
             return r1;
@@ -573,7 +599,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             {
                 var r1 = _nav1.IsSamePosition(comp._nav1);
                 var r2 = _nav2.IsSamePosition(comp._nav2);
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
                 Assert.Equal(r1, r2);
 #else
                 CompareNodeTypes(_nav1.NodeType, _nav2.NodeType);
@@ -596,7 +622,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             {
                 var r1 = _nav1.Value;
                 var r2 = _nav2.Value;
-#if ASSERT_ATTRIBUTE_ORDER
+#if CHECK_ATTRIBUTE_ORDER
                 Assert.Equal(r1, r2);
 #else
                 CompareNodeTypes(_nav1.NodeType, _nav2.NodeType);
