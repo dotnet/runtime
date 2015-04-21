@@ -19,9 +19,10 @@ namespace System.IO.MemoryMappedFiles
                 (protections & (Interop.libc.MemoryMappedProtections.PROT_WRITE)) != 0 ? FileAccess.Write :
                 FileAccess.Read;
 
+            const int DefaultBufferSize = 0x1000;
             var fs = new FileStream(Path.Combine(Path.GetTempPath(), mapName),
                 FileMode.CreateNew, TranslateProtectionsToFileAccess(protections), FileShare.ReadWrite,
-                0x1000, FileOptions.DeleteOnClose);
+                DefaultBufferSize, FileOptions.DeleteOnClose);
             fs.SetLength(capacity);
             return fs;
         }
