@@ -8,7 +8,7 @@ using Xunit;
 
 public class Directory_AnsiChars
 {
-    [ActiveIssue(847)]
+    [Fact]
     public static void runTest()
     {
         bool bTestPassed = false;

@@ -58,12 +58,13 @@ public class FileInfo_get_LastWriteTime
             Task.Delay(4000).Wait();
             fil2.Refresh();
             iCountTestcases++;
-            if ((DateTime.Now - fil2.LastWriteTime).TotalMilliseconds < 2000 ||
-               (DateTime.Now - fil2.LastWriteTime).TotalMilliseconds > 5000)
+            DateTime lastWriteTime = fil2.LastWriteTime;
+            if ((DateTime.Now - lastWriteTime).TotalMilliseconds < 2000 ||
+               (DateTime.Now - lastWriteTime).TotalMilliseconds > 5000)
             {
                 iCountErrors++;
-                Console.WriteLine(fil2.LastWriteTime);
-                Console.WriteLine((DateTime.Now - fil2.LastWriteTime).TotalMilliseconds);
+                Console.WriteLine(lastWriteTime);
+                Console.WriteLine((DateTime.Now - lastWriteTime).TotalMilliseconds);
                 printerr("Error_20hjx! Last Write Time time cannot be correct");
             }
 
@@ -76,14 +77,10 @@ public class FileInfo_get_LastWriteTime
             stream.Read(new Byte[1], 0, 1);
             stream.Dispose();
             fil2.Refresh();
-            Task.Delay(2000).Wait();
-            iCountTestcases++;
-            if ((DateTime.Now - fil2.LastWriteTime).TotalMilliseconds < 4000 ||
-               (DateTime.Now - fil2.LastWriteTime).TotalMilliseconds > 7000)
+            if (fil2.LastWriteTime != lastWriteTime)
             {
                 iCountErrors++;
-                Console.WriteLine((DateTime.Now - fil2.LastWriteTime).TotalMilliseconds);
-                printerr("Eror_209x9! LastWriteTime is way off");
+                printerr("Eror_209x9! LastWriteTime should not have changed due to a read");
             }
 
             stream = fil2.Open(FileMode.Open);

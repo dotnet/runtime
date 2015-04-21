@@ -47,10 +47,6 @@ namespace System.IO.MemoryMappedFiles
             ValidateSizeAndOffset(
                 requestedSize, requestedOffset, pageSize, 
                 out nativeSize, out extraMemNeeded, out nativeOffset);
-            if (nativeSize == 0)
-            {
-                nativeSize = (ulong)pageSize;
-            }
 
             bool gotRefOnHandle = false;
             try
@@ -64,12 +60,12 @@ namespace System.IO.MemoryMappedFiles
                 // If we have a file handle, get the file descriptor from it.  If the handle is null,
                 // we'll use an anonymous backing store for the map.
                 int fd;
-                if (memMappedFileHandle._fileHandle != null)
+                if (memMappedFileHandle._fileStream != null)
                 {
                     // Get the file descriptor from the SafeFileHandle
-                    memMappedFileHandle._fileHandle.DangerousAddRef(ref gotRefOnHandle);
+                    memMappedFileHandle._fileStream.SafeFileHandle.DangerousAddRef(ref gotRefOnHandle);
                     Debug.Assert(gotRefOnHandle);
-                    fd = (int)memMappedFileHandle._fileHandle.DangerousGetHandle();
+                    fd = (int)memMappedFileHandle._fileStream.SafeFileHandle.DangerousGetHandle();
                     Debug.Assert(fd >= 0);
                 }
                 else
@@ -90,14 +86,36 @@ namespace System.IO.MemoryMappedFiles
                     throw new UnauthorizedAccessException();
                 }
 
+                // viewProtections is strictly less than mapProtections, so use viewProtections for actually creating the map.
+                Interop.libc.MemoryMappedProtections viewProtForCreation = GetProtections(access, forVerification: false);
+
                 // Create the map
-                IntPtr addr = Interop.libc.mmap(
-                    IntPtr.Zero,         // don't specify an address; let the system choose one
-                    (IntPtr)nativeSize,  // specify the rounded-size we computed so as to page align; size + extraMemNeeded
-                    GetProtections(access, forVerification: false), // viewProtections is strictly less than mapProtections, so use viewProtections
-                    flags,
-                    fd,                  // mmap adds a ref count to the fd, so there's no need to dup it.
-                    (long)nativeOffset); // specify the rounded-offset we computed so as to page align; offset - extraMemNeeded
+                IntPtr addr = IntPtr.Zero;
+                if (nativeSize > 0)
+                {
+                    addr = Interop.libc.mmap(
+                        IntPtr.Zero,         // don't specify an address; let the system choose one
+                        (IntPtr)nativeSize,  // specify the rounded-size we computed so as to page align; size + extraMemNeeded
+                        viewProtForCreation,
+                        flags,
+                        fd,                  // mmap adds a ref count to the fd, so there's no need to dup it.
+                        (long)nativeOffset); // specify the rounded-offset we computed so as to page align; offset - extraMemNeeded
+                }
+                else
+                {
+                    // There are some corner cases where the .NET API allows the requested size to be zero, e.g. the caller is 
+                    // creating a map at the end of the capacity.  We can't pass 0 to mmap, as that'll fail with EINVAL, nor can 
+                    // we create a map that extends beyond the end of the underlying file, as that'll fail on some platforms at the 
+                    // time of the map's creation.  Instead, since there's no data to be read/written, it doesn't actually matter 
+                    // what backs the view, so we just create an anonymous mapping.
+                    addr = Interop.libc.mmap(
+                        IntPtr.Zero,
+                        (IntPtr)1, // any length that's greater than zero will suffice
+                        viewProtForCreation,
+                        flags | Interop.libc.MemoryMappedFlags.MAP_ANONYMOUS,
+                        -1,        // ignore the actual fd even if there was one
+                        0);
+                }
                 if ((long)addr < 0)
                 {
                     throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error());
@@ -107,8 +125,7 @@ namespace System.IO.MemoryMappedFiles
                 // from being inherited by a forked process
                 if (memMappedFileHandle._inheritability == HandleInheritability.None)
                 {
-                    int adviseResult = Interop.libc.madvise(addr, (IntPtr)nativeSize, Interop.libc.MemoryMappedAdvice.MADV_DONTFORK);
-                    Debug.Assert(adviseResult == 0); // In release, ignore failures from advise; it's just a hint, anyway.
+                    DisableForkingIfPossible(addr, (IntPtr)nativeSize);
                 }
 
                 // Create and return the view handle
@@ -124,7 +141,7 @@ namespace System.IO.MemoryMappedFiles
             {
                 if (gotRefOnHandle)
                 {
-                    memMappedFileHandle._fileHandle.DangerousRelease();
+                    memMappedFileHandle._fileStream.SafeFileHandle.DangerousRelease();
                 }
             }
         }
@@ -132,6 +149,9 @@ namespace System.IO.MemoryMappedFiles
         [SecurityCritical]
         public unsafe void Flush(UIntPtr capacity)
         {
+            if (capacity == UIntPtr.Zero)
+                return;
+
             byte* ptr = null;
             try
             {
@@ -156,6 +176,11 @@ namespace System.IO.MemoryMappedFiles
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
+
+        /// <summary>Attempt to prevent the specified pages from being copied into forked processes.</summary>
+        /// <param name="addr">The starting address.</param>
+        /// <param name="length">The length.</param>
+        static partial void DisableForkingIfPossible(IntPtr addr, IntPtr length);
 
         /// <summary>
         /// The Windows implementation limits maps to the size of the logical address space.

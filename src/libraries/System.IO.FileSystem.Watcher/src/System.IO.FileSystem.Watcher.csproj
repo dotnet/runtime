@@ -38,12 +38,6 @@
     <Compile Include="Microsoft\Win32\UnsafeNativeMethods.cs" />
     <Compile Include="System\IO\FileSystemWatcher.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
-    <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
-    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.inotify.cs">
-      <Link>Common\Interop\Linux\Interop.inotify.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -64,6 +58,15 @@
       <Link>Common\src\Interop\Unix\libc\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
+    <Compile Include="System\IO\FileSystemWatcher.Linux.cs" />
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.inotify.cs">
+      <Link>Common\Interop\Linux\Interop.inotify.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
+      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.EventStream.cs">
@@ -74,6 +77,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
+      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.RunLoop.cs">
       <Link>Common\Interop\OSX\Interop.RunLoop.cs</Link>
