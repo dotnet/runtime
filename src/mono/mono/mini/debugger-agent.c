@@ -206,9 +206,6 @@ typedef struct {
 	/* Whenever thread_stop () was called for this thread */
 	gboolean terminated;
 
-	/* Number of thread interruptions not yet processed */
-	gint32 interrupt_count;
-
 	/* Whenever to disable breakpoints (used during invokes) */
 	gboolean disable_breakpoints;
 
@@ -2561,51 +2558,19 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 /*
  * thread_interrupt:
  *
- *   Process interruption of a thread. If SIGCTX is set, process the current thread. If
- * INFO is set, process the thread described by INFO.
- * This should be signal safe.
+ *   Process interruption of a thread. This should be signal safe.
  */
-static gboolean
-thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, MonoJitInfo *ji)
+static void
+thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, MonoJitInfo *ji)
 {
 	gboolean res;
 	gpointer ip;
 	MonoNativeThreadId tid;
 
-	/*
-	 * OSX can (and will) coalesce signals, so sending multiple pthread_kills does not
-	 * guarantee the signal handler will be called that many times.  Instead of tracking
-	 * interrupt_count on osx, we use this as a boolean flag to determine if a interrupt
-	 * has been requested that hasn't been handled yet, otherwise we can have threads
-	 * refuse to die when VM_EXIT is called
-	 */
-#if defined(__APPLE__)
-	if (InterlockedCompareExchange (&tls->interrupt_count, 0, 1) == 0)
-		return FALSE;
-#else
-	/*
-	 * We use interrupt_count to determine whenever this interrupt should be processed
-	 * by us or the normal interrupt processing code in the signal handler.
-	 * There is no race here with notify_thread (), since the signal is sent after
-	 * incrementing interrupt_count.
-	 */
-	if (tls->interrupt_count == 0)
-		return FALSE;
+	g_assert (info);
 
-	InterlockedDecrement (&tls->interrupt_count);
-#endif
-
-	if (sigctx)
-		ip = mono_arch_ip_from_context (sigctx);
-	else if (info)
-		ip = MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx);
-	else
-		ip = NULL;
-
-	if (info)
-		tid = mono_thread_info_get_tid (info);
-	else
-		tid = (MonoNativeThreadId)GetCurrentThreadId ();
+	ip = MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx);
+	tid = mono_thread_info_get_tid (info);
 
 	// FIXME: Races when the thread leaves managed code before hitting a single step
 	// event.
@@ -2613,7 +2578,6 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 	if (ji) {
 		/* Running managed code, will be suspended by the single step code */
 		DEBUG_PRINTF (1, "[%p] Received interrupt while at %s(%p), continuing.\n", (gpointer)(gsize)tid, jinfo_get_method (ji)->name, ip);
-		return TRUE;
 	} else {
 		/* 
 		 * Running native code, will be suspended when it returns to/enters 
@@ -2633,7 +2597,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 
 			if (!tls->thread)
 				/* Already terminated */
-				return TRUE;
+				return;
 
 			/*
 			 * We are in a difficult position: we want to be able to provide stack
@@ -2646,17 +2610,7 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 			 * remain valid.
 			 */
 			data.last_frame_set = FALSE;
-			if (sigctx) {
-				mono_sigctx_to_monoctx (sigctx, &ctx);
-				/* 
-				 * Don't pass MONO_UNWIND_ACTUAL_METHOD, its not signal safe, and
-				 * get_last_frame () doesn't need it, the last frame cannot be a ginst
-				 * since we are not in a JITted method.
-				 */
-				mono_walk_stack_with_ctx (get_last_frame, &ctx, MONO_UNWIND_NONE, &data);
-			} else if (info) {
-				mono_get_eh_callbacks ()->mono_walk_stack_with_state (get_last_frame, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &data);
-			}
+			mono_get_eh_callbacks ()->mono_walk_stack_with_state (get_last_frame, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &data);
 			if (data.last_frame_set) {
 				memcpy (&tls->async_last_frame, &data.last_frame, sizeof (StackFrameInfo));
 				res = mono_thread_state_init_from_monoctx (&tls->async_state, &ctx);
@@ -2676,7 +2630,6 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 			tls->suspended = TRUE;
 			MONO_SEM_POST (&suspend_sem);
 		}
-		return TRUE;
 	}
 }
 
@@ -2716,7 +2669,8 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 	data->valid_info = TRUE;
 	ji = mono_jit_info_table_find (mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN], MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
 
-	thread_interrupt (data->tls, info, NULL, ji);
+	/* This is signal safe */
+	thread_interrupt (data->tls, info, ji);
 	return MonoResumeThread;
 }
 
@@ -2736,8 +2690,6 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 		return;
 
 	DEBUG_PRINTF (1, "[%p] Interrupting %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid);
-
-	InterlockedIncrement (&tls->interrupt_count);
 
 	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
 	InterruptData interrupt_data = { 0 };
