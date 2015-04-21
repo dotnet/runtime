@@ -59,7 +59,9 @@ include_directories(${CLR_DIR}/src/inc)
 set(SOURCES
     sosplugin.cpp
     soscommand.cpp
+    coreruncommand.cpp
     debugclient.cpp
+    ${CLR_DIR}/src/coreclr/hosts/unixcorerun/corerun.cpp
 )
 
 add_library(sosplugin SHARED ${SOURCES})

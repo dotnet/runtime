@@ -321,7 +321,7 @@ int ExecuteManagedAssembly(
         return -1;
     }
     
-    void* coreclrLib = dlopen(coreClrDllPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    void* coreclrLib = dlopen(coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (coreclrLib != nullptr)
     {
         ExecuteAssemblyFunction executeAssembly = (ExecuteAssemblyFunction)dlsym(coreclrLib, "ExecuteAssembly");
@@ -402,7 +402,7 @@ int ExecuteManagedAssembly(
     return exitCode;
 }
 
-int main(const int argc, const char* argv[])
+int corerun(const int argc, const char* argv[])
 {
     const char* clrFilesPath;
     const char* managedAssemblyPath;
@@ -483,4 +483,9 @@ int main(const int argc, const char* argv[])
                             managedAssemblyArgc,
                             managedAssemblyArgv);
     return exitCode;
+}
+
+int main(const int argc, const char* argv[])
+{
+    return corerun(argc, argv);
 }
