@@ -100,12 +100,12 @@ SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
     if (!SEHInitializeConsole())
     {
         ERROR("SEHInitializeConsole failed!\n");
-        SEHCleanup(flags);
+        SEHCleanup();
         goto SEHInitializeExit;
     }
 
 #if !HAVE_MACH_EXCEPTIONS
-    SEHInitializeSignals(flags);
+    SEHInitializeSignals();
 
     if (flags & PAL_INITIALIZE_SIGNAL_THREAD)
     {
@@ -113,7 +113,7 @@ SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
         if (NO_ERROR != palError)
         {
             ERROR("StartExternalSignalHandlerThread returned %d\n", palError);
-            SEHCleanup(flags);
+            SEHCleanup();
             goto SEHInitializeExit;
         }
     }
@@ -131,20 +131,20 @@ Function :
     Undo work done by SEHInitialize
 
 Parameters :
-    PAL initialize flags
+    None
 
     (no return value)
     
 --*/
 VOID 
-SEHCleanup(DWORD flags)
+SEHCleanup()
 {
     TRACE("Cleaning up SEH\n");
 
 #if HAVE_MACH_EXCEPTIONS
     SEHCleanupExceptionPort();
 #else
-    SEHCleanupSignals(flags);
+    SEHCleanupSignals();
 #endif
 }
 
@@ -179,9 +179,8 @@ Parameters:
     PEXCEPTION_POINTERS pointers
 
 Return value:
-    Does not return
+    Returns only if the exception is unhandled
 --*/
-PAL_NORETURN
 VOID
 SEHProcessException(PEXCEPTION_POINTERS pointers)
 {
@@ -197,9 +196,7 @@ SEHProcessException(PEXCEPTION_POINTERS pointers)
         throw exception;
     }
 
-    ASSERT("Unhandled hardware exception %08x\n", pointers->ExceptionRecord->ExceptionCode);
-
-    ExitProcess(pointers->ExceptionRecord->ExceptionCode);
+    TRACE("Unhandled hardware exception %08x\n", pointers->ExceptionRecord->ExceptionCode);
 }
 
 /*++

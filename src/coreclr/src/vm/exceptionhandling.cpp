@@ -4945,6 +4945,10 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
 VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 {
+    if (!g_fEEStarted)
+    {
+        return;
+    }
     if (ex->ExceptionRecord.ExceptionCode != STATUS_BREAKPOINT && ex->ExceptionRecord.ExceptionCode != STATUS_SINGLE_STEP)
     {
         // A hardware exception is handled only if it happened in a jitted code or 
@@ -4989,13 +4993,13 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             UNREACHABLE();
         }
     }
-    else 
+    else
     {
         // This is a breakpoint or single step stop, we report it to the debugger.
-        Thread *pThread = GetThread(); 
+        Thread *pThread = GetThread();
         if (pThread != NULL && g_pDebugInterface != NULL)
         {
-            if (ex->ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT)   
+            if (ex->ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT)
             {
                 // If this is breakpoint context, it is set up to point to an instruction after the break instruction.
                 // But debugger expects to see context that points to the break instruction, that's why we correct it.
@@ -5004,13 +5008,13 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
             }
 
             if (g_pDebugInterface->FirstChanceNativeException(&ex->ExceptionRecord,
-                                                          &ex->ContextRecord,
-                                                          ex->ExceptionRecord.ExceptionCode,
-                                                          pThread))
+                &ex->ContextRecord,
+                ex->ExceptionRecord.ExceptionCode,
+                pThread))
             {
                 RtlRestoreContext(&ex->ContextRecord, &ex->ExceptionRecord);
-            } 
-            else 
+            }
+            else
             {
                 _ASSERTE(!"Looks like a random breakpoint/trap that was not prepared by the EE debugger");
             }
