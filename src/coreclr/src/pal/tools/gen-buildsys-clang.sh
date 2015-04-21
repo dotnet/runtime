@@ -55,9 +55,9 @@ locate_llvm_exec() {
   if which "$llvm_prefix$1$desired_llvm_version" > /dev/null 2>&1
   then
     echo "$(which $llvm_prefix$1$desired_llvm_version)"
-  elif which "$1" > /dev/null 2>&1
+  elif which "$llvm_prefix$1" > /dev/null 2>&1
   then
-    echo "$(which $1)"
+    echo "$(which $llvm_prefix$1)"
   else
     exit 1
   fi
