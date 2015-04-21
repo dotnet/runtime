@@ -6085,16 +6085,13 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
     }
     else
 #endif  //INLINE_NDIRECT
-    // TODO-Review: the indentation below suggests different precedence of the && and ||
-    // operators than the one based on the parens around the first && term. 
-    // It needs to be investigated whether the indentation is wrong or the
-    // parens are wrong and all the || terms should be grouped together in parens.
-    if ((opcode == CEE_CALLI &&
-         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_STDCALL) ||
-         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_C        ||
-         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_THISCALL ||
-         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_FASTCALL)
-
+    if  ((opcode == CEE_CALLI) &&
+         (
+          ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_STDCALL)  ||
+          ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_C)        ||
+          ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_THISCALL) ||
+          ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_FASTCALL)
+         ))
     {
         if (!info.compCompHnd->canGetCookieForPInvokeCalliSig(sig))
         {
@@ -10483,26 +10480,28 @@ _CONV:
                 impStackTop(0);
             }
 
-            /* Convert a (dup, stloc) sequence into a (stloc, ldloc)
-               sequence so that CSE will recognize the two as
-               equal (this helps eliminate a redundant bounds check
-               in cases such as:  ariba[i+3] += some_value;
-            */
+            // Convert a (dup, stloc) sequence into a (stloc, ldloc) sequence in the following cases:
+            // - If this is non-debug code - so that CSE will recognize the two as equal.
+            //   This helps eliminate a redundant bounds check in cases such as:
+            //       ariba[i+3] += some_value;
+            // - If the top of the stack is a non-leaf that may be expensive to clone.
 
             if (codeAddr < codeEndp)
             {
                 OPCODE nextOpcode = (OPCODE) getU1LittleEndian(codeAddr);
-                // TODO-Review: the indentation below suggests different precedence of the && and ||
-                // operators than the one based on the parens around the first && term. 
-                // It needs to be investigated whether the indentation is wrong or the
-                // parens are wrong and all the || terms should be grouped together in parens.
-                if ((!opts.compDbgCode &&
-                    (nextOpcode == CEE_STLOC))  ||
-                    (nextOpcode == CEE_STLOC_S) ||
-                    ((nextOpcode >= CEE_STLOC_0) && (nextOpcode <= CEE_STLOC_3)))
+                if (impIsAnySTLOC(nextOpcode))
                 {
-                    insertLdloc = true;
-                    break;
+                    if (!opts.compDbgCode)
+                    {
+                        insertLdloc = true;
+                        break;
+                    }
+                    GenTree* stackTop = impStackTop().val;
+                    if (!stackTop->IsZero() && !stackTop->IsLocal())
+                    {
+                        insertLdloc = true;
+                        break;
+                    }
                 }
             }
 
