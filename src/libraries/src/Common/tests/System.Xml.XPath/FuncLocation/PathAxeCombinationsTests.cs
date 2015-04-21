@@ -44935,7 +44935,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// NS59: //namespace::node()//@*
         /// </summary>
         [Fact]
-        [ActiveIssue(284)]
         public static void AxesCombinationsTest2142()
         {
             var xml = "ns_prefixes.xml";
@@ -44951,7 +44950,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// NS60: //namespace::node()//self::*
         /// </summary>
         [Fact]
-        [ActiveIssue(284)]
         public static void AxesCombinationsTest2143()
         {
             var xml = "ns_prefixes.xml";
@@ -44967,7 +44965,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// NS61: //namespace::node()//namespace::node()
         /// </summary>
         [Fact]
-        [ActiveIssue(284)]
         public static void AxesCombinationsTest2144()
         {
             var xml = "ns_prefixes.xml";
