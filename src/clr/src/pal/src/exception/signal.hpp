@@ -30,11 +30,11 @@ Function :
     Set-up signal handlers to catch signals and translate them to exceptions
 
 Parameters :
-    PAL initialize flags
+    None
 
     (no return value)
 --*/
-void SEHInitializeSignals(DWORD flags);
+void SEHInitializeSignals();
 
 /*++
 Function :
@@ -44,7 +44,7 @@ Function :
 
     (no parameters, no return value)
 --*/
-void SEHCleanupSignals(DWORD flags);
+void SEHCleanupSignals();
 
 #if (__GNUC__ > 3 ||                                            \
      (__GNUC__ == 3 && __GNUC_MINOR__ > 2))

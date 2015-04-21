@@ -12,3 +12,6 @@ typedef HRESULT (*CommandFunc)(PDEBUG_CLIENT client, const char *args);
 
 bool 
 sosCommandInitialize(lldb::SBDebugger debugger);
+
+bool
+corerunCommandInitialize(lldb::SBDebugger debugger);
