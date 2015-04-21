@@ -1945,8 +1945,10 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     }
     CONTRACTL_END;
 
-    if(g_fEEStarted)
+    if (m_fStarted)
+    {
         return HOST_E_INVALIDOPERATION;
+    }
 
     if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcServer) != 0)
     {
