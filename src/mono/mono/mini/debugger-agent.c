@@ -2762,9 +2762,6 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 	MonoInternalThread *thread = key;
 	DebuggerTlsData *tls = value;
 	gsize tid = thread->tid;
-#ifndef HOST_WIN32
-	int res;
-#endif
 
 	if (GetCurrentThreadId () == tid || tls->terminated)
 		return;
@@ -2790,18 +2787,16 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 #endif
 
 	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
-	{
-		InterruptData interrupt_data = { 0 };
-		interrupt_data.tls = tls;
+	InterruptData interrupt_data = { 0 };
+	interrupt_data.tls = tls;
 
-		mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE, debugger_interrupt_critical, &interrupt_data);
-		if (!interrupt_data.valid_info) {
-			DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid);
-			/* 
-			 * Attached thread which died without detaching.
-			 */
-			tls->terminated = TRUE;
-		}
+	mono_thread_info_safe_suspend_and_run ((MonoNativeThreadId)(gpointer)(gsize)thread->tid, FALSE, debugger_interrupt_critical, &interrupt_data);
+	if (!interrupt_data.valid_info) {
+		DEBUG_PRINTF (1, "[%p] mono_thread_info_suspend_sync () failed for %p...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid);
+		/* 
+		 * Attached thread which died without detaching.
+		 */
+		tls->terminated = TRUE;
 	}
 }
 

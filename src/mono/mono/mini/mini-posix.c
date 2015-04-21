@@ -356,7 +356,6 @@ MONO_SIG_HANDLER_FUNC (static, sigprof_signal_handler)
 MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 {
 	gboolean res;
-	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	/* We use this signal to start the attach agent too */
 	res = mono_attach_start ();
