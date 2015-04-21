@@ -370,9 +370,6 @@ mono_thread_info_end_self_suspend (void);
 //END of new API
 
 gboolean
-mono_thread_info_new_interrupt_enabled (void);
-
-gboolean
 mono_thread_info_unified_management_enabled (void);
 
 void
@@ -383,9 +380,6 @@ mono_thread_info_suspend_lock (void);
 
 void
 mono_thread_info_suspend_unlock (void);
-
-void
-mono_thread_info_disable_new_interrupt (gboolean disable);
 
 void
 mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);

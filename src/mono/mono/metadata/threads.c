@@ -204,7 +204,6 @@ static void mono_free_static_data (gpointer* static_data, gboolean threadlocal);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoInternalThread* thread);
-static void signal_thread_state_change (MonoInternalThread *thread);
 static void abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception, gboolean install_async_abort);
 static void suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (MonoInternalThread *thread);
@@ -943,9 +942,6 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 
 	thread->handle=thread_handle;
 	thread->tid=tid;
-#ifdef PLATFORM_ANDROID
-	thread->android_tid = (gpointer) gettid ();
-#endif
 	thread->stack_ptr = &tid;
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread_handle));
@@ -2062,44 +2058,6 @@ static void CALLBACK interruption_request_apc (ULONG_PTR param)
 }
 #endif /* HOST_WIN32 */
 
-/*
- * signal_thread_state_change
- *
- * Tells the thread that his state has changed and it has to enter the new
- * state as soon as possible.
- */
-static void signal_thread_state_change (MonoInternalThread *thread)
-{
-#ifndef HOST_WIN32
-	gpointer wait_handle;
-#endif
-
-	if (thread == mono_thread_internal_current ()) {
-		/* Do it synchronously */
-		MonoException *exc = mono_thread_request_interruption (FALSE); 
-		if (exc)
-			mono_raise_exception (exc);
-	}
-
-#ifdef HOST_WIN32
-	QueueUserAPC ((PAPCFUNC)interruption_request_apc, thread->handle, (ULONG_PTR)NULL);
-#else
-	/* 
-	 * This will cause waits to be broken.
-	 * It will also prevent the thread from entering a wait, so if the thread returns
-	 * from the wait before it receives the abort signal, it will just spin in the wait
-	 * functions in the io-layer until the signal handler calls QueueUserAPC which will
-	 * make it return.
-	 */
-	wait_handle = mono_thread_info_prepare_interrupt (thread->handle);
-
-	/* fixme: store the state somewhere */
-	mono_thread_kill (thread, mono_thread_get_abort_signal ());
-
-	mono_thread_info_finish_interrupt (wait_handle);
-#endif /* HOST_WIN32 */
-}
-
 void
 ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state)
 {
@@ -2129,14 +2087,6 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 		thread->abort_state_handle = 0;
 	}
 	thread->abort_exc = NULL;
-
-	/*
-	 * abort_exc is set in mono_thread_execute_interruption(),
-	 * triggered by the call to signal_thread_state_change(),
-	 * below.  There's a point between where we have
-	 * abort_state_handle set, but abort_exc NULL, but that's not
-	 * a problem.
-	 */
 
 	UNLOCK_THREAD (thread);
 
@@ -3094,7 +3044,6 @@ void mono_thread_suspend_all_other_threads (void)
 	struct wait_data *wait = &wait_data;
 	int i;
 	gsize self = GetCurrentThreadId ();
-	gpointer *events;
 	guint32 eventidx = 0;
 	gboolean starting, finished;
 
@@ -3131,12 +3080,10 @@ void mono_thread_suspend_all_other_threads (void)
 		mono_g_hash_table_foreach (threads, collect_threads_for_suspend, wait);
 		mono_threads_unlock ();
 
-		events = g_new0 (gpointer, wait->num);
 		eventidx = 0;
 		/* Get the suspended events that we'll be waiting for */
 		for (i = 0; i < wait->num; ++i) {
 			MonoInternalThread *thread = wait->threads [i];
-			gboolean signal_suspend = FALSE;
 
 			if ((thread->tid == self) || mono_gc_is_finalizer_internal_thread (thread) || (thread->flags & MONO_THREAD_FLAG_DONT_MANAGE)) {
 				//CloseHandle (wait->handles [i]);
@@ -3145,15 +3092,6 @@ void mono_thread_suspend_all_other_threads (void)
 			}
 
 			LOCK_THREAD (thread);
-
-			if (thread->suspended_event == NULL) {
-				thread->suspended_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-				if (thread->suspended_event == NULL) {
-					/* Forget this one and go on to the next */
-					UNLOCK_THREAD (thread);
-					continue;
-				}
-			}
 
 			if ((thread->state & ThreadState_Suspended) != 0 || 
 				(thread->state & ThreadState_StopRequested) != 0 ||
@@ -3164,10 +3102,7 @@ void mono_thread_suspend_all_other_threads (void)
 				continue;
 			}
 
-			if ((thread->state & ThreadState_SuspendRequested) == 0)
-				signal_suspend = TRUE;
-
-			events [eventidx++] = thread->suspended_event;
+			++eventidx;
 
 			/* Convert abort requests into suspend requests */
 			if ((thread->state & ThreadState_AbortRequested) != 0)
@@ -3178,33 +3113,8 @@ void mono_thread_suspend_all_other_threads (void)
 			UNLOCK_THREAD (thread);
 
 			/* Signal the thread to suspend */
-			if (mono_thread_info_new_interrupt_enabled ())
-				suspend_thread_internal (thread, TRUE);
-			else if (signal_suspend)
-				signal_thread_state_change (thread);
+			suspend_thread_internal (thread, TRUE);
 		}
-
-		/*Only wait on the suspend event if we are using the old path */
-		if (eventidx > 0 && !mono_thread_info_new_interrupt_enabled ()) {
-			MONO_PREPARE_BLOCKING
-			WaitForMultipleObjectsEx (eventidx, events, TRUE, 100, FALSE);
-			MONO_FINISH_BLOCKING
-
-			for (i = 0; i < wait->num; ++i) {
-				MonoInternalThread *thread = wait->threads [i];
-
-				if (thread == NULL)
-					continue;
-
-				LOCK_THREAD (thread);
-				if ((thread->state & ThreadState_Suspended) != 0) {
-					CloseHandle (thread->suspended_event);
-					thread->suspended_event = NULL;
-				}
-				UNLOCK_THREAD (thread);
-			}
-		}
-		
 		if (eventidx <= 0) {
 			/* 
 			 * If there are threads which are starting up, we wait until they
@@ -3224,8 +3134,6 @@ void mono_thread_suspend_all_other_threads (void)
 			else
 				finished = TRUE;
 		}
-
-		g_free (events);
 	}
 }
 
@@ -3358,41 +3266,9 @@ mono_threads_perform_thread_dump (void)
 void
 mono_threads_request_thread_dump (void)
 {
-	struct wait_data wait_data;
-	struct wait_data *wait = &wait_data;
-	int i;
-
 	/*The new thread dump code runs out of the finalizer thread. */
-	if (mono_thread_info_new_interrupt_enabled ()) {
-		thread_dump_requested = TRUE;
-		mono_gc_finalize_notify ();
-		return;
-	}
-
-
-	memset (wait, 0, sizeof (struct wait_data));
-
-	/* 
-	 * Make a copy of the hashtable since we can't do anything with
-	 * threads while threads_mutex is held.
-	 */
-	mono_threads_lock ();
-	mono_g_hash_table_foreach (threads, collect_threads, wait);
-	mono_threads_unlock ();
-
-	for (i = 0; i < wait->num; ++i) {
-		MonoInternalThread *thread = wait->threads [i];
-
-		if (!mono_gc_is_finalizer_internal_thread (thread) &&
-				(thread != mono_thread_internal_current ()) &&
-				!thread->thread_dump_requested) {
-			thread->thread_dump_requested = TRUE;
-
-			signal_thread_state_change (thread);
-		}
-
-		CloseHandle (wait->handles [i]);
-	}
+	thread_dump_requested = TRUE;
+	mono_gc_finalize_notify ();
 }
 
 struct ref_stack {
@@ -4560,42 +4436,6 @@ mono_runtime_has_tls_get (void)
 	return has_tls_get;
 }
 
-int
-mono_thread_kill (MonoInternalThread *thread, int signal)
-{
-#ifdef __native_client__
-	/* Workaround pthread_kill abort() in NaCl glibc. */
-	return -1;
-#endif
-#if defined (HOST_WIN32) || !defined (HAVE_SIGACTION)
-	/* Win32 uses QueueUserAPC and callers of this are guarded */
-	g_assert_not_reached ();
-#else
-#  ifdef PTHREAD_POINTER_ID
-	return pthread_kill ((gpointer)(gsize)(thread->tid), mono_thread_get_abort_signal ());
-#  else
-#    ifdef USE_TKILL_ON_ANDROID
-	if (thread->android_tid != 0) {
-		int  ret;
-		int  old_errno = errno;
-
-		ret = tkill ((pid_t) thread->android_tid, signal);
-		if (ret < 0) {
-			ret = errno;
-			errno = old_errno;
-		}
-
-		return ret;
-	}
-	else
-		return pthread_kill (thread->tid, mono_thread_get_abort_signal ());
-#    else
-	return pthread_kill (thread->tid, mono_thread_get_abort_signal ());
-#    endif
-#  endif
-#endif
-}
-
 static void
 self_interrupt_thread (void *_unused)
 {
@@ -4690,11 +4530,6 @@ abort_thread_internal (MonoInternalThread *thread, gboolean can_raise_exception,
 	data.thread = thread;
 	data.install_async_abort = install_async_abort;
 
-	if (!mono_thread_info_new_interrupt_enabled ()) {
-		signal_thread_state_change (thread);
-		return;
-	}
-
 	/*
 	FIXME this is insanely broken, it doesn't cause interruption to happen
 	synchronously since passing FALSE to mono_thread_request_interruption makes sure it returns NULL
@@ -4753,11 +4588,6 @@ suspend_thread_critical (MonoThreadInfo *info, gpointer ud)
 static void
 suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 {
-	if (!mono_thread_info_new_interrupt_enabled ()) {
-		signal_thread_state_change (thread);
-		return;
-	}
-
 	LOCK_THREAD (thread);
 	if (thread == mono_thread_internal_current ()) {
 		mono_thread_info_begin_self_suspend ();
@@ -4782,44 +4612,6 @@ suspend_thread_internal (MonoInternalThread *thread, gboolean interrupt)
 static void
 self_suspend_internal (MonoInternalThread *thread)
 {
-	if (!mono_thread_info_new_interrupt_enabled ()) {
-		thread->state &= ~ThreadState_SuspendRequested;
-		thread->state |= ThreadState_Suspended;
-		thread->suspend_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-		if (thread->suspend_event == NULL) {
-			UNLOCK_THREAD (thread);
-			return;
-		}
-		if (thread->suspended_event)
-			SetEvent (thread->suspended_event);
-
-		UNLOCK_THREAD (thread);
-
-		if (shutting_down) {
-			/* After we left the lock, the runtime might shut down so everything becomes invalid */
-			for (;;)
-				Sleep (1000);
-		}
-
-		MONO_PREPARE_BLOCKING
-		WaitForSingleObject (thread->suspend_event, INFINITE);
-		MONO_FINISH_BLOCKING
-		
-		LOCK_THREAD (thread);
-
-		CloseHandle (thread->suspend_event);
-		thread->suspend_event = NULL;
-		thread->state &= ~ThreadState_Suspended;
-	
-		/* The thread that requested the resume will have replaced this event
-		 * and will be waiting for it
-		 */
-		SetEvent (thread->resume_event);
-
-		UNLOCK_THREAD (thread);
-		return;
-	}
-
 	mono_thread_info_begin_self_suspend ();
 	thread->state &= ~ThreadState_SuspendRequested;
 	thread->state |= ThreadState_Suspended;
@@ -4831,28 +4623,6 @@ self_suspend_internal (MonoInternalThread *thread)
 static gboolean
 resume_thread_internal (MonoInternalThread *thread)
 {
-	if (!mono_thread_info_new_interrupt_enabled ()) {
-		thread->resume_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-		if (thread->resume_event == NULL) {
-			UNLOCK_THREAD (thread);
-			return FALSE;
-		}
-
-		/* Awake the thread */
-		SetEvent (thread->suspend_event);
-
-		UNLOCK_THREAD (thread);
-
-		/* Wait for the thread to awake */
-		MONO_PREPARE_BLOCKING
-		WaitForSingleObject (thread->resume_event, INFINITE);
-		MONO_FINISH_BLOCKING
-
-		CloseHandle (thread->resume_event);
-		thread->resume_event = NULL;
-		return TRUE;
-	}
-
 	UNLOCK_THREAD (thread);
 	/* Awake the thread */
 	if (!mono_thread_info_resume ((MonoNativeThreadId)(gpointer)(gsize)thread->tid))

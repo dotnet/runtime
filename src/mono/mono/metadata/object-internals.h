@@ -405,9 +405,9 @@ struct _MonoInternalThread {
 	gpointer appdomain_refs;
 	/* This is modified using atomic ops, so keep it a gint32 */
 	gint32 interruption_requested;
-	gpointer suspend_event;
-	gpointer suspended_event;
-	gpointer resume_event;
+	gpointer dead_field_remove_me_2;
+	gpointer dead_field_remove_me_3;
+	gpointer dead_field_remove_me_4;
 	mono_mutex_t *synch_cs;
 	MonoBoolean threadpool_thread;
 	MonoBoolean thread_dump_requested;
@@ -421,9 +421,9 @@ struct _MonoInternalThread {
 	MonoThreadManageCallback manage_callback;
 	gpointer interrupt_on_stop;
 	gsize    flags;
-	gpointer android_tid;
+	gpointer dead_field_remove_me_5;
 	gpointer thread_pinning_ref;
-	gint32 ignore_next_signal;
+	gint32 dead_field_remove_me_6;
 	MonoMethod *async_invoke_method;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions

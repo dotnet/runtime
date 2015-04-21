@@ -2790,7 +2790,7 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 #endif
 
 	/* This is _not_ equivalent to ves_icall_System_Threading_Thread_Abort () */
-	if (mono_thread_info_new_interrupt_enabled ()) {
+	{
 		InterruptData interrupt_data = { 0 };
 		interrupt_data.tls = tls;
 
@@ -2802,20 +2802,6 @@ notify_thread (gpointer key, gpointer value, gpointer user_data)
 			 */
 			tls->terminated = TRUE;
 		}
-	} else {
-#ifdef HOST_WIN32
-		// FIXME: Remove this since new interrupt is used on win32 now
-		QueueUserAPC (notify_thread_apc, thread->handle, (ULONG_PTR)NULL);
-#else
-		res = mono_thread_kill (thread, mono_thread_get_abort_signal ());
-		if (res) {
-			DEBUG_PRINTF (1, "[%p] mono_thread_kill () failed for %p: %d...\n", (gpointer)GetCurrentThreadId (), (gpointer)tid, res);
-			/* 
-			 * Attached thread which died without detaching.
-			 */
-			tls->terminated = TRUE;
-		}
-#endif
 	}
 }
 

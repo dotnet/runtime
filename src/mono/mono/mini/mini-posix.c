@@ -209,79 +209,6 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 	}
 }
 
-MONO_SIG_HANDLER_FUNC (static, sigusr1_signal_handler)
-{
-	gboolean running_managed;
-	MonoException *exc;
-	MonoInternalThread *thread = mono_thread_internal_current ();
-	MonoDomain *domain = mono_domain_get ();
-	void *ji;
-	MONO_SIG_HANDLER_GET_CONTEXT;
-
-	if (!thread || !domain) {
-		/* The thread might not have started up yet */
-		/* FIXME: Specify the synchronization with start_wrapper () in threads.c */
-		mono_debugger_agent_thread_interrupt (ctx, NULL);
-		return;
-	}
-
-	if (thread->ignore_next_signal) {
-		thread->ignore_next_signal = FALSE;
-		return;
-	}
-
-	if (thread->thread_dump_requested) {
-		thread->thread_dump_requested = FALSE;
-
-		mono_print_thread_dump (ctx);
-	}
-
-	/*
-	 * This is an async signal, so the code below must not call anything which
-	 * is not async safe. That includes the pthread locking functions. If we
-	 * know that we interrupted managed code, then locking is safe.
-	 */
-	/*
-	 * On OpenBSD, ctx can be NULL if we are interrupting poll ().
-	 */
-	if (ctx) {
-		ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context(ctx));
-		running_managed = ji != NULL;
-
-		if (mono_debugger_agent_thread_interrupt (ctx, ji))
-			return;
-	} else {
-		running_managed = FALSE;
-	}
-
-	/* We can't do handler block checking from metadata since it requires doing
-	 * a stack walk with context.
-	 *
-	 * FIXME add full-aot support.
-	 */
-#ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
-	if (!mono_aot_only && ctx) {
-		MonoThreadUnwindState unwind_state;
-		if (mono_thread_state_init_from_sigctx (&unwind_state, ctx)) {
-			if (mono_install_handler_block_guard (&unwind_state)) {
-#ifndef HOST_WIN32
-				/*Clear current thread from been wapi interrupted otherwise things can go south*/
-				wapi_clear_interruption ();
-#endif
-				return;
-			}
-		}
-	}
-#endif
-
-	exc = mono_thread_request_interruption (running_managed); 
-	if (!exc)
-		return;
-
-	mono_arch_handle_exception (ctx, exc);
-}
-
-
 #if defined(__i386__) || defined(__x86_64__)
 #define FULL_STAT_PROFILER_BACKTRACE 1
 #define CURRENT_FRAME_GET_BASE_POINTER(f) (* (gpointer*)(f))
@@ -436,21 +363,7 @@ MONO_SIG_HANDLER_FUNC (static, sigquit_signal_handler)
 	if (res)
 		return;
 
-	if (mono_thread_info_new_interrupt_enabled ()) {
-		mono_threads_request_thread_dump ();
-	} else {
-		printf ("Full thread dump:\n");
-
-		mono_threads_request_thread_dump ();
-
-		/*
-		 * print_thread_dump () skips the current thread, since sending a signal
-		 * to it would invoke the signal handler below the sigquit signal handler,
-		 * and signal handlers don't create an lmf, so the stack walk could not
-		 * be performed.
-		 */
-		mono_print_thread_dump (ctx);
-	}
+	mono_threads_request_thread_dump ();
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
@@ -552,8 +465,6 @@ mono_runtime_posix_install_handlers (void)
 	if (mono_jit_trace_calls != NULL)
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler);
 
-	if (!mono_thread_info_new_interrupt_enabled ())
-		add_signal_handler (mono_thread_get_abort_signal (), sigusr1_signal_handler);
 	/* it seems to have become a common bug for some programs that run as parents
 	 * of many processes to block signal delivery for real time signals.
 	 * We try to detect and work around their breakage here.

@@ -2533,14 +2533,7 @@ icall_cancel_blocking_socket_operation (MonoThread *thread)
 {
 	MonoInternalThread *internal = thread->internal_thread;
 	
-	if (mono_thread_info_new_interrupt_enabled ()) {
-		mono_thread_info_abort_socket_syscall_for_close ((MonoNativeThreadId)(gsize)internal->tid);
-	} else {
-#ifndef HOST_WIN32
-		internal->ignore_next_signal = TRUE;
-		mono_thread_kill (internal, mono_thread_get_abort_signal ());		
-#endif
-	}
+	mono_thread_info_abort_socket_syscall_for_close ((MonoNativeThreadId)(gsize)internal->tid);
 }
 
 #endif /* #ifndef DISABLE_SOCKETS */

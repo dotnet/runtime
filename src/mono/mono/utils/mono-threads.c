@@ -51,7 +51,6 @@ static __thread guint32 tls_small_id MONO_TLS_FAST;
 static MonoNativeTlsKey small_id_key;
 #endif
 static MonoLinkedListSet thread_list;
-static gboolean disable_new_interrupt = FALSE;
 static gboolean mono_threads_inited = FALSE;
 
 static MonoSemType suspend_semaphore;
@@ -961,12 +960,6 @@ mono_thread_info_suspend_unlock (void)
 	MONO_SEM_POST (&global_suspend_semaphore);
 }
 
-void
-mono_thread_info_disable_new_interrupt (gboolean disable)
-{
-	disable_new_interrupt = disable;
-}
-
 /*
  * This is a very specific function whose only purpose is to
  * break a given thread from socket syscalls.
@@ -1008,30 +1001,6 @@ gboolean
 mono_thread_info_unified_management_enabled (void)
 {
 	return unified_suspend_enabled;
-}
-
-/*
-Disabled by default for now.
-To enable this we need mini to implement the callbacks by MonoThreadInfoRuntimeCallbacks
-which means mono-context and setup_async_callback, and we need a mono-threads backend.
-*/
-gboolean
-mono_thread_info_new_interrupt_enabled (void)
-{
-	/*We need STW gc events to work correctly*/
-#if defined (HAVE_BOEHM_GC) && !defined (USE_INCLUDED_LIBGC)
-	return FALSE;
-#endif
-#if defined(HOST_WIN32)
-	return !disable_new_interrupt;
-#endif
-#if defined (__i386__) || defined(__x86_64__)
-	return !disable_new_interrupt;
-#endif
-#if defined(__arm__) || defined(__aarch64__)
-	return !disable_new_interrupt;
-#endif
-	return FALSE;
 }
 
 /*
