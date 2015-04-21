@@ -2681,37 +2681,6 @@ thread_interrupt (DebuggerTlsData *tls, MonoThreadInfo *info, void *sigctx, Mono
 }
 
 /*
- * mono_debugger_agent_thread_interrupt:
- *
- *   Called by the abort signal handler.
- * Should be signal safe.
- */
-gboolean
-mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji)
-{
-	DebuggerTlsData *tls;
-
-	if (!inited)
-		return FALSE;
-
-	tls = mono_native_tls_get_value (debugger_tls_id);
-	if (!tls) {
-		DEBUG_PRINTF (1, "[%p] Received interrupt with no TLS, continuing.\n", (gpointer)GetCurrentThreadId ());
- 		return FALSE;
-	}
-
-	return thread_interrupt (tls, NULL, sigctx, ji);
-}
-
-#ifdef HOST_WIN32
-static void CALLBACK notify_thread_apc (ULONG_PTR param)
-{
-	//DebugBreak ();
-	mono_debugger_agent_thread_interrupt (NULL, NULL);
-}
-#endif /* HOST_WIN32 */
-
-/*
  * reset_native_thread_suspend_state:
  * 
  *   Reset the suspended flag and state on native threads

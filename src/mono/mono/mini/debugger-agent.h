@@ -24,8 +24,6 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx);
 void
 mono_debugger_agent_free_domain_info (MonoDomain *domain);
 
-gboolean mono_debugger_agent_thread_interrupt (void *sigctx, MonoJitInfo *ji);
-
 #if defined(PLATFORM_ANDROID) || defined(TARGET_ANDROID)
 void
 mono_debugger_agent_unhandled_exception (MonoException *exc);
