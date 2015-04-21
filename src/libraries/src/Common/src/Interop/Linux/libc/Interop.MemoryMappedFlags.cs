@@ -8,12 +8,14 @@ internal static partial class Interop
 {
     internal static partial class libc
     {
-        internal static string getenv(string name)
+        [Flags]
+        internal enum MemoryMappedFlags
         {
-            return Marshal.PtrToStringAnsi(getenv_core(name)); // TODO: Use correct encoding
+            MAP_FILE = 0x0,
+            MAP_SHARED = 0x01,
+            MAP_PRIVATE = 0x02,
+            MAP_FIXED = 0x10,
+            MAP_ANONYMOUS = 0x20,
         }
-
-        [DllImport(Libraries.Libc, EntryPoint = "getenv")]
-        private static extern IntPtr getenv_core(string name);
     }
 }

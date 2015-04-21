@@ -2,15 +2,17 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
-
-using size_t = System.IntPtr;
 
 internal static partial class Interop
 {
     internal static partial class libc
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int msync(IntPtr addr, size_t len, MemoryMappedSyncFlags flags);
+        [Flags]
+        internal enum MemoryMappedSyncFlags
+        {
+            MS_ASYNC = 0x1,
+            MS_INVALIDATE = 0x2,
+            MS_SYNC = 0x10
+        }
     }
 }

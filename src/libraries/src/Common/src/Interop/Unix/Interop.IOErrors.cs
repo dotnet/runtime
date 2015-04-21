@@ -17,15 +17,20 @@ internal static partial class Interop
     /// <param name="result">The result of the system call.</param>
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
     /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
+    /// <param name="errorRewriter">Optional function to change an error code prior to processing it.</param>
     /// <returns>
     /// true if the system call should be retried due to it being interrupted; otherwise, false.
     /// An exception will be thrown if the system call failed for any reason other than interruption.
     /// </returns>
-    internal static bool CheckIo(long result, string path = null, bool isDirectory = false)
+    internal static bool CheckIo(long result, string path = null, bool isDirectory = false, Func<int, int> errorRewriter = null)
     {
         if (result < 0)
         {
             int errno = Marshal.GetLastWin32Error();
+            if (errorRewriter != null)
+            {
+                errno = errorRewriter(errno);
+            }
             if (errno != Interop.Errors.EINTR)
             {
                 throw Interop.GetExceptionForIoErrno(errno, path, isDirectory);
@@ -74,7 +79,7 @@ internal static partial class Interop
 
             case Errors.EACCES:
             case Errors.EBADF:
-            case Errors.EISDIR:
+            case Errors.EPERM:
                 return !string.IsNullOrEmpty(path) ?
                     new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path)) :
                     new UnauthorizedAccessException(SR.UnauthorizedAccess_IODenied_NoPathName);
@@ -101,7 +106,12 @@ internal static partial class Interop
                 goto default;
 
             default:
-                return new IOException(libc.strerror(errno), errno);
+                return GetIOException(errno);
         }
+    }
+
+    internal static Exception GetIOException(int errno)
+    {
+        return new IOException(libc.strerror(errno), errno);
     }
 }
