@@ -9210,7 +9210,6 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         /// /descendant-or-self::node()/parent::node()/descendant::node()/preceding::*
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void ComplexExpressionsTest322()
         {
             var xml = "books.xml";

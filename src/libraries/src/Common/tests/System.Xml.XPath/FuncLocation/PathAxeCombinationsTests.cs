@@ -4185,7 +4185,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// child::node()/preceding::node()[preceding-sibling::book and following-sibling::magazine]
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest225()
         {
             var xml = "books.xml";
@@ -8471,7 +8470,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// book/descendant::award/preceding::text()
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest239()
         {
             var xml = "books.xml";
@@ -17815,7 +17813,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// descendant-or-self::node()[position()>=3 and position()<=15]/preceding::node()
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest267()
         {
             var xml = "books.xml";
@@ -23032,7 +23029,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// preceding-sibling::*/preceding::node()
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest282()
         {
             var xml = "books.xml";
@@ -48209,7 +48205,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/preceding::node()
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest2156()
         {
             var xml = "books.xml";
@@ -54033,7 +54028,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// NSXX: //namespace::*[local-name()=""]/preceding::*
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest2183()
         {
             var xml = "name2.xml";
@@ -55723,7 +55717,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// //@*/preceding::*
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest2189()
         {
             var xml = "books.xml";
@@ -57647,7 +57640,6 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// //comment()/preceding::node()
         /// </summary>
         [Fact]
-        [ActiveIssue(17)]
         public static void AxesCombinationsTest2199()
         {
             var xml = "test63682.xml";
