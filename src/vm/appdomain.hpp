@@ -3413,6 +3413,7 @@ private:
     PTR_DomainAssembly m_pSystemRuntimeWindowsRuntimeDll;       // System.Runtime.WindowsRuntime.dll loaded into this domain
     PTR_DomainAssembly m_pSystemRuntimeWindowsRuntimeUIXamlDll; // System.Runtime.WindowsRuntime.UI.Xaml.dll loaded into this domain
     PTR_DomainAssembly m_pSystemNumericsVectors;                // System.Numerics.Vectors.dll loaded into this domain
+    PTR_DomainAssembly m_pInternalUri;                          // Internal.Uri.dll loaded into this domain
 public:
     BOOL FindRedirectedAssemblyFromIndexIfLoaded(WinMDAdapter::FrameworkAssemblyIndex index, Assembly** ppAssembly);
 
