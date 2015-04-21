@@ -1,0 +1,14 @@
+#
+# Copyright (c) Microsoft Corporation.  All rights reserved.
+#
+
+Version = 1.0
+Section = Miscellaneous
+Function = InterlockedBitTestAndSet
+Name = Test for InterlockedBitTestAndSet
+TYPE = DEFAULT
+EXE1 = test
+Description
+Test validates that function InterlockedBitTestAndSet work as intended.
+
+
