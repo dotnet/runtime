@@ -20,6 +20,7 @@ namespace System.Diagnostics.Contracts.Tests
             };
 
             Contract.Assert(true);
+
             Assert.False(eventRaised, "ContractFailed event was raised");
         }
 
@@ -34,7 +35,11 @@ namespace System.Diagnostics.Contracts.Tests
             };
 
             Contract.Assert(false);
-            Assert.True(eventRaised, "ContractFailed event not raised");
+#if DEBUG
+            Assert.True(eventRaised, "ContractFailed event not raised");            
+#else
+            Assert.False(eventRaised, "ContractFailed event was raised");
+#endif            
         }
 
         [Fact]
@@ -48,12 +53,18 @@ namespace System.Diagnostics.Contracts.Tests
             };
 
 
+#if DEBUG
             Assert.ThrowsAny<Exception>(() =>
             {
                 Contract.Assert(false, "Some kind of user message");
             });
 
             Assert.True(eventRaised, "Event was not raised");
+#else
+            Contract.Assert(false, "Some kind of user message");
+            
+            Assert.False(eventRaised, "ContractFailed event was raised");
+#endif            
         }
     }
 }
