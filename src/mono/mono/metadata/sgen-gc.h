@@ -697,6 +697,15 @@ typedef struct _SgenRememberedSet {
 
 SgenRememberedSet *sgen_get_remset (void);
 
+/*
+ * These must be kept in sync with object.h.  They're here for using SGen independently of
+ * Mono.
+ */
+void mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count);
+void mono_gc_wbarrier_generic_nostore (gpointer ptr);
+void mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value);
+void mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value);
+
 void sgen_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap);
 
 static inline mword
