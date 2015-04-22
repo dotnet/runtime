@@ -12533,7 +12533,7 @@ BOOL g_fAllowRel32 = TRUE;
 // are OK since they discard the return value of this method.
 
 PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader,
-                        DWORD flags, DWORD flags2)
+                        DWORD flags, DWORD flags2, ULONG * pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
 
@@ -12784,6 +12784,14 @@ PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader,
                                                   &sizeOfCode,
                                                   (MethodDesc*)ftn);
             LOG((LF_CORDB, LL_EVERYTHING, "Got through CallCompile MethodWithSEHWrapper\n"));
+
+#if FEATURE_PERFMAP
+            // Save the code size so that it can be reported to the perfmap.
+            if (pSizeOfCode != NULL)
+            {
+                *pSizeOfCode = sizeOfCode;
+            }
+#endif
 
 #if defined(ENABLE_PERF_COUNTERS)
             LARGE_INTEGER CycleStop;

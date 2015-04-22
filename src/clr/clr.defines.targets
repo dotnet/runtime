@@ -102,6 +102,7 @@
         <CDefines Condition="'$(FeatureStrongnameMigration)' == 'true'">$(CDefines);FEATURE_STRONGNAME_MIGRATION</CDefines>
         <CDefines Condition="'$(FeatureStrongnameTestkeyAllowed)' == 'true'">$(CDefines);FEATURE_STRONGNAME_TESTKEY_ALLOWED</CDefines>
         <CDefines Condition="'$(FeatureSvrGc)' == 'true'">$(CDefines);FEATURE_SVR_GC</CDefines>
+        <CDefines Condition="'$(FeaturePerfMap)' == 'true'">$(CDefines);FEATURE_PERFMAP</CDefines>
         <CDefines Condition="'$(FeatureSynchronizationcontextWait)' == 'true'">$(CDefines);FEATURE_SYNCHRONIZATIONCONTEXT_WAIT</CDefines>
         <CDefines Condition="'$(FeatureSyntheticCultures)' == 'true'">$(CDefines);FEATURE_SYNTHETIC_CULTURES</CDefines>
         <CDefines Condition="'$(FeatureTypeEquivalence)' == 'true'">$(CDefines);FEATURE_TYPEEQUIVALENCE</CDefines>
