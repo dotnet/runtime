@@ -264,8 +264,6 @@ namespace System.Linq.Expressions.Interpreter
 
         private readonly LightCompiler _parent;
 
-        private static LocalDefinition[] s_emptyLocals = new LocalDefinition[0];
-
         public LightCompiler()
         {
             _instructions = new InstructionList();
@@ -522,7 +520,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                locals = s_emptyLocals;
+                locals = Array.Empty<LocalDefinition>();
             }
 
             for (int i = 0; i < node.Expressions.Count - 1; i++)

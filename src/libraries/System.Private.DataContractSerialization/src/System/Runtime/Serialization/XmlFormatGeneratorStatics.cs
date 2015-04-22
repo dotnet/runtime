@@ -190,7 +190,7 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_hashtableCtor == null)
-                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Globals.EmptyTypeArray);
+                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Array.Empty<Type>());
                 return s_hashtableCtor;
             }
         }
