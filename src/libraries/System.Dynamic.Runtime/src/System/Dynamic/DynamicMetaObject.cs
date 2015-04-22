@@ -287,7 +287,7 @@ namespace System.Dynamic
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public virtual IEnumerable<string> GetDynamicMemberNames()
         {
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         /// <summary>

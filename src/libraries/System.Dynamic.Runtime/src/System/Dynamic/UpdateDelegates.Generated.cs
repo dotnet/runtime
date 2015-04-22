@@ -106,7 +106,7 @@ namespace System.Dynamic
             //
 
             rule = null;
-            var args = new object[] { };
+            var args = Array.Empty<object>();
 
             for (; ; )
             {

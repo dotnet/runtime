@@ -680,7 +680,7 @@ namespace System.ServiceProcess
         /// Starts the service.
         public void Start()
         {
-            Start(new string[0]);
+            Start(Array.Empty<string>());
         }
 
         /// Starts a service in the machine specified.
