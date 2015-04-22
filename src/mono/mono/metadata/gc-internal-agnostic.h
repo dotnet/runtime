@@ -22,6 +22,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include <stdio.h>
 
 #include "mono/utils/mono-compiler.h"
 
