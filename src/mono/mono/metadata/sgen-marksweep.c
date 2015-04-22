@@ -698,7 +698,7 @@ free_object (char *obj, size_t size, gboolean pinned)
 	if (!in_free_list) {
 		MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (pinned, block->has_references);
 		int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
-		SGEN_ASSERT (9, !block->next_free, "block %p doesn't have a free-list of object but belongs to a free-list of blocks");
+		SGEN_ASSERT (9, !block->next_free, "block %p doesn't have a free-list of object but belongs to a free-list of blocks", block);
 		add_free_block (free_blocks, size_index, block);
 	}
 }
