@@ -144,6 +144,7 @@ const char* sgen_client_description_for_internal_mem_type (int type);
 /*
  * Only used for debugging.  `sgen_client_vtable_get_namespace()` may return NULL.
  */
+gboolean sgen_client_vtable_is_inited (GCVTable *vtable);
 const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
 const char* sgen_client_vtable_get_name (GCVTable *vtable);
 

@@ -480,7 +480,7 @@ sgen_alloc_obj_pinned (GCVTable *vtable, size_t size)
 		/* large objects are always pinned anyway */
 		p = sgen_los_alloc_large_inner ((GCVTable*)vtable, size);
 	} else {
-		SGEN_ASSERT (9, vtable->klass->inited, "class %s:%s is not initialized", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
+		SGEN_ASSERT (9, sgen_client_vtable_is_inited (vtable), "class %s:%s is not initialized", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 		p = major_collector.alloc_small_pinned_obj ((GCVTable*)vtable, size, SGEN_VTABLE_HAS_REFERENCES ((GCVTable*)vtable));
 	}
 	if (G_LIKELY (p)) {

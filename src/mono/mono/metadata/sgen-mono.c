@@ -2652,6 +2652,13 @@ sgen_client_pre_collection_checks (void)
 	}
 }
 
+gboolean
+sgen_client_vtable_is_inited (GCVTable *gc_vtable)
+{
+	MonoVTable *vt = (MonoVTable*)gc_vtable;
+	return vt->klass->inited;
+}
+
 const char*
 sgen_client_vtable_get_namespace (GCVTable *gc_vtable)
 {
