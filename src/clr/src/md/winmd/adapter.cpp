@@ -1134,7 +1134,7 @@ void WinMDAdapter::GetExtraAssemblyRefProps(FrameworkAssemblyIndex index,
         else
 #endif
         {
-            if (index == FrameworkAssembly_SystemNumericsVectors)
+            if (index == FrameworkAssembly_SystemNumericsVectors || index == FrameworkAssembly_InternalUri)
             {
                 *ppPublicKeytoken = s_pbContractPublicKeyToken;
                 *pTokenLength = sizeof(s_pbContractPublicKeyToken);

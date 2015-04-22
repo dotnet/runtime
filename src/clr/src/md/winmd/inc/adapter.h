@@ -87,6 +87,7 @@ public:
         FrameworkAssembly_SystemRuntimeWindowsRuntime,
         FrameworkAssembly_SystemRuntimeWindowsRuntimeUIXaml,
         FrameworkAssembly_SystemNumericsVectors,
+        FrameworkAssembly_InternalUri,
 
         FrameworkAssembly_Count,
     };
@@ -633,6 +634,8 @@ public:
                 return "System.Runtime.WindowsRuntime.UI.Xaml";
             case FrameworkAssembly_SystemNumericsVectors:
                 return "System.Numerics.Vectors";
+            case FrameworkAssembly_InternalUri:
+                return "Internal.Uri";
             default:
                 _ASSERTE(!"Invalid AssemblyRef token!");
                 return NULL;
