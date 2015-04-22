@@ -204,18 +204,72 @@ namespace Mono.Linker.Steps {
 			MarkCustomAttributeFields (ca, type);
 		}
 
-		void MarkCustomAttributeProperties (CustomAttribute ca, TypeDefinition attribute)
+		protected void MarkSecurityDeclarations (ISecurityDeclarationProvider provider)
+		{
+			// most security declarations are removed (if linked) but user code might still have some
+			// and if the attribtues references types then they need to be marked too
+			if ((provider == null) || !provider.HasSecurityDeclarations)
+				return;
+
+			foreach (var sd in provider.SecurityDeclarations)
+				MarkSecurityDeclaration (sd);
+		}
+
+		protected virtual void MarkSecurityDeclaration (SecurityDeclaration sd)
+		{
+			if (!sd.HasSecurityAttributes)
+				return;
+			
+			foreach (var sa in sd.SecurityAttributes)
+				MarkSecurityAttribute (sa);
+		}
+
+		protected virtual void MarkSecurityAttribute (SecurityAttribute sa)
+		{
+			TypeReference security_type = sa.AttributeType;
+			TypeDefinition type = security_type.Resolve ();
+			if (type == null)
+				throw new ResolutionException (security_type);
+			
+			MarkType (security_type);
+			MarkSecurityAttributeProperties (sa, type);
+			MarkSecurityAttributeFields (sa, type);
+		}
+
+		protected void MarkSecurityAttributeProperties (SecurityAttribute sa, TypeDefinition attribute)
+		{
+			if (!sa.HasProperties)
+				return;
+
+			foreach (var named_argument in sa.Properties)
+				MarkCustomAttributeProperty (named_argument, attribute);
+		}
+
+		protected void MarkSecurityAttributeFields (SecurityAttribute sa, TypeDefinition attribute)
+		{
+			if (!sa.HasFields)
+				return;
+
+			foreach (var named_argument in sa.Fields)
+				MarkCustomAttributeField (named_argument, attribute);
+		}
+
+		protected void MarkCustomAttributeProperties (CustomAttribute ca, TypeDefinition attribute)
 		{
 			if (!ca.HasProperties)
 				return;
 
-			foreach (var named_argument in ca.Properties) {
-				PropertyDefinition property = GetProperty (attribute, named_argument.Name);
-				if (property != null)
-					MarkMethod (property.SetMethod);
+			foreach (var named_argument in ca.Properties)
+				MarkCustomAttributeProperty (named_argument, attribute);
+		}
 
-				MarkIfType (named_argument.Argument);
-			}
+		protected void MarkCustomAttributeProperty (CustomAttributeNamedArgument namedArgument, TypeDefinition attribute)
+		{
+			PropertyDefinition property = GetProperty (attribute, namedArgument.Name);
+			if (property != null)
+				MarkMethod (property.SetMethod);
+
+			MarkIfType (namedArgument.Argument);
 		}
 
 		PropertyDefinition GetProperty (TypeDefinition type, string propertyname)
@@ -231,18 +285,22 @@ namespace Mono.Linker.Steps {
 			return null;
 		}
 
-		void MarkCustomAttributeFields (CustomAttribute ca, TypeDefinition attribute)
+		protected void MarkCustomAttributeFields (CustomAttribute ca, TypeDefinition attribute)
 		{
 			if (!ca.HasFields)
 				return;
 
-			foreach (var named_argument in ca.Fields) {
-				FieldDefinition field = GetField (attribute, named_argument.Name);
-				if (field != null)
-					MarkField (field);
+			foreach (var named_argument in ca.Fields)
+				MarkCustomAttributeField (named_argument, attribute);
+		}
 
-				MarkIfType (named_argument.Argument);
-			}
+		protected void MarkCustomAttributeField (CustomAttributeNamedArgument namedArgument, TypeDefinition attribute)
+		{
+			FieldDefinition field = GetField (attribute, namedArgument.Name);
+			if (field != null)
+				MarkField (field);
+
+			MarkIfType (namedArgument.Argument);
 		}
 
 		FieldDefinition GetField (TypeDefinition type, string fieldname)
@@ -322,7 +380,7 @@ namespace Mono.Linker.Steps {
 			return false;
 		}
 
-		void MarkAssembly (AssemblyDefinition assembly)
+		protected void MarkAssembly (AssemblyDefinition assembly)
 		{
 			if (CheckProcessed (assembly))
 				return;
@@ -330,6 +388,7 @@ namespace Mono.Linker.Steps {
 			ProcessModule (assembly);
 
 			MarkCustomAttributes (assembly);
+			MarkSecurityDeclarations (assembly);
 
 			foreach (ModuleDefinition module in assembly.Modules)
 				MarkCustomAttributes (module);
@@ -428,6 +487,7 @@ namespace Mono.Linker.Steps {
 			MarkType (type.BaseType);
 			MarkType (type.DeclaringType);
 			MarkCustomAttributes (type);
+			MarkSecurityDeclarations (type);
 
 			if (IsMulticastDelegate (type)) {
 				MarkMethodCollection (type.Methods);
@@ -861,6 +921,7 @@ namespace Mono.Linker.Steps {
 
 			MarkType (method.DeclaringType);
 			MarkCustomAttributes (method);
+			MarkSecurityDeclarations (method);
 
 			MarkGenericParameterProvider (method);
 
