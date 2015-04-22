@@ -2,7 +2,7 @@
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
   <!-- Build Tools Version -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00033</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00039</BuildToolsVersion>
     <DnxVersion>1.0.0-beta5-11580</DnxVersion>
   </PropertyGroup>
 
