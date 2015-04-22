@@ -13,27 +13,8 @@ internal static partial class Interop
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
         internal static extern IntPtr mmap(
-            IntPtr __addr, size_t __len, 
-            MemoryMappedProtections __prot, MemoryMappedFlags __flags, 
-            int __fd, off_t __offset);
-
-        [Flags]
-        internal enum MemoryMappedProtections
-        {
-            PROT_NONE = 0x0,
-            PROT_READ = 0x1,
-            PROT_WRITE = 0x2,
-            PROT_EXEC = 0x4
-        }
-
-        [Flags]
-        internal enum MemoryMappedFlags
-        {
-            MAP_FILE = 0,
-            MAP_SHARED = 0x01,
-            MAP_PRIVATE = 0x02,
-            MAP_FIXED = 0x10,
-            MAP_ANONYMOUS = 0x20,
-        }
+            IntPtr addr, size_t len, 
+            MemoryMappedProtections prot, MemoryMappedFlags flags,
+            int fd, off_t offset);
     }
 }

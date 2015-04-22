@@ -129,8 +129,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
       <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.madvise.cs">
-      <Link>Common\Interop\Unix\Interop.madvise.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.MemoryMappedProtections.cs">
+      <Link>Common\Interop\Unix\Interop.MemoryMappedProtections.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mmap.cs">
       <Link>Common\Interop\Unix\Interop.mmap.cs</Link>
@@ -141,9 +141,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.msync.cs">
       <Link>Common\Interop\Unix\Interop.msync.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
@@ -153,13 +150,64 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.sysconf.cs">
       <Link>Common\Interop\Unix\Interop.sysconf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\librt\Interop.shm_open.cs">
-      <Link>Common\Interop\Unix\Interop.shm_open.cs</Link>
-    </Compile>
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Unix.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedViewHandle.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.cs" />
+  </ItemGroup>
+  <!-- Linux -->
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Linux.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Linux.cs" />
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
+      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.MemoryMappedFlags.cs">
+      <Link>Common\Interop\Linux\Interop.MemoryMappedFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.MemoryMappedSyncFlags.cs">
+      <Link>Common\Interop\Linux\Interop.MemoryMappedSyncFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.madvise.cs">
+      <Link>Common\Interop\Linux\Interop.madvise.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Linux\Interop.OpenFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\librt\Interop.shm_open.cs">
+      <Link>Common\Interop\Linux\Interop.shm_open.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SysConfNames.cs">
+      <Link>Common\Interop\Linux\Interop.SysConfNames.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- OSX -->
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.OSX.cs" />
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
+      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.MemoryMappedFlags.cs">
+      <Link>Common\Interop\OSX\Interop.MemoryMappedFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.MemoryMappedSyncFlags.cs">
+      <Link>Common\Interop\OSX\Interop.MemoryMappedSyncFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\OSX\Interop.OpenFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
+      <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libsystem_kernel\Interop.shm_open.cs">
+      <Link>Common\Interop\OSX\Interop.shm_open.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Resource files -->
   <ItemGroup>

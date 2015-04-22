@@ -12,7 +12,7 @@ using Microsoft.Win32.SafeHandles;
 namespace System.IO
 {
     /// <summary>Provides an implementation of a file stream for Unix files.</summary>
-    internal sealed class UnixFileStream : FileStreamBase
+    internal sealed partial class UnixFileStream : FileStreamBase
     {
         /// <summary>The file descriptor wrapped in a file handle.</summary>
         private readonly SafeFileHandle _fileHandle;
@@ -105,16 +105,8 @@ namespace System.IO
                 throw;
             }
 
-            // Support additional options after the file has been opened.
-            // These provide hints around how the file will be accessed.
-            Interop.libc.Advice fadv =
-                _options == FileOptions.RandomAccess ? Interop.libc.Advice.POSIX_FADV_RANDOM :
-                _options == FileOptions.SequentialScan ? Interop.libc.Advice.POSIX_FADV_SEQUENTIAL :
-                0;
-            if (fadv != 0)
-            {
-                SysCall<Interop.libc.Advice, int>((fd, advice, _) => Interop.libc.posix_fadvise(fd, 0, 0, advice), fadv);
-            }
+            // Perform additional configurations on the stream based on the provided FileOptions
+            PostOpenConfigureStreamFromOptions();
 
             // Jump to the end of the file if opened as Append.
             if (_mode == FileMode.Append)
@@ -122,6 +114,9 @@ namespace System.IO
                 _appendStart = SeekCore(0, SeekOrigin.End);
             }
         }
+
+        /// <summary>Performs additional configuration of the opened stream based on provided options.</summary>
+        partial void PostOpenConfigureStreamFromOptions();
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
         /// <param name="handle">The handle to the file.</param>
@@ -171,7 +166,7 @@ namespace System.IO
         private static Interop.libc.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileOptions options)
         {
             // Translate FileMode.  Most of the values map cleanly to one or more options for open.
-            Interop.libc.OpenFlags flags = Interop.libc.OpenFlags.O_LARGEFILE;
+            Interop.libc.OpenFlags flags = default(Interop.libc.OpenFlags);
             switch (mode)
             {
                 default:
@@ -218,8 +213,8 @@ namespace System.IO
                 case FileOptions.Asynchronous:    // Handled in ctor, setting _useAsync and SafeFileHandle.IsAsync to true
                 case FileOptions.DeleteOnClose:   // DeleteOnClose doesn't have a Unix equivalent, but we approximate it in Dispose
                 case FileOptions.Encrypted:       // Encrypted does not have an equivalent on Unix and is ignored.
-                case FileOptions.RandomAccess:    // Implemented after open via posix_fadvise
-                case FileOptions.SequentialScan:  // Implemented after open via posix_fadvise
+                case FileOptions.RandomAccess:    // Implemented after open if posix_fadvise is available
+                case FileOptions.SequentialScan:  // Implemented after open if posix_fadvise is available
                     break;
 
                 case FileOptions.WriteThrough:

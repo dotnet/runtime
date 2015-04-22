@@ -83,29 +83,32 @@ public class DirectoryInfo_get_CreationTime
             dir.Delete(true);
 
             //See VSWhidbey # 92050
-            String path = TestInfo.CurrentDirectory + Path.DirectorySeparatorChar;
-            String tempPath;
-            int count = 0;
-            while (true)
+            if (Interop.IsWindows) // for back compat, rather than throwing, Windows returns default values when the file doesn't exist
             {
-                tempPath = path + "foo_" + count++;
-                if (!Directory.Exists(tempPath))
-                    break;
-            }
-            dir = new DirectoryInfo(tempPath);
-            try
-            {
-                DateTime d1 = dir.CreationTime;
-                if (d1 != DateTime.FromFileTime(0))
+                String path = TestInfo.CurrentDirectory + Path.DirectorySeparatorChar;
+                String tempPath;
+                int count = 0;
+                while (true)
+                {
+                    tempPath = path + "foo_" + count++;
+                    if (!Directory.Exists(tempPath))
+                        break;
+                }
+                dir = new DirectoryInfo(tempPath);
+                try
+                {
+                    DateTime d1 = dir.CreationTime;
+                    if (d1 != DateTime.FromFileTime(0))
+                    {
+                        iCountErrors++;
+                        printerr("Error_20hjx! Creation time cannot be correct");
+                    }
+                }
+                catch (Exception exc)
                 {
                     iCountErrors++;
-                    printerr("Error_20hjx! Creation time cannot be correct");
+                    printerr("Error_20fhd! Unexpected exceptiont thrown: " + exc.ToString());
                 }
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_20fhd! Unexpected exceptiont thrown: " + exc.ToString());
             }
 
             ///////////////////////////////////////////////////////////////////

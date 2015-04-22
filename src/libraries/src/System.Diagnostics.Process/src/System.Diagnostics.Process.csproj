@@ -270,6 +270,9 @@
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
+      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
       <Link>Common\Interop\Linux\Interop.ProcFsStat.cs</Link>
     </Compile>
@@ -278,6 +281,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.prioritywhich.cs">
       <Link>Common\Interop\Linux\Interop.prioritywhich.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.SysConfNames.cs">
+      <Link>Common\Interop\Linux\Interop.SysConfNames.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
@@ -292,6 +301,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.prioritywhich.cs">
       <Link>Common\Interop\OSX\Interop.prioritywhich.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
+      <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

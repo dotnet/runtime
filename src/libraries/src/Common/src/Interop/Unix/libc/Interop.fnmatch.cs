@@ -14,14 +14,7 @@ internal static partial class Interop
         [Flags]
         internal enum FnmatchFlags
         {
-            None = 0,
-            FNM_PATHNAME    = (1 << 0),
-            FNM_FILE_NAME   = FNM_PATHNAME,
-            FNM_NOESCAPE    = (1 << 1),
-            FNM_PERIOD      = (1 << 2),
-            FNM_LEADING_DIR = (1 << 3),
-            FNM_CASEFOLD    = (1 << 4),
-            FNM_EXTMATCH    = (1 << 5)
+            None = 0
         }
     }
 }
