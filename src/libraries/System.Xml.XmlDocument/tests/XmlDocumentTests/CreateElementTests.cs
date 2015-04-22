@@ -86,7 +86,6 @@ namespace XmlDocumentTests.XmlDocumentTests
         }
 
         [Fact]
-        [ActiveIssue(228)]
         public static void NameWithWhitespace()
         {
             var xmlDocument = new XmlDocument();
