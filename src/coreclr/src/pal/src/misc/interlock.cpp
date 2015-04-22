@@ -269,6 +269,24 @@ InterlockedOr(
     return __sync_fetch_and_or(Destination, Value);
 }
 
+UCHAR
+PALAPI
+InterlockedBitTestAndReset(
+               IN OUT LONG volatile *Base,
+               IN LONG Bit)
+{
+    return (InterlockedAnd(Base, ~(1 << Bit)) & (1 << Bit)) != 0;
+}
+
+UCHAR
+PALAPI
+InterlockedBitTestAndSet(
+               IN OUT LONG volatile *Base,
+               IN LONG Bit)
+{
+    return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
+}
+
 /*++
 Function:
 MemoryBarrier

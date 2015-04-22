@@ -3072,6 +3072,7 @@ typedef struct _CRITICAL_SECTION {
 PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
+PALIMPORT VOID PALAPI InitializeCriticalSectionEx(LPCRITICAL_SECTION lpCriticalSection, DWORD dwSpinCount, DWORD Flags);
 PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT BOOL PALAPI TryEnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
@@ -4811,6 +4812,20 @@ PALAPI
 InterlockedOr(
               IN OUT LONG volatile *Destination,
               IN LONG Value);
+
+PALIMPORT
+UCHAR
+PALAPI
+InterlockedBitTestAndReset(
+               IN OUT LONG volatile *Base,
+               IN LONG Bit);
+
+PALIMPORT
+UCHAR
+PALAPI
+InterlockedBitTestAndSet(
+               IN OUT LONG volatile *Base,
+               IN LONG Bit);
 
 PALIMPORT
 unsigned char
