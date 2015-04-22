@@ -1009,7 +1009,7 @@ namespace System.Runtime.Serialization
             ConstructorInfo defaultCtor = null;
             if (!type.GetTypeInfo().IsValueType)
             {
-                defaultCtor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Globals.EmptyTypeArray);
+                defaultCtor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Array.Empty<Type>());
                 if (defaultCtor == null && constructorRequired)
                 {
                     return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection/*createContractWithException*/,
@@ -1184,7 +1184,7 @@ namespace System.Runtime.Serialization
 
             if (getEnumeratorMethod == null)
             {
-                getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Globals.EmptyTypeArray);
+                getEnumeratorMethod = type.GetMethod(Globals.GetEnumeratorMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
                 if (getEnumeratorMethod == null || !Globals.TypeOfIEnumerator.IsAssignableFrom(getEnumeratorMethod.ReturnType))
                 {
                     Type ienumerableInterface = interfaceType.GetInterfaces().Where(t => t.FullName.StartsWith("System.Collections.Generic.IEnumerable")).FirstOrDefault();

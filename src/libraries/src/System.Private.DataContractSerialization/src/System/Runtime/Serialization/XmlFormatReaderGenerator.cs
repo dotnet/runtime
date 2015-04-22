@@ -510,7 +510,7 @@ namespace System.Runtime.Serialization
                     {
                         case CollectionKind.GenericDictionary:
                             type = Globals.TypeOfDictionaryGeneric.MakeGenericType(itemType.GetGenericArguments());
-                            constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Globals.EmptyTypeArray);
+                            constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
                             break;
                         case CollectionKind.Dictionary:
                             type = Globals.TypeOfHashtable;
