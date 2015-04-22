@@ -11,14 +11,6 @@ internal static partial class Interop
     internal static partial class libc
     {
         [DllImport(Libraries.Libc, SetLastError = true)]
-        internal static extern int msync(IntPtr __addr, size_t __len, MemoryMappedSyncFlags __flags);
-
-        [Flags]
-        internal enum MemoryMappedSyncFlags
-        {
-            MS_ASYNC = 1,
-            MS_INVALIDATE = 2,
-            MS_SYNC = 4
-        }
+        internal static extern int msync(IntPtr addr, size_t len, MemoryMappedSyncFlags flags);
     }
 }

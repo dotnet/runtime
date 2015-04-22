@@ -14,8 +14,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\Collections\IEnumerableTest.cs" />
+    <Compile Include="$(CommonTestPath)\Collections\ICollectionTest.cs" />
+    <Compile Include="$(CommonTestPath)\Collections\IListTest.cs" />
+    <Compile Include="$(CommonTestPath)\Collections\Utils.cs" />
     <Compile Include="ComponentModel\INotifyPropertyChangingTests.cs" />
     <Compile Include="ComponentModel\PropertyChangingEventArgsTests.cs" />
+    <Compile Include="KeyedCollection\TestMethods.cs" />
+    <Compile Include="KeyedCollection\ConcreteTestClasses.cs" />
+    <Compile Include="KeyedCollection\Utils.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_ConstructorAndPropertyTests.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_MethodsTest.cs" />
     <Compile Include="ReadOnlyDictionary\ReadOnlyDictionaryTests.cs" />
@@ -26,6 +33,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
     <ProjectReference Include="..\src\System.ObjectModel.csproj">
       <Project>{F24D3391-2928-4E83-AADE-A4461E5CAE50}</Project>
       <Name>System.ObjectModel</Name>

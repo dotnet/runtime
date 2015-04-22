@@ -269,9 +269,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.opendir.cs">
       <Link>Common\Interop\Unix\Interop.opendir.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.lseek.cs">
       <Link>Common\Interop\Unix\Interop.lseek64.cs</Link>
     </Compile>
@@ -283,9 +280,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.posix_fadvise.cs">
-      <Link>Common\Interop\Unix\Interop.posix_fadvise.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.read.cs">
       <Link>Common\Interop\Unix\Interop.read.cs</Link>
@@ -314,11 +308,24 @@
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="System\IO\UnixFileStream.Linux.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Linux.cs">
       <Link>Common\System\IO\PathInternal.Linux.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
+      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.readdir.cs">
       <Link>Common\Interop\Linux\Interop.readdir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Linux\Interop.OpenFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\Linux\Interop.PathConfNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.posix_fadvise.cs">
+      <Link>Common\Interop\Linux\Interop.posix_fadvise.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- OSX -->
@@ -328,6 +335,15 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.readdir.cs">
       <Link>Common\Interop\OSX\Interop.readdir.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\OSX\Interop.OpenFlags.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.PathConfNames.cs">
+      <Link>Common\Interop\OSX\Interop.PathConfNames.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
+      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

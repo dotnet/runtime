@@ -18,7 +18,6 @@ internal static partial class Interop
             O_TRUNC     = 0x200,
             O_SYNC      = 0x1000,
             O_ASYNC     = 0x2000,
-            O_LARGEFILE = 0x8000,
             O_CLOEXEC   = 0x80000,
         }
     }

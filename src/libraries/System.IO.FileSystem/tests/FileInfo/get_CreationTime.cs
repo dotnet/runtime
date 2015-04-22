@@ -49,25 +49,28 @@ public class FileInfo_get_CreationTime
             if (File.Exists(filName))
                 File.Delete(filName);
 
-            DirectoryInfo newDirectory = new DirectoryInfo(".");
-            fil2 = new FileInfo(newDirectory + filName);
-            iCountTestcases++;
-            try
+            if (Interop.IsWindows) // for back compat, rather than throwing, Windows returns default values when the file doesn't exist
             {
-                DateTime d1 = fil2.CreationTime;
-                //We threw in Whidbey upto 50606 but V1.1 behavior is as below
-                if (d1 != DateTime.FromFileTime(0))
+                DirectoryInfo newDirectory = new DirectoryInfo(".");
+                fil2 = new FileInfo(Path.Combine(newDirectory.FullName, filName));
+                iCountTestcases++;
+                try
+                {
+                    DateTime d1 = fil2.CreationTime;
+                    //We threw in Whidbey upto 50606 but V1.1 behavior is as below
+                    if (d1 != DateTime.FromFileTime(0))
+                    {
+                        iCountErrors++;
+                        Console.WriteLine("Error_20hjx! Creation time cannot be correct: {0}", d1);
+                    }
+                }
+                catch (Exception exc)
                 {
                     iCountErrors++;
-                    Console.WriteLine("Error_20hjx! Creation time cannot be correct: {0}", d1);
+                    printerr("Bug 14952 - Error_20fhd! Unexpected exceptiont thrown: " + exc.ToString());
                 }
+                fil2.Delete();
             }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Bug 14952 - Error_20fhd! Unexpected exceptiont thrown: " + exc.ToString());
-            }
-            fil2.Delete();
 
 
             // [] Create file, sleep for a while and check the creation time.

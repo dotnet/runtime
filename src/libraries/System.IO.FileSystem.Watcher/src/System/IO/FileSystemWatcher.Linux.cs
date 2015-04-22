@@ -725,21 +725,9 @@ namespace System.IO
                     int fd = (int)_inotifyHandle.DangerousGetHandle();
                     Debug.Assert(fd >= 0);
 
-                    // System calls may fail due to EINTR (signal interruption).  We need to retry in those cases.
-                    while (true)
-                    {
-                        long result = sysCall(fd);
-                        if (result < 0)
-                        {
-                            int errno = Marshal.GetLastWin32Error();
-                            if (errno == (int)Interop.Errors.EINTR)
-                            {
-                                continue;
-                            }
-                            throw Interop.GetExceptionForIoErrno(errno, isDirectory: true);
-                        }
-                        return result;
-                    }
+                    long result;
+                    while (Interop.CheckIo(result = sysCall(fd), isDirectory: true)) ;
+                    return result;
                 }
                 finally
                 {

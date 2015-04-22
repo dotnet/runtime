@@ -66,9 +66,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.open.cs">
       <Link>Common\Interop\Unix\libc\Interop.open.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.OpenFlags.cs">
-      <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\libc\Interop.strerror.cs</Link>
     </Compile>
@@ -83,6 +80,24 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Linux -->
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
+      <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\Linux\Interop.OpenFlags.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- OSX -->
+  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
+      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.OpenFlags.cs">
+      <Link>Common\Interop\OSX\Interop.OpenFlags.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

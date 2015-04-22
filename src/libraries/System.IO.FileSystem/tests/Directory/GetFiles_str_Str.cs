@@ -323,7 +323,7 @@ public class Directory_GetFiles_str_str
 
             strArr = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), dirName), "*BB*");
             iCountTestcases++;
-            if (strArr.Length != (Interop.IsLinux ? 1 : 2)) // Linux is case-sensitive
+            if (strArr.Length != (Interop.IsWindows ? 2 : 1))
             {
                 iCountErrors++;
                 printerr("Error_4y190! Incorrect number of files==" + strArr.Length);
@@ -338,7 +338,7 @@ public class Directory_GetFiles_str_str
                 iCountErrors++;
                 printerr("Error_956yb! Incorrect name==" + strArr[0].ToString());
             }
-            if (!Interop.IsLinux) // Linux is case-sensitive
+            if (Interop.IsWindows)
             {
                 iCountTestcases++;
                 if (Array.IndexOf(names, "aaabbcc") < 0)
