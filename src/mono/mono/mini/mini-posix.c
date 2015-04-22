@@ -412,7 +412,6 @@ add_signal_handler (int signo, gpointer handler)
 		sigset_t block_mask;
      
 		sigemptyset (&block_mask);
-		sigaddset (&sa.sa_mask, mono_thread_get_abort_signal ());
 	}
 #else
 	sa.sa_handler = handler;
@@ -469,7 +468,6 @@ mono_runtime_posix_install_handlers (void)
 	 * We try to detect and work around their breakage here.
 	 */
 	sigemptyset (&signal_set);
-	sigaddset (&signal_set, mono_thread_get_abort_signal ());
 	if (mono_gc_get_suspend_signal () != -1)
 		sigaddset (&signal_set, mono_gc_get_suspend_signal ());
 	if (mono_gc_get_restart_signal () != -1)
@@ -505,8 +503,6 @@ mono_runtime_cleanup_handlers (void)
 	remove_signal_handler (SIGBUS);
 	if (mono_jit_trace_calls != NULL)
 		remove_signal_handler (SIGUSR2);
-
-	remove_signal_handler (mono_thread_get_abort_signal ());
 
 	remove_signal_handler (SIGABRT);
 

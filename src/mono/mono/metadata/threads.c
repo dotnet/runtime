@@ -2018,46 +2018,6 @@ void mono_thread_current_check_pending_interrupt ()
 	}
 }
 
-int  
-mono_thread_get_abort_signal (void)
-{
-#if defined (HOST_WIN32) || !defined (HAVE_SIGACTION)
-	return -1;
-#elif defined(PLATFORM_ANDROID)
-	return SIGUNUSED;
-#elif !defined (SIGRTMIN)
-#ifdef SIGUSR1
-	return SIGUSR1;
-#else
-	return -1;
-#endif /* SIGUSR1 */
-#else
-	static int abort_signum = -1;
-	int i;
-	if (abort_signum != -1)
-		return abort_signum;
-	/* we try to avoid SIGRTMIN and any one that might have been set already, see bug #75387 */
-	for (i = SIGRTMIN + 1; i < SIGRTMAX; ++i) {
-		struct sigaction sinfo;
-		sigaction (i, NULL, &sinfo);
-		if (sinfo.sa_handler == SIG_DFL && (void*)sinfo.sa_sigaction == (void*)SIG_DFL) {
-			abort_signum = i;
-			return i;
-		}
-	}
-	/* fallback to the old way */
-	return SIGRTMIN;
-#endif /* HOST_WIN32 */
-}
-
-#ifdef HOST_WIN32
-static void CALLBACK interruption_request_apc (ULONG_PTR param)
-{
-	MonoException* exc = mono_thread_request_interruption (FALSE);
-	if (exc) mono_raise_exception (exc);
-}
-#endif /* HOST_WIN32 */
-
 void
 ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state)
 {

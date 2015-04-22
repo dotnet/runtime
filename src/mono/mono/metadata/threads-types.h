@@ -225,8 +225,6 @@ void mono_thread_set_execution_context (MonoObject *ec);
 void mono_runtime_set_has_tls_get (gboolean val);
 gboolean mono_runtime_has_tls_get (void);
 
-int mono_thread_get_abort_signal (void);
-
 void mono_thread_abort_all_other_threads (void);
 void mono_thread_suspend_all_other_threads (void);
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
