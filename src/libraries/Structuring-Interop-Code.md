@@ -120,6 +120,9 @@ TargetsUnix is true for both OSX and Linux builds and can be used to include cod
 
 You should not test the value of the OS property directly, instead use one of the values above.
 
+#### Project Files
+Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux.  A property can be passed to msbuild to control which flavor is built, e.g. msbuild /p:OS=OSX System.Console.csproj.
+
 ### Constants
 - Wherever possible, constants should be defined as "const".  Only if the data type doesn’t support this (e.g. IntPtr) should they instead be static readonly fields.
 
