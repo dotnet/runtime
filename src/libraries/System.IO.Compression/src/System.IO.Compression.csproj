@@ -66,7 +66,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(PackagesDir)\System.IO.Compression.clrcompression-x64\4.0.0-beta-22819\native\win\x64\clrcompression.dll">
+    <Content Include="$(PackagesDir)\System.IO.Compression.clrcompression-x86\4.0.0-beta-22819\native\win\x86\clrcompression.dll">
       <Link>clrcompression.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
