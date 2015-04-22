@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         bool ICSharpInvokeOrInvokeMemberBinder.StaticCall { get { return _argumentInfo[0] != null && _argumentInfo[0].IsStaticType; } }
         string ICSharpInvokeOrInvokeMemberBinder.Name { get { return "Invoke"; } }
-        IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments { get { return new Type[0]; } }
+        IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments { get { return Array.Empty<Type>(); } }
 
         CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags { get { return _flags; } }
         private CSharpCallFlags _flags;

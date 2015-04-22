@@ -110,7 +110,7 @@ namespace System.Xml.Serialization
                 CodeGenerator.InstanceBindingFlags,
                 CodeGenerator.EmptyTypeArray
                 );
-            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityTransparentAttribute_ctor, new Object[0]));
+            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityTransparentAttribute_ctor, Array.Empty<Object>()));
             CodeIdentifiers classes = new CodeIdentifiers();
             classes.AddUnique("XmlSerializationWriter", "XmlSerializationWriter");
             classes.AddUnique("XmlSerializationReader", "XmlSerializationReader");
