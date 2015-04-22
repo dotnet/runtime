@@ -102,6 +102,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.IO.Compression**. Provides classes that support the compression and decompression of streams.
 
+* **System.IO.Compression.ZipFile**. Provides static methods for creating and using Zip files.
+
 * **System.IO.FileSystem**. Provides access to the file system, including support for enumerating and manipulating 
   file system objects and for reading and writing files via streams.
 
