@@ -3,25 +3,42 @@
 # This file invokes cmake and generates the build system for gcc.
 #
 
-if [ $# -lt 1 -o $# -gt 2 ]
+if [ $# -lt 3 -o $# -gt 4 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> [build flavor]"
+  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> [build flavor]"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
+  echo "Specify the clang version to use, split into major and minor version"
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
   exit 1
 fi
 
-. "$1/src/pal/tools/setup-compiler-clang.sh"
+# Set up the environment to be used for building with clang.
+if which "clang-$2.$3" > /dev/null 2>&1
+    then
+        export CC="$(which clang-$2.$3)"
+        export CXX="$(which clang++-$2.$3)"
+elif which "clang$2$3" > /dev/null 2>&1
+    then
+        export CC="$(which clang$2$3)"
+        export CXX="$(which clang++$2$3)"
+elif which clang > /dev/null 2>&1
+    then
+        export CC="$(which clang)"
+        export CXX="$(which clang++)"
+else
+    echo "Unable to find Clang Compiler"
+    exit 1
+fi
 
 # Possible build types are DEBUG, RELEASE, RELWITHDEBINFO, MINSIZEREL.
 # Default to DEBUG
-if [ -z "$2" ]
+if [ -z "$4" ]
 then
   echo "Defaulting to DEBUG build."
   buildtype="DEBUG"
 else
-  buildtype="$2"
+  buildtype="$4"
 fi
 
 OS=`uname`
@@ -42,8 +59,8 @@ else
   exit 1
 fi
 
-desired_llvm_major_version=3
-desired_llvm_minor_version=5
+desired_llvm_major_version=$2
+desired_llvm_minor_version=$3
 if [ $OS = "FreeBSD" ]; then
     desired_llvm_version="$desired_llvm_major_version$desired_llvm_minor_version"
 elif [ $OS = "OpenBSD" ]; then
@@ -62,6 +79,7 @@ locate_llvm_exec() {
     exit 1
   fi
 }
+
 llvm_ar="$(locate_llvm_exec ar)"
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-ar"; exit 1; }
 llvm_link="$(locate_llvm_exec link)"
