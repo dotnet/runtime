@@ -209,6 +209,14 @@ namespace System.IO.Compression
             return;
         }
 
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            EnsureNotDisposed();
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             throw new NotSupportedException(SR.NotSupported);
@@ -337,16 +345,7 @@ namespace System.IO.Compression
                     throw new InvalidOperationException(SR.NotReadableStream);
                 }
 
-                var tcs = new TaskCompletionSource<int>();
-
-                // ContinueWith will never throw here otherwise we'll be in inconsistent state
-                readTask.ContinueWith(
-                   (t) => ReadAsyncCore(t, tcs, array, offset, count, cancellationToken),
-                   cancellationToken,
-                   TaskContinuationOptions.ExecuteSynchronously,
-                   TaskScheduler.Default);
-
-                return tcs.Task;
+                return ReadAsyncCore(readTask, array, offset, count, cancellationToken);
             }
             finally
             {
@@ -358,77 +357,46 @@ namespace System.IO.Compression
             }
         }
 
-        // callback function for asynchrous reading on base stream
-        private void ReadAsyncCore(Task<int> previousReadTask, TaskCompletionSource<int> tcs, byte[] array, int offset, int count, CancellationToken cancellationToken)
+        private async Task<int> ReadAsyncCore(Task<int> readTask, byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
-            Task<int> readTask = null;
-
             try
             {
-                if (previousReadTask.IsCanceled)
+                while (true)
                 {
-                    tcs.TrySetCanceled();
-                    return;
-                }
+                    int bytesRead = await readTask.ConfigureAwait(false);
+                    EnsureNotDisposed();
 
-                if (previousReadTask.IsFaulted)
-                {
-                    tcs.TrySetException(readTask.Exception.GetBaseException());
-                    return;
-                }
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    tcs.TrySetCanceled();
-                    return;
-                }
-
-                EnsureNotDisposed();
-
-                int bytesRead = previousReadTask.Result;
-                if (bytesRead <= 0)
-                {
-                    // This indicates the base stream has received EOF
-                    tcs.SetResult(0);
-                    return;
-                }
-
-                // Feed the data from base stream into decompression engine
-                _inflater.SetInput(_buffer, 0, bytesRead);
-                bytesRead = _inflater.Inflate(array, offset, count);
-
-                if (bytesRead == 0 && !_inflater.Finished())
-                {
-                    // We could have read in head information and didn't get any data.
-                    // Read from the base stream again.   
-                    readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
-                    if (readTask == null)
+                    if (bytesRead <= 0)
                     {
-                        throw new InvalidOperationException(SR.NotReadableStream);
+                        // This indicates the base stream has received EOF
+                        return 0;
                     }
 
-                    readTask.ContinueWith(
-                       (t) => ReadAsyncCore(t, tcs, array, offset, count, cancellationToken),
-                       cancellationToken,
-                       TaskContinuationOptions.ExecuteSynchronously,
-                       TaskScheduler.Default);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Feed the data from base stream into decompression engine
+                    _inflater.SetInput(_buffer, 0, bytesRead);
+                    bytesRead = _inflater.Inflate(array, offset, count);
+
+                    if (bytesRead == 0 && !_inflater.Finished())
+                    {
+                        // We could have read in head information and didn't get any data.
+                        // Read from the base stream again.   
+                        readTask = _stream.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
+                        if (readTask == null)
+                        {
+                            throw new InvalidOperationException(SR.NotReadableStream);
+                        }
+                    }
+                    else
+                    {
+                        return bytesRead;
+                    }
                 }
-                else
-                {
-                    tcs.SetResult(bytesRead);
-                }
-            }
-            catch (Exception exc)
-            {
-                tcs.TrySetException(exc);
             }
             finally
             {
-                // if we haven't started any new async work, decrement the counter to end the transaction
-                if (readTask == null)
-                {
-                    Interlocked.Decrement(ref _asyncOperations);
-                }
+                Interlocked.Decrement(ref _asyncOperations);
             }
         }
 
@@ -607,23 +575,22 @@ namespace System.IO.Compression
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<int>(cancellationToken);
 
-            Interlocked.Increment(ref _asyncOperations);
+            return WriteAsyncCore(array, offset, count, cancellationToken);
+        }
 
+        private async Task WriteAsyncCore(Byte[] array, int offset, int count, CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _asyncOperations);
             try
             {
-                return base.WriteAsync(array, offset, count, cancellationToken).ContinueWith(
-                        (t) => Interlocked.Decrement(ref _asyncOperations),
-                        cancellationToken,
-                        TaskContinuationOptions.ExecuteSynchronously,
-                        TaskScheduler.Default
-                    );
+                await base.WriteAsync(array, offset, count, cancellationToken).ConfigureAwait(false);
             }
-            catch
+            finally
             {
                 Interlocked.Decrement(ref _asyncOperations);
-                throw;
             }
         }
+
     }  // public class DeflateStream
 }  // namespace System.IO.Compression
 
