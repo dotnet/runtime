@@ -22,10 +22,12 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+#include <string.h>
+
 #include "mono/metadata/sgen-gc.h"
 #include "mono/metadata/sgen-workers.h"
 #include "mono/metadata/sgen-thread-pool.h"
-#include "mono/utils/mono-counters.h"
+#include "mono/utils/mono-membar.h"
 #include "mono/metadata/sgen-client.h"
 
 static int workers_num;

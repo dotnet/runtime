@@ -27,6 +27,8 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+#include <stdlib.h>
+
 #include "mono/metadata/sgen-gc.h"
 #include "mono/metadata/sgen-memory-governor.h"
 #include "mono/metadata/sgen-thread-pool.h"

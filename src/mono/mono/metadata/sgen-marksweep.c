@@ -27,6 +27,8 @@
 
 #include <math.h>
 #include <errno.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "mono/metadata/sgen-gc.h"
 #include "mono/metadata/sgen-protocol.h"
@@ -38,6 +40,7 @@
 #include "mono/metadata/sgen-workers.h"
 #include "mono/metadata/sgen-thread-pool.h"
 #include "mono/metadata/sgen-client.h"
+#include "mono/utils/mono-membar.h"
 
 #if defined(ARCH_MIN_MS_BLOCK_SIZE) && defined(ARCH_MIN_MS_BLOCK_SIZE_SHIFT)
 #define MS_BLOCK_SIZE	ARCH_MIN_MS_BLOCK_SIZE

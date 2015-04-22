@@ -24,7 +24,9 @@
 #include "mono/metadata/sgen-thread-pool.h"
 #include "mono/metadata/sgen-pointer-queue.h"
 #include "mono/utils/mono-mutex.h"
+#ifndef SGEN_WITHOUT_MONO
 #include "mono/utils/mono-threads.h"
+#endif
 
 static mono_mutex_t lock;
 static mono_cond_t work_cond;
