@@ -27,6 +27,7 @@
 
 #include "sgen-gc.h"
 #include "sgen-toggleref.h"
+#include "sgen-client.h"
 
 
 /*only one of the two can be non null at a given time*/

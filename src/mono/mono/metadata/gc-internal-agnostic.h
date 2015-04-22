@@ -64,4 +64,6 @@ void mono_gc_bzero_aligned (void *dest, size_t size);
 void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
 void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
 
+FILE *mono_gc_get_logfile (void);
+
 #endif

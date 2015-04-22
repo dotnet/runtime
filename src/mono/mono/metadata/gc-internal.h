@@ -314,8 +314,6 @@ pthread_t mono_gc_get_mach_exception_thread (void);
 
 gboolean mono_gc_precise_stack_mark_enabled (void);
 
-FILE *mono_gc_get_logfile (void);
-
 typedef struct _RefQueueEntry RefQueueEntry;
 
 struct _RefQueueEntry {
