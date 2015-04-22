@@ -4869,6 +4869,7 @@ AppDomain::AppDomain()
     m_pSystemRuntimeWindowsRuntimeDll = nullptr;
     m_pSystemRuntimeWindowsRuntimeUIXamlDll = nullptr;
     m_pSystemNumericsVectors = nullptr;
+    m_pInternalUri = nullptr;
 #endif // FEATURE_COMINTEROP
 
     m_pUMEntryThunkCache = NULL;
@@ -5949,6 +5950,11 @@ bool AppDomain::FindRedirectedAssembly(Assembly* pAssembly, WinMDAdapter::Framew
         *pIndex = WinMDAdapter::FrameworkAssembly_SystemNumericsVectors;
         return true;
     }
+    else if (pDomainAssembly == m_pInternalUri)
+    {
+        *pIndex = WinMDAdapter::FrameworkAssembly_InternalUri;
+        return true;
+    }
 
     return false;
 }
@@ -5964,7 +5970,7 @@ BOOL AppDomain::FindRedirectedAssemblyFromIndexIfLoaded(WinMDAdapter::FrameworkA
     LIMITED_METHOD_CONTRACT;
 
     // If new redirected assemblies are added, this function probably needs to be updated
-    C_ASSERT(WinMDAdapter::FrameworkAssembly_Count == 5);
+    C_ASSERT(WinMDAdapter::FrameworkAssembly_Count == 6);
 
     DomainAssembly * pDomainAssembly = NULL;
 
@@ -5988,6 +5994,10 @@ BOOL AppDomain::FindRedirectedAssemblyFromIndexIfLoaded(WinMDAdapter::FrameworkA
     else if (index == WinMDAdapter::FrameworkAssembly_SystemNumericsVectors)
     {
         pDomainAssembly = m_pSystemNumericsVectors;
+    }
+    else if (index == WinMDAdapter::FrameworkAssembly_InternalUri)
+    {
+        pDomainAssembly = m_pInternalUri;
     }
 
     if (pDomainAssembly != NULL)
@@ -6105,6 +6115,21 @@ void AppDomain::AddAssembly(DomainAssembly * assem)
             if (cbPublicKey == sizeof(s_pbContractPublicKey) && memcmp(pbPublicKey, s_pbContractPublicKey, cbPublicKey) == 0)
             {
                 m_pSystemNumericsVectors = assem;
+            }
+        }
+    }
+    if (m_pInternalUri == nullptr)
+    {
+        PEAssembly *pPEAssembly = assem->GetFile();
+
+        if (strcmp("Internal.Uri", pPEAssembly->GetSimpleName()) == 0)
+        {
+            DWORD cbPublicKey;
+            const BYTE *pbPublicKey = static_cast<const BYTE *>(pPEAssembly->GetPublicKey(&cbPublicKey));
+
+            if (cbPublicKey == sizeof(s_pbContractPublicKey) && memcmp(pbPublicKey, s_pbContractPublicKey, cbPublicKey) == 0)
+            {
+                m_pInternalUri = assem;
             }
         }
     }
