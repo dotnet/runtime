@@ -13,7 +13,7 @@ else()
 
 add_definitions(-DNO_CRT_INIT)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 # This option is necessary to ensure that the overloaded delete operator defined inside
 # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic-functions")
@@ -26,7 +26,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 # These options are used to force every object to be included even if it's unused.
     set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
     set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive) 
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 # These options are used to force every object to be included even if it's unused.

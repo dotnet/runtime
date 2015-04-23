@@ -15,9 +15,12 @@ add_executable(corerun
     ${CORERUN_SOURCES}
 )
 
-target_link_libraries(corerun 
-    dl
-)
+# FreeBSD implements dlopen in libc
+if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+    target_link_libraries(corerun 
+        dl
+    )
+endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 add_dependencies(corerun
     coreclr
