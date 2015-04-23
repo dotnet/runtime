@@ -580,23 +580,25 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_PublishDacTableAddress(
-    IN PVOID address,
-    IN ULONG size
+    IN PVOID baseAddress,
+    IN PVOID tableAddress,
+    IN ULONG tableSize
     );
 
 PALIMPORT
 DWORD
 PALAPI
 PAL_GetDacTableAddress(
-    IN DWORD pid,
-    OUT PVOID *pAddress,
-    OUT PULONG pSize
+    IN PVOID baseAddress,
+    OUT PVOID *tableAddress,
+    OUT PULONG tableSize
     );
 
 PALIMPORT
 VOID
 PALAPI
 PAL_CleanupDacTableAddress(
+    IN PVOID baseAddress
     );
 
 
