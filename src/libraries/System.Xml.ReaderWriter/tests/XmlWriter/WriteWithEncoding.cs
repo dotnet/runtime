@@ -10,7 +10,6 @@ using Xunit;
 public class XmlWriterTests
 {
     [Fact]
-    [ActiveIssue(1263)]
     public static void WriteWithEncoding()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
