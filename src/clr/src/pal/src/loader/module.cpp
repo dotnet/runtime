@@ -91,11 +91,6 @@ CRITICAL_SECTION module_critsec;
 MODSTRUCT exe_module; /* always the first, in the in-load-order list */
 MODSTRUCT pal_module; /* always the second, in the in-load-order list */
 
-PDLLMAIN g_pRuntimeDllMain = NULL;
-// Use the g_szCoreCLRPath global to determine whether we're really part of CoreCLR or just a standalone PAL
-// linked into some utility.
-extern char g_szCoreCLRPath[MAX_PATH];
-
 /* static function declarations ***********************************************/
 
 static BOOL LOADValidateModule(MODSTRUCT *module);
@@ -634,6 +629,8 @@ GetModuleFileNameW(
 
     LockModuleList();
 
+    wcscpy_s(lpFileName, nSize, W(""));
+
     if(hModule && !LOADValidateModule((MODSTRUCT *)hModule))
     {
         TRACE("Can't find name for invalid module handle %p\n", hModule);
@@ -644,7 +641,7 @@ GetModuleFileNameW(
 
     if(!wide_name)
     {
-        ASSERT("Can't find name for valid module handle %p\n", hModule);
+        TRACE("Can't find name for valid module handle %p\n", hModule);
         SetLastError(ERROR_INTERNAL_ERROR);
         goto done;
     }
@@ -869,8 +866,6 @@ Notes :
 extern "C"
 BOOL LOADInitializeModules(LPWSTR exe_name)
 {
-    LPWSTR  lpwstr = NULL;
-
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     LPSTR   pszExeName = NULL;
     CPalThread *pThread = NULL;
@@ -889,55 +884,27 @@ BOOL LOADInitializeModules(LPWSTR exe_name)
 
     /* initialize module for main executable */
     TRACE("Initializing module for main executable\n");
-    exe_module.self=(HMODULE)&exe_module;
-    exe_module.dl_handle=dlopen(NULL, RTLD_LAZY);
+    exe_module.self = (HMODULE)&exe_module;
+    exe_module.dl_handle = dlopen(NULL, RTLD_LAZY);
     if(!exe_module.dl_handle)
     {
         ASSERT("Main executable module will be broken : dlopen(NULL) failed. "
              "dlerror message is \"%s\" \n", dlerror());
     }
     exe_module.lib_name = exe_name;
-    exe_module.refcount=-1;
-    exe_module.next=&pal_module;
-    exe_module.prev=&pal_module;
+    exe_module.refcount = -1;
+    exe_module.next = &pal_module;
+    exe_module.prev = &pal_module;
     exe_module.pDllMain = NULL;
     exe_module.ThreadLibCalls = TRUE;
     
     TRACE("Initializing module for PAL library\n");
-    pal_module.self=(HANDLE)&pal_module;
-
-    if (g_szCoreCLRPath[0] == '\0')
-    {
-        pal_module.lib_name=NULL;
-        pal_module.dl_handle=NULL;
-    } else
-    {
-        TRACE("PAL library is %s\n", g_szCoreCLRPath);
-        lpwstr = UTIL_MBToWC_Alloc(g_szCoreCLRPath, -1);
-        if(NULL == lpwstr)
-        {
-            ERROR("MBToWC failure, unable to save full name of PAL module\n");
-            goto Done;
-        }
-        pal_module.lib_name=lpwstr;
-        pal_module.dl_handle=dlopen(g_szCoreCLRPath, RTLD_LAZY);
-
-        if(pal_module.dl_handle)
-        {
-            g_pRuntimeDllMain = (PDLLMAIN)dlsym(pal_module.dl_handle, "CoreDllMain");
-        }
-        else
-        {
-#if !defined(__hppa__)
-            ASSERT("PAL module will be broken : dlopen(%s) failed. dlerror "
-                 "message is \"%s\"\n ", g_szCoreCLRPath, dlerror());
-#endif
-        }
-    }
-
-    pal_module.refcount=-1;
-    pal_module.next=&exe_module;
-    pal_module.prev=&exe_module;
+    pal_module.self = (HANDLE)&pal_module;
+    pal_module.lib_name = NULL;
+    pal_module.dl_handle = NULL;
+    pal_module.refcount= - 1;
+    pal_module.next = &exe_module;
+    pal_module.prev = &exe_module;
     pal_module.pDllMain = NULL;
     pal_module.ThreadLibCalls = TRUE;
 
@@ -1905,15 +1872,32 @@ Done:
     mscorwks).
 
 Parameters:
-    void
+    Core CLR path
 
 Return value:
     TRUE if successful
     FALSE if failure
 --*/
-BOOL LOADInitCoreCLRModules()
+BOOL LOADInitCoreCLRModules(
+    const char *szCoreCLRPath)
 {
-    return g_pRuntimeDllMain((HMODULE)&pal_module, DLL_PROCESS_ATTACH, NULL);
+    TRACE("PAL library is %s\n", szCoreCLRPath);
+    LPWSTR lpwstr = UTIL_MBToWC_Alloc(szCoreCLRPath, -1);
+    if(!lpwstr)
+    {
+        ERROR("MBToWC failure, unable to save full name of PAL module\n");
+        return FALSE;
+    }
+    pal_module.lib_name = lpwstr;
+    pal_module.dl_handle = dlopen(szCoreCLRPath, RTLD_LAZY);
+    if(!pal_module.dl_handle)
+    {
+        ERROR("PAL module will be broken : dlopen(%s) failed. dlerror message is \"%s\"\n ", 
+            szCoreCLRPath, dlerror());
+        return FALSE;
+    }
+    PDLLMAIN pRuntimeDllMain = (PDLLMAIN)dlsym(pal_module.dl_handle, "CoreDllMain");
+    return pRuntimeDllMain((HMODULE)&pal_module, DLL_PROCESS_ATTACH, NULL);
 }
 
 // Get base address of the module containing a given symbol 
