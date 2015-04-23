@@ -55,6 +55,9 @@ int __cdecl main(int argc, char *argv[])
     // Case 10: /<name>/../. transforms to /
     TestCase("/Test/../.", "/");
 
+    // Case 11: /.. transforms to /
+    TestCase("/..", "/");
+
     PAL_Terminate();
     return PASS;
 }
