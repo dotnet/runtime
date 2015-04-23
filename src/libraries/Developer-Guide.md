@@ -125,3 +125,5 @@ Code coverage reports from the continuous integration system are available from 
 
 * VS 2015 is required to debug tests running on CoreCLR as the CoreCLR
 debug engine is a VS 2015 component.
+
+* If the Xamarin PCL profiles are installed, the build will fail due to [issue #449](https://github.com/dotnet/corefx/issues/449).  A possible workaround is listed [in the issue](https://github.com/dotnet/corefx/issues/449#issuecomment-95117040) itself.
