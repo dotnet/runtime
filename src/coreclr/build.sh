@@ -2,10 +2,12 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [clean]"
+    echo "Usage: $0 [BuildArch] [BuildType] [clean] [verbose] [clangx.y]"
     echo "BuildArch can be: x64"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
+    echo "verbose - optional argument to enable verbose build output."
+    echo "clangx.y - optional argument to build using clang version x.y."
 
     exit 1
 }
@@ -38,7 +40,7 @@ check_prereqs()
     hash cmake 2>/dev/null || { echo >&2 "Please install cmake before running this script"; exit 1; }
     
     # Check for clang
-    hash clang-3.5 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
+    hash clang-$__ClangMajorVersion.$__ClangMinorVersion 2>/dev/null ||  hash clang$__ClangMajorVersion$__ClangMinorVersion 2>/dev/null ||  hash clang 2>/dev/null || { echo >&2 "Please install clang before running this script"; exit 1; }
    
 }
 
@@ -51,7 +53,7 @@ build_coreclr()
     
     # Regenerate the CMake solution
     echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__CMakeArgs"
-    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__CMakeArgs
+    "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__CMakeArgs
     
     # Check that the makefiles were created.
     
@@ -129,6 +131,9 @@ __LogsDir="$__RootBinDir/Logs"
 __UnprocessedBuildArgs=
 __MSBCleanBuildArgs=
 __CleanBuild=false
+__VerboseBuild=false
+__ClangMajorVersion=3
+__ClangMinorVersion=5
 
 for i in "$@"
     do
@@ -152,6 +157,21 @@ for i in "$@"
         clean)
         __CleanBuild=1
         ;;
+        verbose)
+        __VerboseBuild=1
+        ;;
+        clang3.5)
+        __ClangMajorVersion=3
+        __ClangMinorVersion=5
+        ;;
+        clang3.6)
+        __ClangMajorVersion=3
+        __ClangMinorVersion=6
+        ;;
+        clang3.7)
+        __ClangMajorVersion=3
+        __ClangMinorVersion=7
+        ;;
         *)
         __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
     esac
@@ -171,6 +191,11 @@ export __CMakeBinDir="$__BinDir"
 # Configure environment if we are doing a clean build.
 if [ $__CleanBuild == 1 ]; then
     clean
+fi
+
+# Configure environment if we are doing a verbose build
+if [ $__VerboseBuild == 1 ]; then
+	export VERBOSE=1
 fi
 
 # Make the directories necessary for build if they don't exist
