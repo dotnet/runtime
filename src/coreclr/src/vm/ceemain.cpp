@@ -1417,6 +1417,10 @@ HRESULT EEStartup(COINITIEE fFlags)
 
     _ASSERTE(!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus));
 
+#ifdef FEATURE_PAL
+    DacGlobals::Initialize();
+#endif
+
     PAL_TRY(COINITIEE *, pfFlags, &fFlags)
     {
         EEStartupHelper(*pfFlags);

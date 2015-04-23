@@ -1996,10 +1996,6 @@ HRESULT Debugger::Startup(void)
 
     DebuggerLockHolder dbgLockHolder(this);
 
-#ifdef FEATURE_PAL
-    DacGlobals::Initialize();
-#endif
-
     // Stubs in Stacktraces are always enabled.
     g_EnableSIS = true;
 
@@ -2548,10 +2544,6 @@ void Debugger::StopDebugger(void)
     }
     CONTRACTL_END;
    
-#ifdef FEATURE_PAL
-    PAL_CleanupDacTableAddress();
-#endif
-
     // Leak almost everything on process exit. The OS will clean it up anyways and trying to 
     // clean it up ourselves is just one more place we may AV / deadlock.
 
