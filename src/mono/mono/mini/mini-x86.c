@@ -5026,7 +5026,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_GC_SAFE_POINT: {
 			gpointer polling_func = NULL;
-			int compare_val;
+			int compare_val = 0;
 			guint8 *br [1];
 
 #if defined (USE_COOP_GC)
