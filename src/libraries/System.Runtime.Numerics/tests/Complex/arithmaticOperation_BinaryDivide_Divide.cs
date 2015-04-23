@@ -2,61 +2,55 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class arithmaticOperation_BinaryDivide_DivideTest
     {
-        //Verification is done with Abs and Conjugate methods
-        private static void VerifyBinaryDivideResult(Double realFirst, Double imgFirst, Double realSecond, Double imgSecond)
+        // Verification is done with Abs and Conjugate methods
+        private static void VerifyBinaryDivideResult(double realFirst, double imgFirst, double realSecond, double imgSecond)
         {
             // Create complex numbers
             Complex cFirst = new Complex(realFirst, imgFirst);
             Complex cSecond = new Complex(realSecond, imgSecond);
-
-
+            
             Complex cExpectedResult = (cFirst * Complex.Conjugate(cSecond));
-            Double cExpectedReal = cExpectedResult.Real;
-            Double cExpectedImaginary = cExpectedResult.Imaginary;
+            double cExpectedReal = cExpectedResult.Real;
+            double cExpectedImaginary = cExpectedResult.Imaginary;
 
-            if (!Double.IsInfinity(cExpectedReal))
+            if (!double.IsInfinity(cExpectedReal))
+            {
                 cExpectedReal = cExpectedReal / (cSecond.Magnitude * cSecond.Magnitude);
-            if (!Double.IsInfinity(cExpectedImaginary))
+            }
+            if (!double.IsInfinity(cExpectedImaginary))
+            {
                 cExpectedImaginary = cExpectedImaginary / (cSecond.Magnitude * cSecond.Magnitude);
+            }
 
-            //local variables
+            // local variables
             Complex cResult;
 
             // arithmetic binary divide operation
             cResult = cFirst / cSecond;
 
             // verify the result
-            if (false == Support.VerifyRealImaginaryProperties(cResult, cExpectedReal, cExpectedImaginary))
-            {
-                Console.WriteLine("Error_ryt02!!! Binary Divide test = ({0}, {1}) / ({2}, {3})", realFirst, imgFirst, realSecond, imgSecond);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(cResult, cExpectedReal, cExpectedImaginary,
+                string.Format("Binary Divide test = ({0}, {1}) / ({2}, {3})", realFirst, imgFirst, realSecond, imgSecond));
 
             // arithmetic divide (static) operation
             cResult = Complex.Divide(cFirst, cSecond);
 
             // verify the result
-            if (false == Support.VerifyRealImaginaryProperties(cResult, cExpectedReal, cExpectedImaginary))
-            {
-                Console.WriteLine("Error_a1s12!!! Divide (Static) test = ({0}, {1}) / ({2}, {3})", realFirst, imgFirst, realSecond, imgSecond);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(cResult, cExpectedReal, cExpectedImaginary,
+                string.Format("Divide (Static) test = ({0}, {1}) / ({2}, {3})", realFirst, imgFirst, realSecond, imgSecond));
         }
 
         [Fact]
         public static void RunTests_ZeroOneImaginaryOne()
         {
-            Double real = 10;//Support.GetRandomDoubleValue(false);
-            Double imaginary = 50;//Support.GetRandomPhaseValue(false);
+            double real = 10;
+            double imaginary = 50;
 
             // Test with Zero
             VerifyBinaryDivideResult(0.0, 0.0, real, imaginary); // Verify 0/x=0
@@ -74,84 +68,83 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_BoundaryValues()
         {
-            // local variables
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double img = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double img = Support.GetSmallRandomDoubleValue(false);
 
             // test with 'Max'
-            VerifyBinaryDivideResult(Double.MaxValue, Double.MaxValue, real, img);
+            VerifyBinaryDivideResult(double.MaxValue, double.MaxValue, real, img);
 
             // test with 'Min'
-            VerifyBinaryDivideResult(Double.MinValue, Double.MinValue, real, img);
+            VerifyBinaryDivideResult(double.MinValue, double.MinValue, real, img);
         }
 
         [Fact]
         public static void RunTests_RandomValidValues()
         {
-            // Verify test results with ComlexInFirstQuad / ComplexInFirstQuad
-            Double realFirst = Support.GetSmallRandomDoubleValue(false);
-            Double imgFirst = Support.GetSmallRandomDoubleValue(false);
-            Double realSecond = Support.GetSmallRandomDoubleValue(false);
-            Double imgSecond = Support.GetSmallRandomDoubleValue(false);
+            // Verify test results with ComplexInFirstQuad / ComplexInFirstQuad
+            double realFirst = Support.GetSmallRandomDoubleValue(false);
+            double imgFirst = Support.GetSmallRandomDoubleValue(false);
+            double realSecond = Support.GetSmallRandomDoubleValue(false);
+            double imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInFirstQuad / ComplexInSecondQuad
+            // Verify test results with ComplexInFirstQuad / ComplexInSecondQuad
             realFirst = Support.GetSmallRandomDoubleValue(false);
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(true);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInFirstQuad / ComplexInThirdQuad
+            // Verify test results with ComplexInFirstQuad / ComplexInThirdQuad
             realFirst = Support.GetSmallRandomDoubleValue(false);
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(true);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInFirstQuad / ComplexInFourthQuad
+            // Verify test results with ComplexInFirstQuad / ComplexInFourthQuad
             realFirst = Support.GetSmallRandomDoubleValue(false);
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInSecondQuad / ComplexInSecondQuad
+            // Verify test results with ComplexInSecondQuad / ComplexInSecondQuad
             realFirst = Support.GetSmallRandomDoubleValue(true);
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(true);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInSecondQuad / ComplexInThirdQuad
+            // Verify test results with ComplexInSecondQuad / ComplexInThirdQuad
             realFirst = Support.GetSmallRandomDoubleValue(true);
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(true);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInSecondQuad / ComplexInFourthQuad
+            // Verify test results with ComplexInSecondQuad / ComplexInFourthQuad
             realFirst = Support.GetSmallRandomDoubleValue(true);
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInThirdQuad / ComplexInThirdQuad
+            // Verify test results with ComplexInThirdQuad / ComplexInThirdQuad
             realFirst = Support.GetSmallRandomDoubleValue(true);
             imgFirst = Support.GetSmallRandomDoubleValue(true);
             realSecond = Support.GetSmallRandomDoubleValue(true);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInThirdQuad / ComplexInFourthQuad
+            // Verify test results with ComplexInThirdQuad / ComplexInFourthQuad
             realFirst = Support.GetSmallRandomDoubleValue(true);
             imgFirst = Support.GetSmallRandomDoubleValue(true);
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
-            // Verify test results with ComlexInFourthQuad / ComplexInFourthQuad
+            // Verify test results with ComplexInFourthQuad / ComplexInFourthQuad
             realFirst = Support.GetSmallRandomDoubleValue(true);
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(true);
@@ -162,43 +155,42 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_InvalidImaginaryValues()
         {
-            // local variables
-            Double realFirst;
-            Double imgFirst;
-            Double realSecond;
-            Double imgSecond;
+            double realFirst;
+            double imgFirst;
+            double realSecond;
+            double imgSecond;
 
             // Verify with (valid, PositiveInfinity) / (valid, PositiveValid)
             realFirst = Support.GetSmallRandomDoubleValue(false);
-            imgFirst = Double.PositiveInfinity;
+            imgFirst = double.PositiveInfinity;
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (valid, PositiveInfinity) / (valid, NegativeValid)
             realFirst = Support.GetSmallRandomDoubleValue(false);
-            imgFirst = Double.PositiveInfinity;
+            imgFirst = double.PositiveInfinity;
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (valid, NegativeInfinity) / (valid, PositiveValid)
             realFirst = Support.GetSmallRandomDoubleValue(false);
-            imgFirst = Double.NegativeInfinity;
+            imgFirst = double.NegativeInfinity;
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (valid, NegativeInfinity) / (valid, NegativeValid)
             realFirst = Support.GetSmallRandomDoubleValue(false);
-            imgFirst = Double.NegativeInfinity;
+            imgFirst = double.NegativeInfinity;
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(true);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (valid, NaN) / (valid, Valid)
             realFirst = Support.GetSmallRandomDoubleValue(false);
-            imgFirst = Double.NaN;
+            imgFirst = double.NaN;
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
@@ -207,42 +199,41 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_InvalidRealValues()
         {
-            // local variables
-            Double realFirst;
-            Double imgFirst;
-            Double realSecond;
-            Double imgSecond;
+            double realFirst;
+            double imgFirst;
+            double realSecond;
+            double imgSecond;
 
             // Verify with (PositiveInfinity, valid) / (PositiveValid, valid)
-            realFirst = Double.PositiveInfinity;
+            realFirst = double.PositiveInfinity;
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (PositiveInfinity, valid) / (NegativeValid, valid)
-            realFirst = Double.PositiveInfinity;
+            realFirst = double.PositiveInfinity;
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(true);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (NegativeInfinity, valid) / (PositiveValid, valid)
-            realFirst = Double.NegativeInfinity;
+            realFirst = double.NegativeInfinity;
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (NegativeInfinity, valid) / (NegativeValid, valid)
-            realFirst = Double.NegativeInfinity;
+            realFirst = double.NegativeInfinity;
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(true);
             imgSecond = Support.GetSmallRandomDoubleValue(false);
             VerifyBinaryDivideResult(realFirst, imgFirst, realSecond, imgSecond);
 
             // Verify with (NaN, valid) / (valid, valid)
-            realFirst = Double.NaN;
+            realFirst = double.NaN;
             imgFirst = Support.GetSmallRandomDoubleValue(false);
             realSecond = Support.GetSmallRandomDoubleValue(false);
             imgSecond = Support.GetSmallRandomDoubleValue(false);

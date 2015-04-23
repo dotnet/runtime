@@ -2,14 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class trigonometricOperations_ATanTest
     {
-        private static void VerifyAtan(Double x, Double y)
+        private static void VerifyAtan(double x, double y)
         {
             // formula used in the feature: Atan(z) = (i/2) * (log(1-iz) - log(1+iz))
             // Verification is done with z = ATan(Tan(z));
@@ -18,26 +17,18 @@ namespace System.Numerics.Tests
             Complex tanComplex = Complex.Tan(complex);
             Complex atanComplex = Complex.Atan(tanComplex);
 
-            if (false == Support.VerifyRealImaginaryProperties(atanComplex, x, y))
-            {
-                Console.WriteLine("Error aTaN-ErraT6A81N! ({0}) != ATan(Tan():{1}):{2}", complex, tanComplex, atanComplex);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(atanComplex, x, y, 
+                string.Format("({0}) != ATan(Tan():{1}):{2}", complex, tanComplex, atanComplex));
         }
 
-        private static void VerifyAtan(Double x, Double y, Double expectedReal, Double expectedImaginary)
+        private static void VerifyAtan(double x, double y, double expectedReal, double expectedImaginary)
         {
             // if ATan verification formula returns invalid Values
             Complex complex = new Complex(x, y);
             Complex atanComplex = Complex.Atan(complex);
 
-            if (false == Support.VerifyRealImaginaryProperties(atanComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error AtAn-Err3A6s1N! ATan({0})", complex, atanComplex);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(atanComplex, expectedReal, expectedImaginary,
+                string.Format("ATan({0}):{1}", complex, atanComplex));
         }
 
         [Fact]
@@ -65,8 +56,8 @@ namespace System.Numerics.Tests
         public static void RunTests_RandomValidValues()
         {
             // Verify test results with ComplexInFirstQuad
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyAtan(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -89,43 +80,43 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with Max
-            VerifyAtan(Double.MaxValue, Double.MaxValue, Double.NaN, Double.NaN);
+            VerifyAtan(double.MaxValue, double.MaxValue, double.NaN, double.NaN);
 
             // Verify test results with MaxReal
-            VerifyAtan(Double.MaxValue, 0, Math.PI / 2, 0);
+            VerifyAtan(double.MaxValue, 0, Math.PI / 2, 0);
 
             // Verify test results with MaxImg
-            VerifyAtan(0, Double.MaxValue, Math.PI / 2, 0);
+            VerifyAtan(0, double.MaxValue, Math.PI / 2, 0);
 
             // Verify test results with Min
-            VerifyAtan(Double.MinValue, Double.MinValue, Double.NaN, Double.NaN);
+            VerifyAtan(double.MinValue, double.MinValue, double.NaN, double.NaN);
 
             // Verify test results with MinReal
-            VerifyAtan(Double.MinValue, 0, -Math.PI / 2, 0);
+            VerifyAtan(double.MinValue, 0, -Math.PI / 2, 0);
 
             // Verify test results with MinImaginary
-            VerifyAtan(0.0, Double.MinValue, -Math.PI / 2, 0);
+            VerifyAtan(0.0, double.MinValue, -Math.PI / 2, 0);
         }
 
         [Fact]
         public static void RunTests_InvalidValues()
         {
             // Verify test results with invalid Imaginary
-            VerifyAtan(1.0, Double.PositiveInfinity, Double.NaN, Double.NaN);
-            VerifyAtan(1.0, Double.NegativeInfinity, Double.NaN, Double.NaN);
-            VerifyAtan(1.0, Double.NaN, Double.NaN, Double.NaN);
+            VerifyAtan(1.0, double.PositiveInfinity, double.NaN, double.NaN);
+            VerifyAtan(1.0, double.NegativeInfinity, double.NaN, double.NaN);
+            VerifyAtan(1.0, double.NaN, double.NaN, double.NaN);
 
             // Verify test results with invalid Real
-            VerifyAtan(Double.PositiveInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifyAtan(Double.NegativeInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifyAtan(Double.NaN, 1.0, Double.NaN, Double.NaN);
+            VerifyAtan(double.PositiveInfinity, 1.0, double.NaN, double.NaN);
+            VerifyAtan(double.NegativeInfinity, 1.0, double.NaN, double.NaN);
+            VerifyAtan(double.NaN, 1.0, double.NaN, double.NaN);
 
             // Verify test results with invalid Real and Imaginary
-            foreach (Double invalidReal in Support.doubleInvalidValues)
+            foreach (double invalidReal in Support.doubleInvalidValues)
             {
-                foreach (Double invalidImaginary in Support.doubleInvalidValues)
+                foreach (double invalidImaginary in Support.doubleInvalidValues)
                 {
-                    VerifyAtan(invalidReal, invalidImaginary, Double.NaN, Double.NaN);
+                    VerifyAtan(invalidReal, invalidImaginary, double.NaN, double.NaN);
                 }
             }
         }

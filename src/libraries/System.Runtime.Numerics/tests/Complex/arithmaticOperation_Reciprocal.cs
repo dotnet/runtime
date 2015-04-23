@@ -2,14 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class arithmaticOperation_ReciprocalTest
     {
-        private static void VerifyReciprocal(Double real, Double imaginary)
+        private static void VerifyReciprocal(double real, double imaginary)
         {
             // Create complex numbers
             Complex c_test = new Complex(real, imaginary);
@@ -17,37 +16,34 @@ namespace System.Numerics.Tests
 
             Complex c_expected = Complex.Zero;
             if (Complex.Zero != c_test &&
-                !(Double.IsInfinity(real) && !(Double.IsInfinity(imaginary) || Double.IsNaN(imaginary))) &&
-                !(Double.IsInfinity(imaginary) && !(Double.IsInfinity(real) || Double.IsNaN(real))))
+                !(double.IsInfinity(real) && !(double.IsInfinity(imaginary) || double.IsNaN(imaginary))) &&
+                !(double.IsInfinity(imaginary) && !(double.IsInfinity(real) || double.IsNaN(real))))
             {
-                Double magnitude = c_test.Magnitude;
+                double magnitude = c_test.Magnitude;
                 c_expected = (Complex.Conjugate(c_test) / magnitude); // in order to avoid Infinity = magnitude* magnitude
-                c_expected = c_expected / magnitude;
+                c_expected /= magnitude;
             }
 
-            if (false == Support.VerifyRealImaginaryProperties(c_rcp, c_expected.Real, c_expected.Imaginary))
-            {
-                Console.WriteLine("Error_rye102!!! Reciprocal({0})", c_test);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(c_rcp, c_expected.Real, c_expected.Imaginary,
+                string.Format("Reciprocal ({0}, {1}) Actual: {2}, Expected: {3}", real, imaginary, c_rcp, c_expected));
         }
 
         [Fact]
         public static void RunTests_ZeroOneImaginaryOne()
         {
-            VerifyReciprocal(0.0, 0.0); // Verify with Double.Zero
-            VerifyReciprocal(1.0, 0.0); // Verify with Double.One
-            VerifyReciprocal(-1.0, 0.0); // Verify with Double.MinusOne
-            VerifyReciprocal(0.0, 1.0); // Verify with Double.ImaginaryOne
-            VerifyReciprocal(0.0, -1.0); // Verify with Double.MinusImaginaryOne
+            VerifyReciprocal(0.0, 0.0); // Verify with double.Zero
+            VerifyReciprocal(1.0, 0.0); // Verify with double.One
+            VerifyReciprocal(-1.0, 0.0); // Verify with double.MinusOne
+            VerifyReciprocal(0.0, 1.0); // Verify with double.ImaginaryOne
+            VerifyReciprocal(0.0, -1.0); // Verify with double.MinusImaginaryOne
         }
 
         [Fact]
         public static void RunTests_RandomValidValues()
         {
-            // Verify test results with ComlexInFirstQuad
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            // Verify test results with ComplexInFirstQuad
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyReciprocal(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -69,19 +65,24 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_BoundaryValues()
         {
-            // local variables
-            VerifyReciprocal(Double.MaxValue, 0); // test with 'MaxReal'
-            VerifyReciprocal(0, Double.MaxValue); // test with 'MaxImaginary'
-            VerifyReciprocal(Double.MinValue, 0); // test with 'MinReal'
-            VerifyReciprocal(0, Double.MinValue); // test with 'MinImaginary'
+            // MaxReal
+            VerifyReciprocal(double.MaxValue, 0);
+
+            // MaxImaginary
+            VerifyReciprocal(0, double.MaxValue);
+
+            // MinReal
+            VerifyReciprocal(double.MinValue, 0);
+
+            // MinImaginary
+            VerifyReciprocal(0, double.MinValue);
         }
 
         [Fact]
         public static void RunTests_InvalidValues()
         {
-            // local variables
-            Double realRandom = Support.GetRandomDoubleValue(false);
-            Double imaginaryRandom = Support.GetRandomDoubleValue(false);
+            double realRandom = Support.GetRandomDoubleValue(false);
+            double imaginaryRandom = Support.GetRandomDoubleValue(false);
 
             // Complex number with a valid  real and an invalid imaginary part
             foreach (double imaginaryInvalid in Support.doubleInvalidValues)

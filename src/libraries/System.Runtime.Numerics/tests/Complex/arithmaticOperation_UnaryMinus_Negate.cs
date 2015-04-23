@@ -2,43 +2,33 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class arithmaticOperation_UnaryMinus_NegateTest
     {
-        private static void VerifyUnaryMinusResult(Double real, Double imaginary)
+        private static void VerifyUnaryMinusResult(double real, double imaginary)
         {
-            //local variables
-            Complex unaryComplex;
             Complex c_new = new Complex(real, imaginary);
 
-            unaryComplex = -c_new;
-            if (!Support.VerifyRealImaginaryProperties(unaryComplex, -c_new.Real, -c_new.Imaginary))
-            {
-                Console.WriteLine("ErRoR! Unary Minus Error -{0} does not equal to {1}!", c_new, unaryComplex);
-                Console.WriteLine("Unary Minus test with ({0}, {1})", real, imaginary);
-                Assert.True(false, "Verification Failed");
-            }
+            Complex unaryComplex = -c_new;
+            Support.VerifyRealImaginaryProperties(unaryComplex, -c_new.Real, -c_new.Imaginary,
+                string.Format("Unary Minus Error -{0} does not equal to {1} with ({2}, {3})!", c_new, unaryComplex, real, imaginary));
 
             unaryComplex = Complex.Negate(c_new);
-            if (!Support.VerifyRealImaginaryProperties(unaryComplex, -c_new.Real, -c_new.Imaginary))
-            {
-                Console.WriteLine("ErRoR! Negate Error -{0} does not equal to {1}!", c_new, unaryComplex);
-                Console.WriteLine("Negate test with ({0}, {1})", real, imaginary);
-                Assert.True(false, "Verification Failed");
-            }
+
+            Support.VerifyRealImaginaryProperties(unaryComplex, -c_new.Real, -c_new.Imaginary,
+                string.Format("Negate Error -{0} does not equal to {1} with ({2}, {3})!", c_new, unaryComplex, real, imaginary));
         }
 
         [Fact]
         public static void RunTests_TypicalValidValues()
         {
             // Test with valid double value pairs
-            foreach (Double real in Support.doubleValidValues)
+            foreach (double real in Support.doubleValidValues)
             {
-                foreach (Double imaginary in Support.doubleValidValues)
+                foreach (double imaginary in Support.doubleValidValues)
                 {
                     VerifyUnaryMinusResult(real, imaginary);
                 }
@@ -53,7 +43,7 @@ namespace System.Numerics.Tests
             double imaginaryRandom;
 
             // Complex numbers in the first quadrant: (postive real, positive imaginary)
-            for (int i = 0; i < Support.randomSample; i++)
+            for (int i = 0; i < 3; i++)
             {
                 realRandom = Support.GetRandomDoubleValue(false);
                 imaginaryRandom = Support.GetRandomDoubleValue(false);
@@ -61,7 +51,7 @@ namespace System.Numerics.Tests
             }
 
             // Complex numbers in the second quadrant: (negative real, positive imaginary)
-            for (int i = 0; i < Support.randomSample; i++)
+            for (int i = 0; i < 3; i++)
             {
                 realRandom = Support.GetRandomDoubleValue(true);
                 imaginaryRandom = Support.GetRandomDoubleValue(false);
@@ -69,7 +59,7 @@ namespace System.Numerics.Tests
             }
 
             // Complex numbers in the third quadrant: (negative real, negative imaginary)
-            for (int i = 0; i < Support.randomSample; i++)
+            for (int i = 0; i < 3; i++)
             {
                 realRandom = Support.GetRandomDoubleValue(true);
                 imaginaryRandom = Support.GetRandomDoubleValue(true);
@@ -77,7 +67,7 @@ namespace System.Numerics.Tests
             }
 
             // Complex numbers in the fourth quadrant: (postive real, negative imaginary)
-            for (int i = 0; i < Support.randomSample; i++)
+            for (int i = 0; i < 3; i++)
             {
                 realRandom = Support.GetRandomDoubleValue(false);
                 imaginaryRandom = Support.GetRandomDoubleValue(true);
@@ -88,9 +78,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_InvalidValues()
         {
-            // local variables
-            Double realRandom;
-            Double imaginaryRandom;
+            double realRandom;
+            double imaginaryRandom;
 
             // Complex number with a valid positive real and an invalid imaginary part
             foreach (double imaginaryInvalid in Support.doubleInvalidValues)

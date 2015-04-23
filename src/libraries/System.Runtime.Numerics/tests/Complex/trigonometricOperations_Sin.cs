@@ -2,27 +2,22 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class trigonometricOperations_SinTest
     {
-        private static void VerifySin(Double x, Double y, Double expectedReal, Double expectedImaginary)
+        private static void VerifySin(double x, double y, double expectedReal, double expectedImaginary)
         {
             Complex complex = new Complex(x, y);
             Complex sinComplex = Complex.Sin(complex);
 
-            if (false == Support.VerifyRealImaginaryProperties(sinComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error sIn-Err36s1N! Sin({0}):{1} != ({2},{3})", complex, sinComplex, expectedReal, expectedImaginary);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(sinComplex, expectedReal, expectedImaginary,
+                string.Format("Sin({0}):{1} != ({2},{3})", complex, sinComplex, expectedReal, expectedImaginary));
         }
 
-        private static void VerifySin(Double x, Double y)
+        private static void VerifySin(double x, double y)
         {
             // the product formula: sin (x+iy) = sin(x)*cosh(y) + icos(x)sinh(y)
             // the verification formula: sin (z) = (Complex.Exp(i*z) - Complex.Exp(-i*z)) / (2*i)
@@ -57,8 +52,8 @@ namespace System.Numerics.Tests
         public static void RunTests_RandomValidValues()
         {
             // Verify test results with ComplexInFirstQuad
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifySin(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -81,43 +76,43 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with Max
-            VerifySin(Double.MaxValue, Double.MaxValue, Double.PositiveInfinity, Math.Cos(Double.MaxValue) * Double.PositiveInfinity); //for IA64
+            VerifySin(double.MaxValue, double.MaxValue, double.PositiveInfinity, Math.Cos(double.MaxValue) * double.PositiveInfinity); //for IA64
 
             // Verify test results with MaxReal
-            VerifySin(Double.MaxValue, 0.0, Math.Sin(Double.MaxValue), 0); //for IA64
+            VerifySin(double.MaxValue, 0.0, Math.Sin(double.MaxValue), 0); //for IA64
 
             // Verify test results with MaxImg
-            VerifySin(0.0, Double.MaxValue, Double.NaN, Double.PositiveInfinity);
+            VerifySin(0.0, double.MaxValue, double.NaN, double.PositiveInfinity);
 
             // Verify test results with Min
-            VerifySin(Double.MinValue, Double.MinValue, Double.NegativeInfinity, Double.PositiveInfinity);
+            VerifySin(double.MinValue, double.MinValue, double.NegativeInfinity, double.PositiveInfinity);
 
             // Verify test results with MinReal
-            VerifySin(Double.MinValue, 0.0, Math.Sin(Double.MinValue), 0.0); //for IA64
+            VerifySin(double.MinValue, 0.0, Math.Sin(double.MinValue), 0.0); //for IA64
 
             // Verify test results with MinImaginary
-            VerifySin(0.0, Double.MinValue, Double.NaN, Double.NegativeInfinity);
+            VerifySin(0.0, double.MinValue, double.NaN, double.NegativeInfinity);
         }
 
         [Fact]
         public static void RunTests_InvalidValues()
         {
             // Verify test results with invalid Imaginary
-            VerifySin(1.0, Double.PositiveInfinity, Double.PositiveInfinity, Double.PositiveInfinity);
-            VerifySin(1.0, Double.NegativeInfinity, Double.PositiveInfinity, Double.NegativeInfinity);
-            VerifySin(1.0, Double.NaN, Double.NaN, Double.NaN);
+            VerifySin(1.0, double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity);
+            VerifySin(1.0, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity);
+            VerifySin(1.0, double.NaN, double.NaN, double.NaN);
 
             // Verify test results with invalid Real
-            VerifySin(Double.PositiveInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifySin(Double.NegativeInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifySin(Double.NaN, 1.0, Double.NaN, Double.NaN);
+            VerifySin(double.PositiveInfinity, 1.0, double.NaN, double.NaN);
+            VerifySin(double.NegativeInfinity, 1.0, double.NaN, double.NaN);
+            VerifySin(double.NaN, 1.0, double.NaN, double.NaN);
 
             // Verify test results with invalid Real and Imaginary
-            foreach (Double invalidReal in Support.doubleInvalidValues)
+            foreach (double invalidReal in Support.doubleInvalidValues)
             {
-                foreach (Double invalidImaginary in Support.doubleInvalidValues)
+                foreach (double invalidImaginary in Support.doubleInvalidValues)
                 {
-                    VerifySin(invalidReal, invalidImaginary, Double.NaN, Double.NaN);
+                    VerifySin(invalidReal, invalidImaginary, double.NaN, double.NaN);
                 }
             }
         }

@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -34,7 +33,7 @@ namespace System.Numerics.Tests
         private static void VerifyLogWithMultiply(Complex c1, Complex c2)
         {
             // Log(c1*c2) == Log(c1) + Log(c2), if -PI < Arg(c1) + Arg(c2) <= PI
-            Double equalityCondition = Math.Atan2(c1.Imaginary, c1.Real) + Math.Atan2(c2.Imaginary, c2.Real);
+            double equalityCondition = Math.Atan2(c1.Imaginary, c1.Real) + Math.Atan2(c2.Imaginary, c2.Real);
             if (equalityCondition <= -Math.PI || equalityCondition > Math.PI)
             {
                 return;
@@ -43,11 +42,8 @@ namespace System.Numerics.Tests
             Complex logComplex = Complex.Log(c1 * c2);
             Complex logExpectedComplex = Complex.Log(c1) + Complex.Log(c2);
 
-            if (false == Support.VerifyRealImaginaryProperties(logComplex, logExpectedComplex.Real, logExpectedComplex.Imaginary))
-            {
-                Console.WriteLine("Error LogMULT-ErrLoG8710! Log({0}*{1}):{2} != {3})", c1, c2, logComplex, logExpectedComplex);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(logComplex, logExpectedComplex.Real, logExpectedComplex.Imaginary,
+                string.Format("Log({0}*{1}):{2} != {3})", c1, c2, logComplex, logExpectedComplex));
         }
 
         private static void VerifyLogWithPowerMinusOne(Complex c)
@@ -56,11 +52,8 @@ namespace System.Numerics.Tests
             Complex logComplex = Complex.Log(c);
             Complex logPowerMinusOne = Complex.Log(1 / c);
 
-            if (false == Support.VerifyRealImaginaryProperties(logComplex, -logPowerMinusOne.Real, -logPowerMinusOne.Imaginary))
-            {
-                Console.WriteLine("Error LogPowMnsOne-ErrLoG6913! Log({0}):{1} != {2} as expected", c, logComplex, -logPowerMinusOne);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(logComplex, -logPowerMinusOne.Real, -logPowerMinusOne.Imaginary,
+                string.Format("Log({0}):{1} != {2} as expected", c, logComplex, -logPowerMinusOne));
         }
 
         private static void VerifyLogWithExp(Complex c)
@@ -69,33 +62,27 @@ namespace System.Numerics.Tests
             Complex logComplex = Complex.Log(c);
             Complex expLogComplex = Complex.Exp(logComplex);
 
-            if (false == Support.VerifyRealImaginaryProperties(expLogComplex, c.Real, c.Imaginary))
-            {
-                Console.WriteLine("Error LogEXP-Err2113! Exp(Log({0}):{1} != {2})", c, expLogComplex, c);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(expLogComplex, c.Real, c.Imaginary,
+                string.Format("Exp(Log({0}):{1} != {2})", c, expLogComplex, c));
         }
 
         private static void VerifyLogWithBase10(Complex complex)
         {
             Complex logValue = Complex.Log10(complex);
             Complex logComplex = Complex.Log(complex);
-            Double baseLog = Math.Log(10);
+            double baseLog = Math.Log(10);
             Complex expectedLog = logComplex / baseLog;
 
-            if (!Support.VerifyRealImaginaryProperties(logValue, expectedLog.Real, expectedLog.Imaginary))
-            {
-                Console.WriteLine("Error LogBase10-ErrLoG4211! Log({0}, {1}):{2} != {3} as expected", complex, 10, logValue, expectedLog);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(logValue, expectedLog.Real, expectedLog.Imaginary, 
+                string.Format("Log({0}, {1}):{2} != {3} as expected", complex, 10, logValue, expectedLog));
         }
 
         private static void VerifyLogWithBase(Complex complex)
         {
-            Double baseValue = 0.0;
-            Double baseLog;
+            double baseValue = 0.0;
+            double baseLog;
 
-            // verify with Random Int32
+            // Verify with Random Int32
             do
             {
                 baseValue = Support.GetRandomInt32Value(false);
@@ -108,14 +95,10 @@ namespace System.Numerics.Tests
             baseLog = Math.Log(baseValue);
             Complex expectedLog = logComplex / baseLog;
 
-            if (false == Support.VerifyRealImaginaryProperties(logValue, expectedLog.Real, expectedLog.Imaginary))
-            {
-                Console.WriteLine("Error LogBase-ErrLoG01571! Log({0}, {1}):{2} != {3} as expected", complex, baseValue, logValue, expectedLog);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(logValue, expectedLog.Real, expectedLog.Imaginary, 
+                string.Format("Log({0}, {1}):{2} != {3} as expected", complex, baseValue, logValue, expectedLog));
 
-            // Verify with Random Double value
-
+            // Verify with Random double value
             baseValue = 0.0;
             do
             {
@@ -128,27 +111,24 @@ namespace System.Numerics.Tests
             baseLog = Math.Log(baseValue);
             expectedLog = logComplex / baseLog;
 
-            if (!Support.VerifyRealImaginaryProperties(logValue, expectedLog.Real, expectedLog.Imaginary))
-            {
-                Console.WriteLine("Error LogBaseDbL-ErrLoG1598! Log({0}, {1}):{2} != {3} as expected", complex, baseValue, logValue, expectedLog);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(logValue, expectedLog.Real, expectedLog.Imaginary, 
+                string.Format("Log({0}, {1}):{2} != {3} as expected", complex, baseValue, logValue, expectedLog));
         }
 
         [Fact]
         public static void RunTests_ZeroOneImaginaryOne()
         {
             Complex logValue = Complex.Log(Complex.Zero);
-            Support.VerifyRealImaginaryProperties(logValue, Double.NegativeInfinity, 0.0);
+            Support.VerifyRealImaginaryProperties(logValue, double.NegativeInfinity, 0.0, "Verify log of zero");
 
-            // verify log10 with Zero
+            // Verify log10 with Zero
             logValue = Complex.Log10(Complex.Zero);
-            Support.VerifyRealImaginaryProperties(logValue, Double.NegativeInfinity, 0.0);
+            Support.VerifyRealImaginaryProperties(logValue, double.NegativeInfinity, 0.0, "Verify log10 of zero");
 
-            // verify log base with Zero
-            Double baseValue = Support.GetRandomInt32Value(false);
+            // Verify log base with Zero
+            double baseValue = Support.GetRandomInt32Value(false);
             logValue = Complex.Log(Complex.Zero, baseValue);
-            Support.VerifyRealImaginaryProperties(logValue, Double.NegativeInfinity, Double.NaN);
+            Support.VerifyRealImaginaryProperties(logValue, double.NegativeInfinity, double.NaN, "Verify log base of zero");
 
             // Verify test results with Zero - One
             VerifyLogWithProperties(Complex.One, Complex.Zero);
@@ -160,8 +140,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_RandomValidValues()
         {
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             Complex cFirst = new Complex(real, imaginary);
 
             real = Support.GetSmallRandomDoubleValue(true);
@@ -210,22 +190,21 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_BoundaryValues()
         {
-            // local variables
-            Complex c_maxReal = new Complex(Double.MaxValue, 0.0);
-            Complex c_maxImg = new Complex(0.0, Double.MaxValue);
-            Complex c_minReal = new Complex(Double.MinValue, 0.0);
-            Complex c_minImg = new Complex(0.0, Double.MinValue);
+            Complex c_maxReal = new Complex(double.MaxValue, 0.0);
+            Complex c_maxImg = new Complex(0.0, double.MaxValue);
+            Complex c_minReal = new Complex(double.MinValue, 0.0);
+            Complex c_minImg = new Complex(0.0, double.MinValue);
 
-            // test with 'MaxReal'
+            // MaxReal
             VerifyLogWithProperties(c_maxReal, Complex.One, false);
 
-            // test with 'MaxImaginary'
+            // MaxImaginary
             VerifyLogWithProperties(c_maxImg, Complex.ImaginaryOne, false);
 
-            // test with 'MinReal'
+            // MinReal
             VerifyLogWithProperties(c_minReal, Complex.One, false);
 
-            // test with 'MinImaginary'
+            // MinImaginary
             VerifyLogWithProperties(c_minImg, Complex.ImaginaryOne, false);
         }
     }

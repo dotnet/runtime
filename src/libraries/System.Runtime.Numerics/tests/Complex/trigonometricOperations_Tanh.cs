@@ -2,27 +2,22 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class trigonometricOperations_TanhTest
     {
-        private static void VerifyTanh(Double x, Double y, Double expectedReal, Double expectedImaginary)
+        private static void VerifyTanh(double x, double y, double expectedReal, double expectedImaginary)
         {
             Complex complex = new Complex(x, y);
             Complex tanhComplex = Complex.Tanh(complex);
 
-            if (false == Support.VerifyRealImaginaryProperties(tanhComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error TaNh-ErrT6A81Nh!!! Actual Tanh({0})", complex);
-
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(tanhComplex, expectedReal, expectedImaginary,
+                string.Format("Tanh({0}):{1} != ({2},{3})", complex, tanhComplex, expectedReal, expectedImaginary));
         }
 
-        private static void VerifyTanh(Double x, Double y)
+        private static void VerifyTanh(double x, double y)
         {
             // the product formula: cosh (x+iy) = sinh (x+iy) / cosh (x+iy)
             // the verification formula: Tanh (z) = (Exp(2z) -1) / (Exp(2z)+1)
@@ -58,8 +53,8 @@ namespace System.Numerics.Tests
         public static void RunTests_RandomValidValues()
         {
             // Verify test results with ComplexInFirstQuad
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyTanh(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -82,43 +77,43 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with Max
-            VerifyTanh(Double.MaxValue, Double.MaxValue);
+            VerifyTanh(double.MaxValue, double.MaxValue);
 
             // Verify test results with MaxReal
-            VerifyTanh(Double.MaxValue, 0.0);
+            VerifyTanh(double.MaxValue, 0.0);
 
             // Verify test results with MaxImg
-            VerifyTanh(0.0, Double.MaxValue, 0, Math.Sin(Double.MaxValue) / Math.Cos(Double.MaxValue)); //for IA64
+            VerifyTanh(0.0, double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue)); //for IA64
 
             // Verify test results with Min
-            VerifyTanh(Double.MinValue, Double.MinValue);
+            VerifyTanh(double.MinValue, double.MinValue);
 
             // Verify test results with MinReal
-            VerifyTanh(Double.MinValue, 0.0, Double.NaN, Double.NaN);
+            VerifyTanh(double.MinValue, 0.0, double.NaN, double.NaN);
 
             // Verify test results with MinImaginary
-            VerifyTanh(0.0, Double.MinValue, 0, Math.Sin(Double.MinValue) / Math.Cos(Double.MinValue)); //for IA64
+            VerifyTanh(0.0, double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue)); //for IA64
         }
 
         [Fact]
         public static void RunTests_InvalidValues()
         {
             // Verify test results with invalid Imaginary
-            VerifyTanh(1.0, Double.PositiveInfinity, Double.NaN, Double.NaN);
-            VerifyTanh(1.0, Double.NegativeInfinity, Double.NaN, Double.NaN);
-            VerifyTanh(1.0, Double.NaN, Double.NaN, Double.NaN);
+            VerifyTanh(1.0, double.PositiveInfinity, double.NaN, double.NaN);
+            VerifyTanh(1.0, double.NegativeInfinity, double.NaN, double.NaN);
+            VerifyTanh(1.0, double.NaN, double.NaN, double.NaN);
 
             // Verify test results with invalid Real
-            VerifyTanh(Double.PositiveInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifyTanh(Double.NegativeInfinity, 1.0, Double.NaN, Double.NaN);
-            VerifyTanh(Double.NaN, 1.0, Double.NaN, Double.NaN);
+            VerifyTanh(double.PositiveInfinity, 1.0, double.NaN, double.NaN);
+            VerifyTanh(double.NegativeInfinity, 1.0, double.NaN, double.NaN);
+            VerifyTanh(double.NaN, 1.0, double.NaN, double.NaN);
 
             // Verify test results with invalid Real and Imaginary
-            foreach (Double invalidReal in Support.doubleInvalidValues)
+            foreach (double invalidReal in Support.doubleInvalidValues)
             {
-                foreach (Double invalidImaginary in Support.doubleInvalidValues)
+                foreach (double invalidImaginary in Support.doubleInvalidValues)
                 {
-                    VerifyTanh(invalidReal, invalidImaginary, Double.NaN, Double.NaN);
+                    VerifyTanh(invalidReal, invalidImaginary, double.NaN, double.NaN);
                 }
             }
         }
