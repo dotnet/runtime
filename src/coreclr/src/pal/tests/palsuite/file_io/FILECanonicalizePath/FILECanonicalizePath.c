@@ -14,81 +14,68 @@
 
 #include <palsuite.h>
 
-#define TEST_ARR_SIZE 10
 extern void FILECanonicalizePath(LPSTR lpUnixPath);
+
+void TestCase(LPSTR input, LPSTR expectedOutput);
 
 int __cdecl main(int argc, char *argv[])
 {
-	if (PAL_Initialize(argc,argv) != 0)
+    if (PAL_Initialize(argc,argv) != 0)
     {
         return FAIL;
     }
 
-    char paths[TEST_ARR_SIZE] = {};
+    // Case 01: /<name> should not change
+    TestCase("/Test", "/Test");
 
-    // Case 1: // transforms to /
-    strcpy(paths, "//");
-    FILECanonicalizePath(paths);
-    if (strcmp(paths, "/") != 0)
-    {
-    	Fail("FILECanonicalizePath error: // did not transform to /, translated to: %s", paths);
-    }
-    memset(paths, '\0', TEST_ARR_SIZE);
+    // Case 02: /<name>/<name2> should not change
+    TestCase("/Test/Foo", "/Test/Foo");
+
+    // Case 03: // transforms to /
+    TestCase("//", "/");
+  
+    // Case 04: /./ transforms to /
+    TestCase("/./", "/");
     
-    // Case 2: /./ transforms to /
-    strcpy(paths, "/./");
-    FILECanonicalizePath(paths);
-    if (strcmp(paths, "/") != 0)
-    {
-    	Fail("FILECanonicalizePath error: /./ did not transform to /, translated to: %s", paths);
-    }
-    memset(paths, '\0', TEST_ARR_SIZE);
+    // Case 05: /<name>/../ transforms to /
+    TestCase("/Test/../", "/");
+        
+    // Case 06: /Test/Foo/.. transforms to /Test
+    TestCase("/Test/Foo/..", "/Test");
+        
+    // Case 07: /Test/.. transforms to /
+    TestCase("/Test/..", "/");
+        
+    // Case 08: /. transforms to /
+    TestCase("/.", "/");
+        
+    // Case 09: /<name/. transforms to /<name>
+    TestCase("/Test/.", "/Test");
     
-    // Case 3: /<name>/../ transforms to /
-    strcpy(paths, "/Test/../");
-    FILECanonicalizePath(paths);
-    if (strcmp(paths, "/") != 0)
-    {
-    	Fail("FILECanonicalizePath error: /Test/../ did not transform to /, translated to: %s", paths);
-    }
-    memset(paths, '\0', TEST_ARR_SIZE);
-    
-    // Case 4: /Test/Foo/.. transforms to /Test
-    strcpy(paths, "/Test/Foo/..");
-    FILECanonicalizePath(paths);
-    if (strcmp(paths, "/Test") != 0)
-    {
-    	Fail("FILECanonicalizePath error: /Test/Foo/.. did not transform to /, translated to: %s", paths);
-    }
-    memset(paths, '\0', TEST_ARR_SIZE);
-    
-    // Case 5: /Test/.. transforms to /
-    strcpy(paths, "/Test/..");
-    FILECanonicalizePath(paths);
-    if (strcmp(paths, "/") != 0)
-    {
-    	Fail("FILECanonicalizePath error: /Test/.. did not transform to /, translated to: %s", paths);
-    }
-    memset(paths, '\0', TEST_ARR_SIZE);
-    
-    // Case 6: /. transforms to /
-    strcpy(paths, "/.");
-    FILECanonicalizePath(paths);
-    if (strcmp(paths, "/") != 0)
-    {
-    	Fail("FILECanonicalizePath error: /. did not transform to /, translated to: %s", paths);
-    }
-    memset(paths, '\0', TEST_ARR_SIZE);
-    
-    // Case 7: /<name/. transforms to /<name>
-    strcpy(paths, "/Test/.");
-    FILECanonicalizePath(paths);
-    if (strcmp(paths, "/Test") != 0)
-    {
-    	Fail("FILECanonicalizePath error: /<name>/. did not transform to /, translated to: %s", paths);
-    }
-    memset(paths, '\0', TEST_ARR_SIZE);
-    
+    // Case 10: /<name>/../. transforms to /
+    TestCase("/Test/../.", "/");
+
     PAL_Terminate();
     return PASS;
+}
+
+void TestCase(LPSTR input, LPSTR expectedOutput)
+{
+    // Save the input for debug logging since the input is edited in-place
+    char* pOriginalInput = (char*)malloc(strlen(input) * sizeof(char));
+    strcpy(pOriginalInput, input);
+
+    char* pInput = (char*)malloc(strlen(input) * sizeof(char));
+    strcpy(pInput, pOriginalInput);
+
+    FILECanonicalizePath(pInput);
+    if (strcmp(pInput, expectedOutput) != 0)
+    {
+        free(pOriginalInput);
+        free(pInput);
+        Fail("FILECanonicalizePath error: input %s did not match expected output %s; got %s instead", pOriginalInput, expectedOutput, pInput);
+    }
+
+    free(pOriginalInput);
+    free(pInput);
 }
