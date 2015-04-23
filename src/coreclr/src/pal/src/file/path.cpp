@@ -1033,7 +1033,15 @@ void FILECanonicalizePath(LPSTR lpUnixPath)
         slashptr = strrchr(lpUnixPath,'/');
         if(NULL != slashptr)
         {
-            *slashptr = '\0';
+            /* make sure the last slash isn't the root */
+            if (slashptr == lpUnixPath)
+            {
+                lpUnixPath[1] = '\0';
+            }
+            else
+            {
+                *slashptr = '\0';    
+            }
         }
     }
 
