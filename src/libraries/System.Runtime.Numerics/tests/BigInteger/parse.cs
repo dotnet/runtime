@@ -14,6 +14,7 @@ namespace System.Numerics.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(1491)]
         public static void RunParseToStringTests()
         {
             byte[] tempByteArray1 = new byte[0];
