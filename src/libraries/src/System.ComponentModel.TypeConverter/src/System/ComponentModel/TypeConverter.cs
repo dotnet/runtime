@@ -165,7 +165,7 @@ namespace System.ComponentModel
 
             if (value == null)
             {
-                valueTypeName = SR.ToStringNull;
+                valueTypeName = SR.Null;
             }
             else
             {
@@ -185,7 +185,7 @@ namespace System.ComponentModel
 
             if (value == null)
             {
-                valueTypeName = SR.Format(SR.ToStringNull, null);
+                valueTypeName = SR.Null;
             }
             else
             {
