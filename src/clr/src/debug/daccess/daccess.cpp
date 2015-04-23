@@ -7196,11 +7196,9 @@ HRESULT
 ClrDataAccess::GetDacGlobals()
 {
 #ifdef FEATURE_PAL
-    // TODO - 3/5/15 - the DAC side needs the debuggee pid
-    DWORD pid = 0;
     PVOID dacTableAddress = nullptr;
     ULONG dacTableSize = 0;
-    DWORD err = PAL_GetDacTableAddress(pid, &dacTableAddress, &dacTableSize);
+    DWORD err = PAL_GetDacTableAddress((PVOID)m_globalBase, &dacTableAddress, &dacTableSize);
     if (err != ERROR_SUCCESS)
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
