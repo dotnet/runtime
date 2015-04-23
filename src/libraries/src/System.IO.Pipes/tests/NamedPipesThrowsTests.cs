@@ -70,7 +70,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientInvalidPipeHandleThrows()
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle((System.IntPtr)0, true);
+            SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
             Assert.Throws<ArgumentException>(delegate
             {
                 NamedPipeServerStream server = new NamedPipeServerStream(PipeDirection.InOut, false, true, pipeHandle);
@@ -162,7 +162,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientInvalidServerHandleThrows()
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle((System.IntPtr)0, true);
+            SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
             Assert.Throws<ArgumentException>(delegate
             {
                 NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.InOut, false, true, pipeHandle);
