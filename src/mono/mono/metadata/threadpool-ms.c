@@ -757,7 +757,7 @@ monitor_should_keep_running (void)
 
 	if (InterlockedExchange (&monitor_status, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST) {
 		if (mono_runtime_is_shutting_down () || !domain_any_has_request ()) {
-			if (InterlockedExchange (&monitor_status, MONITOR_STATUS_NOT_RUNNING) == MONITOR_STATUS_WAITING_FOR_REQUEST)
+			if (InterlockedCompareExchange (&monitor_status, MONITOR_STATUS_NOT_RUNNING, MONITOR_STATUS_WAITING_FOR_REQUEST) == MONITOR_STATUS_WAITING_FOR_REQUEST)
 				return FALSE;
 		}
 	}
