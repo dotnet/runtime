@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -13,32 +12,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0, 
+                string.Format("Int16ImplicitCast ({0})", value));
+            
+            if (value != Int16.MaxValue)
             {
-                Console.WriteLine("Int16ImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0, 
+                    string.Format("PLuS + Int16ImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != Int16.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + Int16ImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != Int16.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - Int16ImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != Int16.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0, 
+                    string.Format("Minus - Int16ImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -47,7 +35,7 @@ namespace System.Numerics.Tests
         {
             VerifyInt16ImplicitCastToComplex(Int16.MinValue);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Int16 randomValue = Support.GetRandomInt16Value(true);
                 VerifyInt16ImplicitCastToComplex(randomValue);
@@ -57,7 +45,7 @@ namespace System.Numerics.Tests
             VerifyInt16ImplicitCastToComplex(0);
             VerifyInt16ImplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Int16 randomValue = Support.GetRandomInt16Value(false);
                 VerifyInt16ImplicitCastToComplex(randomValue);
@@ -70,32 +58,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0, 
+                string.Format("Int32ImplicitCast ({0})", value));
+            
+            if (value != Int32.MaxValue)
             {
-                Console.WriteLine("Int32ImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0,
+                    string.Format("PLuS + Int32ImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != Int32.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + Int32ImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != Int32.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - Int32ImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != Int32.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0,
+                    string.Format("Minus - Int32ImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -104,7 +81,7 @@ namespace System.Numerics.Tests
         {
             VerifyInt32ImplicitCastToComplex(Int32.MinValue);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Int32 randomValue = Support.GetRandomInt32Value(true);
                 VerifyInt32ImplicitCastToComplex(randomValue);
@@ -114,7 +91,7 @@ namespace System.Numerics.Tests
             VerifyInt32ImplicitCastToComplex(0);
             VerifyInt32ImplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Int32 randomValue = Support.GetRandomInt32Value(false);
                 VerifyInt32ImplicitCastToComplex(randomValue);
@@ -127,32 +104,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0, 
+                string.Format("Int64ImplicitCast ({0})", value));
+           
+            if (value != Int64.MaxValue)
             {
-                Console.WriteLine("Int64ImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0, 
+                    string.Format("PLuS + Int64ImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != Int64.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + Int64ImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != Int64.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - Int64ImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != Int64.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0, 
+                    string.Format("Minus - Int64ImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -161,7 +127,7 @@ namespace System.Numerics.Tests
         {
             VerifyInt64ImplicitCastToComplex(Int64.MinValue);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Int64 randomValue = Support.GetRandomInt64Value(true);
                 VerifyInt64ImplicitCastToComplex(randomValue);
@@ -171,7 +137,7 @@ namespace System.Numerics.Tests
             VerifyInt64ImplicitCastToComplex(0);
             VerifyInt64ImplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Int64 randomValue = Support.GetRandomInt64Value(false);
                 VerifyInt64ImplicitCastToComplex(randomValue);
@@ -184,32 +150,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0,
+                string.Format("UInt16ImplicitCast ({0})", value));
+            
+            if (value != UInt16.MaxValue)
             {
-                Console.WriteLine("UInt16ImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0,
+                    string.Format("PLuS + UInt16ImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != UInt16.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + UInt16ImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != UInt16.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - UInt16ImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != UInt16.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0,
+                    string.Format("Minus - UInt16ImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -221,7 +176,7 @@ namespace System.Numerics.Tests
             VerifyUInt16ImplicitCastToComplex(1);
 
 #if  CLS_Compliant
-        for (int i = 0; i < Support.RandomSampleCount; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             UInt16 randomValue = Support.GetRandomUInt16Value();
             VerifyUInt16ImplicitCastToComplex(randomValue);
@@ -234,32 +189,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0, 
+                string.Format("UInt32ImplicitCast ({0})", value));
+            
+            if (value != UInt32.MaxValue)
             {
-                Console.WriteLine("UInt32ImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0,
+                    string.Format("PLuS + UInt32ImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != UInt32.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + UInt32ImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != UInt32.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - UInt32ImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != UInt32.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0,
+                    string.Format("Minus - UInt32ImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -271,7 +215,7 @@ namespace System.Numerics.Tests
             VerifyUInt32ImplicitCastToComplex(1);
 
 #if  CLS_Compliant
-        for (int i = 0; i < Support.RandomSampleCount; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             UInt32 randomValue = Support.GetRandomUInt32Value();
             VerifyUInt32ImplicitCastToComplex(randomValue);
@@ -285,32 +229,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0,
+                string.Format("UInt64ImplicitCast ({0})", value));
+            
+            if (value != UInt64.MaxValue)
             {
-                Console.WriteLine("UInt64ImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0,
+                    string.Format("PLuS + UInt64ImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != UInt64.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + UInt64ImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != UInt64.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - UInt64ImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != UInt64.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0,
+                    string.Format("Minus - UInt64ImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -322,7 +255,7 @@ namespace System.Numerics.Tests
             VerifyUInt64ImplicitCastToComplex(1);
 
 #if CLS_Compliant
-        for (int i = 0; i < Support.RandomSampleCount; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             UInt64 randomValue = Support.GetRandomUInt64Value();
             VerifyUInt64ImplicitCastToComplex(randomValue);
@@ -335,32 +268,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0,
+                string.Format("SByteImplicitCast ({0})", value));
+            
+            if (value != SByte.MaxValue)
             {
-                Console.WriteLine("SByteImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0,
+                    string.Format("PLuS + SByteImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != SByte.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + SByteImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != SByte.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - SByteImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != SByte.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0,
+                    string.Format("Minus - SByteImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -369,7 +291,7 @@ namespace System.Numerics.Tests
         {
             VerifySByteImplicitCastToComplex(SByte.MinValue);
 #if  CLS_Compliant
-        for (int i = 0; i < Support.RandomSampleCount; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             SByte randomValue = Support.GetRandomSByteValue(false);
             VerifySByteImplicitCastToComplex(randomValue);
@@ -379,7 +301,7 @@ namespace System.Numerics.Tests
             VerifySByteImplicitCastToComplex(1);
 
 #if  CLS_Compliant
-        for (int i = 0; i < Support.RandomSampleCount; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             SByte randomValue = Support.GetRandomSByteValue(true);
             VerifySByteImplicitCastToComplex(randomValue);
@@ -393,32 +315,21 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0, 
+                string.Format("ByteImplicitCast ({0})", value));
+           
+            if (value != Byte.MaxValue)
             {
-                Console.WriteLine("ByteImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0,
+                    string.Format("PLuS + ByteImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != Byte.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + ByteImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != Byte.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - ByteImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != Byte.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0,
+                    string.Format("Minus - ByteImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -429,7 +340,7 @@ namespace System.Numerics.Tests
             VerifyByteImplicitCastToComplex(0);
             VerifyByteImplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Byte randomValue = Support.GetRandomByteValue();
                 VerifyByteImplicitCastToComplex(randomValue);
@@ -442,32 +353,20 @@ namespace System.Numerics.Tests
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0,
+                string.Format("SingleImplicitCast ({0})",  value));
+            if (value != Single.MaxValue)
             {
-                Console.WriteLine("SingleImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0, 
+                    string.Format("PLuS + SingleImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != Single.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + SingleImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != Single.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - SingleImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != Single.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0, 
+                    string.Format("Minus - SingleImplicitCast + 1 ({0})", value));
             }
         }
 
@@ -476,7 +375,7 @@ namespace System.Numerics.Tests
         {
             VerifySingleImplicitCastToComplex(Single.MinValue);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Single randomValue = Support.GetRandomSingleValue(false);
                 VerifySingleImplicitCastToComplex(randomValue);
@@ -485,7 +384,7 @@ namespace System.Numerics.Tests
             VerifySingleImplicitCastToComplex(0);
             VerifySingleImplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Single randomValue = Support.GetRandomSingleValue(true);
                 VerifySingleImplicitCastToComplex(randomValue);
@@ -494,101 +393,77 @@ namespace System.Numerics.Tests
             VerifySingleImplicitCastToComplex(Single.MaxValue);
         }
 
-        private static void VerifyDoubleImplicitCastToComplex(Double value)
+        private static void VerifyDoubleImplicitCastToComplex(double value)
         {
             Complex c_cast = value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, value, 0.0, 
+                string.Format("DoubleImplicitCast ({0})", value));
+            if (value != double.MaxValue)
             {
-                Console.WriteLine("DoubleImplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0,
+                    string.Format("PLuS + DoubleImplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != Double.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, value + 1, 0.0))
-                    {
-                        Console.WriteLine("PLuS + DoubleImplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != Double.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0))
-                    {
-                        Console.WriteLine("Minus - DoubleImplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != double.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, value - 1, 0.0, 
+                    string.Format("Minus - DoubleImplicitCast + 1 ({0})", value));
             }
         }
 
         [Fact]
         public static void RunTests_DoubleImplicitCastToComplex()
         {
-            VerifyDoubleImplicitCastToComplex(Double.MinValue);
+            VerifyDoubleImplicitCastToComplex(double.MinValue);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
-                Double randomValue = Support.GetRandomDoubleValue(false);
+                double randomValue = Support.GetRandomDoubleValue(false);
                 VerifyDoubleImplicitCastToComplex(randomValue);
             }
 
             VerifyDoubleImplicitCastToComplex(0);
             VerifyDoubleImplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
-                Double randomValue = Support.GetRandomDoubleValue(true);
+                double randomValue = Support.GetRandomDoubleValue(true);
                 VerifyDoubleImplicitCastToComplex(randomValue);
             }
 
-            VerifyDoubleImplicitCastToComplex(Double.MaxValue);
+            VerifyDoubleImplicitCastToComplex(double.MaxValue);
         }
 
         private static void VerifyBigIntegerExplicitCastToComplex(BigInteger value)
         {
             Complex c_cast = (Complex)value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, (Double)value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, (Double)value, 0.0,
+                string.Format("BigIntegerExplicitCast ({0})", value));
+            if (value != (BigInteger)double.MaxValue)
             {
-                Console.WriteLine("BigIntegerExplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, (Double)(value + 1), 0.0,
+                    string.Format("PLuS + BigIntegerExplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != (BigInteger)Double.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, (Double)(value + 1), 0.0))
-                    {
-                        Console.WriteLine("PLuS + BigIntegerExplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != (BigInteger)Double.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, (Double)(value - 1), 0.0))
-                    {
-                        Console.WriteLine("Minus - BigIntegerExplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != (BigInteger)double.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, (Double)(value - 1), 0.0,
+                    string.Format("Minus - BigIntegerExplicitCast + 1 ({0})", value));
             }
         }
 
         [Fact]
         public static void RunTests_BigIntegerExplicitCastToComplex()
         {
-            VerifyBigIntegerExplicitCastToComplex((BigInteger)Double.MinValue);
+            VerifyBigIntegerExplicitCastToComplex((BigInteger)double.MinValue);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 BigInteger randomValue = Support.GetRandomBigIntegerValue(false);
                 VerifyBigIntegerExplicitCastToComplex(randomValue);
@@ -597,45 +472,33 @@ namespace System.Numerics.Tests
             VerifyBigIntegerExplicitCastToComplex(0);
             VerifyBigIntegerExplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 BigInteger randomValue = Support.GetRandomBigIntegerValue(true);
                 VerifyBigIntegerExplicitCastToComplex(randomValue);
             }
 
-            VerifyBigIntegerExplicitCastToComplex((BigInteger)Double.MaxValue);
+            VerifyBigIntegerExplicitCastToComplex((BigInteger)double.MaxValue);
         }
 
         private static void VerifyDecimalExplicitCastToComplex(Decimal value)
         {
             Complex c_cast = (Complex)value;
 
-            if (false == Support.VerifyRealImaginaryProperties(c_cast, (Double)value, 0.0))
+            Support.VerifyRealImaginaryProperties(c_cast, (Double)value, 0.0, 
+                string.Format("DecimalExplicitCast ({0})", value));
+            if (value != Decimal.MaxValue)
             {
-                Console.WriteLine("DecimalExplicitCast ({0})" + value);
-                Assert.True(false, "Verification Failed");
+                Complex c_cast_plus = c_cast + 1;
+                Support.VerifyRealImaginaryProperties(c_cast_plus, (Double)(value + 1), 0.0, 
+                    string.Format("PLuS + DecimalExplicitCast ({0})", value));
             }
-            else
-            {
-                if (value != Decimal.MaxValue)
-                {
-                    Complex c_cast_plus = c_cast + 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_plus, (Double)(value + 1), 0.0))
-                    {
-                        Console.WriteLine("PLuS + DecimalExplicitCast ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
 
-                if (value != Decimal.MinValue)
-                {
-                    Complex c_cast_minus = c_cast - 1;
-                    if (false == Support.VerifyRealImaginaryProperties(c_cast_minus, (Double)(value - 1), 0.0))
-                    {
-                        Console.WriteLine("Minus - DecimalExplicitCast + 1 ({0})" + value);
-                        Assert.True(false, "Verification Failed");
-                    }
-                }
+            if (value != Decimal.MinValue)
+            {
+                Complex c_cast_minus = c_cast - 1;
+                Support.VerifyRealImaginaryProperties(c_cast_minus, (Double)(value - 1), 0.0,
+                    string.Format("Minus - DecimalExplicitCast + 1 ({0})", value));
             }
         }
 
@@ -644,7 +507,7 @@ namespace System.Numerics.Tests
         {
             VerifyDecimalExplicitCastToComplex(Decimal.MinValue);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Decimal randomValue = Support.GetRandomDecimalValue(false);
                 VerifyDecimalExplicitCastToComplex(randomValue);
@@ -653,7 +516,7 @@ namespace System.Numerics.Tests
             VerifyDecimalExplicitCastToComplex(0);
             VerifyDecimalExplicitCastToComplex(1);
 
-            for (int i = 0; i < Support.RandomSampleCount; ++i)
+            for (int i = 0; i < 3; ++i)
             {
                 Decimal randomValue = Support.GetRandomDecimalValue(true);
                 VerifyDecimalExplicitCastToComplex(randomValue);

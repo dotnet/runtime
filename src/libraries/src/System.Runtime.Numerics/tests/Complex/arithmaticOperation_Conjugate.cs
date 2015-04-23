@@ -2,52 +2,44 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class arithmaticOperation_ConjugateTest
     {
-        private static void VerifyConjugate(Double real, Double imaginary)
+        private static void VerifyConjugate(double real, double imaginary)
         {
             // Create complex numbers
             Complex c_test = new Complex(real, imaginary);
             Complex c_conj = Complex.Conjugate(c_test);
 
-            if (false == Support.VerifyRealImaginaryProperties(c_conj, real, -imaginary))
-            {
-                Console.WriteLine("ErRoR! Conjugate Real and Imaginary Part Verification Error!");
-                Console.WriteLine("Conjugate test ({0}, {1})", real, imaginary);
-                Assert.True(false, "Verification Failed");
-            }
-            else if (false == Support.VerifyMagnitudePhaseProperties(c_conj, c_test.Magnitude, -c_test.Phase))
-            {
-                Console.WriteLine("ErRoR! Conjugate Magnitude and Phase Verification Error!");
-                Console.WriteLine("Conjugate test ({0}, {1})", real, imaginary);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(c_conj, real, -imaginary,
+                string.Format("Conjugate test ({0}, {1})", real, imaginary));
+
+            Support.VerifyMagnitudePhaseProperties(c_conj, c_test.Magnitude, -c_test.Phase,
+                string.Format("Conjugate test ({0}, {1})", real, imaginary));
         }
 
         [Fact]
         public static void RunTests_ZeroOneImaginaryOne()
         {
-            VerifyConjugate(0.0, 0.0); // Verify with Double.Zero
-            VerifyConjugate(1.0, 0.0); // Verify with Double.One
-            VerifyConjugate(-1.0, 0.0); // Verify with Double.MinusOne
-            VerifyConjugate(0.0, 1.0); // Verify with Double.ImaginaryOne
-            VerifyConjugate(0.0, -1.0); // Verify with Double.MinusImaginaryOne
+            VerifyConjugate(0.0, 0.0); // Verify with double.Zero
+            VerifyConjugate(1.0, 0.0); // Verify with double.One
+            VerifyConjugate(-1.0, 0.0); // Verify with double.MinusOne
+            VerifyConjugate(0.0, 1.0); // Verify with double.ImaginaryOne
+            VerifyConjugate(0.0, -1.0); // Verify with double.MinusImaginaryOne
         }
 
         [Fact]
         public static void RunTests_RandomValidValues()
         {
-            // Verify test results with ComlexInFirstQuad
-            Double real = Support.GetRandomDoubleValue(false);
-            Double imaginary = Support.GetRandomDoubleValue(false);
+            // Verify test results with ComplexInFirstQuad
+            double real = Support.GetRandomDoubleValue(false);
+            double imaginary = Support.GetRandomDoubleValue(false);
             VerifyConjugate(real, imaginary);
 
-            // Verify test results with Small_ComlexInFirstQuad
+            // Verify test results with Small_ComplexInFirstQuad
             real = Support.GetSmallRandomDoubleValue(false);
             imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyConjugate(real, imaginary);
@@ -86,20 +78,30 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunTests_BoundaryValues()
         {
-            VerifyConjugate(Double.MaxValue, Double.MaxValue); // test with 'Max'
-            VerifyConjugate(Double.MaxValue, 0); // test with 'MaxReal'
-            VerifyConjugate(0, Double.MaxValue); // test with 'MaxImaginary'
-            VerifyConjugate(Double.MinValue, Double.MinValue); // test with 'Min'
-            VerifyConjugate(Double.MinValue, 0); // test with 'MinReal'
-            VerifyConjugate(0, Double.MinValue); // test with 'MinImaginary'
+            // Max
+            VerifyConjugate(double.MaxValue, double.MaxValue);
+
+            // MaxReal
+            VerifyConjugate(double.MaxValue, 0);
+
+            // MaxImaginary
+            VerifyConjugate(0, double.MaxValue);
+
+            // Min
+            VerifyConjugate(double.MinValue, double.MinValue);
+
+            // MinReal
+            VerifyConjugate(double.MinValue, 0);
+
+            // MinImaginary
+            VerifyConjugate(0, double.MinValue);
         }
 
         [Fact]
         public static void RunTests_InvalidValues()
         {
-            // local variables
-            Double realRandom;
-            Double imaginaryRandom;
+            double realRandom;
+            double imaginaryRandom;
 
             // Complex number with a valid positive real and an invalid imaginary part
             foreach (double imaginaryInvalid in Support.doubleInvalidValues)

@@ -2,37 +2,37 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ComplexTestSupport;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class trigonometricOperations_TanTest
     {
-        private static void VerifyTan(Double x, Double y, Double expectedReal, Double expectedImaginary)
+        private static void VerifyTan(double x, double y, double expectedReal, double expectedImaginary)
         {
             Complex complex = new Complex(x, y);
             Complex tanComplex = Complex.Tan(complex);
 
-            if (false == Support.VerifyRealImaginaryProperties(tanComplex, expectedReal, expectedImaginary))
-            {
-                Console.WriteLine("Error TaN-ErrT6A81N! Tan({0}):{1} != ({2},{3})", complex, tanComplex, expectedReal, expectedImaginary);
-                Assert.True(false, "Verification Failed");
-            }
+            Support.VerifyRealImaginaryProperties(tanComplex, expectedReal, expectedImaginary,
+                string.Format("Tan({0}):{1} != ({2},{3})", complex, tanComplex, expectedReal, expectedImaginary));
 
             // The following verification can be added: tan(x) = -tan(-x)
         }
 
-        private static void VerifyTan(Double x, Double y)
+        private static void VerifyTan(double x, double y)
         {
-            Double scale = Math.Cosh(2 * y);
-            if (!Double.IsInfinity(scale))
+            double scale = Math.Cosh(2 * y);
+            if (!double.IsInfinity(scale))
+            {
                 scale += Math.Cos(2 * x);
-            Double expectedReal = Math.Sin(2 * x) / scale;
-            Double expectedImaginary = Math.Sinh(2 * y) / scale;
+            }
+            double expectedReal = Math.Sin(2 * x) / scale;
+            double expectedImaginary = Math.Sinh(2 * y) / scale;
 
-            if (Double.IsNaN(expectedImaginary))
-                expectedReal = Double.NaN;
+            if (double.IsNaN(expectedImaginary))
+            {
+                expectedReal = double.NaN;
+            }
             VerifyTan(x, y, expectedReal, expectedImaginary);
         }
 
@@ -59,8 +59,8 @@ namespace System.Numerics.Tests
         public static void RunTests_RandomValidValues()
         {
             // Verify test results with ComplexInFirstQuad
-            Double real = Support.GetSmallRandomDoubleValue(false);
-            Double imaginary = Support.GetSmallRandomDoubleValue(false);
+            double real = Support.GetSmallRandomDoubleValue(false);
+            double imaginary = Support.GetSmallRandomDoubleValue(false);
             VerifyTan(real, imaginary);
 
             // Verify test results with ComplexInSecondQuad
@@ -83,22 +83,22 @@ namespace System.Numerics.Tests
         public static void RunTests_BoundaryValues()
         {
             // Verify test results with Max
-            VerifyTan(Double.MaxValue, Double.MaxValue, Double.NaN, Double.NaN);
+            VerifyTan(double.MaxValue, double.MaxValue, double.NaN, double.NaN);
 
             // Verify test results with MaxReal
-            VerifyTan(Double.MaxValue, 0.0, Math.Sin(Double.MaxValue) / Math.Cos(Double.MaxValue), 0); //for IA64
+            VerifyTan(double.MaxValue, 0.0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue), 0); //for IA64
 
             // Verify test results with MaxImg
-            VerifyTan(0.0, Double.MaxValue, Double.NaN, Double.NaN);
+            VerifyTan(0.0, double.MaxValue, double.NaN, double.NaN);
 
             // Verify test results with Min
-            VerifyTan(Double.MinValue, Double.MinValue, Double.NaN, Double.NaN);
+            VerifyTan(double.MinValue, double.MinValue, double.NaN, double.NaN);
 
             // Verify test results with MinReal
-            VerifyTan(Double.MinValue, 0.0, Math.Sin(Double.MinValue) / Math.Cos(Double.MinValue), 0); //for IA64
+            VerifyTan(double.MinValue, 0.0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue), 0); //for IA64
 
             // Verify test results with MinImaginary
-            VerifyTan(0.0, Double.MinValue, Double.NaN, Double.NaN);
+            VerifyTan(0.0, double.MinValue, double.NaN, double.NaN);
         }
     }
 }
