@@ -121,6 +121,13 @@ if(WIN32)
     )
 endif(WIN32)
 
+if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    # add @loader_path to the rpath so that the loader can find libcoreclrpal which is
+    # sxs with libcoreclr
+    set_target_properties(coreclr PROPERTIES INSTALL_RPATH "@loader_path")
+endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+
 # add the install targets
 install (TARGETS coreclr DESTINATION .)
 if(WIN32)
