@@ -99,6 +99,10 @@ namespace System.IO
         // and to only teardown and recreate streams when we need to.
         private string _lastWatchedDirectory = String.Empty;
 
+        // The user can input relative paths, which can muck with our path comparisons. Save off the 
+        // actual full path so we can use it for comparing
+        private string _fullDirectory = String.Empty;
+
         // The bitmask of events that we want to send to the user
         private Interop.EventStream.FSEventStreamEventFlags _filterFlags = 0;
 
@@ -131,11 +135,13 @@ namespace System.IO
             // Make sure we only do this if there is a valid directory
             if (String.IsNullOrEmpty(_directory) == false)
             {
+                _fullDirectory = System.IO.Path.GetFullPath(_directory);
+
                 // Get the path to watch and verify we created the CFStringRef
-                SafeCreateHandle path = Interop.CoreFoundation.CFStringCreateWithCString(_directory);
+                SafeCreateHandle path = Interop.CoreFoundation.CFStringCreateWithCString(_fullDirectory);
                 if (path.IsInvalid)
                 {
-                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
+                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _fullDirectory, true);
                 }
 
                 // Take the CFStringRef and put it into an array to pass to the EventStream
@@ -143,7 +149,7 @@ namespace System.IO
                 if (arrPaths.IsInvalid)
                 {
                     path.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
+                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _fullDirectory, true);
                 }
 
                 // Create the callback for the EventStream
@@ -160,7 +166,7 @@ namespace System.IO
                 {
                     arrPaths.Dispose();
                     path.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _directory, true);
+                    throw Interop.GetExceptionForIoErrno(Marshal.GetLastWin32Error(), _fullDirectory, true);
                 }
 
                 // Create and start our watcher thread then wait for the thread to initialize and start 
@@ -211,6 +217,7 @@ namespace System.IO
                 // cleanup and recreate our streams next time Start is called.
                 OnError(new ErrorEventArgs(new IOException("", Marshal.GetLastWin32Error())));
                 _lastWatchedDirectory = String.Empty;
+                _fullDirectory = String.Empty;
             }
         }
 
@@ -288,7 +295,7 @@ namespace System.IO
                 else if ((DoesPathPassNameFilter(eventPaths[i])) && ((_filterFlags & eventFlags[i]) != 0))
                 {
                     // Remove the base directory prefix (including trailing / that OS X adds)
-                    string relativePath = eventPaths[i].Remove(0, _directory.Length + 1);
+                    string relativePath = eventPaths[i].Remove(0, _fullDirectory.Length + 1);
 
                     // Check if this is a rename
                     if ((eventFlags[i] & Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed) == Interop.EventStream.FSEventStreamEventFlags.kFSEventStreamEventFlagItemRenamed)
@@ -303,7 +310,7 @@ namespace System.IO
                         {
                             // Remove the base directory prefix (including trailing / that OS X adds) and 
                             // add the paired event to the list of events to skip and notify the user of the rename
-                            string newPathRelativeName = eventPaths[pairedId].Remove(0, _directory.Length + 1);
+                            string newPathRelativeName = eventPaths[pairedId].Remove(0, _fullDirectory.Length + 1);
                             NotifyRenameEventArgs(WatcherChangeTypes.Renamed, newPathRelativeName, relativePath);
 
                             // Create a new list, if necessary, and add the event
@@ -362,7 +369,7 @@ namespace System.IO
                 // Check if the parent is the root. If so, then we'll continue processing based on the name.
                 // If it isn't, then this will be set to false and we'll skip the name processing since it's irrelevant.
                 string parent = System.IO.Path.GetDirectoryName(eventPath);
-                doesPathPass = (parent.Equals(_directory, StringComparison.CurrentCultureIgnoreCase));
+                doesPathPass = (parent.Equals(_fullDirectory, StringComparison.CurrentCultureIgnoreCase));
             }
 
             if (doesPathPass)
