@@ -31,6 +31,7 @@ endif(CLR_CMAKE_PLATFORM_LINUX)
 add_library(dbgshim SHARED ${DBGSHIM_SOURCES})
 
 set(DBGSHIM_LIBRARIES
+    debug-pal
     debugshim
     corguids
     dbgutil
