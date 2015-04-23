@@ -606,9 +606,8 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	/* Allocate a stack frame */
 	sp -= 16;
 	MONO_CONTEXT_SET_SP (ctx, sp);
-	MONO_CONTEXT_SET_IP (ctx, async_cb);
 
-	// FIXME: thumb/arm
+	mono_arch_setup_resume_sighandler_ctx (ctx, async_cb);
 }
 
 /*
