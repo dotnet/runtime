@@ -58,7 +58,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ServerServerPipeHandleThrows()
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle((System.IntPtr)0, true);
+            SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
             using (AnonymousPipeServerStream dummyserver = new AnonymousPipeServerStream(PipeDirection.Out))
             {
                 Assert.Throws<ArgumentException>(delegate
@@ -71,7 +71,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ServerClientPipeHandleThrows()
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle((System.IntPtr)0, true);
+            SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
             using (AnonymousPipeServerStream dummyserver = new AnonymousPipeServerStream(PipeDirection.Out))
             {
                 Assert.Throws<ArgumentException>(delegate
@@ -472,8 +472,6 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientPipeHandleAsNullThrows()
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle((System.IntPtr)0, true);
-
             Assert.Throws<ArgumentNullException>(delegate
             {
                 AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, (SafePipeHandle)null);
@@ -483,7 +481,7 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientBadPipeHandleAsInvalidThrows()
         {
-            SafePipeHandle pipeHandle = new SafePipeHandle((System.IntPtr)0, true);
+            SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
 
             Assert.Throws<ArgumentException>(delegate
             {
