@@ -16,6 +16,8 @@ namespace Microsoft.Win32.SafeHandles
     [System.Security.SecurityCritical]
     internal sealed partial class SafeEventStreamHandle : SafeHandle
     {
+        internal SafeEventStreamHandle() : base(IntPtr.Zero, true) { }
+
         internal SafeEventStreamHandle(IntPtr ptr) : base(IntPtr.Zero, true)
         {
             this.SetHandle(ptr);
