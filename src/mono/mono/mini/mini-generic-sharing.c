@@ -2776,7 +2776,7 @@ mini_method_get_rgctx (MonoMethod *m)
 gboolean
 mini_type_is_vtype (MonoCompile *cfg, MonoType *t)
 {
-	t = mini_native_type_replace_type (t);
+	t = mini_get_underlying_type (cfg, t);
 
 	return MONO_TYPE_ISSTRUCT (t) || mini_is_gsharedvt_variable_type (cfg, t);
 }
