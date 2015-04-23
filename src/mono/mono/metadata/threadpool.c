@@ -343,14 +343,6 @@ get_events_from_list (MonoMList *list)
 	return events;
 }
 
-#define ICALL_RECV(x)	ves_icall_System_Net_Sockets_Socket_Receive_internal (\
-				(SOCKET)(gssize)x->handle, x->buffer, x->offset, x->size,\
-				 x->socket_flags, &x->error);
-
-#define ICALL_SEND(x)	ves_icall_System_Net_Sockets_Socket_Send_internal (\
-				(SOCKET)(gssize)x->handle, x->buffer, x->offset, x->size,\
-				 x->socket_flags, &x->error);
-
 #endif /* !DISABLE_SOCKETS */
 
 static void
@@ -1579,14 +1571,6 @@ async_invoke_thread (gpointer data)
 				MonoSocketAsyncResult *state = (MonoSocketAsyncResult *) data;
 				is_socket = is_socketasyncresult (domain, klass);
 				ar = state->ares;
-				switch (state->operation) {
-				case AIO_OP_RECEIVE:
-					state->total = ICALL_RECV (state);
-					break;
-				case AIO_OP_SEND:
-					state->total = ICALL_SEND (state);
-					break;
-				}
 			}
 #endif
 			/* worker threads invokes methods in different domains,
