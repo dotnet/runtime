@@ -37,9 +37,11 @@ Function
 
 Parameters
 
-    address
+    baseAddress
+       [in] base address of CLR module
+    tableAddress
        [in] address of dac table
-    size
+    tableSize
        [in] size of dac table
 
 Return Values
@@ -50,24 +52,22 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_PublishDacTableAddress(
-    IN PVOID address,
-    IN ULONG size)
+    IN PVOID baseAddress,
+    IN PVOID tableAddress,
+    IN ULONG tableSize)
 {
     DWORD ret = NO_ERROR;
 
-    // TODO - 3/5/15 - the DAC side needs the debuggee pid
-    // pid_t pid = getpid();
-    pid_t pid = 0;
     char fileName[100]; 
-    snprintf(fileName, sizeof(fileName), "/tmp/%d_dacTable", pid);
+    snprintf(fileName, sizeof(fileName), "/tmp/%p_dacTable", baseAddress);
 
     FILE *file = fopen(fileName, "w+");
     if (file != nullptr) 
     {
-        char dacTableAddress[100]; 
-        snprintf(dacTableAddress, sizeof(dacTableAddress), "%p %d\n", address, size);
+        char dacTableInfo[100]; 
+        snprintf(dacTableInfo, sizeof(dacTableInfo), "%p %d\n", tableAddress, tableSize);
 
-        if (fputs(dacTableAddress, file) < 0)
+        if (fputs(dacTableInfo, file) < 0)
         {
             ret = ERROR_INVALID_DATA;
         }
@@ -89,11 +89,11 @@ Function
 
 Parameters
 
-    pid
-       [in] process id to get the data
-    pAddress
+    baseAddress
+       [in] base address of CLR module
+    tableAddress
        [out] pointer to put DAC table address
-    pSize
+    tableSize
        [out] pointer to put DAC table size
 
 Return Values
@@ -104,14 +104,14 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_GetDacTableAddress(
-    IN DWORD pid,
-    OUT PVOID *pAddress,
-    OUT PULONG pSize)
+    IN PVOID baseAddress,
+    OUT PVOID *tableAddress,
+    OUT PULONG tableSize)
 {
     DWORD ret = NO_ERROR;
 
     char fileName[100]; 
-    snprintf(fileName, sizeof(fileName), "/tmp/%d_dacTable", pid);
+    snprintf(fileName, sizeof(fileName), "/tmp/%p_dacTable", baseAddress);
 
     FILE *file = fopen(fileName, "r");
     if (file != nullptr) 
@@ -119,7 +119,7 @@ PAL_GetDacTableAddress(
         char data[100]; 
         if (fgets(data, sizeof(data), file) != nullptr)
         {
-            if (sscanf(data, "%p %d\n", pAddress, pSize) != 2)
+            if (sscanf(data, "%p %d\n", tableAddress, tableSize) != 2)
             {
                 ret = ERROR_INVALID_DATA;
             }
@@ -152,12 +152,10 @@ Return Values
 PALIMPORT
 VOID
 PALAPI
-PAL_CleanupDacTableAddress()
+PAL_CleanupDacTableAddress(
+    IN PVOID baseAddress)
 {
-    //pid_t pid = getpid();
-    pid_t pid = 0;
     char fileName[100]; 
-    snprintf(fileName, sizeof(fileName), "/tmp/%d_dacTable", pid);
-
+    snprintf(fileName, sizeof(fileName), "/tmp/%p_dacTable", baseAddress);
     remove(fileName);
 }
