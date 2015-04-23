@@ -1560,7 +1560,7 @@ namespace System.Xml.Serialization
                     for (int i = 0; i < a.XmlElements.Count; i++)
                     {
                         XmlElementAttribute xmlElement = a.XmlElements[i];
-                        Type targetType = typeof(IXmlSerializable).IsAssignableFrom(arrayElementType) ? arrayElementType : typeof(XmlNode).IsAssignableFrom(arrayElementType) ? arrayElementType : typeof(XmlElement);
+                        Type targetType = xmlElement.Type == null ? arrayElementType : xmlElement.Type;
                         TypeDesc targetTypeDesc = _typeScope.GetTypeDesc(targetType);
                         TypeModel typeModel = _modelScope.GetTypeModel(targetType);
                         ElementAccessor element = new ElementAccessor();
