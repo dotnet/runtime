@@ -247,11 +247,6 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 
         case DLL_PROCESS_DETACH:
         {
-#ifdef RSCONTRACTS
-            TlsFree(DbgRSThread::s_TlsSlot);
-            DbgRSThread::s_TlsSlot = TLS_OUT_OF_INDEXES;
-#endif
-
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
             if (g_pDbgTransportTarget != NULL)
             {
@@ -260,7 +255,11 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
                 g_pDbgTransportTarget = NULL;
             }
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
-
+            
+#ifdef RSCONTRACTS
+            TlsFree(DbgRSThread::s_TlsSlot);
+            DbgRSThread::s_TlsSlot = TLS_OUT_OF_INDEXES;
+#endif
         }
         break;
     }

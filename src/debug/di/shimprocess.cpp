@@ -23,6 +23,8 @@
 #include "debug-pal.h"
 #else
 #include <tlhelp32.h>
+#define PSAPI_VERSION 2
+#include <psapi.h>
 #endif
 
 //---------------------------------------------------------------------------------------
@@ -1735,6 +1737,28 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
 
 }
 
+#if defined(FEATURE_CORESYSTEM) && !defined(FEATURE_PAL)
+// Returns true if the named of a given module is [Core]Clr.dll
+static bool IsClrModule(HANDLE hProcess, HMODULE hModule)
+{
+    WCHAR modulePath[MAX_PATH] = {};
+    if(GetModuleFileNameEx(hProcess, hModule, modulePath, MAX_PATH) == 0)
+    {
+        return false;
+    }
+
+    //strip off everything up to and including the last slash in the path to get name
+    const WCHAR* pModuleName = modulePath;
+    while(wcschr(pModuleName, W('\\')) != NULL)
+    {
+        pModuleName = wcschr(pModuleName, W('\\'));
+        pModuleName++; // pass the slash
+    }
+
+    return _wcsicmp(pModuleName, MAIN_CLR_DLL_NAME_W) == 0;
+}
+#endif
+
 // ----------------------------------------------------------------------------
 // ShimProcess::GetCLRInstanceBaseAddress
 // Finds the base address of [core]clr.dll 
@@ -1747,7 +1771,40 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
     DWORD dwPid = m_pLiveDataTarget->GetPid();
 #if defined(FEATURE_PAL)
     baseAddress = PTR_TO_CORDB_ADDRESS (GetDynamicLibraryAddressInProcess(dwPid, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A)));
-#elif !defined(FEATURE_CORESYSTEM)
+#elif defined(FEATURE_CORESYSTEM)
+    HandleHolder hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPid);
+    if (NULL == hProcess)
+        return baseAddress;
+
+    // These shouldn't be closed
+    HMODULE modules[1000];
+    DWORD cbNeeded;
+    if(!EnumProcessModules(hProcess, modules, sizeof(modules), &cbNeeded))
+    {
+        return baseAddress;
+    }
+
+    DWORD countModules = min(cbNeeded, sizeof(modules)) / sizeof(HMODULE);
+    for(DWORD i = 0; i < countModules; i++)
+    {
+        if (IsClrModule(hProcess, modules[i]))
+        {
+            MODULEINFO info;
+            if (GetModuleInformation(hProcess, modules[i], &info, sizeof(info)))
+            {
+                if (baseAddress)
+                {
+                    // We already found an instance of [core]clr.dll, and this is a second one
+                    // it means we can't automatically detect CLR module, ergo return NULL.
+                    baseAddress = NULL;
+                    break;
+                }
+                baseAddress = CORDB_ADDRESS(info.lpBaseOfDll);
+            }
+        }
+    }    
+
+#else
     // get a "snapshot" of all modules in the target
     HandleHolder hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPid);
     MODULEENTRY32 moduleEntry = { 0 };
@@ -1802,10 +1859,6 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 //    
 HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
 {
-#if defined(FEATURE_CORESYSTEM) && !defined(FEATURE_PAL)
-    _ASSERTE(!"Attempting to get CLR base address on Windows-core platform");
-    return E_NOTIMPL;
-#else
     *pClrInstanceId = GetCLRInstanceBaseAddress();
     
     if (*pClrInstanceId == 0)
@@ -1814,7 +1867,6 @@ HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
     }
 
     return S_OK;
-#endif
 }
 
 //---------------------------------------------------------------------------------------
