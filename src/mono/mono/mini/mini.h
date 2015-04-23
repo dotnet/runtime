@@ -2513,6 +2513,7 @@ gboolean  mono_arch_opcode_needs_emulation      (MonoCompile *cfg, int opcode);
 gboolean  mono_arch_tail_call_supported         (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig);
 int       mono_arch_translate_tls_offset        (int offset);
 gboolean  mono_arch_opcode_supported            (int opcode);
+void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func);
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 gboolean  mono_arch_is_soft_float               (void);
@@ -2535,7 +2536,6 @@ gboolean  mono_arch_is_breakpoint_event         (void *info, void *sigctx);
 void     mono_arch_skip_breakpoint              (MonoContext *ctx, MonoJitInfo *ji);
 void     mono_arch_skip_single_step             (MonoContext *ctx);
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code);
-void     mono_arch_setup_resume_sighandler_ctx  (MonoContext *ctx, gpointer func);
 void     mono_arch_init_lmf_ext                 (MonoLMFExt *ext, gpointer prev_lmf);
 #endif
 
