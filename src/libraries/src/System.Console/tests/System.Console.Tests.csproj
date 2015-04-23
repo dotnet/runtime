@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Console.Tests</AssemblyName>
     <RootNamespace>System.Console.Tests</RootNamespace>
-    <TestCategories>InnerLoop;OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

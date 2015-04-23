@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.ReaderSettings.Tests</AssemblyName>
     <RootNamespace>XmlReaderTest.ReaderSettingsTest</RootNamespace>
-    <TestCategories>OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

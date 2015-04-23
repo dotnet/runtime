@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.NameTable.Tests</AssemblyName>
     <RootNamespace>NameTableTest</RootNamespace>
-    <TestCategories>OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

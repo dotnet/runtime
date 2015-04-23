@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Xml.RW.XmlWriterApiTests</AssemblyName>
     <RootNamespace>XmlWriterAPI.Test</RootNamespace>
-    <TestCategories>OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

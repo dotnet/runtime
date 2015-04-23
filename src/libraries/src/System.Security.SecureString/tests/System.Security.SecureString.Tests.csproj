@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Security.SecureString.Tests</RootNamespace>
     <AssemblyName>System.Security.SecureString.Tests</AssemblyName>
-    <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
