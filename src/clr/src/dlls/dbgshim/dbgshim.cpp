@@ -26,8 +26,12 @@
 #include <getproductversionnumber.h>
 #include <dbgenginemetrics.h>
 
+#if defined(FEATURE_PAL)
+#include "debug-pal.h"
+#else
 #define PSAPI_VERSION 2
 #include <psapi.h>
+#endif
 
 #include "dbgshim.h"
 
@@ -699,14 +703,14 @@ HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
         EX_CATCH_HRESULT(hr);
         return hr;
 #else
-    swprintf_s(pBuffer, cchBuffer, W("%08x"), pidDebuggee);
+    HMODULE hmodTargetCLR = (HMODULE)GetDynamicLibraryAddressInProcess(pidDebuggee, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A));
+
+    swprintf_s(pBuffer, cchBuffer, W("%08x;%08x;%p"), CorDebugLatestVersion, pidDebuggee, hmodTargetCLR);
 #endif // FEATURE_PAL
     }
 
     return S_OK;
 }
-
-#ifndef FEATURE_PAL
 
 // Functions that we'll look for in the loaded Mscordbi module.
 typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
@@ -755,6 +759,7 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
     return S_OK;
 }
 
+#ifndef FEATURE_PAL
 //-----------------------------------------------------------------------------
 // Appends "\mscordbi.dll" to the path. This converts a directory name into the full path to mscordbi.dll.
 // 
@@ -901,7 +906,7 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
 
     *ppCordb = NULL;
 
-#ifndef FEATURE_PAL
+
     //
     // Step 1: Parse version information into internal data structures
     // 
@@ -914,6 +919,7 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
     if (FAILED(hr))
         goto Exit;
 
+#ifndef FEATURE_PAL
     //
     // Step 2:  Find the proper Dbi module (mscordbi.dll) and load it.
     // 
@@ -980,13 +986,13 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
             hr = CORDBG_E_DEBUG_COMPONENT_MISSING;
             goto Exit;
         }
-        FPCreateCordbObject fpCreate = (FPCreateCordbObject)GetProcAddress(hMod, "CreateCordbObject");
-        if (fpCreate == NULL)
+        FPCoreCLRCreateCordbObject fpCreate2 = (FPCoreCLRCreateCordbObject)GetProcAddress(hMod, "CoreCLRCreateCordbObject");
+        if (hmodTargetCLR == NULL || fpCreate2 == NULL)
         {
             hr = CORDBG_E_INCOMPATIBLE_PROTOCOL;
             goto Exit;
         }
-        hr = fpCreate(iDebuggerVersion, &pCordb);
+        hr = fpCreate2(iDebuggerVersion, pidDebuggee, hmodTargetCLR, &pCordb);
     }
 #endif // FEATURE_PAL
     _ASSERTE((pCordb == NULL) == FAILED(hr));
