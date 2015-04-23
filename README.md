@@ -1,48 +1,59 @@
 .NET Core Runtime (CoreCLR)
 ===========================
 
-|   |Linux|Windows|Mac OS X|
-|:-:|:-:|:-:|:-:|
-|**Debug**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/)
-|**Release**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/)
+The CoreCLR repo contains the complete runtime implementation for [.NET Core](http://github.com/dotnet/core). It includes RyuJIT, the .NET GC, native interop and many other components. It is cross-platform, with multiple OS and CPU ports in progress.
 
-The coreclr repo contains the complete runtime implementation (called "CoreCLR") for [.NET Core](http://github.com/dotnet/core). It includes RyuJIT, the .NET GC, native interop and many other components. It builds and runs on Windows. You can 'watch' the repo to see Linux and Mac support being added over the next few months.
+Build Status
+------------
 
-.NET Core is part of ASP.NET 5 and is a subset of the .NET Framework. You can learn more about .NET Core and how and where you can use it in the [CoreCLR is open source][coreclr blog post] blog post. 
+|         |Linux   |Windows |Mac OS X |
+|---------|:------:|:------:|:-------:|
+|**Debug**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/) |
+|**Release**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/) |
 
-The [.NET Core Libraries][corefx] repo contains the base class libraries, which provides data types and base functionality (ex: String, Collections, HttpClient) on top of CoreCLR. The two repos together make up .NET Core. The [.NET Core is Open Source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts describes our .NET Core OSS strategy and road map in more detail.
+Get CoreCLR
+-----------
+
+|                     |Linux   |Windows |Mac OS X |
+|---------------------|:------:|:------:|:-------:|
+|Build from **Source**| [Instructions](Documentation/linux-instructions.md) | [Instructions](Documentation/windows-instructions.md) | [Instructions](Documentation/osx-instructions.md) |
+|Get **Binaries**     | |[Instructions](Documentation/get-coreclr-windows.md)||
+
+Chat Room
+---------
 
 Want to chat with other members of the CoreCLR community?
 
 [![Join the chat at https://gitter.im/dotnet/coreclr](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/coreclr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Learn about CoreCLR
--------------------
+Learn about CoreCLR and .NET Core
+---------------------------------
 
 The best ways to learn about CoreCLR are to try out the product instructions and to read the "Book of the Runtime" architecture documents that describe the inner workings of the product. New devs to the CLR team are encouraged to read these documents before making substative changes to the product. They are equally useful for open source contributors.
 
-- [Product instructions](Documentation/README.md#product-instructions)
+- [Product instructions](Documentation/README.md)
 - [Introduction to the Common Language Runtime](Documentation/intro-to-clr.md)
 - [Book of the Runtime](Documentation/README.md#book-of-the-runtime)
 - [CoreCLR Documents](Documentation)
 
+.NET Core is part of ASP.NET 5 and is a subset of the .NET Framework. You can learn more about .NET Core and how and where you can use it in the [CoreCLR is open source][coreclr blog post] blog post. 
+
+The [.NET Core Libraries][corefx] repo contains the base class libraries, which provides data types and base functionality (ex: String, Collections, HttpClient) on top of CoreCLR. The two repos together make up .NET Core. The [.NET Core is Open Source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts describes our .NET Core OSS strategy and road map in more detail.
+
 Engage, Contribute and Provide Feedback
 ---------------------------------------
 
-Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. 
-
-Want to get more familiar with what's going on in the code?
-* [Pull requests](https://github.com/dotnet/coreclr/pulls): [Open](https://github.com/dotnet/coreclr/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/coreclr/pulls?q=is%3Apr+is%3Aclosed)
+Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. You are encouraged to start a discussion by filing an issue, or starting a thread in the [.NET Foundation forums].
 
 Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
 
-* [Contributing Guide](https://github.com/dotnet/coreclr/wiki/Contributing)
+Please checkout the wiki to read the [contribution guidelines][Contributing Guide] for .NET Core and the deverloper guide for general information.
+
+* [Contributing Guide][Contributing Guide]
 * [Developer Guide](https://github.com/dotnet/coreclr/wiki/Developer-Guide)
 
-You are encouraged to start a discussion by filing an issue, creating a
-gist or starting a thread in the [.NET Foundation forums]. For broader topics, please use the forums.
-
 [.NET Foundation forums]: http://forums.dotnetfoundation.org/
+[Contributing Guide]: https://github.com/dotnet/coreclr/wiki/Contributing
 
 License
 -------
