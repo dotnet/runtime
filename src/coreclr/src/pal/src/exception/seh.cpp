@@ -55,6 +55,17 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 /* Bit 28 of exception codes is reserved. */
 const UINT RESERVED_SEH_BIT = 0x800000;
 
+/* Internal variables definitions **********************************************/
+
+PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
+
+#ifdef __llvm__
+__thread 
+#else // __llvm__
+__declspec(thread)
+#endif // !__llvm__
+int t_holderCount = 0;
+
 /* Internal function declarations *********************************************/
 
 BOOL SEHInitializeConsole();
@@ -81,7 +92,8 @@ Return value :
     TRUE  if SEH support initialization succeeded
     FALSE otherwise
 --*/
-BOOL SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
+BOOL 
+SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
 {
     BOOL bRet = FALSE;
 
@@ -124,7 +136,8 @@ Parameters :
     (no return value)
     
 --*/
-void SEHCleanup (DWORD flags)
+VOID 
+SEHCleanup(DWORD flags)
 {
     TRACE("Cleaning up SEH\n");
 
@@ -135,23 +148,59 @@ void SEHCleanup (DWORD flags)
 #endif
 }
 
-PHARDWARE_EXCEPTION_HANDLER g_hardwareExceptionHandler = NULL;
+/*++
+Function:
+    PAL_SetHardwareExceptionHandler
 
+    Register a hardware exception handler.
+
+Parameters:
+    handler - exception handler
+
+Return value:
+    None
+--*/
 VOID
 PALAPI 
-PAL_SetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
+PAL_SetHardwareExceptionHandler(
+    IN PHARDWARE_EXCEPTION_HANDLER exceptionHandler)
+
 {
-    g_hardwareExceptionHandler = handler;
+    g_hardwareExceptionHandler = exceptionHandler;
 }
 
-#ifdef FEATURE_PAL_SXS
-BOOL
-PALAPI
-PAL_RegisterMacEHPort()
-{
-    return SEHEnable(InternalGetCurrentThread()) == ERROR_SUCCESS;
-}
+/*++
+Function:
+    SEHProcessException
 
+    Build the PAL exception and sent it to any handler registered.
+
+Parameters:
+    PEXCEPTION_POINTERS pointers
+
+Return value:
+    Does not return
+--*/
+PAL_NORETURN
+VOID
+SEHProcessException(PEXCEPTION_POINTERS pointers)
+{
+    PAL_SEHException exception(pointers->ExceptionRecord, pointers->ContextRecord);
+
+    if (g_hardwareExceptionHandler != NULL)
+    {
+        g_hardwareExceptionHandler(&exception);
+    }
+
+    if (PAL_CatchHardwareExceptionHolder::IsEnabled())
+    {
+        throw exception;
+    }
+
+    ASSERT("Unhandled hardware exception %08x\n", pointers->ExceptionRecord->ExceptionCode);
+
+    ExitProcess(pointers->ExceptionRecord->ExceptionCode);
+}
 
 /*++
 Function :
@@ -206,6 +255,26 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 #error not yet implemented
 #endif // HAVE_MACH_EXCEPTIONS
 }
-#endif // FEATURE_PAL_SXS
+
+/*++
+
+PAL_HandlerExceptionHolder implementation
+
+--*/
+
+PAL_CatchHardwareExceptionHolder::PAL_CatchHardwareExceptionHolder()
+{
+    ++t_holderCount;
+}
+
+PAL_CatchHardwareExceptionHolder::~PAL_CatchHardwareExceptionHolder()
+{
+    --t_holderCount;
+}
+
+bool PAL_CatchHardwareExceptionHolder::IsEnabled()
+{
+    return t_holderCount > 0;
+}
 
 #include "seh-unwind.cpp"

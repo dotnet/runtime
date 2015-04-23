@@ -658,12 +658,14 @@ PAL_InitializeCoreCLR(
     int result = PAL_Initialize(1, &szExePath);
 #endif // __APPLE__
     if (result != 0)
+    {
         return GetLastError();
+    }
 
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
-    if (!LOADInitCoreCLRModules())
+    if (!LOADInitCoreCLRModules(g_szCoreCLRPath))
     {
         return ERROR_DLL_INIT_FAILED;
     }

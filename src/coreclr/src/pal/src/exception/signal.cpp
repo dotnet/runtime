@@ -132,6 +132,10 @@ void SEHInitializeSignals(DWORD flags)
     handle_signal(SIGFPE,    sigfpe_handler);
     handle_signal(SIGBUS,    sigbus_handler);
     handle_signal(SIGSEGV,   sigsegv_handler);
+#if USE_SIGNALS_FOR_THREAD_SUSPENSION
+    handle_signal(SIGUSR1,   suspend_handler);
+    handle_signal(SIGUSR2,   resume_handler);
+#endif
 
     if (flags & PAL_INITIALIZE_ALL_SIGNALS)
     {
@@ -160,10 +164,6 @@ void SEHInitializeSignals(DWORD flags)
 #ifdef SIGINFO
         handle_signal(SIGINFO,   NULL);
 #endif  // SIGINFO
-#if USE_SIGNALS_FOR_THREAD_SUSPENSION
-        handle_signal(SIGUSR1,   suspend_handler);
-        handle_signal(SIGUSR2,   resume_handler);
-#endif
         
         /* The default action for SIGPIPE is process termination.
            Since SIGPIPE can be signaled when trying to write on a socket for which
@@ -548,25 +548,13 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
 
     /* Unmask signal so we can receive it again */
     sigemptyset(&signal_set);
-    sigaddset(&signal_set,code);
-    if(-1 == sigprocmask(SIG_UNBLOCK,&signal_set,NULL))
+    sigaddset(&signal_set, code);
+    if(-1 == sigprocmask(SIG_UNBLOCK, &signal_set, NULL))
     {
-        ASSERT("sigprocmask failed; error is %d (%s)\n",errno, strerror(errno));
+        ASSERT("sigprocmask failed; error is %d (%s)\n", errno, strerror(errno));
     } 
 
-    if (g_hardwareExceptionHandler != NULL)
-    {
-        PAL_SEHException exception(pointers->ExceptionRecord, pointers->ContextRecord);
-
-        g_hardwareExceptionHandler(&exception);
-        ASSERT("HardwareExceptionHandler has returned, it should not.");
-    }
-    else
-    {
-        ASSERT("Unhandled hardware exception\n");
-    }
-
-    ExitProcess(pointers->ExceptionRecord->ExceptionCode);
+    SEHProcessException(pointers);
 }
 
 /*++
