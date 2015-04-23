@@ -37,6 +37,28 @@ namespace System.Text
         {
         }
 
+        // Method assumes that memory pointer is aligned
+        private static unsafe void ZeroMemAligned(byte* buffer, int count)
+        {
+            long* pLong = (long*)buffer;
+            long* pLongEnd = (long*)(buffer + count - sizeof(long));
+
+            while (pLong < pLongEnd)
+            {
+                *pLong = 0;
+                pLong++;
+            }
+
+            byte* pByte = (byte*)pLong;
+            byte* pEnd = buffer + count;
+
+            while (pByte < pEnd)
+            {
+                *pByte = 0;
+                pByte++;
+            }
+        }
+
         // We have a managed code page entry, so load our tables
         // SBCS data section looks like:
         //
@@ -69,10 +91,15 @@ namespace System.Text
 
                 // Get our mapped section 65536 bytes for unicode->bytes, 256 * 2 bytes for bytes->unicode
                 // Plus 4 byte to remember CP # when done loading it. (Don't want to get IA64 or anything out of alignment)
-                byte* pNativeMemory = GetNativeMemory(65536 * 1 + 256 * 2 + 4 + iExtraBytes);
+                const int UnicodeToBytesMappingSize = 65536;
+                const int BytesToUnicodeMappingSize = 256 * 2;
+                const int CodePageNumberSize = 4;
+                int bytesToAllocate = UnicodeToBytesMappingSize + BytesToUnicodeMappingSize + CodePageNumberSize + iExtraBytes;
+                byte* pNativeMemory = GetNativeMemory(bytesToAllocate);
+                ZeroMemAligned(pNativeMemory, bytesToAllocate);
 
-                _mapBytesToUnicode = (char*)pNativeMemory;
-                _mapUnicodeToBytes = (byte*)(pNativeMemory + 256 * 2);
+                char* mapBytesToUnicode = (char*)pNativeMemory;
+                byte* mapUnicodeToBytes = (byte*)(pNativeMemory + 256 * 2);
 
                 // Need to read our data file and fill in our section.
                 // WARNING: Multiple code pieces could do this at once (so we don't have to lock machine-wide)
@@ -96,17 +123,20 @@ namespace System.Text
                         // Don't want to force 0's to map Unicode wrong.  0 byte == 0 unicode already taken care of
                         if (pTemp[b] != 0 || b == 0)
                         {
-                            _mapBytesToUnicode[b] = pTemp[b];
+                            mapBytesToUnicode[b] = pTemp[b];
 
                             if (pTemp[b] != UNKNOWN_CHAR)
-                                _mapUnicodeToBytes[pTemp[b]] = (byte)b;
+                                mapUnicodeToBytes[pTemp[b]] = (byte)b;
                         }
                         else
                         {
-                            _mapBytesToUnicode[b] = UNKNOWN_CHAR;
+                            mapBytesToUnicode[b] = UNKNOWN_CHAR;
                         }
                     }
                 }
+                
+                _mapBytesToUnicode = mapBytesToUnicode;
+                _mapUnicodeToBytes = mapUnicodeToBytes;
             }
         }
 
