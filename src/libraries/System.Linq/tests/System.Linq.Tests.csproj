@@ -35,6 +35,7 @@
     <ProjectReference Include="..\src\System.Linq.csproj">
       <Project>{ca488507-3b6e-4494-b7be-7b4eeeb2c4d1}</Project>
       <Name>System.Linq</Name>
+      <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
