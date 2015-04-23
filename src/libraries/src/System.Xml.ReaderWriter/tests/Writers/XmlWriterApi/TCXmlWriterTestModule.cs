@@ -100,6 +100,7 @@ namespace XmlWriterAPI.Test
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(1491)]
         static public void TCFullEndElement()
         {
             RunTest(() => new TCFullEndElement() { Attribute = new TestCase() { Name = "WriteFullEndElement" } });
