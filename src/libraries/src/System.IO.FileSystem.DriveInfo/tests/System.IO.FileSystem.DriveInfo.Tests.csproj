@@ -8,7 +8,6 @@
     <RootNamespace>System.IO.FileSystem.DriveInfo.Tests</RootNamespace>
     <AssemblyName>System.IO.FileSystem.DriveInfo.Tests</AssemblyName>
     <ProjectGuid>{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}</ProjectGuid>
-    <TestCategories>InnerLoop;OuterLoop</TestCategories>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
