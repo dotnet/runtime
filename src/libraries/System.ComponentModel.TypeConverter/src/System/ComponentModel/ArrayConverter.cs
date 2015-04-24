@@ -26,7 +26,7 @@ namespace System.ComponentModel
             {
                 if (value is Array)
                 {
-                    return SR.Format(SR.ArrayConverterText, value.GetType().Name);
+                    return SR.Format(SR.Array, value.GetType().Name);
                 }
             }
 

@@ -25,7 +25,7 @@ namespace System.ComponentModel
             {
                 if (value is string)
                 {
-                    return SR.MultilineStringConverterText;
+                    return SR.Text;
                 }
             }
 

@@ -72,7 +72,7 @@ namespace System.ComponentModel
             {
                 if (value == null)
                 {
-                    return SR.ToStringNone;
+                    return SR.none;
                 }
                 else
                 {

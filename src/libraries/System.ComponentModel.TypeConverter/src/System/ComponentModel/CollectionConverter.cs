@@ -28,7 +28,7 @@ namespace System.ComponentModel
             {
                 if (value is ICollection)
                 {
-                    return SR.CollectionConverterText;
+                    return SR.Collection;
                 }
             }
 
