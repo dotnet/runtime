@@ -117,10 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArrayConverterText" xml:space="preserve">
+  <data name="Array" xml:space="preserve">
     <value>{0} Array</value>
   </data>
-  <data name="CollectionConverterText" xml:space="preserve">
+  <data name="Collection" xml:space="preserve">
     <value>(Collection)</value>
   </data>
   <data name="ConvertFromException" xml:space="preserve">
@@ -138,16 +138,16 @@
   <data name="InvalidMemberName" xml:space="preserve">
     <value>Invalid member name</value>
   </data>
-  <data name="MultilineStringConverterText" xml:space="preserve">
+  <data name="Text" xml:space="preserve">
     <value>(Text)</value>
   </data>
   <data name="NullableConverterBadCtorArg" xml:space="preserve">
     <value>The specified type is not a nullable type.</value>
   </data>
-  <data name="ToStringNone" xml:space="preserve">
+  <data name="none" xml:space="preserve">
     <value>(none)</value>
   </data>
-  <data name="ToStringNull" xml:space="preserve">
+  <data name="Null" xml:space="preserve">
     <value>(null)</value>
   </data>
 </root>

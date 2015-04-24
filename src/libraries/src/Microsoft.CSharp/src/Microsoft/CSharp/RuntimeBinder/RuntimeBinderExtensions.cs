@@ -287,7 +287,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 #if UNSUPPORTEDAPI
             return (mi1.MetadataToken == mi2.MetadataToken) && (mi1.Module == mi2.Module));
 #else
-            if (mi1.Module != mi2.Module)
+            if (!mi1.Module.Equals(mi2.Module))
             {
                 return false;
             }
