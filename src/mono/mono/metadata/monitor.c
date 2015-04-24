@@ -153,7 +153,19 @@ mono_monitor_cleanup (void)
 	for (mon = monitor_freelist; mon; mon = mon->data)
 		mon->wait_list = (gpointer)-1;
 
-	/* FIXME: This still crashes with sgen (async_read.exe) */
+	/*
+	 * FIXME: This still crashes with sgen (async_read.exe)
+	 *
+	 * In mini_cleanup() we first call mono_runtime_cleanup(), which calls
+	 * mono_monitor_cleanup(), which is supposed to free all monitor memory.
+	 *
+	 * Later in mini_cleanup(), we call mono_domain_free(), which calls
+	 * mono_gc_clear_domain(), which frees all weak links associated with objects.
+	 * Those weak links reside in the monitor structures, which we've freed earlier.
+	 *
+	 * Unless we fix this dependency in the shutdown sequence this code has to remain
+	 * disabled, or at least the call to g_free().
+	 */
 	/*
 	for (marray = monitor_allocated; marray; marray = next) {
 		int i;
