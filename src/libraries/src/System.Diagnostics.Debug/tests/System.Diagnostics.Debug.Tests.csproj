@@ -8,6 +8,10 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Diagnostics.Debug.Tests</AssemblyName>
     <RootNamespace>System.Diagnostics.Tests</RootNamespace>
+    <NuGetTargetFrameworkMoniker>ASP.NetCore, version=v5.0</NuGetTargetFrameworkMoniker>
+    <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
+    <PostFilterNugetReferences>true</PostFilterNugetReferences>
+    <NoWarn>1685</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -23,6 +27,7 @@
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.CoreCLR.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

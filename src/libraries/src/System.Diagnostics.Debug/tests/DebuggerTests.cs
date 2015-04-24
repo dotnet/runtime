@@ -11,21 +11,18 @@ namespace System.Diagnostics.Tests
         public void IsAttached()
         {
             // TODO: Implement this when Debugger is properly implemented
-            Assert.False(Debugger.IsAttached);
         }
 
         [Fact]
         public void Launch()
         {
             // TODO: Implement this when Debugger is properly implemented
-            Assert.Throws<NotImplementedException>(() => Debugger.Launch());
         }
 
         [Fact]
         public void Break()
         {
             // TODO: Implement this when Debugger is properly implemented
-            Assert.Throws<NotImplementedException>(() => Debugger.Break());
         }
     }
 }

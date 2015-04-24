@@ -6,7 +6,11 @@ using System.Threading;
 
 namespace System.Diagnostics
 {
+#if PUBLIC_DEBUG
     public static partial class Debug
+#else
+    internal static partial class Debug
+#endif
     {
         // internal and not read only so that the tests can swap this out.
         internal static IDebugLogger s_logger = new WindowsDebugLogger();
@@ -22,37 +26,19 @@ namespace System.Diagnostics
             {
                 string fullMessage = message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace;
 
-                int flags = Interop.User32.MB_OKCANCEL | Interop.User32.MB_ICONHAND | Interop.User32.MB_TOPMOST;
-
-                if (IsRTLResources)
+                Debug.WriteLine(fullMessage);
+                if (Debugger.IsAttached)
                 {
-                    flags = flags | Interop.User32.MB_RIGHT | Interop.User32.MB_RTLREADING;
+                    Debugger.Break();
                 }
-
-                int rval = 0;
-
-                // Run the message box on its own thread.
-                rval = new MessageBoxPopup(fullMessage, SR.DebugAssertTitle, flags).ShowMessageBox();
-
-                switch (rval)
+                else
                 {
-                    case Interop.User32.IDCANCEL:
-                        if (!System.Diagnostics.Debugger.IsAttached)
-                        {
-                            System.Diagnostics.Debugger.Launch();
-                        }
-                        System.Diagnostics.Debugger.Break();
-                        break;
-                    default:
-                        Debug.Assert(rval == Interop.User32.IDOK);
-                        break;
+                    Environment.FailFast(fullMessage);
                 }
             }
 
             public void WriteCore(string message)
             {
-                Assert(message != null);
-
                 // really huge messages mess up both VS and dbmon, so we chop it up into 
                 // reasonable chunks if it's too big. This is the number of characters 
                 // that OutputDebugstring chunks at.
@@ -61,7 +47,7 @@ namespace System.Diagnostics
                 // We don't want output from multiple threads to be interleaved.
                 lock (s_ForLock)
                 {
-                    if (message.Length <= WriteChunkLength)
+                    if (message == null || message.Length <= WriteChunkLength)
                     {
                         WriteToDebugger(message);
                     }
@@ -80,45 +66,13 @@ namespace System.Diagnostics
             [System.Security.SecuritySafeCritical]
             private static void WriteToDebugger(string message)
             {
-                Interop.mincore.OutputDebugString(message);
-            }
-
-            private static bool IsRTLResources
-            {
-                get
+                if (Debugger.IsLogging())
                 {
-                    return SR.RTL != "RTL_False";
+                    Debugger.Log(0, null, message);
                 }
-            }
-
-            internal class MessageBoxPopup
-            {
-                private readonly string _body;
-                private readonly string _title;
-                private readonly int _flags;
-                private int _returnValue;
-
-
-                [SecurityCritical]
-                public MessageBoxPopup(string body, string title, int flags)
+                else
                 {
-                    _body = body;
-                    _title = title;
-                    _flags = flags;
-                }
-
-                public int ShowMessageBox()
-                {
-                    Thread t = new Thread(DoPopup);
-                    t.Start();
-                    t.Join();
-                    return _returnValue;
-                }
-
-                [SecuritySafeCritical]
-                public void DoPopup()
-                {
-                    _returnValue = Interop.User32.MessageBox(IntPtr.Zero, _body, _title, _flags);
+                    Interop.mincore.OutputDebugString(message ?? string.Empty);
                 }
             }
         }
