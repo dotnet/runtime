@@ -47,8 +47,8 @@ namespace System.IO.Compression.Test
         [Fact]
         public static void InvalidFiles()
         {
-            ConstructorThrows<InvalidDataException>(() => ZipFile.OpenRead(bad("EOCDMissing.zip")));
-            ConstructorThrows<InvalidDataException>(() => ZipFile.Open(bad("EOCDMissing.zip"), ZipArchiveMode.Update));
+            ConstructorThrows<InvalidDataException>(() => ZipFile.OpenRead(bad("EOCDmissing.zip")));
+            ConstructorThrows<InvalidDataException>(() => ZipFile.Open(bad("EOCDmissing.zip"), ZipArchiveMode.Update));
             ConstructorThrows<InvalidDataException>(() => ZipFile.OpenRead(bad("CDoffsetOutOfBounds.zip")));
             ConstructorThrows<InvalidDataException>(() => ZipFile.Open(bad("CDoffsetOutOfBounds.zip"), ZipArchiveMode.Update));
 
@@ -102,7 +102,7 @@ namespace System.IO.Compression.Test
         public static void UnsupportedCompression()
         {
             //lzma compression method
-            UnsupportedCompressionRoutine(bad("lzma.zip"), true);
+            UnsupportedCompressionRoutine(bad("LZMA.zip"), true);
 
             UnsupportedCompressionRoutine(bad("invalidDeflate.zip"), false);
         }
