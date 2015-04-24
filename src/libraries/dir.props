@@ -1,9 +1,20 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
-  <!-- Build Tools Version -->
+
+  <!--
+    OsVersionPlatform is set to Unix/Win32NT.
+  -->
+  <PropertyGroup>
+    <OsVersionPlatform>$([System.Environment]::OSVersion.Platform)</OsVersionPlatform>
+  </PropertyGroup>
+
+  <!-- Build Tools Versions -->
   <PropertyGroup>
     <BuildToolsVersion>1.0.25-prerelease-00040</BuildToolsVersion>
-    <DnxVersion>1.0.0-beta5-11580</DnxVersion>
+    <DnxVersion Condition="'$(OsVersionPlatform)'!='Unix'">1.0.0-beta5-11580</DnxVersion>
+    <DnxVersion Condition="'$(OsVersionPlatform)'=='Unix'">1.0.0-beta5-11624</DnxVersion>
+    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsVersionPlatform)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
+    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsVersionPlatform)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -36,7 +47,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DnuToolPath Condition="'$(DnuToolPath)' == ''">$(PackagesDir)dnx-coreclr-win-x86.$(DnxVersion)\bin\dnu.cmd</DnuToolPath>
+    <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsVersionPlatform)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsVersionPlatform)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
 
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
@@ -46,6 +59,7 @@
          so we ignore the pre-calculation in the lock file and calculate asset applicability in the build task -->
     <NuGetIngoreLockFile>true</NuGetIngoreLockFile>
   </PropertyGroup>
+
   <!-- 
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
