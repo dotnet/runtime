@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -23,7 +23,7 @@ namespace Xunit.TraitDiscoverers
         public IEnumerable<KeyValuePair<string, string>> GetTraits(IAttributeInfo traitAttribute)
         {
             IEnumerable<object> ctorArgs = traitAttribute.GetConstructorArguments();
-            Contract.Assert(ctorArgs.Count() >= 2);
+            Debug.Assert(ctorArgs.Count() >= 2);
 
             string issue = ctorArgs.First().ToString();
             PlatformID platforms = (PlatformID)ctorArgs.Last();
