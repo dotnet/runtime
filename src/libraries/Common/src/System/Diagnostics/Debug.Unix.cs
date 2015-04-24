@@ -7,7 +7,11 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
 {
+#if PUBLIC_DEBUG
     public static partial class Debug
+#else
+    internal static partial class Debug
+#endif
     {
         // internal and not read only so that the tests can swap this out.
         internal static IDebugLogger s_logger = new UnixDebugLogger();
