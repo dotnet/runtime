@@ -55,7 +55,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private const int LOG2_SYMTBL_INITIAL_BUCKET_CNT = 13;    // Initial local size: 8192 buckets.
 
-        private static readonly TypeArray s_taEmpty = new TypeArray(new CType[] { });
+        private static readonly TypeArray s_taEmpty = new TypeArray(Array.Empty<CType>());
 
         public BSYMMGR(NameManager nameMgr, TypeManager typeManager)
         {

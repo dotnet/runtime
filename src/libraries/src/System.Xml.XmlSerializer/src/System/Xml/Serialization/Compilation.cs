@@ -35,7 +35,6 @@ namespace System.Xml.Serialization
         private IDictionary _writerMethods;
         private IDictionary _readerMethods;
         private TempMethodDictionary _methods;
-        private static object[] s_emptyObjectArray = new object[0];
 
         internal class TempMethod
         {
@@ -108,9 +107,9 @@ namespace System.Xml.Serialization
             AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
             ConstructorInfo SecurityTransparentAttribute_ctor = typeof(SecurityTransparentAttribute).GetConstructor(
                 CodeGenerator.InstanceBindingFlags,
-                CodeGenerator.EmptyTypeArray
+                Array.Empty<Type>()
                 );
-            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityTransparentAttribute_ctor, new Object[0]));
+            assemblyBuilder.SetCustomAttribute(new CustomAttributeBuilder(SecurityTransparentAttribute_ctor, Array.Empty<Object>()));
             CodeIdentifiers classes = new CodeIdentifiers();
             classes.AddUnique("XmlSerializationWriter", "XmlSerializationWriter");
             classes.AddUnique("XmlSerializationReader", "XmlSerializationReader");
@@ -229,7 +228,7 @@ namespace System.Xml.Serialization
                     }
                     _methods[mapping.Key].readMethod = GetMethodFromType(reader.GetType(), methodName);
                 }
-                return _methods[mapping.Key].readMethod.Invoke(reader, s_emptyObjectArray);
+                return _methods[mapping.Key].readMethod.Invoke(reader, Array.Empty<object>());
             }
             catch (SecurityException e)
             {

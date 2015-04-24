@@ -36,8 +36,7 @@ namespace System.Xml
         private int _windowOffset;
         private int _windowOffsetMax;
         private ValueHandle _listValue;
-        private static byte[] s_emptyByteArray = new byte[0];
-        private static XmlBufferReader s_empty = new XmlBufferReader(s_emptyByteArray);
+        private static XmlBufferReader s_empty = new XmlBufferReader(Array.Empty<byte>());
 
         public XmlBufferReader(XmlDictionaryReader reader)
         {
@@ -113,7 +112,7 @@ namespace System.Xml
                 _stream.Dispose();
                 _stream = null;
             }
-            _buffer = s_emptyByteArray;
+            _buffer = Array.Empty<byte>();
             _offset = 0;
             _offsetMax = 0;
             _windowOffset = 0;

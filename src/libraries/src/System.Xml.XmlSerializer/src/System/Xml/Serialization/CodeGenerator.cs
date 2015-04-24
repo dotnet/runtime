@@ -36,8 +36,6 @@ namespace System.Xml.Serialization
         internal static MethodAttributes PublicOverrideMethodAttributes = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
         internal static MethodAttributes ProtectedOverrideMethodAttributes = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
         internal static MethodAttributes PrivateMethodAttributes = MethodAttributes.Private | MethodAttributes.HideBySig;
-        internal static Type[] EmptyTypeArray = new Type[] { };
-        internal static string[] EmptyStringArray = new string[] { };
 
         private TypeBuilder _typeBuilder;
         private MethodBuilder _methodBuilder;
@@ -323,7 +321,7 @@ namespace System.Xml.Serialization
                     MethodInfo ICollection_get_Count = typeof(ICollection).GetMethod(
                           "get_Count",
                           CodeGenerator.InstanceBindingFlags,
-                          CodeGenerator.EmptyTypeArray
+                          Array.Empty<Type>()
                           );
                     Call(ICollection_get_Count);
                 }

@@ -863,7 +863,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, "type");
             ContractUtils.RequiresNotNull(methodName, "methodName");
 
-            if (arguments == null) arguments = new Expression[] { };
+            if (arguments == null) arguments = Array.Empty<Expression>();
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
             return Expression.Call(null, FindMethod(type, methodName, typeArguments, arguments, flags), arguments);
         }

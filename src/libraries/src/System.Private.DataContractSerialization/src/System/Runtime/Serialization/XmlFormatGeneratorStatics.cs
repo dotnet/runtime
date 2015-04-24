@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_writeEndElementMethod == null)
-                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, new Type[] { });
+                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, Array.Empty<Type>());
                 return s_writeEndElementMethod;
             }
         }
@@ -147,7 +147,7 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_isStartElementMethod0 == null)
-                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, new Type[] { });
+                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, Array.Empty<Type>());
                 return s_isStartElementMethod0;
             }
         }
@@ -190,7 +190,7 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_hashtableCtor == null)
-                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Globals.EmptyTypeArray);
+                    s_hashtableCtor = Globals.TypeOfHashtable.GetConstructor(Globals.ScanAllMembers, Array.Empty<Type>());
                 return s_hashtableCtor;
             }
         }
