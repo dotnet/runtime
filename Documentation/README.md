@@ -11,6 +11,7 @@ Get CoreCLR
 Build CoreCLR from Source
 =========================
 
+- [Building CoreCLR on FreeBSD](freebsd-instructions.md)
 - [Building CoreCLR on Linux](linux-instructions.md)
 - [Building CoreCLR on OS X](osx-instructions.md)
 - [Building CoreCLR on Windows](windows-instructions.md)
