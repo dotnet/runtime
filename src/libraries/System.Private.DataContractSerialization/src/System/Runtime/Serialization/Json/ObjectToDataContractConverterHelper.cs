@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization.Json
             DataContractJsonSerializer.InvokeOnDeserialized(o, dataContract, context);
             if (dataContract.IsKeyValuePairAdapter)
             {
-                return dataContract.GetKeyValuePairMethodInfo.Invoke(o, Globals.EmptyTypeArray);
+                return dataContract.GetKeyValuePairMethodInfo.Invoke(o, Array.Empty<Type>());
             }
             return o;
         }
@@ -176,7 +176,7 @@ namespace System.Runtime.Serialization.Json
                 return ConvertDictionary(serializer, contract, valueAsDictionary, context);
             }
 
-            object returnValue = (contract.Constructor != null) ? contract.Constructor.Invoke(Globals.EmptyTypeArray) : null;
+            object returnValue = (contract.Constructor != null) ? contract.Constructor.Invoke(Array.Empty<Type>()) : null;
 
             bool isCollectionDataContractDictionary = contract.IsDictionary;
             MethodInfo addMethod = contract.AddMethod;

@@ -379,8 +379,8 @@ namespace System.Runtime.Serialization
                     {
                         enumeratorType = collectionContract.GetEnumeratorMethod.ReturnType;
                     }
-                    MethodInfo moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, Globals.EmptyTypeArray);
-                    MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Globals.EmptyTypeArray);
+                    MethodInfo moveNextMethod = enumeratorType.GetMethod(Globals.MoveNextMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
+                    MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
                     if (moveNextMethod == null || getCurrentMethod == null)
                     {
                         if (enumeratorType.GetTypeInfo().IsInterface)

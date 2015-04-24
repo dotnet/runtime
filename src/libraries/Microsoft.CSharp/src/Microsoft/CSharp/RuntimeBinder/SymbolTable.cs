@@ -220,7 +220,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private IEnumerable<MemberInfo> AddNamesInInheritanceHierarchy(string name, List<Type> inheritance)
         {
-            IEnumerable<MemberInfo> result = new MemberInfo[0];
+            IEnumerable<MemberInfo> result = Array.Empty<MemberInfo>();
 
             foreach (Type t in inheritance)
             {

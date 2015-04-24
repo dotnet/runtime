@@ -98,7 +98,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSerializer(Type type, XmlRootAttribute root) : this(type, null, new Type[0], root, null, null, null)
+        public XmlSerializer(Type type, XmlRootAttribute root) : this(type, null, Array.Empty<Type>(), root, null, null, null)
         {
         }
 
@@ -114,7 +114,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlSerializer(Type type, XmlAttributeOverrides overrides) : this(type, overrides, new Type[0], null, null, null, null)
+        public XmlSerializer(Type type, XmlAttributeOverrides overrides) : this(type, overrides, Array.Empty<Type>(), null, null, null, null)
         {
         }
 

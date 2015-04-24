@@ -20,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private List<CSharpArgumentInfo> _argumentInfo;
 
         public bool StaticCall { get { return true; } }
-        public IList<Type> TypeArguments { get { return new Type[0]; } }
+        public IList<Type> TypeArguments { get { return Array.Empty<Type>(); } }
         public string Name { get { return ".ctor"; } }
 
         bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded { get { return false; } }

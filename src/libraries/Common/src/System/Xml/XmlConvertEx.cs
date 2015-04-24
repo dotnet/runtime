@@ -171,7 +171,7 @@ namespace System.Xml
 
         private static Exception CreateException(string res, ExceptionType exceptionType, int lineNo, int linePos)
         {
-            return CreateException(res, new string[] { }, exceptionType, lineNo, linePos);
+            return CreateException(res, Array.Empty<string>(), exceptionType, lineNo, linePos);
         }
 
         public static Exception CreateInvalidCharException(string data, int invCharPos, ExceptionType exceptionType)

@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization.Json
             List<object> serializedList = new List<object>();
             MethodInfo getEnumeratorMethod = dataContract.GetEnumeratorMethod;
 
-            IEnumerator enumerator = (getEnumeratorMethod == null) ? value.GetEnumerator() : (IEnumerator)getEnumeratorMethod.Invoke(value, Globals.EmptyTypeArray);
+            IEnumerator enumerator = (getEnumeratorMethod == null) ? value.GetEnumerator() : (IEnumerator)getEnumeratorMethod.Invoke(value, Array.Empty<Type>());
             while (enumerator.MoveNext())
             {
                 if (enumerator.Current == null || enumerator.Current.GetType().GetTypeInfo().IsPrimitive)
@@ -63,7 +63,7 @@ namespace System.Runtime.Serialization.Json
             Type[] declaredTypes = dataContract.ItemType.GetGenericArguments();
             MethodInfo getEnumeratorMethod = dataContract.GetEnumeratorMethod;
 
-            IDictionaryEnumerator enumerator = (IDictionaryEnumerator)((getEnumeratorMethod == null) ? value.GetEnumerator() : (IDictionaryEnumerator)getEnumeratorMethod.Invoke(value, Globals.EmptyTypeArray));
+            IDictionaryEnumerator enumerator = (IDictionaryEnumerator)((getEnumeratorMethod == null) ? value.GetEnumerator() : (IDictionaryEnumerator)getEnumeratorMethod.Invoke(value, Array.Empty<Type>()));
             while (enumerator.MoveNext())
             {
                 DictionaryEntry current = enumerator.Entry;

@@ -535,35 +535,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-
-
-        [SecurityCritical]
-        private static object[] s_emptyObjectArray;
-        internal static object[] EmptyObjectArray
-        {
-            [SecuritySafeCritical]
-            get
-            {
-                if (s_emptyObjectArray == null)
-                    s_emptyObjectArray = new object[0];
-                return s_emptyObjectArray;
-            }
-        }
-
-        [SecurityCritical]
-        private static Type[] s_emptyTypeArray;
-        internal static Type[] EmptyTypeArray
-        {
-            [SecuritySafeCritical]
-            get
-            {
-                if (s_emptyTypeArray == null)
-                    s_emptyTypeArray = new Type[0];
-                return s_emptyTypeArray;
-            }
-        }
-
-
         [SecurityCritical]
         private static Type s_typeOfNullable;
         internal static Type TypeOfNullable
