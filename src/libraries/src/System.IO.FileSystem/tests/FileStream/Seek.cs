@@ -207,7 +207,7 @@ namespace System.IO.FileSystem.Tests
 
             Assert.Equal(position, stream.Seek(0, SeekOrigin.Current));
             Assert.Equal(position, stream.Position);
-            
+
             Assert.Equal(position, stream.Seek(position - stream.Length, SeekOrigin.End));
             Assert.Equal(position, stream.Position);
         }
@@ -256,5 +256,57 @@ namespace System.IO.FileSystem.Tests
                 Assert.Equal(0x2A, fs.ReadByte());
             }
         }
+
+        [Fact]
+        public void RandomSeekReadConsistency()
+        {
+            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            {
+                var rand = new Random(1); // fixed seed to enable repeatable runs
+                const int Trials = 1000;
+                const int FileLength = 0x4000;
+                const int MaxBytesToRead = 21;
+
+                // Write data to the file
+                var buffer = new byte[FileLength];
+                for (int i = 0; i < buffer.Length; i++)
+                    buffer[i] = (byte)i;
+                fs.Write(buffer, 0, buffer.Length);
+                fs.Position = 0;
+
+                // Repeatedly jump around, reading, and making sure we get the right data back
+                for (int trial = 0; trial < Trials; trial++)
+                {
+                    // Pick some number of bytes to read
+                    int bytesToRead = rand.Next(1, MaxBytesToRead);
+
+                    // Jump to a random position, seeking either from one of the possible origins
+                    SeekOrigin origin = (SeekOrigin)rand.Next(3);
+                    int offset = 0;
+                    switch (origin)
+                    {
+                        case SeekOrigin.Begin:
+                            offset = rand.Next(0, (int)fs.Length - bytesToRead);
+                            break;
+                        case SeekOrigin.Current:
+                            offset = rand.Next(-(int)fs.Position + bytesToRead, (int)fs.Length - (int)fs.Position - bytesToRead);
+                            break;
+                        case SeekOrigin.End:
+                            offset = -rand.Next(bytesToRead, (int)fs.Length);
+                            break;
+                    }
+                    long pos = fs.Seek(offset, origin);
+                    Assert.InRange(pos, 0, fs.Length - bytesToRead - 1);
+
+                    // Read the requested number of bytes, and verify each is correct
+                    for (int i = 0; i < bytesToRead; i++)
+                    {
+                        int byteRead = fs.ReadByte();
+                        Assert.Equal(buffer[pos + i], byteRead);
+                    }
+                }
+            }
+        }
+
     }
 }
