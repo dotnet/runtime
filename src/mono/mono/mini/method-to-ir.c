@@ -5734,15 +5734,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			cfg->flags |= MONO_CFG_HAS_ARRAY_ACCESS;
 
 			return ins;
-		} else if (strcmp (cmethod->name, "InternalSetChar") == 0 && fsig->param_count == 3) {
-			int mult_reg = alloc_preg (cfg);
-			int add_reg = alloc_preg (cfg);
-
-			/* The corlib functions check for oob already. */
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, mult_reg, args [1]->dreg, 1);
-			MONO_EMIT_NEW_BIALU (cfg, OP_PADD, add_reg, mult_reg, args [0]->dreg);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, add_reg, MONO_STRUCT_OFFSET (MonoString, chars), args [2]->dreg);
-			return cfg->cbb->last_ins;
 		} else 
 			return NULL;
 	} else if (cmethod->klass == mono_defaults.object_class) {
