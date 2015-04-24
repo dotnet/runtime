@@ -677,6 +677,7 @@ private: ;
         EHClauseInfo m_EHClauseInfo;
         EnclosingClauseInfo m_EnclosingClauseInfo;
         EnclosingClauseInfo m_EnclosingClauseInfoForGCReporting;
+        bool m_fFixupCallerSPForGCReporting;
 
     public:
         // Save the state of the source exception tracker
