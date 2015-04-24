@@ -6,18 +6,18 @@ The CoreCLR repo contains the complete runtime implementation for [.NET Core](ht
 Build Status
 ------------
 
-|         |Linux   |Windows |Mac OS X |
-|---------|:------:|:------:|:-------:|
-|**Debug**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/) |
-|**Release**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/) |
+|         |Linux   |Windows |Mac OS X |FreeBSD  |
+|---------|:------:|:------:|:-------:|:-------:|
+|**Debug**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/) |[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_debug/) |
+|**Release**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/) |[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_release/) |
 
 Get CoreCLR
 -----------
 
-|                     |Linux   |Windows |Mac OS X |
-|---------------------|:------:|:------:|:-------:|
-|Build from **Source**| [Instructions](Documentation/linux-instructions.md) | [Instructions](Documentation/windows-instructions.md) | [Instructions](Documentation/osx-instructions.md) |
-|Get **Binaries**     | |[Instructions](Documentation/get-coreclr-windows.md)||
+|                     |Linux   |Windows |Mac OS X |FreeBSD  |
+|---------------------|:------:|:------:|:-------:|:-------:|
+|Build from **Source**| [Instructions](Documentation/linux-instructions.md) | [Instructions](Documentation/windows-instructions.md) | [Instructions](Documentation/osx-instructions.md) | [Instructions](Documentation/freebsd-instructions.md) |
+|Get **Binaries**     | |[Instructions](Documentation/get-coreclr-windows.md)|||
 
 Chat Room
 ---------
