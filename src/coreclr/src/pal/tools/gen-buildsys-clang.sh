@@ -50,7 +50,7 @@ OS=`uname`
 # On FreeBSD the version number is appended without point and dash (i.e.
 # llvm-ar35).
 # Additionally, OSX doesn't use the llvm- prefix.
-if [ $OS = "Linux" -o $OS = "FreeBSD" -o $OS = "OpenBSD" ]; then
+if [ $OS = "Linux" -o $OS = "FreeBSD" -o $OS = "OpenBSD" -o $OS = "NetBSD" ]; then
   llvm_prefix="llvm-"
 elif [ $OS = "Darwin" ]; then
   llvm_prefix=""
@@ -64,6 +64,8 @@ desired_llvm_minor_version=$3
 if [ $OS = "FreeBSD" ]; then
     desired_llvm_version="$desired_llvm_major_version$desired_llvm_minor_version"
 elif [ $OS = "OpenBSD" ]; then
+    desired_llvm_version=""
+elif [ $OS = "NetBSD" ]; then
     desired_llvm_version=""
 else
   desired_llvm_version="-$desired_llvm_major_version.$desired_llvm_minor_version"
@@ -88,7 +90,7 @@ llvm_nm="$(locate_llvm_exec nm)"
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-nm"; exit 1; }
 llvm_ranlib="$(locate_llvm_exec ranlib)"
 [[ $? -eq 0 ]] || { echo "Unable to locate llvm-ranlib"; exit 1; }
-if [ $OS = "Linux" -o $OS = "FreeBSD" -o $OS = "OpenBSD" ]; then
+if [ $OS = "Linux" -o $OS = "FreeBSD" -o $OS = "OpenBSD" -o $OS = "NetBSD" ]; then
   llvm_objdump="$(locate_llvm_exec objdump)"
   [[ $? -eq 0 ]] || { echo "Unable to locate llvm-objdump"; exit 1; }
 fi
