@@ -4895,7 +4895,7 @@ Function :
     IsDivByZeroAnIntegerOverflow
 
     Check if a division by zero exception is in fact a division overflow. The
-    x64 processor generate the same exception in both cases for the IDIV 
+    x64 processor generate the same exception in both cases for the IDIV / DIV
     instruction. So we need to decode the instruction argument and check
     whether it was zero or not.
 
@@ -4923,16 +4923,17 @@ bool IsDivByZeroAnIntegerOverflow(PCONTEXT pContext)
 
     DWORD64 divisor = 0;
 
-    // Check if the instruction is IDIV. The instruction code includes the three
-    // 'reg' bits in the ModRM byte.
-    if ((code == 0xF7 || code == 0xF6) && (((*ip & 0x38) >> 3) == 7))
+    // Check if the instruction is IDIV or DIV. The instruction code includes the three
+    // 'reg' bits in the ModRM byte. These are 7 for IDIV and 6 for DIV
+    BYTE regBits = (*ip & 0x38) >> 3;
+    if ((code == 0xF7 || code == 0xF6) && (regBits == 7 || regBits == 6))
     {
         bool is8Bit = (code == 0xF6);
         divisor = GetModRMOperandValue(rex, ip, pContext, is8Bit, hasOpSizePrefix);
     }
     else
     {
-        _ASSERTE(!"Invalid instruction (expected IDIV)");
+        _ASSERTE(!"Invalid instruction (expected IDIV or DIV)");
     }
 
     // If the division operand is zero, it was division by zero. Otherwise the failure 
