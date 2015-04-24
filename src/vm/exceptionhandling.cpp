@@ -3529,6 +3529,7 @@ void ExceptionTracker::PartialTrackerState::Save(const ExceptionTracker* pSource
     m_EHClauseInfo = pSourceTracker->m_EHClauseInfo;
     m_EnclosingClauseInfo = pSourceTracker->m_EnclosingClauseInfo;
     m_EnclosingClauseInfoForGCReporting = pSourceTracker->m_EnclosingClauseInfoForGCReporting;
+    m_fFixupCallerSPForGCReporting = pSourceTracker->m_fFixupCallerSPForGCReporting;
 }
 
 // Restore the state into the target exception tracker
@@ -3542,6 +3543,7 @@ void ExceptionTracker::PartialTrackerState::Restore(ExceptionTracker* pTargetTra
     pTargetTracker->m_EHClauseInfo = m_EHClauseInfo;
     pTargetTracker->m_EnclosingClauseInfo = m_EnclosingClauseInfo;
     pTargetTracker->m_EnclosingClauseInfoForGCReporting = m_EnclosingClauseInfoForGCReporting;
+    pTargetTracker->m_fFixupCallerSPForGCReporting = m_fFixupCallerSPForGCReporting;
 }
 
 //
@@ -6087,6 +6089,8 @@ bool ExceptionTracker::IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF
     PTR_ExceptionTracker pCurrentTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
     return ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentTracker);
 }
+
+
 
 // Returns a bool indicating if the specified CrawlFrame has been unwound by any active (e.g. nested) exceptions.
 // 
