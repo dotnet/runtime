@@ -162,7 +162,7 @@ namespace System.Globalization
                 case LocaleStringData.Digits:
                     return "3;0";
                 case LocaleStringData.MonetarySymbol:
-                    return "\u00A4";
+                    return "$"; // TODO: CoreFX #846 Restore to the original value "\x00a4"
                 case LocaleStringData.Iso4217MonetarySymbol:
                     return "XDR";
                 case LocaleStringData.MonetaryDecimalSeparator:
