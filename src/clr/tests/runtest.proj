@@ -49,6 +49,7 @@
 
   
 
+  <Import Project="$(__Exclude)" Condition="'$(__Exclude)' != '' AND '$(XunitTestBinBase)' != ''" /> 
 
   <Target Name="CreateXunitWrapper"
            DependsOnTargets="CreateXunitFacts">
@@ -213,10 +214,15 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 ]]>
        </_XunitEpilog>
     </PropertyGroup>
+
+    <ItemGroup>
+        <CanonicalExcludeList Include="%(ExcludeList.FullPath)" Condition="'$(__Exclude)' != ''"/>
+    </ItemGroup>
+
     <ItemGroup>
         <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
-        <AllCMDExcludeFilter Include="@(AllCMDsPresent)" Exclude="@AllRunnableTestPaths"/>
-        <AllCMDs Include="@(AllCMDsPresent)" Exclude="@AllCMDExcludeFilter"/>
+        <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="'$(__Exclude)' != ''"/>
+        <AllCMDs Include="@(AllCMDsPresent)" Exclude="@(AllCMDExcludeFilter)"/>
         
       <AllCommamds Include="@(AllCMDs)" >
 
@@ -330,13 +336,12 @@ public class $([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)"
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateAllWrappers"
-             Properties="_CMDDIR=%(TestDirectories.Identity)"
-             Condition=" '$(NoBuild)'!='true' "/>
+             Properties="_CMDDIR=%(TestDirectories.Identity)" />
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyDependecyToCoreRoot" 
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyDependecyToCoreRoot"
              Condition=" '$(NoRun)'!='true' "/>
          
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests" 
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
              Condition=" '$(NoRun)'!='true' "/>
   </Target>
  
