@@ -218,9 +218,7 @@ marker_idle_func (void *data_untyped)
 {
 	WorkerData *data = data_untyped;
 
-	if (!continue_idle_func ())
-		return;
-
+	SGEN_ASSERT (0, continue_idle_func (), "Why are we called when we're not supposed to work?");
 	SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "The worker should only mark in concurrent collections.");
 
 	if (workers_state == STATE_WORK_ENQUEUED) {
