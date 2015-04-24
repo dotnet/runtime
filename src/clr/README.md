@@ -15,9 +15,9 @@ Get CoreCLR
 -----------
 
 |                     |Linux   |Windows |Mac OS X |FreeBSD  |
-|---------------------|:------:|:------:|:-------:|:-------:|
+|---------------------|--------|--------|---------|---------|
 |Build from **Source**| [Instructions](Documentation/linux-instructions.md) | [Instructions](Documentation/windows-instructions.md) | [Instructions](Documentation/osx-instructions.md) | [Instructions](Documentation/freebsd-instructions.md) |
-|Get **Binaries**     | |[Instructions](Documentation/get-coreclr-windows.md)|||
+|Get **Binaries**     | |[NuGet](Documentation/get-dotnetcore-windows-nuget.md) <br> [DNVM](Documentation/get-dotnetcore-windows-dnvm.md) |||
 
 Chat Room
 ---------
