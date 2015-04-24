@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Text;
 
 namespace System.IO.Compression
@@ -501,7 +501,7 @@ namespace System.IO.Compression
                     directoryIsEmpty = false;
 
                     Int32 entryNameLength = file.FullName.Length - basePath.Length;
-                    Contract.Assert(entryNameLength > 0);
+                    Debug.Assert(entryNameLength > 0);
 
                     String entryName = file.FullName.Substring(basePath.Length, entryNameLength);
 
