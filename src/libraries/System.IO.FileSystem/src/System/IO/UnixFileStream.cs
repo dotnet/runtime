@@ -945,11 +945,15 @@ namespace System.IO
             VerifyOSHandlePosition();
 
             // Flush our write/read buffer.  FlushWrite will output any write buffer we have and reset _bufferWritePos.
-            // We don't call FlushRead or FlushInternalBuffer, as that will do an unnecessary seek to rewind the read
-            // buffer, and since we're about to seek and update our position, we can simply dump the buffer and reset
-            // our read position. In the future, for some simple cases we could potentially add an optimization here to just 
-            // move data around in the buffer for short jumps, to avoid re-reading the data from disk.
+            // We don't call FlushRead, as that will do an unnecessary seek to rewind the read buffer, and since we're 
+            // about to seek and update our position, we can simply update the offset as necessary and reset our read 
+            // position and length to 0. (In the future, for some simple cases we could potentially add an optimization 
+            // here to just move data around in the buffer for short jumps, to avoid re-reading the data from disk.)
             FlushWriteBuffer();
+            if (origin == SeekOrigin.Current)
+            {
+                offset -= (_readLength - _readPos);
+            }
             _readPos = _readLength = 0;
 
             // Keep track of where we were, in case we're in append mode and need to verify
