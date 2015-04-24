@@ -450,7 +450,8 @@ namespace System.Globalization
                     invariant.sPerMille = "\x2030";               // PerMille(‰) symbol
 
                     // Currency
-                    invariant.sCurrency = "\x00a4";                // local monetary symbol "¤: for international monetary symbol
+                    // TODO: CoreFX #846 Put sCurrency back to its correct Invariant value.
+                    invariant.sCurrency = "$"; // "\x00a4";         // local monetary symbol "¤: for international monetary symbol
                     invariant.sIntlMonetarySymbol = "XDR";                  // international monetary symbol (RegionInfo)
                     invariant.iCurrencyDigits = 2;                      // # local monetary fractional digits
                     invariant.iCurrency = 0;                      // positive currency format
