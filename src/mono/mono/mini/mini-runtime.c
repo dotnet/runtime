@@ -480,7 +480,8 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
 	mono_jit_info_init (ji, NULL, info->code, info->code_size, 0, 0, 0);
 	ji->d.tramp_info = info;
 	ji->is_trampoline = TRUE;
-	// FIXME: Unwind info
+
+	ji->unwind_info = mono_cache_unwind_info (info->uw_info, info->uw_info_len);
 
 	mono_jit_info_table_add (domain, ji);
 }
@@ -504,6 +505,14 @@ mono_tramp_info_register (MonoTrampInfo *info)
 	copy->code = info->code;
 	copy->code_size = info->code_size;
 	copy->name = g_strdup (info->name);
+
+	if (info->unwind_ops) {
+		copy->uw_info = mono_unwind_ops_encode (info->unwind_ops, &copy->uw_info_len);
+	} else {
+		/* Trampolines from aot have the unwind ops already encoded */
+		copy->uw_info = info->uw_info;
+		copy->uw_info_len = info->uw_info_len;
+	}
 
 	mono_jit_lock ();
 	tramp_infos = g_slist_prepend (tramp_infos, copy);
