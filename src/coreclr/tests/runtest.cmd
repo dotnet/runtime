@@ -8,6 +8,7 @@ if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&got
 if /i "%1" == "debug"    (set __BuildType=debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=release&shift&goto Arg_Loop)
 if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&goto Arg_Loop)
+if /i "%1" == "Exclude" (set __Exclude=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "TestEnv" (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "/?"      (goto Usage)
@@ -55,6 +56,7 @@ set Core_Root=%__BinDir%
 if not exist %XunitTestBinBase% echo Error: Ensure the Test Binaries are built and are present at %XunitTestBinBase%, Run - buildtest.cmd %__BuildArch% %__BuildType% to build the tests first. && exit /b 1
 if "%Core_Root%" == ""             echo Error: Ensure you have done a successful build of the Product and Run - runtest BuildArch BuildType {path to product binaries}. && exit /b 1
 if not exist %Core_Root%\coreclr.dll echo Error: Ensure you have done a successful build of the Product and %Core_Root% contains runtime binaries. && exit /b 1
+if not "%__Exclude%"==""           (if not exist %__Exclude% echo Error: Exclusion .targets file not found && exit /b 1) 
 if not "%__TestEnv%"==""           (if not exist %__TestEnv% echo Error: Test Environment script not found && exit /b 1) 
 if not exist %__LogsDir%           md  %__LogsDir%
 
@@ -130,11 +132,12 @@ goto :eof
 :Usage
 echo.
 echo Usage:
-echo %0 BuildArch BuildType [SkipWrapperGeneration] [TestEnv TEST_ENV_SCRIPT] CORE_ROOT   where:
+echo %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] CORE_ROOT   where:
 echo.
 echo BuildArch is x64
 echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
+echo Exclude- Optional parameter - this will exclude individual tests from running, specified by ExcludeList ItemGroup in an .targets file.
 echo TestEnv- Optional parameter - this will run a custom script to set custom test envirommnent settings.
 echo CORE_ROOT The path to the runtime  
 exit /b 1
