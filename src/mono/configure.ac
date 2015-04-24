@@ -105,7 +105,9 @@ case "$host" in
 				target_win32=yes
 			fi
 		else
-			target_win32=yes
+			if test "x$host" == "x$target"; then
+				target_win32=yes
+			fi
 		fi
 		HOST_CC="gcc"
 		# Windows Vista or later is required
@@ -1147,7 +1149,7 @@ dnl ***********************************
 AC_CHECK_HEADERS(signal.h)
 AC_CHECK_FUNCS(sigaction)
 
-if test x$target_win32 = xno; then
+if test x$host_win32 = xno; then
 
 	dnl hires monotonic clock support
 	AC_SEARCH_LIBS(clock_gettime, rt)
