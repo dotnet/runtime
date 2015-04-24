@@ -2520,7 +2520,7 @@ get_last_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 {
 	GetLastFrameUserData *data = user_data;
 
-	if (info->type == FRAME_TYPE_MANAGED_TO_NATIVE)
+	if (info->type == FRAME_TYPE_MANAGED_TO_NATIVE || info->type == FRAME_TYPE_TRAMPOLINE)
 		return FALSE;
 
 	if (!data->last_frame_set) {

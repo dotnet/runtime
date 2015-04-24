@@ -243,6 +243,8 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 		if (managed)
 			*managed = TRUE;
 		return frame.ji;
+	case FRAME_TYPE_TRAMPOLINE:
+		return frame.ji;
 	case FRAME_TYPE_MANAGED_TO_NATIVE:
 		if (frame.ji)
 			return frame.ji;
@@ -944,7 +946,9 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		if (!res)
 			return FALSE;
 
-		if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE || frame.type == FRAME_TYPE_DEBUGGER_INVOKE)
+		if (frame.type == FRAME_TYPE_MANAGED_TO_NATIVE ||
+				frame.type == FRAME_TYPE_DEBUGGER_INVOKE ||
+				frame.type == FRAME_TYPE_TRAMPOLINE)
 			continue;
 
 		ji = frame.ji;
@@ -1265,7 +1269,9 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, gpointer obj, gint3
 
 		unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (unwind_res) {
-			if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE || frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
+			if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE ||
+					frame.type == FRAME_TYPE_MANAGED_TO_NATIVE ||
+					frame.type == FRAME_TYPE_TRAMPOLINE) {
 				*ctx = new_ctx;
 				continue;
 			}
@@ -1602,7 +1608,9 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 
 			unwind_res = mono_find_jit_info_ext (domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 			if (unwind_res) {
-				if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE || frame.type == FRAME_TYPE_MANAGED_TO_NATIVE) {
+				if (frame.type == FRAME_TYPE_DEBUGGER_INVOKE ||
+						frame.type == FRAME_TYPE_MANAGED_TO_NATIVE ||
+						frame.type == FRAME_TYPE_TRAMPOLINE) {
 					*ctx = new_ctx;
 					continue;
 				}
