@@ -3,8 +3,13 @@ Documents Index
 
 This repo includes several documents that explain both high-level and low-level concepts about the .NET runtime. These are very useful for contributors, to get context that can be very difficult to acquire from just reading code.
 
-Product Instructions
-====================
+Get CoreCLR
+===========
+
+- [Get CoreCLR on Windows](get-coreclr-windows.md)
+
+Build CoreCLR from Source
+=========================
 
 - [Building CoreCLR on Linux](linux-instructions.md)
 - [Building CoreCLR on OS X](osx-instructions.md)
