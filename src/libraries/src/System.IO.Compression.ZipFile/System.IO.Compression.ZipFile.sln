@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.22609.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.ZipFile", "src\System.IO.Compression.ZipFile.csproj", "{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.ZipFile.Tests", "tests\System.IO.Compression.ZipFile.Tests.csproj", "{ED453083-A80F-480C-AD25-5B8618E8A303}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Linux_Debug|Any CPU = Linux_Debug|Any CPU
+		Linux_Release|Any CPU = Linux_Release|Any CPU
+		OSX_Debug|Any CPU = OSX_Debug|Any CPU
+		OSX_Release|Any CPU = OSX_Release|Any CPU
+		Windows_Debug|Any CPU = Windows_Debug|Any CPU
+		Windows_Release|Any CPU = Windows_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Linux_Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Linux_Debug|Any CPU.Build.0 = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Linux_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Linux_Release|Any CPU.Build.0 = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.OSX_Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.OSX_Debug|Any CPU.Build.0 = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.OSX_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.OSX_Release|Any CPU.Build.0 = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Windows_Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Windows_Debug|Any CPU.Build.0 = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8CF61F0-56EA-4B5F-9375-0723DF4250C0}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Linux_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Linux_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Linux_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Linux_Release|Any CPU.Build.0 = Release|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.OSX_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.OSX_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.OSX_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.OSX_Release|Any CPU.Build.0 = Release|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED453083-A80F-480C-AD25-5B8618E8A303}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
