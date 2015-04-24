@@ -1,12 +1,14 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+#define DEBUG // Do not remove this, it is needed to retain calls to these conditional methods in release builds
 
 namespace System.Diagnostics
 {
     /// <summary>
     /// Provides a set of properties and methods for debugging code.
     /// </summary>
-    public static partial class Debug
+    static partial class Debug
     {
         private static readonly object s_ForLock = new Object();
 
