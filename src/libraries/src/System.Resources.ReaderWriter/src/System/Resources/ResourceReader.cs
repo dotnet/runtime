@@ -10,7 +10,7 @@ namespace System.Resources
     using System.Text;
     using System.Threading;
     using System.Collections.Generic;
-    using System.Diagnostics.Contracts;
+    using System.Diagnostics;
     public sealed class ResourceReader : IDisposable
     {
 
@@ -79,7 +79,7 @@ namespace System.Resources
 
         private unsafe int GetNamePosition(int index)
         {
-            Contract.Assert(index >= 0 && index < _numResources, "Bad index into name position array.  index: " + index);
+            Debug.Assert(index >= 0 && index < _numResources, "Bad index into name position array.  index: " + index);
 
             int r;
 
@@ -100,7 +100,7 @@ namespace System.Resources
 
         private unsafe String AllocateStringForNameIndex(int index, out int dataOffset)
         {
-            Contract.Assert(_store != null, "ResourceReader is closed!");
+            Debug.Assert(_store != null, "ResourceReader is closed!");
             byte[] bytes;
             int byteLen;
             long nameVA = GetNamePosition(index);
@@ -139,7 +139,7 @@ namespace System.Resources
 
         private string GetValueForNameIndex(int index)
         {
-            Contract.Assert(_store != null, "ResourceReader is closed!");
+            Debug.Assert(_store != null, "ResourceReader is closed!");
             long nameVA = GetNamePosition(index);
             lock (this)
             {
@@ -198,7 +198,7 @@ namespace System.Resources
 
         private void ReadResources()
         {
-            Contract.Assert(_store != null, "ResourceReader is closed!");
+            Debug.Assert(_store != null, "ResourceReader is closed!");
 
             try
             {
@@ -363,7 +363,7 @@ namespace System.Resources
                     _store.BaseStream.Position = oldPos;
                 }
             }
-            Contract.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
+            Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
             return _typeTable[typeIndex];
         }
 

@@ -105,7 +105,7 @@ namespace System
         private static Encoding GetEncoding(int codePage)
         {
             Encoding enc = EncodingHelper.GetSupportedConsoleEncoding(codePage);
-            Contract.Assert(!(enc is UnicodeEncoding)); // if this ever changes, will need to update how we read/write Windows console stream
+            Debug.Assert(!(enc is UnicodeEncoding)); // if this ever changes, will need to update how we read/write Windows console stream
 
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
         }
