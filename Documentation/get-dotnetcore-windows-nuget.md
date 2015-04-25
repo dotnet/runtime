@@ -1,9 +1,9 @@
-Get CoreCLR on Windows
-======================
+Get .NET Core on Windows with NuGet
+===================================
 
-These instructions will lead you through acquiring CoreCLR and running a "Hello World" demo on Windows. The instructions use a particular set of paths. You'll need to adjust if you want to use a different set.
+These instructions will lead you through acquiring .NET Core via NuGet and running a "Hello World" demo on Windows. The instructions use a particular set of paths. You'll need to adjust if you want to use a different set.
 
-CoreCLR is distributed as NuGet packages. There is no installer or other distribution mechanism, other than [building from source](windows-instructions.md). You acquire CoreCLR via the normal NuGet restore experience.
+.NET Core is distributed as NuGet packages. You can acquire it via NuGet restore (these instructions) or the [.NET Version Manager](get-coreclr-windows-dnvm.md). Alternatively, you can [build from source](windows-instructions.md). 
 
 You can see the [CoreCLR myget feed](https://www.myget.org/F/dotnet-core) @ the [dotnet-core gallery](https://www.myget.org/gallery/dotnet-core) page. These packages are not yet published to NuGet.org, but that will change soon.
 
