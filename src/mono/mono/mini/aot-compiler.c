@@ -878,8 +878,8 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
  * arch_emit_got_offset:
  *
  *   The memory pointed to by CODE should hold native code for computing the GOT
- * address. Emit this code while patching it with the offset between code and
- * the GOT. CODE_SIZE is set to the number of bytes emitted.
+ * address (OP_LOAD_GOTADDR). Emit this code while patching it with the offset
+ * between code and the GOT. CODE_SIZE is set to the number of bytes emitted.
  */
 static void
 arch_emit_got_offset (MonoAotCompile *acfg, guint8 *code, int *code_size)
@@ -920,14 +920,12 @@ arch_emit_got_offset (MonoAotCompile *acfg, guint8 *code, int *code_size)
  * arch_emit_got_access:
  *
  *   The memory pointed to by CODE should hold native code for loading a GOT
- * slot. Emit this code while patching it so it accesses the GOT slot GOT_SLOT.
- * CODE_SIZE is set to the number of bytes emitted.
+ * slot (OP_AOTCONST/OP_GOT_ENTRY). Emit this code while patching it so it accesses the
+ * GOT slot GOT_SLOT. CODE_SIZE is set to the number of bytes emitted.
  */
 static void
-arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *code_size)
+arch_emit_got_access (MonoAotCompile *acfg, const char *got_symbol, guint8 *code, int got_slot, int *code_size)
 {
-	/* This needs to emit the same code as OP_AOTCONST */
-
 #ifdef TARGET_AMD64
 	/* mov reg, got+offset(%rip) */
 	if (acfg->llvm) {
@@ -942,11 +940,11 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 		dreg = ((code [2] >> 3) & 0x7) + (rex_r ? 8 : 0);
 
 		emit_unset_mode (acfg);
-		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", acfg->got_symbol, (unsigned int) ((got_slot * sizeof (gpointer))), mono_arch_regname (dreg));
+		fprintf (acfg->fp, "mov %s+%d(%%rip), %s\n", got_symbol, (unsigned int) ((got_slot * sizeof (gpointer))), mono_arch_regname (dreg));
 		*code_size = 7;
 	} else {
 		emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
+		emit_symbol_diff (acfg, got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer)) - 4));
 		*code_size = mono_arch_get_patch_offset (code) + 4;
 	}
 #elif defined(TARGET_X86)
@@ -955,7 +953,7 @@ arch_emit_got_access (MonoAotCompile *acfg, guint8 *code, int got_slot, int *cod
 	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_ARM)
 	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
+	emit_symbol_diff (acfg, got_symbol, ".", (unsigned int) ((got_slot * sizeof (gpointer))) - 12);
 	*code_size = mono_arch_get_patch_offset (code) + 4;
 #elif defined(TARGET_ARM64)
 	emit_bytes (acfg, code, mono_arch_get_patch_offset (code));
@@ -1015,20 +1013,22 @@ arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int 
 /*
  * arch_emit_plt_entry:
  *
- *   Emit code for the PLT entry with index INDEX.
+ *   Emit code for the PLT entry.
+ * The plt entry should look like this:
+ * <indirect jump to GOT_SYMBOL + OFFSET>
+ * <INFO_OFFSET embedded into the instruction stream>
  */
 static void
-arch_emit_plt_entry (MonoAotCompile *acfg, int index)
+arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, int offset, int info_offset)
 {
 #if defined(TARGET_X86)
-		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
 #if defined(__default_codegen__)
 		/* jmp *<offset>(%ebx) */
 		emit_byte (acfg, 0xff);
 		emit_byte (acfg, 0xa3);
 		emit_int32 (acfg, offset);
 		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_int32 (acfg, info_offset);
 #elif defined(__native_client_codegen__)
 		const guint8 kSizeOfNaClJmp = 11;
 		guint8 bytes[kSizeOfNaClJmp];
@@ -1039,7 +1039,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		/* four bytes of data, used by mono_arch_patch_plt_entry              */
 		/* For Native Client, make this work with data embedded in push.      */
 		emit_byte (acfg, 0x68);  /* hide data in a push */
-		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_int32 (acfg, info_offset);
 		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
 #endif /*__native_client_codegen__*/
 #elif defined(TARGET_AMD64)
@@ -1047,13 +1047,13 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		if (acfg->use_bin_writer) {
 			emit_byte (acfg, '\xff');
 			emit_byte (acfg, '\x25');
-			emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
+			emit_symbol_diff (acfg, got_symbol, ".", offset - 4);
 		} else {
 			emit_unset_mode (acfg);
-			fprintf (acfg->fp, "jmp *%s+%d(%%rip)\n", acfg->got_symbol, (int)((acfg->plt_got_offset_base + index) * sizeof (gpointer)));
+			fprintf (acfg->fp, "jmp *%s+%d(%%rip)\n", got_symbol, offset);
 		}
 		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_int32 (acfg, info_offset);
 		acfg->stats.plt_size += 10;
 #elif defined(__native_client_codegen__)
 		guint8 buf [256];
@@ -1064,7 +1064,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		emit_byte (acfg, '\x45');
 		emit_byte (acfg, '\x8b');
 		emit_byte (acfg, '\x1d');
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) -4);
+		emit_symbol_diff (acfg, got_symbol, ".", offset - 4);
 
 		amd64_jump_reg (code, AMD64_R11);
 		/* This should be constant for the plt patch */
@@ -1073,7 +1073,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 
 		/* Hide data in a push imm32 so it passes validation */
 		emit_byte (acfg, 0x68);  /* push */
-		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_int32 (acfg, info_offset);
 		emit_alignment (acfg, AOT_FUNC_ALIGNMENT);
 #endif /*__native_client_codegen__*/
 #elif defined(TARGET_ARM)
@@ -1084,14 +1084,12 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_LDR_REG_REG (code, ARMREG_PC, ARMREG_PC, ARMREG_IP);
 		emit_bytes (acfg, buf, code - buf);
-		emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) - 4);
+		emit_symbol_diff (acfg, got_symbol, ".", offset - 4);
 		/* Used by mono_aot_get_plt_info_offset */
-		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_int32 (acfg, info_offset);
 #elif defined(TARGET_ARM64)
-		arm64_emit_plt_entry (acfg, index);
+		arm64_emit_plt_entry (acfg, got_symbol, offset, info_offset);
 #elif defined(TARGET_POWERPC)
-		guint32 offset = (acfg->plt_got_offset_base + index) * sizeof (gpointer);
-
 		/* The GOT address is guaranteed to be in r30 by OP_LOAD_GOTADDR */
 		g_assert (!acfg->use_bin_writer);
 		emit_unset_mode (acfg);
@@ -1105,24 +1103,22 @@ arch_emit_plt_entry (MonoAotCompile *acfg, int index)
 #endif
 		fprintf (acfg->fp, "mtctr 11\n");
 		fprintf (acfg->fp, "bctr\n");
-		emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+		emit_int32 (acfg, info_offset);
 #else
 		g_assert_not_reached ();
 #endif
 }
 
+/*
+ * arch_emit_llvm_plt_entry:
+ *
+ *   Same as arch_emit_plt_entry, but handles calls from LLVM generated code.
+ * This is only needed on arm to handle thumb interop.
+ */
 static void
-arch_emit_llvm_plt_entry (MonoAotCompile *acfg, int index)
+arch_emit_llvm_plt_entry (MonoAotCompile *acfg, const char *got_symbol, int offset, int info_offset)
 {
 #if defined(TARGET_ARM)
-#if 0
-	/* LLVM calls the PLT entries using bl, so emit a stub */
-	/* FIXME: Too much overhead on every call */
-	fprintf (acfg->fp, ".thumb_func\n");
-	fprintf (acfg->fp, "bx pc\n");
-	fprintf (acfg->fp, "nop\n");
-	fprintf (acfg->fp, ".arm\n");
-#endif
 	/* LLVM calls the PLT entries using bl, so these have to be thumb2 */
 	/* The caller already transitioned to thumb */
 	/* The code below should be 12 bytes long */
@@ -1139,8 +1135,8 @@ arch_emit_llvm_plt_entry (MonoAotCompile *acfg, int index)
 	fprintf (acfg->fp, ".2byte 0x44fc\n");
 	fprintf (acfg->fp, ".4byte 0xc000f8dc\n");
 	fprintf (acfg->fp, ".2byte 0x4760\n");
-	emit_symbol_diff (acfg, acfg->got_symbol, ".", ((acfg->plt_got_offset_base + index) * sizeof (gpointer)) + 4);
-	emit_int32 (acfg, acfg->plt_got_info_offsets [index]);
+	emit_symbol_diff (acfg, got_symbol, ".", offset + 4);
+	emit_int32 (acfg, info_offset);
 	emit_unset_mode (acfg);
 	emit_set_arm_mode (acfg);
 #else
@@ -4879,7 +4875,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 
 					got_slot = get_got_offset (acfg, FALSE, patch_info);
 
-					arch_emit_got_access (acfg, code + i, got_slot, &code_size);
+					arch_emit_got_access (acfg, acfg->got_symbol, code + i, got_slot, &code_size);
 					i += code_size - INST_LEN;
 				}
 				skip = TRUE;
@@ -5924,7 +5920,7 @@ emit_plt (MonoAotCompile *acfg)
 
 		emit_label (acfg, plt_entry->symbol);
 
-		arch_emit_plt_entry (acfg, i);
+		arch_emit_plt_entry (acfg, acfg->got_symbol, (acfg->plt_got_offset_base + i) * sizeof (gpointer), acfg->plt_got_info_offsets [i]);
 
 		if (debug_sym)
 			emit_symbol_size (acfg, debug_sym, ".");
@@ -5971,7 +5967,7 @@ emit_plt (MonoAotCompile *acfg)
 			if (acfg->llvm)
 				emit_global_inner (acfg, plt_entry->llvm_symbol, TRUE);
 
-			arch_emit_llvm_plt_entry (acfg, i);
+			arch_emit_llvm_plt_entry (acfg, acfg->got_symbol, (acfg->plt_got_offset_base + i) * sizeof (gpointer), acfg->plt_got_info_offsets [i]);
 
 			if (debug_sym) {
 				emit_symbol_size (acfg, debug_sym, ".");
