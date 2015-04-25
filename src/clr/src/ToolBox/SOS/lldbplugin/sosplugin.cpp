@@ -12,5 +12,7 @@ namespace lldb {
 bool
 lldb::PluginInitialize (lldb::SBDebugger debugger)
 {
-    return sosCommandInitialize(debugger);
+    corerunCommandInitialize(debugger);
+    sosCommandInitialize(debugger);
+    return true;
 }
