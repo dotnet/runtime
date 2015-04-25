@@ -1674,35 +1674,33 @@ CThreadSuspensionInfo::HandleSuspendSignal(
     CPalThread *pthrTarget
     )
 {
-    if (!GetSuspendSignalSent())
+    if (GetSuspendSignalSent())
     {
-        ASSERT("Entered suspend handler (by receiving SIGUSR1) but not due to SuspendThread.\n");
-        return;
-    }
-    SetSuspendSignalSent(FALSE);
-    
-    if (IsSuspensionStateSafe())
-    {
-        SetSuspPending(FALSE);
-        if (!pthrTarget->GetCreateSuspended())
+        SetSuspendSignalSent(FALSE);
+
+        if (IsSuspensionStateSafe())
         {
-            /* Note that we don't call sem_post when CreateSuspended is true. 
-            This is to handle the scenario where a thread suspends itself and 
-            another thread then attempts to suspend that thread. It won't wait 
-            on the semaphore if the self suspending thread already posted 
-            but didn't reach the matching wait. */
-            PostOnSuspendSemaphore();
+            SetSuspPending(FALSE);
+            if (!pthrTarget->GetCreateSuspended())
+            {
+                /* Note that we don't call sem_post when CreateSuspended is true. 
+                This is to handle the scenario where a thread suspends itself and 
+                another thread then attempts to suspend that thread. It won't wait 
+                on the semaphore if the self suspending thread already posted 
+                but didn't reach the matching wait. */
+                PostOnSuspendSemaphore();
+            }
+            else 
+            {
+                pthrTarget->SetStartStatus(TRUE);
+            }
+            sigsuspend(&smSuspmask);
         }
-        else 
+        else
         {
-        	pthrTarget->SetStartStatus(TRUE);
-        }
-        sigsuspend(&smSuspmask);
+            SetSuspPending(TRUE);
+        }	
     }
-    else
-    {
-        SetSuspPending(TRUE);
-    }	
 }
 
 /*++
@@ -1720,27 +1718,25 @@ continue execution.
 void 
 CThreadSuspensionInfo::HandleResumeSignal()
 {
-    if (!GetResumeSignalSent())
+    if (GetResumeSignalSent())
     {
-        ASSERT("Entered resume handler (by receiving SIGUSR2) but not due to ResumeThread.\n");
-        return;
+        SetResumeSignalSent(FALSE);
+
+        if (GetSuspCount() != 0)
+        {
+            ASSERT("Should not be resuming a thread whose suspension count is %d.\n", GetSuspCount());
+            return;
+        }
+
+        // This thread is no longer suspended - if it self suspended, 
+        // then its self suspension field should now be set to FALSE.
+        if (GetSelfSusp())
+        {
+            SetSelfSusp(FALSE);
+        }
+
+        PostOnResumeSemaphore();
     }
-    SetResumeSignalSent(FALSE);
-    
-    if (GetSuspCount() != 0)
-    {
-        ASSERT("Should not be resuming a thread whose suspension count is %d.\n", GetSuspCount());
-        return;
-    }
-    
-    // This thread is no longer suspended - if it self suspended, 
-    // then its self suspension field should now be set to FALSE.
-    if (GetSelfSusp())
-    {
-        SetSelfSusp(FALSE);
-    }
-    
-    PostOnResumeSemaphore();
 }
 #else // USE_SIGNALS_FOR_THREAD_SUSPENSION
 

@@ -56,43 +56,36 @@ typedef void *siginfo_t;
 #endif  /* !HAVE_SIGINFO_T */
 typedef void (*SIGFUNC)(int, siginfo_t *, void *);
 
-/* Static variables ***********************************************************/
-static LONG fatal_signal_received;
-
 /* internal function declarations *********************************************/
 
-static void sigint_handler(int code, siginfo_t *siginfo, void *context);
-static void sigquit_handler(int code, siginfo_t *siginfo, void *context);
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
 static void sigfpe_handler(int code, siginfo_t *siginfo, void *context);
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context);
 static void sigtrap_handler(int code, siginfo_t *siginfo, void *context);
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context);
-static void fatal_signal_handler(int code, siginfo_t *siginfo, void *context);
+#if USE_SIGNALS_FOR_THREAD_SUSPENSION
+void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context);
+void CorUnix::resume_handler(int code, siginfo_t *siginfo, void *context);
+#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
+
 static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
                                   native_context_t *ucontext);
 
-void handle_signal(int signal_id, SIGFUNC sigfunc);
-inline void check_pal_initialize(int signal_id);
+static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction);
+static void restore_signal(int signal_id, struct sigaction *previousAction);
+inline void check_pal_initialize(int signal_id, struct sigaction *previousAction);
 
-#if HAVE__THREAD_SYS_SIGRETURN
-int _thread_sys_sigreturn(native_context_t *);
-#endif
+/* internal data declarations *********************************************/
+
+struct sigaction g_previous_sigill;
+struct sigaction g_previous_sigtrap;
+struct sigaction g_previous_sigfpe;
+struct sigaction g_previous_sigbus;
+struct sigaction g_previous_sigsegv;
 
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
-void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context)
-{
-    check_pal_initialize(code);
-    CPalThread *pThread = InternalGetCurrentThread();
-    pThread->suspensionInfo.HandleSuspendSignal(pThread);
-}
-
-void CorUnix::resume_handler(int code, siginfo_t *siginfo, void *context)
-{
-    check_pal_initialize(code);
-    CPalThread *pThread = InternalGetCurrentThread();
-    pThread->suspensionInfo.HandleResumeSignal();
-}
+struct sigaction g_previous_sigusr1;
+struct sigaction g_previous_sigusr2;
 #endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
 /* public function definitions ************************************************/
@@ -104,16 +97,14 @@ Function :
     Set-up signal handlers to catch signals and translate them to exceptions
 
 Parameters :
-    PAL initialize flags
+    None
 
     (no return value)
 --*/
-void SEHInitializeSignals(DWORD flags)
+void SEHInitializeSignals()
 {
     TRACE("Initializing signal handlers\n");
 
-    fatal_signal_received = 0;
-    
     /* we call handle signal for every possible signal, even
        if we don't provide a signal handler. 
 
@@ -127,54 +118,25 @@ void SEHInitializeSignals(DWORD flags)
 
        see sigaction man page for more details
     */
-    handle_signal(SIGILL,    sigill_handler);
-    handle_signal(SIGTRAP,   sigtrap_handler);
-    handle_signal(SIGFPE,    sigfpe_handler);
-    handle_signal(SIGBUS,    sigbus_handler);
-    handle_signal(SIGSEGV,   sigsegv_handler);
+    handle_signal(SIGILL, sigill_handler, &g_previous_sigill);
+    handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
+    handle_signal(SIGFPE, sigfpe_handler, &g_previous_sigfpe);
+    handle_signal(SIGBUS, sigbus_handler, &g_previous_sigbus);
+    handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
-    handle_signal(SIGUSR1,   suspend_handler);
-    handle_signal(SIGUSR2,   resume_handler);
+    handle_signal(SIGUSR1, suspend_handler, &g_previous_sigusr1);
+    handle_signal(SIGUSR2, resume_handler, &g_previous_sigusr2);
 #endif
 
-    if (flags & PAL_INITIALIZE_ALL_SIGNALS)
-    {
-        handle_signal(SIGHUP,    fatal_signal_handler);
-        handle_signal(SIGINT,    sigint_handler);
-        handle_signal(SIGQUIT,   sigquit_handler);
-        handle_signal(SIGABRT,   fatal_signal_handler); 
-#ifdef SIGEMT
-        handle_signal(SIGEMT,    fatal_signal_handler);
-#endif // SIGEMT
-        handle_signal(SIGSYS,    fatal_signal_handler); 
-        handle_signal(SIGALRM,   fatal_signal_handler); 
-        handle_signal(SIGTERM,   fatal_signal_handler); 
-        handle_signal(SIGURG,    NULL);
-        handle_signal(SIGTSTP,   NULL);
-        handle_signal(SIGCONT,   NULL);
-        handle_signal(SIGCHLD,   NULL);
-        handle_signal(SIGTTIN,   NULL);
-        handle_signal(SIGTTOU,   NULL);
-        handle_signal(SIGIO,     NULL);
-        handle_signal(SIGXCPU,   fatal_signal_handler);
-        handle_signal(SIGXFSZ,   fatal_signal_handler);
-        handle_signal(SIGVTALRM, fatal_signal_handler);
-        handle_signal(SIGPROF,   fatal_signal_handler);
-        handle_signal(SIGWINCH,  NULL);
-#ifdef SIGINFO
-        handle_signal(SIGINFO,   NULL);
-#endif  // SIGINFO
-        
-        /* The default action for SIGPIPE is process termination.
-           Since SIGPIPE can be signaled when trying to write on a socket for which
-           the connection has been dropped, we need to tell the system we want
-           to ignore this signal. 
-           
-           Instead of terminating the process, the system call which would had
-           issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
-        */
-        signal(SIGPIPE, SIG_IGN);
-    }
+    /* The default action for SIGPIPE is process termination.
+       Since SIGPIPE can be signaled when trying to write on a socket for which
+       the connection has been dropped, we need to tell the system we want
+       to ignore this signal. 
+       
+       Instead of terminating the process, the system call which would had
+       issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
+    */
+    signal(SIGPIPE, SIG_IGN);
 }
 
 /*++
@@ -184,7 +146,7 @@ Function :
     Restore default signal handlers
 
 Parameters :
-    PAL initialize flags
+    None
 
     (no return value)
     
@@ -193,79 +155,54 @@ reason for this function is that during PAL_Terminate, we reach a point where
 SEH isn't possible anymore (handle manager is off, etc). Past that point, 
 we can't avoid crashing on a signal     
 --*/
-void SEHCleanupSignals (DWORD flags)
+void SEHCleanupSignals()
 {
     TRACE("Restoring default signal handlers\n");
 
-    handle_signal(SIGILL, NULL);
-    handle_signal(SIGTRAP, NULL);
-    handle_signal(SIGFPE, NULL);
-    handle_signal(SIGBUS, NULL);
-    handle_signal(SIGSEGV, NULL);
-
-    if (flags & PAL_INITIALIZE_ALL_SIGNALS)
-    {
-        handle_signal(SIGHUP, NULL);
-        handle_signal(SIGINT, NULL);
-        handle_signal(SIGQUIT, NULL);
-        handle_signal(SIGABRT, NULL);
-#ifdef SIGEMT
-        handle_signal(SIGEMT,    NULL);
-#endif // SIGEMT
-        handle_signal(SIGSYS, NULL);
-        handle_signal(SIGALRM, NULL);
-        handle_signal(SIGTERM, NULL);
-        handle_signal(SIGXCPU, NULL);
-        handle_signal(SIGXFSZ, NULL);
-        handle_signal(SIGVTALRM, NULL);
-        handle_signal(SIGPROF, NULL);
-        handle_signal(SIGPIPE, NULL);
-        /* Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
+   /* Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
         during cleanup after this function has been called. */
-    }
+    restore_signal(SIGILL, &g_previous_sigill);
+    restore_signal(SIGTRAP, &g_previous_sigtrap);
+    restore_signal(SIGFPE, &g_previous_sigfpe);
+    restore_signal(SIGBUS, &g_previous_sigbus);
+    restore_signal(SIGSEGV, &g_previous_sigsegv);
 }
-
 
 /* internal function definitions **********************************************/
 
-/*++
-Function :
-    sigint_handler
+#if USE_SIGNALS_FOR_THREAD_SUSPENSION
 
-    This signal is now handled by the PAL signal handling thread : see seh.cpp
-    The SIGINT signal (CONTROL_C_EXIT exception) is intercepted by the signal handling thread, 
-    which creates a new thread, that calls SEHHandleControlEvent, to handle the SIGINT.
-
-Parameters :
-    POSIX signal handler parameter list ("man sigaction" for details)
-
-    (no return value)
---*/
-static void sigint_handler(int code, siginfo_t *siginfo, void *context)
+void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code);
-    ASSERT("Should not reach sigint_handler\n");
+    check_pal_initialize(code, &g_previous_sigusr1);
+
+    CPalThread *pThread = InternalGetCurrentThread();
+    pThread->suspensionInfo.HandleSuspendSignal(pThread);
+
+    TRACE("SIGUSR1 signal was unhandled; chaining to previous sigaction\n");
+
+    if (g_previous_sigusr1.sa_sigaction != NULL)
+    {
+        g_previous_sigusr1.sa_sigaction(code, siginfo, context);
+    }
 }
 
-/*++
-Function :
-    sigquit_handler
-    
-    This signal is now handled by the PAL signal handling thread : see seh.cpp
-    The SIGQUIT signal is intercepted by the signal handling thread,
-    which create a new thread, that calls SEHHandleControlEvent, to handle the SIGQUIT.
-
-Parameters :
-    POSIX signal handler parameter list ("man sigaction" for details)
-
-    (no return value)
---*/
-static void sigquit_handler(int code, siginfo_t *siginfo, void *context)
+void CorUnix::resume_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code);
-    ASSERT("Should not reach sigquit_handler\n");
+    check_pal_initialize(code, &g_previous_sigusr2);
 
+    CPalThread *pThread = InternalGetCurrentThread();
+    pThread->suspensionInfo.HandleResumeSignal();
+
+    TRACE("SIGUSR2 signal was unhandled; chaining to previous sigaction\n");
+
+    if (g_previous_sigusr2.sa_sigaction != NULL)
+    {
+        g_previous_sigusr2.sa_sigaction(code, siginfo, context);
+    }
 }
+
+#endif // USE_SIGNALS_FOR_THREAD_SUSPENSION
 
 /*++
 Function :
@@ -280,7 +217,8 @@ Parameters :
 --*/
 static void sigill_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code);
+    check_pal_initialize(code, &g_previous_sigill);
+
     EXCEPTION_RECORD record;
     EXCEPTION_POINTERS pointers;
     native_context_t *ucontext;
@@ -297,7 +235,12 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
 
     common_signal_handler(&pointers, code, ucontext);
 
-    TRACE("SIGILL Signal was handled; continuing execution.\n");
+    TRACE("SIGILL signal was unhandled; chaining to previous sigaction\n");
+
+    if (g_previous_sigill.sa_sigaction != NULL)
+    {
+        g_previous_sigill.sa_sigaction(code, siginfo, context);
+    }
 }
 
 /*++
@@ -313,7 +256,8 @@ Parameters :
 --*/
 static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code);
+    check_pal_initialize(code, &g_previous_sigfpe);
+
     EXCEPTION_RECORD record;
     EXCEPTION_POINTERS pointers;
     native_context_t *ucontext;
@@ -330,7 +274,12 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 
     common_signal_handler(&pointers, code, ucontext);
 
-    TRACE("SIGFPE Signal was handled; continuing execution.\n");
+    TRACE("SIGFPE signal was unhandled; chaining to previous sigaction\n");
+
+    if (g_previous_sigfpe.sa_sigaction != NULL)
+    {
+        g_previous_sigfpe.sa_sigaction(code, siginfo, context);
+    }
 }
 
 /*++
@@ -346,7 +295,8 @@ Parameters :
 --*/
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code);
+    check_pal_initialize(code, &g_previous_sigsegv);
+
     EXCEPTION_RECORD record;
     EXCEPTION_POINTERS pointers;
     native_context_t *ucontext;
@@ -371,7 +321,12 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
     common_signal_handler(&pointers, code, ucontext);
 
-    TRACE("SIGSEGV Signal was handled; continuing execution.\n");
+    TRACE("SIGSEGV signal was unhandled; chaining to previous sigaction\n");
+
+    if (g_previous_sigsegv.sa_sigaction != NULL)
+    {
+        g_previous_sigsegv.sa_sigaction(code, siginfo, context);
+    }
 }
 
 /*++
@@ -387,7 +342,8 @@ Parameters :
 --*/
 static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code);
+    check_pal_initialize(code, &g_previous_sigtrap);
+
     EXCEPTION_RECORD record;
     EXCEPTION_POINTERS pointers;
     native_context_t *ucontext;
@@ -404,7 +360,12 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
 
     common_signal_handler(&pointers, code, ucontext);
 
-    TRACE("SIGTRAP Signal was handled; continuing execution.\n");
+    TRACE("SIGTRAP signal was unhandled; chaining to previous sigaction\n");
+
+    if (g_previous_sigtrap.sa_sigaction != NULL)
+    {
+        g_previous_sigtrap.sa_sigaction(code, siginfo, context);
+    }
 }
 
 /*++
@@ -420,7 +381,7 @@ Parameters :
 --*/
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code);
+    check_pal_initialize(code, &g_previous_sigbus);
     EXCEPTION_RECORD record;
     EXCEPTION_POINTERS pointers;
     native_context_t *ucontext;
@@ -445,7 +406,12 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
 
     common_signal_handler(&pointers, code, ucontext);
 
-    TRACE("SIGBUS Signal was handled; continuing execution.\n");
+    TRACE("SIGBUS signal was unhandled; chaining to previous sigaction\n");
+
+    if (g_previous_sigbus.sa_sigaction != NULL)
+    {
+        g_previous_sigbus.sa_sigaction(code, siginfo, context);
+    }
 }
 
 /*++
@@ -494,25 +460,6 @@ BOOL SEHGetSafeState(CPalThread *pthrCurrent)
 
 /*++
 Function :
-    fatal_signal_handler
-
-    This signal handler has been replaced by the PAL signal handling thread : see seh.cpp
-    Any signals assigned to this handler are intercepted by the signal handling thread, which
-    initiates process termination and cleanup.
-
-Parameters :
-    POSIX signal handler parameter list ("man sigaction" for details)
-
-    (no return value)
---*/
-void fatal_signal_handler(int code, siginfo_t *siginfo, void *context)
-{
-    check_pal_initialize(code);
-    ASSERT("Should not reach fatal_signal_handler\n");
-}
-
-/*++
-Function :
     common_signal_handler
 
     common code for all signal handlers
@@ -530,7 +477,6 @@ Note:
 static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code, 
                                   native_context_t *ucontext)
 {
-    check_pal_initialize(code);
     sigset_t signal_set;
     CONTEXT context;
 
@@ -541,8 +487,7 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
     // Fill context record with required information. from pal.h :
     // On non-Win32 platforms, the CONTEXT pointer in the
     // PEXCEPTION_POINTERS will contain at least the CONTEXT_CONTROL registers.
-    CONTEXTFromNativeContext(ucontext, &context,
-                             CONTEXT_CONTROL | CONTEXT_INTEGER);
+    CONTEXTFromNativeContext(ucontext, &context, CONTEXT_CONTROL | CONTEXT_INTEGER);
 
     pointers->ContextRecord = &context;
 
@@ -566,40 +511,51 @@ Function :
 Parameters :
     int signal_id : signal to handle
     SIGFUNC sigfunc : signal handler
+    previousAction : previous sigaction struct
 
     (no return value)
     
 note : if sigfunc is NULL, the default signal handler is restored    
 --*/
-void handle_signal(int signal_id, SIGFUNC sigfunc)
+void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction)
 {
-    struct sigaction act;
+    struct sigaction newAction;
 
-    act.sa_flags = SA_RESTART;
-
-    if( NULL == sigfunc )
-    {
-        act.sa_handler=SIG_DFL;
+    newAction.sa_flags = SA_RESTART;
 #if HAVE_SIGINFO_T
-        act.sa_sigaction=NULL;
-#endif  /* HAVE_SIGINFO_T */
-    }
-    else
-    {
-#if HAVE_SIGINFO_T
-        act.sa_handler=NULL;
-        act.sa_sigaction=sigfunc;
-        act.sa_flags |= SA_SIGINFO;
+    newAction.sa_handler = NULL;
+    newAction.sa_sigaction = sigfunc;
+    newAction.sa_flags |= SA_SIGINFO;
 #else   /* HAVE_SIGINFO_T */
-        act.sa_handler = SIG_DFL;
+    newAction.sa_handler = SIG_DFL;
 #endif  /* HAVE_SIGINFO_T */
-    }
-    sigemptyset(&act.sa_mask);
+    sigemptyset(&newAction.sa_mask);
 
-    if(-1==sigaction(signal_id,&act,NULL))
+    if (-1 == sigaction(signal_id, &newAction, previousAction))
     {
-        ASSERT("sigaction() call failed with error code %d (%s)\n",
-              errno, strerror(errno));
+        ASSERT("handle_signal: sigaction() call failed with error code %d (%s)\n",
+            errno, strerror(errno));
+    }
+}
+
+/*++
+Function :
+    restore_signal
+
+    restore handler for specified signal
+
+Parameters :
+    int signal_id : signal to handle
+    previousAction : previous sigaction struct to restore
+
+    (no return value)
+--*/
+void restore_signal(int signal_id, struct sigaction *previousAction)
+{
+    if (-1 == sigaction(signal_id, previousAction, NULL))
+    {
+        ASSERT("restore_signal: sigaction() call failed with error code %d (%s)\n",
+            errno, strerror(errno));
     }
 }
 
@@ -612,14 +568,15 @@ Function :
 
 Parameters :
     int signal_id : signal to handle
+    previousAction : previous sigaction struct to restore
 
     (no return value)
 --*/    
-inline void check_pal_initialize(int signal_id) 
+inline void check_pal_initialize(int signal_id, struct sigaction *previousAction) 
 { 
     if (!PALIsInitialized()) 
     { 
-        handle_signal(signal_id, NULL); 
+        restore_signal(signal_id, previousAction); 
         kill(gPID, signal_id); 
     } 
 }
@@ -640,17 +597,9 @@ ControlHandlerThreadRoutine(
     PVOID pvSignal
     );
 
-static
-DWORD
-PALAPI
-ShutdownThreadRoutine(
-    PVOID
-    );
-
 PAL_ERROR
 StartExternalSignalHandlerThread(
-    CPalThread *pthr
-    )
+    CPalThread *pthr)
 {
     PAL_ERROR palError = NO_ERROR;
     
@@ -694,7 +643,6 @@ ExternalSignalHandlerThreadRoutine(
 {
     DWORD dwThreadId;
     bool fContinue = TRUE;
-    bool fShutdownThreadLaunched = FALSE;
     HANDLE hThread;
     int iError;
     int iSignal;
@@ -716,54 +664,10 @@ ExternalSignalHandlerThreadRoutine(
 
     (void)sigfillset(&sigsetAll); 
     (void)sigdelset(&sigsetAll, SIGPROF);
-    (void)sigfillset(&sigsetWait);
 
-#if SIGWAIT_FAILS_WHEN_PASSED_FULL_SIGSET
-    (void)sigdelset(&sigsetWait, SIGKILL);
-    (void)sigdelset(&sigsetWait, SIGSTOP);
-    (void)sigdelset(&sigsetWait, SIGWAITING);
-    (void)sigdelset(&sigsetWait, SIGALRM1);
-#endif
-
-    //
-    // We don't want this thread to wait for signals that
-    // we want to leave to the default handler (primarily
-    // those involved with terminal or job control).
-    //
-    //
-
-    (void)sigdelset(&sigsetWait, SIGURG);  
-    (void)sigdelset(&sigsetWait, SIGTSTP);
-    (void)sigdelset(&sigsetWait, SIGCONT);
-    (void)sigdelset(&sigsetWait, SIGCHLD);
-    (void)sigdelset(&sigsetWait, SIGTTIN);
-    (void)sigdelset(&sigsetWait, SIGTTOU);
-    (void)sigdelset(&sigsetWait, SIGIO);
-    (void)sigdelset(&sigsetWait, SIGWINCH);
-#ifdef SIGINFO
-    (void)sigdelset(&sigsetWait, SIGINFO);
-#endif  // SIGINFO
-    (void)sigdelset(&sigsetWait, SIGPROF);
-
-    //
-    // Ideally, we'd like externally generated translated signals
-    // (i.e., the signals that we convert to exceptions) to be directed
-    // to this thread as well. Unfortunately on some platforms the sigwait
-    // will take precedence over the synchronous signal on a thread within
-    // this process -- the signal will get directed to this thread, instead
-    // of the thread that executed the instruction that raised the signal.
-    // This, needless to say, is not good for our EH mechanism.
-    //
-    // Furthermore, since these signals are not masked on other threads
-    // on other platforms the externally generated signal will be directed
-    // to one of those threads, instead of this one.
-    //
-
-    (void)sigdelset(&sigsetWait, SIGILL);
-    (void)sigdelset(&sigsetWait, SIGTRAP);
-    (void)sigdelset(&sigsetWait, SIGFPE);
-    (void)sigdelset(&sigsetWait, SIGBUS);
-    (void)sigdelset(&sigsetWait, SIGSEGV);
+    (void)sigemptyset(&sigsetWait);
+    (void)sigaddset(&sigsetWait, SIGINT);  
+    (void)sigaddset(&sigsetWait, SIGQUIT);  
 
     //
     // Mask off all signals for this thread
@@ -850,59 +754,13 @@ ExternalSignalHandlerThreadRoutine(
                 }
 
                 InternalCloseHandle(pthr, hThread);                
-
                 break;
             }
 
             default:
-            {
-                //
-                // Any other signal received externally is fatal. If we
-                // haven't yet spun up a shutdown thread, do so now; if we
-                // have, we want to wait for a bit (in the hope that the
-                // shutdown thread is able to complete) and then exit.
-                //
-
-                if (fShutdownThreadLaunched)
-                {
-                    sleep(c_iShutdownWaitTime);
-                    fContinue = FALSE;
-                    break;
-                }
-
-                //
-                // Spin up a new thread to perform a graceful shutdown. As
-                // with the console control handlers we want this thread
-                // to continue to handle external signals.
-                //
-                // We're going to call TerminateProcess so it's OK for
-                // this thread to be a worker thread -- DllMain routines
-                // will not be called.
-                //
-
-                fShutdownThreadLaunched = TRUE;
-
-                palError = InternalCreateThread(
-                    pthr,
-                    NULL,
-                    0,
-                    ShutdownThreadRoutine,
-                    NULL,
-                    0,
-                    PalWorkerThread,
-                    &dwThreadId,
-                    &hThread
-                    );
-
-                if (NO_ERROR != palError)
-                {
-                    fContinue = FALSE;
-                    break;
-                }
-
-                InternalCloseHandle(pthr, hThread);
+                ASSERT("Unexpect signal %d in signal thread\n", iSignal);
+                fContinue = FALSE;
                 break;
-            }
         }
     }
 
@@ -924,17 +782,6 @@ ControlHandlerThreadRoutine(
 {
     // Uint and DWORD are implicitly the same.
     SEHHandleControlEvent(PtrToUint(pvSignal), NULL);
-    return 0;
-}
-
-static
-DWORD
-PALAPI
-ShutdownThreadRoutine(
-    PVOID
-    )
-{
-    TerminateProcess(GetCurrentProcess(), CONTROL_C_EXIT);
     return 0;
 }
 
