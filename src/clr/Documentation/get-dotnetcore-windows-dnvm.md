@@ -12,7 +12,7 @@ You can see the [CoreCLR myget feed](https://www.myget.org/F/dotnet-core) @ the 
 Installing DNVM
 ===============
 
-You need DNVM as a starting point. DNVM enables you to acquire a (or multiple) .NET Execution Environment (DNX). DNVM is simply a script, which doesn't depend on .NET. You can install it via a PowerShell command. You can find alternate DNVM install itructions at the [ASP.NET Home repo](https://github.com/aspnet/home).
+You need DNVM as a starting point. DNVM enables you to acquire a (or multiple) .NET Execution Environment (DNX). DNVM is simply a script, which doesn't depend on .NET. You can install it via a PowerShell command. You can find alternate DNVM install instructions at the [ASP.NET Home repo](https://github.com/aspnet/home).
 
 	@powershell -NoProfile -ExecutionPolicy unrestricted -Command "&{$Branch='dev';iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.ps1'))}"
 
