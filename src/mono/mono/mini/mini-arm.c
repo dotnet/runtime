@@ -650,6 +650,8 @@ emit_restore_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset)
 static gboolean
 mono_arm_have_fast_tls (void)
 {
+	if (mini_get_debug_options ()->arm_use_fallback_tls)
+		return FALSE;
 #if (defined(HAVE_KW_THREAD) && defined(__linux__)) \
 	|| defined(TARGET_ANDROID)
 	guint32* kuser_get_tls = (void*)0xffff0fe0;
