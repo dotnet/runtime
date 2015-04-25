@@ -53,12 +53,12 @@ Function :
     Clean up SEH-related stuff(signals, etc)
 
 Parameters:
-    flags : PAL initialize flags
+    None
 
     (no return value)
 --*/
 VOID 
-SEHCleanup(DWORD flags);
+SEHCleanup();
 
 /*++
 Function:

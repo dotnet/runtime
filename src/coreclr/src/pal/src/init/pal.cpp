@@ -534,7 +534,7 @@ CLEANUP10:
 CLEANUP8:
     MAPCleanup();
 CLEANUP6:
-    SEHCleanup(flags);
+    SEHCleanup();
 CLEANUP5:
     PROCCleanupInitialProcess();
 CLEANUP4:
@@ -847,7 +847,7 @@ PALCommonCleanup(PALCLEANUP_STEP step, BOOL full_cleanup)
                    LOADFreeModules requires SEH to be functional when calling DllMain.
                    Therefore SEHCleanup must go between LOADFreeModules and
                    PROCCleanupInitialProcess */
-                SEHCleanup(PAL_INITIALIZE_ALL);
+                SEHCleanup();
                 PROCCleanupInitialProcess();
             }
 
