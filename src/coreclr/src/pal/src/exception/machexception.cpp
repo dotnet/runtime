@@ -902,40 +902,7 @@ catch_exception_raise(
 
     void **FramePointer = (void **)ThreadState.esp;
 
-    // ThreadState.eip points to the instruction that caused the fault.
-    // In the frame we're constructing, we'll pretend PAL_DispatchExceptionWrapper
-    // was called by eip+1 instead of eip to work around a quirk in the
-    // stack unwinding logic of the gcc runtime.
-    //
-    // The quirk is the following.  The stack unwinder of the gcc runtime
-    // has been designed for unwinding stack frames created by ordinary
-    // function calls, so it expects that every return address on the
-    // stack points to an instruction following a call instruction.  If
-    // the target of a given call is a function declared to never return,
-    // gcc can generate code where this call is the very last instruction
-    // in a function, in which case the return address points to the first
-    // instruction of the function that happens to be laid out immediately
-    // after the calling function in the binary.  To ensure it gets the
-    // exception handling table for the right function, the stack unwinder
-    // therefore always subtracts one from any return address.  (Note that
-    // gdb isn't as smart in this case and actually shows the wrong symbol
-    // in a backtrace!)  Similarly, gcc's personality routine uses eip-1
-    // when looking up which try block we're in, since the call could have
-    // been the last instruction in the try block.
-    //
-    // This logic breaks down for the stack frame we are constructing here
-    // if our faulting instruction is the first instruction in a try block,
-    // since eip-1 would point outside the range of instructions that make
-    // up said block.  We fix this by storing eip+1 as the return address.
-    //
-    // Do we expect this to cause any problems to other code?  No - since
-    // we never actually return from PAL_DispatchException, this value
-    // should only ever be examined by the exception unwinder and gcc's
-    // personality routine.  At worst, this can cause some confusion to
-    // developers looking at stack traces produced by tools such as gdb
-    // and CrashReporter, who may see an eip that points in the middle of
-    // an instruction.
-    *--FramePointer = (void *)((ULONG_PTR)ThreadState.eip + 1);
+    *--FramePointer = (void *)((ULONG_PTR)ThreadState.eip);
 
     // Construct a stack frame for a pretend activation of the function
     // PAL_DispatchExceptionWrapper that serves only to make the stack
@@ -983,40 +950,7 @@ catch_exception_raise(
 
     void **FramePointer = (void **)ThreadState.__rsp;
 
-    // ThreadState.eip points to the instruction that caused the fault.
-    // In the frame we're constructing, we'll pretend PAL_DispatchExceptionWrapper
-    // was called by eip+1 instead of eip to work around a quirk in the
-    // stack unwinding logic of the gcc runtime.
-    //
-    // The quirk is the following.  The stack unwinder of the gcc runtime
-    // has been designed for unwinding stack frames created by ordinary
-    // function calls, so it expects that every return address on the
-    // stack points to an instruction following a call instruction.  If
-    // the target of a given call is a function declared to never return,
-    // gcc can generate code where this call is the very last instruction
-    // in a function, in which case the return address points to the first
-    // instruction of the function that happens to be laid out immediately
-    // after the calling function in the binary.  To ensure it gets the
-    // exception handling table for the right function, the stack unwinder
-    // therefore always subtracts one from any return address.  (Note that
-    // gdb isn't as smart in this case and actually shows the wrong symbol
-    // in a backtrace!)  Similarly, gcc's personality routine uses eip-1
-    // when looking up which try block we're in, since the call could have
-    // been the last instruction in the try block.
-    //
-    // This logic breaks down for the stack frame we are constructing here
-    // if our faulting instruction is the first instruction in a try block,
-    // since eip-1 would point outside the range of instructions that make
-    // up said block.  We fix this by storing eip+1 as the return address.
-    //
-    // Do we expect this to cause any problems to other code?  No - since
-    // we never actually return from PAL_DispatchException, this value
-    // should only ever be examined by the exception unwinder and gcc's
-    // personality routine.  At worst, this can cause some confusion to
-    // developers looking at stack traces produced by tools such as gdb
-    // and CrashReporter, who may see an eip that points in the middle of
-    // an instruction.
-    *--FramePointer = (void *)((ULONG_PTR)ThreadState.__rip + 1);
+    *--FramePointer = (void *)((ULONG_PTR)ThreadState.__rip);
 
     // Construct a stack frame for a pretend activation of the function
     // PAL_DispatchExceptionWrapper that serves only to make the stack
