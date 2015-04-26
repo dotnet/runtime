@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests
         /// </summary>
         [Fact]
         [OuterLoop]
+        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
         public static void GlobalizationTest566()
         {
             var xml = "Surrogates_1.xml";
