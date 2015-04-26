@@ -128,10 +128,10 @@ namespace System.Diagnostics
                 EnsureState(State.HaveId);
 
                 int pri = 0;
-                int result = Interop.libc.getpriority(Interop.libc.PriorityWhich.PRIO_PROCESS, _processId, out pri);
-                if (result == 0)
+                int errno = Interop.libc.getpriority(Interop.libc.PriorityWhich.PRIO_PROCESS, _processId, out pri);
+                if (errno != 0)
                 {
-                    throw new Win32Exception(); // match Windows exception
+                    throw new Win32Exception(errno); // match Windows exception
                 }
 
                 Debug.Assert(pri >= -20 && pri <= 20);
