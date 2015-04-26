@@ -678,7 +678,7 @@ BOOL GCObjInHeap(TADDR taddrObj, const DacpGcHeapDetails &heap,
 
 #ifndef FEATURE_PAL
 // this function updates genUsage to reflect statistics from the range defined by [start, end)
-void GCGenUsageStats(TADDR start, TADDR end, const std::hash_set<TADDR> &liveObjs, 
+void GCGenUsageStats(TADDR start, TADDR end, const std::unordered_set<TADDR> &liveObjs,
     const DacpGcHeapDetails &heap, BOOL bLarge, const AllocInfo *pAllocInfo, GenUsageStat *genUsage)
 {
     // if this is an empty segment or generation return
@@ -787,7 +787,7 @@ BOOL GCHeapUsageStats(const DacpGcHeapDetails& heap, BOOL bIncUnreachable, HeapU
 #ifndef FEATURE_PAL
     // this will create the bitmap of rooted objects only if bIncUnreachable is true
     GCRootImpl gcroot;
-    const std::hash_set<TADDR> &liveObjs = gcroot.GetLiveObjects();
+    const std::unordered_set<TADDR> &liveObjs = gcroot.GetLiveObjects();
     
     // 1a. enumerate all non-ephemeral segments
     while (taddrSeg != (TADDR)heap.generation_table[0].start_segment)
