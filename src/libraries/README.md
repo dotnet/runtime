@@ -82,6 +82,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Console**. Provides the Console class, which enables access to the standard input,
   output, and error streams for console-based applications.
 
+* **System.Diagnostics.Contracts**. Provides types and methods for representing program contracts such as preconditions, 
+  postconditions, and invariants.
+
 * **System.Diagnostics.Debug**. Provides a class to interact with the debugger as well as methods for performing runtime assertions.
 
 * **System.Diagnostics.FileVersionInfo**. Provides useful functionality for querying
@@ -93,9 +96,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Diagnostics.TextWriterTraceListener**. Provides trace listeners for directing tracing output to a text writer, 
   such as System.IO.StreamWriter.
 
-* **System.Dynamic.Runtime**. Provides classes and interfaces that support the Dynamic Language Runtime (DLR).
-
 * **System.Diagnostics.TraceSource**. Provides classes that help you trace the execution of your code.
+
+* **System.Dynamic.Runtime**. Provides classes and interfaces that support the Dynamic Language Runtime (DLR).
 
 * **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string 
   comparisons and support the use of non-ASCII characters for Internet domain names.
@@ -149,10 +152,14 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Resources.ReaderWriter**. Provides classes for reading and writing resources in the system-default format.
 
-* **System.Runtime**. Provides a set of unit tests for basic run-time types such as String and Int32.
+* **System.Runtime**. Provides the fundamental primitives, classes, and base classes that define commonly-used value 
+  and reference data types, events and event handlers, interfaces, attributes, and exceptions.
 
-* **System.Runtime.Extensions**. Provides a set of unit tests for extensions to the basic runtime functionality
-  such as System.Convert and System.IO.Path.
+* **System.Runtime.Extensions**. Provides commonly-used classes for performing mathematical functions, conversions, 
+  string comparisons, and querying environment information
+
+* **System.Runtime.Handles**. Provides base classes, including CriticalHandle and SafeHandle, for types that 
+  represent operating system handles.
  
 * **System.Runtime.Numerics**. Provides two useful numeric structures, BigInteger and Complex.
 
@@ -188,16 +195,16 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Xml.XDocument**. Provides XML-related types for querying XML documents using LINQ.
 
+* **System.Xml.XmlDocument**.  Provides types for manipulating an XML Document Object Model (DOM).
+
+* **System.Xml.XmlSerializer**. Provides classes for serializing objects to XML and for deserializing XML data to objects.
+
 * **System.Xml.XPath**.  Provides classes that define a cursor model for navigating and editing XML information items 
   as instances of the XQuery 1.0 and XPath 2.0 Data Model.
 
 * **System.Xml.XPath.XDocument**. Provides extension methods that add System.Xml.XPath support to the System.Xml.XDocument package.
 
 * **System.Xml.XPath.XmlDocument**. Provides extension methods that add System.Xml.XPath support to the System.Xml.XmlDocument package.
-
-* **System.Xml.XmlDocument**.  Provides types for manipulating an XML Document Object Model (DOM).
-
-* **System.Xml.XmlSerializer**. Provides classes for serializing objects to XML and for deserializing XML data to objects.
 
 * **Microsoft.CSharp**. Provides support for compilation and code generation, including dynamic, using the C# language.
 
@@ -209,11 +216,11 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * The overall list of items we currently plan to move onto GitHub is [here][typelist].
 
-[roslyn]: https://roslyn.codeplex.com/
+[roslyn]: https://github.com/dotnet/roslyn
 [immutable-msdn]: http://msdn.microsoft.com/en-us/library/dn385366(v=vs.110).aspx
 [simd-post-1]: http://blogs.msdn.com/b/dotnet/archive/2014/04/07/the-jit-finally-proposed-jit-and-simd-are-getting-married.aspx
 [simd-post-2]: http://blogs.msdn.com/b/dotnet/archive/2014/05/13/update-to-simd-support.aspx
-[typelist]: http://blogs.msdn.com/cfs-file.ashx/__key/communityserver-components-postattachments/00-10-58-94-19/NetCore_5F00_OpenSourceUpdate.xlsx
+[typelist]: https://github.com/dotnet/corefx-progress/blob/master/src-diff/README.md
 
 ## License
 
