@@ -697,10 +697,9 @@ namespace Microsoft.Win32 {
         internal const String USER32   = "user32.dll";
         internal const String OLE32    = "ole32.dll";
 #else //FEATURE_PAL
-        internal const String KERNEL32 = "libcoreclrpal";
-        internal const String USER32   = "libcoreclrpal";
-        internal const String OLE32    = "libcoreclrpal";
-        internal const String LIBCORECLR = "libcoreclr";
+        internal const String KERNEL32 = "libcoreclr";
+        internal const String USER32   = "libcoreclr";
+        internal const String OLE32    = "libcoreclr";
 #endif //FEATURE_PAL         
         internal const String ADVAPI32 = "advapi32.dll";
         internal const String OLEAUT32 = "oleaut32.dll";
@@ -1373,25 +1372,13 @@ namespace Microsoft.Win32 {
         [DllImport(KERNEL32, CharSet=CharSet.Auto, BestFitMapping=false)]
         internal extern static int GetComputerName([Out]StringBuilder nameBuffer, ref int bufferSize);
 
-#if !FEATURE_PAL
         [DllImport(OLE32)]
-#else
-        [DllImport(LIBCORECLR)]
-#endif
         internal extern static int CoCreateGuid(out Guid guid);
 
-#if !FEATURE_PAL
         [DllImport(OLE32)]
-#else
-        [DllImport(LIBCORECLR)]
-#endif
         internal static extern IntPtr CoTaskMemAlloc(UIntPtr cb);
 
-#if !FEATURE_PAL
         [DllImport(OLE32)]
-#else
-        [DllImport(LIBCORECLR)]
-#endif
         internal static extern void CoTaskMemFree(IntPtr ptr);
 
         [DllImport(OLE32)]

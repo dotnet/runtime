@@ -438,11 +438,15 @@ typedef long time_t;
 #define DLL_THREAD_DETACH  3
 #define DLL_PROCESS_DETACH 0
 
+#define PAL_INITIALIZE_NONE            0x00
 #define PAL_INITIALIZE_SYNC_THREAD     0x01
 #define PAL_INITIALIZE_SIGNAL_THREAD   0x02
-#define PAL_INITIALIZE_ALL_SIGNALS     0x04
-#define PAL_INITIALIZE_ALL             0xff
-#define PAL_INITIALIZE_DLL             0x00
+
+// PAL_Initialize() flags - do not initialize signal thread (used for ctrl-c handling) for now
+#define PAL_INITIALIZE                 PAL_INITIALIZE_SYNC_THREAD     
+
+// PAL_InitializeDLL() flags - don't start any of the helper threads
+#define PAL_INITIALIZE_DLL             PAL_INITIALIZE_NONE       
 
 typedef DWORD (PALAPI *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
