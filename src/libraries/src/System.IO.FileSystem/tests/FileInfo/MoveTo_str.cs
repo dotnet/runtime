@@ -183,7 +183,7 @@ public class FileInfo_MoveTo_str
             iCountTestcases++;
             try
             {
-                fil2.MoveTo("**");
+                fil2.MoveTo("*\0*");
                 iCountErrors++;
                 printerr("Error_298xh! Expected exception not thrown, fil2==" + fil2.FullName);
                 fil2.Delete();

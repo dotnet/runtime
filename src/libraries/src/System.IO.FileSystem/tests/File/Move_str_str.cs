@@ -199,7 +199,7 @@ public class File_Move_str_str
             iCountTestcases++;
             try
             {
-                File.Move(fil2.FullName, "**");
+                File.Move(fil2.FullName, "*\0*");
                 iCountErrors++;
                 printerr("Error_298xh! Expected exception not thrown, fil2==" + fil2.FullName);
                 fil2.Delete();

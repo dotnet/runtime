@@ -260,45 +260,51 @@ public class Directory_Move_str_str
 
             //-----------------------------------------------------------------
 
-            // [] wildchars in src directory
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00032";
+            if (Interop.IsWindows)
+            {
+                // [] wildchars in src directory
+                //-----------------------------------------------------------------
+                strLoc = "Loc_00032";
 
-            iCountTestcases++;
-            try
-            {
-                Directory.Move("*", tempDirName);
-                iCountErrors++;
-                printerr("Error_00033! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00035! Incorrect exception thrown, exc==" + exc.ToString());
+                iCountTestcases++;
+                try
+                {
+                    Directory.Move("*", tempDirName);
+                    iCountErrors++;
+                    printerr("Error_00033! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_00035! Incorrect exception thrown, exc==" + exc.ToString());
+                }
             }
             //-----------------------------------------------------------------
 
-            // [] wildchars in dest directory
-            //-----------------------------------------------------------------
-            strLoc = "Loc_00036";
+            if (Interop.IsWindows)
+            {
+                // [] wildchars in dest directory
+                //-----------------------------------------------------------------
+                strLoc = "Loc_00036";
 
-            iCountTestcases++;
-            try
-            {
-                Directory.Move(TestInfo.CurrentDirectory, "Temp*");
-                iCountErrors++;
-                printerr("Error_00037! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_00039! Incorrect exception thrown, exc==" + exc.ToString());
+                iCountTestcases++;
+                try
+                {
+                    Directory.Move(TestInfo.CurrentDirectory, "Temp*");
+                    iCountErrors++;
+                    printerr("Error_00037! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_00039! Incorrect exception thrown, exc==" + exc.ToString());
+                }
             }
             //-----------------------------------------------------------------
 

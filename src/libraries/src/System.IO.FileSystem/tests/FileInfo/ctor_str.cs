@@ -183,26 +183,28 @@ public class FileInfo_ctor_str
             }
 
 
-
-            // [] Filename with wildchar characters
-
-
-            strLoc = "Loc_984hg";
-
-            iCountTestcases++;
-            try
+            if (Interop.IsWindows)
             {
-                fil2 = new FileInfo("**");
-                iCountErrors++;
-                printerr("Error_298xh! Expected exception not thrown, fil2==" + fil2.FullName);
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_2091s! Incorrect exception thrown, exc==" + exc.ToString());
+                // [] Filename with wildchar characters
+
+
+                strLoc = "Loc_984hg";
+
+                iCountTestcases++;
+                try
+                {
+                    fil2 = new FileInfo("**");
+                    iCountErrors++;
+                    printerr("Error_298xh! Expected exception not thrown, fil2==" + fil2.FullName);
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_2091s! Incorrect exception thrown, exc==" + exc.ToString());
+                }
             }
 
 
