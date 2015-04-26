@@ -20,6 +20,9 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
+if /i "%1" == "vs2013"   (set __VSVersion=%1&set __VSProductVersion=120&shift&goto Arg_Loop)
+if /i "%1" == "vs2015"   (set __VSVersion=%1&set __VSProductVersion=140&shift&goto Arg_Loop)
+
 goto Usage
 
 
@@ -29,6 +32,9 @@ goto Usage
 if not defined __BuildArch set __BuildArch=x64
 if not defined __BuildType set __BuildType=Debug
 if not defined __BuildOS set __BuildOS=Windows_NT
+:: Default to VS2013
+if not defined __VSVersion set __VSVersion=vs2013
+if not defined __VSProductVersion set __VSProductVersion=120
 
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 :: We have different managed and native intermediate dirs because the managed bits will include
@@ -73,19 +79,21 @@ echo.
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
 
 :: Check presence of VS
-if defined VS120COMNTOOLS goto CheckVSExistence
+if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
 echo Installation of VS 2013 is a pre-requisite to build this repository.
 goto :eof
 
 :CheckVSExistence
-:: Does VS 2013 really exist?
-if exist "%VS120COMNTOOLS%\..\IDE\devenv.exe" goto CheckMSBuild
+:: Does VS 2013 or VS 2015 really exist?
+if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
 echo Installation of VS 2013 is a pre-requisite to build this repository.
 goto :eof
 
-:CheckMSBuild    
+:CheckMSBuild
+if /i "%__VSVersion%" =="vs2015" goto MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
+:MSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/wiki/Developer%%20Guide for build instructions. && exit /b 1
@@ -97,7 +105,7 @@ echo Commencing build of native test components for %__BuildArch%/%__BuildType%
 echo.
 
 :: Set the environment for the native build
-call "%VS120COMNTOOLS%..\..\VC\vcvarsall.bat" x86_amd64
+call "!VS%__VSProductVersion%COMNTOOLS!..\..\VC\vcvarsall.bat" x86_amd64
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
@@ -109,7 +117,7 @@ goto :eof
 :GenVSSolution
 :: Regenerate the VS solution
 pushd "%__NativeTestIntermediatesDir%"
-call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectFilesDir%\"
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectFilesDir%\" %__VSVersion%
 popd
 
 :BuildComponents
@@ -133,7 +141,7 @@ endlocal
 REM setlocal to prepare for vsdevcmd.bat
 setlocal
 :: Set the environment for the managed build- Vs cmd prompt
-call "%VS120COMNTOOLS%\VsDevCmd.bat"
+call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 if not defined VSINSTALLDIR echo Error: build.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/wiki/Developer%%20Guide for build instructions. && exit /b 1
 
 
@@ -168,9 +176,10 @@ goto :eof
 :Usage
 echo.
 echo Usage:
-echo %0 BuildArch BuildType [clean]  where:
+echo %0 BuildArch BuildType [clean] [vsversion] where:
 echo.
 echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
+echo VSVersion - optional argument to use VS2013 or VS2015  (default VS2013)
 exit /b 1
