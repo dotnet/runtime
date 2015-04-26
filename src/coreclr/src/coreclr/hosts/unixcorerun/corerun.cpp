@@ -18,10 +18,8 @@
 
 // The name of the CoreCLR native runtime DLL.
 #if defined(__APPLE__)
-static const char * const coreClrPal = "libcoreclrpal.dylib";
 static const char * const coreClrDll = "libcoreclr.dylib";
 #else
-static const char * const coreClrPal = "libcoreclrpal.so";
 static const char * const coreClrDll = "libcoreclr.so";
 #endif
 
@@ -282,20 +280,10 @@ int ExecuteManagedAssembly(
     // Indicates failure
     int exitCode = -1;
     
-    std::string coreClrPalPath(clrFilesAbsolutePath);
-    coreClrPalPath.append("/");
-    coreClrPalPath.append(coreClrPal);
-
     std::string coreClrDllPath(clrFilesAbsolutePath);
     coreClrDllPath.append("/");
     coreClrDllPath.append(coreClrDll);
     
-    if (coreClrPalPath.length() >= PATH_MAX)
-    {
-        fprintf(stderr, "Absolute path to libcoreclrpal.so too long\n");
-        return -1;
-    }
-
     if (coreClrDllPath.length() >= PATH_MAX)
     {
         fprintf(stderr, "Absolute path to libcoreclr.so too long\n");
@@ -313,14 +301,6 @@ int ExecuteManagedAssembly(
     std::string tpaList;
     AddFilesFromDirectoryToTpaList(clrFilesAbsolutePath, tpaList);
 
-    void* coreclrPal = dlopen(coreClrPalPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
-    if (coreclrPal == nullptr)
-    {
-        char* error = dlerror();
-        fprintf(stderr, "dlopen failed to open the libcoreclrpal.so with error %s\n", error);
-        return -1;
-    }
-    
     void* coreclrLib = dlopen(coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (coreclrLib != nullptr)
     {

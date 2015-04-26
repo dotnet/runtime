@@ -94,7 +94,9 @@ if(WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
+        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available  
         coreclrpal
+        ${END_WHOLE_ARCHIVE} 
         palrt
     )
 endif(WIN32)
@@ -120,13 +122,6 @@ if(WIN32)
         COMMENT Add dactable & debug resources to coreclr
     )
 endif(WIN32)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    # add @loader_path to the rpath so that the loader can find libcoreclrpal which is
-    # sxs with libcoreclr
-    set_target_properties(coreclr PROPERTIES INSTALL_RPATH "@loader_path")
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
 
 # add the install targets
 install (TARGETS coreclr DESTINATION .)
