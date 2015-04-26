@@ -61,24 +61,27 @@ public class File_Delete_str
                 printerr("Error_19d4b! Incorrect exception thrown, exc==" + exc.ToString());
             }
 
-            // [] ArgumentException if argument is *.*
-            //-----------------------------------------------------------------
-            strLoc = "Loc_32453";
+            if (Interop.IsWindows)
+            {
+                // [] ArgumentException if argument is *.*
+                //-----------------------------------------------------------------
+                strLoc = "Loc_32453";
 
-            iCountTestcases++;
-            try
-            {
-                File.Delete("*.*");
-                iCountErrors++;
-                printerr("Error_4342! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_7777! Incorrect exception thrown, exc==" + exc.ToString());
+                iCountTestcases++;
+                try
+                {
+                    File.Delete("*.*");
+                    iCountErrors++;
+                    printerr("Error_4342! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_7777! Incorrect exception thrown, exc==" + exc.ToString());
+                }
             }
 
             // [] Exception for "."
