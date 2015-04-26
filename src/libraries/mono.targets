@@ -1,0 +1,70 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Temporary workarounds to allow building on Unix against MSBuild on top of Mono -->
+
+  <!--
+    Normal behavior is to blacklist assemblies that don't meet ResolveAssemblyReference's analysis of what is part of the target
+    framework profile. This causes us to fail on Mono as the framework ref folders don't match up with Windows. Setting the
+    following skips this behavior- should probably do the same in the normal targets (for Windows).
+  -->
+  <PropertyGroup>
+    <IgnoreDefaultInstalledAssemblyTables>true</IgnoreDefaultInstalledAssemblyTables>
+    <IgnoreDefaultInstalledAssemblySubsetTables>true</IgnoreDefaultInstalledAssemblySubsetTables>
+  </PropertyGroup>
+
+  <!--
+    Skipping this temporarily to focus on the failures in building the product assemblies. The error we get is as follows:
+
+     RunTestsForProject:
+      mono corerun.exe xunit.console.netcore.exe System.Xml.XPath.XmlDocument.Tests.dll  -xml testResults.xml  -notrait category=OuterLoop -notrait category=failing 
+      Cannot open assembly 'corerun.exe': No such file or directory.
+
+    Note that MSBuild will shell launch as opposed to mono launch if the target file doesn't end in .exe.
+  -->
+  <Target Name="RunTestsForProject">
+    <Message Importance="high" Text="Skipping test run pending fix." />
+  </Target>
+
+  <!--
+    Mono Microsoft.Portable.Core.targets do not have the condition that the Windows targets do.
+    Copied to override and added the condition.
+
+    Note that this issue is fixed in https://github.com/mono/mono/pull/1464.
+  -->
+  <Target
+    Name="ImplicitlyExpandTargetFramework"
+    Condition="'$(ImplicitlyExpandTargetFramework)' == 'true'"
+    DependsOnTargets="$(ImplicitlyExpandTargetFrameworkDependsOn)">
+
+    <ItemGroup>
+      <ReferenceAssemblyPaths Include="$(_TargetFrameworkDirectories)"/>
+      <ReferencePath Include="%(ReferenceAssemblyPaths.Identity)\*.dll">
+        <CopyLocal>false</CopyLocal>
+        <ResolvedFrom>ImplicitlyExpandTargetFramework</ResolvedFrom>
+        <IsSystemReference>True</IsSystemReference>
+      </ReferencePath>
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Overriding from build targets as Mono doesn't implement StandardOutputImportance.
+    Currently custom tasks are using Mono as a base.
+
+    Note that this issue is fixed in https://github.com/mono/mono/pull/1469
+  -->
+  <Target Name="RestoreTestRuntimePackage"
+          BeforeTargets="ResolveNuGetPackages"
+          Inputs="$(TestRuntimePackageConfig);$(TestRuntimeProjectJson)"
+          Outputs="$(TestRuntimePackageSemaphore);$(TestRuntimeProjectLockJson)"
+          Condition="'$(IsTestProject)' == 'true'">
+
+    <Exec Command="$(NugetRestoreCommand) &quot;$(TestRuntimePackageConfig)&quot;" StandardOutputImportance="Low" />
+
+    <!-- This is the custom task where we cannot use StandardOutputImportance -->
+    <ExecWithMutex Command="$(DnuRestoreCommand) &quot;$(TestRuntimeProjectJson)&quot;" MutexName="$(TestRuntimeProjectJson)" CustomErrorRegularExpression="^Unable to locate .*" />
+
+    <!-- Always copy since we need to force a timestamp update for inputs/outputs-->
+    <Copy SourceFiles="$(TestRuntimePackageConfig)" DestinationFiles="$(TestRuntimePackageSemaphore)" ContinueOnError="true" SkipUnchangedFiles="false" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)test-runtime\project.lock.json" DestinationFiles="$(TestRuntimeProjectLockJson)" ContinueOnError="true" SkipUnchangedFiles="false" />
+  </Target>
+</Project>
