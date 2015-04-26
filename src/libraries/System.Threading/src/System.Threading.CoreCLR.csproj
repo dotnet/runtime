@@ -63,16 +63,16 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Common\Interop\mincore\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclrpal\Interop.CreateSemaphore.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.CreateSemaphore.cs">
       <Link>Common\Interop\Interop.CreateSemaphore.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclrpal\Interop.OpenSemaphore.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.OpenSemaphore.cs">
       <Link>Common\Interop\Interop.OpenSemaphore.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclrpal\Interop.ReleaseSemaphore.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.ReleaseSemaphore.cs">
       <Link>Common\Interop\Interop.ReleaseSemaphore.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclrpal\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.FormatMessage.cs">
       <Link>Common\Interop\Interop.ReleaseSemaphore.cs</Link>
     </Compile>
   </ItemGroup>
