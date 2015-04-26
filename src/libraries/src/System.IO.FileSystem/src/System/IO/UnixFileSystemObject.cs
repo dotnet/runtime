@@ -18,7 +18,7 @@ namespace System.IO
             private bool _isDirectory;
 
             /// <summary>The last cached stat information about the file.</summary>
-            private Interop.libcoreclrpal.fileinfo _fileinfo;
+            private Interop.libcoreclr.fileinfo _fileinfo;
 
             /// <summary>
             /// Whether we've successfully cached a stat structure.
@@ -92,7 +92,7 @@ namespace System.IO
             {
                 get
                 {
-                    return (_fileinfo.mode & Interop.libcoreclrpal.FileTypes.S_IFMT) == Interop.libcoreclrpal.FileTypes.S_IFDIR;
+                    return (_fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFDIR;
                 }
             }
 
@@ -100,7 +100,7 @@ namespace System.IO
             {
                 get
                 {
-                    return (_fileinfo.mode & Interop.libcoreclrpal.FileTypes.S_IFMT) == Interop.libcoreclrpal.FileTypes.S_IFLNK;
+                    return (_fileinfo.mode & Interop.libcoreclr.FileTypes.S_IFMT) == Interop.libcoreclr.FileTypes.S_IFLNK;
                 }
             }
 
@@ -174,7 +174,7 @@ namespace System.IO
                 get
                 {
                     EnsureStatInitialized();
-                    return (_fileinfo.flags & (uint)Interop.libcoreclrpal.FileInformationFlags.HasBTime) != 0 ?
+                    return (_fileinfo.flags & (uint)Interop.libcoreclr.FileInformationFlags.HasBTime) != 0 ?
                         DateTimeOffset.FromUnixTimeSeconds(_fileinfo.btime) :
                         default(DateTimeOffset);
                 }
@@ -228,7 +228,7 @@ namespace System.IO
                 int result;
                 while (true)
                 {
-                    result = Interop.libcoreclrpal.GetFileInformationFromPath(_fullPath, out _fileinfo);
+                    result = Interop.libcoreclr.GetFileInformationFromPath(_fullPath, out _fileinfo);
                     if (result >= 0)
                     {
                         _fileinfoInitialized = 0;

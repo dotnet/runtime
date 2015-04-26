@@ -15,7 +15,7 @@ namespace System.Threading
             Debug.Assert(initialCount <= maximumCount);
             Debug.Assert(name == null || name.Length <= MAX_PATH);
 
-            return Interop.libcoreclrpal.CreateSemaphore(null, initialCount, maximumCount, name);
+            return Interop.libcoreclr.CreateSemaphore(null, initialCount, maximumCount, name);
         }
 
         private static SafeWaitHandle OpenSemaphore(string name)
@@ -27,17 +27,17 @@ namespace System.Threading
             const int SEMAPHORE_MODIFY_STATE = 0x00000002;
 
             //Pass false to OpenSemaphore to prevent inheritedHandles
-            return Interop.libcoreclrpal.OpenSemaphore(SEMAPHORE_MODIFY_STATE | SYNCHRONIZE, false, name);
+            return Interop.libcoreclr.OpenSemaphore(SEMAPHORE_MODIFY_STATE | SYNCHRONIZE, false, name);
         }
 
         private static bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount)
         {
-            return Interop.libcoreclrpal.ReleaseSemaphore(handle, releaseCount, out previousCount);
+            return Interop.libcoreclr.ReleaseSemaphore(handle, releaseCount, out previousCount);
         }
 
         private static string GetMessage(int win32Error)
         {
-            return Interop.libcoreclrpal.GetMessage(win32Error);
+            return Interop.libcoreclr.GetMessage(win32Error);
         }
 
         // -----------------------------

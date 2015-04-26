@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libcoreclrpal
+    internal static partial class libcoreclr
     {
-        [DllImport(Libraries.LibCoreClrPal, BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeWaitHandle OpenSemaphore(int desiredAccess, bool inheritHandle, string name);
+        [DllImport(Libraries.LibCoreClr, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount);
     }
 }

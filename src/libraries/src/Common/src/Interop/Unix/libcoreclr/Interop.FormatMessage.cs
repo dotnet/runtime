@@ -6,13 +6,13 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libcoreclrpal
+    internal static partial class libcoreclr
     {
         private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
 
-        [DllImport(Interop.Libraries.LibCoreClrPal)]
+        [DllImport(Interop.Libraries.LibCoreClr)]
         private extern static uint FormatMessage(
                     uint dwFlags,
                     IntPtr lpSource,
@@ -26,7 +26,7 @@ internal static partial class Interop
         internal static String GetMessage(int errorCode)
         {
             char[] buffer = new char[512];
-            uint result = Interop.libcoreclrpal.FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
+            uint result = Interop.libcoreclr.FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
                 FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
                 IntPtr.Zero, (uint)errorCode, 0, buffer, (uint)buffer.Length, IntPtr.Zero);
             if (result != 0)
