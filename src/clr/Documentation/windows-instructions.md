@@ -16,7 +16,7 @@ Visual Studio must be installed. Supported versions:
 - [Visual Studio Community 2013](http://go.microsoft.com/fwlink/?LinkId=517284) - **Free** for Open Source development!
 - [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) (Pro, Premium, Ultimate)
 
-Visual Studio Express is not supported. Visual Studio 2015 isn't supported yet.
+Visual Studio Express is not supported. Visual Studio 2015 isn't supported yet (see [issue #30](https://github.com/dotnet/coreclr/issues/30)).
 
 **Known Issues**
 
