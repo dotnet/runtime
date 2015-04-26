@@ -25,7 +25,9 @@ namespace System.IO
     [System.Runtime.CompilerServices.FriendAccessAllowed]
     internal class FileSecurityState : SecurityState
     {
+#if !PLATFORM_UNIX
         private static readonly char[] m_illegalCharacters = { '?', '*' };
+#endif // !PLATFORM_UNIX
 
         private FileSecurityStateAccess m_access;
         private String m_userPath;
@@ -125,8 +127,10 @@ namespace System.IO
 
                 System.IO.Path.CheckInvalidPathChars(path);
 
+#if !PLATFORM_UNIX
                 if (path.IndexOfAny( m_illegalCharacters ) != -1)
                     throw new ArgumentException( Environment.GetResourceString( "Argument_InvalidPathChars" ) );
+#endif // !PLATFORM_UNIX
             }
         }
     }
