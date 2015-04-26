@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
   </PropertyGroup>
-  
+
   <Import Project="..\dir.targets" />
 
   <!-- Returns the assembly version of the project for consumption
@@ -11,5 +11,6 @@
           Returns="$(AssemblyVersion)"/>
 
   <Import Project="$(ToolsDir)Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets')" />
+  <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
 
 </Project>
