@@ -2857,8 +2857,8 @@ private:
 //
 
 #ifndef FEATURE_PAL
-#include <hash_map>
-#include <hash_set>
+#include <unordered_map>
+#include <unordered_set>
 #include <list>
 #endif
 
@@ -2877,7 +2877,7 @@ private:
     LinearReadCache mCache;
     
 #ifndef FEATURE_PAL
-    std::hash_map<TADDR, std::list<TADDR>> mDependentHandleMap;
+    std::unordered_map<TADDR, std::list<TADDR>> mDependentHandleMap;
 #endif
     
 public:           
@@ -3031,7 +3031,7 @@ private:
     };
 
 public:
-    static void GetDependentHandleMap(std::hash_map<TADDR, std::list<TADDR>> &map);
+    static void GetDependentHandleMap(std::unordered_map<TADDR, std::list<TADDR>> &map);
 
 public:
     // Finds all objects which root "target" and prints the path from the root
@@ -3050,7 +3050,7 @@ public:
     void ObjSize();
 
     // Returns the set of all live objects in the process.
-    const std::hash_set<TADDR> &GetLiveObjects(bool excludeFQ = false);
+    const std::unordered_set<TADDR> &GetLiveObjects(bool excludeFQ = false);
 
     // See !FindRoots.
     int FindRoots(int gen, TADDR target);
@@ -3108,12 +3108,12 @@ private:
     std::list<RootNode*> mCleanupList;  // A list of RootNode's we've newed up.  This is only used to delete all of them later.
     std::list<RootNode*> mRootNewList;  // A list of unused RootNodes that are free to use instead of having to "new" up more.
     
-    std::hash_map<TADDR, MTInfo*> mMTs;     // The MethodTable cache which maps from MT -> MethodTable data (size, gcdesc, string typename)
-    std::hash_map<TADDR, RootNode*> mTargets;   // The objects that we are searching for.
-    std::hash_set<TADDR> mConsidered;       // A hashtable of objects we've already visited.
-    std::hash_map<TADDR, size_t> mSizes;   // A mapping from object address to total size of data the object roots.
+    std::unordered_map<TADDR, MTInfo*> mMTs;     // The MethodTable cache which maps from MT -> MethodTable data (size, gcdesc, string typename)
+    std::unordered_map<TADDR, RootNode*> mTargets;   // The objects that we are searching for.
+    std::unordered_set<TADDR> mConsidered;       // A hashtable of objects we've already visited.
+    std::unordered_map<TADDR, size_t> mSizes;   // A mapping from object address to total size of data the object roots.
     
-    std::hash_map<TADDR, std::list<TADDR>> mDependentHandleMap;
+    std::unordered_map<TADDR, std::list<TADDR>> mDependentHandleMap;
     
     LinearReadCache mCache;     // A linear cache which stops us from having to read from the target process more than 1-2 times per object.
 };
