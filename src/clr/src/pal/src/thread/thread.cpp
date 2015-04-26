@@ -2433,6 +2433,9 @@ PAL_GetStackBase()
     
     pthread_t thread = pthread_self();
     
+    status = pthread_attr_init(&attr);
+    _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2465,6 +2468,9 @@ PAL_GetStackLimit()
     
     pthread_t thread = pthread_self();
     
+    status = pthread_attr_init(&attr);
+    _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
