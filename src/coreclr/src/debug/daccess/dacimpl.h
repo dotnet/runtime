@@ -18,7 +18,7 @@
 #if defined(_TARGET_ARM_) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
-// storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL hash_map to.
+// storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
 
 #define DAC_HASHTABLE
 #endif // _TARGET_ARM_|| FEATURE_CORESYSTEM
@@ -26,7 +26,7 @@
 #ifndef DAC_HASHTABLE
 #pragma push_macro("return")
 #undef return
-#include <hash_map>
+#include <unordered_map>
 #pragma pop_macro("return")
 #endif //DAC_HASHTABLE
 extern CRITICAL_SECTION g_dacCritSec;
@@ -784,7 +784,7 @@ private:
     HashInstanceKeyBlock* m_hash[DAC_INSTANCE_HASH_SIZE];
 #else //DAC_HASHTABLE
 
-    // We're going to use the STL hash_map for our instance hash.  
+    // We're going to use the STL unordered_map for our instance hash.  
     // This has the benefit of scaling to different workloads appropriately (as opposed to having a 
     // fixed number of buckets).
 
@@ -829,7 +829,7 @@ private:
 #endif
 
     };
-    typedef stdext::hash_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
+    typedef stdext::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
     typedef DacInstanceHash::value_type DacInstanceHashValue;
     typedef DacInstanceHash::iterator DacInstanceHashIterator;
     DacInstanceHash m_hash;
