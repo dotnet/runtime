@@ -4010,7 +4010,7 @@ private:
 private:
 #if !defined(FEATURE_PAL)
     // Windows only
-    std::hash_set<TADDR> mLiveness;
+    std::unordered_set<TADDR> mLiveness;
     typedef std::list<sos::FragmentationBlock> FragmentationList;
     FragmentationList mFrag;
 
