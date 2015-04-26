@@ -146,7 +146,7 @@ namespace com_activation
         { return memcmp(&_Key1, &_Key2, sizeof(GUID)) == -1; }
     };
 
-    static std::hash_map<GUID, HMODULE, hash_compareGUID> *g_pClsidHmodMap = NULL;
+    static std::unordered_map<GUID, HMODULE, hash_compareGUID> *g_pClsidHmodMap = NULL;
 
 
 
@@ -393,7 +393,7 @@ Error:
 *                                                                      *
 * Note:                                                                *
 *                                                                      *
-* It uses a hash_map to cache the mapping between a CLSID and the      *
+* It uses a unordered_map to cache the mapping between a CLSID and the      *
 * HMODULE that is successfully used to activate the CLSID from. When   *
 * SOS is unloaded (in DebugExtensionUninitialize()) we call            *
 * FreeLibrary() for all cached HMODULEs.                               *
@@ -411,7 +411,7 @@ HRESULT CreateInstanceFromPath(
 
     if (g_pClsidHmodMap == NULL)
     {
-        g_pClsidHmodMap = new std::hash_map<GUID, HMODULE, hash_compareGUID>();
+        g_pClsidHmodMap = new std::unordered_map<GUID, HMODULE, hash_compareGUID>();
         OnUnloadTask::Register(CleanupClsidHmodMap);
     }
 
