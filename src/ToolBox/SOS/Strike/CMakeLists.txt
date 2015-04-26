@@ -89,11 +89,11 @@ else(WIN32)
   )
 
   set(SOS_LIBRARY
-    coreclrpal
     corguids
     debugshim
     dbgutil
-    palrt
+    # share the PAL in the dac module
+    mscordaccore
   )
 endif(WIN32)
 
