@@ -1,6 +1,11 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 set __ProjectFilesDir=%~dp0
+
+:: Default to VS2013
+set __VSVersion=VS2013
+set __VSProductVersion=120
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&goto Arg_Loop)
@@ -11,6 +16,9 @@ if /i "%1" == "SkipWrapperGeneration" (set __SkipWrapperGeneration=true&shift&go
 if /i "%1" == "Exclude" (set __Exclude=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "TestEnv" (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 
+if /i "%1" == "vs2013"   (set __VSVersion=%1&set __VSProductVersion=120&shift&goto Arg_Loop)
+if /i "%1" == "vs2015"   (set __VSVersion=%1&set __VSProductVersion=140&shift&goto Arg_Loop)
+
 if /i "%1" == "/?"      (goto Usage)
 
 set Core_Root=%1
@@ -19,19 +27,21 @@ shift
 :: Check prerequisites
 
 :: Check presence of VS
-if defined VS120COMNTOOLS goto CheckMSbuild
+if defined VS%__VSProductVersion%COMNTOOLS goto CheckMSbuild
 echo Installation of VS 2013 is a pre-requisite to build this repository.
 goto :eof
 
-:CheckMSBuild    
+:CheckMSBuild
+if /i "%__VSVersion%" =="vs2015" goto MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
+:MSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corefx/wiki/Developer%%20Guide for build instructions. && exit /b 1
 
 :: Set the environment for the  build- Vs cmd prompt
-call "%VS120COMNTOOLS%\VsDevCmd.bat"
+call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 
 if not defined VSINSTALLDIR echo Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/wiki/Developer%%20Guide for build instructions. && exit /b 1
 
@@ -132,13 +142,14 @@ goto :eof
 :Usage
 echo.
 echo Usage:
-echo %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] CORE_ROOT   where:
+echo %0 BuildArch BuildType [SkipWrapperGeneration] [Exclude EXCLUSION_TARGETS] [TestEnv TEST_ENV_SCRIPT] [vsversion] CORE_ROOT   where:
 echo.
 echo BuildArch is x64
 echo BuildType can be: Debug, Release
 echo SkipWrapperGeneration- Optional parameter - this will run the same set of tests as the last time it was run
 echo Exclude- Optional parameter - this will exclude individual tests from running, specified by ExcludeList ItemGroup in an .targets file.
 echo TestEnv- Optional parameter - this will run a custom script to set custom test envirommnent settings.
+echo VSVersion- optional argument to use VS2013 or VS2015  (default VS2013)
 echo CORE_ROOT The path to the runtime  
 exit /b 1
 

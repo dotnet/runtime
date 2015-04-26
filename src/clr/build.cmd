@@ -6,6 +6,10 @@ set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
 
+:: Default to VS2013
+set __VSVersion=VS2013
+set __VSProductVersion=120
+
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -29,6 +33,9 @@ if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "linuxmscorlib" (set __MscorlibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
 if /i "%1" == "osxmscorlib" (set __MscorlibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
+
+if /i "%1" == "vs2013" (set __VSVersion=%1&set __VSProductVersion=120&shift&goto Arg_Loop)
+if /i "%1" == "vs2015" (set __VSVersion=%1&set __VSProductVersion=140&shift&goto Arg_Loop)
 
 echo Invalid commandline argument: %1
 goto Usage
@@ -79,25 +86,27 @@ goto CheckVS
 
 :CheckVS
 :: Check presence of VS
-if defined VS120COMNTOOLS goto CheckVSExistence
+if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
 echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
 goto :eof
 
 :CheckVSExistence
-:: Does VS 2013 really exist?
-if exist "%VS120COMNTOOLS%\..\IDE\devenv.exe" goto CheckMSBuild
+:: Does VS 2013 or VS 2015 really exist?
+if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
 echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
 goto :eof
 
-:CheckMSBuild    
+:CheckMSBuild
 :: Note: We've disabled node reuse because it causes file locking issues.
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
+if /i "%__VSVersion%" =="vs2015" goto MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
+:MSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/wiki/Developer%%20Guide for build instructions. && exit /b 1
@@ -111,7 +120,7 @@ echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__Buil
 echo.
 
 :: Set the environment for the native build
-call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
+call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" x86_amd64
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
@@ -127,7 +136,7 @@ goto :eof
 :GenVSSolution
 :: Regenerate the VS solution
 pushd "%__IntermediatesDir%"
-call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%"
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion%
 popd
 
 :BuildComponents
@@ -157,7 +166,7 @@ set Platform=
 if defined __MscorlibOnly set __AdditionalMSBuildArgs=/p:BuildNugetPackage=false
 
 :: Set the environment for the managed build
-call "%VS120COMNTOOLS%\VsDevCmd.bat"
+call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
@@ -202,11 +211,12 @@ goto :eof
 :Usage
 echo.
 echo Usage:
-echo %0 BuildArch BuildType [clean] where:
+echo %0 BuildArch BuildType [clean] [vsversion] where:
 echo.
 echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
+echo VSVersion - optional argument to use VS2013 or VS2015 (default VS2013)
 echo linuxmscorlib - Build mscorlib for Linux
 echo osxmscorlib - Build mscorlib for OS X
 exit /b 1
