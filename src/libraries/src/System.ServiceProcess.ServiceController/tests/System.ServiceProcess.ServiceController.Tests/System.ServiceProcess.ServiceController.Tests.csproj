@@ -10,6 +10,7 @@
     <ProjectGuid>{F7D9984B-02EB-4573-84EF-00FFFBFB872C}</ProjectGuid>
     <!-- Tests require admin access to install and uninstall services, to be run in outerloop -->
     <RunTestsForProject>False</RunTestsForProject>
+    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
