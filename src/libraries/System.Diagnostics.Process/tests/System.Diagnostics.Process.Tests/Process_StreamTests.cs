@@ -24,7 +24,7 @@ namespace System.Diagnostics.ProcessTests
             return CreateProcess("stream");
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_SyncErrorStream()
         {
             Process p = CreateProcessError();
@@ -34,7 +34,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_AsyncErrorStream()
         {
             StringBuilder sb = new StringBuilder();
@@ -50,7 +50,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Equal(TestExeName + " error stream", sb.ToString());
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_SyncOutputStream()
         {
             Process p = CreateProcessStream();
@@ -61,7 +61,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Equal(s, TestExeName + " started" + Environment.NewLine + TestExeName + " closed" + Environment.NewLine);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_AsyncOutputStream()
         {
             {

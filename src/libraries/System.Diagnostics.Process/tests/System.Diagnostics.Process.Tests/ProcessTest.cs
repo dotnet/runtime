@@ -77,7 +77,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Equal(priority, _process.BasePriority);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_BasePriority()
         {
             ProcessPriorityClass originalPriority = _process.PriorityClass;
@@ -117,7 +117,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_EnableRaiseEvents()
         {
             {
@@ -154,7 +154,7 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_ExitCode()
         {
             {
@@ -258,7 +258,7 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_MaxWorkingSet()
         {
             IntPtr min, max;
@@ -284,7 +284,7 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_MinWorkingSet()
         {
             long curValue = (long)_process.MinWorkingSet;
@@ -338,49 +338,49 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_NonpagedSystemMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.NonpagedSystemMemorySize64);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_PagedMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PagedMemorySize64);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_PagedSystemMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PagedSystemMemorySize64);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_PeakPagedMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PeakPagedMemorySize64);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_PeakVirtualMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PeakVirtualMemorySize64);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_PeakWorkingSet64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PeakWorkingSet64);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_PrivateMemorySize64()
         {
             AssertNonZeroWindowsZeroUnix(_process.PrivateMemorySize64);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_PrivilegedProcessorTime()
         {
             Assert.True(_process.UserProcessorTime.TotalSeconds >= 0);
@@ -388,7 +388,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.True(_process.TotalProcessorTime.TotalSeconds >= 0);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_ProcessorAffinity()
         {
             IntPtr curProcessorAffinity = _process.ProcessorAffinity;
@@ -446,7 +446,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Throws<ArgumentException>(() => { p.PriorityClass = ProcessPriorityClass.Normal | ProcessPriorityClass.Idle; });
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void ProcessProcessName()
         {
             Assert.Equal(_process.ProcessName, CoreRunName, StringComparer.OrdinalIgnoreCase);
@@ -459,7 +459,7 @@ namespace System.Diagnostics.ProcessTests
         [DllImport("libc")]
         internal static extern int getpid();
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_GetCurrentProcess()
         {
             Process current = Process.GetCurrentProcess();
@@ -473,7 +473,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Equal(Process.GetProcessById(currentProcessId).ProcessName, Process.GetCurrentProcess().ProcessName);
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_GetProcesses()
         {
             // Get all the processes running on the machine.
@@ -491,7 +491,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.True(foundCurrentProcess, "Process_GetProcesses002 failed");
         }
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_GetProcessesByName()
         {
             // Get the current process using its name
