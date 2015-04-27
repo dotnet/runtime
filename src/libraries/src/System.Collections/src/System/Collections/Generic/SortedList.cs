@@ -48,7 +48,6 @@ namespace System.Collections.Generic
     // 
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public class SortedList<TKey, TValue> :
         IDictionary<TKey, TValue>, System.Collections.IDictionary, IReadOnlyDictionary<TKey, TValue>
     {

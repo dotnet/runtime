@@ -53,7 +53,6 @@ namespace System.Collections.Generic
         private int _length;
 
         // ptr to stack alloc'd array of ints
-        [System.Security.SecurityCritical]
         private int* _arrayPtr;
 
         // array of ints
@@ -67,7 +66,6 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="bitArray">int array to hold bits</param>
         /// <param name="length">length of int array</param>
-        [System.Security.SecurityCritical]
         internal BitHelper(int* bitArrayPtr, int length)
         {
             _arrayPtr = bitArrayPtr;
@@ -90,7 +88,6 @@ namespace System.Collections.Generic
         /// Mark bit at specified position
         /// </summary>
         /// <param name="bitPosition"></param>
-        [System.Security.SecuritySafeCritical]
         internal unsafe void MarkBit(int bitPosition)
         {
             int bitArrayIndex = bitPosition / IntSize;
@@ -112,7 +109,6 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="bitPosition"></param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]
         internal unsafe bool IsMarked(int bitPosition)
         {
             int bitArrayIndex = bitPosition / IntSize;

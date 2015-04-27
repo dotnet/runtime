@@ -1480,7 +1480,6 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]
         public bool IsSubsetOf(IEnumerable<T> other)
         {
             if (other == null)
@@ -1526,7 +1525,6 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
             if (other == null)
@@ -1597,7 +1595,6 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
             if (other == null)
@@ -1642,7 +1639,6 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]
         public bool SetEquals(IEnumerable<T> other)
         {
             if (other == null)
@@ -1743,7 +1739,6 @@ namespace System.Collections.Generic
         // <ReferencesCritical Name="Method: BitHelper.IsMarked(System.Int32):System.Boolean" Ring="1" />
         // <ReferencesCritical Name="Method: BitHelper.MarkBit(System.Int32):System.Void" Ring="1" />
         // </SecurityKernel>
-        [System.Security.SecurityCritical]
         private unsafe ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
         {
             ElementCount result;

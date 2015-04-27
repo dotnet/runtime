@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
-    [System.Runtime.InteropServices.ComVisible(false)]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class LinkedList<T> : ICollection<T>, System.Collections.ICollection, IReadOnlyCollection<T>
@@ -545,7 +544,6 @@ namespace System.Collections.Generic
     }
 
     // Note following class is not serializable since we customized the serialization of LinkedList. 
-    [System.Runtime.InteropServices.ComVisible(false)]
     public sealed class LinkedListNode<T>
     {
         internal LinkedList<T> list;

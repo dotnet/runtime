@@ -19,7 +19,6 @@ namespace System.Collections.Generic
 
     [DebuggerTypeProxy(typeof(StackDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public class Stack<T> : IEnumerable<T>,
         System.Collections.ICollection,
         IReadOnlyCollection<T>
