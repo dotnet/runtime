@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D5FF747F-7A0B-9003-885A-FE9A63E755E5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <AssemblyName>System.Collections</AssemblyName>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NuGetTargetFrameworkMoniker>ASP.NetCore, version=v5.0</NuGetTargetFrameworkMoniker>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.CoreCLR.csproj">
+      <Name>System.Runtime</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
+      <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
+      <Name>System.Diagnostics.Debug</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Collections\Generic\BitHelper.cs" />
+    <Compile Include="System\Collections\Generic\ICollectionDebugView.cs" />
+    <Compile Include="System\Collections\Generic\IDictionaryDebugView.cs" />
+    <Compile Include="System\Collections\Generic\HashSet.cs" />
+    <Compile Include="System\Collections\Generic\HashSetDebugView.cs" />
+    <Compile Include="System\Collections\Generic\LinkedList.cs" />
+    <Compile Include="System\Collections\Generic\Queue.cs" />
+    <Compile Include="System\Collections\Generic\QueueDebugView.cs" />
+    <Compile Include="System\Collections\Generic\SortedDictionary.cs" />
+    <Compile Include="System\Collections\Generic\SortedList.cs" />
+    <Compile Include="System\Collections\Generic\SortedSet.cs" />
+    <Compile Include="System\Collections\Generic\SortedSetDebugView.cs" />
+    <Compile Include="System\Collections\Generic\Stack.cs" />
+    <Compile Include="System\Collections\Generic\StackDebugView.cs" />
+    <Compile Include="System\Collections\StructuralComparisons.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Collections\HashHelpers.cs">
+      <Link>Common\System\Collections\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\CommonRuntimeTypes.cs">
+      <Link>Common\System\Collections\CommonRuntimeTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\ArrayT.cs">
+      <Link>Common\System\ArrayT.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
