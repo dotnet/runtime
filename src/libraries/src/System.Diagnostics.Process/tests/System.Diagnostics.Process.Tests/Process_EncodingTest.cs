@@ -23,7 +23,7 @@ namespace System.Diagnostics.ProcessTests
 
         private const int s_ConsoleEncoding = 437;
 
-        [Fact]
+        [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_EncodingBeforeProvider()
         {
             Action<int> run = expectedCodePage =>
