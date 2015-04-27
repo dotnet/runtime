@@ -1,18 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
 /*
@@ -72,16 +65,8 @@ namespace System.IO
         private SafeFileHandle _handle;
         private long _pos;        // Cache current location in the file.
         private long _appendStart;// When appending, prevent overwriting file.
-
-#if USE_OVERLAPPED
-        private static AsyncCallback s_endReadTask;
-        private static AsyncCallback s_endWriteTask;
-        private static Action<object> s_cancelReadHandler;
-        private static Action<object> s_cancelWriteHandler;
-#endif
-
-        private StreamAsyncHelper _streamAsyncHelper; // We delegate to this helper for
-                                                      // behavior previously implemented in Stream
+        
+        private Task<int> _lastSynchronouslyCompletedTask = null;
 
         [System.Security.SecuritySafeCritical]
         public Win32FileStream(String path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, FileStream parent) : base(parent)
@@ -204,10 +189,6 @@ namespace System.IO
             _readPos = 0;
             _readLen = 0;
             _writePos = 0;
-
-            // We need to pass _parent here to ensure the async implementation falls
-            // back to a derived sync implementation (if it exists).
-            _streamAsyncHelper = new StreamAsyncHelper(_parent);
 
             // For Append mode...
             if (seekToEnd)
@@ -595,7 +576,7 @@ namespace System.IO
 #if USE_OVERLAPPED
             if (_isAsync)
             {
-                IAsyncResult asyncResult = BeginWriteCore(_buffer, 0, _writePos, null, null);
+                Task<int> writeTask = WriteInternalCoreAsync(_buffer, 0, _writePos, CancellationToken.None);
                 // With our Whidbey async IO & overlapped support for AD unloads,
                 // we don't strictly need to block here to release resources
                 // since that support takes care of the pinning & freeing the 
@@ -610,11 +591,15 @@ namespace System.IO
                 // unloading because if we weren't unloading, an AD unload 
                 // could happen on a separate thread before we call EndWrite.
                 if (!calledFromFinalizer)
-                    EndWrite(asyncResult);
+                {
+                    writeTask.GetAwaiter().GetResult();
+                }
             }
             else
 #endif
+            {
                 WriteCore(_buffer, 0, _writePos);
+            }
 
             _writePos = 0;
         }
@@ -784,8 +769,7 @@ namespace System.IO
 #if USE_OVERLAPPED
             if (_isAsync)
             {
-                IAsyncResult result = BeginReadCore(buffer, offset, count, null, null, 0);
-                return EndRead(result);
+                return ReadInternalCoreAsync(buffer, offset, count, 0, CancellationToken.None).GetAwaiter().GetResult();
             }
 #endif
 
@@ -1028,8 +1012,7 @@ namespace System.IO
 #if USE_OVERLAPPED
                 if (_isAsync)
                 {
-                    IAsyncResult result = BeginWriteCore(_buffer, 0, _writePos, null, null);
-                    EndWrite(result);
+                    WriteInternalCoreAsync(_buffer, 0, _writePos, CancellationToken.None).GetAwaiter().GetResult();
                 }
                 else
 #endif
@@ -1067,8 +1050,7 @@ namespace System.IO
 #if USE_OVERLAPPED
             if (_isAsync)
             {
-                IAsyncResult result = BeginWriteCore(buffer, offset, count, null, null);
-                EndWrite(result);
+                WriteInternalCoreAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
                 return;
             }
 #endif
@@ -1109,28 +1091,7 @@ namespace System.IO
 
 #if USE_OVERLAPPED
         [System.Security.SecuritySafeCritical]  // auto-generated
-        internal IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
-        {
-            if (array == null)
-                throw new ArgumentNullException("array");
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < numBytes)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
-
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-
-            if (!_isAsync)
-                return _streamAsyncHelper.BeginRead(array, offset, numBytes, userCallback, stateObject);
-            else
-                return BeginReadAsync(array, offset, numBytes, userCallback, stateObject);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private FileStreamAsyncResult BeginReadAsync(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
+        private Task<int> ReadInternalAsync(byte[] array, int offset, int numBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(_isAsync);
 
@@ -1160,13 +1121,13 @@ namespace System.IO
                     Buffer.BlockCopy(_buffer, _readPos, array, offset, n);
                     _readPos += n;
 
-                    // Return a synchronous FileStreamAsyncResult
-                    return FileStreamAsyncResult.CreateBufferedReadResult(n, userCallback, stateObject, false);
+                    // Return a completed task
+                    return TaskFromResultOrCache(n);
                 }
                 else
                 {
                     Debug.Assert(_writePos == 0, "Win32FileStream must not have buffered write data here!  Pipes should be unidirectional.");
-                    return BeginReadCore(array, offset, numBytes, userCallback, stateObject, 0);
+                    return ReadInternalCoreAsync(array, offset, numBytes, 0, cancellationToken);
                 }
             }
 
@@ -1190,15 +1151,15 @@ namespace System.IO
                 if (numBytes < _bufferSize)
                 {
                     if (_buffer == null) _buffer = new byte[_bufferSize];
-                    IAsyncResult bufferRead = BeginReadCore(_buffer, 0, _bufferSize, null, null, 0);
-                    _readLen = EndRead(bufferRead);
+                    Task<int> readTask = ReadInternalCoreAsync(_buffer, 0, _bufferSize, 0, cancellationToken);
+                    _readLen = readTask.GetAwaiter().GetResult();
                     int n = _readLen;
                     if (n > numBytes) n = numBytes;
                     Buffer.BlockCopy(_buffer, 0, array, offset, n);
                     _readPos = n;
 
-                    // Return a synchronous FileStreamAsyncResult
-                    return FileStreamAsyncResult.CreateBufferedReadResult(n, userCallback, stateObject, false);
+                    // Return a completed task (recycling the one above if possible)
+                    return (_readLen == n ? readTask : TaskFromResultOrCache(n));
                 }
                 else
                 {
@@ -1206,7 +1167,7 @@ namespace System.IO
                     // with our read buffer.  Throw away the read buffer's contents.
                     _readPos = 0;
                     _readLen = 0;
-                    return BeginReadCore(array, offset, numBytes, userCallback, stateObject, 0);
+                    return ReadInternalCoreAsync(array, offset, numBytes, 0, cancellationToken);
                 }
             }
             else
@@ -1218,8 +1179,8 @@ namespace System.IO
 
                 if (n >= numBytes)
                 {
-                    // Return a synchronous FileStreamAsyncResult
-                    return FileStreamAsyncResult.CreateBufferedReadResult(n, userCallback, stateObject, false);
+                    // Return a completed task
+                    return TaskFromResultOrCache(n);
                 }
                 else
                 {
@@ -1230,7 +1191,7 @@ namespace System.IO
                     // Throw away read buffer.
                     _readPos = 0;
                     _readLen = 0;
-                    return BeginReadCore(array, offset + n, numBytes - n, userCallback, stateObject, n);
+                    return ReadInternalCoreAsync(array, offset + n, numBytes - n, n, cancellationToken);
                 }
                 // WARNING: all state on asyncResult objects must be set before
                 // we call ReadFile in BeginReadCore, since the OS can run our
@@ -1239,7 +1200,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        unsafe private FileStreamAsyncResult BeginReadCore(byte[] bytes, int offset, int numBytes, AsyncCallback userCallback, Object stateObject, int numBufferedBytesRead)
+        unsafe private Task<int> ReadInternalCoreAsync(byte[] bytes, int offset, int numBytes, int numBufferedBytesRead, CancellationToken cancellationToken)
         {
             Debug.Assert(!_handle.IsClosed, "!_handle.IsClosed");
             Debug.Assert(_parent.CanRead, "_parent.CanRead");
@@ -1251,12 +1212,8 @@ namespace System.IO
 
             // Create and store async stream class library specific data in the async result
 
-            // Must pass in _numBufferedBytes here to ensure all the state on the IAsyncResult 
-            // object is set before we call ReadFile, which gives the OS an
-            // opportunity to run our callback (including the user callback &
-            // the call to EndRead) before ReadFile has returned.   
-            FileStreamAsyncResult asyncResult = new FileStreamAsyncResult(numBufferedBytesRead, bytes, _handle, userCallback, stateObject, false);
-            NativeOverlapped* intOverlapped = asyncResult.OverLapped;
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _handle);
+            NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
             if (_parent.CanSeek)
@@ -1316,18 +1273,30 @@ namespace System.IO
                     // We clear the overlapped status bit for this special case.
                     // Failure to do so looks like we are freeing a pending overlapped later.
                     intOverlapped->InternalLow = IntPtr.Zero;
-                    asyncResult.CallUserCallback();
-                    // EndRead will free the Overlapped struct correctly.
+                    completionSource.SetCompletedSynchronously(0);
                 }
                 else if (errorCode != ERROR_IO_PENDING)
                 {
                     if (!_handle.IsClosed && _parent.CanSeek)  // Update Position - It could be anywhere.
+                    {
                         SeekCore(0, SeekOrigin.Current);
+                    }
+
+                    completionSource.ReleaseNativeResource();
 
                     if (errorCode == ERROR_HANDLE_EOF)
+                    {
                         throw __Error.GetEndOfFile();
+                    }
                     else
+                    {
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    }
+                }
+                else
+                {
+                    // Only once the IO is pending do we register for cancellation
+                    completionSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -1342,46 +1311,8 @@ namespace System.IO
                 //Console.WriteLine("ReadFile returned: "+r+" (0x"+Int32.Format(r, "x")+")  The IO completed synchronously, but the user callback was called on a separate thread");
             }
 
-            return asyncResult;
-        }
-
-        [System.Security.SecuritySafeCritical]
-        internal unsafe int EndRead(IAsyncResult asyncResult)
-        {
-            // There are 3 significantly different IAsyncResults we'll accept
-            // here.  One is from Stream::BeginRead.  The other two are variations
-            // on our FileStreamAsyncResult.  One is from BeginReadCore,
-            // while the other is from the BeginRead buffering wrapper.
-            if (asyncResult == null)
-                throw new ArgumentNullException("asyncResult");
-            Contract.EndContractBlock();
-
-            if (!_isAsync)
-                return _streamAsyncHelper.EndRead(asyncResult);
-
-            FileStreamAsyncResult afsar = asyncResult as FileStreamAsyncResult;
-            if (afsar == null || afsar.IsWrite)
-                throw __Error.GetWrongAsyncResult();
-
-            // Ensure we can't get into any race conditions by doing an 
-            // Interlocked.CompareExchange here.  Avoids corrupting memory via 
-            // freeing the NativeOverlapped class or GCHandle twice.  -- 
-            if (1 == Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0))
-                throw __Error.GetEndReadCalledTwice();
-
-            // Obtain the WaitHandle, but don't use public property in case we
-            // delay initialize the manual reset event in the future.
-            afsar.Wait();
-
-            // Free memory & GC handles.
-            afsar.ReleaseNativeResource();
-
-            // Now check for any error during the read.
-            if (afsar.ErrorCode != 0)
-                throw Win32Marshal.GetExceptionForWin32Error(afsar.ErrorCode);
-
-            return afsar.NumBytesRead;
-        }
+            return completionSource.Task;
+        }       
 #endif
 
         // Reads a byte from the file stream.  Returns the byte cast to an int
@@ -1410,28 +1341,7 @@ namespace System.IO
 
 #if USE_OVERLAPPED
         [System.Security.SecuritySafeCritical]  // auto-generated
-        internal IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
-        {
-            if (array == null)
-                throw new ArgumentNullException("array");
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - offset < numBytes)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
-
-            if (_handle.IsClosed) throw __Error.GetFileNotOpen();
-
-            if (!_isAsync)
-                return _streamAsyncHelper.BeginWrite(array, offset, numBytes, userCallback, stateObject);
-            else
-                return BeginWriteAsync(array, offset, numBytes, userCallback, stateObject);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        private FileStreamAsyncResult BeginWriteAsync(byte[] array, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
+        private Task WriteInternalAsync(byte[] array, int offset, int numBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(_isAsync);
 
@@ -1459,7 +1369,7 @@ namespace System.IO
                 if (_writePos > 0)
                     FlushWrite(false);
 
-                return BeginWriteCore(array, offset, numBytes, userCallback, stateObject);
+                return WriteInternalCoreAsync(array, offset, numBytes, cancellationToken);
             }
 
             // Handle buffering.
@@ -1476,19 +1386,18 @@ namespace System.IO
                 if (_writePos == 0) _buffer = new byte[_bufferSize];
                 Buffer.BlockCopy(array, offset, _buffer, _writePos, numBytes);
                 _writePos += numBytes;
-
-                // Return a synchronous FileStreamAsyncResult
-                return FileStreamAsyncResult.CreateBufferedReadResult(numBytes, userCallback, stateObject, true);
+                
+                return Task.CompletedTask;
             }
 
             if (_writePos > 0)
                 FlushWrite(false);
 
-            return BeginWriteCore(array, offset, numBytes, userCallback, stateObject);
+            return WriteInternalCoreAsync(array, offset, numBytes, cancellationToken);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
-        unsafe private FileStreamAsyncResult BeginWriteCore(byte[] bytes, int offset, int numBytes, AsyncCallback userCallback, Object stateObject)
+        unsafe private Task<int> WriteInternalCoreAsync(byte[] bytes, int offset, int numBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(!_handle.IsClosed, "!_handle.IsClosed");
             Debug.Assert(_parent.CanWrite, "_parent.CanWrite");
@@ -1499,8 +1408,8 @@ namespace System.IO
             Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamAsyncResult asyncResult = new FileStreamAsyncResult(0, bytes, _handle, userCallback, stateObject, true);
-            NativeOverlapped* intOverlapped = asyncResult.OverLapped;
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _handle);
+            NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (_parent.CanSeek)
             {
@@ -1554,18 +1463,30 @@ namespace System.IO
                 {
                     // Not an error, but EOF.  AsyncFSCallback will NOT be 
                     // called.  Call the user callback here.
-                    asyncResult.CallUserCallback();
-                    // EndWrite will free the Overlapped struct correctly.
+                    completionSource.SetCompletedSynchronously(0);
                 }
                 else if (errorCode != ERROR_IO_PENDING)
                 {
                     if (!_handle.IsClosed && _parent.CanSeek)  // Update Position - It could be anywhere.
+                    {
                         SeekCore(0, SeekOrigin.Current);
+                    }
+
+                    completionSource.ReleaseNativeResource();
 
                     if (errorCode == ERROR_HANDLE_EOF)
+                    {
                         throw __Error.GetEndOfFile();
+                    }
                     else
+                    {
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    }
+                }
+                else
+                {
+                    // Only once the IO is pending do we register for cancellation
+                    completionSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -1580,45 +1501,7 @@ namespace System.IO
                 //Console.WriteLine("WriteFile returned: "+r+" (0x"+Int32.Format(r, "x")+")  The IO completed synchronously, but the user callback was called on another thread.");
             }
 
-            return asyncResult;
-        }
-
-        [System.Security.SecuritySafeCritical]
-        internal unsafe void EndWrite(IAsyncResult asyncResult)
-        {
-            if (asyncResult == null)
-                throw new ArgumentNullException("asyncResult");
-            Contract.EndContractBlock();
-
-            if (!_isAsync)
-            {
-                _streamAsyncHelper.EndWrite(asyncResult);
-                return;
-            }
-
-            FileStreamAsyncResult afsar = asyncResult as FileStreamAsyncResult;
-            if (afsar == null || !afsar.IsWrite)
-                throw __Error.GetWrongAsyncResult();
-
-            // Ensure we can't get into any race conditions by doing an 
-            // Interlocked.CompareExchange here.  Avoids corrupting memory via
-            // freeing the NativeOverlapped class or GCHandle twice.  -- 
-            if (1 == Interlocked.CompareExchange(ref afsar._EndXxxCalled, 1, 0))
-                throw __Error.GetEndWriteCalledTwice();
-
-            // Obtain the WaitHandle, but don't use public property in case we
-            // delay initialize the manual reset event in the future.
-            afsar.Wait();
-
-            // Free memory & GC handles.
-            afsar.ReleaseNativeResource();
-
-            // Now check for any error during the write.
-            if (afsar.ErrorCode != 0)
-                throw Win32Marshal.GetExceptionForWin32Error(afsar.ErrorCode);
-
-            // Number of bytes written is afsar._numBytes + afsar._numBufferedBytes.
-            return;
+            return completionSource.Task;
         }
 #endif
 
@@ -1820,25 +1703,10 @@ namespace System.IO
                 return base.ReadAsync(buffer, offset, count, cancellationToken);
             }
 #if USE_OVERLAPPED
-            var asyncState = new FileStreamTaskAsyncState<int>();
-            asyncState._cancellationToken = cancellationToken;
-            asyncState._taskCompletionSource = new TaskCompletionSource<int>(asyncState);
-            var endReadTask = s_endReadTask;
-            if (endReadTask == null) s_endReadTask = endReadTask = EndReadTask; // benign initialization race condition
-            asyncState._asyncResult = BeginReadAsync(buffer, offset, count, endReadTask, asyncState);
-
-            if (asyncState._asyncResult.IsAsync && cancellationToken.CanBeCanceled)
+            else
             {
-                var cancelReadHandler = s_cancelReadHandler;
-                if (cancelReadHandler == null) s_cancelReadHandler = cancelReadHandler = CancelTask<int>; // benign initialization race condition
-                asyncState._registration = cancellationToken.Register(cancelReadHandler, asyncState);
-
-                // In case the task is completed right before we register the cancellation callback.
-                if (asyncState._asyncResult.IsCompleted)
-                    asyncState._registration.Dispose();
+                return ReadInternalAsync(buffer, offset, count, cancellationToken);
             }
-
-            return asyncState._taskCompletionSource.Task;
 #endif
         }
 
@@ -1856,149 +1724,17 @@ namespace System.IO
             // if this Win32FileStream was not opened with FileOptions.Asynchronous.
             if (!_isAsync)
 #endif
+            {
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
-#if USE_OVERLAPPED
-            var asyncState = new FileStreamTaskAsyncState<VoidTaskResult>();
-            asyncState._cancellationToken = cancellationToken;
-            asyncState._taskCompletionSource = new TaskCompletionSource<VoidTaskResult>(asyncState);
-            var endWriteTask = s_endWriteTask;
-            if (endWriteTask == null) s_endWriteTask = endWriteTask = EndWriteTask; // benign initialization race condition
-            asyncState._asyncResult = BeginWriteAsync(buffer, offset, count, endWriteTask, asyncState);
-
-            if (asyncState._asyncResult.IsAsync && cancellationToken.CanBeCanceled)
-            {
-                var cancelWriteHandler = s_cancelWriteHandler;
-                if (cancelWriteHandler == null) s_cancelWriteHandler = cancelWriteHandler = CancelTask<VoidTaskResult>; // benign initialization race condition
-                asyncState._registration = cancellationToken.Register(cancelWriteHandler, asyncState);
-
-                // In case the task is completed right before we register the cancellation callback.
-                if (asyncState._asyncResult.IsCompleted)
-                    asyncState._registration.Dispose();
             }
-
-            return asyncState._taskCompletionSource.Task;
+#if USE_OVERLAPPED
+            else
+            {
+                return WriteInternalAsync(buffer, offset, count, cancellationToken);
+            } 
 #endif
         }
-
-#if USE_OVERLAPPED
-        // Holds state we need when our TPM methods delegate to our APM methods
-        private sealed class FileStreamTaskAsyncState<T>
-        {
-            internal TaskCompletionSource<T> _taskCompletionSource;
-            internal CancellationToken _cancellationToken;
-            internal CancellationTokenRegistration _registration; // initialized after Begin call completes
-            internal FileStreamAsyncResult _asyncResult; // initialized after Begin call completes
-        }
-
-        // Cancellation callback for both ReadAsync and WriteAsync.
-        [System.Security.SecuritySafeCritical]
-        private static void CancelTask<T>(object state)
-        {
-            var fileStreamTaskAsyncState = state as FileStreamTaskAsyncState<T>;
-            Debug.Assert(fileStreamTaskAsyncState != null);
-            FileStreamAsyncResult asyncResult = fileStreamTaskAsyncState._asyncResult;
-
-            // This method is used as both the completion callback and the cancellation callback.
-            // We should try to cancel the operation if this is running as the completion callback
-            // or if cancellation is not applicable:
-            // 1. asyncResult is not a FileStreamAsyncResult
-            // 2. asyncResult.IsAsync is false: asyncResult is a "synchronous" FileStreamAsyncResult.
-            // 3. The asyncResult is completed: this should never happen.
-            Debug.Assert((!asyncResult.IsWrite && typeof(T) == typeof(int)) ||
-                            (asyncResult.IsWrite && typeof(T) == typeof(VoidTaskResult)));
-            Debug.Assert(asyncResult != null);
-            Debug.Assert(asyncResult.IsAsync);
-
-            try
-            {
-                // Cancel the overlapped read and set the task to cancelled state.
-                if (!asyncResult.IsCompleted)
-                    asyncResult.Cancel();
-            }
-            catch (Exception ex)
-            {
-                fileStreamTaskAsyncState._taskCompletionSource.TrySetException(ex);
-            }
-        }
-
-        // Completion callback for ReadAsync
-        [System.Security.SecuritySafeCritical]
-        private static void EndReadTask(IAsyncResult iar)
-        {
-            FileStreamAsyncResult asyncResult = iar as FileStreamAsyncResult;
-            Debug.Assert(asyncResult != null);
-            Debug.Assert(asyncResult.IsCompleted, "How can we end up in the completion callback if the IAsyncResult is not completed?");
-
-            var asyncState = asyncResult.AsyncState as FileStreamTaskAsyncState<int>;
-            Debug.Assert(asyncState != null);
-
-            try
-            {
-                if (asyncResult.IsAsync)
-                {
-                    asyncResult.ReleaseNativeResource();
-
-                    // release the resource held by CancellationTokenRegistration
-                    asyncState._registration.Dispose();
-                }
-
-                if (asyncResult.ErrorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
-                {
-                    var cancellationToken = asyncState._cancellationToken;
-                    Debug.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");
-                    TrySetCanceled(asyncState._taskCompletionSource, cancellationToken);
-                }
-                else
-                    asyncState._taskCompletionSource.TrySetResult(asyncResult.NumBytesRead);
-            }
-            catch (Exception ex)
-            {
-                asyncState._taskCompletionSource.TrySetException(ex);
-            }
-        }
-
-        // Completion callback for WriteAsync
-        [System.Security.SecuritySafeCritical]
-        private static void EndWriteTask(IAsyncResult iar)
-        {
-            var asyncResult = iar as FileStreamAsyncResult;
-            Debug.Assert(asyncResult != null);
-            Debug.Assert(asyncResult.IsCompleted, "How can we end up in the completion callback if the IAsyncResult is not completed?");
-
-            var asyncState = iar.AsyncState as FileStreamTaskAsyncState<VoidTaskResult>;
-            Debug.Assert(asyncState != null);
-
-            try
-            {
-                if (asyncResult.IsAsync)
-                {
-                    asyncResult.ReleaseNativeResource();
-
-                    // release the resource held by CancellationTokenRegistration
-                    asyncState._registration.Dispose();
-                }
-
-                if (asyncResult.ErrorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
-                {
-                    var cancellationToken = asyncState._cancellationToken;
-                    Debug.Assert(cancellationToken.IsCancellationRequested, "How can the IO operation be aborted if cancellation was not requested?");
-                    TrySetCanceled(asyncState._taskCompletionSource, cancellationToken);
-                }
-                else
-                    asyncState._taskCompletionSource.TrySetResult(default(VoidTaskResult));
-            }
-            catch (Exception ex)
-            {
-                asyncState._taskCompletionSource.TrySetException(ex);
-            }
-        }
-
-        private static void TrySetCanceled<T>(TaskCompletionSource<T> taskCompletionSource, CancellationToken cancellationToken)
-        {
-            taskCompletionSource.TrySetCanceled(cancellationToken);
-        }
-#endif
-
+        
         // Unlike Flush(), FlushAsync() always flushes to disk. This is intentional.
         // Legend is that we chose not to flush the OS file buffers in Flush() in fear of 
         // perf problems with frequent, long running FlushFileBuffers() calls. But we don't 
@@ -2038,7 +1774,19 @@ namespace System.IO
             else
                 return Task.CompletedTask;
         }
+        
+        private Task<int> TaskFromResultOrCache(int result)
+        {
+            Task<int> completedTask = _lastSynchronouslyCompletedTask;
+            Debug.Assert(completedTask == null || completedTask.Status == TaskStatus.RanToCompletion, "Cached task should have completed successfully");
 
-        private struct VoidTaskResult { }
+            if ((completedTask == null) || (completedTask.Result != result))
+            {
+                completedTask = Task.FromResult(result);
+                _lastSynchronouslyCompletedTask = completedTask;
+            }
+
+            return completedTask;
+        }
     }
 }

@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.FileSystem.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
