@@ -30,7 +30,7 @@ namespace System.Collections.Generic
         private Object _syncRoot;
 
         private const int DefaultCapacity = 4;
-        private static T[] s_emptyArray = new T[0];
+        private static T[] s_emptyArray = Array.Empty<T>();
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Stack"]/*' />
         public Stack()
