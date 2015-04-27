@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-// #define USING_HASH_SET
 
 /*============================================================
 **
@@ -1417,19 +1416,10 @@ namespace System.Collections.Generic
 
             SortedSet<T> asSorted = other as SortedSet<T>;
 
-#if USING_HASH_SET
-            HashSet<T> asHash = other as HashSet<T>;
-#endif
             if (asSorted != null && AreComparersEqual(this, asSorted))
             {
                 SymmetricExceptWithSameEC(asSorted);
             }
-#if USING_HASH_SET
-            else if (asHash != null && this.comparer.Equals(Comparer<T>.Default) && asHash.Comparer.Equals(EqualityComparer<T>.Default))
-            {
-                SymmetricExceptWithSameEC(asHash);
-            }
-#endif
             else
             {
                 //need perf improvement on this
@@ -1551,14 +1541,6 @@ namespace System.Collections.Generic
             }
 
 
-#if USING_HASH_SET
-            //do it one way for HashSets
-            HashSet<T> asHash = other as HashSet<T>;
-            if (asHash != null && comparer.Equals(Comparer<T>.Default) && asHash.Comparer.Equals(EqualityComparer<T>.Default))
-            {
-                return asHash.IsProperSupersetOf(this);
-            }
-#endif
             //another for sorted sets with the same comparer
             SortedSet<T> asSorted = other as SortedSet<T>;
             if (asSorted != null && AreComparersEqual(this, asSorted))
@@ -1592,13 +1574,6 @@ namespace System.Collections.Generic
                 return true;
 
             //do it one way for HashSets
-#if USING_HASH_SET
-            HashSet<T> asHash = other as HashSet<T>;
-            if (asHash != null && comparer.Equals(Comparer<T>.Default) && asHash.Comparer.Equals(EqualityComparer<T>.Default))
-            {
-                return asHash.IsSubsetOf(this);
-            }
-#endif
             //another for sorted sets with the same comparer
             SortedSet<T> asSorted = other as SortedSet<T>;
             if (asSorted != null && AreComparersEqual(this, asSorted))
@@ -1636,15 +1611,6 @@ namespace System.Collections.Generic
             if ((other as ICollection) != null && (other as ICollection).Count == 0)
                 return true;
 
-#if USING_HASH_SET
-            //do it one way for HashSets
-
-            HashSet<T> asHash = other as HashSet<T>;
-            if (asHash != null && comparer.Equals(Comparer<T>.Default) && asHash.Comparer.Equals(EqualityComparer<T>.Default))
-            {
-                return asHash.IsProperSubsetOf(this);
-            }
-#endif
             //another way for sorted sets
             SortedSet<T> asSorted = other as SortedSet<T>;
             if (asSorted != null && AreComparersEqual(asSorted, this))
@@ -1684,13 +1650,6 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("other");
             }
 
-#if USING_HASH_SET
-            HashSet<T> asHash = other as HashSet<T>;
-            if (asHash != null && comparer.Equals(Comparer<T>.Default) && asHash.Comparer.Equals(EqualityComparer<T>.Default))
-            {
-                return asHash.SetEquals(this);
-            }
-#endif
             SortedSet<T> asSorted = other as SortedSet<T>;
             if (asSorted != null && AreComparersEqual(this, asSorted))
             {
@@ -1741,13 +1700,6 @@ namespace System.Collections.Generic
             {
                 return false;
             }
-#if USING_HASH_SET
-            HashSet<T> asHash = other as HashSet<T>;
-            if (asHash != null && comparer.Equals(Comparer<T>.Default) && asHash.Comparer.Equals(EqualityComparer<T>.Default))
-            {
-                return asHash.Overlaps(this);
-            }
-#endif
             foreach (T item in other)
             {
                 if (this.Contains(item))
