@@ -9,28 +9,28 @@
 
 #include <windows.h>
 
-HRESULT GetStartupNotificationEvent(DWORD debuggeePID,
+EXTERN_C HRESULT GetStartupNotificationEvent(DWORD debuggeePID,
                                     __out HANDLE* phStartupEvent);
 
-HRESULT CloseCLREnumeration(HANDLE* pHandleArray, LPWSTR* pStringArray, DWORD dwArrayLength);
+EXTERN_C HRESULT CloseCLREnumeration(HANDLE* pHandleArray, LPWSTR* pStringArray, DWORD dwArrayLength);
 
-HRESULT EnumerateCLRs(DWORD debuggeePID, 
+EXTERN_C HRESULT EnumerateCLRs(DWORD debuggeePID, 
                       __out HANDLE** ppHandleArrayOut,
                       __out LPWSTR** ppStringArrayOut,
                       __out DWORD* pdwArrayLengthOut);
 
-HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
+EXTERN_C HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
                                       LPCWSTR szModuleName,
                                       __out_ecount_part(cchBuffer, *pdwLength) LPWSTR pBuffer,
                                       DWORD cchBuffer,
                                       __out DWORD* pdwLength);
 
-HRESULT CreateDebuggingInterfaceFromVersionEx(
+EXTERN_C HRESULT CreateDebuggingInterfaceFromVersionEx(
     int iDebuggerVersion,
     LPCWSTR szDebuggeeVersion,
     IUnknown ** ppCordb);
 
-HRESULT CreateDebuggingInterfaceFromVersion(
+EXTERN_C HRESULT CreateDebuggingInterfaceFromVersion(
     LPCWSTR szDebuggeeVersion, 
     IUnknown ** ppCordb);
 
