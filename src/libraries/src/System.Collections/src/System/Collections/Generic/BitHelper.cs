@@ -44,7 +44,7 @@ namespace System.Collections.Generic
     /// on a bit array and then need to loop over it. In particular, if it avoided visiting 
     /// every bit, it would allow good perf improvements when the bit array is sparse.
     /// </summary>
-    unsafe internal class BitHelper
+    unsafe internal sealed class BitHelper
     {   // should not be serialized
         private const byte MarkedBitFlag = 1;
         private const byte IntSize = 32;
