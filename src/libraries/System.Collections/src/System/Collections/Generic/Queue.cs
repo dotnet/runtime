@@ -18,7 +18,6 @@ namespace System.Collections.Generic
     // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisible(false)]
     public class Queue<T> : IEnumerable<T>,
         System.Collections.ICollection,
         IReadOnlyCollection<T>

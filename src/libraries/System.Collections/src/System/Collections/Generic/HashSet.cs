@@ -1082,7 +1082,6 @@ namespace System.Collections.Generic
         /// This attempts to allocate on the stack, if below StackAllocThreshold.
         /// </summary>
         /// <param name="other"></param>
-        [System.Security.SecuritySafeCritical]
         private unsafe void IntersectWithEnumerable(IEnumerable<T> other)
         {
             Debug.Assert(_buckets != null, "_buckets shouldn't be null; callers should check first");
@@ -1183,7 +1182,6 @@ namespace System.Collections.Generic
         ///
         /// </summary>
         /// <param name="other"></param>
-        [System.Security.SecuritySafeCritical]
         private unsafe void SymmetricExceptWithEnumerable(IEnumerable<T> other)
         {
             int originalLastIndex = _lastIndex;
@@ -1319,7 +1317,6 @@ namespace System.Collections.Generic
         /// <param name="returnIfUnfound">Allows us to finish faster for equals and proper superset
         /// because unfoundCount must be 0.</param>
         /// <returns></returns>
-        [System.Security.SecuritySafeCritical]
         private unsafe ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
         {
             ElementCount result;
