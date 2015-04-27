@@ -30,10 +30,10 @@ namespace System.Collections.Generic
         private int _version;
         private Object _syncRoot;
 
-        private const int _MinimumGrow = 4;
-        private const int _ShrinkThreshold = 32;
-        private const int _GrowFactor = 200;  // double each time
-        private const int _DefaultCapacity = 4;
+        private const int MinimumGrow = 4;
+        private const int GrowFactor = 200;  // double each time
+        private const int DefaultCapacity = 4;
+        private const int ShrinkThreshold = 32;
         private static T[] s_emptyArray = new T[0];
 
         // Creates a queue with room for capacity objects. The default initial
@@ -68,7 +68,7 @@ namespace System.Collections.Generic
             if (collection == null)
                 throw new ArgumentNullException("collection");
 
-            _array = new T[_DefaultCapacity];
+            _array = new T[DefaultCapacity];
             _size = 0;
             _version = 0;
 
@@ -213,10 +213,10 @@ namespace System.Collections.Generic
         {
             if (_size == _array.Length)
             {
-                int newcapacity = (int)((long)_array.Length * (long)_GrowFactor / 100);
-                if (newcapacity < _array.Length + _MinimumGrow)
+                int newcapacity = (int)((long)_array.Length * (long)GrowFactor / 100);
+                if (newcapacity < _array.Length + MinimumGrow)
                 {
-                    newcapacity = _array.Length + _MinimumGrow;
+                    newcapacity = _array.Length + MinimumGrow;
                 }
                 SetCapacity(newcapacity);
             }

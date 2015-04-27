@@ -64,11 +64,11 @@ namespace System.Collections.Generic
         private static TKey[] s_emptyKeys = new TKey[0];
         private static TValue[] s_emptyValues = new TValue[0];
 
-        private const int _defaultCapacity = 4;
+        private const int DefaultCapacity = 4;
 
         // Constructs a new sorted list. The sorted list is initially empty and has
         // a capacity of zero. Upon adding the first element to the sorted list the
-        // capacity is increased to _defaultCapacity, and then increased in multiples of two as
+        // capacity is increased to DefaultCapacity, and then increased in multiples of two as
         // required. The elements of the sorted list are ordered according to the
         // IComparable interface, which must be implemented by the keys of
         // all entries added to the sorted list.
@@ -536,7 +536,7 @@ namespace System.Collections.Generic
         // to min, whichever is larger.
         private void EnsureCapacity(int min)
         {
-            int newCapacity = _keys.Length == 0 ? _defaultCapacity : _keys.Length * 2;
+            int newCapacity = _keys.Length == 0 ? DefaultCapacity : _keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;

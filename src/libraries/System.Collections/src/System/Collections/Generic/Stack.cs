@@ -29,7 +29,7 @@ namespace System.Collections.Generic
         private int _version;        // Used to keep enumerator in sync w/ collection.
         private Object _syncRoot;
 
-        private const int _defaultCapacity = 4;
+        private const int DefaultCapacity = 4;
         private static T[] s_emptyArray = new T[0];
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Stack"]/*' />
@@ -72,7 +72,7 @@ namespace System.Collections.Generic
             else
             {
                 _size = 0;
-                _array = new T[_defaultCapacity];
+                _array = new T[DefaultCapacity];
 
                 using (IEnumerator<T> en = collection.GetEnumerator())
                 {
@@ -271,7 +271,7 @@ namespace System.Collections.Generic
         {
             if (_size == _array.Length)
             {
-                T[] newArray = ArrayT<T>.Resize(_array, (_array.Length == 0) ? _defaultCapacity : 2 * _array.Length, _size);
+                T[] newArray = ArrayT<T>.Resize(_array, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length, _size);
                 _array = newArray;
             }
             _array[_size++] = item;
