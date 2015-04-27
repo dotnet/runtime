@@ -192,10 +192,10 @@ Run your App
 You're ready to run Hello World!  To do that, run corerun, passing the path to the managed exe, plus any arguments.  The HelloWorld from corefxlab will print Tux if you pass "linux" as an argument, so:
 
 ```
-janhenke@freebsd-frankfurt:~/coreclr-demo/runtime % ./corerun HelloWorld.exe linux
+janhenke@freebsd-frankfurt:~/coreclr-demo/runtime % ./corerun HelloWorld.exe freebsd
 ```
 
-Note: This command is known to hang currently. We are working on it, the progress is tracked in [Issue #801](https://github.com/dotnet/coreclr/issues/801)
+If all works, you should be greeted by a friendly daemon you know well.
 
 Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and FreeBSD versions of an assembly, so you can simply nuget restore the dependencies. 
 
