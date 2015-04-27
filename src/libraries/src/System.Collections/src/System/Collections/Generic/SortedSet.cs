@@ -54,17 +54,6 @@ namespace System.Collections.Generic
         private int _version;
         private Object _syncRoot;
 
-        private const String ComparerName = "Comparer";
-        private const String CountName = "Count";
-        private const String ItemsName = "Items";
-        private const String VersionName = "Version";
-        //needed for enumerator
-        private const String TreeName = "Tree";
-        private const String NodeValueName = "Item";
-        private const String EnumStartName = "EnumStarted";
-        private const String ReverseName = "Reverse";
-        private const String EnumVersionName = "EnumVersion";
-
         internal const int StackAllocThreshold = 100;
 
         #endregion
