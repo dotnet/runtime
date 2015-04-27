@@ -486,7 +486,7 @@ domain_get_or_create (MonoDomain *domain)
 }
 
 static gboolean
-domain_any_has_request ()
+domain_any_has_request (void)
 {
 	gboolean res = FALSE;
 	guint i;
@@ -1176,7 +1176,7 @@ heuristic_notify_work_completed (void)
 }
 
 static gboolean
-heuristic_should_adjust ()
+heuristic_should_adjust (void)
 {
 	g_assert (threadpool);
 
@@ -1190,7 +1190,7 @@ heuristic_should_adjust ()
 }
 
 static void
-heuristic_adjust ()
+heuristic_adjust (void)
 {
 	g_assert (threadpool);
 
