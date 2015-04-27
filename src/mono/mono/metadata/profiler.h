@@ -6,6 +6,29 @@
 
 MONO_BEGIN_DECLS
 
+/*
+ * The profiler API is considered unstable because it needs to evolve with the
+ * Mono runtime. Profilers will pass in the profiler API version they are built
+ * against when calling mono_profiler_install (). If the profiler API version
+ * of the runtime is not equal to the one passed in, Mono will print a warning
+ * letting developers know that a profiler module needs to be updated.
+ *
+ * When you have updated a module to be compatible with a version of the
+ * profiler API, make it pass in the current value of MONO_PROFILER_VERSION.
+ * Pass the value literally; using the macro will defeat the purpose.
+ * (Modules within Mono are exceptions to this rule.)
+ *
+ * mono_profiler_install () is the single function guaranteed to be stable.
+ *
+ * -- Change Log --
+ *
+ * Version 1:
+ *
+ *  - Introduced profiler API versioning.
+ */
+
+#define MONO_PROFILER_VERSION 1
+
 #define MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH 128
 
 typedef enum {
@@ -160,7 +183,7 @@ typedef void (*MonoProfilerCodeBufferNew) (MonoProfiler *prof, void* buffer, int
 /*
  * Function the profiler may call.
  */
-MONO_API void mono_profiler_install       (MonoProfiler *prof, MonoProfileFunc shutdown_callback);
+MONO_API void mono_profiler_install       (MonoProfiler *prof, int version, MonoProfileFunc shutdown_callback);
 MONO_API void mono_profiler_set_events    (MonoProfileFlags events);
 
 MONO_API MonoProfileFlags mono_profiler_get_events (void);
