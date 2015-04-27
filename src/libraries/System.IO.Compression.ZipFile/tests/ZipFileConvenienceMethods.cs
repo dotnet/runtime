@@ -13,7 +13,10 @@ namespace System.IO.Compression.Test
         public static async Task CreateFromDirectoryNormal()
         {
             await TestCreateDirectory(zfolder("normal"), true);
-            await TestCreateDirectory(zfolder("unicode"), true);
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            {
+                await TestCreateDirectory(zfolder("unicode"), true);
+            }
         }
 
         private static async Task TestCreateDirectory(String folderName, Boolean testWithBaseDir)
@@ -62,7 +65,10 @@ namespace System.IO.Compression.Test
         public static void ExtractToDirectoryNormal()
         {
             TestExtract(zfile("normal.zip"), zfolder("normal"));
-            TestExtract(zfile("unicode.zip"), zfolder("unicode"));
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            {
+                TestExtract(zfile("unicode.zip"), zfolder("unicode"));
+            }
             TestExtract(zfile("empty.zip"), zfolder("empty"));
             TestExtract(zfile("explicitdir1.zip"), zfolder("explicitdir"));
             TestExtract(zfile("explicitdir2.zip"), zfolder("explicitdir"));
@@ -137,12 +143,15 @@ namespace System.IO.Compression.Test
                 DirsEqual(tempFolder, zfolder("normal"));
             }
 
-            using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
             {
-                String tempFolder = StreamHelpers.GetTmpPath(false);
-                archive.ExtractToDirectory(tempFolder);
+                using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
+                {
+                    String tempFolder = StreamHelpers.GetTmpPath(false);
+                    archive.ExtractToDirectory(tempFolder);
 
-                DirsEqual(tempFolder, zfolder("unicode"));
+                    DirsEqual(tempFolder, zfolder("unicode"));
+                }
             }
         }
 
