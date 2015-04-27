@@ -134,7 +134,6 @@ namespace MS.Internal.Xml.XPath
                         break;
                 }
             }
-            AssertDOD(buffer, nav, l);
             buffer.Insert(l, nav.Clone());
             return true;
         }
@@ -167,60 +166,6 @@ namespace MS.Internal.Xml.XPath
                 );
             }
             return cmp;
-        }
-
-        [Conditional("DEBUG")]
-        private static void AssertDOD(List<XPathNavigator> buffer, XPathNavigator nav, int pos)
-        {
-            if (nav.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator") return;
-            if (nav.GetType().ToString() == "System.Xml.DataDocumentXPathNavigator") return;
-            Debug.Assert(0 <= pos && pos <= buffer.Count, "Algorithm error: Insert()");
-            XmlNodeOrder cmp;
-            if (0 < pos)
-            {
-                cmp = CompareNodes(buffer[pos - 1], nav);
-                Debug.Assert(cmp == XmlNodeOrder.Before, "Algorithm error: Insert()");
-            }
-            if (pos < buffer.Count)
-            {
-                cmp = CompareNodes(nav, buffer[pos]);
-                Debug.Assert(cmp == XmlNodeOrder.Before, "Algorithm error: Insert()");
-            }
-        }
-
-        [Conditional("DEBUG")]
-        public static void AssertQuery(Query query)
-        {
-            Debug.Assert(query != null, "AssertQuery(): query == null");
-            if (query is FunctionQuery) return; // Temp Fix. Functions (as document()) return now unordered sequences
-            query = Clone(query);
-            XPathNavigator last = null;
-            XPathNavigator curr;
-            int querySize = query.Clone().Count;
-            int actualSize = 0;
-            while ((curr = query.Advance()) != null)
-            {
-                if (curr.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator") return;
-                if (curr.GetType().ToString() == "System.Xml.DataDocumentXPathNavigator") return;
-                Debug.Assert(curr == query.Current, "AssertQuery(): query.Advance() != query.Current");
-                if (last != null)
-                {
-                    if (last.NodeType == XPathNodeType.Namespace && curr.NodeType == XPathNodeType.Namespace)
-                    {
-                        // NamespaceQuery reports namespaces in mixed order.
-                        // Ignore this for now. 
-                        // It seams that this doesn't break other queries because NS can't have children
-                    }
-                    else
-                    {
-                        XmlNodeOrder cmp = CompareNodes(last, curr);
-                        Debug.Assert(cmp == XmlNodeOrder.Before, "AssertQuery(): Wrong node order");
-                    }
-                }
-                last = curr.Clone();
-                actualSize++;
-            }
-            Debug.Assert(actualSize == querySize, "AssertQuery(): actualSize != querySize");
         }
 
         // =================== XPathResultType_Navigator ======================

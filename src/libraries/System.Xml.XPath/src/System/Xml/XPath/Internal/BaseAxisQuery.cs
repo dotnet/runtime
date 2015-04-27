@@ -106,7 +106,6 @@ namespace MS.Internal.Xml.XPath
             ResetCount();
             Reset();
             qyInput.Evaluate(nodeIterator);
-            AssertQuery(qyInput);
             return this;
         }
 
