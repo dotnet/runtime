@@ -1259,6 +1259,18 @@ public static class DataContractJsonSerializerTests
         Assert.StrictEqual("Bar Summary", deserializedValue.Articles[0].Title);
     }
 
+    [Fact]
+    public static void DCJS_SerializationEvents()
+    {
+        var input = new MyType() { Value = "string value" };
+        var output = SerializeAndDeserialize<MyType>(input, "{\"Value\":\"string value\"}");
+
+        Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
+        Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
+        Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
+        Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null)
     {
         DataContractJsonSerializer dcjs;
