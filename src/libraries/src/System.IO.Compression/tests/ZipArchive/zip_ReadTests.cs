@@ -25,8 +25,11 @@ namespace System.IO.Compression.Test
                 ZipTest.zfile("emptydir.zip"), ZipTest.zfolder("emptydir"), ZipArchiveMode.Read);
             await ZipTest.IsZipSameAsDirAsync(
                 ZipTest.zfile("small.zip"), ZipTest.zfolder("small"), ZipArchiveMode.Read);
-            await ZipTest.IsZipSameAsDirAsync(
-                ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"), ZipArchiveMode.Read);
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            {
+                await ZipTest.IsZipSameAsDirAsync(
+                    ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"), ZipArchiveMode.Read);
+            }
         }
 
         [Fact]
@@ -36,7 +39,10 @@ namespace System.IO.Compression.Test
 
             await TestStreamingRead(ZipTest.zfile("normal.zip"), ZipTest.zfolder("normal"));
             await TestStreamingRead(ZipTest.zfile("fake64.zip"), ZipTest.zfolder("small"));
-            await TestStreamingRead(ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"));
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            {
+                await TestStreamingRead(ZipTest.zfile("unicode.zip"), ZipTest.zfolder("unicode"));
+            }
             await TestStreamingRead(ZipTest.zfile("empty.zip"), ZipTest.zfolder("empty"));
             await TestStreamingRead(ZipTest.zfile("appended.zip"), ZipTest.zfolder("small"));
             await TestStreamingRead(ZipTest.zfile("prepended.zip"), ZipTest.zfolder("small"));

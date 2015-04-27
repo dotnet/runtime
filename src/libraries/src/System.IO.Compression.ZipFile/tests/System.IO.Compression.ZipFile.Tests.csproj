@@ -34,6 +34,7 @@
     <Compile Include="$(CommonTestPath)\Compression\Utilities\LocalMemoryStream.cs" />
     <Compile Include="$(CommonTestPath)\Compression\Utilities\StreamHelpers.cs" />
     <Compile Include="$(CommonTestPath)\Compression\Utilities\ZipTestHelper.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Temporary until we have new work in build tools to
