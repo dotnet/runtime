@@ -93,18 +93,14 @@ namespace System.Collections.Generic
         [System.Security.SecuritySafeCritical]
         internal unsafe void MarkBit(int bitPosition)
         {
-            if (_useStackAlloc)
+            int bitArrayIndex = bitPosition / IntSize;
+            if (bitArrayIndex < _length && bitArrayIndex >= 0)
             {
-                int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < _length && bitArrayIndex >= 0)
+                if (_useStackAlloc)
                 {
                     _arrayPtr[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
                 }
-            }
-            else
-            {
-                int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < _length && bitArrayIndex >= 0)
+                else
                 {
                     _array[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
                 }
@@ -119,24 +115,19 @@ namespace System.Collections.Generic
         [System.Security.SecuritySafeCritical]
         internal unsafe bool IsMarked(int bitPosition)
         {
-            if (_useStackAlloc)
+            int bitArrayIndex = bitPosition / IntSize;
+            if (bitArrayIndex < _length && bitArrayIndex >= 0)
             {
-                int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < _length && bitArrayIndex >= 0)
+                if (_useStackAlloc)
                 {
                     return ((_arrayPtr[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
                 }
-                return false;
-            }
-            else
-            {
-                int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < _length && bitArrayIndex >= 0)
+                else
                 {
                     return ((_array[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
                 }
-                return false;
             }
+            return false;
         }
 
         /// <summary>
