@@ -634,15 +634,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        private static void DisallowMemberAccess(bool memberAccess)
-        {
-            if (memberAccess)
-            {
-                // the exception will be wrapped with an appropriate message
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SecurityException());
-            }
-        }
-
         static internal void InvokeOnSerializing(Object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context)
         {
             if (contract is ClassDataContract)
@@ -656,7 +647,6 @@ namespace System.Runtime.Serialization.Json
                     bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null, JsonGlobals.JsonSerializationPatterns);
                     try
                     {
-                        DisallowMemberAccess(memberAccessFlag);
                         classContract.OnSerializing.Invoke(value, new object[] { context.GetStreamingContext() });
                     }
                     catch (SecurityException securityException)
@@ -695,7 +685,6 @@ namespace System.Runtime.Serialization.Json
                     bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null, JsonGlobals.JsonSerializationPatterns);
                     try
                     {
-                        DisallowMemberAccess(memberAccessFlag);
                         classContract.OnSerialized.Invoke(value, new object[] { context.GetStreamingContext() });
                     }
                     catch (SecurityException securityException)
@@ -734,7 +723,6 @@ namespace System.Runtime.Serialization.Json
                     bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null, JsonGlobals.JsonSerializationPatterns);
                     try
                     {
-                        DisallowMemberAccess(memberAccessFlag);
                         classContract.OnDeserializing.Invoke(value, new object[] { context.GetStreamingContext() });
                     }
                     catch (SecurityException securityException)
@@ -773,7 +761,6 @@ namespace System.Runtime.Serialization.Json
                     bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null, JsonGlobals.JsonSerializationPatterns);
                     try
                     {
-                        DisallowMemberAccess(memberAccessFlag);
                         classContract.OnDeserialized.Invoke(value, new object[] { context.GetStreamingContext() });
                     }
                     catch (SecurityException securityException)
