@@ -85,22 +85,25 @@ public class Directory_GetFileSystemEntries_str_str
                 printerr("Error_1002! Unexpected exceptiont thrown: " + exc.ToString());
             }
 
-            //With wild character's as file name
-            iCountTestcases++;
-            try
+            if (Interop.IsWindows)
             {
-                String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 3);
-                Directory.GetFileSystemEntries(strTempDir, "*");
-                iCountErrors++;
-                printerr("Error_1003! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_1004! Unexpected exceptiont thrown: " + exc.ToString());
+                //With wild character's as file name
+                iCountTestcases++;
+                try
+                {
+                    String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 3);
+                    Directory.GetFileSystemEntries(strTempDir, "*");
+                    iCountErrors++;
+                    printerr("Error_1003! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_1004! Unexpected exceptiont thrown: " + exc.ToString());
+                }
             }
 
             //With spaces as file name
@@ -160,22 +163,25 @@ public class Directory_GetFileSystemEntries_str_str
                 printerr("Error_9005! Unexpected exceptiont thrown: " + exc.ToString());
             }
 
-            //With wild character's as search pattern
-            iCountTestcases++;
-            try
+            if (Interop.IsWindows)
             {
-                String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 3);
-                Directory.GetFileSystemEntries(dirName, strTempDir);
-                iCountErrors++;
-                printerr("Error_3003! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_3004! Unexpected exceptiont thrown: " + exc.ToString());
+                //With wild character's as search pattern
+                iCountTestcases++;
+                try
+                {
+                    String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 3);
+                    Directory.GetFileSystemEntries(dirName, strTempDir);
+                    iCountErrors++;
+                    printerr("Error_3003! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_3004! Unexpected exceptiont thrown: " + exc.ToString());
+                }
             }
 
             //Valid characters for search pattern

@@ -107,22 +107,25 @@ public class Directory_GetFileSystemEntries_str
 
             //TODO:: Add UNC path testcase.
 
-            //With wild character's
-            iCountTestcases++;
-            try
+            if (Interop.IsWindows)
             {
-                String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 2);
-                Directory.GetFileSystemEntries(strTempDir);
-                iCountErrors++;
-                printerr("Error_1003! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_1004! Unexpected exceptiont thrown: " + exc.ToString());
+                //With wild character's
+                iCountTestcases++;
+                try
+                {
+                    String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 2);
+                    Directory.GetFileSystemEntries(strTempDir);
+                    iCountErrors++;
+                    printerr("Error_1003! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_1004! Unexpected exceptiont thrown: " + exc.ToString());
+                }
             }
 
             //With lot's of \'s at the end
