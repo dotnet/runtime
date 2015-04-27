@@ -16,7 +16,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("set");
             }
 
-            this._sortedSet = sortedSet;
+            _sortedSet = sortedSet;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

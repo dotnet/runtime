@@ -16,7 +16,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("queue");
             }
 
-            this._queue = queue;
+            _queue = queue;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

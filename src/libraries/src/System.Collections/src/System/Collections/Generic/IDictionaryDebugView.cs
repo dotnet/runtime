@@ -14,7 +14,7 @@ namespace System.Collections.Generic
             if (dictionary == null)
                 throw new ArgumentNullException("dictionary");
 
-            this._dict = dictionary;
+            _dict = dictionary;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -38,7 +38,7 @@ namespace System.Collections.Generic
             if (collection == null)
                 throw new ArgumentNullException("collection");
 
-            this._collection = collection;
+            _collection = collection;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -62,7 +62,7 @@ namespace System.Collections.Generic
             if (collection == null)
                 throw new ArgumentNullException("collection");
 
-            this._collection = collection;
+            _collection = collection;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

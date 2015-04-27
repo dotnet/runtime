@@ -3,14 +3,11 @@
 
 /*=============================================================================
 **
-** Class: Queue
 **
 ** Purpose: A circular-array implementation of a generic queue.
 **
-** Date: January 28, 2003
 **
 =============================================================================*/
-
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -37,14 +34,14 @@ namespace System.Collections.Generic
         private const int _ShrinkThreshold = 32;
         private const int _GrowFactor = 200;  // double each time
         private const int _DefaultCapacity = 4;
-        static T[] _emptyArray = new T[0];
+        private static T[] s_emptyArray = new T[0];
 
         // Creates a queue with room for capacity objects. The default initial
         // capacity and grow factor are used.
         /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Queue"]/*' />
         public Queue()
         {
-            _array = _emptyArray;
+            _array = s_emptyArray;
         }
 
         // Creates a queue with room for capacity objects. The default grow factor

@@ -50,17 +50,17 @@ namespace System.Collections.Generic
         private const byte IntSize = 32;
 
         // m_length of underlying int array (not logical bit array)
-        private int m_length;
+        private int _length;
 
         // ptr to stack alloc'd array of ints
         [System.Security.SecurityCritical]
-        private int* m_arrayPtr;
+        private int* _arrayPtr;
 
         // array of ints
-        private int[] m_array;
+        private int[] _array;
 
         // whether to operate on stack alloc'd or heap alloc'd array 
-        private bool useStackAlloc;
+        private bool _useStackAlloc;
 
         /// <summary>
         /// Instantiates a BitHelper with a heap alloc'd array of ints
@@ -70,9 +70,9 @@ namespace System.Collections.Generic
         [System.Security.SecurityCritical]
         internal BitHelper(int* bitArrayPtr, int length)
         {
-            this.m_arrayPtr = bitArrayPtr;
-            this.m_length = length;
-            useStackAlloc = true;
+            _arrayPtr = bitArrayPtr;
+            _length = length;
+            _useStackAlloc = true;
         }
 
         /// <summary>
@@ -82,8 +82,8 @@ namespace System.Collections.Generic
         /// <param name="length">length of int array</param>
         internal BitHelper(int[] bitArray, int length)
         {
-            this.m_array = bitArray;
-            this.m_length = length;
+            _array = bitArray;
+            _length = length;
         }
 
         /// <summary>
@@ -93,20 +93,20 @@ namespace System.Collections.Generic
         [System.Security.SecuritySafeCritical]
         internal unsafe void MarkBit(int bitPosition)
         {
-            if (useStackAlloc)
+            if (_useStackAlloc)
             {
                 int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < m_length && bitArrayIndex >= 0)
+                if (bitArrayIndex < _length && bitArrayIndex >= 0)
                 {
-                    m_arrayPtr[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
+                    _arrayPtr[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
                 }
             }
             else
             {
                 int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < m_length && bitArrayIndex >= 0)
+                if (bitArrayIndex < _length && bitArrayIndex >= 0)
                 {
-                    m_array[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
+                    _array[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
                 }
             }
         }
@@ -119,21 +119,21 @@ namespace System.Collections.Generic
         [System.Security.SecuritySafeCritical]
         internal unsafe bool IsMarked(int bitPosition)
         {
-            if (useStackAlloc)
+            if (_useStackAlloc)
             {
                 int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < m_length && bitArrayIndex >= 0)
+                if (bitArrayIndex < _length && bitArrayIndex >= 0)
                 {
-                    return ((m_arrayPtr[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
+                    return ((_arrayPtr[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
                 }
                 return false;
             }
             else
             {
                 int bitArrayIndex = bitPosition / IntSize;
-                if (bitArrayIndex < m_length && bitArrayIndex >= 0)
+                if (bitArrayIndex < _length && bitArrayIndex >= 0)
                 {
-                    return ((m_array[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
+                    return ((_array[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
                 }
                 return false;
             }
