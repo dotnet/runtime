@@ -298,6 +298,13 @@ public:
         return m_pInitialExplicitFrame;
     }
 
+    // Reset the range of explicit frames that covers already unwound frames.
+    void ResetUnwoundExplicitFramesRange()
+    {
+        m_pInitialExplicitFrame = NULL;
+        m_pLimitFrame = NULL;
+    }
+
     // Determines if we have unwound to the specified parent method frame.
     // Currently this is only used for funclet skipping.
     static bool IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent);
