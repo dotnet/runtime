@@ -829,7 +829,7 @@ private:
 #endif
 
     };
-    typedef stdext::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
+    typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
     typedef DacInstanceHash::value_type DacInstanceHashValue;
     typedef DacInstanceHash::iterator DacInstanceHashIterator;
     DacInstanceHash m_hash;
