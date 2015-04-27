@@ -33,7 +33,7 @@ namespace System.Collections.Generic
         private const int MinimumGrow = 4;
         private const int GrowFactor = 200;  // double each time
         private const int DefaultCapacity = 4;
-        private static T[] s_emptyArray = new T[0];
+        private static T[] s_emptyArray = Array.Empty<T>();
 
         // Creates a queue with room for capacity objects. The default initial
         // capacity and grow factor are used.
