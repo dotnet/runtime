@@ -880,6 +880,13 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   set(ZH_TW_LOCALE_NAME zh_TW_LOCALE_NOT_FOUND)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(UNWIND_CONTEXT_IS_UCONTEXT_T 1)
+
+  if(EXISTS "/lib/libc.so.7")
+    set(FREEBSD_LIBC "/lib/libc.so.7")
+  else()
+    message(FATAL_ERROR "Cannot find libc on this system.")
+  endif()
+  
 else() # Anything else is Linux
   if(NOT HAVE_LIBUNWIND_H)
     unset(HAVE_LIBUNWIND_H CACHE)
