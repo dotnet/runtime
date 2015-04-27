@@ -90,17 +90,7 @@ namespace MS.Internal.Xml.XPath
                         continue;
                     }
                 }
-#if DEBUG
-                if (_lastNode != null)
-                {
-                    if (currentNode.GetType().ToString() == "Microsoft.VisualStudio.Modeling.StoreNavigator")
-                    {
-                        XmlNodeOrder order = CompareNodes(_lastNode, currentNode);
-                        System.Diagnostics.Debug.Assert(order == XmlNodeOrder.Before, "Algorithm error. Nodes expected to be DocOrderDistinct");
-                    }
-                }
-                _lastNode = currentNode.Clone();
-#endif
+
                 if (matches(currentNode))
                 {
                     position++;
