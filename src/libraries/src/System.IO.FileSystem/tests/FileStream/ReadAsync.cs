@@ -326,5 +326,80 @@ namespace System.IO.FileSystem.Tests
                 }
             }
         }
+
+        [Fact, OuterLoop]
+        public async Task ReadAsyncMiniStress()
+        {
+            TimeSpan testRunTime = TimeSpan.FromSeconds(30);
+            const int MaximumReadSize = 16 * 1024;
+            const int NormalReadSize = 4 * 1024;
+
+            Random rand = new Random();
+            DateTime testStartTime = DateTime.UtcNow;
+
+            // Generate file data
+            byte[] readableFileContents = new byte[MaximumReadSize * 16];
+            rand.NextBytes(readableFileContents);
+
+            // Create and fill file
+            string readableFilePath = GetTestFilePath();
+            using (var stream = new FileStream(readableFilePath, FileMode.CreateNew, FileAccess.Write))
+            {
+                await stream.WriteAsync(readableFileContents, 0, readableFileContents.Length);
+            }
+
+            using (var stream = new FileStream(readableFilePath, FileMode.Open, FileAccess.Read))
+            {
+                // Create a new token that expires between 100-1000ms
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
+                tokenSource.CancelAfter(rand.Next(100, 1000));
+
+                int currentPosition = 0;
+                byte[] buffer = new byte[MaximumReadSize];
+                do
+                {
+                    try
+                    {
+                        // 20%: random read size
+                        int bytesToRead = (rand.NextDouble() < 0.2 ? rand.Next(16, MaximumReadSize) : NormalReadSize);
+
+                        int bytesRead;
+                        if (rand.NextDouble() < 0.1)
+                        {
+                            // 10%: Sync read
+                            bytesRead = stream.Read(buffer, 0, bytesToRead);
+                        }
+                        else
+                        {
+                            // 90%: Async read
+                            bytesRead = await stream.ReadAsync(buffer, 0, bytesToRead, tokenSource.Token);
+                        }
+
+                        // 10%: Verify data (burns a lot of CPU time)
+                        if (rand.NextDouble() < 0.1)
+                        {
+                            // Validate data read
+                            Assert.True(bytesRead + currentPosition <= readableFileContents.Length, "Too many bytes read");
+                            Assert.Equal(readableFileContents.Skip(currentPosition).Take(bytesRead), buffer.Take(bytesRead));
+                        }
+
+                        // Advance position and reset if we are at the end
+                        currentPosition += bytesRead;
+                        if (currentPosition >= readableFileContents.Length)
+                        {
+                            currentPosition = 0;
+                            stream.Seek(0, SeekOrigin.Begin);
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        // Once the token has expired, generate a new one
+                        Assert.True(tokenSource.Token.IsCancellationRequested, "Received cancellation exception before token expired");
+                        tokenSource = new CancellationTokenSource();
+                        tokenSource.CancelAfter(rand.Next(100, 1000));
+                    }
+                } while (DateTime.UtcNow - testStartTime <= testRunTime);
+            }
+        }
     }
 }
