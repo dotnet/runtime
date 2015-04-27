@@ -33,7 +33,6 @@ namespace System.Collections.Generic
         private const int MinimumGrow = 4;
         private const int GrowFactor = 200;  // double each time
         private const int DefaultCapacity = 4;
-        private const int ShrinkThreshold = 32;
         private static T[] s_emptyArray = new T[0];
 
         // Creates a queue with room for capacity objects. The default initial
