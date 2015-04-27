@@ -4589,10 +4589,20 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
 
             *currentFlags = firstPassFlags;
 
-            // Pop all frames that are below the block of native frames and that would be
-            // in the unwound part of the stack when UnwindManagedExceptionPass1 is resumed 
-            // at the next managed frame.
-            UnwindFrameChain(GetThread(), (VOID*)frameContext.Rsp);
+            {
+                GCX_COOP();
+                // Pop all frames that are below the block of native frames and that would be
+                // in the unwound part of the stack when UnwindManagedExceptionPass1 is resumed 
+                // at the next managed frame.
+                UnwindFrameChain(GetThread(), (VOID*)frameContext.Rsp);
+
+                // We are going to reclaim the stack range that was scanned by the exception tracker
+                // until now. We need to reset the explicit frames range so that if GC fires before
+                // we recreate the tracker at the first managed frame after unwinding the native 
+                // frames, it doesn't attempt to scan the reclaimed stack range.
+                ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+                pTracker->ResetUnwoundExplicitFramesRange();
+            }
 
             // Now we need to unwind the native frames until we reach managed frames again or the exception is
             // handled in the native code.
@@ -4956,8 +4966,10 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
 #if defined(WIN64EXCEPTIONS)
             *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
 #endif // WIN64EXCEPTIONS
-            GCX_COOP();
-            fef.InitAndLink(&ex->ContextRecord);
+            {
+                GCX_COOP();     // Must be cooperative to modify frame chain.
+                fef.InitAndLink(&ex->ContextRecord);
+            }
 
 #ifdef _AMD64_
             // It is possible that an overflow was mapped to a divide-by-zero exception. 
