@@ -16,7 +16,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("set");
             }
 
-            this._set = set;
+            _set = set;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

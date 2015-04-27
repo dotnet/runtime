@@ -19,9 +19,9 @@ namespace System.Collections.Generic
         private Object _syncRoot;
 
         // names for serialization
-        const String VersionName = "Version";
-        const String CountName = "Count";
-        const String ValuesName = "Data";
+        private const String VersionName = "Version";
+        private const String CountName = "Count";
+        private const String ValuesName = "Data";
 
         public LinkedList()
         {
@@ -475,77 +475,77 @@ namespace System.Collections.Generic
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
-            private LinkedList<T> list;
-            private LinkedListNode<T> node;
-            private int version;
-            private T current;
-            private int index;
+            private LinkedList<T> _list;
+            private LinkedListNode<T> _node;
+            private int _version;
+            private T _current;
+            private int _index;
 
-            const string LinkedListName = "LinkedList";
-            const string CurrentValueName = "Current";
-            const string VersionName = "Version";
-            const string IndexName = "Index";
+            private const string LinkedListName = "LinkedList";
+            private const string CurrentValueName = "Current";
+            private const string VersionName = "Version";
+            private const string IndexName = "Index";
 
             internal Enumerator(LinkedList<T> list)
             {
-                this.list = list;
-                version = list.version;
-                node = list.head;
-                current = default(T);
-                index = 0;
+                _list = list;
+                _version = list.version;
+                _node = list.head;
+                _current = default(T);
+                _index = 0;
             }
 
             public T Current
             {
-                get { return current; }
+                get { return _current; }
             }
 
             object System.Collections.IEnumerator.Current
             {
                 get
                 {
-                    if (index == 0 || (index == list.Count + 1))
+                    if (_index == 0 || (_index == _list.Count + 1))
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
 
-                    return current;
+                    return _current;
                 }
             }
 
             public bool MoveNext()
             {
-                if (version != list.version)
+                if (_version != _list.version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                if (node == null)
+                if (_node == null)
                 {
-                    index = list.Count + 1;
+                    _index = _list.Count + 1;
                     return false;
                 }
 
-                ++index;
-                current = node.item;
-                node = node.next;
-                if (node == list.head)
+                ++_index;
+                _current = _node.item;
+                _node = _node.next;
+                if (_node == _list.head)
                 {
-                    node = null;
+                    _node = null;
                 }
                 return true;
             }
 
             void System.Collections.IEnumerator.Reset()
             {
-                if (version != list.version)
+                if (_version != _list.version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                current = default(T);
-                node = list.head;
-                index = 0;
+                _current = default(T);
+                _node = _list.head;
+                _index = 0;
             }
 
             public void Dispose()

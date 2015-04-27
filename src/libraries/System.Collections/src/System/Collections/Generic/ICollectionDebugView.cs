@@ -16,7 +16,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("collection");
             }
 
-            this._collection = collection;
+            _collection = collection;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

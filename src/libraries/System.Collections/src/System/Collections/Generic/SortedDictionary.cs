@@ -11,9 +11,9 @@ namespace System.Collections.Generic
     [DebuggerDisplay("Count = {Count}")]
     public class SortedDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>
     {
-        private KeyCollection keys;
+        private KeyCollection _keys;
 
-        private ValueCollection values;
+        private ValueCollection _values;
 
         private TreeSet<KeyValuePair<TKey, TValue>> _set;
 
@@ -149,8 +149,8 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (keys == null) keys = new KeyCollection(this);
-                return keys;
+                if (_keys == null) _keys = new KeyCollection(this);
+                return _keys;
             }
         }
 
@@ -174,8 +174,8 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (values == null) values = new ValueCollection(this);
-                return values;
+                if (_values == null) _values = new ValueCollection(this);
+                return _values;
             }
         }
 
@@ -440,33 +440,33 @@ namespace System.Collections.Generic
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
-            private TreeSet<KeyValuePair<TKey, TValue>>.Enumerator treeEnum;
-            private int getEnumeratorRetType;  // What should Enumerator.Current return?
+            private TreeSet<KeyValuePair<TKey, TValue>>.Enumerator _treeEnum;
+            private int _getEnumeratorRetType;  // What should Enumerator.Current return?
 
             internal const int KeyValuePair = 1;
             internal const int DictEntry = 2;
 
             internal Enumerator(SortedDictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
             {
-                treeEnum = dictionary._set.GetEnumerator();
-                this.getEnumeratorRetType = getEnumeratorRetType;
+                _treeEnum = dictionary._set.GetEnumerator();
+                _getEnumeratorRetType = getEnumeratorRetType;
             }
 
             public bool MoveNext()
             {
-                return treeEnum.MoveNext();
+                return _treeEnum.MoveNext();
             }
 
             public void Dispose()
             {
-                treeEnum.Dispose();
+                _treeEnum.Dispose();
             }
 
             public KeyValuePair<TKey, TValue> Current
             {
                 get
                 {
-                    return treeEnum.Current;
+                    return _treeEnum.Current;
                 }
             }
 
@@ -474,19 +474,19 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    return treeEnum.NotStartedOrEnded;
+                    return _treeEnum.NotStartedOrEnded;
                 }
             }
 
             internal void Reset()
             {
-                treeEnum.Reset();
+                _treeEnum.Reset();
             }
 
 
             void IEnumerator.Reset()
             {
-                treeEnum.Reset();
+                _treeEnum.Reset();
             }
 
             object IEnumerator.Current
@@ -498,7 +498,7 @@ namespace System.Collections.Generic
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
 
-                    if (getEnumeratorRetType == DictEntry)
+                    if (_getEnumeratorRetType == DictEntry)
                     {
                         return new DictionaryEntry(Current.Key, Current.Value);
                     }
@@ -553,7 +553,7 @@ namespace System.Collections.Generic
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
-            private SortedDictionary<TKey, TValue> dictionary;
+            private SortedDictionary<TKey, TValue> _dictionary;
 
             public KeyCollection(SortedDictionary<TKey, TValue> dictionary)
             {
@@ -561,22 +561,22 @@ namespace System.Collections.Generic
                 {
                     throw new ArgumentNullException("dictionary");
                 }
-                this.dictionary = dictionary;
+                _dictionary = dictionary;
             }
 
             public Enumerator GetEnumerator()
             {
-                return new Enumerator(dictionary);
+                return new Enumerator(_dictionary);
             }
 
             IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator()
             {
-                return new Enumerator(dictionary);
+                return new Enumerator(_dictionary);
             }
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                return new Enumerator(dictionary);
+                return new Enumerator(_dictionary);
             }
 
             public void CopyTo(TKey[] array, int index)
@@ -596,7 +596,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
 
-                dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { array[index++] = node.Item.Key; return true; });
+                _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { array[index++] = node.Item.Key; return true; });
             }
 
             void ICollection.CopyTo(Array array, int index)
@@ -621,7 +621,7 @@ namespace System.Collections.Generic
                     throw new ArgumentOutOfRangeException("arrayIndex", SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
-                if (array.Length - index < dictionary.Count)
+                if (array.Length - index < _dictionary.Count)
                 {
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
@@ -641,7 +641,7 @@ namespace System.Collections.Generic
 
                     try
                     {
-                        dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { objects[index++] = node.Item.Key; return true; });
+                        _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { objects[index++] = node.Item.Key; return true; });
                     }
                     catch (ArrayTypeMismatchException)
                     {
@@ -652,7 +652,7 @@ namespace System.Collections.Generic
 
             public int Count
             {
-                get { return dictionary.Count; }
+                get { return _dictionary.Count; }
             }
 
             bool ICollection<TKey>.IsReadOnly
@@ -672,7 +672,7 @@ namespace System.Collections.Generic
 
             bool ICollection<TKey>.Contains(TKey item)
             {
-                return dictionary.ContainsKey(item);
+                return _dictionary.ContainsKey(item);
             }
 
             bool ICollection<TKey>.Remove(TKey item)
@@ -687,34 +687,34 @@ namespace System.Collections.Generic
 
             Object ICollection.SyncRoot
             {
-                get { return ((ICollection)dictionary).SyncRoot; }
+                get { return ((ICollection)_dictionary).SyncRoot; }
             }
 
             [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
             public struct Enumerator : IEnumerator<TKey>, IEnumerator
             {
-                private SortedDictionary<TKey, TValue>.Enumerator dictEnum;
+                private SortedDictionary<TKey, TValue>.Enumerator _dictEnum;
 
                 internal Enumerator(SortedDictionary<TKey, TValue> dictionary)
                 {
-                    dictEnum = dictionary.GetEnumerator();
+                    _dictEnum = dictionary.GetEnumerator();
                 }
 
                 public void Dispose()
                 {
-                    dictEnum.Dispose();
+                    _dictEnum.Dispose();
                 }
 
                 public bool MoveNext()
                 {
-                    return dictEnum.MoveNext();
+                    return _dictEnum.MoveNext();
                 }
 
                 public TKey Current
                 {
                     get
                     {
-                        return dictEnum.Current.Key;
+                        return _dictEnum.Current.Key;
                     }
                 }
 
@@ -722,7 +722,7 @@ namespace System.Collections.Generic
                 {
                     get
                     {
-                        if (dictEnum.NotStartedOrEnded)
+                        if (_dictEnum.NotStartedOrEnded)
                         {
                             throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                         }
@@ -733,7 +733,7 @@ namespace System.Collections.Generic
 
                 void IEnumerator.Reset()
                 {
-                    dictEnum.Reset();
+                    _dictEnum.Reset();
                 }
             }
         }
@@ -742,7 +742,7 @@ namespace System.Collections.Generic
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
-            private SortedDictionary<TKey, TValue> dictionary;
+            private SortedDictionary<TKey, TValue> _dictionary;
 
             public ValueCollection(SortedDictionary<TKey, TValue> dictionary)
             {
@@ -750,22 +750,22 @@ namespace System.Collections.Generic
                 {
                     throw new ArgumentNullException("dictionary");
                 }
-                this.dictionary = dictionary;
+                _dictionary = dictionary;
             }
 
             public Enumerator GetEnumerator()
             {
-                return new Enumerator(dictionary);
+                return new Enumerator(_dictionary);
             }
 
             IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator()
             {
-                return new Enumerator(dictionary);
+                return new Enumerator(_dictionary);
             }
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                return new Enumerator(dictionary);
+                return new Enumerator(_dictionary);
             }
 
             public void CopyTo(TValue[] array, int index)
@@ -785,7 +785,7 @@ namespace System.Collections.Generic
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
 
-                dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { array[index++] = node.Item.Value; return true; });
+                _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { array[index++] = node.Item.Value; return true; });
             }
 
             void ICollection.CopyTo(Array array, int index)
@@ -810,7 +810,7 @@ namespace System.Collections.Generic
                     throw new ArgumentOutOfRangeException("arrayIndex", SR.ArgumentOutOfRange_NeedNonNegNum);
                 }
 
-                if (array.Length - index < dictionary.Count)
+                if (array.Length - index < _dictionary.Count)
                 {
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 }
@@ -830,7 +830,7 @@ namespace System.Collections.Generic
 
                     try
                     {
-                        dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { objects[index++] = node.Item.Value; return true; });
+                        _dictionary._set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node) { objects[index++] = node.Item.Value; return true; });
                     }
                     catch (ArrayTypeMismatchException)
                     {
@@ -841,7 +841,7 @@ namespace System.Collections.Generic
 
             public int Count
             {
-                get { return dictionary.Count; }
+                get { return _dictionary.Count; }
             }
 
             bool ICollection<TValue>.IsReadOnly
@@ -861,7 +861,7 @@ namespace System.Collections.Generic
 
             bool ICollection<TValue>.Contains(TValue item)
             {
-                return dictionary.ContainsValue(item);
+                return _dictionary.ContainsValue(item);
             }
 
             bool ICollection<TValue>.Remove(TValue item)
@@ -876,34 +876,34 @@ namespace System.Collections.Generic
 
             Object ICollection.SyncRoot
             {
-                get { return ((ICollection)dictionary).SyncRoot; }
+                get { return ((ICollection)_dictionary).SyncRoot; }
             }
 
             [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
             public struct Enumerator : IEnumerator<TValue>, IEnumerator
             {
-                private SortedDictionary<TKey, TValue>.Enumerator dictEnum;
+                private SortedDictionary<TKey, TValue>.Enumerator _dictEnum;
 
                 internal Enumerator(SortedDictionary<TKey, TValue> dictionary)
                 {
-                    dictEnum = dictionary.GetEnumerator();
+                    _dictEnum = dictionary.GetEnumerator();
                 }
 
                 public void Dispose()
                 {
-                    dictEnum.Dispose();
+                    _dictEnum.Dispose();
                 }
 
                 public bool MoveNext()
                 {
-                    return dictEnum.MoveNext();
+                    return _dictEnum.MoveNext();
                 }
 
                 public TValue Current
                 {
                     get
                     {
-                        return dictEnum.Current.Value;
+                        return _dictEnum.Current.Value;
                     }
                 }
 
@@ -911,7 +911,7 @@ namespace System.Collections.Generic
                 {
                     get
                     {
-                        if (dictEnum.NotStartedOrEnded)
+                        if (_dictEnum.NotStartedOrEnded)
                         {
                             throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                         }
@@ -922,7 +922,7 @@ namespace System.Collections.Generic
 
                 void IEnumerator.Reset()
                 {
-                    dictEnum.Reset();
+                    _dictEnum.Reset();
                 }
             }
         }

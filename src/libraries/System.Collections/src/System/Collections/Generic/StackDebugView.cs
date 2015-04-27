@@ -16,7 +16,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("stack");
             }
 
-            this._stack = stack;
+            _stack = stack;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

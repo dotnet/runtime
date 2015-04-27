@@ -3,14 +3,11 @@
 
 /*=============================================================================
 **
-** Class: Stack
 **
 ** Purpose: An array implementation of a generic stack.
 **
-** Date: January 28, 2003
 **
 =============================================================================*/
-
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -33,12 +30,12 @@ namespace System.Collections.Generic
         private Object _syncRoot;
 
         private const int _defaultCapacity = 4;
-        static T[] _emptyArray = new T[0];
+        private static T[] s_emptyArray = new T[0];
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Stack"]/*' />
         public Stack()
         {
-            _array = _emptyArray;
+            _array = s_emptyArray;
             _size = 0;
             _version = 0;
         }
@@ -302,14 +299,14 @@ namespace System.Collections.Generic
             private Stack<T> _stack;
             private int _index;
             private int _version;
-            private T currentElement;
+            private T _currentElement;
 
             internal Enumerator(Stack<T> stack)
             {
                 _stack = stack;
                 _version = _stack._version;
                 _index = -2;
-                currentElement = default(T);
+                _currentElement = default(T);
             }
 
             /// <include file='doc\Stack.uex' path='docs/doc[@for="StackEnumerator.Dispose"]/*' />
@@ -328,7 +325,7 @@ namespace System.Collections.Generic
                     _index = _stack._size - 1;
                     retval = (_index >= 0);
                     if (retval)
-                        currentElement = _stack._array[_index];
+                        _currentElement = _stack._array[_index];
                     return retval;
                 }
                 if (_index == -1)
@@ -338,9 +335,9 @@ namespace System.Collections.Generic
 
                 retval = (--_index >= 0);
                 if (retval)
-                    currentElement = _stack._array[_index];
+                    _currentElement = _stack._array[_index];
                 else
-                    currentElement = default(T);
+                    _currentElement = default(T);
                 return retval;
             }
 
@@ -351,7 +348,7 @@ namespace System.Collections.Generic
                 {
                     if (_index == -2) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_index == -1) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                    return currentElement;
+                    return _currentElement;
                 }
             }
 
@@ -361,7 +358,7 @@ namespace System.Collections.Generic
                 {
                     if (_index == -2) throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                     if (_index == -1) throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-                    return currentElement;
+                    return _currentElement;
                 }
             }
 
@@ -369,7 +366,7 @@ namespace System.Collections.Generic
             {
                 if (_version != _stack._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -2;
-                currentElement = default(T);
+                _currentElement = default(T);
             }
         }
     }
