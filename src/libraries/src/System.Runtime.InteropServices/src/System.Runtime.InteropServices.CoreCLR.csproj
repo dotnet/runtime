@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.InteropServices</AssemblyName>
+    <AssemblyVersion>4.0.20.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <NuGetTargetFrameworkMoniker>ASP.NetCore, version=v5.0</NuGetTargetFrameworkMoniker>
+  </PropertyGroup>
+
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\HandleCollector.CoreCLR.cs" />
+    <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\ADVF.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\DATADIR.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\DVASPECT.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\FORMATETC.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IAdviseSink.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumFORMATETC.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\STATDATA.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\STGMEDIUM.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\TYMED.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
