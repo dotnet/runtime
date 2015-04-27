@@ -1350,7 +1350,7 @@ static HMODULE LOADLoadLibrary(LPCSTR ShortAsciiName, BOOL fDynamic)
 #if defined(__APPLE__)
         ShortAsciiName = "libc.dylib";
 #elif defined(__FreeBSD__)
-        ShortAsciiName = "libc.so";
+        ShortAsciiName = FREEBSD_LIBC;
 #else
         ShortAsciiName = LIBC_SO;
 #endif
