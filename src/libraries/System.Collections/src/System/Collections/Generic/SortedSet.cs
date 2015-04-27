@@ -2267,7 +2267,7 @@ namespace System.Collections.Generic
         #endregion
 
         #region Helper Classes
-        internal class Node
+        internal sealed class Node
         {
             public bool IsRed;
             public T Item;
@@ -2485,7 +2485,7 @@ namespace System.Collections.Generic
     /// equality defined by the IComparer for this SortedSet be consistent with the default IEqualityComparer
     /// for the type T. If not, such an IEqualityComparer should be provided through the constructor.
     /// </summary>    
-    internal class SortedSetEqualityComparer<T> : IEqualityComparer<SortedSet<T>>
+    internal sealed class SortedSetEqualityComparer<T> : IEqualityComparer<SortedSet<T>>
     {
         private IComparer<T> comparer;
         private IEqualityComparer<T> e_comparer;
