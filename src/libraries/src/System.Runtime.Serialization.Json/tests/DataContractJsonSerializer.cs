@@ -917,8 +917,7 @@ public static class DataContractJsonSerializerTests
     public static void DCJS_WithXElement()
     {
         var original = new WithXElement(true);
-        var actual = SerializeAndDeserialize<WithXElement>(original, "{\"e\":\"<ElementName1 Attribute1=\\\"AttributeValue1\\\">Value1<\\/ElementName1>\"}",
-            skipStringCompare: true);
+        var actual = SerializeAndDeserialize<WithXElement>(original, "{\"e\":\"<ElementName1 Attribute1=\\\"AttributeValue1\\\">Value1<\\/ElementName1>\"}");
 
         VerifyXElementObject(original.e, actual.e);
     }
@@ -1260,7 +1259,7 @@ public static class DataContractJsonSerializerTests
         Assert.StrictEqual("Bar Summary", deserializedValue.Articles[0].Title);
     }
 
-    private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
+    private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null)
     {
         DataContractJsonSerializer dcjs;
         if (serializerFactory != null)
@@ -1272,43 +1271,21 @@ public static class DataContractJsonSerializerTests
             dcjs = (settings != null) ? new DataContractJsonSerializer(typeof(T), settings) : new DataContractJsonSerializer(typeof(T));
         }
 
-        Console.WriteLine("Testing input value : {0}", value);
-
         using (MemoryStream ms = new MemoryStream())
         {
-            try
-            {
-                dcjs.WriteObject(ms, value);
-                ms.Position = 0;
-            }
-            catch
-            {
-                Console.WriteLine("Error while serializing value");
-                throw;
-            }
+            dcjs.WriteObject(ms, value);
+            ms.Position = 0;
 
             string actualOutput = new StreamReader(ms).ReadToEnd();
             ms.Position = 0;
             Utils.CompareResult result = Utils.Compare(baseline, actualOutput, false);
 
-            if (!result.Equal && !skipStringCompare)
-            {
-                Console.WriteLine(result.ErrorMessage);
-                throw new Exception(string.Format("Test failed for input : {0}", value));
-            }
+            Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
 
             ms.Position = 0;
-            T deserialized;
-            try
-            {
-                deserialized = (T)dcjs.ReadObject(ms);
-            }
-            catch
-            {
-                Console.WriteLine("Error deserializing value. the serialized string was:" + Environment.NewLine + actualOutput);
-                throw;
-            }
-
+            T deserialized = (T)dcjs.ReadObject(ms);
+    
             return deserialized;
         }
     }
