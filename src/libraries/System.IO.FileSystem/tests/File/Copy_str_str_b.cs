@@ -211,7 +211,7 @@ public class File_Copy_str_str_b
             iCountTestcases++;
             try
             {
-                File.Copy(fil2.FullName, "**", false);
+                File.Copy(fil2.FullName, "*\0*", false);
                 iCountErrors++;
                 printerr("Error_298xh! Expected exception not thrown, fil2==" + fil1.FullName);
                 fil1.Delete();

@@ -381,7 +381,7 @@ public class DirectoryInfo_Move_str
             iCountTestcases++;
             try
             {
-                dir2.MoveTo("******.***");
+                dir2.MoveTo("\0\0\0**\0.*\0\0");
                 iCountErrors++;
                 printerr("Error_298hv! Expected exception not thrown");
             }

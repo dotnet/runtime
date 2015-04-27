@@ -130,24 +130,27 @@ public class File_CreateText_str
             //-----------------------------------------------------------------
 
 
-            // [] Wildcard in filename should throw
-            //-----------------------------------------------------------------
-            strLoc = "Loc_48yv8";
+            if (Interop.IsWindows)
+            {
+                // [] Wildcard in filename should throw
+                //-----------------------------------------------------------------
+                strLoc = "Loc_48yv8";
 
-            iCountTestcases++;
-            try
-            {
-                File.CreateText("Test*");
-                iCountErrors++;
-                printerr("Error_4y8vv! Expected exception not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
-            catch (Exception exc)
-            {
-                iCountErrors++;
-                printerr("Error_489v7! Incorrect exception thrown, exc==" + exc.ToString());
+                iCountTestcases++;
+                try
+                {
+                    File.CreateText("Test*");
+                    iCountErrors++;
+                    printerr("Error_4y8vv! Expected exception not thrown");
+                }
+                catch (ArgumentException)
+                {
+                }
+                catch (Exception exc)
+                {
+                    iCountErrors++;
+                    printerr("Error_489v7! Incorrect exception thrown, exc==" + exc.ToString());
+                }
             }
 
             //-----------------------------------------------------------------

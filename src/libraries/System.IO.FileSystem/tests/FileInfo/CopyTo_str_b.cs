@@ -188,7 +188,7 @@ public class FileInfo_CopyTo_str_b
             iCountTestcases++;
             try
             {
-                fil1 = fil2.CopyTo("**", false);
+                fil1 = fil2.CopyTo("*\0*", false);
                 iCountErrors++;
                 printerr("Error_298xh! Expected exception not thrown, fil2==" + fil1.FullName);
                 fil1.Delete();
