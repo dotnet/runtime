@@ -18,11 +18,6 @@ namespace System.Collections.Generic
         internal int version;
         private Object _syncRoot;
 
-        // names for serialization
-        private const String VersionName = "Version";
-        private const String CountName = "Count";
-        private const String ValuesName = "Data";
-
         public LinkedList()
         {
         }
@@ -480,11 +475,6 @@ namespace System.Collections.Generic
             private int _version;
             private T _current;
             private int _index;
-
-            private const string LinkedListName = "LinkedList";
-            private const string CurrentValueName = "Current";
-            private const string VersionName = "Version";
-            private const string IndexName = "Index";
 
             internal Enumerator(LinkedList<T> list)
             {
