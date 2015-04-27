@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -14,6 +14,14 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Compile tests against the contract, but copy our local-built implementation for testing -->  
+    <ProjectReference Include="..\src\System.Collections.csproj">  
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>  
+      <OutputItemType>Content</OutputItemType>  
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>  
+    </ProjectReference>  
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
