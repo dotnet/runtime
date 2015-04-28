@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
-    public static class LazyInitializerTests
+    public static class LazyTests
     {
         [Fact]
         public static void TestConstructor()
