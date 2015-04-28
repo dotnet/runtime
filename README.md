@@ -11,8 +11,8 @@ Build Status
 |**Debug**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_debug/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_debug/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_debug/) |[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_debug/) |
 |**Release**|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_linux_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_windows_release/)|[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_mac_release/) |[![Build status](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_release/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_coreclr_freebsd_release/) |
 
-Get CoreCLR
------------
+Get .NET Core
+-------------
 
 |                     |Linux   |Windows |Mac OS X |FreeBSD  |
 |---------------------|--------|--------|---------|---------|
