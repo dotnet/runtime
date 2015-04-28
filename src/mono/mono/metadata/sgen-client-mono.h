@@ -352,7 +352,7 @@ sgen_client_binary_protocol_sweep_end (int generation, int full_sweep)
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_world_stopping (int generation, long long timestamp)
+sgen_client_binary_protocol_world_stopping (int generation, long long timestamp, gpointer thread)
 {
 	MONO_GC_WORLD_STOP_BEGIN ();
 
