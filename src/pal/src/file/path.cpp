@@ -1485,3 +1485,42 @@ done:
     return nRet;
 }
 
+/*++
+Function:
+  PathFindFileNameW
+
+See MSDN doc.
+--*/
+LPWSTR
+PALAPI
+PathFindFileNameW(
+    IN LPCWSTR pPath
+    )
+{
+    PERF_ENTRY(PathFindFileNameW);
+    ENTRY("PathFindFileNameW(pPath=%p (%S))\n",
+          pPath?pPath:W16_NULLSTRING,
+          pPath?pPath:W16_NULLSTRING);
+
+    LPWSTR ret = (LPWSTR)pPath;
+    if (ret != NULL && *ret != W('\0'))
+    {
+        ret = PAL_wcschr(ret, W('\0')) - 1;
+        if (ret > pPath && *ret == W('/'))
+        {
+            ret--;
+        }
+        while (ret > pPath && *ret != W('/'))
+        {
+            ret--;
+        }
+        if (*ret == W('/') && *(ret + 1) != W('\0'))
+        {
+            ret++;
+        }
+    }
+done:
+    LOGEXIT("PathFindFileNameW returns %S\n", ret);
+    PERF_EXIT(PathFindFileNameW);
+    return ret;
+}

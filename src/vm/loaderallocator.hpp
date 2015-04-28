@@ -491,10 +491,10 @@ public:
     virtual BOOL CanUnload();
     void SetDomainAssembly(DomainAssembly *pDomainAssembly) { WRAPPER_NO_CONTRACT; m_Id.SetDomainAssembly(pDomainAssembly); }
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
-#endif // !defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 private:
     struct HandleCleanupListItem

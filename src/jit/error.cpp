@@ -356,7 +356,7 @@ void logf_stdout(const char* fmt, va_list args)
     }
     else
     {
-#ifdef CROSSGEN_COMPILE
+#if defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX)
         // Crossgen has forced stdout into UNICODE only mode:
         //     _setmode(_fileno(stdout), _O_U8TEXT); 
         //

@@ -222,6 +222,7 @@ void ZapVersionResource::Save(ZapWriter * pZapWriter)
 
 void ZapImage::CopyWin32VersionResource()
 {
+#ifndef FEATURE_PAL
     // Copy the version resource over so it is easy to see in the dumps where the ngened module came from
     COUNT_T cbResourceData;
     PVOID pResourceData = m_ModuleDecoder.GetWin32Resource(MAKEINTRESOURCE(1), RT_VERSION, &cbResourceData);
@@ -237,6 +238,7 @@ void ZapImage::CopyWin32VersionResource()
     m_pWin32ResourceSection->Place(pVersionData);
 
     SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE, m_pWin32ResourceSection);
+#endif
 }
 #undef MAKEINTRESOURCE
 

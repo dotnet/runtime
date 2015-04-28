@@ -236,6 +236,7 @@ public:
     }
 
     PTR_Frame GetFrame() { return NULL; }
+    void SetFrame(Frame *pFrame) { }
     DWORD CatchAtSafePoint() { return 0; }
     DWORD CatchAtSafePointOpportunistic() { return 0; }
 

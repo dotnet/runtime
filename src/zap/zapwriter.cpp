@@ -628,7 +628,7 @@ ZapBlob * ZapBlob::NewBlob(ZapWriter * pWriter, PVOID pData, SIZE_T cbSize)
     ZapBlob * pZapBlob = new (pMemory) ZapBlob(cbSize);
     
     if (pData != NULL)
-        memcpy(pZapBlob + 1, pData, cbSize);
+        memcpy((void*)(pZapBlob + 1), pData, cbSize);
 
     return pZapBlob;
 }
@@ -659,7 +659,7 @@ public:
         ZapAlignedBlobConst<alignment> * pZapBlob = new (pMemory) ZapAlignedBlobConst<alignment>(cbSize);
 
         if (pData != NULL)
-            memcpy(pZapBlob + 1, pData, cbSize);
+            memcpy((void *)(pZapBlob + 1), pData, cbSize);
 
         return pZapBlob;
     }

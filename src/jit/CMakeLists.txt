@@ -90,6 +90,4 @@ endif()
 set(CLR_EXPORTED_SYMBOL_FILE ${CLRJIT_EXPORTS_DEF})
 
 add_subdirectory(dll)
-if(WIN32)
-  add_subdirectory(crossgen)
-endif()
+add_subdirectory(crossgen)
