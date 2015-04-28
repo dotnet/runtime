@@ -35,7 +35,5 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(v3binder)
-if(WIN32)
-  add_subdirectory(v3binder_crossgen)
-endif()
+add_subdirectory(v3binder_crossgen)
 

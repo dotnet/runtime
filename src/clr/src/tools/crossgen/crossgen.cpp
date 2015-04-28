@@ -23,9 +23,6 @@
 #include "coregen.h"
 #include "consoleargs.h"
 
-#define SEPARATOR_CHAR_W W('\\')
-#define SEPARATOR_STRING_W W("\\")
-
 // Return values from wmain() in case of error
 enum ReturnValues
 {
@@ -41,7 +38,7 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL);
 void SetSvcLogger(ICorSvcLogger *pCorSvcLogger);
 #ifdef FEATURE_CORECLR
-void SetMscorlibPath(LPCWCHAR wzSystemDirectory);
+void SetMscorlibPath(LPCWSTR wzSystemDirectory);
 #endif
 
 /* --------------------------------------------------------------------------- *    
@@ -57,7 +54,7 @@ void Outputf(LPCWSTR szFormat, ...)
 {
     va_list args;
     va_start(args, szFormat);
-    vwprintf(szFormat, args);
+    vfwprintf(stdout, szFormat, args);
     va_end(args);
 }
 
@@ -259,7 +256,7 @@ bool MatchParameter(LPCWSTR szArg, LPCWSTR szTestParamName)
 // Returns true if pwzString ends with the string in pwzCandidate
 // Ignores case
 //
-bool StringEndsWith(LPWSTR pwzString, LPWSTR pwzCandidate)
+bool StringEndsWith(LPCWSTR pwzString, LPCWSTR pwzCandidate)
 {
     size_t stringLength = wcslen(pwzString);
     size_t candidateLength = wcslen(pwzCandidate);
@@ -269,7 +266,7 @@ bool StringEndsWith(LPWSTR pwzString, LPWSTR pwzCandidate)
         return false;
     }
 
-    LPWSTR pwzStringEnd = pwzString + stringLength - candidateLength;
+    LPCWSTR pwzStringEnd = pwzString + stringLength - candidateLength;
 
     return !_wcsicmp(pwzStringEnd, pwzCandidate);
 }
@@ -322,7 +319,7 @@ bool ComputeMscorlibPathFromTrustedPlatformAssemblies(LPWSTR pwzMscorlibPath, DW
 // Given a path terminated with "\\" and a search mask, this function will add
 // the enumerated files, corresponding to the search mask, from the path into
 // the refTPAList.
-void PopulateTPAList(SString path, LPWSTR pwszMask, SString &refTPAList, bool fCompilingMscorlib, bool fCreatePDB)
+void PopulateTPAList(SString path, LPCWSTR pwszMask, SString &refTPAList, bool fCompilingMscorlib, bool fCreatePDB)
 {
     _ASSERTE(path.GetCount() > 0);
     ClrDirectoryEnumerator folderEnumerator(path.GetUnicode(), pwszMask);
@@ -444,7 +441,9 @@ extern HMODULE g_hThisInst;
 
 int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 {
+#ifndef FEATURE_PAL
     g_hThisInst = WszGetModuleHandle(NULL);
+#endif
 
     /////////////////////////////////////////////////////////////////////////
     //
@@ -468,8 +467,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     HRESULT hr;
 
+#ifndef PLATFORM_UNIX
     // This is required to properly display Unicode characters
     _setmode(_fileno(stdout), _O_U8TEXT);
+#endif
 
     // Skip this executable path
     argv++;
@@ -690,7 +691,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argc--;
 
             // Ensure output dir ends in a backslash, or else diasymreader has issues
-            if (wzDirectoryToStorePDB[wcslen(wzDirectoryToStorePDB)-1] != SEPARATOR_CHAR_W)
+            if (wzDirectoryToStorePDB[wcslen(wzDirectoryToStorePDB)-1] != DIRECTORY_SEPARATOR_CHAR_W)
             {
                 if (wcscat_s(
                         wzDirectoryToStorePDB, 
@@ -811,7 +812,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             Output(W("You must specify an output filename (/out <file>)\n"));
             exit(INVALID_ARGUMENTS);
         }
-        if (CopyFileExW(pwzFilename, pwzOutputFilename, NULL, NULL, NULL, 0) == 0)
+        if (CopyFileW(pwzFilename, pwzOutputFilename, FALSE) == 0)
         {
             DWORD dwLastError = GetLastError();
             OutputErrf(W("Error: x86 copy failed for \"%s\" (0x%08x)\n"), pwzFilename, HRESULT_FROM_WIN32(dwLastError));
@@ -928,7 +929,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             exit(CLR_INIT_ERROR);
         }
 
-        wchar_t* pszSep = wcsrchr(wzTrustedPathRoot, SEPARATOR_CHAR_W);
+        wchar_t* pszSep = wcsrchr(wzTrustedPathRoot, DIRECTORY_SEPARATOR_CHAR_W);
         if (pszSep == NULL)
         {
             ERROR_HR(W("Error: wcsrchr returned NULL; GetModuleFileName must have given us something bad\n"), E_UNEXPECTED);
@@ -988,3 +989,31 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     return 0;
 }
+
+#ifdef PLATFORM_UNIX
+int main(int argc, char *argv[])
+{
+    if (0 != PAL_Initialize(argc, argv))
+    {
+        return FAILURE_RESULT;
+    }
+
+    wchar_t **wargv = new wchar_t*[argc];
+    for (int i = 0; i < argc; i++)
+    {
+        size_t len = strlen(argv[i]) + 1;
+        wargv[i] = new wchar_t[len];
+        WszMultiByteToWideChar(CP_ACP, 0, argv[i], -1, wargv[i], len);
+    }
+
+    int ret = wmain(argc, wargv);
+
+    for (int i = 0; i < argc; i++)
+    {
+        delete[] wargv[i];
+    }
+    delete[] wargv;
+
+    return ret;
+}
+#endif // PLATFORM_UNIX

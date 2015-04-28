@@ -30,7 +30,7 @@
 // Pull in some implementation files from other places in the tree
 //
 
-#include "..\..\dlls\mscoree\mscoree.cpp"
+#include "../../dlls/mscoree/mscoree.cpp"
 
 //---------------------------------------------------------------------------------------
 //
@@ -39,7 +39,7 @@
 
 #undef ExitProcess
 
-void CrossGenNotSupported(char * message)
+void CrossGenNotSupported(const char * message)
 {
     _ASSERTE(!"CrossGenNotSupported");
     fprintf(stderr, "Fatal error: %s\n", message);
