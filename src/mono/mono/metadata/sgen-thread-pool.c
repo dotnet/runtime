@@ -146,6 +146,8 @@ thread_func (void *thread_data)
 				mono_cond_signal (&done_cond);
 		}
 	}
+
+	return 0;
 }
 
 void

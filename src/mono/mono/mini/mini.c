@@ -3006,11 +3006,11 @@ is_open_method (MonoMethod *method)
 
 #ifndef DISABLE_JIT
 
+#if defined(__native_client_codegen__) || USE_COOP_GC
+
 static void
 mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 {
-#if defined(__native_client_codegen__) || USE_COOP_GC
-
 	MonoInst *poll_addr, *ins;
 	if (cfg->verbose_level)
 		printf ("ADDING SAFE POINT TO BB %d\n", bblock->block_num);
@@ -3041,8 +3041,6 @@ mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 		mono_bblock_insert_before_ins (bblock, NULL, poll_addr);
 		mono_bblock_insert_after_ins (bblock, poll_addr, ins);
 	}
-
-#endif
 }
 
 /*
@@ -3057,7 +3055,6 @@ Those are:
 static void
 mono_insert_safepoints (MonoCompile *cfg)
 {
-#if defined(__native_client_codegen__) || defined(USE_COOP_GC)
 	MonoBasicBlock *bb;
 
 	if (cfg->verbose_level)
@@ -3067,8 +3064,16 @@ mono_insert_safepoints (MonoCompile *cfg)
 		if (bb->loop_body_start || bb == cfg->bb_entry || bb->flags & BB_EXCEPTION_HANDLER)
 			mono_create_gc_safepoint (cfg, bb);
 	}
-#endif
 }
+
+#else
+
+static void
+mono_insert_safepoints (MonoCompile *cfg)
+{
+}
+
+#endif
 
 /*
  * mini_method_compile:
