@@ -2984,7 +2984,8 @@ bool  Compiler::compRsvdRegCheck(FrameLayoutState curState)
 // importing, morphing, optimizations and code generation.  This is called from the EE through the
 // code:CILJit::compileMethod function.  
 // 
-// See the document jitOverview.doc file in this directory for an overview of the structure of the JIT. 
+// For an overview of the structure of the JIT, see:
+//   https://github.com/dotnet/coreclr/documentation/ryujit-overview.md
 //  
 void                 Compiler::compCompile(void * * methodCodePtr,
                                            ULONG  * methodCodeSize,
