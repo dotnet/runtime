@@ -253,7 +253,24 @@ sgen_card_table_align_pointer (void *ptr)
 void
 sgen_card_table_mark_range (mword address, mword size)
 {
-	memset (sgen_card_table_get_card_address (address), 1, cards_in_range (address, size));
+	mword num_cards = cards_in_range (address, size);
+	guint8 *start = sgen_card_table_get_card_address (address);
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+	/*
+	 * FIXME: There's a theoretical bug here, namely that the card table is allocated so
+	 * far toward the end of the address space that start + num_cards overflows.
+	 */
+	guint8 *end = start + num_cards;
+	SGEN_ASSERT (0, num_cards <= CARD_COUNT_IN_BYTES, "How did we get an object larger than the card table?");
+	if (end > SGEN_CARDTABLE_END) {
+		memset (start, 1, SGEN_CARDTABLE_END - start);
+		memset (sgen_cardtable, 1, end - sgen_cardtable);
+		return;
+	}
+#endif
+
+	memset (start, 1, num_cards);
 }
 
 static gboolean
