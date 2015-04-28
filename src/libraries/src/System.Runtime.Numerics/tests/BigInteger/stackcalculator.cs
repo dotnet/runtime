@@ -176,6 +176,10 @@ namespace Tools
                     return (-(num1));
                 case "u+":
                     return (+(num1));
+                case "uMultiply":
+                    return BigInteger.Multiply(num1, num1);
+                case "u*":
+                    return num1 * num1;
                 default:
                     Assert.True(false, String.Format("Invalid operation found: {0}", op));
                     break;
