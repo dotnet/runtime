@@ -19,6 +19,8 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
+    <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
     <Compile Include="System\Numerics\BigInteger.cs" />
     <Compile Include="System\Numerics\BigIntegerBuilder.cs" />
     <Compile Include="System\Numerics\BigNumber.cs" />
