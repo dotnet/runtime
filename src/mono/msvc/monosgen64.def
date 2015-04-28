@@ -313,15 +313,11 @@ mono_g_hash_table_replace
 mono_g_hash_table_size
 mono_gc_collect
 mono_gc_collection_count
-mono_gc_enable_events
 mono_gc_get_generation
 mono_gc_get_heap_size
 mono_gc_get_used_size
 mono_gc_invoke_finalizers
-mono_gc_is_finalizer_thread
-mono_gc_make_root_descr_user
 mono_gc_max_generation
-mono_gc_out_of_memory
 mono_gc_reference_queue_add
 mono_gc_reference_queue_free
 mono_gc_reference_queue_new
@@ -633,7 +629,6 @@ mono_object_get_domain
 mono_object_get_size
 mono_object_get_virtual_method
 mono_object_hash
-mono_object_is_alive
 mono_object_isinst
 mono_object_isinst_mbyref
 mono_object_isinst_with_cache

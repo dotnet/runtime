@@ -113,10 +113,10 @@ extern void mono_gc_set_stack_end (void *stack_end);
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
  */
-extern MONO_API gboolean mono_object_is_alive (MonoObject* obj);
-extern MONO_API gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
-extern MONO_API gpointer mono_gc_out_of_memory (size_t size);
-extern MONO_API void     mono_gc_enable_events (void);
+gboolean mono_object_is_alive (MonoObject* obj);
+gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
+gpointer mono_gc_out_of_memory (size_t size);
+void     mono_gc_enable_events (void);
 
 /* disappearing link functionality */
 void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj, gboolean track);
@@ -147,7 +147,7 @@ typedef void (*MonoGCMarkFunc)     (void **addr, void *gc_data);
 typedef void (*MonoGCRootMarkFunc) (void *addr, MonoGCMarkFunc mark_func, void *gc_data);
 
 /* Create a descriptor with a user defined marking function */
-MONO_API void *mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker);
+void *mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker);
 
 /* Return whenever user defined marking functions are supported */
 gboolean mono_gc_user_markers_supported (void);
