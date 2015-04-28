@@ -78,7 +78,7 @@ You will build ```mscorlib.dll``` out of the coreclr repository and the rest of 
 D:\git\coreclr> build.cmd linuxmscorlib
 ```
 
-The output is placed in ```bin\obj\Unix.x64.Debug\mscorlib.dll```.  You'll want to copy this to the runtime folder on your Linux machine. (e.g. ```~/coreclr-demo/runtime```)
+The output is placed in ```bin\obj\Linux.x64.Debug\mscorlib.dll```.  You'll want to copy this to the runtime folder on your Linux machine. (e.g. ```~/coreclr-demo/runtime```)
 
 For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
@@ -88,7 +88,7 @@ D:\git\corefx> build.cmd /p:OS=Linux /p:SkipTests=true
 
 It's also possible to add ```/t:rebuild``` to the build.cmd to force it to delete the previously built assemblies.
 
-For the purposes of Hello World, you need to copy over both ```bin\Unix.AnyCPU.Debug\System.Console\System.Console.dll``` and ```bin\Unix.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll```  into the runtime folder on Linux. (e.g ```~/coreclr-demo/runtime```).
+For the purposes of Hello World, you need to copy over both ```bin\Linux.AnyCPU.Debug\System.Console\System.Console.dll``` and ```bin\Linux.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll```  into the runtime folder on Linux. (e.g ```~/coreclr-demo/runtime```).
 
 After you've done these steps, the runtime directory on Linux should look like this:
 
