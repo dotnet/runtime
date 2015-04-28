@@ -18,7 +18,7 @@ Build CoreCLR from Source
 - [Building CoreCLR on Windows](windows-instructions.md)
 - [Debugging CoreCLR](debugging-instructions.md)
 - [Testing CoreCLR Changes](test-instructions.md)
-- [Creating a Custom DNX](dnx-instructions.md)
+- [Creating a Custom DNX](custom-dnx-instructions.md)
 
 Book of the Runtime
 ===================
