@@ -30,17 +30,43 @@ namespace Microsoft.Framework.WebEncoders
             Assert.Same(retVal1, retVal2);
         }
 
+        [Fact]
+        public void GetScalarValueFromUtf16()
+        {
+            // TODO: [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            // This loop should instead be implemented as a [Theory] with multiple [InlineData]s.
+            // However, until globalization support is implemented on Unix, this causes failures when
+            // the xunit runner is configured with -xml to trace out results.  When it does so with 
+            // [InlineData], the parameters get written out to the results xml file, and with our
+            // current temporary globalization implementation on Unix, this causes exceptions like
+            // "The surrogate pair (0xD800, 0x22) is invalid. A high surrogate character 
+            // (0xD800 - 0xDBFF) must always be paired with a low surrogate character (0xDC00 - 0xDFFF)."
+            foreach (var input in new[] {
+                Tuple.Create(1, "a", (int)'a'), // normal BMP char, end of string
+                Tuple.Create(2, "ab", (int)'a'), // normal BMP char, not end of string
+                Tuple.Create(3, "\uDFFF", UnicodeReplacementChar), // trailing surrogate, end of string
+                Tuple.Create(4, "\uDFFFx", UnicodeReplacementChar), // trailing surrogate, not end of string
+                Tuple.Create(5, "\uD800", UnicodeReplacementChar), // leading surrogate, end of string
+                Tuple.Create(6, "\uD800x", UnicodeReplacementChar), // leading surrogate, not end of string, followed by non-surrogate
+                Tuple.Create(7, "\uD800\uD800", UnicodeReplacementChar), // leading surrogate, not end of string, followed by leading surrogate
+                Tuple.Create(8, "\uD800\uDFFF", 0x103FF) // leading surrogate, not end of string, followed by trailing surrogate
+            })
+            {
+                GetScalarValueFromUtf16(input.Item1, input.Item2, input.Item3);
+            }
+        }
         
-        [Theory]
-        [InlineData(1, "a", (int)'a')] // normal BMP char, end of string
-        [InlineData(2, "ab", (int)'a')] // normal BMP char, not end of string
-        [InlineData(3, "\uDFFF", UnicodeReplacementChar)] // trailing surrogate, end of string
-        [InlineData(4, "\uDFFFx", UnicodeReplacementChar)] // trailing surrogate, not end of string
-        [InlineData(5, "\uD800", UnicodeReplacementChar)] // leading surrogate, end of string
-        [InlineData(6, "\uD800x", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by non-surrogate
-        [InlineData(7, "\uD800\uD800", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by leading surrogate
-        [InlineData(8, "\uD800\uDFFF", 0x103FF)] // leading surrogate, not end of string, followed by trailing surrogate
-        public void GetScalarValueFromUtf16(int unused, string input, int expectedResult)
+        //[Theory]
+        //[InlineData(1, "a", (int)'a')] // normal BMP char, end of string
+        //[InlineData(2, "ab", (int)'a')] // normal BMP char, not end of string
+        //[InlineData(3, "\uDFFF", UnicodeReplacementChar)] // trailing surrogate, end of string
+        //[InlineData(4, "\uDFFFx", UnicodeReplacementChar)] // trailing surrogate, not end of string
+        //[InlineData(5, "\uD800", UnicodeReplacementChar)] // leading surrogate, end of string
+        //[InlineData(6, "\uD800x", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by non-surrogate
+        //[InlineData(7, "\uD800\uD800", UnicodeReplacementChar)] // leading surrogate, not end of string, followed by leading surrogate
+        //[InlineData(8, "\uD800\uDFFF", 0x103FF)] // leading surrogate, not end of string, followed by trailing surrogate
+        //public
+        private void GetScalarValueFromUtf16(int unused, string input, int expectedResult)
         {
             // The 'unused' parameter exists because the xunit runner can't distinguish
             // the individual malformed data test cases from each other without this
