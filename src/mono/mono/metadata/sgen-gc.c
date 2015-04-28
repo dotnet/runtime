@@ -2690,7 +2690,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	sgen_client_thread_unregister (p);
 }
 
-
 /*
  * ######################################################################
  * ########  Write barriers
