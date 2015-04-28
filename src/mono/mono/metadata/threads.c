@@ -31,6 +31,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/utils/monobitset.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-membar.h>
@@ -3487,31 +3488,25 @@ static const int static_data_size [NUM_STATIC_DATA_IDX] = {
 };
 #endif
 
-static uintptr_t* static_reference_bitmaps [NUM_STATIC_DATA_IDX];
+static MonoBitSet* static_reference_bitmaps [NUM_STATIC_DATA_IDX];
 
 static void
 mark_tls_slots (void *addr, MonoGCMarkFunc mark_func, void *gc_data)
 {
-	int i;
 	gpointer *static_data = addr;
-	for (i = 0; i < NUM_STATIC_DATA_IDX; ++i) {
-		int j, numwords;
-		void **ptr;
-		if (!static_data [i])
+
+	for (int i = 0; i < NUM_STATIC_DATA_IDX; ++i) {
+		void **ptr = static_data [i];
+
+		if (!ptr)
 			continue;
-		numwords = 1 + static_data_size [i] / sizeof (gpointer) / (sizeof(uintptr_t) * 8);
-		ptr = static_data [i];
-		for (j = 0; j < numwords; ++j, ptr += sizeof (uintptr_t) * 8) {
-			uintptr_t bmap = static_reference_bitmaps [i][j];
-			void ** p = ptr;
-			while (bmap) {
-				if ((bmap & 1) && *p) {
-					mark_func (p, gc_data);
-				}
-				p++;
-				bmap >>= 1;
-			}
-		}
+
+		MONO_BITSET_FOREACH (static_reference_bitmaps [i], idx, {
+			void **p = ptr + idx;
+
+			if (*p)
+				mark_func (p, gc_data);
+		});
 	}
 }
 
@@ -3671,16 +3666,15 @@ update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int numbits)
 {
 	int i;
 	int idx = (offset >> 24) - 1;
-	uintptr_t *rb;
 	if (!static_reference_bitmaps [idx])
-		static_reference_bitmaps [idx] = g_new0 (uintptr_t, 1 + static_data_size [idx] / sizeof(gpointer) / (sizeof(uintptr_t) * 8));
-	rb = static_reference_bitmaps [idx];
+		static_reference_bitmaps [idx] = mono_bitset_new (static_data_size [idx] / sizeof (uintptr_t), 0);
+	MonoBitSet *rb = static_reference_bitmaps [idx];
 	offset &= 0xffffff;
 	offset /= sizeof (gpointer);
 	/* offset is now the bitmap offset */
 	for (i = 0; i < numbits; ++i) {
 		if (bitmap [i / sizeof (uintptr_t)] & (ONE_P << (i & (sizeof (uintptr_t) * 8 -1))))
-			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (ONE_P << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
+			mono_bitset_set_fast (rb, offset + i);
 	}
 }
 
@@ -3688,15 +3682,14 @@ static void
 clear_reference_bitmap (guint32 offset, guint32 size)
 {
 	int idx = (offset >> 24) - 1;
-	uintptr_t *rb;
-	rb = static_reference_bitmaps [idx];
+	MonoBitSet *rb = static_reference_bitmaps [idx];
 	offset &= 0xffffff;
 	offset /= sizeof (gpointer);
 	size /= sizeof (gpointer);
 	size += offset;
 	/* offset is now the bitmap offset */
 	for (; offset < size; ++offset)
-		rb [offset / (sizeof (uintptr_t) * 8)] &= ~(1L << (offset & (sizeof (uintptr_t) * 8 -1)));
+		mono_bitset_clear_fast (rb, offset);
 }
 
 /*
