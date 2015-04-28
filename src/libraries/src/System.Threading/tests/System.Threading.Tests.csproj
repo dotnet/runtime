@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Threading.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="AsyncLocalTests.cs" />
+    <Compile Include="BarrierCancellationTests.cs" />
+    <Compile Include="BarrierTests.cs" />
+    <Compile Include="CountdownEventCancellationTests.cs" />
+    <Compile Include="CountdownEventTests.cs" />
+    <Compile Include="ManualResetEventSlimCancellationTests.cs" />
+    <Compile Include="ManualResetEventSlimTests.cs" />
+    <Compile Include="SemaphoreSlimCancellationTests.cs" />
+    <Compile Include="SemaphoreSlimTests.cs" />
+    <Compile Include="SpinLockTests.cs" />
+    <Compile Include="ThreadLocalTests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="project.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
+      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
+      <Name>XunitTraitsDiscoverers</Name>
+    </ProjectReference>
+    <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
+    <ProjectReference Include="..\src\System.Threading.CoreCLR.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
