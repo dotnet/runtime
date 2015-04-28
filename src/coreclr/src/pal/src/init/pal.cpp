@@ -669,7 +669,9 @@ PAL_InitializeCoreCLR(
     {
         return ERROR_DLL_INIT_FAILED;
     }
-    
+
+    InitializeStringResources();
+
     if (!fStayInPAL)
     {
         PAL_Leave(PAL_BoundaryTop);
