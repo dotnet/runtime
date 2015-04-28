@@ -15,8 +15,11 @@ namespace System.IO.Compression.Test
             await testCreate("small", false);
             await testCreate("normal", true);
             await testCreate("normal", false);
-            await testCreate("unicode", true);
-            await testCreate("unicode", false);
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            {
+                await testCreate("unicode", true);
+                await testCreate("unicode", false);
+            }
             await testCreate("empty", true);
             await testCreate("empty", false);
             await testCreate("emptydir", true);
