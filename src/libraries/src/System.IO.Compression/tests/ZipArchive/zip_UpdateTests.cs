@@ -15,8 +15,11 @@ namespace System.IO.Compression.Test
                 await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("normal.zip")), ZipTest.zfolder("normal"), ZipArchiveMode.Update, false, false);
             ZipTest.IsZipSameAsDir(
                 await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("fake64.zip")), ZipTest.zfolder("small"), ZipArchiveMode.Update, false, false);
-            ZipTest.IsZipSameAsDir(
-                await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("unicode.zip")), ZipTest.zfolder("unicode"), ZipArchiveMode.Update, false, false);
+            if (Interop.IsWindows)
+            {
+                ZipTest.IsZipSameAsDir(
+                    await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("unicode.zip")), ZipTest.zfolder("unicode"), ZipArchiveMode.Update, false, false);
+            }
             ZipTest.IsZipSameAsDir(
                 await StreamHelpers.CreateTempCopyStream(ZipTest.zfile("empty.zip")), ZipTest.zfolder("empty"), ZipArchiveMode.Update, false, false);
             ZipTest.IsZipSameAsDir(
@@ -49,7 +52,10 @@ namespace System.IO.Compression.Test
         {
             await testFolder("normal");
             await testFolder("empty");
-            await testFolder("unicode");
+            if (Interop.IsWindows)
+            {
+                await testFolder("unicode");
+            }
         }
 
         public static async Task testFolder(String s)
