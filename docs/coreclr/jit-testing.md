@@ -26,7 +26,7 @@ TBD).
 5. Tests in CI can be run on private changes (currently tied to PRs; this may
 be sufficient).
 6. Test strategy harmonious with other .Net repo test strategies.
-7.Test harness behaves reasonably on test failure. Easy to get at repro steps 
+7. Test harness behaves reasonably on test failure. Easy to get at repro steps 
 for subsequent debugging.
 8. Tests must allow fine-grained inspection of JIT outputs, for instance
 comparing the generated code versus a baseline JIT.
@@ -39,19 +39,20 @@ spent in the JIT, memory used by the JIT, etc.
 ## Tasks
 
 Below are some broad task areas that we should consider as part of this plan.
-It seems sensible to for Microsoft to focus on opening up the JIT self-host
+It seems sensible for Microsoft to focus on opening up the JIT self-host
 (aka JITSH) tests first. A few other tasks are also Microsoft specific and are
 marked with (MS) below. 
 
 Other than that the priority, task list, and possibly assigments are open to
 discussion.
 
-### (MS) Bring up equivalent of the “JITSH” tests
+### (MS) Bring up equivalent of the JITSH tests
 
 JITSH is a set of roughly 8000 tests that have been traditionally used by
 Microsoft JIT developers as the frontline JIT test suite.
 
-We’ll need to subset these tests for various reasons:
+We'll need to subset these tests for various reasons:
+
 1. Some have shallow desktop CLR dependence (e.g. missing cases in string
 formatting).
 2. Some have deep desktop CLR dependence (testing a desktop CLR feature that
@@ -73,9 +74,10 @@ wrapper around this (runtest.cmd today) to facilitate test execution.
 The proposal is to implement platform-neutral variant of runtest.cmd that
 contains all the existing functionality plus some additional capabilities for
 JIT testing. Initially this will mean:
-1.	Ability to execute tests with a JIT specified by the user (either as alt 
+
+1. Ability to execute tests with a JIT specified by the user (either as alt 
 JIT or as the only JIT)
-2. 	Ability to pass options through to the JIT (eg for dumping assembly or IR)
+2. Ability to pass options through to the JIT (eg for dumping assembly or IR)
 or to the CoreCLR (eg to disable use of ngen images).
 
 ### Cache prebuilt test assets
@@ -102,7 +104,7 @@ projects can build.
 
 Native/interop tests may or may not require platform-specific adaption.
 
-### (MS) Port the “devBVT” tests.
+### (MS) Port the devBVT tests.
 
 devBVT is a broader part of CLR SelfHost that is useful for second-tier testing.
 Not yet clear what porting this entails.
@@ -129,7 +131,7 @@ Suggestions for best practices or effective techniques are welcome.
 
 ### Bring up quantitative measurements.
 
-For Jit testing we’ll need various quantitatve assessments of Jit behavior:
+For Jit testing we'll need various quantitatve assessments of Jit behavior:
 
 1. Time spent jitting
 2. Speed of jitted code
@@ -138,7 +140,8 @@ For Jit testing we’ll need various quantitatve assessments of Jit behavior:
 5. Debug info fidelity
 6. Coverage ?
 
-There is work going on elsewhere to 
+There will likely be work going on elsewhere to address some of these same
+measurement capabilities, so we should make sure to keep it all in sync.
 
 ### Bring up alternate codegen capabilities.
 
@@ -155,6 +158,7 @@ to generate code for all the methods.
 The value of existing test assets can be leveraged through various stress
 testing modes. These modes use non-standard code generation or runtime
 mechanisms to try an flush out bugs.
+
 1. GC stress. Here the runtime will GC with much higher frequency in an attempt
 to maximize the dependence on the GC info reported by the JIT.
 2. Internal modes in the JIT to try and flush out bugs, eg randomized inlining,
