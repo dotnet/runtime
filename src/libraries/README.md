@@ -96,6 +96,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Diagnostics.TextWriterTraceListener**. Provides trace listeners for directing tracing output to a text writer, 
   such as System.IO.StreamWriter.
 
+* **System.Diagnostics.Tools**. Provides attributes, such as GeneratedCodeAttribute, that are emitted or consumed by 
+  analysis tools.
+
 * **System.Diagnostics.TraceSource**. Provides classes that help you trace the execution of your code.
 
 * **System.Dynamic.Runtime**. Provides classes and interfaces that support the Dynamic Language Runtime (DLR).
@@ -160,7 +163,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Runtime.Handles**. Provides base classes, including CriticalHandle and SafeHandle, for types that 
   represent operating system handles.
- 
+
+* **System.Runtime.InteropServices**. Provides types that support platform invoke (P/Invoke) and COM interop.
+
 * **System.Runtime.Numerics**. Provides two useful numeric structures, BigInteger and Complex.
 
 * **System.Runtime.Serialization.Json**. Provides classes for serializing objects to the JavaScript Object 
@@ -184,6 +189,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Text.RegularExpressions**. Provides a regular expression engine. The types in this library provide useful 
   functionality for running common operations using regular expressions.
+
+* **System.Threading**. Provides synchronization primitives used when writing multi-threaded and asynchronous code. 
 
 * **System.Threading.Tasks.Dataflow**.  Provides a set of types that support actor/agent-oriented designs through 
   primitives for in-process message passing, dataflow, and pipelining.
