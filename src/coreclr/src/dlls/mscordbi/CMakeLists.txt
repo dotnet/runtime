@@ -57,8 +57,8 @@ if(WIN32)
 elseif(CLR_CMAKE_PLATFORM_UNIX)
     list(APPEND COREDBI_LIBRARIES
         mdhotdata_full
-        coreclrpal
-        palrt
+        # share the PAL in the dac module
+        mscordaccore
     )
 
     # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
