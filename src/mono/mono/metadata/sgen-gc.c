@@ -3413,14 +3413,13 @@ sgen_stop_world (int generation)
 void
 sgen_restart_world (int generation, GGTimingInfo *timing)
 {
+	long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
+
 	SGEN_ASSERT (0, world_is_stopped, "Why are we restarting a running world?");
 
-	if (binary_protocol_is_enabled ()) {
-		long long major_total = -1, major_marked = -1, los_total = -1, los_marked = -1;
-		if (binary_protocol_is_heavy_enabled ())
-			count_cards (&major_total, &major_marked, &los_total, &los_marked);
-		binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
-	}
+	if (binary_protocol_is_heavy_enabled ())
+		count_cards (&major_total, &major_marked, &los_total, &los_marked);
+	binary_protocol_world_restarting (generation, sgen_timestamp (), major_total, major_marked, los_total, los_marked);
 
 	sgen_client_restart_world (generation, timing);
 
