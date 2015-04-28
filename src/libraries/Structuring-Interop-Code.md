@@ -107,9 +107,9 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 ```
 
 ### Build System
-When building CoreFx, we use the "OS" property to control what target platform we are building for.  The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
+When building CoreFx, we use the "OSGroup" property to control what target platform we are building for.  The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
 
-The build system sets a few MSBuild properties, depending on the OS setting:
+The build system sets a few MSBuild properties, depending on the OSGroup setting:
 
 * TargetsWindows
 * TargetsLinux
@@ -118,10 +118,10 @@ The build system sets a few MSBuild properties, depending on the OS setting:
 
 TargetsUnix is true for both OSX and Linux builds and can be used to include code that can be used on both Linux and OSX (e.g. it is written against a POSIX API that is present on both platforms).
 
-You should not test the value of the OS property directly, instead use one of the values above.
+You should not test the value of the OSGroup property directly, instead use one of the values above.
 
 #### Project Files
-Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux.  A property can be passed to msbuild to control which flavor is built, e.g. msbuild /p:OS=OSX System.Console.csproj.
+Whenever possible, a single .csproj should be used per assembly, spanning all target platforms, e.g. System.Console.csproj includes conditional entries for when targeting Windows vs when targeting Linux.  A property can be passed to msbuild to control which flavor is built, e.g. msbuild /p:OSGroup=OSX System.Console.csproj.
 
 ### Constants
 - Wherever possible, constants should be defined as "const".  Only if the data type doesn’t support this (e.g. IntPtr) should they instead be static readonly fields.
