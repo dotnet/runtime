@@ -157,7 +157,7 @@ set(SOURCES
 )
 
 add_library(coreclrpal
-  SHARED
+  STATIC
   ${SOURCES}
   ${PLATFORM_SOURCES}
 )
@@ -197,4 +197,3 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 add_subdirectory(examples)
 
-install(TARGETS coreclrpal DESTINATION .)

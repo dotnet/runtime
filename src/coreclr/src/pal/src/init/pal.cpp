@@ -140,7 +140,7 @@ PAL_Initialize(
     int argc,
     const char *const argv[])
 {
-    return Initialize(argc, argv, PAL_INITIALIZE_ALL);
+    return Initialize(argc, argv, PAL_INITIALIZE);
 }
 
 /*++
