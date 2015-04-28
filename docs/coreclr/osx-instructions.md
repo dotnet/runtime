@@ -64,7 +64,7 @@ To Build CoreCLR, run build.sh from the root of the coreclr repo.
 
     [Lots of stuff before this]
     Repo successfully built.
-	Product binaries are available at /Users/richlander/git/coreclr/bin/Product/mac.x64.debug
+    Product binaries are available at /Users/richlander/git/coreclr/bin/Product/mac.x64.debug
 
 
 Type `./build.sh -?` to see the full set of build options.
@@ -108,7 +108,7 @@ Build CoreFX
 
 Build the rest of the Framework out of the corefx directory. You need to pass some special parameters to build.cmd.
 
-    C:\git\corefx>build.cmd /p:OS=OSX /p:SkipTests=true
+    C:\git\corefx>build.cmd /p:OSGroup=OSX /p:SkipTests=true
 
 It's also possible to add `/t:rebuild` to build.cmd to force it to delete the previously built assemblies.
 
