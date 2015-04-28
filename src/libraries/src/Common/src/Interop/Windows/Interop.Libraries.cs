@@ -40,6 +40,7 @@ internal static partial class Interop
         internal const string ServiceMgmt_L2 = "api-ms-win-service-management-l2-1-0.dll";
         internal const string ServiceWinSvc = "api-ms-win-service-winsvc-l1-1-0.dll";
         internal const string ServiceCore = "api-ms-win-service-core-l1-1-1.dll";
+        internal const string Synch = "api-ms-win-core-synch-l1-1-0.dll";
         internal const string SystemInfo = "api-ms-win-core-sysinfo-l1-1-0.dll";
         internal const string User32 = "user32.dll";
         internal const string Version = "api-ms-win-core-version-l1-1-0.dll";

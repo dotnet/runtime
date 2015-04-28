@@ -7,12 +7,12 @@ namespace System.CodeDom.Compiler
     public sealed class GeneratedCodeAttribute : Attribute
     {
         private readonly string _tool;
-        private readonly string _vversion;
+        private readonly string _version;
 
         public GeneratedCodeAttribute(string tool, string version)
         {
             _tool = tool;
-            _vversion = version;
+            _version = version;
         }
 
         public string Tool
@@ -22,7 +22,7 @@ namespace System.CodeDom.Compiler
 
         public string Version
         {
-            get { return _vversion; }
+            get { return _version; }
         }
     }
 }
