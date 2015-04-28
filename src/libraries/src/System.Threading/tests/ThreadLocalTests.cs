@@ -290,7 +290,7 @@ namespace Test
                 Assert.True(threadLocal.Values.Count == 1, "RunThreadLocalTest8_Values: Expected values count to still be 1 after updating existing value");
                 Assert.True(threadLocal.Values[0] == 42, "RunThreadLocalTest8_Values: Expected values to contain updated value");
 
-                ((IAsyncResult)Task.Factory.StartNew(() => threadLocal.Value = 43)).AsyncWaitHandle.WaitOne();
+                ((IAsyncResult)Task.Run(() => threadLocal.Value = 43)).AsyncWaitHandle.WaitOne();
                 Assert.True(threadLocal.Values.Count == 2, "RunThreadLocalTest8_Values: Expected values count to be 2 now that another thread stored a value");
                 Assert.True(threadLocal.Values.Contains(42) && threadLocal.Values.Contains(43), "RunThreadLocalTest8_Values: Expected values to contain both thread's values");
 
@@ -302,7 +302,7 @@ namespace Test
                     // there is no guarantee that the Task will be created on another thread.
                     // There is also no guarantee that using this TaskCreationOption will force
                     // it to be run on another thread.
-                    var task = Task.Factory.StartNew(() => threadLocal.Value = i, TaskCreationOptions.LongRunning);
+                    var task = Task.Factory.StartNew(() => threadLocal.Value = i, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                     task.Wait();
                 }
 

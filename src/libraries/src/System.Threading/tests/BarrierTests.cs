@@ -296,7 +296,7 @@ namespace Test
 
                 Task[] tasks = new Task[actions.Length];
                 for (int k = 0; k < tasks.Length; k++)
-                    tasks[k] = Task.Factory.StartNew((index) => actions[(int)index](), k);
+                    tasks[k] = Task.Factory.StartNew((index) => actions[(int)index](), k, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                 Task.WaitAll(tasks);
                 if (b.ParticipantCount != 0)
                     failed = true;
@@ -417,7 +417,7 @@ namespace Test
                 var src = new CancellationTokenSource();
                 for (int i = 0; i < tasks.Length; i++)
                 {
-                    tasks[i] = Task.Factory.StartNew(() =>
+                    tasks[i] = Task.Run(() =>
                     {
                         try
                         {
@@ -441,14 +441,14 @@ namespace Test
             for (int j = 0; j < 10000; j++)
             {
                 Barrier b = new Barrier(2);
-                var t1 = Task.Factory.StartNew(() =>
+                var t1 = Task.Run(() =>
                     {
                         b.SignalAndWait();
                         b.RemoveParticipant();
                         b.SignalAndWait();
                     });
 
-                var t2 = Task.Factory.StartNew(() => b.SignalAndWait());
+                var t2 = Task.Run(() => b.SignalAndWait());
                 Task.WaitAll(t1, t2);
                 if (j > 0 && j % 1000 == 0)
                     Debug.WriteLine(" > Finished {0} iterations", j);
@@ -463,8 +463,8 @@ namespace Test
             {
                 Task[] tasks = new Task[2];
                 Barrier b = new Barrier(3);
-                tasks[0] = Task.Factory.StartNew(() => b.SignalAndWait());
-                tasks[1] = Task.Factory.StartNew(() => b.SignalAndWait());
+                tasks[0] = Task.Run(() => b.SignalAndWait());
+                tasks[1] = Task.Run(() => b.SignalAndWait());
 
 
                 b.SignalAndWait();

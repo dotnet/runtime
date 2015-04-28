@@ -44,7 +44,7 @@ namespace Test
             const int numberParticipants = 3;
             Barrier barrier = new Barrier(numberParticipants);
 
-            Task.Factory.StartNew(() => cancellationTokenSource.Cancel());
+            Task.Run(() => cancellationTokenSource.Cancel());
 
             //Now wait.. the wait should abort and an exception should be thrown
             EnsureOperationCanceledExceptionThrown(
@@ -65,7 +65,7 @@ namespace Test
             const int numberParticipants = 3;
             Barrier barrier = new Barrier(numberParticipants);
 
-            Task.Factory.StartNew(() => cancellationTokenSource.Cancel());
+            Task.Run(() => cancellationTokenSource.Cancel());
 
             //Test that backout occured.
             Assert.Equal(numberParticipants, barrier.ParticipantsRemaining);
