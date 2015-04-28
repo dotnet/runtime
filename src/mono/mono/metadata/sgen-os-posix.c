@@ -82,7 +82,7 @@ suspend_thread (SgenThreadInfo *info, void *context)
 
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
-	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
+	if (stack_start >= info->stack_start_limit && stack_start <= info->stack_end) {
 		info->stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
