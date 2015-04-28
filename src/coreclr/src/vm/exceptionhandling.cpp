@@ -4959,6 +4959,7 @@ VOID PALAPI HandleHardwareException(PAL_SEHException* ex)
     {
         return;
     }
+
     if (ex->ExceptionRecord.ExceptionCode != STATUS_BREAKPOINT && ex->ExceptionRecord.ExceptionCode != STATUS_SINGLE_STEP)
     {
         // A hardware exception is handled only if it happened in a jitted code or 
