@@ -36,6 +36,8 @@
     <Compile Include="System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTestBase.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollection.cs" />
+    <Compile Include="System\ComponentModel\EditorBrowsableAttribute.cs" />
+    <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />
     <Compile Include="System\DateTime.cs" />
     <Compile Include="System\DateTimeOffset.cs" />
     <Compile Include="System\DateTimeOffset.UnixTimeConversions.cs" />
@@ -59,12 +61,14 @@
     <Compile Include="System\IO\PathTooLongException.cs" />
     <Compile Include="System\IO\PathTooLongException.Interop.cs" />
     <Compile Include="System\Lazy.cs" />
+    <Compile Include="System\LazyOfTMetadata.cs" />
     <Compile Include="System\MethodAccessException.cs" />
     <Compile Include="System\MissingFieldException.cs" />
     <Compile Include="System\MissingMethodException.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Nullable.cs" />
     <Compile Include="System\Object.cs" />
+    <Compile Include="System\Runtime\CompilerServices\StrongBox.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <Compile Include="System\SByte.cs" />
     <Compile Include="System\Single.cs" />
