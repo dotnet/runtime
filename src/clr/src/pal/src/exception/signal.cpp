@@ -73,7 +73,6 @@ static void common_signal_handler(PEXCEPTION_POINTERS pointers, int code,
 
 static void handle_signal(int signal_id, SIGFUNC sigfunc, struct sigaction *previousAction);
 static void restore_signal(int signal_id, struct sigaction *previousAction);
-inline void check_pal_initialize(int signal_id, struct sigaction *previousAction);
 
 /* internal data declarations *********************************************/
 
@@ -174,13 +173,15 @@ void SEHCleanupSignals()
 
 void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code, &g_previous_sigusr1);
-
-    CPalThread *pThread = InternalGetCurrentThread();
-    if (pThread->suspensionInfo.HandleSuspendSignal(pThread)) 
+    if (PALIsInitialized())
     {
-        return;
+        CPalThread *pThread = InternalGetCurrentThread();
+        if (pThread->suspensionInfo.HandleSuspendSignal(pThread)) 
+        {
+            return;
+        }
     }
+    
     TRACE("SIGUSR1 signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigusr1.sa_sigaction != NULL)
@@ -191,13 +192,15 @@ void CorUnix::suspend_handler(int code, siginfo_t *siginfo, void *context)
 
 void CorUnix::resume_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code, &g_previous_sigusr2);
-
-    CPalThread *pThread = InternalGetCurrentThread();
-    if (pThread->suspensionInfo.HandleResumeSignal()) 
+    if (PALIsInitialized())
     {
-        return;
+        CPalThread *pThread = InternalGetCurrentThread();
+        if (pThread->suspensionInfo.HandleResumeSignal()) 
+        {
+            return;
+        }
     }
+
     TRACE("SIGUSR2 signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigusr2.sa_sigaction != NULL)
@@ -221,29 +224,35 @@ Parameters :
 --*/
 static void sigill_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code, &g_previous_sigill);
+    if (PALIsInitialized())
+    {
+        EXCEPTION_RECORD record;
+        EXCEPTION_POINTERS pointers;
+        native_context_t *ucontext;
 
-    EXCEPTION_RECORD record;
-    EXCEPTION_POINTERS pointers;
-    native_context_t *ucontext;
+        ucontext = (native_context_t *)context;
 
-    ucontext = (native_context_t *)context;
+        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
+        record.ExceptionRecord = NULL;
+        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.NumberParameters = 0;
 
-    record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-    record.ExceptionFlags = EXCEPTION_IS_SIGNAL; 
-    record.ExceptionRecord = NULL;
-    record.ExceptionAddress = CONTEXTGetPC(ucontext);
-    record.NumberParameters = 0;
+        pointers.ExceptionRecord = &record;
 
-    pointers.ExceptionRecord = &record;
-
-    common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(&pointers, code, ucontext);
+    }
 
     TRACE("SIGILL signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigill.sa_sigaction != NULL)
     {
         g_previous_sigill.sa_sigaction(code, siginfo, context);
+    }
+    else
+    {
+        // Restore the original or default handler and restart h/w exception
+        restore_signal(code, &g_previous_sigill);
     }
 }
 
@@ -260,29 +269,35 @@ Parameters :
 --*/
 static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code, &g_previous_sigfpe);
+    if (PALIsInitialized())
+    {
+        EXCEPTION_RECORD record;
+        EXCEPTION_POINTERS pointers;
+        native_context_t *ucontext;
 
-    EXCEPTION_RECORD record;
-    EXCEPTION_POINTERS pointers;
-    native_context_t *ucontext;
+        ucontext = (native_context_t *)context;
 
-    ucontext = (native_context_t *)context;
+        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
+        record.ExceptionRecord = NULL;
+        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.NumberParameters = 0;
 
-    record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-    record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-    record.ExceptionRecord = NULL;
-    record.ExceptionAddress = CONTEXTGetPC(ucontext);
-    record.NumberParameters = 0;
+        pointers.ExceptionRecord = &record;
 
-    pointers.ExceptionRecord = &record;
-
-    common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(&pointers, code, ucontext);
+    }
 
     TRACE("SIGFPE signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigfpe.sa_sigaction != NULL)
     {
         g_previous_sigfpe.sa_sigaction(code, siginfo, context);
+    }
+    else
+    {
+        // Restore the original or default handler and restart h/w exception
+        restore_signal(code, &g_previous_sigfpe);
     }
 }
 
@@ -299,37 +314,43 @@ Parameters :
 --*/
 static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code, &g_previous_sigsegv);
+    if (PALIsInitialized())
+    {
+        EXCEPTION_RECORD record;
+        EXCEPTION_POINTERS pointers;
+        native_context_t *ucontext;
 
-    EXCEPTION_RECORD record;
-    EXCEPTION_POINTERS pointers;
-    native_context_t *ucontext;
-	
-    ucontext = (native_context_t *)context;
+        ucontext = (native_context_t *)context;
 
-    record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-    record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-    record.ExceptionRecord = NULL;
-    record.ExceptionAddress = CONTEXTGetPC(ucontext);
-    record.NumberParameters = 2;
+        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
+        record.ExceptionRecord = NULL;
+        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.NumberParameters = 2;
 
-    // TODO: First parameter says whether a read (0) or write (non-0) caused the
-    // fault. We must disassemble the instruction at record.ExceptionAddress
-    // to correctly fill in this value.
-    record.ExceptionInformation[0] = 0;
+        // TODO: First parameter says whether a read (0) or write (non-0) caused the
+        // fault. We must disassemble the instruction at record.ExceptionAddress
+        // to correctly fill in this value.
+        record.ExceptionInformation[0] = 0;
 
-    // Second parameter is the address that caused the fault.
-    record.ExceptionInformation[1] = (size_t)siginfo->si_addr;
+        // Second parameter is the address that caused the fault.
+        record.ExceptionInformation[1] = (size_t)siginfo->si_addr;
 
-    pointers.ExceptionRecord = &record;
+        pointers.ExceptionRecord = &record;
 
-    common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(&pointers, code, ucontext);
+    }
 
     TRACE("SIGSEGV signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigsegv.sa_sigaction != NULL)
     {
         g_previous_sigsegv.sa_sigaction(code, siginfo, context);
+    }
+    else
+    {
+        // Restore the original or default handler and restart h/w exception
+        restore_signal(code, &g_previous_sigsegv);
     }
 }
 
@@ -346,29 +367,35 @@ Parameters :
 --*/
 static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code, &g_previous_sigtrap);
+    if (PALIsInitialized())
+    {
+        EXCEPTION_RECORD record;
+        EXCEPTION_POINTERS pointers;
+        native_context_t *ucontext;
 
-    EXCEPTION_RECORD record;
-    EXCEPTION_POINTERS pointers;
-    native_context_t *ucontext;
+        ucontext = (native_context_t *)context;
 
-    ucontext = (native_context_t *)context;
+        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
+        record.ExceptionRecord = NULL;
+        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.NumberParameters = 0;
 
-    record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-    record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-    record.ExceptionRecord = NULL;
-    record.ExceptionAddress = CONTEXTGetPC(ucontext);
-    record.NumberParameters = 0;
+        pointers.ExceptionRecord = &record;
 
-    pointers.ExceptionRecord = &record;
-
-    common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(&pointers, code, ucontext);
+    }
 
     TRACE("SIGTRAP signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigtrap.sa_sigaction != NULL)
     {
         g_previous_sigtrap.sa_sigaction(code, siginfo, context);
+    }
+    else
+    {
+        // Restore the original or default handler and restart h/w exception
+        restore_signal(code, &g_previous_sigtrap);
     }
 }
 
@@ -385,36 +412,43 @@ Parameters :
 --*/
 static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
 {
-    check_pal_initialize(code, &g_previous_sigbus);
-    EXCEPTION_RECORD record;
-    EXCEPTION_POINTERS pointers;
-    native_context_t *ucontext;
+    if (PALIsInitialized())
+    {
+        EXCEPTION_RECORD record;
+        EXCEPTION_POINTERS pointers;
+        native_context_t *ucontext;
 
-    ucontext = (native_context_t *)context;
+        ucontext = (native_context_t *)context;
 
-    record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
-    record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
-    record.ExceptionRecord = NULL;
-    record.ExceptionAddress = CONTEXTGetPC(ucontext);
-    record.NumberParameters = 2;
+        record.ExceptionCode = CONTEXTGetExceptionCodeForSignal(siginfo, ucontext);
+        record.ExceptionFlags = EXCEPTION_IS_SIGNAL;
+        record.ExceptionRecord = NULL;
+        record.ExceptionAddress = CONTEXTGetPC(ucontext);
+        record.NumberParameters = 2;
 
-    // TODO: First parameter says whether a read (0) or write (non-0) caused the
-    // fault. We must disassemble the instruction at record.ExceptionAddress
-    // to correctly fill in this value.
-    record.ExceptionInformation[0] = 0;
+        // TODO: First parameter says whether a read (0) or write (non-0) caused the
+        // fault. We must disassemble the instruction at record.ExceptionAddress
+        // to correctly fill in this value.
+        record.ExceptionInformation[0] = 0;
 
-    // Second parameter is the address that caused the fault.
-    record.ExceptionInformation[1] = (size_t)siginfo->si_addr;
+        // Second parameter is the address that caused the fault.
+        record.ExceptionInformation[1] = (size_t)siginfo->si_addr;
 
-    pointers.ExceptionRecord = &record;
+        pointers.ExceptionRecord = &record;
 
-    common_signal_handler(&pointers, code, ucontext);
+        common_signal_handler(&pointers, code, ucontext);
+    }
 
     TRACE("SIGBUS signal was unhandled; chaining to previous sigaction\n");
 
     if (g_previous_sigbus.sa_sigaction != NULL)
     {
         g_previous_sigbus.sa_sigaction(code, siginfo, context);
+    }
+    else
+    {
+        // Restore the original or default handler and restart h/w exception
+        restore_signal(code, &g_previous_sigbus);
     }
 }
 
@@ -561,28 +595,6 @@ void restore_signal(int signal_id, struct sigaction *previousAction)
         ASSERT("restore_signal: sigaction() call failed with error code %d (%s)\n",
             errno, strerror(errno));
     }
-}
-
-/*++
-Function :
-    check_pal_initialize
-
-    Check if PAL is initialized. If it isn't, deregister signal handler
-    and reraise the signal.
-
-Parameters :
-    int signal_id : signal to handle
-    previousAction : previous sigaction struct to restore
-
-    (no return value)
---*/    
-inline void check_pal_initialize(int signal_id, struct sigaction *previousAction) 
-{ 
-    if (!PALIsInitialized()) 
-    { 
-        restore_signal(signal_id, previousAction); 
-        kill(gPID, signal_id); 
-    } 
 }
 
 DWORD g_dwExternalSignalHandlerThreadId;
