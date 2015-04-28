@@ -96,7 +96,7 @@ namespace Test
                     Debug.WriteLine("Val: " + value);
                     seenValuesFromAllThreads.Add(value);
                 }, TaskCreationOptions.LongRunning);
-                threads[i].Start();
+                threads[i].Start(TaskScheduler.Default);
                 threads[i].Wait();
             }
             bool successful = true;
@@ -164,7 +164,7 @@ namespace Test
             // there is no guarantee that the Task will be created on another thread.
             // There is also no guarantee that using this TaskCreationOption will force
             // it to be run on another thread.
-            new Task(() => { threadLocal.Value = new SetMreOnFinalize(mres); }, TaskCreationOptions.LongRunning).Start();
+            new Task(() => { threadLocal.Value = new SetMreOnFinalize(mres); }, TaskCreationOptions.LongRunning).Start(TaskScheduler.Default);
 
             SpinWait.SpinUntil(() =>
             {
@@ -319,8 +319,7 @@ namespace Test
             // Test that thread values remain after threads depart
             {
                 var tl = new ThreadLocal<string>(true);
-                var t = new Task(() => tl.Value = "Parallel");
-                t.Start();
+                var t = Task.Run(() => tl.Value = "Parallel");
                 t.Wait();
                 t = null;
                 GC.Collect();
@@ -335,8 +334,7 @@ namespace Test
         private static void RunThreadLocalTest8Helper(ManualResetEventSlim mres)
         {
             var tl = new ThreadLocal<object>(true);
-            var t = new Task(() => tl.Value = new SetMreOnFinalize(mres));
-            t.Start();
+            var t = Task.Run(() => tl.Value = new SetMreOnFinalize(mres));
             t.Wait();
             t = null;
             GC.Collect();

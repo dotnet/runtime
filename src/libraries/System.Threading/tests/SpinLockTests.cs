@@ -91,7 +91,7 @@ namespace Test
 
             for (int i = 0; i < threadsCount; i++)
             {
-                threads[i] = new Task(delegate ()
+                threads[i] = Task.Run(delegate ()
                 {
                     bool lockTaken = false;
                     try
@@ -124,7 +124,6 @@ namespace Test
                         }
                     }
                 });
-                threads[i].Start();
             }
             // wait all threads
             for (int i = 0; i < threadsCount; i++)
@@ -158,7 +157,7 @@ namespace Test
                 // Run threads
                 for (int i = 0; i < threadsCount; i++)
                 {
-                    threads[i] = new Task(delegate ()
+                    threads[i] = Task.Run(delegate ()
                     {
                         bool lockTaken = false;
                         slock.TryEnter(ref lockTaken);
@@ -174,7 +173,6 @@ namespace Test
                             Interlocked.Increment(ref failed);
                         }
                     });
-                    threads[i].Start();
                 }
                 // Wait all threads
                 for (int i = 0; i < threadsCount; i++)
@@ -227,7 +225,7 @@ namespace Test
                             Interlocked.Increment(ref failed);
                         }
                     }, i);
-                    threads[i].Start();
+                    threads[i].Start(TaskScheduler.Default);
                 }
                 // Wait all threads
                 for (int i = 0; i < threadsCount; i++)
