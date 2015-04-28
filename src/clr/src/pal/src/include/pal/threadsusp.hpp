@@ -406,12 +406,14 @@ namespace CorUnix
             };
 
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
-            VOID
+            bool
             HandleSuspendSignal(
                 CPalThread *pthrTarget
             );
 
-            VOID HandleResumeSignal();
+            bool 
+            HandleResumeSignal(
+            );
 #else // USE_SIGNALS_FOR_THREAD_SUSPENSION
             static
             BOOL 
