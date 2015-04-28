@@ -4623,13 +4623,9 @@ mono_object_clone (MonoObject *obj)
 
 	o = mono_object_allocate (size, obj->vtable);
 
-	if (obj->vtable->klass->has_references) {
-		mono_gc_wbarrier_object_copy (o, obj);
-	} else {
-		int size = obj->vtable->klass->instance_size;
-		/* do not copy the sync state */
-		mono_gc_memmove_atomic ((char*)o + sizeof (MonoObject), (char*)obj + sizeof (MonoObject), size - sizeof (MonoObject));
-	}
+	/* If the object doesn't contain references this will do a simple memmove. */
+	mono_gc_wbarrier_object_copy (o, obj);
+
 	if (G_UNLIKELY (profile_allocs))
 		mono_profiler_allocation (o, obj->vtable->klass);
 

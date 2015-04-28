@@ -138,7 +138,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 
 	HEAVY_STAT (++stat_wbarrier_object_copy);
 
-	if (sgen_ptr_in_nursery (obj) || ptr_on_stack (obj)) {
+	if (sgen_ptr_in_nursery (obj) || ptr_on_stack (obj) || !SGEN_OBJECT_HAS_REFERENCES (src)) {
 		size = mono_object_class (obj)->instance_size;
 		mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 				size - sizeof (MonoObject));
