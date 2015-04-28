@@ -300,7 +300,7 @@ bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey, bool fImportK
         return false;
     }
 
-#if !defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
+#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
     // Make sure the public key blob imports properly
     if (fImportKeys)
     {
@@ -316,9 +316,9 @@ bool StrongNameIsValidPublicKey(const PublicKeyBlob &keyPublicKey, bool fImportK
             return false;
         }
     }
-#else // !FEATURE_CORECLR || CROSSGEN_COMPILE
+#else // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
     _ASSERTE(!fImportKeys);
-#endif // !FEATURE_CORECLR || CROSSGEN_COMPILE
+#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
 
     return true;
 }
@@ -345,7 +345,7 @@ DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
            GET_UNALIGNED_VAL32(&keyPublicKey.cbPublicKey);  // the number of bytes in the key
 }
 
-#if !defined(FEATURE_CORECLR) || defined(CROSSGEN_COMPILE)
+#if !defined(FEATURE_CORECLR) || (defined(CROSSGEN_COMPILE) && !defined(PLATFORM_UNIX))
 
 //---------------------------------------------------------------------------------------
 //
@@ -444,5 +444,5 @@ bool StrongNameCryptAcquireContext(HCRYPTPROV *phProv, LPCWSTR pwszContainer, LP
     return !!WszCryptAcquireContext(phProv, pwszContainer, pwszProvider, dwProvType, dwFlags);
 }
 
-#endif // !FEATURE_CORECLR || CROSSGEN_COMPILE
+#endif // !FEATURE_CORECLR || (CROSSGEN_COMPILE && !PLATFORM_UNIX)
 
