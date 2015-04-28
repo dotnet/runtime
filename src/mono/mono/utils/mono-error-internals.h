@@ -24,6 +24,9 @@ typedef struct {
 } MonoErrorInternal;
 
 void
+mono_error_assert_ok (MonoError *error);
+
+void
 mono_error_dup_strings (MonoError *error, gboolean dup_strings);
 
 /* This function is not very useful as you can't provide any details beyond the message.*/

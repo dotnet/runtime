@@ -55,9 +55,6 @@ mono_error_cleanup (MonoError *error);
 MONO_API mono_bool
 mono_error_ok (MonoError *error);
 
-MONO_API void
-mono_error_assert_ok (MonoError *error);
-
 MONO_API unsigned short
 mono_error_get_error_code (MonoError *error);
 
