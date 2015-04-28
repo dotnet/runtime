@@ -131,7 +131,7 @@ namespace Test
             Barrier b = new Barrier(initialCount);
             for (int i = 0; i < initialCount - 1; i++)
             {
-                new Task(() => b.SignalAndWait()).Start();
+                Task.Run(() => b.SignalAndWait());
             }
             b.SignalAndWait();
 
@@ -329,7 +329,7 @@ namespace Test
             Task[] threads = new Task[participants];
             for (int i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Task(() =>
+                threads[i] = Task.Run(() =>
                     {
                         try
                         {
@@ -341,7 +341,6 @@ namespace Test
                                 Interlocked.Increment(ref succeededCount);
                         }
                     });
-                threads[i].Start();
             }
 
             foreach (Task t in threads)
@@ -363,7 +362,7 @@ namespace Test
             threads = new Task[participants];
             for (int i = 0; i < threads.Length; i++)
             {
-                threads[i] = new Task(() =>
+                threads[i] = Task.Run(() =>
                 {
                     try
                     {
@@ -374,8 +373,6 @@ namespace Test
                         Interlocked.Decrement(ref succeededCount);
                     }
                 });
-
-                threads[i].Start();
             }
             foreach (Task t in threads)
                 t.Wait();

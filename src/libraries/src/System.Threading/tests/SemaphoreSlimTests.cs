@@ -595,7 +595,7 @@ namespace Test
                         // there is no guarantee that the Task will be created on another thread.
                         // There is also no guarantee that using this TaskCreationOption will force
                         // it to be run on another thread.
-                        threads[i] = new Task(delegate ()
+                        threads[i] = new Task (delegate ()
                             {
                                 mre.WaitOne();
                                 if (semaphore.Wait(timeout))
@@ -606,8 +606,7 @@ namespace Test
                                 {
                                     Interlocked.Increment(ref failed);
                                 }
-                            },
-                            TaskCreationOptions.LongRunning);
+                            });
                     }
                     else
                     {
@@ -617,7 +616,7 @@ namespace Test
                                semaphore.Release();
                            });
                     }
-                    threads[i].Start();
+                    threads[i].Start(TaskScheduler.Default);
                 }
 
                 mre.Set();
