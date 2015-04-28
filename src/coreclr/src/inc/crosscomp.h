@@ -360,5 +360,5 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 
 
 #ifdef CROSSGEN_COMPILE
-void CrossGenNotSupported(char * message);
+void CrossGenNotSupported(const char * message);
 #endif

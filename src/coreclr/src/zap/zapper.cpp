@@ -24,7 +24,9 @@
 #endif
 
 #include "clr/fs/dir.h"
+#ifdef FEATURE_FUSION
 #include "ngenparser.inl"
+#endif
 
 /* --------------------------------------------------------------------------- *
  * Error Macros
@@ -940,8 +942,8 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     {
         // Allow a second jit to be loaded into the system.
         // 
-        LPWSTR altName;
-        hr = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJitName, &altName);
+        LPCWSTR altName;
+        hr = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJitName, (LPWSTR*)&altName);
         if (FAILED(hr))
         {
             Error(W("Unable to load alternative Jit Compiler\r\n"));
@@ -3504,6 +3506,7 @@ void Zapper::DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId)
         ThrowHR(HRESULT_FROM_WIN32(ERROR_INVALID_NAME));
     }
 
+#ifndef PLATFORM_UNIX
     //
     // We always need a hash since our assembly module is separate from the manifest.
     // Use MD5 by default.
@@ -3511,6 +3514,7 @@ void Zapper::DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId)
 
     if (hashAlgId == 0)
         hashAlgId = CALG_MD5;
+#endif
 
     mdAssembly tkEmitAssembly;
     IfFailThrow(m_pAssemblyEmit->DefineAssembly(pbPublicKey, cbPublicKey, hashAlgId,

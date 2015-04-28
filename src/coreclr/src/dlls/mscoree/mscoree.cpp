@@ -907,9 +907,23 @@ STDAPI GetCORSystemDirectoryInternal(__out_ecount_part_opt(cchBuffer, *pdwLength
     if (pBuffer == NULL)
         IfFailGo(E_POINTER);
 
+#ifdef CROSSGEN_COMPILE
+    if (WszGetModuleFileName(NULL, pBuffer, cchBuffer) == 0)
+    {
+        IfFailGo(HRESULT_FROM_GetLastError());
+    }
+    WCHAR *pSeparator;
+    pSeparator = wcsrchr(pBuffer, DIRECTORY_SEPARATOR_CHAR_W);
+    if (pSeparator == NULL)
+    {
+        IfFailGo(HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND));
+    }
+    *pSeparator = W('\0');
+#else
     if (!PAL_GetPALDirectory(pBuffer, cchBuffer)) {
         IfFailGo(HRESULT_FROM_GetLastError());
     }
+#endif
 
     // Include the null terminator in the length
     *pdwLength = (DWORD)wcslen(pBuffer)+1;
@@ -1267,7 +1281,7 @@ HRESULT SetInternalSystemDirectory()
 }
 
 #if defined(CROSSGEN_COMPILE) && defined(FEATURE_CORECLR)
-void SetMscorlibPath(LPCWCHAR wzSystemDirectory)
+void SetMscorlibPath(LPCWSTR wzSystemDirectory)
 {
     wcscpy_s(g_pSystemDirectory, COUNTOF(g_pSystemDirectory), wzSystemDirectory);
 

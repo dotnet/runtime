@@ -1444,14 +1444,12 @@ BOOL AppDomainLoaderAllocator::CanUnload()
     return m_Id.GetAppDomain()->CanUnload();
 }
 
-#ifndef CROSSGEN_COMPILE
 BOOL AssemblyLoaderAllocator::CanUnload()
 {
     LIMITED_METHOD_CONTRACT;
 
     return TRUE;
 }
-#endif // CROSSGEN_COMPILE
 
 BOOL LoaderAllocator::IsDomainNeutral()
 {
