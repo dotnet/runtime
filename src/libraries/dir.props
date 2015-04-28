@@ -2,19 +2,19 @@
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
   <!--
-    OsVersionPlatform is set to Unix/Win32NT.
+    $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
   <PropertyGroup>
-    <OsVersionPlatform>$([System.Environment]::OSVersion.Platform)</OsVersionPlatform>
+    <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
     <BuildToolsVersion>1.0.25-prerelease-00040</BuildToolsVersion>
-    <DnxVersion Condition="'$(OsVersionPlatform)'!='Unix'">1.0.0-beta5-11580</DnxVersion>
-    <DnxVersion Condition="'$(OsVersionPlatform)'=='Unix'">1.0.0-beta5-11624</DnxVersion>
-    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsVersionPlatform)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
-    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsVersionPlatform)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
+    <DnxVersion Condition="'$(OsEnvironment)'!='Unix'">1.0.0-beta5-11580</DnxVersion>
+    <DnxVersion Condition="'$(OsEnvironment)'=='Unix'">1.0.0-beta5-11624</DnxVersion>
+    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
+    <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -48,8 +48,8 @@
 
   <PropertyGroup>
     <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsVersionPlatform)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
-    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsVersionPlatform)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
 
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
@@ -65,7 +65,7 @@
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
   if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
   OSX_[Debug|Release] and Linux_[Debug|Release] configurations.  We do this so that we place all the output under
-  a single binary folder and can have a similar experiance between the command line and Visual Studio.
+  a single binary folder and can have a similar experience between the command line and Visual Studio.
   
   Since now have multiple *Debug and *Release configurations, ConfigurationGroup is set to Debug for any of the
   debug configurations, and to Release for any of the release configurations.
@@ -79,15 +79,14 @@
     <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
     <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">$(Configuration)</ConfigurationGroup>
- 
-    <OS Condition="$(Configuration.StartsWith('Windows'))">Windows_NT</OS>
-    <OS Condition="$(Configuration.StartsWith('Linux'))">Linux</OS>
-    <OS Condition="$(Configuration.StartsWith('OSX'))">OSX</OS>
 
-    <OSGroup Condition="'$(OSGroup)'==''">$(OS)</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
   </PropertyGroup>
 
-  <!-- Setup Default symbol and optimization for Configuration -->
+  <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
@@ -109,13 +108,13 @@
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
-  <!-- Setup some common paths -->
+  <!-- Set up some common paths -->
   <PropertyGroup>
     <CommonPath>$(SourceDir)Common\src</CommonPath>
     <CommonTestPath>$(SourceDir)Common\tests</CommonTestPath>
   </PropertyGroup>
 
-  <!-- Setup the default output and intermediate paths -->
+  <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
 
@@ -131,11 +130,11 @@
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
 
-  <!-- Setup common target properties that we use to conditionally include sources -->
+  <!-- Set up common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsWindows Condition="'$(OS)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsLinux Condition="'$(OS)' == 'Linux'">true</TargetsLinux>
-    <TargetsOSX Condition="'$(OS)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
+    <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
 
     <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
