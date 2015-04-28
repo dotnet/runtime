@@ -89,9 +89,9 @@
     <Copy Condition="Exists('$(NuGetConfigFile)')" SourceFiles="$(NuGetConfigFile)" DestinationFolder="$(IntermediateOutputRootPath)" SkipUnchangedFiles="true" />
 
     <!-- Add DNU execute rights -->
-    <Exec Condition="'$(OsVersionPlatform)'=='Unix'"
+    <Exec Condition="'$(OsEnvironment)'=='Unix'"
           Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnu&quot;" />
-    <Exec Condition="'$(OsVersionPlatform)'=='Unix'"
+    <Exec Condition="'$(OsEnvironment)'=='Unix'"
           Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnx&quot;" />
 
     <Error Condition="'$(ErrorIfBuildToolsRestoredFromIndividualProject)'=='true'"
