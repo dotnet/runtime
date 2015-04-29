@@ -95,9 +95,9 @@ ZapVirtualSection * ZapImage::GetCodeMethodDescSection(CodeType codeType)
         return m_pHotCodeMethodDescsSection;
     case Unprofiled:
         return m_pCodeMethodDescsSection;
+    default:
+        UNREACHABLE();
     }
-
-    UNREACHABLE();
 }
 
 ZapVirtualSection* ZapImage::GetUnwindInfoLookupSection(CodeType codeType)
@@ -108,9 +108,9 @@ ZapVirtualSection* ZapImage::GetUnwindInfoLookupSection(CodeType codeType)
         return m_pHotRuntimeFunctionLookupSection;
     case Unprofiled:
         return m_pRuntimeFunctionLookupSection;
+    default:
+        UNREACHABLE();
     }
-
-    UNREACHABLE();
 }
 
 void ZapImage::GetCodeCompilationRange(CodeType codeType, COUNT_T * start, COUNT_T * end)
@@ -1501,7 +1501,7 @@ ZapUnwindData * ZapUnwindData::NewUnwindData(ZapWriter * pWriter, PVOID pData, S
     ZapUnwindData * pZapUnwindData = fIsFilterFunclet ?
         (new (pMemory) ZapFilterFuncletUnwindData(cbSize)) : (new (pMemory) ZapUnwindData(cbSize));
 
-    memcpy(pZapUnwindData + 1, pData, cbSize);
+    memcpy((void*)(pZapUnwindData + 1), pData, cbSize);
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
     // Make sure the personality routine thunk is created

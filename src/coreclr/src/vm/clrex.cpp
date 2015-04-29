@@ -1363,55 +1363,6 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
 }
 
 // ---------------------------------------------------------------------------
-// EEComException methods
-// ---------------------------------------------------------------------------
-
-static HRESULT Undefer(EXCEPINFO *pExcepInfo)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (pExcepInfo->pfnDeferredFillIn)
-    {
-        EXCEPINFO FilledInExcepInfo; 
-
-        HRESULT hr = pExcepInfo->pfnDeferredFillIn(&FilledInExcepInfo);
-        if (SUCCEEDED(hr))
-        {
-            // Free the strings in the original EXCEPINFO.
-            if (pExcepInfo->bstrDescription)
-            {
-                SysFreeString(pExcepInfo->bstrDescription);
-                pExcepInfo->bstrDescription = NULL;
-            }
-            if (pExcepInfo->bstrSource)
-            {
-                SysFreeString(pExcepInfo->bstrSource);
-                pExcepInfo->bstrSource = NULL;
-            }
-            if (pExcepInfo->bstrHelpFile)
-            {
-                SysFreeString(pExcepInfo->bstrHelpFile);
-                pExcepInfo->bstrHelpFile = NULL;
-            }
-
-            // Fill in the new data
-            *pExcepInfo = FilledInExcepInfo;
-        }
-    }
-
-    if (pExcepInfo->scode != 0)
-        return pExcepInfo->scode;
-    else
-        return (HRESULT)pExcepInfo->wCode;
-}
-
-// ---------------------------------------------------------------------------
 // EEFieldException is an EE exception subclass composed of a field
 // ---------------------------------------------------------------------------
 
@@ -2179,6 +2130,55 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *parent,
 }
 
 #ifndef CROSSGEN_COMPILE
+// ---------------------------------------------------------------------------
+// EEComException methods
+// ---------------------------------------------------------------------------
+
+static HRESULT Undefer(EXCEPINFO *pExcepInfo)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        NOTHROW;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (pExcepInfo->pfnDeferredFillIn)
+    {
+        EXCEPINFO FilledInExcepInfo; 
+
+        HRESULT hr = pExcepInfo->pfnDeferredFillIn(&FilledInExcepInfo);
+        if (SUCCEEDED(hr))
+        {
+            // Free the strings in the original EXCEPINFO.
+            if (pExcepInfo->bstrDescription)
+            {
+                SysFreeString(pExcepInfo->bstrDescription);
+                pExcepInfo->bstrDescription = NULL;
+            }
+            if (pExcepInfo->bstrSource)
+            {
+                SysFreeString(pExcepInfo->bstrSource);
+                pExcepInfo->bstrSource = NULL;
+            }
+            if (pExcepInfo->bstrHelpFile)
+            {
+                SysFreeString(pExcepInfo->bstrHelpFile);
+                pExcepInfo->bstrHelpFile = NULL;
+            }
+
+            // Fill in the new data
+            *pExcepInfo = FilledInExcepInfo;
+        }
+    }
+
+    if (pExcepInfo->scode != 0)
+        return pExcepInfo->scode;
+    else
+        return (HRESULT)pExcepInfo->wCode;
+}
+
 EECOMException::EECOMException(EXCEPINFO *pExcepInfo)
   : EEException(GetKindFromHR(Undefer(pExcepInfo)))
 {
