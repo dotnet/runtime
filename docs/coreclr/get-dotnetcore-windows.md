@@ -1,11 +1,13 @@
-Get .NET Core on Windows with NuGet
-===================================
+Get .NET Core on Windows - Raw Experience
+=========================================
 
-These instructions will lead you through acquiring .NET Core via NuGet and running a "Hello World" demo on Windows. The instructions use a particular set of paths. You'll need to adjust if you want to use a different set.
+These instructions will lead you through acquiring .NET Core directly via NuGet restore and running a "Hello World" demo on Windows. The instructions use a particular set of paths. You'll need to adjust if you want to use a different set.
 
-.NET Core is distributed as NuGet packages. You can acquire it via NuGet restore (these instructions) or the [.NET Version Manager](get-coreclr-windows-dnvm.md). Alternatively, you can [build from source](windows-instructions.md). 
+These instructions are for .NET Core console apps. If you want to try out ASP.NET 5 on top of .NET Core - which is a great idea - check out the [ASP.NET 5 instructions](https://github.com/aspnet/home).
 
-You can see the [CoreCLR myget feed](https://www.myget.org/F/dotnet-core) @ the [dotnet-core gallery](https://www.myget.org/gallery/dotnet-core) page. These packages are not yet published to NuGet.org, but that will change soon.
+.NET Core NuGet packages are available on the [.NET Core myget feed](https://www.myget.org/F/dotnet-core), which you can more easily view on [gallery](https://www.myget.org/gallery/dotnet-core) for the feed.
+
+The preferred approach to acquire .NET Core is via the [.NET Core DNX SDK](get-dotnetcore-dnx-windows.md). It's the easiest approach. Alternatively, you can [build from source](windows-instructions.md). 
 
 NuGet Restore Packages
 ======================
@@ -50,16 +52,18 @@ Write your App
 
 You need a Hello World application to run. You can write your own, if you'd like. Here's a very simple one:
 
-	using System;
+```csharp
+using System;
 
-	public class Program
-	{
-	    public static void Main (string[] args)
-	    {
-	        Console.WriteLine("Hello, Windows");
-	        Console.WriteLine("Love from CoreCLR.");
-	    }   
-	} 
+public class Program
+{
+    public static void Main (string[] args)
+    {
+        Console.WriteLine("Hello, Windows");
+        Console.WriteLine("Love from CoreCLR.");
+    }   
+} 
+```
 
 Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to ```C:\coreclr-demo```.
 
@@ -79,11 +83,11 @@ Prepare the demo
 
 You need to copy the NuGet package assemblies over to the app folder. You need to run a few commands, including a little batch magic.
 
-	C:\coreclr-demo>for /f %k in ('dir /s /b packages\*.dll') do echo %k | findstr "\aspnetcore50" && copy /Y %k app
+	C:\coreclr-demo> for /f %k in ('dir /s /b packages\*.dll') do echo %k | findstr "\aspnetcore50" && copy /Y %k app
 
-	C:\coreclr-demo>copy packages\Microsoft.NETCore.Runtime.CoreCLR-x64.1.0.0-beta-22819\lib\any~win\x64\* app
+	C:\coreclr-demo> copy packages\Microsoft.NETCore.Runtime.CoreCLR-x64.1.0.0-beta-22819\lib\any~win\x64\* app
 
-	C:\coreclr-demo>copy packages\Microsoft.NETCore.Runtime.CoreCLR.ConsoleHost-x64.1.0.0-beta-22819\native\win\x64\CoreConsole.exe app\HelloWorld.exe
+	C:\coreclr-demo> copy packages\Microsoft.NETCore.Runtime.CoreCLR.ConsoleHost-x64.1.0.0-beta-22819\native\win\x64\CoreConsole.exe app\HelloWorld.exe
 
 This last step might be a bit surprising, copying ```CoreConsole.exe``` to MyApp.exe, in this case ```HelloWorld.exe```. This is closedly related to compiling the app, in the instructions above, to MyApp.dll, in this case to ```HelloWorld.dll```. 
 
