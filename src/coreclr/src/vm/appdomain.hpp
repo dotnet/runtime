@@ -2103,7 +2103,6 @@ public:
     HRESULT GetComIPForExposedObject(IUnknown **pComIP);
 
     MethodTable *GetRedirectedType(WinMDAdapter::RedirectedTypeIndex index);
-    bool FindRedirectedAssembly(Assembly* pAssembly, WinMDAdapter::FrameworkAssemblyIndex* pIndex);
 #endif // FEATURE_COMINTEROP
 
 
@@ -3409,21 +3408,6 @@ private:
     COMorRemotingFlag m_COMorRemotingFlag;
     OBJECTHANDLE  m_hndMissing;     //Handle points to Missing.Value Object which is used for [Optional] arg scenario during IDispatch CCW Call
 
-    PTR_DomainAssembly m_pSystemDll;                            // System.dll loaded into this domain
-    PTR_DomainAssembly m_pSystemRuntimeWindowsRuntimeDll;       // System.Runtime.WindowsRuntime.dll loaded into this domain
-    PTR_DomainAssembly m_pSystemRuntimeWindowsRuntimeUIXamlDll; // System.Runtime.WindowsRuntime.UI.Xaml.dll loaded into this domain
-    PTR_DomainAssembly m_pSystemNumericsVectors;                // System.Numerics.Vectors.dll loaded into this domain
-    PTR_DomainAssembly m_pInternalUri;                          // Internal.Uri.dll loaded into this domain
-public:
-    BOOL FindRedirectedAssemblyFromIndexIfLoaded(WinMDAdapter::FrameworkAssemblyIndex index, Assembly** ppAssembly);
-
-    BOOL IsSystemDll(Assembly *pAssembly)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pSystemDll != NULL && m_pSystemDll->GetCurrentAssembly() == pAssembly);
-    }
-private:
-    
     MethodTable* m_rpCLRTypes[WinMDAdapter::RedirectedTypeIndex_Count];
 
     MethodTable* LoadRedirectedType(WinMDAdapter::RedirectedTypeIndex index, WinMDAdapter::FrameworkAssemblyIndex assembly);

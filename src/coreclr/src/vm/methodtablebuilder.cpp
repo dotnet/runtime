@@ -58,20 +58,6 @@ const char* FormatSig(MethodDesc* pMD, LoaderHeap *pHeap, AllocMemTracker *pamTr
 unsigned g_dupMethods = 0;
 #endif // _DEBUG
 
-#ifdef FEATURE_COMINTEROP
-WinMDAdapter::RedirectedTypeIndex CalculateWinRTRedirectedTypeIndex(IMDInternalImport * pInternalImport, Module * pModule, mdTypeDef cl)
-{
-    STANDARD_VM_CONTRACT;
-
-    Assembly * pAssembly = pModule->GetAssembly();
-    WinMDAdapter::FrameworkAssemblyIndex assemblyIndex;
-    if (!GetAppDomain()->FindRedirectedAssembly(pAssembly, &assemblyIndex))
-        return WinMDAdapter::RedirectedTypeIndex_Invalid;
-
-    return WinRTTypeNameConverter::GetRedirectedTypeIndexByName(pInternalImport, cl, assemblyIndex);
-}
-#endif // FEATURE_COMINTEROP
-
 //==========================================================================
 // This function is very specific about how it constructs a EEClass.  It first
 // determines the necessary size of the vtable and the number of statics that
@@ -262,8 +248,8 @@ MethodTableBuilder::CreateClass( Module *pModule,
         }
     }
 
-    WinMDAdapter::RedirectedTypeIndex redirectedTypeIndex; 
-    redirectedTypeIndex = CalculateWinRTRedirectedTypeIndex(pInternalImport, pModule, cl);
+    WinMDAdapter::RedirectedTypeIndex redirectedTypeIndex;
+    redirectedTypeIndex = WinRTTypeNameConverter::GetRedirectedTypeIndexByName(pModule, cl);
     if (redirectedTypeIndex != WinMDAdapter::RedirectedTypeIndex_Invalid)
     {
         EnsureOptionalFieldsAreAllocated(pEEClass, pamTracker, pAllocator->GetLowFrequencyHeap());
@@ -11741,30 +11727,29 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
             }
         }
     }
-    else if (GetAppDomain()->IsSystemDll(pModule->GetAssembly()))
+    else if ((IsInterface() || IsDelegate()) && 
+        IsTdPublic(GetHalfBakedClass()->GetAttrClass()) && 
+        GetHalfBakedClass()->GetWinRTRedirectedTypeIndex() != WinMDAdapter::RedirectedTypeIndex_Invalid)
     {
         // 7. System.Collections.Specialized.INotifyCollectionChanged
         // 8. System.Collections.Specialized.NotifyCollectionChangedEventHandler
         // 9. System.ComponentModel.INotifyPropertyChanged
         // 10. System.ComponentModel.PropertyChangedEventHandler
         // 11. System.Windows.Input.ICommand
-        if ((IsInterface() || IsDelegate()) && IsTdPublic(GetHalfBakedClass()->GetAttrClass()))
+        LPCUTF8 pszClassName;
+        LPCUTF8 pszClassNamespace;
+        if (SUCCEEDED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
         {
-            LPCUTF8 pszClassName;
-            LPCUTF8 pszClassNamespace;
-            if (SUCCEEDED(pMDImport->GetNameOfTypeDef(GetCl(), &pszClassName, &pszClassNamespace)))
-            {
-                LPUTF8 pszFullyQualifiedName = NULL;
-                MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
+            LPUTF8 pszFullyQualifiedName = NULL;
+            MAKE_FULLY_QUALIFIED_NAME(pszFullyQualifiedName, pszClassNamespace, pszClassName);
 
-                if (strcmp(pszFullyQualifiedName, g_INotifyCollectionChangedName) == 0 ||
-                    strcmp(pszFullyQualifiedName, g_NotifyCollectionChangedEventHandlerName) == 0 ||
-                    strcmp(pszFullyQualifiedName, g_INotifyPropertyChangedName) == 0 ||
-                    strcmp(pszFullyQualifiedName, g_PropertyChangedEventHandlerName) == 0 ||
-                    strcmp(pszFullyQualifiedName, g_ICommandName) == 0)
-                {
-                    bmtProp->fNeedsRCWPerTypeData = true;
-                }
+            if (strcmp(pszFullyQualifiedName, g_INotifyCollectionChangedName) == 0 ||
+                strcmp(pszFullyQualifiedName, g_NotifyCollectionChangedEventHandlerName) == 0 ||
+                strcmp(pszFullyQualifiedName, g_INotifyPropertyChangedName) == 0 ||
+                strcmp(pszFullyQualifiedName, g_PropertyChangedEventHandlerName) == 0 ||
+                strcmp(pszFullyQualifiedName, g_ICommandName) == 0)
+            {
+                bmtProp->fNeedsRCWPerTypeData = true;
             }
         }
     }
