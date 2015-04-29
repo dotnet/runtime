@@ -340,6 +340,7 @@ mono_context_init (MonoDomain *domain)
 	context = (MonoAppContext *) mono_object_new_pinned (domain, class);
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
+	ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (context);
 	domain->default_context = context;
 }
 
