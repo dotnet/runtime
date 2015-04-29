@@ -439,11 +439,11 @@ ZapperOptions::ZapperOptions() :
   m_fPartialNGen(false),
   m_fPartialNGenSet(false),
   m_fNGenLastRetry(false),
-  m_legacyMode(false),
+  m_compilerFlags(CORJIT_FLG_RELOC | CORJIT_FLG_PREJIT),
+  m_legacyMode(false)
 #ifdef FEATURE_CORECLR
-  m_fNoMetaData(s_fNGenNoMetaData),
+  ,m_fNoMetaData(s_fNGenNoMetaData)
 #endif
-  m_compilerFlags(CORJIT_FLG_RELOC | CORJIT_FLG_PREJIT)
 {
     m_zapSet = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapSet);
     if (m_zapSet != NULL && wcslen(m_zapSet) > 3)

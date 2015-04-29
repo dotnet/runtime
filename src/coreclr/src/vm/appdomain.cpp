@@ -6960,6 +6960,7 @@ struct LoadFileArgs
     DomainFile *result;
 };
 
+#ifndef CROSSGEN_COMPILE
 static void LoadDomainFile_Wrapper(void *ptr)
 {
     WRAPPER_NO_CONTRACT;
@@ -6968,6 +6969,7 @@ static void LoadDomainFile_Wrapper(void *ptr)
     LoadFileArgs *args = (LoadFileArgs *) ptr;
     args->result = GetAppDomain()->LoadDomainFile(args->pLock, args->targetLevel);
 }
+#endif // !CROSSGEN_COMPILE
 
 DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetLevel)
 {
