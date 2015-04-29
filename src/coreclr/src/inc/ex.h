@@ -7,6 +7,8 @@
 #if !defined(_EX_H_)
 #define _EX_H_
 
+void RetailAssertIfExpectedClean();             // Defined in src/utilcode/debug.cpp
+
 #ifdef CLR_STANDALONE_BINDER
 
 #define INCONTRACT(x)
@@ -51,7 +53,6 @@ inline void IfFailThrow(HRESULT hr)
     }
 }
 
-void RetailAssertIfExpectedClean();             // Defined in src\util\Debug.cpp
 /*
 inline HRESULT OutOfMemory()
 {
@@ -1252,7 +1253,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 // a RetailAssert when a reg key is set if we get an unexpected HRESULT
 // from one of the RPC calls.
 //===================================================================================
-void RetailAssertIfExpectedClean();             // Defined in src\util\Debug.cpp
 
 #define EX_CATCH_HRESULT_AND_NGEN_CLEAN(_hr)                                    \
     EX_CATCH                                                                    \

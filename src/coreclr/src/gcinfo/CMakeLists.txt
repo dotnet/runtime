@@ -13,6 +13,4 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_subdirectory(lib)
-if(WIN32)
-  add_subdirectory(crossgen)
-endif()
+add_subdirectory(crossgen)

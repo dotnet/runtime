@@ -187,6 +187,68 @@ MessageBoxW(
             goto error;
         }
     }
+
+    rc = MessageBoxA(hWnd, text, caption, uType);
+
+error:
+    PAL_free(caption);
+    PAL_free(text);
+
+
+    LOGEXIT("MessageBoxW returns %d\n", rc);
+    PERF_EXIT(MessageBoxW);
+    return rc;
+}
+
+
+/*++
+Function:
+  MessageBoxA
+
+This is a small subset of MessageBox that simply logs a message to the
+system logging facility and returns. A typical log entry will look
+like:
+
+May 23 15:48:10 rice example1: MessageBox: Caption: Error Text
+
+Note:
+  hWnd should always be NULL.
+
+See MSDN doc.
+--*/
+int
+PALAPI
+MessageBoxA(
+	    IN LPVOID hWnd,
+	    IN LPCSTR lpText,
+	    IN LPCSTR lpCaption,
+	    IN UINT uType)
+{
+    INT len = 0;
+    INT rc = 0;
+
+    PERF_ENTRY(MessageBoxA);
+    ENTRY( "MessageBoxA (hWnd=%p, lpText=%p (%s), lpCaption=%p (%s), uType=%#x)\n",
+           hWnd, lpText?lpText:"NULL", lpText?lpText:"NULL",
+           lpCaption?lpCaption:"NULL",
+           lpCaption?lpCaption:"NULL", uType );
+
+    if (hWnd != NULL)
+    {
+        ASSERT("hWnd != NULL");
+    }
+
+    if (lpText == NULL)
+    {
+        WARN("No message text\n");
+
+        lpText = "(no message text)";
+    }
+
+    if (lpCaption == NULL)
+    {
+        lpCaption = "Error";
+    }
     
     if (uType & MB_DEFMASK)
     {
@@ -233,8 +295,8 @@ MessageBoxW(
     osstatus = SessionGetInfo(callerSecuritySession, &secSession, &secSessionInfo);
     if (noErr == osstatus && (secSessionInfo & sessionHasGraphicAccess) != 0)
     {
-        CFStringRef cfsTitle = CFStringCreateWithCString(kCFAllocatorDefault, caption, kCFStringEncodingUTF8);
-        CFStringRef cfsText = CFStringCreateWithCString(kCFAllocatorDefault, text, kCFStringEncodingUTF8);
+        CFStringRef cfsTitle = CFStringCreateWithCString(kCFAllocatorDefault, lpCaption, kCFStringEncodingUTF8);
+        CFStringRef cfsText = CFStringCreateWithCString(kCFAllocatorDefault, lpText, kCFStringEncodingUTF8);
         CFStringRef cfsButton1 = NULL;
         CFStringRef cfsButton2 = NULL;
         CFStringRef cfsButton3 = NULL;
@@ -336,25 +398,21 @@ MessageBoxW(
     {
         // We're not in a login session, e.g., running via ssh, and so bringing
         // up a message box would be bad form.
-        fprintf ( stderr, "MessageBox: %s: %s", caption, text );
-        syslog(LOG_USER|LOG_ERR, "MessageBox: %s: %s", caption, text);
+        fprintf ( stderr, "MessageBox: %s: %s", lpCaption, lpText );
+        syslog(LOG_USER|LOG_ERR, "MessageBox: %s: %s", lpCaption, lpText);
     }
 #else // __APPLE__
-    fprintf ( stderr, "MessageBox: %s: %s", caption, text );
-    syslog(LOG_USER|LOG_ERR, "MessageBox: %s: %s", caption, text);
+    fprintf ( stderr, "MessageBox: %s: %s", lpCaption, lpText );
+    syslog(LOG_USER|LOG_ERR, "MessageBox: %s: %s", lpCaption, lpText);
 
     // Some systems support displaying a GUI dialog. (This will suspend the current thread until they hit the
     // 'OK' button and allow a debugger to be attached).
-    PAL_DisplayDialog(caption, text);
+    PAL_DisplayDialog(lpCaption, lpText);
 #endif // __APPLE__ else
 
     PALCLeaveCriticalSection( &msgbox_critsec);
 error:
-    PAL_free(caption);
-    PAL_free(text);
-
-
-    LOGEXIT("MessageBoxW returns %d\n", rc);
-    PERF_EXIT(MessageBoxW);
+    LOGEXIT("MessageBoxA returns %d\n", rc);
+    PERF_EXIT(MessageBoxA);
     return rc;
 }

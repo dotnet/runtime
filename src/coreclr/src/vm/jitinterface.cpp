@@ -93,7 +93,7 @@
 
 
 #if defined(CROSSGEN_COMPILE)
-static const PCHAR hlpNameTable[CORINFO_HELP_COUNT] = {
+static const char *const hlpNameTable[CORINFO_HELP_COUNT] = {
 #define JITHELPER(code, pfnHelper, sig) #code,
 #include "jithelpers.h"
 };

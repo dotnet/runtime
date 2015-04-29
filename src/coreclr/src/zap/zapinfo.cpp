@@ -29,7 +29,9 @@ class MethodDesc;
 class MethodTable;
 #include "CompactLayoutWriter.h"
 #endif
+#ifdef MDIL
 #include "TritonStress.h"
+#endif
 
 ZapInfo::ZapInfo(ZapImage * pImage, mdMethodDef md, CORINFO_METHOD_HANDLE handle, CORINFO_MODULE_HANDLE module, unsigned methodProfilingDataFlags)
     : m_pImage(pImage),

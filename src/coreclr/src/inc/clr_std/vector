@@ -27,6 +27,8 @@ namespace std
     class vector
     {
         public:
+            class const_iterator;
+
             class iterator
             {
                 friend class std::vector<T>::const_iterator;

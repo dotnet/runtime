@@ -702,8 +702,19 @@ MessageBoxW(
         IN LPCWSTR lpCaption,
         IN UINT uType);
 
+PALIMPORT
+int
+PALAPI
+MessageBoxA(
+        IN LPVOID hWnd,  // NOTE: diff from winuser.h
+        IN LPCSTR lpText,
+        IN LPCSTR lpCaption,
+        IN UINT uType);
+
 #ifdef UNICODE
 #define MessageBox MessageBoxW
+#else
+#define MessageBox MessageBoxA
 #endif
 
 /***************** wincon.h Entrypoints **********************************/
@@ -786,6 +797,7 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define FILE_ATTRIBUTE_SYSTEM                   0x00000004
 #define FILE_ATTRIBUTE_DIRECTORY                0x00000010
 #define FILE_ATTRIBUTE_ARCHIVE                  0x00000020
+#define FILE_ATTRIBUTE_DEVICE                   0x00000040
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
