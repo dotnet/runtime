@@ -5864,31 +5864,6 @@ public:
 
 #include "pal_unwind.h"
 
-// A pretend exception code that we use to stand for external exceptions,
-// such as a C++ exception leaking across a P/Invoke boundary into
-// COMPlusFrameHandler.
-#define EXCEPTION_FOREIGN 0xe0455874    // 0xe0000000 | 'EXT'
-
-// Test whether the argument exceptionObject is an SEH exception.  If it is,
-// return the associated exception pointers.  If it is not, return NULL.
-PALIMPORT
-EXCEPTION_POINTERS *
-PALAPI
-PAL_GetExceptionPointers(struct _Unwind_Exception *exceptionObject);
-
-typedef void (*PFN_PAL_BODY)(void *pvParam);
-
-typedef struct _PAL_DISPATCHER_CONTEXT {
-    _Unwind_Action actions;
-    struct _Unwind_Exception *exception_object;
-    struct _Unwind_Context *context;
-} PAL_DISPATCHER_CONTEXT;
-
-typedef EXCEPTION_DISPOSITION (*PFN_PAL_EXCEPTION_FILTER)(
-    EXCEPTION_POINTERS *ExceptionPointers,
-    PAL_DISPATCHER_CONTEXT *DispatcherContext,
-    void *pvParam);
-
 struct PAL_SEHException
 {
 public:
