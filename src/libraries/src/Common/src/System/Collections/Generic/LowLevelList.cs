@@ -49,14 +49,12 @@ namespace System.Collections.Generic
         protected int _size;
         protected int _version;
 
-        private static readonly T[] s_emptyArray = new T[0];
-
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
         // increased to 16, and then increased in multiples of two as required.
         public LowLevelList()
         {
-            _items = s_emptyArray;
+            _items = Array.Empty<T>();
         }
 
         // Constructs a List with a given initial capacity. The list is
@@ -69,7 +67,7 @@ namespace System.Collections.Generic
             Contract.EndContractBlock();
 
             if (capacity == 0)
-                _items = s_emptyArray;
+                _items = Array.Empty<T>();
             else
                 _items = new T[capacity];
         }
@@ -90,7 +88,7 @@ namespace System.Collections.Generic
                 int count = c.Count;
                 if (count == 0)
                 {
-                    _items = s_emptyArray;
+                    _items = Array.Empty<T>();
                 }
                 else
                 {
@@ -102,7 +100,7 @@ namespace System.Collections.Generic
             else
             {
                 _size = 0;
-                _items = s_emptyArray;
+                _items = Array.Empty<T>();
                 // This enumerable could be empty.  Let Add allocate a new array, if needed.
                 // Note it will also go to _defaultCapacity first, not 1, then 2, etc.
 
@@ -150,7 +148,7 @@ namespace System.Collections.Generic
                     }
                     else
                     {
-                        _items = s_emptyArray;
+                        _items = Array.Empty<T>();
                     }
                 }
             }
