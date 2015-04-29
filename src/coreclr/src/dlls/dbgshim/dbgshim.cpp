@@ -26,8 +26,12 @@
 #include <getproductversionnumber.h>
 #include <dbgenginemetrics.h>
 
+#if defined(FEATURE_PAL)
+#include "debug-pal.h"
+#else
 #define PSAPI_VERSION 2
 #include <psapi.h>
+#endif
 
 #include "dbgshim.h"
 
@@ -587,7 +591,7 @@ BYTE* GetRemoteModuleBaseAddress(DWORD dwPID, LPCWSTR szFullModulePath)
         ThrowHR(HRESULT_FROM_WIN32(GetLastError()));
     }
 
-    DWORD countModules = cbNeeded/sizeof(HMODULE);
+    DWORD countModules = min(cbNeeded, sizeof(modules)) / sizeof(HMODULE);
     for(DWORD i = 0; i < countModules; i++)
     {
         WCHAR modulePath[MAX_PATH];
@@ -623,6 +627,7 @@ const int c_iMaxVersionStringLen = 8 + 1 + 8 + 1 + 16; // 64-bit hmodule
 const int c_iMinVersionStringLen = 8 + 1 + 8 + 1 + 8; // 32-bit hmodule
 const int c_idxFirstSemi = 8;
 const int c_idxSecondSemi = 17;
+const WCHAR *c_versionStrFormat = W("%08x;%08x;%p");
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -640,6 +645,7 @@ const int c_idxSecondSemi = 17;
 //  S_OK - on success.
 //  E_INVALIDARG - 
 //  HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) if the buffer is too small.
+//  COR_E_FILENOTFOUND - module is not found in a given debugee process
 //  
 // Notes:
 //   The null-terminated version string including null, is 
@@ -680,33 +686,41 @@ HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
     }
     else if (pBuffer != NULL)
     {
-#ifndef FEATURE_PAL
+
         HRESULT hr = S_OK;
         EX_TRY
         {        
             CorDebugInterfaceVersion dbiVersion = CorDebugInvalidVersion;
-            DWORD pid = pidDebuggee;
-
+            BYTE* hmodTargetCLR = NULL;
+#ifndef FEATURE_PAL            
             CLR_ENGINE_METRICS metricsStruct;
 
             GetTargetCLRMetrics(szModuleName, &metricsStruct); // throws
             dbiVersion = (CorDebugInterfaceVersion) metricsStruct.dwDbiVersion;
             
-            BYTE* hmodTargetCLR = GetRemoteModuleBaseAddress(pidDebuggee, szModuleName); // throws
+            hmodTargetCLR = GetRemoteModuleBaseAddress(pidDebuggee, szModuleName); // throws
+#else
+            //TODO: So far on POSIX systems we only support one version of debugging interface
+            // in future we might want to detect it the same way we do it on Windows.
+            dbiVersion = CorDebugLatestVersion; 
+            hmodTargetCLR = (BYTE *)GetDynamicLibraryAddressInProcess(pidDebuggee, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A));
+#endif // FEATURE_PAL    
 
-            swprintf_s(pBuffer, cchBuffer, W("%08x;%08x;%p"), dbiVersion, pid, hmodTargetCLR);
+            if (hmodTargetCLR == NULL)
+            {
+                hr = COR_E_FILENOTFOUND;
+            } 
+            else 
+            {
+                swprintf_s(pBuffer, cchBuffer, c_versionStrFormat, dbiVersion, pidDebuggee, hmodTargetCLR);    
+            }
         }
         EX_CATCH_HRESULT(hr);
         return hr;
-#else
-    swprintf_s(pBuffer, cchBuffer, W("%08x"), pidDebuggee);
-#endif // FEATURE_PAL
     }
 
     return S_OK;
 }
-
-#ifndef FEATURE_PAL
 
 // Functions that we'll look for in the loaded Mscordbi module.
 typedef HRESULT (STDAPICALLTYPE *FPCoreCLRCreateCordbObject)(
@@ -744,9 +758,8 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
         return E_INVALIDARG;
     }
 
-    
-    int numFieldsAssigned = swscanf_s(szDebuggeeVersion, W("%08x;%08x;%p;"), piDebuggerVersion, pdwPidDebuggee, 
-                                        phmodTargetCLR);
+    int numFieldsAssigned = swscanf_s(szDebuggeeVersion, c_versionStrFormat, piDebuggerVersion, pdwPidDebuggee, phmodTargetCLR);
+
     if (numFieldsAssigned != 3)
     {
         return E_FAIL;
@@ -755,6 +768,7 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
     return S_OK;
 }
 
+#ifndef FEATURE_PAL
 //-----------------------------------------------------------------------------
 // Appends "\mscordbi.dll" to the path. This converts a directory name into the full path to mscordbi.dll.
 // 
@@ -901,7 +915,7 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
 
     *ppCordb = NULL;
 
-#ifndef FEATURE_PAL
+
     //
     // Step 1: Parse version information into internal data structures
     // 
@@ -914,6 +928,7 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
     if (FAILED(hr))
         goto Exit;
 
+#ifndef FEATURE_PAL
     //
     // Step 2:  Find the proper Dbi module (mscordbi.dll) and load it.
     // 
@@ -980,13 +995,13 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
             hr = CORDBG_E_DEBUG_COMPONENT_MISSING;
             goto Exit;
         }
-        FPCreateCordbObject fpCreate = (FPCreateCordbObject)GetProcAddress(hMod, "CreateCordbObject");
-        if (fpCreate == NULL)
+        FPCoreCLRCreateCordbObject fpCreate2 = (FPCoreCLRCreateCordbObject)GetProcAddress(hMod, "CoreCLRCreateCordbObject");
+        if (hmodTargetCLR == NULL || fpCreate2 == NULL)
         {
             hr = CORDBG_E_INCOMPATIBLE_PROTOCOL;
             goto Exit;
         }
-        hr = fpCreate(iDebuggerVersion, &pCordb);
+        hr = fpCreate2(iDebuggerVersion, pidDebuggee, hmodTargetCLR, &pCordb);
     }
 #endif // FEATURE_PAL
     _ASSERTE((pCordb == NULL) == FAILED(hr));

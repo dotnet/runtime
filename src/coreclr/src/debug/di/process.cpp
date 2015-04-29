@@ -1112,8 +1112,6 @@ HRESULT ShimProcess::CreateProcess(
     {
         pShim.Assign(new ShimProcess());
 
-        pShim->CheckForPortInfo(pRemoteTarget);
-
         // Indicate that this process was started under the debugger as opposed to attaching later.
         pShim->m_attached = false;
 
@@ -1177,8 +1175,6 @@ HRESULT ShimProcess::DebugActiveProcess(
     EX_TRY
     {
         pShim.Assign(new ShimProcess());
-
-        pShim->CheckForPortInfo(pRemoteTarget);
 
         // Indicate that this process was attached to, asopposed to being started under the debugger.
         pShim->m_attached = true;
