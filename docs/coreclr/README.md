@@ -27,6 +27,7 @@ Book of the Runtime
 - [Introduction to the Common Language Runtime](intro-to-clr.md)
 - [Garbage Collection Design](garbage-collection.md)
 - [Threading](threading.md)
+- [RyuJIT Overview](ryujit-overview.md)
 - [Type System](type-system.md)
 - [Type Loader](type-loader.md)
 - [Method Descriptor](method-descriptor.md)
