@@ -19,12 +19,8 @@
 #include <limits.h>
 #include "shimpriv.h"
 
-#if defined(FEATURE_PAL)
-#include "debug-pal.h"
-#else
+#if !defined(FEATURE_CORESYSTEM)
 #include <tlhelp32.h>
-#define PSAPI_VERSION 2
-#include <psapi.h>
 #endif
 
 //---------------------------------------------------------------------------------------
@@ -1737,28 +1733,6 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
 
 }
 
-#if defined(FEATURE_CORESYSTEM) && !defined(FEATURE_PAL)
-// Returns true if the named of a given module is [Core]Clr.dll
-static bool IsClrModule(HANDLE hProcess, HMODULE hModule)
-{
-    WCHAR modulePath[MAX_PATH] = {};
-    if(GetModuleFileNameEx(hProcess, hModule, modulePath, MAX_PATH) == 0)
-    {
-        return false;
-    }
-
-    //strip off everything up to and including the last slash in the path to get name
-    const WCHAR* pModuleName = modulePath;
-    while(wcschr(pModuleName, W('\\')) != NULL)
-    {
-        pModuleName = wcschr(pModuleName, W('\\'));
-        pModuleName++; // pass the slash
-    }
-
-    return _wcsicmp(pModuleName, MAIN_CLR_DLL_NAME_W) == 0;
-}
-#endif
-
 // ----------------------------------------------------------------------------
 // ShimProcess::GetCLRInstanceBaseAddress
 // Finds the base address of [core]clr.dll 
@@ -1769,41 +1743,10 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 {
     CORDB_ADDRESS baseAddress = CORDB_ADDRESS(NULL);
     DWORD dwPid = m_pLiveDataTarget->GetPid();
-#if defined(FEATURE_PAL)
-    baseAddress = PTR_TO_CORDB_ADDRESS (GetDynamicLibraryAddressInProcess(dwPid, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A)));
-#elif defined(FEATURE_CORESYSTEM)
-    HandleHolder hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPid);
-    if (NULL == hProcess)
-        return baseAddress;
-
-    // These shouldn't be closed
-    HMODULE modules[1000];
-    DWORD cbNeeded;
-    if(!EnumProcessModules(hProcess, modules, sizeof(modules), &cbNeeded))
-    {
-        return baseAddress;
-    }
-
-    DWORD countModules = min(cbNeeded, sizeof(modules)) / sizeof(HMODULE);
-    for(DWORD i = 0; i < countModules; i++)
-    {
-        if (IsClrModule(hProcess, modules[i]))
-        {
-            MODULEINFO info;
-            if (GetModuleInformation(hProcess, modules[i], &info, sizeof(info)))
-            {
-                if (baseAddress)
-                {
-                    // We already found an instance of [core]clr.dll, and this is a second one
-                    // it means we can't automatically detect CLR module, ergo return NULL.
-                    baseAddress = NULL;
-                    break;
-                }
-                baseAddress = CORDB_ADDRESS(info.lpBaseOfDll);
-            }
-        }
-    }    
-
+#if defined(FEATURE_CORESYSTEM)
+    // Debugger attaching to CoreCLR via CoreCLRCreateCordbObject should have already specified CLR module address.
+    // Code that help to find it now lives in dbgshim.
+    baseAddress = PTR_TO_CORDB_ADDRESS(0);
 #else
     // get a "snapshot" of all modules in the target
     HandleHolder hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPid);
@@ -1869,48 +1812,6 @@ HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
     return S_OK;
 }
 
-//---------------------------------------------------------------------------------------
-//
-// If a debugger calls ICDRemote::CreateProcessEx() or ICDRemote::DebugActiveProcessEx(), 
-// then an ICDRemoteTarget should have been passed to us. We can query this port to find 
-// out the remote IP address (and possibly port) that the user wants to connect to.
-//
-// Arguments:
-//    pRemoteTarget - provided by the debugger for us to query the host name of the target machine
-//
-// Return Value:
-//    None.  Throws on errors.
-//
- 
-void ShimProcess::CheckForPortInfo(ICorDebugRemoteTarget * pRemoteTarget)
-{
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    if (pRemoteTarget != NULL)
-    {
-        DWORD dwIPAddress = ResolveHostName(pRemoteTarget);
-        m_machineInfo.Init(dwIPAddress, 0);
-    }
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Resolve the host name given by the ICorDebugRemote to an IP address.  Currently only IPv4 and fully
-// qualified domain name are supported.
-//
-// Arguments:
-//    pRemoteTarget - provides the host name
-//
-// Return Value:
-//    Returns the IPv4 address of the target machine.
-//    Throws on errors.
-//
-
-DWORD ShimProcess::ResolveHostName(ICorDebugRemoteTarget * pRemoteTarget)
-{
-    DWORD dwIPAddress = 0;
-    return dwIPAddress;
-}
 
 //---------------------------------------------------------------------------------------
 //

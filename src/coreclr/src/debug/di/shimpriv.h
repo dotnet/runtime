@@ -480,12 +480,6 @@ public:
     // Look for a CLR in the process and if found, return it's instance ID
     HRESULT FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId);    
 
-    // Check whether the debugger has given us an ICorDebugRemoteTarget to query for the host name of the remote machine.
-    void   CheckForPortInfo(ICorDebugRemoteTarget * pRemoteTarget);
-
-    // Resolve the host name given to us by the debugger to an IP address.  Currently we don't support IPv6.
-    DWORD  ResolveHostName(ICorDebugRemoteTarget * pRemoteTarget);
-
     // Retrieve the IP address and the port number of the debugger proxy.
     MachineInfo GetMachineInfo();
 
