@@ -43,8 +43,8 @@ const static int suspend_signal_num = SIGPWR;
 #endif
 const static int restart_signal_num = SIGXCPU;
 
-static MonoSemType suspend_ack_semaphore;
-static MonoSemType *suspend_ack_semaphore_ptr;
+static SgenSemaphore suspend_ack_semaphore;
+static SgenSemaphore *suspend_ack_semaphore_ptr;
 
 static sigset_t suspend_signal_mask;
 static sigset_t suspend_ack_signal_mask;
@@ -59,53 +59,53 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	MonoContext ctx;
 	gpointer stack_start;
 
-	info->stopped_domain = mono_domain_get ();
-	info->signal = 0;
+	info->client_info.stopped_domain = mono_domain_get ();
+	info->client_info.signal = 0;
 	stop_count = sgen_global_stop_count;
 	/* duplicate signal */
-	if (0 && info->stop_count == stop_count)
+	if (0 && info->client_info.stop_count == stop_count)
 		return;
 
 #ifdef USE_MONO_CTX
 	if (context) {
 		mono_sigctx_to_monoctx (context, &ctx);
-		info->stopped_ip = MONO_CONTEXT_GET_IP (&ctx);
+		info->client_info.stopped_ip = MONO_CONTEXT_GET_IP (&ctx);
 		stack_start = (((guint8 *) MONO_CONTEXT_GET_SP (&ctx)) - REDZONE_SIZE);
 	} else {
-		info->stopped_ip = NULL;
+		info->client_info.stopped_ip = NULL;
 		stack_start = NULL;
 	}
 #else
-	info->stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
+	info->client_info.stopped_ip = context ? (gpointer) ARCH_SIGCTX_IP (context) : NULL;
 	stack_start = context ? (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE : NULL;
 #endif
 
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
-	if (stack_start >= info->stack_start_limit && stack_start <= info->stack_end) {
-		info->stack_start = stack_start;
+	if (stack_start >= info->client_info.stack_start_limit && stack_start <= info->client_info.stack_end) {
+		info->client_info.stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
 		if (context) {
-			memcpy (&info->ctx, &ctx, sizeof (MonoContext));
+			memcpy (&info->client_info.ctx, &ctx, sizeof (MonoContext));
 		} else {
-			memset (&info->ctx, 0, sizeof (MonoContext));
+			memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 		}
 #else
 		if (context) {
 			ARCH_COPY_SIGCTX_REGS (regs, context);
-			memcpy (&info->regs, regs, sizeof (info->regs));
+			memcpy (&info->client_info.regs, regs, sizeof (info->client_info.regs));
 		} else {
-			memset (&info->regs, 0, sizeof (info->regs));
+			memset (&info->client_info.regs, 0, sizeof (info->client_info.regs));
 		}
 #endif
 	} else {
-		g_assert (!info->stack_start);
+		g_assert (!info->client_info.stack_start);
 	}
 
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, context, NULL);
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, context, NULL);
 
 	SGEN_LOG (4, "Posting suspend_ack_semaphore for suspend from %p %p", info, (gpointer)mono_native_thread_id_get ());
 
@@ -117,21 +117,21 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	pthread_sigmask (SIG_BLOCK, &suspend_ack_signal_mask, NULL);
 
 	/* notify the waiting thread */
-	MONO_SEM_POST (suspend_ack_semaphore_ptr);
-	info->stop_count = stop_count;
+	SGEN_SEMAPHORE_POST (suspend_ack_semaphore_ptr);
+	info->client_info.stop_count = stop_count;
 
 	/* wait until we receive the restart signal */
 	do {
-		info->signal = 0;
+		info->client_info.signal = 0;
 		sigsuspend (&suspend_signal_mask);
-	} while (info->signal != restart_signal_num);
+	} while (info->client_info.signal != restart_signal_num);
 
 	/* Unblock the restart signal. */
 	pthread_sigmask (SIG_UNBLOCK, &suspend_ack_signal_mask, NULL);
 
 	SGEN_LOG (4, "Posting suspend_ack_semaphore for resume from %p %p\n", info, (gpointer)mono_native_thread_id_get ());
 	/* notify the waiting thread */
-	MONO_SEM_POST (suspend_ack_semaphore_ptr);
+	SGEN_SEMAPHORE_POST (suspend_ack_semaphore_ptr);
 }
 
 /* LOCKING: assumes the GC lock is held (by the stopping thread) */
@@ -162,7 +162,7 @@ MONO_SIG_HANDLER_FUNC (static, restart_handler)
 	int old_errno = errno;
 
 	info = mono_thread_info_current ();
-	info->signal = restart_signal_num;
+	info->client_info.signal = restart_signal_num;
 	SGEN_LOG (4, "Restart handler in %p %p", info, (gpointer)mono_native_thread_id_get ());
 	errno = old_errno;
 }
@@ -185,9 +185,9 @@ sgen_wait_for_suspend_ack (int count)
 	int i, result;
 
 	for (i = 0; i < count; ++i) {
-		while ((result = MONO_SEM_WAIT (suspend_ack_semaphore_ptr)) != 0) {
+		while ((result = SGEN_SEMAPHORE_WAIT (suspend_ack_semaphore_ptr)) != 0) {
 			if (errno != EINTR) {
-				g_error ("MONO_SEM_WAIT FAILED with %d errno %d (%s)", result, errno, strerror (errno));
+				g_error ("SGEN_SEMAPHORE_WAIT FAILED with %d errno %d (%s)", result, errno, strerror (errno));
 			}
 		}
 	}
@@ -203,13 +203,13 @@ sgen_thread_handshake (BOOL suspend)
 	MonoNativeThreadId me = mono_native_thread_id_get ();
 
 	count = 0;
-	mono_thread_info_current ()->suspend_done = TRUE;
+	mono_thread_info_current ()->client_info.suspend_done = TRUE;
 	FOREACH_THREAD_SAFE (info) {
 		if (mono_native_thread_id_equals (mono_thread_info_get_tid (info), me)) {
 			continue;
 		}
-		info->suspend_done = FALSE;
-		if (info->gc_disabled)
+		info->client_info.suspend_done = FALSE;
+		if (info->client_info.gc_disabled)
 			continue;
 		/*if (signum == suspend_signal_num && info->stop_count == global_stop_count)
 			continue;*/
@@ -217,7 +217,7 @@ sgen_thread_handshake (BOOL suspend)
 		if (result == 0) {
 			count++;
 		} else {
-			info->skip = 1;
+			info->client_info.skip = 1;
 		}
 	} END_FOREACH_THREAD_SAFE
 
@@ -237,7 +237,7 @@ sgen_os_init (void)
 		return;
 
 	suspend_ack_semaphore_ptr = &suspend_ack_semaphore;
-	MONO_SEM_INIT (&suspend_ack_semaphore, 0);
+	SGEN_SEMAPHORE_INIT (&suspend_ack_semaphore, 0);
 
 	sigfillset (&sinfo.sa_mask);
 	sinfo.sa_flags = SA_RESTART | SA_SIGINFO;

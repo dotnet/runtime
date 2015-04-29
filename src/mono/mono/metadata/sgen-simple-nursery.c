@@ -23,14 +23,15 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/profiler-private.h"
+#include <string.h>
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-layout-stats.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-layout-stats.h"
+#include "mono/metadata/sgen-client.h"
 
 static inline char*
-alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
+alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	return major_collector.alloc_object (vtable, objsize, has_references);
 }

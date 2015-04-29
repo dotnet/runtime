@@ -45,13 +45,12 @@
 #include <errno.h>
 
 #include "sgen-gc.h"
-#include "sgen-bridge.h"
+#include "sgen-bridge-internal.h"
 #include "sgen-hash-table.h"
 #include "sgen-qsort.h"
+#include "sgen-client.h"
 #include "tabledefs.h"
 #include "utils/mono-logger-internal.h"
-#include "utils/mono-time.h"
-#include "utils/mono-compiler.h"
 
 //#define NEW_XREFS
 #ifdef NEW_XREFS
@@ -626,7 +625,7 @@ static int dfs1_passes, dfs2_passes;
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
-		MonoObject *dst = (MonoObject*)*(ptr);			\
+		GCObject *dst = (GCObject*)*(ptr);			\
 		if (dst && object_needs_expansion (&dst)) {			\
 			++num_links;					\
 			dyn_array_ptr_push (&dfs_stack, obj_entry);	\
@@ -974,7 +973,7 @@ static int fist_pass_links, second_pass_links, sccs_links;
 static int max_sccs_links = 0;
 
 static void
-register_finalized_object (MonoObject *obj)
+register_finalized_object (GCObject *obj)
 {
 	g_assert (sgen_need_bridge_processing ());
 	dyn_array_ptr_push (&registered_bridges, obj);
@@ -1325,12 +1324,14 @@ processing_after_callback (int generation)
 
 	if (bridge_accounting_enabled) {
 		for (i = 0; i < num_sccs; ++i) {
-			for (j = 0; j < api_sccs [i]->num_objs; ++j)
+			for (j = 0; j < api_sccs [i]->num_objs; ++j) {
+				GCVTable *vtable = SGEN_LOAD_VTABLE (api_sccs [i]->objs [j]);
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC,
 					"OBJECT %s (%p) SCC [%d] %s",
-						sgen_safe_name (api_sccs [i]->objs [j]), api_sccs [i]->objs [j],
+						sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), api_sccs [i]->objs [j],
 						i,
 						api_sccs [i]->is_alive  ? "ALIVE" : "DEAD");
+			}
 		}
 	}
 
@@ -1351,7 +1352,7 @@ processing_after_callback (int generation)
 }
 
 static void
-describe_pointer (MonoObject *obj)
+describe_pointer (GCObject *obj)
 {
 	HashEntry *entry;
 	int i;

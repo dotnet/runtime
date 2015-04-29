@@ -22,10 +22,13 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-pinning.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-pointer-queue.h"
+#include <string.h>
+
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-pinning.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-pointer-queue.h"
+#include "mono/metadata/sgen-client.h"
 
 static SgenPointerQueue pin_queue;
 static size_t last_num_pinned = 0;
@@ -171,7 +174,7 @@ sgen_dump_pin_queue (void)
 
 	for (i = 0; i < last_num_pinned; ++i) {
 		void *ptr = pin_queue.data [i];
-		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", ptr, sgen_safe_name (ptr), sgen_safe_object_get_size (ptr));
+		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", ptr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (ptr)), sgen_safe_object_get_size (ptr));
 	}
 }
 
@@ -201,7 +204,7 @@ sgen_cement_reset (void)
 gboolean
 sgen_cement_lookup (char *obj)
 {
-	guint hv = mono_aligned_addr_hash (obj);
+	guint hv = sgen_aligned_addr_hash (obj);
 	int i = SGEN_CEMENT_HASH (hv);
 
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Looking up cementing for non-nursery objects makes no sense");
@@ -227,7 +230,7 @@ sgen_cement_lookup_or_register (char *obj)
 	if (!cement_enabled)
 		return FALSE;
 
-	hv = mono_aligned_addr_hash (obj);
+	hv = sgen_aligned_addr_hash (obj);
 	i = SGEN_CEMENT_HASH (hv);
 
 	SGEN_ASSERT (5, sgen_ptr_in_nursery (obj), "Can only cement pointers to nursery objects");
@@ -248,13 +251,8 @@ sgen_cement_lookup_or_register (char *obj)
 		SGEN_ASSERT (9, SGEN_OBJECT_IS_PINNED (obj), "Can only cement pinned objects");
 		SGEN_CEMENT_OBJECT (obj);
 
-		if (G_UNLIKELY (MONO_GC_OBJ_CEMENTED_ENABLED())) {
-			MonoVTable *vt G_GNUC_UNUSED = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
-			MONO_GC_OBJ_CEMENTED ((mword)obj, sgen_safe_object_get_size ((MonoObject*)obj),
-					vt->klass->name_space, vt->klass->name);
-		}
 		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
-				(int)sgen_safe_object_get_size ((MonoObject*)obj));
+				(int)sgen_safe_object_get_size ((GCObject*)obj));
 	}
 
 	return FALSE;

@@ -21,9 +21,8 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "utils/mono-counters.h"
-#include "sgen-protocol.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
 
 #ifdef HEAVY_STATISTICS
 guint64 stat_gray_queue_section_alloc;
@@ -141,7 +140,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue)
 	}
 
 	STATE_ASSERT (queue->first, GRAY_QUEUE_SECTION_STATE_ENQUEUED);
-	SGEN_ASSERT (9, queue->cursor >= GRAY_FIRST_CURSOR_POSITION (queue->first), "gray queue %p underflow, first %p, cursor %d", queue, queue->first, queue->cursor);
+	SGEN_ASSERT (9, queue->cursor >= GRAY_FIRST_CURSOR_POSITION (queue->first), "gray queue %p underflow", queue);
 
 	entry = *queue->cursor--;
 
@@ -247,7 +246,7 @@ invalid_prepare_func (SgenGrayQueue *queue)
 void
 sgen_gray_object_queue_init_invalid (SgenGrayQueue *queue)
 {
-	sgen_gray_object_queue_init (queue, FALSE);
+	sgen_gray_object_queue_init (queue, NULL);
 	queue->alloc_prepare_func = invalid_prepare_func;
 	queue->alloc_prepare_data = NULL;
 }

@@ -43,7 +43,7 @@
 gboolean
 sgen_resume_thread (SgenThreadInfo *info)
 {
-	return thread_resume (info->info.native_handle) == KERN_SUCCESS;
+	return thread_resume (info->client_info.info.native_handle) == KERN_SUCCESS;
 }
 
 gboolean
@@ -60,41 +60,40 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	state = (thread_state_t) alloca (mono_mach_arch_get_thread_state_size ());
 	mctx = (mcontext_t) alloca (mono_mach_arch_get_mcontext_size ());
 
-	ret = thread_suspend (info->info.native_handle);
+	ret = thread_suspend (info->client_info.info.native_handle);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
-	ret = mono_mach_arch_get_thread_state (info->info.native_handle, state, &num_state);
+	ret = mono_mach_arch_get_thread_state (info->client_info.info.native_handle, state, &num_state);
 	if (ret != KERN_SUCCESS)
 		return FALSE;
 
 	mono_mach_arch_thread_state_to_mcontext (state, mctx);
 	ctx.uc_mcontext = mctx;
 
-	info->stopped_domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
-	info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
-	info->stack_start = NULL;
+	info->client_info.stopped_domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
+	info->client_info.stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
+	info->client_info.stack_start = NULL;
 	stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
 	/* If stack_start is not within the limits, then don't set it in info and we will be restarted. */
-	if (stack_start >= info->stack_start_limit && stack_start <= info->stack_end) {
-		info->stack_start = stack_start;
+	if (stack_start >= info->client_info.stack_start_limit && stack_start <= info->client_info.stack_end) {
+		info->client_info.stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
-		mono_sigctx_to_monoctx (&ctx, &info->ctx);
+		mono_sigctx_to_monoctx (&ctx, &info->client_info.ctx);
 #else
-		ARCH_COPY_SIGCTX_REGS (&info->regs, &ctx);
+		ARCH_COPY_SIGCTX_REGS (&info->client_info.regs, &ctx);
 #endif
 	} else {
-		g_assert (!info->stack_start);
+		g_assert (!info->client_info.stack_start);
 	}
 
 	/* Notify the JIT */
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, &ctx, NULL);
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, &ctx, NULL);
 
-	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)(gsize)info->info.native_handle, info->stopped_ip, info->stack_start);
-
-	binary_protocol_thread_suspend ((gpointer)mono_thread_info_get_tid (info), info->stopped_ip);
+	SGEN_LOG (2, "thread %p stopped at %p stack_start=%p", (void*)(gsize)info->client_info.info.native_handle, info->client_info.stopped_ip, info->client_info.stack_start);
+	binary_protocol_thread_suspend ((gpointer)mono_thread_info_get_tid (info), info->client_info.stopped_ip);
 
 	return TRUE;
 }
@@ -115,20 +114,20 @@ sgen_thread_handshake (BOOL suspend)
 
 	int count = 0;
 
-	cur_thread->suspend_done = TRUE;
+	cur_thread->client_info.suspend_done = TRUE;
 	FOREACH_THREAD_SAFE (info) {
 		if (info == cur_thread || sgen_thread_pool_is_thread_pool_thread (mono_thread_info_get_tid (info)))
 			continue;
 
-		info->suspend_done = FALSE;
-		if (info->gc_disabled)
+		info->client_info.suspend_done = FALSE;
+		if (info->client_info.gc_disabled)
 			continue;
 
 		if (suspend) {
 			if (!sgen_suspend_thread (info))
 				continue;
 		} else {
-			ret = thread_resume (info->info.native_handle);
+			ret = thread_resume (info->client_info.info.native_handle);
 			if (ret != KERN_SUCCESS)
 				continue;
 		}

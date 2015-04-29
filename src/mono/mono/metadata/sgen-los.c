@@ -33,12 +33,13 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-cardtable.h"
-#include "metadata/sgen-memory-governor.h"
-#include "utils/mono-mmap.h"
-#include "utils/mono-compiler.h"
+#include <string.h>
+
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-cardtable.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-client.h"
 
 #define LOS_SECTION_SIZE	(1024 * 1024)
 
@@ -330,7 +331,7 @@ sgen_los_free_object (LOSObject *obj)
  * and we avoid the memcpy overhead.
  */
 void*
-sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
+sgen_los_alloc_large_inner (GCVTable *vtable, size_t size)
 {
 	LOSObject *obj = NULL;
 	void **vtslot;
@@ -391,7 +392,7 @@ sgen_los_alloc_large_inner (MonoVTable *vtable, size_t size)
 	los_object_list = obj;
 	los_memory_usage += size;
 	los_num_objects++;
-	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %zd", obj->data, vtable, vtable->klass->name, size);
+	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %zd", obj->data, vtable, sgen_client_vtable_get_name (vtable), size);
 	binary_protocol_alloc (obj->data, vtable, size);
 
 #ifdef LOS_CONSISTENCY_CHECK
@@ -570,7 +571,7 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	LOSObject *obj;
 	for (obj = los_object_list; obj; obj = obj->next) {
-		MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj->data);
+		GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj->data);
 		if (SGEN_VTABLE_HAS_REFERENCES (vt))
 			callback ((mword)obj->data, (mword)obj->size);
 	}
@@ -679,7 +680,7 @@ sgen_los_pin_object (char *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
 	obj->size = obj->size | 1;
-	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size ((MonoObject*)data));
+	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size ((GCObject*)data));
 }
 
 static void
@@ -697,7 +698,7 @@ sgen_los_object_is_pinned (char *data)
 }
 
 void
-sgen_los_mark_mod_union_card (MonoObject *mono_obj, void **ptr)
+sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr)
 {
 	LOSObject *obj = sgen_los_header_for_object ((char*)mono_obj);
 	guint8 *mod_union = get_cardtable_mod_union_for_object (obj);

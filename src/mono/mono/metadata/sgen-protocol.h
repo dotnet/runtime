@@ -31,11 +31,13 @@
 
 #define PROTOCOL_ID(method) method ## _id
 #define PROTOCOL_STRUCT(method) method ## _struct
+#define CLIENT_PROTOCOL_NAME(method) sgen_client_ ## method
 
 #define TYPE_INT int
 #define TYPE_LONGLONG long long
 #define TYPE_SIZE size_t
 #define TYPE_POINTER gpointer
+#define TYPE_BOOL gboolean
 
 enum {
 #define BEGIN_PROTOCOL_ENTRY0(method) PROTOCOL_ID(method),
@@ -214,5 +216,6 @@ void binary_protocol_flush_buffers (gboolean force);
 #undef TYPE_LONGLONG
 #undef TYPE_SIZE
 #undef TYPE_POINTER
+#undef TYPE_BOOL
 
 #endif

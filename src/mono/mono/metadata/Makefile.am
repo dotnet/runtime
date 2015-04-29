@@ -129,7 +129,9 @@ common_sources = \
 	filewatcher.c		\
 	filewatcher.h		\
 	gc-internal.h		\
+	gc-internal-agnostic.h	\
 	gc-memfuncs.c		\
+	gc-parse.c		\
 	icall.c			\
 	icall-def.h		\
 	image.c			\
@@ -226,6 +228,7 @@ common_sources = \
 gc_dependent_sources = \
 	appdomain.c	\
 	domain.c	\
+	gc-stats.c	\
 	gc.c		\
 	monitor.c	\
 	mono-hash.c	\
@@ -246,6 +249,7 @@ sgen_sources = \
 	sgen-protocol.c \
 	sgen-bridge.c		\
 	sgen-bridge.h		\
+	sgen-bridge-internal.h	\
 	sgen-old-bridge.c		\
 	sgen-new-bridge.c		\
 	sgen-tarjan-bridge.c		\
@@ -293,7 +297,10 @@ sgen_sources = \
 	sgen-qsort.h	\
 	sgen-thread-pool.c	\
 	sgen-thread-pool.h	\
-	sgen-tagged-pointer.h
+	sgen-tagged-pointer.h	\
+	sgen-mono.c		\
+	sgen-client.h		\
+	sgen-client-mono.h
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)

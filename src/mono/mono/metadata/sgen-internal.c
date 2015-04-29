@@ -21,11 +21,12 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include "utils/mono-counters.h"
-#include "metadata/sgen-gc.h"
-#include "utils/mono-mmap.h"
-#include "utils/lock-free-alloc.h"
-#include "metadata/sgen-memory-governor.h"
+#include <string.h>
+
+#include "mono/metadata/sgen-gc.h"
+#include "mono/utils/lock-free-alloc.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-client.h"
 
 /* keep each size a multiple of ALLOC_ALIGN */
 #if SIZEOF_VOID_P == 4
@@ -120,7 +121,7 @@ description_for_type (int type)
 	case INTERNAL_MEM_SCAN_STARTS: return "scan-starts";
 	case INTERNAL_MEM_FIN_TABLE: return "fin-table";
 	case INTERNAL_MEM_FINALIZE_ENTRY: return "finalize-entry";
-	case INTERNAL_MEM_FINALIZE_READY_ENTRY: return "finalize-ready-entry";
+	case INTERNAL_MEM_FINALIZE_READY: return "finalize-ready";
 	case INTERNAL_MEM_DISLINK_TABLE: return "dislink-table";
 	case INTERNAL_MEM_DISLINK: return "dislink";
 	case INTERNAL_MEM_ROOTS_TABLE: return "roots-table";
@@ -132,7 +133,6 @@ description_for_type (int type)
 	case INTERNAL_MEM_MS_TABLES: return "marksweep-tables";
 	case INTERNAL_MEM_MS_BLOCK_INFO: return "marksweep-block-info";
 	case INTERNAL_MEM_MS_BLOCK_INFO_SORT: return "marksweep-block-info-sort";
-	case INTERNAL_MEM_EPHEMERON_LINK: return "ephemeron-link";
 	case INTERNAL_MEM_WORKER_DATA: return "worker-data";
 	case INTERNAL_MEM_THREAD_POOL_JOB: return "thread-pool-job";
 	case INTERNAL_MEM_BRIDGE_DATA: return "bridge-data";
@@ -150,8 +150,11 @@ description_for_type (int type)
 	case INTERNAL_MEM_CARDTABLE_MOD_UNION: return "cardtable-mod-union";
 	case INTERNAL_MEM_BINARY_PROTOCOL: return "binary-protocol";
 	case INTERNAL_MEM_TEMPORARY: return "temporary";
-	default:
-		g_assert_not_reached ();
+	default: {
+		const char *description = sgen_client_description_for_internal_mem_type (type);
+		SGEN_ASSERT (0, description, "Unknown internal mem type");
+		return description;
+	}
 	}
 }
 
@@ -177,8 +180,6 @@ sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_failure)
 			sgen_assert_memory_alloc (NULL, size, description_for_type (type));
 		memset (p, 0, size);
 	}
-
-	MONO_GC_INTERNAL_ALLOC ((mword)p, size, type);
 	return p;
 }
 
@@ -192,8 +193,6 @@ sgen_free_internal_dynamic (void *addr, size_t size, int type)
 		sgen_free_os_memory (addr, size, SGEN_ALLOC_INTERNAL);
 	else
 		mono_lock_free_free (addr, block_size (size));
-
-	MONO_GC_INTERNAL_DEALLOC ((mword)addr, size, type);
 }
 
 void*
@@ -214,8 +213,6 @@ sgen_alloc_internal (int type)
 	p = mono_lock_free_alloc (&allocators [index]);
 	memset (p, 0, size);
 
-	MONO_GC_INTERNAL_ALLOC ((mword)p, size, type);
-
 	return p;
 }
 
@@ -231,11 +228,6 @@ sgen_free_internal (void *addr, int type)
 	g_assert (index >= 0 && index < NUM_ALLOCATORS);
 
 	mono_lock_free_free (addr, allocator_block_sizes [index]);
-
-	if (MONO_GC_INTERNAL_DEALLOC_ENABLED ()) {
-		int size G_GNUC_UNUSED = allocator_sizes [index];
-		MONO_GC_INTERNAL_DEALLOC ((mword)addr, size, type);
-	}
 }
 
 void

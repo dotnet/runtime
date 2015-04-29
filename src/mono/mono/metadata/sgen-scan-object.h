@@ -46,11 +46,11 @@
 {
 #ifndef SCAN_OBJECT_NOVTABLE
 #if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
-	binary_protocol_scan_begin (start, SGEN_LOAD_VTABLE (start), sgen_safe_object_get_size ((MonoObject*)start));
+	binary_protocol_scan_begin (start, SGEN_LOAD_VTABLE (start), sgen_safe_object_get_size ((GCObject*)start));
 #endif
 #else
 #if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
-	binary_protocol_scan_vtype_begin (start + sizeof (MonoObject), size);
+	binary_protocol_scan_vtype_begin (start + SGEN_CLIENT_OBJECT_HEADER_SIZE, size);
 #endif
 #endif
 	switch (desc & DESC_TYPE_MASK) {

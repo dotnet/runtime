@@ -26,12 +26,14 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/profiler-private.h"
+#include <string.h>
+#include <stdlib.h>
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-layout-stats.h"
-#include "utils/mono-memory-model.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-layout-stats.h"
+#include "mono/metadata/sgen-client.h"
+#include "mono/utils/mono-memory-model.h"
 
 /*
 The nursery is logically divided into 3 spaces: Allocator space and two Survivor spaces.
@@ -257,7 +259,7 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 }
 
 static inline char*
-alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
+alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	char *p = NULL;
 	int age;
@@ -278,13 +280,14 @@ alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has
 			return major_collector.alloc_object (vtable, objsize, has_references);
 	}
 
-	*(MonoVTable**)p = vtable;
+	/* FIXME: assumes object layout */
+	*(GCVTable**)p = vtable;
 
 	return p;
 }
 
 static char*
-minor_alloc_for_promotion (MonoVTable *vtable, char *obj, size_t objsize, gboolean has_references)
+minor_alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	/*
 	We only need to check for a non-nursery object if we're doing a major collection.

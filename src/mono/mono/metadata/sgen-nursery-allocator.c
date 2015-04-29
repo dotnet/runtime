@@ -59,37 +59,19 @@
 #define _XOPEN_SOURCE
 #endif
 
-#include "metadata/sgen-gc.h"
-#include "metadata/metadata-internals.h"
-#include "metadata/class-internals.h"
-#include "metadata/gc-internal.h"
-#include "metadata/object-internals.h"
-#include "metadata/threads.h"
-#include "metadata/sgen-cardtable.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-archdep.h"
-#include "metadata/sgen-bridge.h"
-#include "metadata/sgen-memory-governor.h"
-#include "metadata/sgen-pinning.h"
-#include "metadata/mono-gc.h"
-#include "metadata/method-builder.h"
-#include "metadata/profiler-private.h"
-#include "metadata/monitor.h"
-#include "metadata/threadpool-internals.h"
-#include "metadata/mempool-internals.h"
-#include "metadata/marshal.h"
-#include "utils/mono-mmap.h"
-#include "utils/mono-time.h"
-#include "utils/mono-semaphore.h"
-#include "utils/mono-counters.h"
-#include "utils/mono-proclib.h"
-#include "utils/mono-threads.h"
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-cardtable.h"
+#include "mono/metadata/sgen-protocol.h"
+#include "mono/metadata/sgen-memory-governor.h"
+#include "mono/metadata/sgen-pinning.h"
+#include "mono/metadata/sgen-client.h"
+#include "mono/utils/mono-membar.h"
 
 /* Enable it so nursery allocation diagnostic data is collected */
 //#define NALLOC_DEBUG 1
 
 /* The mutator allocs from here. */
-SgenFragmentAllocator mutator_allocator;
+static SgenFragmentAllocator mutator_allocator;
 
 /* freeelist of fragment structures */
 static SgenFragment *fragment_freelist = NULL;
@@ -110,16 +92,16 @@ size_t sgen_space_bitmap_size;
 
 #ifdef HEAVY_STATISTICS
 
-static gint32 stat_wasted_bytes_trailer = 0;
-static gint32 stat_wasted_bytes_small_areas = 0;
-static gint32 stat_wasted_bytes_discarded_fragments = 0;
-static gint32 stat_nursery_alloc_requests = 0;
-static gint32 stat_alloc_iterations = 0;
-static gint32 stat_alloc_retries = 0;
+static mword stat_wasted_bytes_trailer = 0;
+static mword stat_wasted_bytes_small_areas = 0;
+static mword stat_wasted_bytes_discarded_fragments = 0;
+static guint64 stat_nursery_alloc_requests = 0;
+static guint64 stat_alloc_iterations = 0;
+static guint64 stat_alloc_retries = 0;
 
-static gint32 stat_nursery_alloc_range_requests = 0;
-static gint32 stat_alloc_range_iterations = 0;
-static gint32 stat_alloc_range_retries = 0;
+static guint64 stat_nursery_alloc_range_requests = 0;
+static guint64 stat_alloc_range_iterations = 0;
+static guint64 stat_alloc_range_retries = 0;
 
 #endif
 
@@ -351,7 +333,7 @@ try_again:
 			mono_memory_write_barrier ();
 		}
 
-		cur = mono_lls_pointer_unmask (next);
+		cur = unmask (next);
 	}
 	return NULL;
 }
@@ -667,25 +649,15 @@ sgen_clear_nursery_fragments (void)
 void
 sgen_clear_range (char *start, char *end)
 {
-	MonoArray *o;
 	size_t size = end - start;
 
 	if ((start && !end) || (start > end))
 		g_error ("Invalid range [%p %p]", start, end);
 
-	if (size < sizeof (MonoArray)) {
-		memset (start, 0, size);
-		return;
+	if (sgen_client_array_fill_range (start, size)) {
+		sgen_set_nursery_scan_start (start);
+		SGEN_ASSERT (0, start + sgen_safe_object_get_size ((GCObject*)start) == end, "Array fill produced wrong size");
 	}
-
-	o = (MonoArray*)start;
-	o->obj.vtable = sgen_get_array_fill_vtable ();
-	/* Mark this as not a real object */
-	o->obj.synchronisation = GINT_TO_POINTER (-1);
-	o->bounds = NULL;
-	o->max_length = (mono_array_size_t)(size - sizeof (MonoArray));
-	sgen_set_nursery_scan_start (start);
-	g_assert (start + sgen_safe_object_get_size ((MonoObject*)o) == end);
 }
 
 void
@@ -706,7 +678,6 @@ add_nursery_frag (SgenFragmentAllocator *allocator, size_t frag_size, char* frag
 {
 	SGEN_LOG (4, "Found empty fragment: %p-%p, size: %zd", frag_start, frag_end, frag_size);
 	binary_protocol_empty (frag_start, frag_size);
-	MONO_GC_NURSERY_SWEPT ((mword)frag_start, frag_end - frag_start);
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= SGEN_MAX_NURSERY_WASTE) {
 		/* memsetting just the first chunk start is bound to provide better cache locality */
@@ -785,7 +756,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpi
 				GRAY_OBJECT_ENQUEUE (unpin_queue, addr0, sgen_obj_get_descriptor_safe (addr0));
 			else
 				SGEN_UNPIN_OBJECT (addr0);
-			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((MonoObject*)addr0));
+			size = SGEN_ALIGN_UP (sgen_safe_object_get_size ((GCObject*)addr0));
 			CANARIFY_SIZE (size);
 			sgen_set_nursery_scan_start (addr0);
 			frag_end = addr0;
@@ -832,7 +803,7 @@ sgen_build_nursery_fragments (GCMemSection *nursery_section, SgenGrayQueue *unpi
 		SGEN_LOG (1, "Nursery fully pinned");
 		for (pin_entry = pin_start; pin_entry < pin_end; ++pin_entry) {
 			void *p = *pin_entry;
-			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", p, sgen_safe_name (p), sgen_safe_object_get_size (p));
+			SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", p, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (p)), sgen_safe_object_get_size (p));
 		}
 	}
 	return fragment_total;
@@ -872,7 +843,7 @@ sgen_can_alloc_size (size_t size)
 void*
 sgen_nursery_alloc (size_t size)
 {
-	SGEN_ASSERT (1, size >= sizeof (MonoObject) && size <= (SGEN_MAX_SMALL_OBJ_SIZE + CANARY_SIZE), "Invalid nursery object size");
+	SGEN_ASSERT (1, size >= (SGEN_CLIENT_MINIMUM_OBJECT_SIZE + CANARY_SIZE) && size <= (SGEN_MAX_SMALL_OBJ_SIZE + CANARY_SIZE), "Invalid nursery object size");
 
 	SGEN_LOG (4, "Searching nursery for size: %zd", size);
 	size = SGEN_ALIGN_UP (size);
@@ -899,17 +870,17 @@ sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, size_t *out_
 void
 sgen_nursery_allocator_init_heavy_stats (void)
 {
-	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_trailer);
-	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_small_areas);
-	mono_counters_register ("bytes wasted discarded fragments", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_wasted_bytes_discarded_fragments);
+	mono_counters_register ("bytes wasted trailer fragments", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_trailer);
+	mono_counters_register ("bytes wasted small areas", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_small_areas);
+	mono_counters_register ("bytes wasted discarded fragments", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES, &stat_wasted_bytes_discarded_fragments);
 
-	mono_counters_register ("# nursery alloc requests", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_nursery_alloc_requests);
-	mono_counters_register ("# nursery alloc iterations", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_iterations);
-	mono_counters_register ("# nursery alloc retries", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_retries);
+	mono_counters_register ("# nursery alloc requests", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_nursery_alloc_requests);
+	mono_counters_register ("# nursery alloc iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_iterations);
+	mono_counters_register ("# nursery alloc retries", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_retries);
 
-	mono_counters_register ("# nursery alloc range requests", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_nursery_alloc_range_requests);
-	mono_counters_register ("# nursery alloc range iterations", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_range_iterations);
-	mono_counters_register ("# nursery alloc range restries", MONO_COUNTER_GC | MONO_COUNTER_INT, &stat_alloc_range_retries);
+	mono_counters_register ("# nursery alloc range requests", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_nursery_alloc_range_requests);
+	mono_counters_register ("# nursery alloc range iterations", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_range_iterations);
+	mono_counters_register ("# nursery alloc range restries", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_alloc_range_retries);
 }
 
 #endif

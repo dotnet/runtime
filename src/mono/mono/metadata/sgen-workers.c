@@ -22,10 +22,13 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-workers.h"
-#include "metadata/sgen-thread-pool.h"
-#include "utils/mono-counters.h"
+#include <string.h>
+
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-workers.h"
+#include "mono/metadata/sgen-thread-pool.h"
+#include "mono/utils/mono-membar.h"
+#include "mono/metadata/sgen-client.h"
 
 static int workers_num;
 static WorkerData *workers_data;
@@ -244,7 +247,7 @@ thread_pool_init_func (void *data_untyped)
 	WorkerData *data = data_untyped;
 	SgenMajorCollector *major = sgen_get_major_collector ();
 
-	mono_thread_info_register_small_id ();
+	sgen_client_thread_register_worker ();
 
 	if (!major->is_concurrent)
 		return;

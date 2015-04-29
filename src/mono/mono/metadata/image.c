@@ -65,7 +65,7 @@ struct ImageUnloadHook {
 	gpointer user_data;
 };
 
-GSList *image_unload_hooks;
+static GSList *image_unload_hooks;
 
 void
 mono_install_image_unload_hook (MonoImageUnloadFunc func, gpointer user_data)

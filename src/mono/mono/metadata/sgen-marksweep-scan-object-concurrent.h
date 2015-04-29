@@ -42,7 +42,7 @@ extern guint64 stat_scan_object_called_major;
 			major_copy_or_mark_object_concurrent ((ptr), __old, queue); \
 		} else {						\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
-				ADD_TO_GLOBAL_REMSET ((MonoObject*)(full_object), (ptr), __old); \
+				ADD_TO_GLOBAL_REMSET ((GCObject*)(full_object), (ptr), __old); \
 		}							\
 	} while (0)
 
@@ -98,8 +98,8 @@ major_scan_vtype_concurrent_finish (char *full_object, char *start, mword desc, 
 	//add_scanned_object (start);
 #endif
 
-	/* The descriptors include info about the MonoObject header as well */
-	start -= sizeof (MonoObject);
+	/* The descriptors include info about the object header as well */
+	start -= SGEN_CLIENT_OBJECT_HEADER_SIZE;
 
 #define SCAN_OBJECT_NOVTABLE
 #define SCAN_OBJECT_PROTOCOL

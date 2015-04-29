@@ -83,7 +83,12 @@
 #include <stdlib.h>
 
 #include <mono/utils/atomic.h>
+#ifdef SGEN_WITHOUT_MONO
+#include <mono/metadata/sgen-gc.h>
+#include <mono/metadata/sgen-client.h>
+#else
 #include <mono/utils/mono-mmap.h>
+#endif
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-queue.h>

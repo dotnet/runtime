@@ -44,13 +44,11 @@
 #include <stdlib.h>
 
 #include "sgen-gc.h"
-#include "sgen-bridge.h"
+#include "sgen-bridge-internal.h"
 #include "sgen-hash-table.h"
 #include "sgen-qsort.h"
+#include "sgen-client.h"
 #include "utils/mono-logger-internal.h"
-#include "utils/mono-time.h"
-#include "utils/mono-compiler.h"
-
 
 typedef struct {
 	int size;
@@ -80,7 +78,7 @@ typedef struct {
  * just one source, so use the srcs pointer itself.
  */
 typedef struct _HashEntry {
-	MonoObject *obj;	/* This is a duplicate - it's already stored in the hash table */
+	GCObject *obj;	/* This is a duplicate - it's already stored in the hash table */
 
 	gboolean is_bridge;
 	gboolean is_visited;
@@ -408,7 +406,7 @@ class_kind (MonoClass *class)
 }
 
 static HashEntry*
-get_hash_entry (MonoObject *obj, gboolean *existing)
+get_hash_entry (GCObject *obj, gboolean *existing)
 {
 	HashEntry *entry = sgen_hash_table_lookup (&hash_table, obj);
 	HashEntry new_entry;
@@ -442,7 +440,7 @@ add_source (HashEntry *entry, HashEntry *src)
 static void
 free_data (void)
 {
-	MonoObject *obj G_GNUC_UNUSED;
+	GCObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
 	int total_srcs = 0;
 	int max_srcs = 0;
@@ -462,7 +460,7 @@ free_data (void)
 }
 
 static HashEntry*
-register_bridge_object (MonoObject *obj)
+register_bridge_object (GCObject *obj)
 {
 	HashEntry *entry = get_hash_entry (obj, NULL);
 	entry->is_bridge = TRUE;
@@ -477,10 +475,10 @@ register_finishing_time (HashEntry *entry, int t)
 }
 
 static gboolean
-object_is_live (MonoObject **objp)
+object_is_live (GCObject **objp)
 {
-	MonoObject *obj = *objp;
-	MonoObject *fwd = SGEN_OBJECT_IS_FORWARDED (obj);
+	GCObject *obj = *objp;
+	GCObject *fwd = SGEN_OBJECT_IS_FORWARDED (obj);
 	if (fwd) {
 		*objp = fwd;
 		return sgen_hash_table_lookup (&hash_table, fwd) == NULL;
@@ -498,7 +496,7 @@ static int dfs1_passes, dfs2_passes;
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
-		MonoObject *dst = (MonoObject*)*(ptr);			\
+		GCObject *dst = (GCObject*)*(ptr);			\
 		if (dst && !object_is_live (&dst)) {			\
 			dyn_array_ptr_push (&dfs_stack, obj_entry);	\
 			dyn_array_ptr_push (&dfs_stack, get_hash_entry (dst, NULL)); \
@@ -515,7 +513,7 @@ dfs1 (HashEntry *obj_entry)
 	dyn_array_ptr_push (&dfs_stack, obj_entry);
 
 	do {
-		MonoObject *obj;
+		GCObject *obj;
 		char *start;
 		++dfs1_passes;
 
@@ -623,7 +621,7 @@ static int fist_pass_links, second_pass_links, sccs_links;
 static int max_sccs_links = 0;
 
 static void
-register_finalized_object (MonoObject *obj)
+register_finalized_object (GCObject *obj)
 {
 	g_assert (sgen_need_bridge_processing ());
 	dyn_array_ptr_push (&registered_bridges, obj);
@@ -682,7 +680,7 @@ processing_build_callback_data (int generation)
 	int i, j;
 	int num_sccs, num_xrefs;
 	int max_entries, max_xrefs;
-	MonoObject *obj G_GNUC_UNUSED;
+	GCObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;
@@ -817,7 +815,7 @@ processing_build_callback_data (int generation)
 	SGEN_HASH_TABLE_FOREACH (&hash_table, obj, entry) {
 		if (entry->is_bridge) {
 			SCC *scc = dyn_array_scc_get_ptr (&sccs, entry->scc_index);
-			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = entry->obj;
+			api_sccs [scc->api_index]->objs [scc->num_bridge_entries++] = (MonoObject*)entry->obj;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
 
@@ -885,12 +883,14 @@ processing_after_callback (int generation)
 
 	if (bridge_accounting_enabled) {
 		for (i = 0; i < num_sccs; ++i) {
-			for (j = 0; j < api_sccs [i]->num_objs; ++j)
+			for (j = 0; j < api_sccs [i]->num_objs; ++j) {
+				GCVTable *vtable = SGEN_LOAD_VTABLE (api_sccs [i]->objs [j]);
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC,
-					"OBJECT %s (%p) SCC [%d] %s",
-						sgen_safe_name (api_sccs [i]->objs [j]), api_sccs [i]->objs [j],
+					"OBJECT %s.%s (%p) SCC [%d] %s",
+						sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), api_sccs [i]->objs [j],
 						i,
 						api_sccs [i]->is_alive  ? "ALIVE" : "DEAD");
+			}
 		}
 	}
 
@@ -911,7 +911,7 @@ processing_after_callback (int generation)
 }
 
 static void
-describe_pointer (MonoObject *obj)
+describe_pointer (GCObject *obj)
 {
 	HashEntry *entry;
 	int i;

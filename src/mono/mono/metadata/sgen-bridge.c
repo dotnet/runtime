@@ -44,12 +44,10 @@
 #include <stdlib.h>
 
 #include "sgen-gc.h"
-#include "sgen-bridge.h"
+#include "sgen-bridge-internal.h"
 #include "sgen-hash-table.h"
 #include "sgen-qsort.h"
 #include "utils/mono-logger-internal.h"
-#include "utils/mono-time.h"
-#include "utils/mono-compiler.h"
 
 MonoGCBridgeCallbacks bridge_callbacks;
 static SgenBridgeProcessor bridge_processor;
@@ -108,7 +106,7 @@ sgen_set_bridge_implementation (const char *name)
 }
 
 gboolean
-sgen_is_bridge_object (MonoObject *obj)
+sgen_is_bridge_object (GCObject *obj)
 {
 	if ((obj->vtable->gc_bits & SGEN_GC_BIT_BRIDGE_OBJECT) != SGEN_GC_BIT_BRIDGE_OBJECT)
 		return FALSE;
@@ -150,14 +148,14 @@ sgen_bridge_processing_stw_step (void)
 		compare_to_bridge_processor.processing_stw_step ();
 }
 
-static mono_bool
-is_bridge_object_alive (MonoObject *obj, void *data)
+static gboolean
+is_bridge_object_dead (GCObject *obj, void *data)
 {
 	SgenHashTable *table = data;
 	unsigned char *value = sgen_hash_table_lookup (table, obj);
 	if (!value)
-		return TRUE;
-	return *value;
+		return FALSE;
+	return !*value;
 }
 
 static void
@@ -181,9 +179,9 @@ null_weak_links_to_dead_objects (SgenBridgeProcessor *processor, int generation)
 	}
 
 	/* Null weak links to dead objects. */
-	sgen_null_links_with_predicate (GENERATION_NURSERY, is_bridge_object_alive, &alive_hash);
+	sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_NURSERY);
 	if (generation == GENERATION_OLD)
-		sgen_null_links_with_predicate (GENERATION_OLD, is_bridge_object_alive, &alive_hash);
+		sgen_null_links_if (is_bridge_object_dead, &alive_hash, GENERATION_OLD);
 
 	sgen_hash_table_clean (&alive_hash);
 }
@@ -251,7 +249,7 @@ sgen_bridge_class_kind (MonoClass *class)
 }
 
 void
-sgen_bridge_register_finalized_object (MonoObject *obj)
+sgen_bridge_register_finalized_object (GCObject *obj)
 {
 	bridge_processor.register_finalized_object (obj);
 	if (compare_bridge_processors ())
@@ -259,7 +257,7 @@ sgen_bridge_register_finalized_object (MonoObject *obj)
 }
 
 void
-sgen_bridge_describe_pointer (MonoObject *obj)
+sgen_bridge_describe_pointer (GCObject *obj)
 {
 	if (bridge_processor.describe_pointer)
 		bridge_processor.describe_pointer (obj);

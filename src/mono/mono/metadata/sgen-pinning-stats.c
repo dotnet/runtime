@@ -26,10 +26,12 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-pinning.h"
-#include "metadata/sgen-hash-table.h"
+#include <string.h>
 
+#include "mono/metadata/sgen-gc.h"
+#include "mono/metadata/sgen-pinning.h"
+#include "mono/metadata/sgen-hash-table.h"
+#include "mono/metadata/sgen-client.h"
 
 typedef struct _PinStatAddress PinStatAddress;
 struct _PinStatAddress {
@@ -47,13 +49,21 @@ typedef struct {
 	gulong num_remsets;
 } GlobalRemsetClassEntry;
 
+static gboolean do_pin_stats = FALSE;
+
 static PinStatAddress *pin_stat_addresses = NULL;
 static size_t pinned_byte_counts [PIN_TYPE_MAX];
 
-static ObjectList *pinned_objects = NULL;
+static SgenPointerQueue pinned_objects = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_STATISTICS);
 
 static SgenHashTable pinned_class_hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_STATISTICS, INTERNAL_MEM_STAT_PINNED_CLASS, sizeof (PinnedClassEntry), g_str_hash, g_str_equal);
 static SgenHashTable global_remset_class_hash_table = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_STATISTICS, INTERNAL_MEM_STAT_REMSET_CLASS, sizeof (GlobalRemsetClassEntry), g_str_hash, g_str_equal);
+
+void
+sgen_pin_stats_enable (void)
+{
+	do_pin_stats = TRUE;
+}
 
 static void
 pin_stats_tree_free (PinStatAddress *node)
@@ -73,11 +83,7 @@ sgen_pin_stats_reset (void)
 	pin_stat_addresses = NULL;
 	for (i = 0; i < PIN_TYPE_MAX; ++i)
 		pinned_byte_counts [i] = 0;
-	while (pinned_objects) {
-		ObjectList *next = pinned_objects->next;
-		sgen_free_internal_dynamic (pinned_objects, sizeof (ObjectList), INTERNAL_MEM_STATISTICS);
-		pinned_objects = next;
-	}
+	sgen_pointer_queue_clear (&pinned_objects);
 }
 
 void
@@ -129,9 +135,9 @@ pin_stats_count_object_from_tree (char *obj, size_t size, PinStatAddress *node, 
 }
 
 static gpointer
-lookup_class_entry (SgenHashTable *hash_table, MonoClass *class, gpointer empty_entry)
+lookup_vtable_entry (SgenHashTable *hash_table, GCVTable *vtable, gpointer empty_entry)
 {
-	char *name = g_strdup_printf ("%s.%s", class->name_space, class->name);
+	char *name = g_strdup_printf ("%s.%s", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 	gpointer entry = sgen_hash_table_lookup (hash_table, name);
 
 	if (entry) {
@@ -145,14 +151,14 @@ lookup_class_entry (SgenHashTable *hash_table, MonoClass *class, gpointer empty_
 }
 
 static void
-register_class (MonoClass *class, int pin_types)
+register_vtable (GCVTable *vtable, int pin_types)
 {
 	PinnedClassEntry empty_entry;
 	PinnedClassEntry *entry;
 	int i;
 
 	memset (&empty_entry, 0, sizeof (PinnedClassEntry));
-	entry = lookup_class_entry (&pinned_class_hash_table, class, &empty_entry);
+	entry = lookup_vtable_entry (&pinned_class_hash_table, vtable, &empty_entry);
 
 	for (i = 0; i < PIN_TYPE_MAX; ++i) {
 		if (pin_types & (1 << i))
@@ -164,16 +170,15 @@ void
 sgen_pin_stats_register_object (char *obj, size_t size)
 {
 	int pin_types = 0;
-	ObjectList *list;
 
-	list = sgen_alloc_internal_dynamic (sizeof (ObjectList), INTERNAL_MEM_STATISTICS, TRUE);
+	if (!do_pin_stats)
+		return;
+
 	pin_stats_count_object_from_tree (obj, size, pin_stat_addresses, &pin_types);
-	list->obj = (MonoObject*)obj;
-	list->next = pinned_objects;
-	pinned_objects = list;
+	sgen_pointer_queue_add (&pinned_objects, obj);
 
 	if (pin_types)
-		register_class (((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass, pin_types);
+		register_vtable ((GCVTable*)SGEN_LOAD_VTABLE (obj), pin_types);
 }
 
 void
@@ -182,8 +187,11 @@ sgen_pin_stats_register_global_remset (char *obj)
 	GlobalRemsetClassEntry empty_entry;
 	GlobalRemsetClassEntry *entry;
 
+	if (!do_pin_stats)
+		return;
+
 	memset (&empty_entry, 0, sizeof (GlobalRemsetClassEntry));
-	entry = lookup_class_entry (&global_remset_class_hash_table, ((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass, &empty_entry);
+	entry = lookup_vtable_entry (&global_remset_class_hash_table, (GCVTable*)SGEN_LOAD_VTABLE (obj), &empty_entry);
 
 	++entry->num_remsets;
 }
@@ -194,6 +202,9 @@ sgen_pin_stats_print_class_stats (void)
 	char *name;
 	PinnedClassEntry *pinned_entry;
 	GlobalRemsetClassEntry *remset_entry;
+
+	if (!do_pin_stats)
+		return;
 
 	g_print ("\n%-50s  %10s  %10s  %10s\n", "Class", "Stack", "Static", "Other");
 	SGEN_HASH_TABLE_FOREACH (&pinned_class_hash_table, name, pinned_entry) {
@@ -216,10 +227,10 @@ sgen_pin_stats_get_pinned_byte_count (int pin_type)
 	return pinned_byte_counts [pin_type];
 }
 
-ObjectList*
+SgenPointerQueue*
 sgen_pin_stats_get_object_list (void)
 {
-	return pinned_objects;
+	return &pinned_objects;
 }
 
 #endif /* HAVE_SGEN_GC */
