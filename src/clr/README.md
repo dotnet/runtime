@@ -17,7 +17,7 @@ Get .NET Core
 |                     |Linux   |Windows |Mac OS X |FreeBSD  |
 |---------------------|--------|--------|---------|---------|
 |Build from **Source**| [Instructions](Documentation/linux-instructions.md) | [Instructions](Documentation/windows-instructions.md) | [Instructions](Documentation/osx-instructions.md) | [Instructions](Documentation/freebsd-instructions.md) |
-|Get **Binaries**     | |[NuGet](Documentation/get-dotnetcore-windows-nuget.md) <br> [DNVM](Documentation/get-dotnetcore-windows-dnvm.md) |||
+|Get **Binaries**     | [DNX SDK](Documentation/get-dotnetcore-dnx-linux.md)|[DNX SDK](Documentation/get-dotnetcore-dnx-windows.md) <br> [Raw](Documentation/get-dotnetcore-windows.md)|[DNX SDK](Documentation/get-dotnetcore-dnx-osx.md)||
 
 Chat Room
 ---------
