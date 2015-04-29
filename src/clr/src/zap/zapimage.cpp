@@ -5103,8 +5103,9 @@ bool ZapImage::canIntraModuleDirectCall(
 
 #ifdef _DEBUG
     const char* clsName, * methodName;
+    methodName = m_zapper->m_pEEJitInfo->getMethodName(targetFtn, &clsName);
     LOG((LF_ZAP, LL_INFO10000, "getIntraModuleDirectCallAddr: Success %s::%s\n",
-        clsName, (methodName = m_zapper->m_pEEJitInfo->getMethodName(targetFtn, &clsName), methodName)));
+        clsName, methodName));
 #endif
 
     return true;
@@ -5112,8 +5113,9 @@ bool ZapImage::canIntraModuleDirectCall(
 CALL_VIA_ENTRY_POINT:
 
 #ifdef _DEBUG
+    methodName = m_zapper->m_pEEJitInfo->getMethodName(targetFtn, &clsName);
     LOG((LF_ZAP, LL_INFO10000, "getIntraModuleDirectCallAddr: Via EntryPoint %s::%s\n",
-         clsName, (methodName = m_zapper->m_pEEJitInfo->getMethodName(targetFtn, &clsName), methodName)));
+         clsName, methodName));
 #endif
 
     return false;
