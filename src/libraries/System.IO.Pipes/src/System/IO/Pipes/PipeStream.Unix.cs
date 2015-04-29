@@ -66,11 +66,11 @@ namespace System.IO.Pipes
         {
             SysCall(safePipeHandle, (fd, _, __) =>
             {
-                Interop.libcoreclrpal.fileinfo buf;
-                int result = Interop.libcoreclrpal.GetFileInformationFromFd(fd, out buf);
+                Interop.libcoreclr.fileinfo buf;
+                int result = Interop.libcoreclr.GetFileInformationFromFd(fd, out buf);
                 if (result == 0)
                 {
-                    if ((buf.mode & Interop.libcoreclrpal.FileTypes.S_IFMT) != Interop.libcoreclrpal.FileTypes.S_IFIFO)
+                    if ((buf.mode & Interop.libcoreclr.FileTypes.S_IFMT) != Interop.libcoreclr.FileTypes.S_IFIFO)
                     {
                         throw new IOException(SR.IO_InvalidPipeHandle);
                     }
