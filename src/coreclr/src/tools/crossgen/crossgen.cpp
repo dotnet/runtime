@@ -696,7 +696,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
                 if (wcscat_s(
                         wzDirectoryToStorePDB, 
                         _countof(wzDirectoryToStorePDB), 
-                        SEPARATOR_STRING_W) != 0)
+                        DIRECTORY_SEPARATOR_STR_W) != 0)
                 {
                     Output(W("Unable to parse output directory to store PDB"));
                     exit(FAILURE_RESULT);
