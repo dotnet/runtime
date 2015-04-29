@@ -1144,7 +1144,7 @@ errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, 
 
 STDAPI_(BOOL) PathAppendW(LPWSTR pszPath, LPCWSTR pszMore);
 STDAPI_(int) PathCommonPrefixW(LPCWSTR pszFile1, LPCWSTR pszFile2, LPWSTR  pszPath);
-STDAPI_(LPWSTR) PathFindFileNameW(LPCWSTR pPath);
+PALIMPORT LPWSTR PALAPI PathFindFileNameW(LPCWSTR pPath);
 STDAPI_(LPWSTR) PathFindExtensionW(LPCWSTR pszPath);
 STDAPI_(int) PathGetDriveNumberW(LPCWSTR lpsz);
 STDAPI_(BOOL) PathIsRelativeW(LPCWSTR lpszPath);
@@ -1333,9 +1333,11 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 
 #ifdef PLATFORM_UNIX
 #define DIRECTORY_SEPARATOR_CHAR_W W('/')
+#define DIRECTORY_SEPARATOR_STR_W W("/")
 #define PATH_SEPARATOR_CHAR_W W(':')
 #else // PLATFORM_UNIX
 #define DIRECTORY_SEPARATOR_CHAR_W W('\\')
+#define DIRECTORY_SEPARATOR_STR_W W("\\")
 #define PATH_SEPARATOR_CHAR_W W(';')
 #endif // PLATFORM_UNIX
 
