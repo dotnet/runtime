@@ -8,17 +8,21 @@ using Xunit;
 namespace System.Reflection.Compatibility.UnitTests
 {
     // Invoke(System.Object[])
-    public class ConstructorInfoInvoke1
+    public class ConstructorInfoInvokeTests
     {
         public class TestClass
         {
             public TestClass(int i, string s) { throw new System.Exception(); }
         }
-        public ConstructorInfoInvoke1() { }
-        public ConstructorInfoInvoke1(int i) { }
-        public ConstructorInfoInvoke1(int i, String s) { }
-        public ConstructorInfoInvoke1(String s, int i) { }
-
+        
+        public class ConstructorInfoInvoke1
+        {
+            public ConstructorInfoInvoke1() { }
+            public ConstructorInfoInvoke1(int i) { }
+            public ConstructorInfoInvoke1(int i, String s) { }
+            public ConstructorInfoInvoke1(String s, int i) { }
+        }
+        
         // Positive Test 1: Ensure ConstructorInfo.Invoke(System.Object[]) can be called with default array
         [Fact]
         public void PosTest1()
