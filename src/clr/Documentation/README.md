@@ -6,8 +6,8 @@ This repo includes several documents that explain both high-level and low-level 
 Get CoreCLR
 ===========
 
-- [Get .NET Core on Windows - NuGet](get-dotnetcore-windows-nuget.md)
-- [Get .NET Core on Windows - .NET Version Manager](get-dotnetcore-windows-dnvm.md)
+- [Get .NET Core on Windows - DNX SDK](get-dotnetcore-dnx-windows.md)
+- [Get .NET Core on Windows - Raw](get-dotnetcore-windows.md)
 
 Build CoreCLR from Source
 =========================
