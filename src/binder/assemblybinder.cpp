@@ -443,6 +443,7 @@ namespace BINDER_SPACE
         }
 #endif // FEATURE_VERSIONING_LOG
 
+#ifndef CROSSGEN_COMPILE
         HRESULT CreateImageAssembly(IMDInternalImport       *pIMetaDataAssemblyImport,
                                     PEKIND                   PeKind,
                                     PEImage                 *pPEImage,
@@ -469,6 +470,7 @@ namespace BINDER_SPACE
         Exit:
             return hr;
         }
+#endif // !CROSSGEN_COMPILE
     };
 
     /* static */
