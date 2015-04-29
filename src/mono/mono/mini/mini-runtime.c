@@ -155,7 +155,7 @@ get_method_from_ip (void *ip)
 	if (!domain)
 		domain = mono_get_root_domain ();
 
-	ji = mono_jit_info_table_find (domain, ip);
+	ji = mono_jit_info_table_find_internal (domain, ip, TRUE, TRUE);
 	if (!ji) {
 		user_data.ip = ip;
 		user_data.method = NULL;
@@ -170,7 +170,11 @@ get_method_from_ip (void *ip)
 		}
 		else
 			return NULL;
+	} else if (ji->is_trampoline) {
+		res = g_strdup_printf ("<%p - %s trampoline>", ip, ((MonoTrampInfo*)ji->d.tramp_info)->name);
+		return res;
 	}
+
 	method = mono_method_full_name (jinfo_get_method (ji), TRUE);
 	/* FIXME: unused ? */
 	location = mono_debug_lookup_source_location (jinfo_get_method (ji), (guint32)((guint8*)ip - (guint8*)ji->code_start), domain);
@@ -286,7 +290,7 @@ gboolean mono_method_same_domain (MonoJitInfo *caller, MonoJitInfo *callee)
 {
 	MonoMethod *cmethod;
 
-	if (!caller || !callee)
+	if (!caller || caller->is_trampoline || !callee || callee->is_trampoline)
 		return FALSE;
 
 	/*
@@ -520,7 +524,8 @@ mono_tramp_info_register (MonoTrampInfo *info)
 
 	mono_save_trampoline_xdebug_info (info);
 
-	if (mono_get_root_domain ())
+	/* Only register trampolines that have unwind infos */
+	if (mono_get_root_domain () && copy->uw_info)
 		register_trampoline_jit_info (mono_get_root_domain (), copy);
 
 	if (mono_jit_map_is_enabled ())
@@ -2342,7 +2347,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
+	ji = mono_jit_info_table_find_internal (mono_domain_get (), mono_arch_ip_from_context (ctx), TRUE, TRUE);
 
 #if defined(MONO_ARCH_HAVE_IS_INT_OVERFLOW)
 	if (mono_arch_is_int_overflow (ctx, info))
@@ -2428,7 +2433,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	}
 #endif
 
-	ji = mono_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (ctx));
+	ji = mono_jit_info_table_find_internal (mono_domain_get (), mono_arch_ip_from_context (ctx), TRUE, TRUE);
 
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 	if (mono_handle_soft_stack_ovf (jit_tls, ji, ctx, info, (guint8*)info->si_addr))
