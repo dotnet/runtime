@@ -3,11 +3,13 @@ Documents Index
 
 This repo includes several documents that explain both high-level and low-level concepts about the .NET runtime. These are very useful for contributors, to get context that can be very difficult to acquire from just reading code.
 
-Get CoreCLR
-===========
+Get .NET Core
+=============
 
-- [Get .NET Core on Windows - NuGet](get-dotnetcore-windows-nuget.md)
-- [Get .NET Core on Windows - .NET Version Manager](get-dotnetcore-windows-dnvm.md)
+- [Get .NET Core DNX SDK on Windows](get-dotnetcore-dnx-windows.md)
+- [Get .NET Core DNX SDK on OS X](get-dotnetcore-dnx-osx.md)
+- [Get .NET Core DNX SDK on Linux](get-dotnetcore-dnx-linux.md)
+- [Get .NET Core (Raw) on Windows](get-dotnetcore-windows.md)
 
 Build CoreCLR from Source
 =========================
