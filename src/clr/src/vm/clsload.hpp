@@ -733,6 +733,16 @@ public:
                                               mdTypeDef *      pTypeDefToken,
                                               Loader::LoadFlag loadFlag = Loader::Load,
                                               BOOL *           pfUsesTypeForwarder = NULL);
+
+    // Resolve a name to a TypeDef
+    // Return FALSE if operation failed (e.g. type does not exist)
+    // *pfUsesTypeForwarder is set to TRUE if a type forwarder is found. It is never set to FALSE.
+    static BOOL ResolveNameToTypeDefThrowing(Module *         pTypeRefModule,
+                                             NameHandle *     pName,
+                                             Module **        ppTypeDefModule,
+                                             mdTypeDef *      pTypeDefToken,
+                                             Loader::LoadFlag loadFlag = Loader::Load,
+                                             BOOL *           pfUsesTypeForwarder = NULL);
 #endif // !BINDER
 
     static void EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
