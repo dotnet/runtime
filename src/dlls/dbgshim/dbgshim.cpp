@@ -591,7 +591,7 @@ BYTE* GetRemoteModuleBaseAddress(DWORD dwPID, LPCWSTR szFullModulePath)
         ThrowHR(HRESULT_FROM_WIN32(GetLastError()));
     }
 
-    DWORD countModules = cbNeeded/sizeof(HMODULE);
+    DWORD countModules = min(cbNeeded, sizeof(modules)) / sizeof(HMODULE);
     for(DWORD i = 0; i < countModules; i++)
     {
         WCHAR modulePath[MAX_PATH];
@@ -627,6 +627,7 @@ const int c_iMaxVersionStringLen = 8 + 1 + 8 + 1 + 16; // 64-bit hmodule
 const int c_iMinVersionStringLen = 8 + 1 + 8 + 1 + 8; // 32-bit hmodule
 const int c_idxFirstSemi = 8;
 const int c_idxSecondSemi = 17;
+const WCHAR *c_versionStrFormat = W("%08x;%08x;%p");
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -644,6 +645,7 @@ const int c_idxSecondSemi = 17;
 //  S_OK - on success.
 //  E_INVALIDARG - 
 //  HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) if the buffer is too small.
+//  COR_E_FILENOTFOUND - module is not found in a given debugee process
 //  
 // Notes:
 //   The null-terminated version string including null, is 
@@ -684,29 +686,37 @@ HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
     }
     else if (pBuffer != NULL)
     {
-#ifndef FEATURE_PAL
+
         HRESULT hr = S_OK;
         EX_TRY
         {        
             CorDebugInterfaceVersion dbiVersion = CorDebugInvalidVersion;
-            DWORD pid = pidDebuggee;
-
+            BYTE* hmodTargetCLR = NULL;
+#ifndef FEATURE_PAL            
             CLR_ENGINE_METRICS metricsStruct;
 
             GetTargetCLRMetrics(szModuleName, &metricsStruct); // throws
             dbiVersion = (CorDebugInterfaceVersion) metricsStruct.dwDbiVersion;
             
-            BYTE* hmodTargetCLR = GetRemoteModuleBaseAddress(pidDebuggee, szModuleName); // throws
+            hmodTargetCLR = GetRemoteModuleBaseAddress(pidDebuggee, szModuleName); // throws
+#else
+            //TODO: So far on POSIX systems we only support one version of debugging interface
+            // in future we might want to detect it the same way we do it on Windows.
+            dbiVersion = CorDebugLatestVersion; 
+            hmodTargetCLR = (BYTE *)GetDynamicLibraryAddressInProcess(pidDebuggee, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A));
+#endif // FEATURE_PAL    
 
-            swprintf_s(pBuffer, cchBuffer, W("%08x;%08x;%p"), dbiVersion, pid, hmodTargetCLR);
+            if (hmodTargetCLR == NULL)
+            {
+                hr = COR_E_FILENOTFOUND;
+            } 
+            else 
+            {
+                swprintf_s(pBuffer, cchBuffer, c_versionStrFormat, dbiVersion, pidDebuggee, hmodTargetCLR);    
+            }
         }
         EX_CATCH_HRESULT(hr);
         return hr;
-#else
-    HMODULE hmodTargetCLR = (HMODULE)GetDynamicLibraryAddressInProcess(pidDebuggee, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A));
-
-    swprintf_s(pBuffer, cchBuffer, W("%08x;%08x;%p"), CorDebugLatestVersion, pidDebuggee, hmodTargetCLR);
-#endif // FEATURE_PAL
     }
 
     return S_OK;
@@ -748,9 +758,8 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
         return E_INVALIDARG;
     }
 
-    
-    int numFieldsAssigned = swscanf_s(szDebuggeeVersion, W("%08x;%08x;%p;"), piDebuggerVersion, pdwPidDebuggee, 
-                                        phmodTargetCLR);
+    int numFieldsAssigned = swscanf_s(szDebuggeeVersion, c_versionStrFormat, piDebuggerVersion, pdwPidDebuggee, phmodTargetCLR);
+
     if (numFieldsAssigned != 3)
     {
         return E_FAIL;
