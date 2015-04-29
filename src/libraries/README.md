@@ -106,6 +106,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Globalization.Extensions**. Provides classes for performing unicode string normalization, culture-specific string 
   comparisons and support the use of non-ASCII characters for Internet domain names.
 
+* **System.IO**. Provides base input and output (I/O) types that enable reading and writing data streams
+
 * **System.IO.Compression**. Provides classes that support the compression and decompression of streams.
 
 * **System.IO.Compression.ZipFile**. Provides static methods for creating and using Zip files.
@@ -153,6 +155,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Reflection.Metadata**. Provides a highly-tuned, low-level ECMA-335 metadata reader.  This is the same
   reader used by "[Roslyn]" C# and Visual Basic compilers to parse assemblies.
 
+* **System.Reflection.TypeExtensions**. Provides extension methods for types in the System.Reflection namespace.
+  These extensions are designed to be source-compatible with older reflection-based APIs.
+
 * **System.Resources.ReaderWriter**. Provides classes for reading and writing resources in the system-default format.
 
 * **System.Runtime**. Provides the fundamental primitives, classes, and base classes that define commonly-used value 
@@ -191,6 +196,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
   functionality for running common operations using regular expressions.
 
 * **System.Threading**. Provides synchronization primitives used when writing multi-threaded and asynchronous code. 
+
+* **System.Threading.Tasks**. Provides types that simplify the work of writing concurrent and asynchronous code.
 
 * **System.Threading.Tasks.Dataflow**.  Provides a set of types that support actor/agent-oriented designs through 
   primitives for in-process message passing, dataflow, and pipelining.
