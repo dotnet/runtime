@@ -764,7 +764,7 @@ CONFIG_DWORD_INFO(INTERNAL_NoASLRForNgen, W("NoASLRForNgen"), 0, "Turn off IMAGE
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_NgenAllowOutput, W("NgenAllowOutput"), 0, "If set to 1, the NGEN worker will bind to the parent console, thus allowing stdout output to work", CLRConfig::REGUTIL_default)
 
 #ifdef CROSSGEN_COMPILE
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, L"CrossGenAssumeInputSigned", 1, "CrossGen should assume that its input assemblies will be signed before deployment")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_CrossGenAssumeInputSigned, W("CrossGenAssumeInputSigned"), 1, "CrossGen should assume that its input assemblies will be signed before deployment")
 #endif
 
 // 

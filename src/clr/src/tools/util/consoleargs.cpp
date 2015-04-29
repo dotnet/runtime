@@ -3,6 +3,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information. 
 //
 
+#include <stdio.h>
 #include "consoleargs.h"
 #include <strsafe.h>
 
@@ -45,6 +46,7 @@ inline int HexValue (WCHAR c)
     return (c >= '0' && c <= '9') ? c - '0' : (c & 0xdf) - 'A' + 10;
 }
 
+#ifndef PLATFORM_UNIX
 //  Get canonical file path from a user specified path.  wszSrcfileName can include relative paths, etc.
 //  Much of this function was taken from csc.exe.
 DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileName) LPWSTR wszDestFileName, _In_ DWORD cchDestFileName, _In_ bool fPreserveSrcCasing)
@@ -103,12 +105,12 @@ DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileNam
     // devices beginning with "\\.\"
     // or wildcards
     // or characters 0-31
-    if (wcschr( full_path + (hasDrive ? 2 : 0), L':') != NULL ||
-        wcsncmp( full_path, L"\\\\?\\", 4) == 0 ||
-        wcsncmp( full_path, L"\\\\.\\", 4) == 0 ||
-        wcspbrk(full_path, L"?*\x1\x2\x3\x4\x5\x6\x7\x8\x9"
-            L"\xA\xB\xC\xD\xE\xF\x10\x11\x12\x13\x14\x15"
-            L"\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F\0") != NULL) {
+    if (wcschr( full_path + (hasDrive ? 2 : 0), W(':')) != NULL ||
+        wcsncmp( full_path, W("\\\\?\\"), 4) == 0 ||
+        wcsncmp( full_path, W("\\\\.\\"), 4) == 0 ||
+        wcspbrk(full_path, W("?*\x1\x2\x3\x4\x5\x6\x7\x8\x9")
+            W("\xA\xB\xC\xD\xE\xF\x10\x11\x12\x13\x14\x15")
+            W("\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F\0")) != NULL) {
         SetLastError(ERROR_INVALID_NAME);
         goto FAIL;
     }
@@ -299,6 +301,7 @@ FAIL:
     }
     return 0;
 }
+#endif // !PLATFORM_UNIX
 
 bool FreeString(LPCWSTR szText)
 {
@@ -334,19 +337,26 @@ void ConsoleArgs::CleanUpArgs()
     }
 }
 
-bool ConsoleArgs::GetFullFileName(LPCWSTR szSource, __deref_out_ecount(cbFilenameBuffer) LPWSTR filenameBuffer, DWORD cbFilenameBuffer, bool fOutputFilename)
+bool ConsoleArgs::GetFullFileName(LPCWSTR szSource, __deref_out_ecount(cchFilenameBuffer) LPWSTR filenameBuffer, DWORD cchFilenameBuffer, bool fOutputFilename)
 {
-    if (0 == GetCanonFilePath( szSource, filenameBuffer, cbFilenameBuffer, fOutputFilename))
+#ifdef PLATFORM_UNIX
+    WCHAR tempBuffer[MAX_PATH];
+    memset(filenameBuffer, 0, cchFilenameBuffer * sizeof(WCHAR));
+    if (!PathCanonicalizeW(tempBuffer, szSource) ||
+        StringCchCopyW(filenameBuffer, cchFilenameBuffer, tempBuffer) != S_OK)
+#else
+    if (0 == GetCanonFilePath( szSource, filenameBuffer, cchFilenameBuffer, fOutputFilename))
+#endif
     {
         if (filenameBuffer[0] == L'\0')
         {
             // This could easily fail because of an overflow, but that's OK
             // we only want what will fit in the output buffer so we can print
             // a good error message
-            StringCchCopyW(filenameBuffer, cbFilenameBuffer - 4, szSource);
+            StringCchCopyW(filenameBuffer, cchFilenameBuffer - 4, szSource);
             // Don't cat on the ..., only stick it in the last 4 characters
             // to indicate truncation (if the string is short than this it just won't print)
-            StringCchCopyW(filenameBuffer + cbFilenameBuffer - 4, 4, L"...");
+            StringCchCopyW(filenameBuffer + cchFilenameBuffer - 4, 4, W("..."));
         }
         return false;
     }
@@ -374,7 +384,7 @@ void ConsoleArgs::SetErrorMessage(__deref_in LPCWSTR pwzMessage)
         return;
     }
 
-    wcscpy_s(m_lastErrorMessage, wcslen(pwzMessage) + 1, pwzMessage);
+    wcscpy_s((LPWSTR)m_lastErrorMessage, wcslen(pwzMessage) + 1, pwzMessage);
 }
 
 //
@@ -633,7 +643,7 @@ LEADINGWHITE:
 
         if (chIllegal != 0)
         {
-            SetErrorMessage(L"Illegal option character.");
+            SetErrorMessage(W("Illegal option character."));
             break;
         }
 
@@ -641,13 +651,13 @@ LEADINGWHITE:
         WCHAR * szArgCopy = new WCHAR[cchLen];
         if (!szArgCopy || FAILED(StringCchCopyW(szArgCopy, cchLen, pFirst)))
         {
-            SetErrorMessage(L"Out of memory.");
+            SetErrorMessage(W("Out of memory."));
             break;
         }
         WStrList * listArgNew = new WStrList( szArgCopy, (*argLast));
         if (!listArgNew)
         {
-            SetErrorMessage(L"Out of memory.");
+            SetErrorMessage(W("Out of memory."));
             break;
         }
 
@@ -678,7 +688,7 @@ bool ConsoleArgs::ExpandResponseFiles(__in int argc, __deref_in_ecount(argc) con
         LPWSTR copyArg = new WCHAR[wcslen(argv[0]) + 1];
         if (!copyArg)
         {
-            SetErrorMessage(L"Out of memory.");
+            SetErrorMessage(W("Out of memory."));
             return false;
         }
         wcscpy_s(copyArg, wcslen(argv[0]) + 1, argv[0]);
@@ -686,7 +696,7 @@ bool ConsoleArgs::ExpandResponseFiles(__in int argc, __deref_in_ecount(argc) con
         WStrList * listArgNew = new WStrList(copyArg, (*argLast));
         if (!listArgNew)
         {
-            SetErrorMessage(L"Out of memory.");
+            SetErrorMessage(W("Out of memory."));
             return false;
         }
         
@@ -713,7 +723,7 @@ bool ConsoleArgs::ExpandResponseFiles(__in int argc, __deref_in_ecount(argc) con
     m_rgArgs = new LPWSTR[newArgc];
     if (!m_rgArgs)
     {
-        SetErrorMessage(L"Out of memory.");
+        SetErrorMessage(W("Out of memory."));
         return false;
     }
     int i = 0;
@@ -745,21 +755,23 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
     HANDLE hFile = CreateFile(pwzFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        SetErrorMessage(L"Cannot open response file.");
+        SetErrorMessage(W("Cannot open response file."));
         goto ErrExit;
     }
+
+    {
     DWORD size = GetFileSize(hFile, NULL);
     bufA = new char[size];
     
     if (!bufA)
     {
-        SetErrorMessage(L"Out of memory");
+        SetErrorMessage(W("Out of memory"));
         goto ErrExit;
     }
     DWORD numRead = 0;
     if (!ReadFile(hFile, bufA, size, &numRead, NULL) || numRead != size)
     {
-        SetErrorMessage(L"Failure reading response file.");
+        SetErrorMessage(W("Failure reading response file."));
         goto ErrExit;
     }
 
@@ -790,13 +802,13 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
     }
     else if (byte0 == 0xFE && byte1 == 0xFF)
     {
-        SetErrorMessage(L"Invalid response file format.  Use little endian encoding with Unicode");
+        SetErrorMessage(W("Invalid response file format.  Use little endian encoding with Unicode"));
         goto ErrExit;
     }
-    else if (byte0 == 0xFF && byte1 == 0xFE && byte2 == 0x00 && byte3 == 0x00 ||
-        byte0 == 0x00 && byte1 == 0x00 && byte2 == 0xFE && byte3 == 0xFF)
+    else if ((byte0 == 0xFF && byte1 == 0xFE && byte2 == 0x00 && byte3 == 0x00) ||
+        (byte0 == 0x00 && byte1 == 0x00 && byte2 == 0xFE && byte3 == 0xFF))
     {
-        SetErrorMessage(L"Invalid response file format.  Use ANSI, UTF-8, or UTF-16");
+        SetErrorMessage(W("Invalid response file format.  Use ANSI, UTF-8, or UTF-16"));
         goto ErrExit;
     }
 
@@ -810,7 +822,7 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
         // Sanity check - requiredSize better be an even number since we're dealing with UTF-16
         if (requiredSize % 2 != 0)
         {
-            SetErrorMessage(L"Response file corrupt.  Expected UTF-16 encoding but we had an odd number of bytes");
+            SetErrorMessage(W("Response file corrupt.  Expected UTF-16 encoding but we had an odd number of bytes"));
             goto ErrExit;
         }
 
@@ -819,7 +831,7 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
         bufW = new WCHAR[requiredSize];
         if (!bufW)
         {
-            SetErrorMessage(L"Out of memory");
+            SetErrorMessage(W("Out of memory"));
             goto ErrExit;
         }
 
@@ -835,13 +847,13 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
         bufW = new WCHAR[requiredSize + 1];
         if (!bufW)
         {
-            SetErrorMessage(L"Out of memory");
+            SetErrorMessage(W("Out of memory"));
             goto ErrExit;
         }
 
         if (!MultiByteToWideChar(CP_UTF8, 0, postByteOrderMarks, size, bufW, requiredSize))
         {
-            SetErrorMessage(L"Failure reading response file.");
+            SetErrorMessage(W("Failure reading response file."));
             goto ErrExit;
         }
 
@@ -851,6 +863,7 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzText
     *ppwzTextBuffer = bufW;
     
     success = true;
+    }
 
 ErrExit:
     if (bufA)
@@ -883,7 +896,7 @@ void ConsoleArgs::ProcessResponseArgs()
 
         if (wcslen(szArg) == 1)
         {
-            SetErrorMessage(L"No response file specified");
+            SetErrorMessage(W("No response file specified"));
             goto CONTINUE;
         }
 
@@ -895,22 +908,27 @@ void ConsoleArgs::ProcessResponseArgs()
         hr = TreeAdd(&response_files, szFilename);
         if (hr == E_OUTOFMEMORY)
         {
-            SetErrorMessage(L"Out of memory.");
+            SetErrorMessage(W("Out of memory."));
             goto CONTINUE;
         }
         else if (hr == S_FALSE)
         {
-            SetErrorMessage(L"Duplicate response file.");
+            SetErrorMessage(W("Duplicate response file."));
             goto CONTINUE;
         }
         
-        LPWSTR pwzFileBuffer = nullptr;
+        {
+        LPWSTR pwzFileBuffer;
+        pwzFileBuffer = nullptr;
         if (!ReadTextFile(szFilename, &pwzFileBuffer))
         {
             goto CONTINUE;
         }
 
         LPWSTR szActualText = nullptr;
+#ifdef PLATFORM_UNIX
+        szActualText = pwzFileBuffer;
+#else
         DWORD dwNumChars = ExpandEnvironmentStrings(pwzFileBuffer, NULL, 0);
         LPWSTR szExpandedBuffer = new WCHAR[dwNumChars];
         if (szExpandedBuffer != nullptr)
@@ -927,8 +945,10 @@ void ConsoleArgs::ProcessResponseArgs()
                 
             }
         }
+#endif
         
         TextToArgs(szActualText, &listCurArg->next);
+        }
 
 CONTINUE:  // remove the response file argument, and continue to the next.
         listCurArg->arg = NULL;

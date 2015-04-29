@@ -11,7 +11,7 @@
 
 #include "common.h"
 
-#include "NativeFormatWriter.h"
+#include "nativeformatwriter.h"
 
 namespace NativeFormat
 {

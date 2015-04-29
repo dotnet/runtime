@@ -1863,6 +1863,9 @@ void ZapImage::OutputTables()
         // 512 byte alignment, since there is no plan to compress data partitions.
         SetFileAlignment(0x1000);
     }
+#elif defined(FEATURE_PAL)
+    // PAL library requires native image sections to align to page bounaries.
+    SetFileAlignment(0x1000);
 #endif
 }
 
@@ -4097,7 +4100,7 @@ HRESULT ZapImage::LocateProfileData()
         return S_FALSE;
     }
 
-#if !defined(FEATURE_CORECLR) || defined(FEATURE_WINDOWSPHONE)
+#if !defined(FEATURE_PAL)
     //
     // See if there's profile data in the resource section of the PE
     //
