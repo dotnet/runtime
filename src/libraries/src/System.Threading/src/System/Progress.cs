@@ -4,7 +4,6 @@
 using System;
 using System.Threading;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System
 {
@@ -34,7 +33,7 @@ namespace System
             // Capture the current synchronization context.
             // If there is no current context, we use a default instance targeting the ThreadPool.
             _synchronizationContext = SynchronizationContext.Current ?? ProgressStatics.DefaultContext;
-            Contract.Assert(_synchronizationContext != null);
+            Debug.Assert(_synchronizationContext != null);
             _invokeHandlers = new SendOrPostCallback(InvokeHandlers);
         }
 

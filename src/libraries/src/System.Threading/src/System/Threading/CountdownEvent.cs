@@ -11,7 +11,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
@@ -180,7 +179,7 @@ namespace System.Threading
         public bool Signal()
         {
             ThrowIfDisposed();
-            Contract.Assert(_event != null);
+            Debug.Assert(_event != null);
 
             if (_currentCount <= 0)
             {
@@ -227,7 +226,7 @@ namespace System.Threading
             }
 
             ThrowIfDisposed();
-            Contract.Assert(_event != null);
+            Debug.Assert(_event != null);
 
             int observedCount;
             SpinWait spin = new SpinWait();
@@ -261,7 +260,7 @@ namespace System.Threading
                 return true;
             }
 
-            Contract.Assert(_currentCount >= 0, "latch was decremented below zero");
+            Debug.Assert(_currentCount >= 0, "latch was decremented below zero");
             return false;
         }
 
