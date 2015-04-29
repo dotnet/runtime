@@ -508,7 +508,6 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
 {
-#ifdef MONO_ARCH_VTABLE_REG
 	guint8 *tramp;
 	guint8 *code, *buf;
 	guint8 **rgctx_null_jumps;
@@ -609,10 +608,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	g_free (name);
 
 	return(buf);
-#else
-	g_assert_not_reached ();
-#endif
-	return(NULL);
 }	
 
 /*========================= End of Function ========================*/

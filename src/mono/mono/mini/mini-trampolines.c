@@ -939,7 +939,6 @@ mono_generic_class_init_trampoline (mgreg_t *regs, guint8 *code, MonoVTable *vta
 static gpointer
 mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, guint8 *tramp)
 {
-#ifdef MONO_ARCH_VTABLE_REG
 	static gboolean inited = FALSE;
 	static int num_lookups = 0;
 	guint32 slot = GPOINTER_TO_UINT (data);
@@ -961,9 +960,6 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 		return mono_method_fill_runtime_generic_context (arg, code, index);
 	else
 		return mono_class_fill_runtime_generic_context (arg, code, index);
-#else
-	g_assert_not_reached ();
-#endif
 }
 
 void
@@ -1427,7 +1423,6 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 gpointer
 mono_create_generic_class_init_trampoline (void)
 {
-#ifdef MONO_ARCH_VTABLE_REG
 	static gpointer code;
 	MonoTrampInfo *info;
 
@@ -1446,9 +1441,6 @@ mono_create_generic_class_init_trampoline (void)
 	mono_trampolines_unlock ();
 
 	return code;
-#else
-	g_assert_not_reached ();
-#endif
 }
 
 gpointer

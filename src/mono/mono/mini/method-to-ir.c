@@ -3654,12 +3654,8 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 		call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline_llvm, &vtable_arg);
 	else
 		call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable_arg);
-#ifdef MONO_ARCH_VTABLE_REG
 	mono_call_inst_add_outarg_reg (cfg, call, vtable_arg->dreg, MONO_ARCH_VTABLE_REG, FALSE);
 	cfg->uses_vtable_reg = TRUE;
-#else
-	NOT_IMPLEMENTED;
-#endif
 }
 
 static void
@@ -11146,17 +11142,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* STATIC CASE */
-
-			/*
-			 * We can only support shared generic static
-			 * field access on architectures where the
-			 * trampoline code has been extended to handle
-			 * the generic class init.
-			 */
-#ifndef MONO_ARCH_VTABLE_REG
-			GENERIC_SHARING_FAILURE (op);
-#endif
-
 			context_used = mini_class_check_context_used (cfg, klass);
 
 			ftype = mono_field_get_type (field);
