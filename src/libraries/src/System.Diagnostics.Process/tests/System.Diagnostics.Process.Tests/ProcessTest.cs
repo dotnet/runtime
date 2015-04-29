@@ -83,7 +83,7 @@ namespace System.Diagnostics.ProcessTests
             ProcessPriorityClass originalPriority = _process.PriorityClass;
             Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
 
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 try
                 {
@@ -227,7 +227,7 @@ namespace System.Diagnostics.ProcessTests
         {
             // Get MainModule property from a Process object
             ProcessModule mainModule = null;
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 mainModule = _process.MainModule;
             }
@@ -267,7 +267,7 @@ namespace System.Diagnostics.ProcessTests
             long curValue = (long)_process.MaxWorkingSet;
             Assert.True(curValue >= 0);
 
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 try
                 {
@@ -290,7 +290,7 @@ namespace System.Diagnostics.ProcessTests
             long curValue = (long)_process.MinWorkingSet;
             Assert.True(curValue >= 0);
 
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 try
                 {
@@ -465,7 +465,7 @@ namespace System.Diagnostics.ProcessTests
             Process current = Process.GetCurrentProcess();
             Assert.NotNull(current);
 
-            int currentProcessId = global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows ?
+            int currentProcessId = global::Interop.IsWindows ?
                 GetCurrentProcessId() :
                 getpid();
 
@@ -535,7 +535,7 @@ namespace System.Diagnostics.ProcessTests
             Environment2.Add("NewKey", "NewValue");
             Environment2.Add("NewKey2", "NewValue2");
             Assert.True(Environment2.ContainsKey("NewKey"));
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 Assert.True(Environment2.ContainsKey("newkey"));
             }
@@ -574,7 +574,7 @@ namespace System.Diagnostics.ProcessTests
 
             //Contains
             Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey", "NewValue")));
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("nEwKeY", "NewValue")));
             }
@@ -599,7 +599,7 @@ namespace System.Diagnostics.ProcessTests
             retval = Environment2.TryGetValue("NewKey", out stringout);
             Assert.True(retval);
             Assert.Equal("NewValue", stringout);
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 retval = Environment2.TryGetValue("NeWkEy", out stringout);
                 Assert.True(retval);
@@ -645,7 +645,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Throws<System.Collections.Generic.KeyNotFoundException>(() => { string a1 = Environment2["1bB"]; });
 
             Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NewKey2", "NewValue2")));
-            if (global::Interop.PlatformDetection.OperatingSystem == global::Interop.OperatingSystem.Windows)
+            if (global::Interop.IsWindows)
             {
                 Assert.True(Environment2.Contains(new System.Collections.Generic.KeyValuePair<string, string>("NEWKeY2", "NewValue2")));
             }

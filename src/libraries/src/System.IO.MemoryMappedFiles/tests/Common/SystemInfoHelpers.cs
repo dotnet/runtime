@@ -11,7 +11,7 @@ internal class SystemInfoHelpers
 {
     internal static uint GetPageSize()
     {
-        if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+        if (Interop.IsWindows)
         {
             SYSTEM_INFO info;
             GetSystemInfo(out info);

@@ -222,7 +222,7 @@ public class CreateFromFile : MMFTestBase
             VerifyCreateFromFile("Loc214", s_fileNameTest2, FileMode.Open, "\t \n\u00A0");
 
             // MMF with this mapname already exists
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map215" + s_uniquifier))
                 {
@@ -325,7 +325,7 @@ public class CreateFromFile : MMFTestBase
                 VerifyCreateFromFile("Loc402", fs, "map402" + s_uniquifier, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // same FS
                 using (FileStream fs = new FileStream(s_fileNameTest2, FileMode.Open))
@@ -385,7 +385,7 @@ public class CreateFromFile : MMFTestBase
                 VerifyCreateFromFile("Loc414", fs, "\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
             }
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // MMF with this mapname already exists
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(s_fileNameTest3, FileMode.Open, "map415" + s_uniquifier))
