@@ -2439,6 +2439,10 @@ LinearScan::getKillSetForNode(GenTree* tree)
                 // rep movs kills RCX, RDI and RSI
                 killMask = RBM_RCX | RBM_RDI | RBM_RSI;
                 break;
+            case GenTreeBlkOp::BlkOpKindUnroll:
+            case GenTreeBlkOp::BlkOpKindInvalid:
+                // for these 'cpBlkNode->gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
+                break;
             }
         }
         break;
@@ -2458,6 +2462,10 @@ LinearScan::getKillSetForNode(GenTree* tree)
                 {
                     killMask |= RBM_RCX;
                 }
+                break;
+            case GenTreeBlkOp::BlkOpKindUnroll:
+            case GenTreeBlkOp::BlkOpKindInvalid:
+                // for these 'cpBlkNode->gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
                 break;
             }
         }
@@ -2541,6 +2549,10 @@ LinearScan::getKillSetForNode(GenTree* tree)
         }
         break;
 #endif // PROFILING_SUPPORTED && _TARGET_AMD64_
+
+    default:
+        // for all other 'tree->OperGet()' kinds, leave 'killMask' = RBM_NONE
+        break;
     }
     return killMask;
 }
@@ -4499,6 +4511,9 @@ LinearScan::tryAllocateFreeReg(Interval *currentInterval, RefPosition *refPositi
                         }
                         break;
                     }
+                default:
+                    // for all other 'operTreeNodee->OperGet()' kinds, we leave 'score' unchanged
+                    break;
                 }
             }
         }
@@ -10039,6 +10054,9 @@ LinearScan::verifyFinalAllocation()
             assert(regRecord != nullptr);
             dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, nullptr, regRecord->regNum, currentBlock);
             break;
+
+        case RefTypeUpperVectorSaveDef:
+        case RefTypeUpperVectorSaveUse:
         case RefTypeDef:
         case RefTypeUse:
         case RefTypeParamDef:
@@ -10151,7 +10169,13 @@ LinearScan::verifyFinalAllocation()
             // Do nothing; these will be handled by the RefTypeBB.
             DBEXEC(VERBOSE, printf("           "));
             break;
+
+        case RefTypeInvalid:
+        case RefTypeBound:
+            // for these 'currentRefPosition->refType' values, No action to take
+            break;
         }
+
         if (currentRefPosition->refType != RefTypeBB)
         {
             DBEXEC(VERBOSE, dumpRegRecords());

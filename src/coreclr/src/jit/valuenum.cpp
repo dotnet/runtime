@@ -1953,7 +1953,11 @@ float ValueNumStore::EvalOpIntegral<float>(VNFunc vnf, float v0, float v1, Value
     {
     case GT_MOD:
         return fmod(v0, v1);
+    default:
+        // For any other values of 'oper', we will assert and return 0.0f
+        break;
     }
+    assert(!"EvalOpIntegral<float> with pExcSet");
     return 0.0f;
 }
 
@@ -1965,7 +1969,11 @@ double ValueNumStore::EvalOpIntegral<double>(VNFunc vnf, double v0, double v1, V
     {
     case GT_MOD:
         return fmod(v0, v1);
+    default:
+        // For any other value of 'oper', we will assert and return 0.0
+        break;
     }
+    assert(!"EvalOpIntegral<double> with pExcSet");
     return 0.0;
 }
 

@@ -175,6 +175,10 @@ bool LC_Condition::Evaluates(bool* pResult)
             return true;
         }
         break;
+
+    default:
+        // for all other 'oper' kinds, we will return false
+        break;
     }
     return false;
 }
