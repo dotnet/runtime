@@ -262,9 +262,11 @@ static void PublishIPCManager(void);
 static void TerminateIPCManager(void);
 #endif // FEATURE_IPCMAN
 
+#ifndef CROSSGEN_COMPILE
 static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
+#endif // !CROSSGEN_COMPILE
 
 HRESULT EEStartup(COINITIEE fFlags);
 #ifdef FEATURE_FUSION
@@ -286,6 +288,7 @@ BOOL STDMETHODCALLTYPE ExecuteDLL(HINSTANCE hInst,
 BOOL STDMETHODCALLTYPE ExecuteEXE(HMODULE hMod);
 BOOL STDMETHODCALLTYPE ExecuteEXE(__in LPWSTR pImageNameIn);
 
+#ifndef CROSSGEN_COMPILE
 static void InitializeGarbageCollector();
 
 #ifdef DEBUGGING_SUPPORTED
@@ -293,6 +296,7 @@ static void InitializeDebugger(void);
 static void TerminateDebugger(void);
 extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 #endif // DEBUGGING_SUPPORTED
+#endif // !CROSSGEN_COMPILE
 
 
 #if !defined(FEATURE_CORECLR) && !defined(CROSSGEN_COMPILE)

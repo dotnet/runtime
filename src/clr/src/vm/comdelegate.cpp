@@ -38,31 +38,6 @@
 
 #ifndef DACCESS_COMPILE
 
-static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::SizeOfArgStack
-    }
-    CONTRACTL_END;
-
-    //TODO: depending on what we decide for generics method we may want to move this check to better places
-    if (method->IsGenericMethodDefinition() || method->HasMethodInstantiation())
-    {
-        COMPlusThrow(kNotSupportedException);
-    }
-
-    // need to grab a virtual dispatch stub 
-    // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
-    VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
-    PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
-    _ASSERTE(pTargetCall);
-    return pTargetCall;
-}
-
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
 
 // ShuffleOfs not needed
@@ -497,6 +472,31 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 
 
 #ifndef CROSSGEN_COMPILE
+
+static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM()); // from MetaSig::SizeOfArgStack
+    }
+    CONTRACTL_END;
+
+    //TODO: depending on what we decide for generics method we may want to move this check to better places
+    if (method->IsGenericMethodDefinition() || method->HasMethodInstantiation())
+    {
+        COMPlusThrow(kNotSupportedException);
+    }
+
+    // need to grab a virtual dispatch stub 
+    // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
+    VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
+    PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
+    _ASSERTE(pTargetCall);
+    return pTargetCall;
+}
 
 FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName, 
                         Object *refThisUNSAFE, 
