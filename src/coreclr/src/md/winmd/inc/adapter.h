@@ -83,11 +83,11 @@ public:
     enum FrameworkAssemblyIndex
     {
         FrameworkAssembly_Mscorlib,
-        FrameworkAssembly_System,
+        FrameworkAssembly_SystemObjectModel,
+        FrameworkAssembly_SystemRuntime,
         FrameworkAssembly_SystemRuntimeWindowsRuntime,
         FrameworkAssembly_SystemRuntimeWindowsRuntimeUIXaml,
         FrameworkAssembly_SystemNumericsVectors,
-        FrameworkAssembly_InternalUri,
 
         FrameworkAssembly_Count,
     };
@@ -626,16 +626,16 @@ public:
         _ASSERTE(index != FrameworkAssembly_Mscorlib);
         switch(index)
         {
-            case FrameworkAssembly_System:
-                return "System";
+            case FrameworkAssembly_SystemObjectModel:
+                return "System.ObjectModel";
+            case FrameworkAssembly_SystemRuntime:
+                return "System.Runtime";
             case FrameworkAssembly_SystemRuntimeWindowsRuntime:
                 return "System.Runtime.WindowsRuntime";
             case FrameworkAssembly_SystemRuntimeWindowsRuntimeUIXaml:
                 return "System.Runtime.WindowsRuntime.UI.Xaml";
             case FrameworkAssembly_SystemNumericsVectors:
                 return "System.Numerics.Vectors";
-            case FrameworkAssembly_InternalUri:
-                return "Internal.Uri";
             default:
                 _ASSERTE(!"Invalid AssemblyRef token!");
                 return NULL;

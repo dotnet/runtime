@@ -4865,11 +4865,6 @@ AppDomain::AppDomain()
     m_pLicenseInteropHelperMT = NULL;
     m_COMorRemotingFlag = COMorRemoting_NotInitialized;
     memset(m_rpCLRTypes, 0, sizeof(m_rpCLRTypes));
-    m_pSystemDll = nullptr;
-    m_pSystemRuntimeWindowsRuntimeDll = nullptr;
-    m_pSystemRuntimeWindowsRuntimeUIXamlDll = nullptr;
-    m_pSystemNumericsVectors = nullptr;
-    m_pInternalUri = nullptr;
 #endif // FEATURE_COMINTEROP
 
     m_pUMEntryThunkCache = NULL;
@@ -5912,105 +5907,9 @@ MethodTable* AppDomain::LoadRedirectedType(WinMDAdapter::RedirectedTypeIndex ind
             CLASS_LOAD_EXACTPARENTS).GetMethodTable();
     }
 }
-
-bool AppDomain::FindRedirectedAssembly(Assembly* pAssembly, WinMDAdapter::FrameworkAssemblyIndex* pIndex)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pAssembly));
-        PRECONDITION(CheckPointer(pIndex));
-    }
-    CONTRACTL_END;
-
-    DomainAssembly *pDomainAssembly = pAssembly->GetDomainAssembly();
-
-    if (pDomainAssembly->IsSystem())
-    {
-        *pIndex = WinMDAdapter::FrameworkAssembly_Mscorlib;
-        return true;
-    }
-    else if (pDomainAssembly == m_pSystemDll)
-    {
-        *pIndex = WinMDAdapter::FrameworkAssembly_System;
-        return true;
-    }
-    else if (pDomainAssembly == m_pSystemRuntimeWindowsRuntimeDll)
-    {
-        *pIndex = WinMDAdapter::FrameworkAssembly_SystemRuntimeWindowsRuntime;
-        return true;
-    }
-    else if (pDomainAssembly == m_pSystemRuntimeWindowsRuntimeUIXamlDll)
-    {
-        *pIndex = WinMDAdapter::FrameworkAssembly_SystemRuntimeWindowsRuntimeUIXaml;
-        return true;
-    }
-    else if (pDomainAssembly == m_pSystemNumericsVectors)
-    {
-        *pIndex = WinMDAdapter::FrameworkAssembly_SystemNumericsVectors;
-        return true;
-    }
-    else if (pDomainAssembly == m_pInternalUri)
-    {
-        *pIndex = WinMDAdapter::FrameworkAssembly_InternalUri;
-        return true;
-    }
-
-    return false;
-}
-
 #endif //FEATURE_COMINTEROP
 
 #endif //!DACCESS_COMPILE
-
-
-#ifdef FEATURE_COMINTEROP
-BOOL AppDomain::FindRedirectedAssemblyFromIndexIfLoaded(WinMDAdapter::FrameworkAssemblyIndex index, Assembly ** ppAssembly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // If new redirected assemblies are added, this function probably needs to be updated
-    C_ASSERT(WinMDAdapter::FrameworkAssembly_Count == 6);
-
-    DomainAssembly * pDomainAssembly = NULL;
-
-    if (index == WinMDAdapter::FrameworkAssembly_Mscorlib)
-    {
-        *ppAssembly = SystemDomain::SystemAssembly();
-        return TRUE;
-    }
-    else if (index == WinMDAdapter::FrameworkAssembly_System)
-    {
-        pDomainAssembly = m_pSystemDll;
-    }
-    else if (index == WinMDAdapter::FrameworkAssembly_SystemRuntimeWindowsRuntime)
-    {
-        pDomainAssembly = m_pSystemRuntimeWindowsRuntimeDll;
-    }
-    else if (index == WinMDAdapter::FrameworkAssembly_SystemRuntimeWindowsRuntimeUIXaml)
-    {
-        pDomainAssembly = m_pSystemRuntimeWindowsRuntimeUIXamlDll;
-    }
-    else if (index == WinMDAdapter::FrameworkAssembly_SystemNumericsVectors)
-    {
-        pDomainAssembly = m_pSystemNumericsVectors;
-    }
-    else if (index == WinMDAdapter::FrameworkAssembly_InternalUri)
-    {
-        pDomainAssembly = m_pInternalUri;
-    }
-
-    if (pDomainAssembly != NULL)
-    {
-        *ppAssembly = pDomainAssembly->GetAssembly();
-        return TRUE;
-    }
-
-    *ppAssembly = NULL;
-    return FALSE;
-}
-
-#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 
@@ -6084,56 +5983,6 @@ void AppDomain::AddAssembly(DomainAssembly * assem)
         // If empty space not found, simply add to end of list
         IfFailThrow(m_Assemblies.Append_Unlocked(assem));
     }
-
-#ifdef FEATURE_COMINTEROP
-    // See if this is one of the well-known assemblies that we look for
-    if (m_pSystemDll == nullptr && IsPlatformAssembly("System", assem))
-    {
-        m_pSystemDll = assem;
-        return;
-    }
-
-    if (m_pSystemRuntimeWindowsRuntimeDll == nullptr && IsPlatformAssembly("System.Runtime.WindowsRuntime", assem))
-    {
-        m_pSystemRuntimeWindowsRuntimeDll = assem;
-        return;
-    }
-    if (m_pSystemRuntimeWindowsRuntimeUIXamlDll == nullptr && IsPlatformAssembly("System.Runtime.WindowsRuntime.UI.Xaml", assem))
-    {
-        m_pSystemRuntimeWindowsRuntimeUIXamlDll = assem;
-        return;
-    }
-    if (m_pSystemNumericsVectors == nullptr)
-    {
-        PEAssembly *pPEAssembly = assem->GetFile();
-
-        if (strcmp("System.Numerics.Vectors", pPEAssembly->GetSimpleName()) == 0)
-        {
-            DWORD cbPublicKey;
-            const BYTE *pbPublicKey = static_cast<const BYTE *>(pPEAssembly->GetPublicKey(&cbPublicKey));
-
-            if (cbPublicKey == sizeof(s_pbContractPublicKey) && memcmp(pbPublicKey, s_pbContractPublicKey, cbPublicKey) == 0)
-            {
-                m_pSystemNumericsVectors = assem;
-            }
-        }
-    }
-    if (m_pInternalUri == nullptr)
-    {
-        PEAssembly *pPEAssembly = assem->GetFile();
-
-        if (strcmp("Internal.Uri", pPEAssembly->GetSimpleName()) == 0)
-        {
-            DWORD cbPublicKey;
-            const BYTE *pbPublicKey = static_cast<const BYTE *>(pPEAssembly->GetPublicKey(&cbPublicKey));
-
-            if (cbPublicKey == sizeof(s_pbContractPublicKey) && memcmp(pbPublicKey, s_pbContractPublicKey, cbPublicKey) == 0)
-            {
-                m_pInternalUri = assem;
-            }
-        }
-    }
-#endif // FEATURE_COMINTEROP
 }
 
 void AppDomain::RemoveAssembly_Unlocked(DomainAssembly * pAsm)

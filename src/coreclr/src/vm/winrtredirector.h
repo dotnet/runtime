@@ -36,12 +36,9 @@ public:
 
     // Returns MethodTable (typical instantiation) of the Framework copy of the specified redirected WinRT interface.
     static MethodTable *GetWinRTTypeForRedirectedInterfaceIndex(WinMDAdapter::RedirectedTypeIndex index);
-
-    // Loads a type from the given Framework assembly.
-    static MethodTable *LoadTypeFromRedirectedAssembly(WinMDAdapter::FrameworkAssemblyIndex index, LPCWSTR wzTypeName);
-
+    
     // Loads a method from the given Framework assembly.
-    static MethodDesc *LoadMethodFromRedirectedAssembly(WinMDAdapter::FrameworkAssemblyIndex index, LPCWSTR wzTypeName, LPCUTF8 szMethodName);
+    static MethodDesc *LoadMethodFromRedirectedAssembly(LPCUTF8 szAssemblyQualifiedTypeName, LPCUTF8 szMethodName);
 
     // Lists WinRT-legal types assignable from .NET reference types that are projected from WinRT structures/arrays/delegates.
     enum WinRTLegalStructureBaseType
@@ -120,10 +117,9 @@ private:
 
     struct NonMscorlibRedirectedInterfaceInfo
     {
-        const WinMDAdapter::FrameworkAssemblyIndex m_AssemblyIndex;
-        const LPCWSTR m_wzWinRTInterfaceTypeName;
-        const LPCWSTR m_wzCLRStubClassTypeName;
-        const LPCWSTR m_wzWinRTStubClassTypeName;
+        const LPCUTF8 m_szWinRTInterfaceAssemblyQualifiedTypeName;
+        const LPCUTF8 m_szCLRStubClassAssemblyQualifiedTypeName;
+        const LPCUTF8 m_szWinRTStubClassAssemblyQualifiedTypeName;
         const LPCUTF8 *m_rszMethodNames;
     };
 

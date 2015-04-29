@@ -52,7 +52,19 @@
 #define g_ICommandName "System.Windows.Input.ICommand"
 #define g_ComObjectName "__ComObject"
 #define g_RuntimeClassName "RuntimeClass"
+#define g_INotifyCollectionChanged_WinRTName "System.Runtime.InteropServices.WindowsRuntime.INotifyCollectionChanged_WinRT"
+#define g_NotifyCollectionChangedToManagedAdapterName "System.Runtime.InteropServices.WindowsRuntime.NotifyCollectionChangedToManagedAdapter"
+#define g_NotifyCollectionChangedToWinRTAdapterName "System.Runtime.InteropServices.WindowsRuntime.NotifyCollectionChangedToWinRTAdapter"
+#define g_INotifyPropertyChanged_WinRTName "System.Runtime.InteropServices.WindowsRuntime.INotifyPropertyChanged_WinRT"
+#define g_NotifyPropertyChangedToManagedAdapterName "System.Runtime.InteropServices.WindowsRuntime.NotifyPropertyChangedToManagedAdapter"
+#define g_NotifyPropertyChangedToWinRTAdapterName "System.Runtime.InteropServices.WindowsRuntime.NotifyPropertyChangedToWinRTAdapter"
+#define g_ICommand_WinRTName "System.Runtime.InteropServices.WindowsRuntime.ICommand_WinRT"
+#define g_ICommandToManagedAdapterName "System.Runtime.InteropServices.WindowsRuntime.ICommandToManagedAdapter"
+#define g_ICommandToWinRTAdapterName "System.Runtime.InteropServices.WindowsRuntime.ICommandToWinRTAdapter"
+#define g_NotifyCollectionChangedEventHandler_WinRT "System.Runtime.InteropServices.WindowsRuntime.NotifyCollectionChangedEventHandler_WinRT"
+#define g_PropertyChangedEventHandler_WinRT_Name "System.Runtime.InteropServices.WindowsRuntime.PropertyChangedEventHandler_WinRT"
 #endif // FEATURE_COMINTEROP
+
 #ifdef FEATURE_REMOTING
 #define g_ContextBoundObjectClassName "System.ContextBoundObject"
 #endif
