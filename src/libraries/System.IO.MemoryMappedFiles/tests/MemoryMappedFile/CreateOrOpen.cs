@@ -54,7 +54,7 @@ public class CreateOrOpen : MMFTestBase
             VerifyCreate("Loc114", "\t \n\u00A0", 4096);
 
             String fileText = "Non-empty file for MMF testing.";
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // MMF with this mapname already exists (pagefile backed)
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_map115a" + s_uniquifier, 1000))
@@ -99,7 +99,7 @@ public class CreateOrOpen : MMFTestBase
             else // 64-bit machine
                 VerifyException<IOException>("Loc215b", "COO_mapname215" + s_uniquifier, Int64.MaxValue); // valid but too large
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // ignored for existing file (smaller)
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname216" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
@@ -152,7 +152,7 @@ public class CreateOrOpen : MMFTestBase
                 VerifyException<ArgumentOutOfRangeException>("Loc332_" + ((int)access), "COO_mapname332_" + ((int)access) + s_uniquifier, 1000, access);
             }
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // default security - all valid for existing file
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname333" + s_uniquifier, 1000))
@@ -191,7 +191,7 @@ public class CreateOrOpen : MMFTestBase
             // all whitespace
             VerifyCreate("Loc414", "\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // MMF with this mapname already exists (pagefile backed)
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_map415a" + s_uniquifier, 1000))
@@ -239,7 +239,7 @@ public class CreateOrOpen : MMFTestBase
             else // 64-bit machine
                 VerifyException<IOException>("Loc425b", "COO_mapname425" + s_uniquifier, Int64.MaxValue, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None); // valid but too large
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // ignored for existing file (smaller)
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname426" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
@@ -288,7 +288,7 @@ public class CreateOrOpen : MMFTestBase
                 VerifyException<ArgumentOutOfRangeException>("Loc432_" + ((int)access), "COO_mapname432_" + ((int)access) + s_uniquifier, 1000, access, MemoryMappedFileOptions.None, HandleInheritability.None);
             }
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // default security - all valid
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname433" + s_uniquifier, 1000))
@@ -340,7 +340,7 @@ public class CreateOrOpen : MMFTestBase
             // invalid
             VerifyException<ArgumentOutOfRangeException>("Loc443", "COO_mapname443" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, (MemoryMappedFileOptions)(-1), HandleInheritability.None);
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // ignored for existing file
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname444" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
@@ -356,7 +356,7 @@ public class CreateOrOpen : MMFTestBase
             // valid non-null
             VerifyCreate("Loc451", "COO_mapname451" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // ignored for existing
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateOrOpen("COO_mapname452" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None))
@@ -373,7 +373,7 @@ public class CreateOrOpen : MMFTestBase
             // Inheritable - new file
             VerifyCreate("Loc462", "COO_mapname462" + s_uniquifier, 100, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable);
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 // Mix and match: None - existing file w/Inheritable
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("COO_mapname464" + s_uniquifier, 1000, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.Inheritable))

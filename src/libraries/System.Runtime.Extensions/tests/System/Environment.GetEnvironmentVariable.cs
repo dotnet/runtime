@@ -121,7 +121,7 @@ public class GetEnvironmentVariable
     private static void SetEnvironmentVariableWithPInvoke(string name, string value)
     {
         bool success =
-            Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows ?
+            Interop.IsWindows ?
                 SetEnvironmentVariable(name, value) :
                 (value != null ? setenv(name, value, 1) : unsetenv(name)) == 0;
         Assert.True(success);

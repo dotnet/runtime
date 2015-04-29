@@ -232,7 +232,7 @@ public partial class FileSystemWatcher_4000_Tests
             file.Write(buffer, 0, buffer.Length);
             file.Flush(flushToDisk: true);
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            if (Interop.IsWindows)
             {
                 // Change security
                 uint result = SetSecurityInfoByHandle(file.Path,

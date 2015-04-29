@@ -48,7 +48,7 @@ public class CreateViewStream : MMFTestBase
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, 100))
             {
                 VerifyCreateViewStream("Loc101", mmf, 
-                    Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows ? defaultCapacity : 100, // Windows rounds up to page size, but that seems like a bug
+                    Interop.IsWindows ? defaultCapacity : 100, // Windows rounds up to page size, but that seems like a bug
                     defaultAccess, fileContents);
             }
 
@@ -198,7 +198,7 @@ public class CreateViewStream : MMFTestBase
 
             long specifiedCapacity = 1000;
             long expectedCapacity =
-                Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows ?
+                Interop.IsWindows ?
                     defaultCapacity : // on Windows it uninentionally rounds up to the page size
                     specifiedCapacity;
 
