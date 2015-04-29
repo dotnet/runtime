@@ -190,7 +190,13 @@ struct Limit
             }
             cns += i;
             return true;
+
+        case keUndef:
+        case keUnknown:
+            // For these values of 'type', conservatively return false
+            break;
         }
+
         return false;
     }
 

@@ -276,9 +276,6 @@ add_compile_options(-Wno-implicit-exception-spec-mismatch)
 # class, but different set of parameters.
 add_compile_options(-Wno-overloaded-virtual)
 add_compile_options(-Wno-unused-variable)
-# Enum value is not handled in a switch (and there is no default clause)
-# Remaining cases are in JIT only
-add_compile_options(-Wno-switch)
 # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
 add_compile_options(-Wno-microsoft)
 # This warning is caused by comparing 'this' to NULL
