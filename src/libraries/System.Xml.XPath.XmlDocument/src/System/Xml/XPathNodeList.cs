@@ -32,8 +32,6 @@ namespace System.Xml
             }
         }
 
-        private static readonly object[] s_nullparams = { };
-
         private XmlNode GetNode(XPathNavigator n)
         {
             return (XmlNode)n.UnderlyingObject;

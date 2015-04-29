@@ -786,7 +786,7 @@ namespace MS.Internal.Xml.XPath
         }
 
         // ----------------------------------------------------------------
-        private static readonly XPathResultType[] s_temparray1 = { };
+        private static readonly XPathResultType[] s_temparray1 = Array.Empty<XPathResultType>();
         private static readonly XPathResultType[] s_temparray2 = { XPathResultType.NodeSet };
         private static readonly XPathResultType[] s_temparray3 = { XPathResultType.Any };
         private static readonly XPathResultType[] s_temparray4 = { XPathResultType.String };
