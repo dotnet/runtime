@@ -141,6 +141,8 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Linq.Queryable**. Provides LINQ standard query operators that operate on objects that implement ```IQueryable<T>```.
 
+* **System.Net.Http**. Provides a programming interface for modern HTTP applications. This includes HTTP client components that allow applications to consume modern web services over HTTP and HTTP components that can be used by both clients and servers for parsing HTTP headers, for example. This provides a consistent programming model on both the client and the server side for modern web services over HTTP.
+
 * **System.Numerics.Vectors**. Provides a set of basic vector types that leverage single instruction, 
   multiple data (SIMD) CPU instructions. See our [recent][simd-post-1] [announcements][simd-post-2] for more details.
 
