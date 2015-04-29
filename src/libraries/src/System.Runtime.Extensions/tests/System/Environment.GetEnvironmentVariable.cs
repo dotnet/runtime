@@ -23,7 +23,7 @@ public class GetEnvironmentVariable
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/635", PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/635", PlatformID.AnyUnix)]
     public void RandomLongVariableNameCanRoundTrip()
     {
         // NOTE: The limit of 32766 characters enforced by dekstop

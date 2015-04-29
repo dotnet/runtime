@@ -27,7 +27,7 @@ public class FileVersionInfoTest
     private MyFVI _fviAssembly1_cs;
 
     [Fact]
-    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(811, PlatformID.AnyUnix)]
     public void FileVersionInfo_Normal()
     {
         EnsureExpectedValuesInitialized();
@@ -35,7 +35,7 @@ public class FileVersionInfoTest
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(811, PlatformID.AnyUnix)]
     public void FileVersionInfo_Chinese()
     {
         EnsureExpectedValuesInitialized();
@@ -43,7 +43,7 @@ public class FileVersionInfoTest
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(811, PlatformID.AnyUnix)]
     public void FileVersionInfo_DifferentFileVersionAndProductVersion()
     {
         EnsureExpectedValuesInitialized();
@@ -51,7 +51,7 @@ public class FileVersionInfoTest
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(811, PlatformID.AnyUnix)]
     public void FileVersionInfo_CustomManagedAssembly()
     {
         EnsureExpectedValuesInitialized();
@@ -59,7 +59,7 @@ public class FileVersionInfoTest
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(811, PlatformID.AnyUnix)]
     public void FileVersionInfo_EmptyFVI()
     {
         EnsureExpectedValuesInitialized();

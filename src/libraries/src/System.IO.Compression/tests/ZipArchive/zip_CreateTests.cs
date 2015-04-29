@@ -15,7 +15,7 @@ namespace System.IO.Compression.Test
             await testCreate("small", false);
             await testCreate("normal", true);
             await testCreate("normal", false);
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 await testCreate("unicode", true);
                 await testCreate("unicode", false);

@@ -901,7 +901,7 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCS_XElementAsRoot()
     {
         var original = new XElement("ElementName1");
@@ -913,7 +913,7 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCJS_WithXElement()
     {
         var original = new WithXElement(true);
@@ -935,7 +935,7 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCJS_WithXElementWithNestedXElement()
     {
         var original = new WithXElementWithNestedXElement(true);
@@ -946,7 +946,7 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCJS_WithArrayOfXElement()
     {
         var original = new WithArrayOfXElement(true);
@@ -959,7 +959,7 @@ public static class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void DCJS_WithListOfXElement()
     {
         var original = new WithListOfXElement(true);
