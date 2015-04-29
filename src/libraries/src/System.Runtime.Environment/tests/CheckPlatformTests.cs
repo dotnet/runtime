@@ -20,8 +20,9 @@ namespace System.Runtime.Environment.Tests
         public void CheckLinux()
         {
             Assert.True(RuntimeInformation.IsOperatingSystem(OSName.Linux));
+            Assert.True(RuntimeInformation.IsOperatingSystem(new OSName("LINUX")));
             Assert.False(RuntimeInformation.IsOperatingSystem(new OSName("linux")));
-            Assert.True(RuntimeInformation.IsOperatingSystem(new OSName("UNIX")));
+            Assert.False(RuntimeInformation.IsOperatingSystem(new OSName("UNIX")));
             Assert.False(RuntimeInformation.IsOperatingSystem(new OSName("ubuntu")));
             Assert.False(RuntimeInformation.IsOperatingSystem(OSName.Windows));
             Assert.False(RuntimeInformation.IsOperatingSystem(OSName.OSX));
@@ -36,7 +37,7 @@ namespace System.Runtime.Environment.Tests
             Assert.False(RuntimeInformation.IsOperatingSystem(new OSName("mac")));
             Assert.False(RuntimeInformation.IsOperatingSystem(new OSName("MACOSX")));
             Assert.False(RuntimeInformation.IsOperatingSystem(OSName.Linux));
-            Assert.False(RuntimeInformation.IsOperatingSystem(OSName.OSX));
+            Assert.False(RuntimeInformation.IsOperatingSystem(OSName.Windows));
         }
 
         [Fact]
