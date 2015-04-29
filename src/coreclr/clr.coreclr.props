@@ -50,7 +50,7 @@
     <FeatureXPlatDacDebugging_HostWindowsAMD64 Condition="'$(TargetArch)' == 'amd64' or '$(TargetArch)' == 'arm64'">true</FeatureXPlatDacDebugging_HostWindowsAMD64>
     <FeatureXPlatDacDebugging_HostOneCorex86 Condition="'$(TargetArch)' == 'i386' or '$(TargetArch)' == 'arm'">true</FeatureXPlatDacDebugging_HostOneCorex86>
     <FeatureXPlatDacDebugging_HostOneCoreAMD64 Condition="'$(TargetArch)' == 'amd64'">true</FeatureXPlatDacDebugging_HostOneCoreAMD64>
-    <ProfilingSupportedBuild Condition="'$(TargetsWindows)' == 'true'">true</ProfilingSupportedBuild>
+    <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     <FeatureUseAsmGCWriteBarriers>true</FeatureUseAsmGCWriteBarriers>
     <!-- Setting this to "false" works only for workstation GC, not server. -->
     <FeatureSymDiff>true</FeatureSymDiff>
@@ -98,6 +98,8 @@
     <FeaturePal>true</FeaturePal>
 
     <FeatureStubsAsIL>true</FeatureStubsAsIL>
+
+    <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
 
     <!-- UNIXTODO Enable randomized string hashing -->
     <FeatureRandomizedStringHashing>false</FeatureRandomizedStringHashing>
