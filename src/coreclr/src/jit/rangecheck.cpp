@@ -368,6 +368,10 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
 
         case GT_ASG_ADD:
             return IsBinOpMonotonicallyIncreasing(asg->gtGetOp1(), asg->gtGetOp2(), GT_ADD, path);
+
+        default:
+            // All other 'asg->OperGet()' kinds, return false
+            break;
         }
         JITDUMP("Unknown local definition type\n");
         return false;
@@ -654,6 +658,10 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, EXPSET_TP assertions, Rang
         case GT_LE:
             pRange->uLimit = limit;
             break;
+
+        default:
+            // All other 'cmpOper' kinds leave lLimit/uLimit unchanged
+            break;
         }
         JITDUMP("The range after edge merging:");
         JITDUMP(pRange->ToString(m_pCompiler->getAllocatorDebugOnly()));
@@ -791,11 +799,15 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock* block, GenTreePtr stmt, Ge
         }
 
     case GT_ASG_ADD:
-    // If the operator of the definition is +=, then compute the range of the operands of +.
-    // Note that gtGetOp1 will return op1 to be the lhs; in the formulation of ssa, we have
-    // a side table for defs and the lhs of a += is considered to be a use for SSA numbering.
+        // If the operator of the definition is +=, then compute the range of the operands of +.
+        // Note that gtGetOp1 will return op1 to be the lhs; in the formulation of ssa, we have
+        // a side table for defs and the lhs of a += is considered to be a use for SSA numbering.
         return ComputeRangeForBinOp(loc->block, loc->stmt,
                 asg->gtGetOp1(), asg->gtGetOp2(), GT_ADD, path, monotonic DEBUGARG(indent));
+
+    default:
+        // All other 'asg->OperGet()' kinds, return Limit::keUnknown
+        break;
     }
     return Range(Limit(Limit::keUnknown));
 }
@@ -955,6 +967,10 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreePtr stmt, GenTreeP
     case GT_ASG_ADD:
         // For GT_ASG_ADD, op2 is use, op1 is also use since we side table for defs in useasg case.
         return DoesBinOpOverflow(loc->block, loc->stmt, asg->gtGetOp1(), asg->gtGetOp2(), path);
+
+    default:
+        // All other 'asg->OperGet()' kinds, conservatively return true
+        break;
     }
     return true;
 }

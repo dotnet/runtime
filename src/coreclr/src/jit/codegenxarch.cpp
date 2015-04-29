@@ -4220,6 +4220,9 @@ void CodeGen::genCodeForShift(GenTreePtr operand, GenTreePtr shiftBy,
                 case INS_shr:
                     ins = INS_shr_1;
                     break;
+                default:
+                    // leave 'ins' unchanged
+                    break;
                 }
                 getEmitter()->emitIns_C(ins, attr, operand->gtClsVar.gtClsVarHnd, 0);
             }
@@ -4235,6 +4238,9 @@ void CodeGen::genCodeForShift(GenTreePtr operand, GenTreePtr shiftBy,
                     break;
                 case INS_shr:
                     ins = INS_shr_N;
+                    break;
+                default:
+                    // leave 'ins' unchanged
                     break;
                 }
                 if (isClsVarAddr)

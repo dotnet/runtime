@@ -10306,6 +10306,9 @@ _CONV:
                 case CEE_CONV_OVF_U_UN:
                 case CEE_CONV_U:
                     isNative = true;
+                default:
+                    // leave 'isNative' = false;
+                    break;
                 }
                 if (isNative)
                 {
