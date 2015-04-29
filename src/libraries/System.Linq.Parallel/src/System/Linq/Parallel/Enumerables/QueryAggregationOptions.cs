@@ -29,7 +29,7 @@ namespace System.Linq.Parallel
     {
         // This helper is a workaround for the fact that Enum.Defined() does not work on non-public enums.
         // There is a custom attribute in System.Reflection.Metadata.Controls that would make it work
-        // but we don't want to introduce a dependency on that contract just to support two Contract.Asserts.
+        // but we don't want to introduce a dependency on that contract just to support two asserts.
         public static bool IsValidQueryAggregationOption(this QueryAggregationOptions value)
         {
             return value == QueryAggregationOptions.None
