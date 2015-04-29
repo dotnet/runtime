@@ -368,4 +368,5 @@ endif
 endif
 
 EXTRA_DIST = $(win32_sources) $(unix_sources) $(null_sources) runtime.h \
-		tpool-poll.c tpool-epoll.c tpool-kqueue.c
+		tpool-poll.c tpool-epoll.c tpool-kqueue.c \
+		threadpool-ms-io-poll.c threadpool-ms-io-epoll.c threadpool-ms-io-kqueue.c
