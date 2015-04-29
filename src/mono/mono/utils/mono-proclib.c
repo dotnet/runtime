@@ -363,7 +363,8 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	}
 	
 	if (task_threads(task, &th_array, &th_count) != KERN_SUCCESS) {
-		mach_port_deallocate (mach_task_self (), task);
+		if (pid != getpid ())
+			mach_port_deallocate (mach_task_self (), task);
 		RET_ERROR (MONO_PROCESS_ERROR_OTHER);
 	}
 		
@@ -386,7 +387,8 @@ get_process_stat_item (int pid, int pos, int sum, MonoProcessError *error)
 	for (i = 0; i < th_count; i++)
 		mach_port_deallocate(task, th_array[i]);
 
-	mach_port_deallocate (mach_task_self (), task);
+	if (pid != getpid ())
+		mach_port_deallocate (mach_task_self (), task);
 
 	process_user_time += t_info.user_time.seconds + t_info.user_time.microseconds / 1e6;
 	process_system_time += t_info.system_time.seconds + t_info.system_time.microseconds / 1e6;
