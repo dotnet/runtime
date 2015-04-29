@@ -979,17 +979,22 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         // Get the TypeDef token and attributes
         IMDInternalImport *pImport = ty.GetMethodTable()->GetMDImport();
         mdTypeDef td = ty.GetCl();
-        _ASSERTE(!IsNilToken(td));
-
-#ifdef _DEBUG
-        if (format & FormatDebug)
-        {
-            WCHAR wzAddress[128];
-            _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), dac_cast<TADDR>(ty.AsPtr()));
-            tnb.AddName(wzAddress);
+        if (IsNilToken(td)) {
+            // This type does not exist in metadata. Simply append "dynamicClass".
+            tnb.AddName(W("(dynamicClass)"));
         }
+        else
+        {
+#ifdef _DEBUG
+            if (format & FormatDebug)
+            {
+                WCHAR wzAddress[128];
+                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), dac_cast<TADDR>(ty.AsPtr()));
+                tnb.AddName(wzAddress);
+            }
 #endif
-        AppendNestedTypeDef(tnb, pImport, td, format);
+            AppendNestedTypeDef(tnb, pImport, td, format);
+        }
 
         // Append the instantiation
         if ((format & (FormatNamespace|FormatAssembly)) && ty.HasInstantiation() && (!ty.IsGenericTypeDefinition() || bToString))
