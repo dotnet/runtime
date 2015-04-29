@@ -766,7 +766,7 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToLower()
     {
         // Char Char.ToLower(Char)
@@ -790,7 +790,7 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToLowerInvariant()
     {
         // Char Char.ToLowerInvariant(Char)
@@ -830,7 +830,7 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToUpper()
     {
         // Char Char.ToUpper(Char)
@@ -854,7 +854,7 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToUpperInvariant()
     {
         // Char Char.ToUpperInvariant(Char)

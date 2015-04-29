@@ -9,7 +9,7 @@ namespace System.IO.FileSystem.DriveInfoTests
     public partial class DriveInfoUnixTests
     {
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
         public void TestConstructor()
         {
             Assert.All(
@@ -22,7 +22,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
         public void TestGetDrives()
         {
             var drives = DriveInfo.GetDrives();
@@ -33,7 +33,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
         public void TestInvalidDriveName()
         {
             var invalidDrive = new DriveInfo("NonExistentDriveName");
@@ -44,7 +44,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
-        [PlatformSpecific(PlatformID.Linux | PlatformID.OSX)]
+        [PlatformSpecific(PlatformID.AnyUnix)]
         public void TestProperties()
         {
             var root = new DriveInfo("/");

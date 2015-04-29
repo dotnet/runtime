@@ -62,7 +62,7 @@ public static class WaitHandleTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/630", PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/630", PlatformID.AnyUnix)]
     public static void WaitAllSameNames()
     {
         Mutex[] wh = new Mutex[2];
