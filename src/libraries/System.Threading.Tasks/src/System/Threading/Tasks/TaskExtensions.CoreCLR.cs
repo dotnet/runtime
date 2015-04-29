@@ -29,6 +29,13 @@ namespace System.Threading.Tasks
         {
             if (task == null)
                 throw new ArgumentNullException("task");
+            
+            // Fast path for an already successfully completed outer task: just return the inner one.
+            // As in the subsequent slower path, a null inner task is special-cased to mean cancellation.
+            if (task.Status == TaskStatus.RanToCompletion && (task.CreationOptions & TaskCreationOptions.AttachedToParent) == 0)
+            {
+                return task.Result ?? Task.FromCanceled(new CancellationToken(true));
+            }
 
             // Create a new Task to serve as a proxy for the actual inner task.  Attach it
             // to the parent if the original was attached to the parent.
@@ -55,6 +62,13 @@ namespace System.Threading.Tasks
         {
             if (task == null)
                 throw new ArgumentNullException("task");
+
+            // Fast path for an already successfully completed outer task: just return the inner one.
+            // As in the subsequent slower path, a null inner task is special-cased to mean cancellation.
+            if (task.Status == TaskStatus.RanToCompletion && (task.CreationOptions & TaskCreationOptions.AttachedToParent) == 0)
+            {
+                return task.Result ?? Task.FromCanceled<TResult>(new CancellationToken(true));
+            }
 
             // Create a new Task to serve as a proxy for the actual inner task.  Attach it
             // to the parent if the original was attached to the parent.
