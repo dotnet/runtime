@@ -305,13 +305,22 @@ namespace Microsoft.CSharp.RuntimeBinder
                 else
                 {
                     var parameter = Expression.Parameter(memberInfo);
-                    s_GetMetadataToken = Expression.Lambda<Func<MemberInfo, int>>(Expression.Property(parameter, property), new[] { parameter }).Compile();
+                    try
+                    {
+                        s_GetMetadataToken = Expression.Lambda<Func<MemberInfo, int>>(Expression.Property(parameter, property), new[] { parameter }).Compile();
+                    }
+                    catch
+                    {
+                        // Platform might not allow access to the property
+                        s_GetMetadataToken = null;
+                    }
                 }
             }
 
-            if ((object)s_GetMetadataToken != null)
+            var getMetadataToken = s_GetMetadataToken;
+            if ((object)getMetadataToken != null)
             {
-                return s_GetMetadataToken(mi1) == s_GetMetadataToken(mi2);
+                return getMetadataToken(mi1) == getMetadataToken(mi2);
             }
 
             return mi1.IsEquivalentTo(mi2);
