@@ -63,7 +63,7 @@ Next, acquire the .NET Core DNX SDK.
 
 You can see the currently installed DNX versions with `dnvm list`.
 
-	dvnm list
+	dnvm list
 
 ```
 Active Version              Runtime Arch Location             Alias
