@@ -3782,7 +3782,7 @@ HRESULT EEClass::WriteCompactLayoutTypeFlags(ICompactLayoutWriter *pICLW)
         _ASSERTE("MDIL Compiler has determined that a winrt type needs per-type-RCW data, but is not a platform type." && 
             (GetMethodTable()->GetModule()->GetAssembly()->GetManifestFile()->IsProfileAssembly() || 
              GetMethodTable()->GetModule()->GetAssembly()->IsWinMD() ||
-             GetAppDomain()->IsSystemDll(GetMethodTable()->GetModule()->GetAssembly())));
+             GetWinRTRedirectedTypeIndex() != WinMDAdapter::RedirectedTypeIndex_Invalid));
 #endif
 #ifdef _DEBUG
         if (GetMethodTable()->GetModule()->GetAssembly()->IsWinMD())
