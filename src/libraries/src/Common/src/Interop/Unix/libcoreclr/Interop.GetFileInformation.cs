@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class libcoreclrpal
+    internal static partial class libcoreclr
     {
-        // Instead of calling stat(2) and friends directly, we call into libcoreclrpal which does so on our behalf
+        // Instead of calling stat(2) and friends directly, we call into libcoreclr which does so on our behalf
         // we do this because the ABI for this function is different across both OS and architectures and it
         // is easier to handle the differences in native code which builds against the platform headers.
 
@@ -41,10 +41,10 @@ internal static partial class Interop
             HasBTime = 0x1,
         }
 
-        [DllImport(Libraries.LibCoreClrPal, CharSet = CharSet.Ansi, SetLastError = true)]
+        [DllImport(Libraries.LibCoreClr, CharSet = CharSet.Ansi, SetLastError = true)]
         internal static extern unsafe int GetFileInformationFromPath(string path, out fileinfo buf);
 
-        [DllImport(Libraries.LibCoreClrPal, SetLastError = true)]
+        [DllImport(Libraries.LibCoreClr, SetLastError = true)]
         internal static extern unsafe int GetFileInformationFromFd(int fd, out fileinfo buf);
     }
 }
