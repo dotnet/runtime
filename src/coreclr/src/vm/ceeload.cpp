@@ -11023,7 +11023,7 @@ void Module::Fixup(DataImage *image)
     STANDARD_VM_CONTRACT;
 
     // Propagate all changes to the image copy
-    memcpy(image->GetImagePointer(this), this, sizeof(Module));
+    memcpy(image->GetImagePointer(this), (void*)this, sizeof(Module));
 
     //
     // Zero out VTable
@@ -11072,7 +11072,7 @@ void Module::Fixup(DataImage *image)
     // Clear active dependencies - they will be refilled at load time
     image->ZeroField(this, offsetof(Module, m_activeDependencies), sizeof(m_activeDependencies));
     new (image->GetImagePointer(this, offsetof(Module, m_unconditionalDependencies))) SynchronizedBitMask();
-    image->ZeroField(this, offsetof(Module, m_unconditionalDependencies) + offsetof(SynchronizedBitMask, SynchronizedBitMask::m_bitMaskLock) + offsetof(SimpleRWLock,SimpleRWLock::m_spinCount), sizeof(m_unconditionalDependencies.m_bitMaskLock.m_spinCount));
+    image->ZeroField(this, offsetof(Module, m_unconditionalDependencies) + offsetof(SynchronizedBitMask, m_bitMaskLock) + offsetof(SimpleRWLock,m_spinCount), sizeof(m_unconditionalDependencies.m_bitMaskLock.m_spinCount));
     image->ZeroField(this, offsetof(Module, m_dwNumberOfActivations), sizeof(m_dwNumberOfActivations));
 
     image->ZeroField(this, offsetof(Module, m_LookupTableCrst), sizeof(m_LookupTableCrst));

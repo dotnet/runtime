@@ -341,7 +341,7 @@ ZapGenericSignature * ZapImportTable::GetGenericSignature(PVOID signature, BOOL 
     void * pMemory = new (m_pImage->GetHeap()) BYTE[cbAllocSize.Value()];
 
     pGenericSignature = new (pMemory) ZapGenericSignature(cbSig);
-    memcpy(pGenericSignature + 1, pSig, cbSig);
+    memcpy((void *)(pGenericSignature + 1), pSig, cbSig);
 
     m_genericSignatures.Add(pGenericSignature);
 
@@ -421,7 +421,7 @@ void ZapImportSectionsTable::Save(ZapWriter * pZapWriter)
 
 
 ZapImportSectionSignatures::ZapImportSectionSignatures(ZapImage * pImage, ZapVirtualSection * pImportSection, ZapVirtualSection * pGCSection)
-    : m_pImage(pImage), m_pImportSection(pImportSection)
+    : m_pImportSection(pImportSection), m_pImage(pImage)
 {
     if (pGCSection != NULL)
     {

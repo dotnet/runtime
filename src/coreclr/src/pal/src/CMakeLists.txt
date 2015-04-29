@@ -102,6 +102,7 @@ set(SOURCES
   misc/fmtmessage.cpp
   misc/interlock.cpp
   misc/miscpalapi.cpp
+  misc/msgbox.cpp
   misc/dactableaddress.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp

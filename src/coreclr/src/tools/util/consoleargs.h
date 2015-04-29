@@ -10,10 +10,12 @@
 #include "tree.h"
 #include <strsafe.h>
 
+#include "palclr.h"
+
 typedef tree<LPCWSTR> b_tree;
 typedef list<WCHAR*> WStrList;
 
-const LPWSTR kOutOfMemory = L"Out of memory";
+const LPCWSTR kOutOfMemory = W("Out of memory");
 
 class ConsoleArgs
 {
@@ -40,7 +42,7 @@ public:
     // Frees all memory used by the arg list and the argv/argc array
     void CleanUpArgs();
 
-    LPWSTR ErrorMessage()
+    LPCWSTR ErrorMessage()
     {
         if (m_errorOccured)
         {
@@ -65,7 +67,7 @@ private:
     WStrList * m_listArgs;
 
     bool m_errorOccured;
-    LPWSTR m_lastErrorMessage;
+    LPCWSTR m_lastErrorMessage;
 };
 
 #endif // __CONSOLEARGS_H__

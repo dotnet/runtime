@@ -1417,7 +1417,7 @@ HRESULT EEStartup(COINITIEE fFlags)
 
     _ASSERTE(!g_fEEStarted && !g_fEEInit && SUCCEEDED (g_EEStartupStatus));
 
-#ifdef FEATURE_PAL
+#if defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
     DacGlobals::Initialize();
 #endif
 
