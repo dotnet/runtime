@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="net_http_httpmethod_format_error" xml:space="preserve">
+    <value>The format of the HTTP method is invalid.</value>
+  </data>
+  <data name="net_http_reasonphrase_format_error" xml:space="preserve">
+    <value>The reason phrase must not contain new-line characters.</value>
+  </data>
+  <data name="net_http_copyto_array_too_small" xml:space="preserve">
+    <value>The number of elements is greater than the available space from arrayIndex to the end of the destination array.</value>
+  </data>
+  <data name="net_http_headers_not_found" xml:space="preserve">
+    <value>The given header was not found.</value>
+  </data>
+  <data name="net_http_headers_single_value_header" xml:space="preserve">
+    <value>Cannot add value because header '{0}' does not support multiple values.</value>
+  </data>
+  <data name="net_http_headers_invalid_header_name" xml:space="preserve">
+    <value>The header name format is invalid.</value>
+  </data>
+  <data name="net_http_headers_invalid_value" xml:space="preserve">
+    <value>The format of value '{0}' is invalid.</value>
+  </data>
+  <data name="net_http_headers_not_allowed_header_name" xml:space="preserve">
+    <value>Misused header name. Make sure request headers are used with HttpRequestMessage, response headers with HttpResponseMessage, and content headers with HttpContent objects.</value>
+  </data>
+  <data name="net_http_headers_invalid_host_header" xml:space="preserve">
+    <value>The specified value is not a valid 'Host' header string.</value>
+  </data>
+  <data name="net_http_headers_invalid_from_header" xml:space="preserve">
+    <value>The specified value is not a valid 'From' header string.</value>
+  </data>
+  <data name="net_http_headers_invalid_etag_name" xml:space="preserve">
+    <value>The specified value is not a valid quoted string.</value>
+  </data>
+  <data name="net_http_headers_invalid_range" xml:space="preserve">
+    <value>Invalid range. At least one of the two parameters must not be null.</value>
+  </data>
+  <data name="net_http_headers_no_newlines" xml:space="preserve">
+    <value>New-line characters in header values must be followed by a white-space character.</value>
+  </data>
+  <data name="net_http_content_buffersize_exceeded" xml:space="preserve">
+    <value>Cannot write more bytes to the buffer than the configured maximum buffer size: {0}.</value>
+  </data>
+  <data name="net_http_content_no_task_returned" xml:space="preserve">
+    <value>The async operation did not return a System.Threading.Tasks.Task object.</value>
+  </data>
+  <data name="net_http_content_stream_already_read" xml:space="preserve">
+    <value>The stream was already consumed. It cannot be read again.</value>
+  </data>
+  <data name="net_http_content_readonly_stream" xml:space="preserve">
+    <value>The stream does not support writing.</value>
+  </data>
+  <data name="net_http_content_invalid_charset" xml:space="preserve">
+    <value>The character set provided in ContentType is invalid. Cannot read content as string using an invalid character set.</value>
+  </data>
+  <data name="net_http_content_stream_copy_error" xml:space="preserve">
+    <value>Error while copying content to a stream.</value>
+  </data>
+  <data name="net_http_argument_empty_string" xml:space="preserve">
+    <value>The value cannot be null or empty.</value>
+  </data>
+  <data name="net_http_client_request_already_sent" xml:space="preserve">
+    <value>The request message was already sent. Cannot send the same request message multiple times.</value>
+  </data>
+  <data name="net_http_operation_started" xml:space="preserve">
+    <value>This instance has already started one or more requests. Properties can only be modified before sending the first request.</value>
+  </data>
+  <data name="net_http_client_execution_error" xml:space="preserve">
+    <value>An error occurred while sending the request.</value>
+  </data>
+  <data name="net_http_client_absolute_baseaddress_required" xml:space="preserve">
+    <value>The base address must be an absolute URI.</value>
+  </data>
+  <data name="net_http_client_invalid_requesturi" xml:space="preserve">
+    <value>An invalid request URI was provided. The request URI must either be an absolute URI or BaseAddress must be set.</value>
+  </data>
+  <data name="net_http_client_http_baseaddress_required" xml:space="preserve">
+    <value>Only 'http' and 'https' schemes are allowed.</value>
+  </data>
+  <data name="net_http_client_send_error" xml:space="preserve">
+    <value>An error occurred while sending {0}. {1}</value>
+  </data>
+  <data name="net_http_client_send_canceled" xml:space="preserve">
+    <value>Request for {0} was canceled.</value>
+  </data>
+  <data name="net_http_client_send_completed" xml:space="preserve">
+    <value>Request for {0} completed successfully. Returning response {1}: {2}</value>
+  </data>
+  <data name="net_http_parser_invalid_base64_string" xml:space="preserve">
+    <value>Value '{0}' is not a valid Base64 string. Error: {1}</value>
+  </data>
+  <data name="net_http_handler_noresponse" xml:space="preserve">
+    <value>Handler did not return a response message.</value>
+  </data>
+  <data name="net_http_handler_norequest" xml:space="preserve">
+    <value>A request message must be provided. It cannot be null.</value>
+  </data>
+  <data name="net_http_message_not_success_statuscode" xml:space="preserve">
+    <value>Response status code does not indicate success: {0} ({1}).</value>
+  </data>
+  <data name="net_http_content_field_too_long" xml:space="preserve">
+    <value>The field cannot be longer than {0} characters.</value>
+  </data>
+  <data name="net_http_log_headers_invalid_value" xml:space="preserve">
+    <value>Value for header '{0}' has invalid format. Value: '{1}'.</value>
+  </data>
+  <data name="net_http_log_headers_no_newlines" xml:space="preserve">
+    <value>Value for header '{0}' contains invalid new-line characters. Value: '{1}'.</value>
+  </data>
+  <data name="net_http_log_headers_invalid_quality" xml:space="preserve">
+    <value>The 'q' value is invalid: '{0}'.</value>
+  </data>
+  <data name="net_http_log_headers_wrong_email_format" xml:space="preserve">
+    <value>Value '{0}' is not a valid email address. Error: {1}</value>
+  </data>
+  <data name="net_http_log_content_no_task_returned_copytoasync" xml:space="preserve">
+    <value>Type '{0}.CopyToAsync()' did not return a System.Threading.Tasks.Task object.</value>
+  </data>
+  <data name="net_http_log_content_null" xml:space="preserve">
+    <value>Content set to '&lt;null&gt;'.</value>
+  </data>
+  <data name="net_http_handler_not_assigned" xml:space="preserve">
+    <value>The inner handler has not been assigned.</value>
+  </data>
+  <data name="net_http_invalid_enable_first" xml:space="preserve">
+    <value>The {0} property must be set to '{1}' to use this property.</value>
+  </data>
+  <data name="net_http_content_buffersize_limit" xml:space="preserve">
+    <value>Buffering more than {0} bytes is not supported.</value>
+  </data>
+  <data name="net_http_value_not_supported" xml:space="preserve">
+    <value>The value '{0}' is not supported for property '{1}'.</value>
+  </data>
+  <data name="net_http_io_read" xml:space="preserve">
+    <value>The read operation failed, see inner exception.</value>
+  </data>
+  <data name="net_http_chunked_not_allowed_with_empty_content" xml:space="preserve">
+    <value>'Transfer-Encoding: chunked' header can not be used when content object is not specified.</value>
+  </data>
+  <data name="net_http_chunked_not_allowed_with_content_length" xml:space="preserve">
+    <value>Both 'Content-Length' and 'Transfer-Encoding: chunked' headers can not be specified at the same time.</value>
+  </data>
+  <data name="net_http_invalid_cookiecontainer" xml:space="preserve">
+    <value>When using CookieUsePolicy.UseSpecifiedCookieContainer, the CookieContainer property must not be null.</value>
+  </data>
+  <data name="net_http_invalid_proxyusepolicy" xml:space="preserve">
+    <value>When using a non-null Proxy, the WindowsProxyUsePolicy property must be set to WindowsProxyUsePolicy.UseCustomProxy.</value>
+  </data>
+  <data name="net_http_invalid_proxy" xml:space="preserve">
+    <value>When using WindowsProxyUsePolicy.UseCustomProxy, the Proxy property must not be null.</value>
+  </data>
+  <data name="net_http_value_must_be_greater_than" xml:space="preserve">
+    <value>The specified value must be greater than {0}.</value>
+  </data>
+  <data name="MailHeaderFieldInvalidCharacter" xml:space="preserve">
+    <value>An invalid character was found in the mail header: '{0}'.</value>
+  </data>
+  <data name="MailAddressInvalidFormat" xml:space="preserve">
+    <value>The specified string is not in the form required for an e-mail address.</value>
+  </data>
+  <data name="MailHeaderFieldMalformedHeader" xml:space="preserve">
+    <value>The mail header is malformed.</value>
+  </data>
+  <data name="InvalidHeaderName" xml:space="preserve">
+    <value>An invalid character was found in header name.</value>
+  </data>
+  <data name="net_cookie_attribute" xml:space="preserve">
+    <value>The '{0}'='{1}' part of the cookie is invalid.</value>
+  </data>
+</root>
