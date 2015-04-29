@@ -10654,6 +10654,10 @@ private:
                 case ELEMENT_TYPE_PTR:     
                     wcsncat_s(typeName, typeNameLen, W("*\0"), typeNameLen);
                     return S_OK;
+                default:
+                    // note we can never reach here as this is a nested switch
+                    // and corElemType can only be one of the values above
+                    break;
                 }
             }
             break;
@@ -10878,6 +10882,8 @@ private:
                             DMLOut(" |- %s = %S", DMLManagedVar(currentExpansion, currentFrame, i), typeOfElement);
                             printed = true;
                         }
+                        break;
+                    default:
                         break;
                     }
                 }
