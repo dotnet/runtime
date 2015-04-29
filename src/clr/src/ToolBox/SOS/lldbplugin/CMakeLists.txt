@@ -55,6 +55,7 @@ include_directories(inc)
 include_directories("${LLDB_H}")
 include_directories(${CLR_DIR}/src/debug/inc)
 include_directories(${CLR_DIR}/src/inc)
+include_directories(${CLR_DIR}/src/coreclr/hosts/unixcoreruncommon)
 
 set(SOURCES
     sosplugin.cpp
