@@ -4,7 +4,6 @@
 //
 
 
-
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
@@ -236,7 +235,7 @@ struct IActivationFactory;
 
 #define	CLR_MINOR_VERSION	( 0 )
 
-#define	CLR_BUILD_VERSION	( 22719 )
+#define	CLR_BUILD_VERSION	( 22828 )
 
 #define	CLR_ASSEMBLY_MAJOR_VERSION	( 4 )
 
@@ -279,10 +278,6 @@ DEPRECATED_CLR_STDAPI CallFunctionShim(LPCWSTR szDllName, LPCSTR szFunctionName,
 DEPRECATED_CLR_STDAPI GetRealProcAddress(LPCSTR pwszProcName, VOID** ppv);
 DECLARE_DEPRECATED void STDMETHODCALLTYPE CorExitProcess(int exitCode);
 DEPRECATED_CLR_STDAPI LoadStringRC(UINT iResouceID, _Out_writes_z_(iMax) LPWSTR szBuffer, int iMax, int bQuiet);
-typedef HRESULT (__stdcall *FLockClrVersionCallback) ();
-DEPRECATED_CLR_STDAPI LockClrVersion(FLockClrVersionCallback hostCallback,FLockClrVersionCallback *pBeginHostSetup,FLockClrVersionCallback *pEndHostSetup);
-DEPRECATED_CLR_STDAPI CreateDebuggingInterfaceFromVersion(int iDebuggerVersion, LPCWSTR szDebuggeeVersion, IUnknown ** ppCordb);
-DEPRECATED_CLR_STDAPI GetVersionFromProcess(HANDLE hProcess, _Out_writes_to_(cchBuffer, *pdwLength) LPWSTR pVersion, DWORD cchBuffer, _Out_ DWORD* dwLength);
 typedef HRESULT  (STDAPICALLTYPE *FnGetCLRRuntimeHost)(REFIID riid, IUnknown **pUnk);
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_mscoree_0000_0000_0001
