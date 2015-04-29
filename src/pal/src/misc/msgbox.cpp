@@ -224,7 +224,6 @@ MessageBoxA(
 	    IN LPCSTR lpCaption,
 	    IN UINT uType)
 {
-    INT len = 0;
     INT rc = 0;
 
     PERF_ENTRY(MessageBoxA);
@@ -411,7 +410,7 @@ MessageBoxA(
 #endif // __APPLE__ else
 
     PALCLeaveCriticalSection( &msgbox_critsec);
-error:
+
     LOGEXIT("MessageBoxA returns %d\n", rc);
     PERF_EXIT(MessageBoxA);
     return rc;

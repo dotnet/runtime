@@ -6137,6 +6137,7 @@ void CEEPreloader::TriageTypeFromSoftBoundModule(TypeHandle th, Module * pSoftBo
     }
 }
 
+#ifdef FEATURE_FULL_NGEN
 static TypeHandle TryToLoadTypeSpecHelper(Module * pModule, PCCOR_SIGNATURE pSig, ULONG cSig)
 {
     STANDARD_VM_CONTRACT;
@@ -6158,7 +6159,6 @@ static TypeHandle TryToLoadTypeSpecHelper(Module * pModule, PCCOR_SIGNATURE pSig
     return th;
 }
 
-#ifdef FEATURE_FULL_NGEN
 void CEEPreloader::TriageTypeSpecsFromSoftBoundModule(Module * pSoftBoundModule)
 {
     STANDARD_VM_CONTRACT;

@@ -707,7 +707,7 @@ FORCEINLINE static CorCompileSection GetSectionForNodeType(ZapNodeType type)
 {
     LIMITED_METHOD_CONTRACT;
 
-    switch (type)
+    switch ((int)type)
     {
     // SECTION_MODULE
     case NodeTypeForItemKind(DataImage::ITEM_MODULE):
