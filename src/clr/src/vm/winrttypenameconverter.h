@@ -75,9 +75,8 @@ public :
     // calculate the redirected type index at EEClass creation time.
     //
     static WinMDAdapter::RedirectedTypeIndex GetRedirectedTypeIndexByName(
-                                                    IMDInternalImport *pMDImport, 
-                                                    mdTypeDef token,
-                                                    WinMDAdapter::FrameworkAssemblyIndex assemblyIndex);
+        Module *pModule,
+        mdTypeDef token);
 public :
     //==============================================================================================
     // WinRT -> Managed
