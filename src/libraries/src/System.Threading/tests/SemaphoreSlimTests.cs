@@ -591,22 +591,23 @@ namespace Test
                 {
                     if (i < waitThreads)
                     {
-                        // We are creating the Task using TaskCreationOptions.LongRunning because...
-                        // there is no guarantee that the Task will be created on another thread.
-                        // There is also no guarantee that using this TaskCreationOption will force
-                        // it to be run on another thread.
-                        threads[i] = new Task (delegate ()
-                            {
-                                mre.WaitOne();
-                                if (semaphore.Wait(timeout))
-                                {
-                                    Interlocked.Increment(ref succeeded);
-                                }
-                                else
-                                {
-                                    Interlocked.Increment(ref failed);
-                                }
-                            });
+                        // We are creating the Task using TaskCreationOptions.LongRunning to
+                        // force usage of another thread (which will be the case on the default scheduler
+                        // with its current implementation).  Without this, the release tasks will likely get
+                        // queued behind the wait tasks in the pool, making it very likely that the wait tasks
+                        // will starve the very tasks that when run would unblock them.
+                        threads[i] = new Task(delegate ()
+                           {
+                               mre.WaitOne();
+                               if (semaphore.Wait(timeout))
+                               {
+                                   Interlocked.Increment(ref succeeded);
+                               }
+                               else
+                               {
+                                   Interlocked.Increment(ref failed);
+                               }
+                           }, TaskCreationOptions.LongRunning);
                     }
                     else
                     {
