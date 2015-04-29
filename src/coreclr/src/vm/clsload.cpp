@@ -3069,11 +3069,38 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
     {
         nameHandle.SetTokenNotToLoad(tdAllTypes);
     }
-    
+
+    return ResolveNameToTypeDefThrowing(pFoundRefModule, &nameHandle, ppTypeDefModule, pTypeDefToken, loadFlag, pfUsesTypeForwarder);
+}
+
+/*static*/
+BOOL
+ClassLoader::ResolveNameToTypeDefThrowing(
+    Module *         pModule,
+    NameHandle *     pName,
+    Module **        ppTypeDefModule,
+    mdTypeDef *      pTypeDefToken,
+    Loader::LoadFlag loadFlag,
+    BOOL *           pfUsesTypeForwarder) // The semantic of this parameter: TRUE if a type forwarder is found. It is never set to FALSE.
+{    
+    CONTRACT(BOOL)
+    {
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        MODE_ANY;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        PRECONDITION(CheckPointer(pModule));
+        PRECONDITION(CheckPointer(pName));
+        SUPPORTS_DAC;
+    }
+    CONTRACT_END;
+
+    TypeHandle typeHnd;
     mdToken  foundTypeDef;
     Module * pFoundModule;
     mdExportedType foundExportedType;
-    Module * pSourceModule = pFoundRefModule;
+    Module * pSourceModule = pModule;
+    Module * pFoundRefModule = pModule;
     
     for (UINT32 nTypeForwardingChainSize = 0; nTypeForwardingChainSize < const_cMaxTypeForwardingChainSize; nTypeForwardingChainSize++)
     {
@@ -3081,7 +3108,7 @@ ClassLoader::ResolveTokenToTypeDefThrowing(
         pFoundModule = NULL;
         foundExportedType = mdTokenNil;
         if (!pSourceModule->GetClassLoader()->FindClassModuleThrowing(
-            &nameHandle, 
+            pName,
             &typeHnd, 
             &foundTypeDef, 
             &pFoundModule, 

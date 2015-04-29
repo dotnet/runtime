@@ -17,7 +17,6 @@
 #include "winrttypenameconverter.h"
 #include "typeresolution.h"
 
-
 struct RedirectedTypeNames
 {
     LPCSTR  szClrNamespace;
@@ -36,6 +35,48 @@ static const RedirectedTypeNames g_redirectedTypeNames[WinMDAdapter::RedirectedT
 
 #undef DEFINE_PROJECTED_TYPE
 
+struct RedirectedTypeNamesKey
+{
+    RedirectedTypeNamesKey(LPCSTR szNamespace, LPCSTR szName) :
+        m_szNamespace(szNamespace),
+        m_szName(szName)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    LPCSTR  m_szNamespace;
+    LPCSTR  m_szName;
+};
+
+class RedirectedTypeNamesTraits : public NoRemoveSHashTraits< DefaultSHashTraits<const RedirectedTypeNames *> >
+{
+public:
+    typedef RedirectedTypeNamesKey key_t;
+
+    static key_t GetKey(element_t e)
+    { 
+        LIMITED_METHOD_CONTRACT;
+        return RedirectedTypeNamesKey(e->szClrNamespace, e->szClrName);
+    }
+    static BOOL Equals(key_t k1, key_t k2) 
+    { 
+        LIMITED_METHOD_CONTRACT;
+        return (strcmp(k1.m_szName, k2.m_szName) == 0) && (strcmp(k1.m_szNamespace, k2.m_szNamespace) == 0);
+    }
+    static count_t Hash(key_t k) 
+    {
+        LIMITED_METHOD_CONTRACT;
+        // Only use the Name when calculating the hash value. Many redirected types share the same namespace so
+        // there isn't a lot of value in using the namespace when calculating the hash value.
+        return HashStringA(k.m_szName);
+    }
+
+    static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
+    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
+};
+
+typedef SHash< RedirectedTypeNamesTraits > RedirectedTypeNamesHashTable;
+static RedirectedTypeNamesHashTable * s_pRedirectedTypeNamesHashTable = NULL;
 
 //
 // Return the redirection index and type kind if the MethodTable* is a redirected type
@@ -580,33 +621,104 @@ bool WinRTTypeNameConverter::IsRedirectedType(MethodTable *pMT, WinMDAdapter::Wi
 
 // static
 WinMDAdapter::RedirectedTypeIndex WinRTTypeNameConverter::GetRedirectedTypeIndexByName(
-                                        IMDInternalImport *pMDImport, 
-                                        mdTypeDef token,
-                                        WinMDAdapter::FrameworkAssemblyIndex assemblyIndex)
+    Module *pModule, 
+    mdTypeDef token)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMDImport));
+        PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
 
+    // If the redirected type hashtable has not been initialized initialize it
+    if (s_pRedirectedTypeNamesHashTable == NULL)
+    {
+        NewHolder<RedirectedTypeNamesHashTable> pRedirectedTypeNamesHashTable = new RedirectedTypeNamesHashTable();
+        pRedirectedTypeNamesHashTable->Reallocate(2 * COUNTOF(g_redirectedTypeNames));
+
+        for (int i = 0; i < COUNTOF(g_redirectedTypeNames); ++i)
+        {
+            pRedirectedTypeNamesHashTable->Add(&(g_redirectedTypeNames[i]));
+        }
+
+        if (InterlockedCompareExchangeT(&s_pRedirectedTypeNamesHashTable, pRedirectedTypeNamesHashTable.GetValue(), NULL) == NULL)
+        {
+            pRedirectedTypeNamesHashTable.SuppressRelease();
+        }
+    }
+
+    IMDInternalImport *pInternalImport = pModule->GetMDImport();
     LPCSTR szName;
     LPCSTR szNamespace;
-    IfFailThrow(pMDImport->GetNameOfTypeDef(token, &szName, &szNamespace));
+    IfFailThrow(pInternalImport->GetNameOfTypeDef(token, &szName, &szNamespace));
 
-    // Check each of the redirected types to see if it is our type
-    for (int i = 0; i < COUNTOF(g_redirectedTypeNames); ++i)
+    const RedirectedTypeNames *const * ppRedirectedNames = s_pRedirectedTypeNamesHashTable->LookupPtr(RedirectedTypeNamesKey(szNamespace, szName));
+    if (ppRedirectedNames == NULL)
     {
-        // Do the fast checks first
-        if (g_redirectedTypeNames[i].assembly == assemblyIndex)
+        return WinMDAdapter::RedirectedTypeIndex_Invalid;
+    }
+
+    UINT redirectedTypeIndex = (UINT)(*ppRedirectedNames - g_redirectedTypeNames);
+    _ASSERTE(redirectedTypeIndex < COUNTOF(g_redirectedTypeNames));
+
+    // If the redirected assembly is mscorlib just compare it directly. This is necessary because 
+    // WinMDAdapter::GetExtraAssemblyRefProps does not support mscorlib
+    if (g_redirectedTypeNames[redirectedTypeIndex].assembly == WinMDAdapter::FrameworkAssembly_Mscorlib)
+    {
+        return MscorlibBinder::GetModule()->GetAssembly() == pModule->GetAssembly() ?
+            (WinMDAdapter::RedirectedTypeIndex)redirectedTypeIndex :
+            WinMDAdapter::RedirectedTypeIndex_Invalid;
+    }
+
+    LPCSTR pSimpleName;
+    AssemblyMetaDataInternal context;
+    const BYTE * pbKeyToken;
+    DWORD cbKeyTokenLength;
+    DWORD dwFlags;
+    WinMDAdapter::GetExtraAssemblyRefProps(
+        g_redirectedTypeNames[redirectedTypeIndex].assembly,
+        &pSimpleName,
+        &context,
+        &pbKeyToken,
+        &cbKeyTokenLength,
+        &dwFlags);
+
+    AssemblySpec spec;
+    IfFailThrow(spec.Init(
+        pSimpleName, 
+        &context,
+        pbKeyToken, 
+        cbKeyTokenLength, 
+        dwFlags));
+    Assembly* pRedirectedAssembly = spec.LoadAssembly(
+        FILE_LOADED,
+        NULL, // pLoadSecurity
+        FALSE); // fThrowOnFileNotFound
+
+    if (pRedirectedAssembly == NULL)
+    {
+        return WinMDAdapter::RedirectedTypeIndex_Invalid;
+    }
+            
+    // Resolve the name in the redirected assembly to the actual type def and assembly
+    NameHandle nameHandle(szNamespace, szName);
+    nameHandle.SetTokenNotToLoad(tdAllTypes);
+    Module * pTypeDefModule;
+    mdTypeDef typeDefToken;
+
+    if (ClassLoader::ResolveNameToTypeDefThrowing(
+        pRedirectedAssembly->GetManifestModule(),
+        &nameHandle,
+        &pTypeDefModule,
+        &typeDefToken,
+        Loader::DontLoad))
+    {
+        // Finally check if the assembly from this type def token mathes the assembly type forwareded from the
+        // redirected assembly
+        if (pTypeDefModule->GetAssembly() == pModule->GetAssembly())
         {
-            // This is in the right assembly, see if the name matches
-            if (strcmp(g_redirectedTypeNames[i].szClrName, szName) == 0 &&
-                strcmp(g_redirectedTypeNames[i].szClrNamespace, szNamespace) == 0)
-            {
-                return (WinMDAdapter::RedirectedTypeIndex)i;
-            }
+            return (WinMDAdapter::RedirectedTypeIndex)redirectedTypeIndex;
         }
     }
 
