@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{089444FE-8FF5-4D8F-A51B-32D026425F6B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Reflection.TypeExtensions.Tests</AssemblyName>
+    <RootNamespace>System.Reflection.TypeExtensions.Tests</RootNamespace>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Assembly\AssemblyExtensionTests.cs" />
+    <Compile Include="ConstructorInfo\InvokeArrayCtors.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoInvoke1.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoInvoke2.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoMemberType.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoTypeConstructorName.cs" />
+    <Compile Include="EventInfo\EventInfoAddEventHandler.cs" />
+    <Compile Include="EventInfo\EventInfoAttributesProperty.cs" />
+    <Compile Include="EventInfo\EventInfoEventHandlerType.cs" />
+    <Compile Include="EventInfo\EventInfoGetAddMethod1.cs" />
+    <Compile Include="EventInfo\EventInfoGetAddMethod2.cs" />
+    <Compile Include="EventInfo\EventInfoGetRaiseMethod1.cs" />
+    <Compile Include="EventInfo\EventInfoGetRaiseMethod2.cs" />
+    <Compile Include="EventInfo\EventInfoGetRemoveMethod1.cs" />
+    <Compile Include="EventInfo\EventInfoGetRemoveMethod2.cs" />
+    <Compile Include="EventInfo\EventInfoIsSpecialName.cs" />
+    <Compile Include="EventInfo\EventInfoMemberType.cs" />
+    <Compile Include="EventInfo\EventInfoRemoveEventHandler.cs" />
+    <Compile Include="FieldInfo\FieldInfoAttributes.cs" />
+    <Compile Include="FieldInfo\FieldInfoFieldType.cs" />
+    <Compile Include="FieldInfo\FieldInfoGetValue1.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsAssembly.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsFamily.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsFamilyAndAssembly.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsFamilyOrAssembly.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsInitOnly.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsLiteral.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsPrivate.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsPublic.cs" />
+    <Compile Include="FieldInfo\FieldInfoIsStatic.cs" />
+    <Compile Include="FieldInfo\FieldInfoMemberType.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfoConstructorName.cs" />
+    <Compile Include="MemberInfo\MemberInfoMemberType.cs" />
+    <Compile Include="MemberInfo\MemberInfoModule.cs" />
+    <Compile Include="MemberInfo\MemberInfoName.cs" />
+    <Compile Include="MethodBase\MethodBaseContainsGenericParameters.cs" />
+    <Compile Include="MethodInfo\GetBaseDefinition.cs" />
+    <Compile Include="MethodInfo\MethodInfoGetGenericArguments.cs" />
+    <Compile Include="Nullable\NullableMisc.cs" />
+	<Compile Include="PropertyCompat\PropertyCompat.cs" />
+    <Compile Include="PropertyInfo\GetAccessors.cs" />
+    <Compile Include="PropertyInfo\PropertyGetAccessors2.cs" />
+    <Compile Include="PropertyInfo\PropertyInfoGetAccessors1.cs" />
+    <Compile Include="Type\GetDefaultMembers.cs" />
+    <Compile Include="Type\GetEvents.cs" />
+    <Compile Include="Type\GetFields.cs" />
+    <Compile Include="Type\GetInterfaces.cs" />
+    <Compile Include="Type\GetMember.cs" />
+    <Compile Include="Type\GetMembers.cs" />
+    <Compile Include="Type\GetMethods.cs" />
+    <Compile Include="Type\GetProperties.cs" />
+    <Compile Include="Type\GetProperty.cs" />
+    <Compile Include="Type\IsAssignableFrom.cs" />
+    <Compile Include="Type\TypeInfoAPIs.cs" />
+  </ItemGroup>
+  <!-- References are resolved from packages.config -->
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.TypeExtensions.CoreCLR.csproj">
+      <Project>{1e689c1b-690c-4799-bde9-6e7990585894}</Project>
+      <Name>System.Reflection.TypeExtensions.CoreCLR</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Targets>Build;DebugSymbolsProjectOutputGroup</Targets>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

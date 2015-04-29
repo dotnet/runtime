@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "System.Collections": "4.0.10-beta-22809",
+    "System.Diagnostics.Debug": "4.0.10-beta-22809",
+    "System.Linq": "4.0.0-beta-22809",
+    "System.Reflection": "4.0.10-beta-22809",
+    "System.Reflection.Emit": "4.0.0-beta-22809",
+    "System.Reflection.Emit.ILGeneration": "4.0.0-beta-22809",
+    "System.Reflection.TypeExtensions": "4.0.0-beta-22809",
+    "System.Reflection.Extensions": "4.0.0-beta-22809",
+    "System.Reflection.Primitives": "4.0.0-beta-22809",
+    "System.Resources.ResourceManager": "4.0.0-beta-22809",
+    "System.Runtime": "4.0.20-beta-22809",
+    "System.Runtime.Extensions": "4.0.10-beta-22809",
+    "System.Threading": "4.0.10-beta-22809"
+  }
+}
