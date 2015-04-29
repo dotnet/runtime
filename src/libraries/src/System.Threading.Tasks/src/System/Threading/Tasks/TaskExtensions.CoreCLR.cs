@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading.Tasks
 {
@@ -28,56 +27,13 @@ namespace System.Threading.Tasks
         /// <returns>A Task that represents the asynchronous operation of the provided Task{Task}.</returns>
         public static Task Unwrap(this Task<Task> task)
         {
-            if (task == null) throw new ArgumentNullException("task");
+            if (task == null)
+                throw new ArgumentNullException("task");
 
-            bool result;
-
-            // tcs.Task serves as a proxy for task.Result.
-            // AttachedToParent is the only legal option for TCS-style task.
-            var tcs = new TaskCompletionSource<Task>(task.CreationOptions & TaskCreationOptions.AttachedToParent);
-
-            // Set up some actions to take when task has completed.
-            task.ContinueWith(delegate
-            {
-                switch (task.Status)
-                {
-                    // If task did not run to completion, then record the cancellation/fault information
-                    // to tcs.Task.
-                    case TaskStatus.Canceled:
-                    case TaskStatus.Faulted:
-                        result = tcs.TrySetFromTask(task);
-                        Debug.Assert(result, "Unwrap(Task<Task>): Expected TrySetFromTask #1 to succeed");
-                        break;
-
-                    case TaskStatus.RanToCompletion:
-                        // task.Result == null ==> proxy should be canceled.
-                        if (task.Result == null) tcs.TrySetCanceled();
-
-                        // When task.Result completes, take some action to set the completion state of tcs.Task.
-                        else
-                        {
-                            task.Result.ContinueWith(_ =>
-                            {
-                                // Copy completion/cancellation/exception info from task.Result to tcs.Task.
-                                result = tcs.TrySetFromTask(task.Result);
-                                Debug.Assert(result, "Unwrap(Task<Task>): Expected TrySetFromTask #2 to succeed");
-                            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default)
-                                .ContinueWith(antecedent =>
-                                {
-                                    // Clean up if ContinueWith() operation fails due to TSE
-                                    tcs.TrySetException(antecedent.Exception);
-                                }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
-                        }
-                        break;
-                }
-            }, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default).ContinueWith(antecedent =>
-            {
-                // Clean up if ContinueWith() operation fails due to TSE
-                tcs.TrySetException(antecedent.Exception);
-            }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
-
-            // Return this immediately as a proxy.  When task.Result completes, or task is faulted/canceled,
-            // the completion information will be transfered to tcs.Task.
+            // Create a new Task to serve as a proxy for the actual inner task.  Attach it
+            // to the parent if the original was attached to the parent.
+            var tcs = new TaskCompletionSource<VoidResult>(task.CreationOptions & TaskCreationOptions.AttachedToParent);
+            TransferAsynchronously(tcs, task);
             return tcs.Task;
         }
 
@@ -97,86 +53,141 @@ namespace System.Threading.Tasks
         /// <returns>A Task{TResult} that represents the asynchronous operation of the provided Task{Task{TResult}}.</returns>        
         public static Task<TResult> Unwrap<TResult>(this Task<Task<TResult>> task)
         {
-            if (task == null) throw new ArgumentNullException("task");
+            if (task == null)
+                throw new ArgumentNullException("task");
 
-            bool result;
-
-            // tcs.Task serves as a proxy for task.Result.
-            // AttachedToParent is the only legal option for TCS-style task.
+            // Create a new Task to serve as a proxy for the actual inner task.  Attach it
+            // to the parent if the original was attached to the parent.
             var tcs = new TaskCompletionSource<TResult>(task.CreationOptions & TaskCreationOptions.AttachedToParent);
-
-            // Set up some actions to take when task has completed.
-            task.ContinueWith(delegate
-            {
-                switch (task.Status)
-                {
-                    // If task did not run to completion, then record the cancellation/fault information
-                    // to tcs.Task.
-                    case TaskStatus.Canceled:
-                    case TaskStatus.Faulted:
-                        result = tcs.TrySetFromTask(task);
-                        Debug.Assert(result, "Unwrap(Task<Task<T>>): Expected TrySetFromTask #1 to succeed");
-                        break;
-
-                    case TaskStatus.RanToCompletion:
-                        // task.Result == null ==> proxy should be canceled.
-                        if (task.Result == null) tcs.TrySetCanceled();
-
-                        // When task.Result completes, take some action to set the completion state of tcs.Task.
-                        else
-                        {
-                            task.Result.ContinueWith(_ =>
-                            {
-                                // Copy completion/cancellation/exception info from task.Result to tcs.Task.
-                                result = tcs.TrySetFromTask(task.Result);
-                                Debug.Assert(result, "Unwrap(Task<Task<T>>): Expected TrySetFromTask #2 to succeed");
-                            },
-                            CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default)
-                                .ContinueWith(antecedent =>
-                                {
-                                    // Clean up if ContinueWith() operation fails due to TSE
-                                    tcs.TrySetException(antecedent.Exception);
-                                }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
-                        }
-
-                        break;
-                }
-            }, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Current).ContinueWith(antecedent =>
-            {
-                // Clean up if ContinueWith() operation fails due to TSE
-                tcs.TrySetException(antecedent.Exception);
-            }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default); ;
-
-            // Return this immediately as a proxy.  When task.Result completes, or task is faulted/canceled,
-            // the completion information will be transfered to tcs.Task.
+            TransferAsynchronously(tcs, task);
             return tcs.Task;
         }
 
-        // Transfer the completion status from "source" to "me".
-        private static bool TrySetFromTask<TResult>(this TaskCompletionSource<TResult> me, Task source)
+        /// <summary>
+        /// Transfer the results of the <paramref name="outer"/> task's inner task to the <paramref name="completionSource"/>.
+        /// </summary>
+        /// <param name="completionSource">The completion source to which results should be transfered.</param>
+        /// <param name="outer">
+        /// The outer task that when completed will yield an inner task whose results we want marshaled to the <paramref name="completionSource"/>.
+        /// </param>
+        private static void TransferAsynchronously<TResult, TInner>(TaskCompletionSource<TResult> completionSource, Task<TInner> outer) where TInner : Task
         {
-            Debug.Assert(source.IsCompleted, "TrySetFromTask: Expected source to have completed.");
-            bool rval = false;
+            Action callback = null;
 
-            switch(source.Status)
+            // Create a continuation delegate.  For performance reasons, we reuse the same delegate/closure across multiple
+            // continuations; by using .ConfigureAwait(false).GetAwaiter().UnsafeOnComplete(action), in most cases
+            // this delegate can be stored directly into the Task's continuation field, eliminating the need for additional
+            // allocations.  Thus, this whole Unwrap operation generally results in four allocations: one for the TaskCompletionSource,
+            // one for the returned task, one for the delegate, and one for the closure.  Since the delegate is used
+            // across multiple continuations, we use the callback variable as well to indicate which continuation we're in:
+            // if the callback is non-null, then we're processing the continuation for the outer task and use the callback
+            // object as the continuation off of the inner task; if the callback is null, then we're processing the
+            // inner task.
+            callback = delegate
+            {
+                Debug.Assert(outer.IsCompleted);
+                if (callback != null)
+                {
+                    // Process the outer task's completion
+
+                    // Clear out the callback field to indicate that any future invocations should
+                    // be for processing the inner task, but store away a local copy in case we need 
+                    // to use it as the continuation off of the outer task.
+                    Action innerCallback = callback;
+                    callback = null;
+
+                    bool result = true;
+                    switch (outer.Status)
+                    {
+                        case TaskStatus.Canceled:
+                        case TaskStatus.Faulted:
+                            // The outer task has completed as canceled or faulted; transfer that
+                            // status to the completion source, and we're done.
+                            result = completionSource.TrySetFromTask(outer);
+                            break;
+                        case TaskStatus.RanToCompletion:
+                            Task inner = outer.Result;
+                            if (inner == null)
+                            {
+                                // The outer task completed successfully, but with a null inner task;
+                                // cancel the completionSource, and we're done.
+                                result = completionSource.TrySetCanceled();
+                            }
+                            else if (inner.IsCompleted)
+                            {
+                                // The inner task also completed!  Transfer the results, and we're done.
+                                result = completionSource.TrySetFromTask(inner);
+                            }
+                            else
+                            {
+                                // Run this delegate again once the inner task has completed.
+                                inner.ConfigureAwait(false).GetAwaiter().UnsafeOnCompleted(innerCallback);
+                            }
+                            break;
+                    }
+                    Debug.Assert(result);
+                }
+                else
+                {
+                    // Process the inner task's completion.  All we need to do is transfer its results
+                    // to the completion source.
+                    Debug.Assert(outer.Status == TaskStatus.RanToCompletion);
+                    Debug.Assert(outer.Result.IsCompleted);
+                    completionSource.TrySetFromTask(outer.Result);
+                }
+            };
+
+            // Kick things off by hooking up the callback as the task's continuation
+            outer.ConfigureAwait(false).GetAwaiter().UnsafeOnCompleted(callback);
+        }
+
+        /// <summary>Copies that ending state information from <paramref name="task"/> to <paramref name="completionSource"/>.</summary>
+        private static bool TrySetFromTask<TResult>(this TaskCompletionSource<TResult> completionSource, Task task)
+        {
+            Debug.Assert(task.IsCompleted);
+
+            bool result = false;
+            switch(task.Status)
             {
                 case TaskStatus.Canceled:
-                    rval = me.TrySetCanceled();
+                    result = completionSource.TrySetCanceled(ExtractCancellationToken(task));
                     break;
 
                 case TaskStatus.Faulted:
-                    rval = me.TrySetException(source.Exception.InnerExceptions);
+                    result = completionSource.TrySetException(task.Exception.InnerExceptions);
                     break;
 
                 case TaskStatus.RanToCompletion:
-                    if(source is Task<TResult>)
-                        rval = me.TrySetResult( ((Task<TResult>)source).Result);
-                    else
-                        rval = me.TrySetResult(default(TResult));
+                    Task<TResult> resultTask = task as Task<TResult>;
+                    result = resultTask != null ?
+                        completionSource.TrySetResult(resultTask.Result) :
+                        completionSource.TrySetResult(default(TResult));
                     break;
             }
-
-            return rval;
+            return result;
         }
+
+        /// <summary>Gets the CancellationToken associated with a canceled task.</summary>
+        private static CancellationToken ExtractCancellationToken(Task task)
+        {
+            // With the public Task APIs as of .NET 4.6, the only way to extract a CancellationToken
+            // that was associated with a Task is by await'ing it, catching the resulting
+            // OperationCanceledException, and getting the token from the OCE.
+            Debug.Assert(task.IsCanceled);
+            try
+            {
+                task.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException oce)
+            {
+                CancellationToken ct = oce.CancellationToken;
+                if (ct.IsCancellationRequested)
+                    return ct;
+            }
+            return new CancellationToken(true);
+        }
+
+        /// <summary>Dummy type to use as a void TResult.</summary>
+        private struct VoidResult { }
     }
 }
