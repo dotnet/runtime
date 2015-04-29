@@ -1,0 +1,7 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Overrides for all other targets (including build tools) can go in this file.
+  -->
+
+  <Import Project="mono.targets" Condition="'$(OsEnvironment)'=='Unix'" />
+</Project>
