@@ -42,7 +42,7 @@ namespace System.Collections.Generic
     }
 
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "by design name choice")]
-    [DebuggerTypeProxy(typeof(System.Collections.Generic.SortedSetDebugView<>))]
+    [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     public class SortedSet<T> : ISet<T>, ICollection<T>, ICollection, IReadOnlyCollection<T>
     {

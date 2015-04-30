@@ -48,7 +48,7 @@ namespace System.Collections.Generic
     /// the same time. 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    [DebuggerTypeProxy(typeof(System.Collections.Generic.HashSetDebugView<>))]
+    [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "By design")]
     public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>
