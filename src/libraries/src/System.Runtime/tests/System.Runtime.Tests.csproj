@@ -73,6 +73,7 @@
     <Compile Include="System\SByte.cs" />
     <Compile Include="System\Single.cs" />
     <Compile Include="System\String.cs" />
+    <Compile Include="System\String.Split.cs" />
     <Compile Include="System\Text\StringBuilder.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\TimeSpan.cs" />
