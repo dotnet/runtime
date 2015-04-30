@@ -14,7 +14,7 @@ namespace System.Numerics.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue(1491)]
+        [ActiveIssue(1642)]
         public static void RunParseToStringTests()
         {
             byte[] tempByteArray1 = new byte[0];
@@ -131,15 +131,15 @@ namespace System.Numerics.Tests
             // Leading Sign
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + GetDigitSequence(1, 100, random));
-                VerifyParseToString(CultureInfo.CurrentUICulture.NumberFormat.PositiveSign + GetDigitSequence(1, 100, random));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.NegativeSign + GetDigitSequence(1, 100, random));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.PositiveSign + GetDigitSequence(1, 100, random));
             }
 
             // Trailing Sign
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, typeof(FormatException));
-                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.PositiveSign, typeof(FormatException));
+                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NegativeSign, typeof(FormatException));
+                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.PositiveSign, typeof(FormatException));
             }
 
             // Parentheses
@@ -151,19 +151,19 @@ namespace System.Numerics.Tests
             // Decimal Point - end
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator, typeof(FormatException));
+                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator, typeof(FormatException));
             }
 
             // Decimal Point - middle
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator + "000", typeof(FormatException));
+                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + "000", typeof(FormatException));
             }
 
             // Decimal Point - non-zero decimal
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator + GetDigitSequence(20, 25, random), typeof(FormatException));
+                VerifyFailParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + GetDigitSequence(20, 25, random), typeof(FormatException));
             }
 
             // Thousands
@@ -173,8 +173,8 @@ namespace System.Numerics.Tests
                 string seperator = null;
                 string digits = null;
 
-                sizes = CultureInfo.CurrentUICulture.NumberFormat.NumberGroupSizes;
-                seperator = CultureInfo.CurrentUICulture.NumberFormat.NumberGroupSeparator;
+                sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
+                seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
                 digits = GenerateGroups(sizes, seperator, random);
                 VerifyFailParseToString(digits, typeof(FormatException));
             }
@@ -182,14 +182,14 @@ namespace System.Numerics.Tests
             // Exponent
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyFailParseToString(GetDigitSequence(1, 100, random) + "e" + CultureInfo.CurrentUICulture.NumberFormat.PositiveSign + GetDigitSequence(1, 3, random), typeof(FormatException));
-                VerifyFailParseToString(GetDigitSequence(1, 100, random) + "e" + CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + GetDigitSequence(1, 3, random), typeof(FormatException));
+                VerifyFailParseToString(GetDigitSequence(1, 100, random) + "e" + CultureInfo.CurrentCulture.NumberFormat.PositiveSign + GetDigitSequence(1, 3, random), typeof(FormatException));
+                VerifyFailParseToString(GetDigitSequence(1, 100, random) + "e" + CultureInfo.CurrentCulture.NumberFormat.NegativeSign + GetDigitSequence(1, 3, random), typeof(FormatException));
             }
 
             // Currency Symbol
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyFailParseToString(CultureInfo.CurrentUICulture.NumberFormat.CurrencySymbol + GetDigitSequence(1, 100, random), typeof(FormatException));
+                VerifyFailParseToString(CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol + GetDigitSequence(1, 100, random), typeof(FormatException));
             }
 
             // Hex Specifier
@@ -251,15 +251,15 @@ namespace System.Numerics.Tests
             // Leading Sign
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + GetDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
-                VerifyParseToString(CultureInfo.CurrentUICulture.NumberFormat.PositiveSign + GetDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.NegativeSign + GetDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.PositiveSign + GetDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
             }
 
             // Trailing Sign
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.NegativeSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
-                VerifyParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.PositiveSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NegativeSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.PositiveSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
             }
 
             // Parentheses
@@ -271,21 +271,21 @@ namespace System.Numerics.Tests
             // Decimal Point - end
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator, ns, ((ns & NumberStyles.AllowDecimalPoint) != 0));
+                VerifyParseToString(GetDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator, ns, ((ns & NumberStyles.AllowDecimalPoint) != 0));
             }
 
             // Decimal Point - middle
             for (int i = 0; i < s_samples; i++)
             {
                 string digits = GetDigitSequence(1, 100, random);
-                VerifyParseToString(digits + CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator + "000", ns, ((ns & NumberStyles.AllowDecimalPoint) != 0), digits);
+                VerifyParseToString(digits + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + "000", ns, ((ns & NumberStyles.AllowDecimalPoint) != 0), digits);
             }
 
             // Decimal Point - non-zero decimal
             for (int i = 0; i < s_samples; i++)
             {
                 string digits = GetDigitSequence(1, 100, random);
-                VerifyParseToString(digits + CultureInfo.CurrentUICulture.NumberFormat.NumberDecimalSeparator + GetDigitSequence(20, 25, random), ns, false, digits);
+                VerifyParseToString(digits + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + GetDigitSequence(20, 25, random), ns, false, digits);
             }
 
             // Thousands
@@ -295,8 +295,8 @@ namespace System.Numerics.Tests
                 string seperator = null;
                 string digits = null;
 
-                sizes = CultureInfo.CurrentUICulture.NumberFormat.NumberGroupSizes;
-                seperator = CultureInfo.CurrentUICulture.NumberFormat.NumberGroupSeparator;
+                sizes = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSizes;
+                seperator = CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
                 digits = GenerateGroups(sizes, seperator, random);
                 VerifyParseToString(digits, ns, ((ns & NumberStyles.AllowThousands) != 0));
             }
@@ -309,7 +309,7 @@ namespace System.Numerics.Tests
                 int expValue = Int32.Parse(exp);
                 string zeros = new string('0', expValue);
                 //Positive Exponents
-                VerifyParseToString(digits + "e" + CultureInfo.CurrentUICulture.NumberFormat.PositiveSign + exp, ns, ((ns & NumberStyles.AllowExponent) != 0), digits + zeros);
+                VerifyParseToString(digits + "e" + CultureInfo.CurrentCulture.NumberFormat.PositiveSign + exp, ns, ((ns & NumberStyles.AllowExponent) != 0), digits + zeros);
                 //Negative Exponents
                 bool valid = ((ns & NumberStyles.AllowExponent) != 0);
                 for (int j = digits.Length; (valid && (j > 0) && (j > digits.Length - expValue)); j--)
@@ -321,18 +321,18 @@ namespace System.Numerics.Tests
                 }
                 if (digits.Length - Int32.Parse(exp) > 0)
                 {
-                    VerifyParseToString(digits + "e" + CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + exp, ns, valid, digits.Substring(0, digits.Length - Int32.Parse(exp)));
+                    VerifyParseToString(digits + "e" + CultureInfo.CurrentCulture.NumberFormat.NegativeSign + exp, ns, valid, digits.Substring(0, digits.Length - Int32.Parse(exp)));
                 }
                 else
                 {
-                    VerifyParseToString(digits + "e" + CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + exp, ns, valid, "0");
+                    VerifyParseToString(digits + "e" + CultureInfo.CurrentCulture.NumberFormat.NegativeSign + exp, ns, valid, "0");
                 }
             }
 
             // Currency Symbol
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(CultureInfo.CurrentUICulture.NumberFormat.CurrencySymbol + GetDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowCurrencySymbol) != 0));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol + GetDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowCurrencySymbol) != 0));
             }
 
             // Hex Specifier
@@ -611,7 +611,7 @@ namespace System.Numerics.Tests
             String y2 = new String(number.ToArray());
             if (isNeg)
             {
-                y2 = CultureInfo.CurrentUICulture.NumberFormat.NegativeSign.ToCharArray() + y2;
+                y2 = CultureInfo.CurrentCulture.NumberFormat.NegativeSign.ToCharArray() + y2;
             }
             return y2;
         }
