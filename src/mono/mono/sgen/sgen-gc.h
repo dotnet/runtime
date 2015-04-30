@@ -1061,6 +1061,22 @@ gboolean nursery_canaries_enabled (void);
 						g_warning ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
 				} }
 
+/*
+ * This causes the compile to extend the liveness of 'v' till the call to dummy_use
+ */
+static inline void
+sgen_dummy_use (gpointer v)
+{
+#if defined(__GNUC__)
+	__asm__ volatile ("" : "=r"(v) : "r"(v));
+#elif defined(_MSC_VER)
+	static volatile gpointer ptr;
+	ptr = v;
+#else
+#error "Implement sgen_dummy_use for your compiler"
+#endif
+}
+
 #endif /* HAVE_SGEN_GC */
 
 #endif /* __MONO_SGENGC_H__ */

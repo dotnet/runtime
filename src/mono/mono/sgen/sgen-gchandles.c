@@ -362,7 +362,7 @@ retry:
 	 * register, so we need to prevent this from being reordered
 	 * wrt the check.
 	 */
-	mono_gc_dummy_use (obj);
+	sgen_dummy_use (obj);
 	mono_memory_barrier ();
 
 	if (is_weak)
@@ -432,7 +432,7 @@ retry:
 	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (slot)) {
 		GCObject *obj = MONO_GC_REVEAL_POINTER (slot, is_weak);
 		/* See note [dummy use]. */
-		mono_gc_dummy_use (obj);
+		sgen_dummy_use (obj);
 		/*
 		 * FIXME: The compiler could technically not carry a reference to obj around
 		 * at this point and recompute it later, in which case we would still use
@@ -444,7 +444,7 @@ retry:
 	}
 	metadata = MONO_GC_REVEAL_POINTER (slot, is_weak);
 	/* See note [dummy use]. */
-	mono_gc_dummy_use (metadata);
+	sgen_dummy_use (metadata);
 	if (*slot_addr != slot)
 		goto retry;
 	return metadata;

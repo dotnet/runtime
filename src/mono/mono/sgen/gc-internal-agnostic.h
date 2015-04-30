@@ -121,19 +121,4 @@ void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
 
 FILE *mono_gc_get_logfile (void);
 
-/*
- * This causes the compile to extend the liveness of 'v' till the call to dummy_use
- */
-static inline void
-mono_gc_dummy_use (gpointer v) {
-#if defined(__GNUC__)
-	__asm__ volatile ("" : "=r"(v) : "r"(v));
-#elif defined(_MSC_VER)
-	static volatile gpointer ptr;
-	ptr = v;
-#else
-#error "Implement mono_gc_dummy_use for your compiler"
-#endif
-}
-
 #endif
