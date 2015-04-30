@@ -13,7 +13,7 @@ namespace System.IO.Compression.Test
         public static async Task CreateFromDirectoryNormal()
         {
             await TestCreateDirectory(zfolder("normal"), true);
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 await TestCreateDirectory(zfolder("unicode"), true);
             }
@@ -65,7 +65,7 @@ namespace System.IO.Compression.Test
         public static void ExtractToDirectoryNormal()
         {
             TestExtract(zfile("normal.zip"), zfolder("normal"));
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 TestExtract(zfile("unicode.zip"), zfolder("unicode"));
             }
@@ -143,7 +143,7 @@ namespace System.IO.Compression.Test
                 DirsEqual(tempFolder, zfolder("normal"));
             }
 
-            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            if (Interop.IsWindows) // [ActiveIssue(846, PlatformID.AnyUnix)]
             {
                 using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
                 {

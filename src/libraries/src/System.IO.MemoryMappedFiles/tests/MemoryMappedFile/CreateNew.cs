@@ -53,7 +53,7 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc114", "\t\t \n\u00A0", 4096);
 
             // MMF with this mapname already exists
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map115" + s_uniquifier, 1000))
                 {
@@ -142,7 +142,7 @@ public class CreateNew : MMFTestBase
             VerifyCreateNew("Loc414", "\t\t \n\u00A0", 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None);
 
             // MMF with this mapname already exists
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows) // named maps not supported on Unix
+            if (Interop.IsWindows) // named maps not supported on Unix
             {
                 using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew("map415" + s_uniquifier, 4096))
                 {

@@ -18,7 +18,7 @@ namespace System.Collections.SortedListTests
 
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test01()
         {
             StringBuilder sblMsg = new StringBuilder(99);

@@ -87,7 +87,7 @@ public class AnonymousPipesSimpleTest
             Assert.False(string.IsNullOrWhiteSpace(server.GetClientHandleAsString()));
             Assert.False(server.IsAsync);
             Assert.True(server.IsConnected);
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            if (Interop.IsWindows)
             {
                 Assert.Equal(0, server.OutBufferSize);
             }
@@ -102,7 +102,7 @@ public class AnonymousPipesSimpleTest
             server.Write(new byte[] { 123 }, 0, 1);
             server.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
             server.Flush();
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            if (Interop.IsWindows)
             {
                 server.WaitForPipeDrain();
             }
@@ -119,7 +119,7 @@ public class AnonymousPipesSimpleTest
         {
             Task clientTask = Task.Run(() => StartClient(PipeDirection.Out, server.ClientSafePipeHandle));
 
-            if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+            if (Interop.IsWindows)
             {
                 Assert.Equal(4096, server.InBufferSize);
             }
@@ -152,7 +152,7 @@ public class AnonymousPipesSimpleTest
                 Assert.True(client.CanWrite);
                 Assert.False(client.IsAsync);
                 Assert.True(client.IsConnected);
-                if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+                if (Interop.IsWindows)
                 {
                     Assert.Equal(0, client.OutBufferSize);
                 }
@@ -166,7 +166,7 @@ public class AnonymousPipesSimpleTest
 
                 client.Write(new byte[] { 123 }, 0, 1);
                 client.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
-                if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+                if (Interop.IsWindows)
                 {
                     client.WaitForPipeDrain();
                 }
@@ -186,7 +186,7 @@ public class AnonymousPipesSimpleTest
             {
                 Task serverTask = Task.Run(() => DoStreamOperations(server));
 
-                if (Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows)
+                if (Interop.IsWindows)
                 {
                     Assert.Equal(4096, client.InBufferSize);
                 }

@@ -351,7 +351,7 @@ public class TupleTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestCompareTo()
     {
         TupleTestDriver<Int16, Int32, Int64, String, Char, Single, Double, DateTime, Tuple<Boolean, Object>, TimeSpan> tupleDriverA, tupleDriverB, tupleDriverC;
