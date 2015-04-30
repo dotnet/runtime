@@ -57,10 +57,10 @@ MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
-BEGIN_PROTOCOL_ENTRY2 (binary_protocol_world_stopping, TYPE_INT, generation, TYPE_LONGLONG, timestamp)
+BEGIN_PROTOCOL_ENTRY3 (binary_protocol_world_stopping, TYPE_INT, generation, TYPE_LONGLONG, timestamp, TYPE_POINTER, thread)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
-MATCH_INDEX (BINARY_PROTOCOL_MATCH)
+MATCH_INDEX (ptr == entry->thread ? 2 : BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
@@ -195,6 +195,13 @@ BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_scan_process_reference, TYPE_POINTE
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (ptr == entry->obj ? 0 : ptr == entry->ptr ? 1 : ptr == entry->value ? 2 : BINARY_PROTOCOL_NO_MATCH)
+IS_VTABLE_MATCH (FALSE)
+END_PROTOCOL_ENTRY_HEAVY
+
+BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_scan_stack, TYPE_POINTER, thread, TYPE_POINTER, stack_start, TYPE_POINTER, stack_end, TYPE_INT, skip_reason)
+DEFAULT_PRINT ()
+IS_ALWAYS_MATCH (FALSE)
+MATCH_INDEX (ptr == entry->thread ? 0 : (ptr >= entry->stack_start && ptr < entry->stack_end) ? 1 : BINARY_PROTOCOL_NO_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY_HEAVY
 

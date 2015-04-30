@@ -510,7 +510,7 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 
 	FOREACH_THREAD (info) {
 		char **start = (char**)info->client_info.stack_start;
-		if (info->client_info.skip)
+		if (info->client_info.skip || info->client_info.gc_disabled)
 			continue;
 		while (start < (char**)info->client_info.stack_end) {
 			if (*start >= obj && *start < endobj)
@@ -857,6 +857,9 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 			++ptr;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
+
+	if (sgen_is_world_stopped ())
+		find_pinning_ref_from_thread ((char*)key, sizeof (MonoObject));
 }
 
 #ifndef SGEN_WITHOUT_MONO

@@ -138,7 +138,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 
 	HEAVY_STAT (++stat_wbarrier_object_copy);
 
-	if (sgen_ptr_in_nursery (obj) || ptr_on_stack (obj)) {
+	if (sgen_ptr_in_nursery (obj) || ptr_on_stack (obj) || !SGEN_OBJECT_HAS_REFERENCES (src)) {
 		size = mono_object_class (obj)->instance_size;
 		mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 				size - sizeof (MonoObject));
@@ -2268,18 +2268,23 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 	scan_area_arg_end = end_nursery;
 
 	FOREACH_THREAD (info) {
+		int skip_reason = 0;
 		if (info->client_info.skip) {
 			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %td", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start);
-			continue;
-		}
-		if (info->client_info.gc_disabled) {
+			skip_reason = 1;
+		} else if (info->client_info.gc_disabled) {
 			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %td", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start);
-			continue;
-		}
-		if (!mono_thread_info_is_live (info)) {
+			skip_reason = 2;
+		} else if (!mono_thread_info_is_live (info)) {
 			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %td (state %x)", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start, info->client_info.info.thread_state);
-			continue;
+			skip_reason = 3;
 		}
+
+		binary_protocol_scan_stack ((gpointer)mono_thread_info_get_tid (info), info->client_info.stack_start, info->client_info.stack_end, skip_reason);
+
+		if (skip_reason)
+			continue;
+
 		g_assert (info->client_info.suspend_done);
 		SGEN_LOG (3, "Scanning thread %p, range: %p-%p, size: %td, pinned=%zd", info, info->client_info.stack_start, info->client_info.stack_end, (char*)info->client_info.stack_end - (char*)info->client_info.stack_start, sgen_get_pinned_count ());
 		if (mono_gc_get_gc_callbacks ()->thread_mark_func && !conservative_stack_mark) {

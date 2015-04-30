@@ -2690,7 +2690,6 @@ sgen_thread_unregister (SgenThreadInfo *p)
 	sgen_client_thread_unregister (p);
 }
 
-
 /*
  * ######################################################################
  * ########  Write barriers
@@ -2794,7 +2793,7 @@ sgen_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsign
 		if (bitmap & 0x1)
 			mono_gc_wbarrier_generic_store (dest, *src);
 		else
-			SGEN_UPDATE_REFERENCE_ALLOW_NULL (dest, *src);
+			*dest = *src;
 		++src;
 		++dest;
 		size -= SIZEOF_VOID_P;
@@ -3398,7 +3397,7 @@ sgen_stop_world (int generation)
 
 	SGEN_ASSERT (0, !world_is_stopped, "Why are we stopping a stopped world?");
 
-	binary_protocol_world_stopping (generation, sgen_timestamp ());
+	binary_protocol_world_stopping (generation, sgen_timestamp (), (gpointer)mono_native_thread_id_get ());
 
 	sgen_client_stop_world (generation);
 
