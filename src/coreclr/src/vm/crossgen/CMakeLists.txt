@@ -111,6 +111,12 @@ set(VM_CROSSGEN_SOURCES
     ../CrossgenRoResolveNamespace.cpp
 )
 
+if (WIN32)
+  list(APPEND VM_CROSSGEN_SOURCES
+      ../readytoruninfo.cpp
+  )
+endif (WIN32)
+
 include_directories(BEFORE ..)
 include_directories(${CLR_DIR}/src/gc)
 include_directories(../amd64)
