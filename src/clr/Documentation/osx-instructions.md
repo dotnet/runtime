@@ -64,14 +64,14 @@ To Build CoreCLR, run build.sh from the root of the coreclr repo.
 
     [Lots of stuff before this]
     Repo successfully built.
-    Product binaries are available at /Users/richlander/git/coreclr/bin/Product/mac.x64.debug
+    Product binaries are available at /Users/richlander/git/coreclr/bin/Product/OSX.x64.Debug
 
 
 Type `./build.sh -?` to see the full set of build options.
 
 Check the build output.
 
-    dotnet-mbp:coreclr richlander$ ls bin/Product/mac.x64.debug/
+    dotnet-mbp:coreclr richlander$ ls bin/Product/OSX.x64.Debug/
 
 You will see several files. The interesting ones are:
 
@@ -80,8 +80,8 @@ You will see several files. The interesting ones are:
 
 Copy the runtime and corerun into the demo directory.
 
-    dotnet-mbp:coreclr richlander$ cp bin/Product/mac.x64.debug/corerun ~/coreclr-demo/runtime/
-    dotnet-mbp:coreclr richlander$ cp bin/Product/mac.x64.debug/libcoreclr.dylib ~/coreclr-demo/runtime/
+    dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/corerun ~/coreclr-demo/runtime/
+    dotnet-mbp:coreclr richlander$ cp bin/Product/OSX.x64.Debug/libcoreclr.dylib ~/coreclr-demo/runtime/
 
 Build the Framework
 ===================
