@@ -26,7 +26,7 @@ namespace XMLTests.ReaderWriter.WriteWithEncodingWithFallback
         private const string ExampleSurrogateEntity = "&#x10000;";
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void XmlWriterConvertsInvalidCharacterToEntity()
         {
             MemoryStream ms = new MemoryStream();
@@ -54,7 +54,7 @@ namespace XMLTests.ReaderWriter.WriteWithEncodingWithFallback
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void EncodingFallbackFailsWhenInvalidCharacterInTagName()
         {
             MemoryStream ms = new MemoryStream();
@@ -77,7 +77,7 @@ namespace XMLTests.ReaderWriter.WriteWithEncodingWithFallback
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void XmlWriterConvertsSurrogatePairToEntity()
         {
             MemoryStream ms = new MemoryStream();
@@ -105,7 +105,7 @@ namespace XMLTests.ReaderWriter.WriteWithEncodingWithFallback
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void AsyncXmlWriterConvertsInvalidCharacterToEntity()
         {
             MemoryStream ms = new MemoryStream();
@@ -134,7 +134,7 @@ namespace XMLTests.ReaderWriter.WriteWithEncodingWithFallback
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void AsyncEncodingFallbackFailsWhenInvalidCharacterInTagName()
         {
             MemoryStream ms = new MemoryStream();
@@ -160,7 +160,7 @@ namespace XMLTests.ReaderWriter.WriteWithEncodingWithFallback
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void AsyncXmlWriterConvertsSurrogatePairToEntity()
         {
             MemoryStream ms = new MemoryStream();

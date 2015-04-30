@@ -45,7 +45,7 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void ConvertTo_WithContext()
         {
             DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)CultureInfo.CurrentCulture.GetFormat(typeof(DateTimeFormatInfo));

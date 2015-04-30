@@ -23,7 +23,7 @@ public class GetEnvironmentVariable
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/coreclr/issues/635", PlatformID.Linux | PlatformID.OSX)]
+    [ActiveIssue("https://github.com/dotnet/coreclr/issues/635", PlatformID.AnyUnix)]
     public void RandomLongVariableNameCanRoundTrip()
     {
         // NOTE: The limit of 32766 characters enforced by dekstop
@@ -121,7 +121,7 @@ public class GetEnvironmentVariable
     private static void SetEnvironmentVariableWithPInvoke(string name, string value)
     {
         bool success =
-            Interop.PlatformDetection.OperatingSystem == Interop.OperatingSystem.Windows ?
+            Interop.IsWindows ?
                 SetEnvironmentVariable(name, value) :
                 (value != null ? setenv(name, value, 1) : unsetenv(name)) == 0;
         Assert.True(success);
