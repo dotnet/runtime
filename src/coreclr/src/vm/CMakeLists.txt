@@ -253,6 +253,7 @@ set(VM_SOURCES_DAC_AND_WKS_WIN32
     clrtocomcall.cpp
     comtoclrcall.cpp
     rcwwalker.cpp
+    readytoruninfo.cpp
     umthunkhash.cpp #" Condition="'$(FeatureMixedMode)' == 'true'
     winrttypenameconverter.cpp
 )
