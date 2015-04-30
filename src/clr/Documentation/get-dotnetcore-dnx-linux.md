@@ -17,11 +17,7 @@ These instructions are written assuming the Ubuntu 14.04 LTS, since that's the d
 Packages
 --------
 
-Install the following packages: 
-
-- libssl-dev
-- libunwind8 
-- unzip
+Install the `libunwind8`, `libssl-dev` and `unzip` packages: 
 
 	sudo apt-get install libunwind8 libssl-dev unzip
 
