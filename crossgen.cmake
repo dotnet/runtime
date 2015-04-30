@@ -17,4 +17,5 @@ remove_definitions(
 
 if(WIN32)
     add_definitions(-MT)
+    add_definitions(-DFEATURE_READYTORUN_COMPILER)
 endif(WIN32)
