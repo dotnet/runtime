@@ -213,7 +213,7 @@ void BasicBlock::dspBlockILRange()
     }
     else
     {
-        printf("[???..");
+        printf("[???" "..");
     }
 
     if (bbCodeOffsEnd != BAD_IL_OFFSET)
@@ -224,7 +224,7 @@ void BasicBlock::dspBlockILRange()
     else
     {
         // brace-matching editor workaround for following line: (
-        printf("???)");
+        printf("???" ")");
     }
 }
 
