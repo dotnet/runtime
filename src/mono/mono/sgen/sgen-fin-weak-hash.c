@@ -680,8 +680,8 @@ static volatile guint64 stat_gc_handles_max_allocated = 0;
  * so, then 'GC_HANDLE_VALID' gives whether the entry refers to a valid (1) or
  * NULL (0) object reference. If the reference is valid, then the pointer is an
  * object pointer. If the reference is NULL, and 'GC_HANDLE_TYPE_IS_WEAK' is
- * true for 'type', then the pointer is a domain pointer--this allows us to
- * retrieve the domain ID of an expired weak reference.
+ * true for 'type', then the pointer is a metadata pointer--this allows us to
+ * retrieve the domain ID of an expired weak reference in Mono.
  *
  * Finally, 'slot_hint' denotes the position of the last allocation, so that the
  * whole array needn't be searched on every allocation.
@@ -727,16 +727,16 @@ bucketize (guint index, guint *bucket, guint *offset)
 }
 
 static inline gboolean
-try_set_slot (volatile gpointer *slot, MonoObject *obj, gpointer old, GCHandleType type)
+try_set_slot (volatile gpointer *slot, GCObject *obj, gpointer old, GCHandleType type)
 {
 	if (obj)
 		return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_OBJECT_POINTER (obj, GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
-	return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_DOMAIN_POINTER (mono_domain_get (), GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
+	return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_METADATA_POINTER (sgen_client_default_metadata (), GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
 }
 
 /* Try to claim a slot by setting its occupied bit. */
 static inline gboolean
-try_occupy_slot (HandleData *handles, guint bucket, guint offset, MonoObject *obj, gboolean track)
+try_occupy_slot (HandleData *handles, guint bucket, guint offset, GCObject *obj, gboolean track)
 {
 	volatile gpointer *link_addr = &(handles->entries [bucket] [offset]);
 	if (MONO_GC_HANDLE_OCCUPIED (*link_addr))
@@ -829,7 +829,7 @@ handle_data_grow (HandleData *handles, guint32 old_capacity)
 }
 
 static guint32
-alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
+alloc_handle (HandleData *handles, GCObject *obj, gboolean track)
 {
 	guint index;
 	guint32 res;
@@ -879,7 +879,7 @@ object_older_than (GCObject *object, int generation)
  * Maps a function over all GC handles.
  * This assumes that the world is stopped!
  */
-static void
+void
 sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer, GCHandleType, int, gpointer), gpointer user)
 {
 	HandleData *handle_data = gc_handles_for_type (handle_type);
@@ -931,7 +931,7 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer ca
  * unmanaged code.
  */
 guint32
-mono_gchandle_new (MonoObject *obj, gboolean pinned)
+mono_gchandle_new (GCObject *obj, gboolean pinned)
 {
 	return alloc_handle (gc_handles_for_type (pinned ? HANDLE_PINNED : HANDLE_NORMAL), obj, FALSE);
 }
@@ -956,7 +956,7 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
  * unmanaged code.
  */
 guint32
-mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
+mono_gchandle_new_weakref (GCObject *obj, gboolean track_resurrection)
 {
 	return alloc_handle (gc_handles_for_type (track_resurrection ? HANDLE_WEAK_TRACK : HANDLE_WEAK), obj, track_resurrection);
 }
@@ -979,12 +979,12 @@ ensure_weak_links_accessible (void)
 		mono_gc_wait_for_bridge_processing ();
 }
 
-static MonoObject *
+static GCObject *
 link_get (volatile gpointer *link_addr, gboolean is_weak)
 {
 	void *volatile *link_addr_volatile;
 	void *ptr;
-	MonoObject *obj;
+	GCObject *obj;
 retry:
 	link_addr_volatile = link_addr;
 	ptr = (void*)*link_addr_volatile;
@@ -999,7 +999,7 @@ retry:
 	 * sure the object reference is valid.
 	 */
 	if (ptr && MONO_GC_HANDLE_IS_OBJECT_POINTER (ptr))
-		obj = (MonoObject *)MONO_GC_REVEAL_POINTER (ptr, is_weak);
+		obj = (GCObject *)MONO_GC_REVEAL_POINTER (ptr, is_weak);
 	else
 		return NULL;
 
@@ -1031,7 +1031,7 @@ retry:
  * Returns a pointer to the MonoObject represented by the handle or
  * NULL for a collected object if using a weakref handle.
  */
-MonoObject*
+GCObject*
 mono_gchandle_get_target (guint32 gchandle)
 {
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
@@ -1067,33 +1067,39 @@ retry:
 		binary_protocol_dislink_add ((gpointer)&handles->entries [bucket] [offset], obj, track);
 }
 
-static MonoDomain *
-mono_gchandle_slot_domain (volatile gpointer *slot_addr, gboolean is_weak)
+static gpointer
+mono_gchandle_slot_metadata (volatile gpointer *slot_addr, gboolean is_weak)
 {
 	gpointer slot;
-	MonoDomain *domain;
+	gpointer metadata;
 retry:
 	slot = *slot_addr;
 	if (!MONO_GC_HANDLE_OCCUPIED (slot))
 		return NULL;
 	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (slot)) {
-		MonoObject *obj = MONO_GC_REVEAL_POINTER (slot, is_weak);
+		GCObject *obj = MONO_GC_REVEAL_POINTER (slot, is_weak);
 		/* See note [dummy use]. */
 		mono_gc_dummy_use (obj);
+		/*
+		 * FIXME: The compiler could technically not carry a reference to obj around
+		 * at this point and recompute it later, in which case we would still use
+		 * it.
+		 */
 		if (*slot_addr != slot)
 			goto retry;
-		return mono_object_domain (obj);
+		return sgen_client_metadata_for_object (obj);
 	}
-	domain = MONO_GC_REVEAL_POINTER (slot, is_weak);
+	metadata = MONO_GC_REVEAL_POINTER (slot, is_weak);
 	/* See note [dummy use]. */
-	mono_gc_dummy_use (domain);
+	mono_gc_dummy_use (metadata);
 	if (*slot_addr != slot)
 		goto retry;
-	return domain;
+	return metadata;
 }
 
-static MonoDomain *
-gchandle_domain (guint32 gchandle) {
+gpointer
+sgen_gchandle_get_metadata (guint32 gchandle)
+{
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
@@ -1101,20 +1107,7 @@ gchandle_domain (guint32 gchandle) {
 	if (index >= handles->capacity)
 		return NULL;
 	bucketize (index, &bucket, &offset);
-	return mono_gchandle_slot_domain (&handles->entries [bucket] [offset], MONO_GC_HANDLE_TYPE_IS_WEAK (type));
-}
-
-/**
- * mono_gchandle_is_in_domain:
- * @gchandle: a GCHandle's handle.
- * @domain: An application domain.
- *
- * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
- */
-gboolean
-mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
-{
-	return domain->domain_id == gchandle_domain (gchandle)->domain_id;
+	return mono_gchandle_slot_metadata (&handles->entries [bucket] [offset], MONO_GC_HANDLE_TYPE_IS_WEAK (type));
 }
 
 /**
@@ -1147,18 +1140,6 @@ mono_gchandle_free (guint32 gchandle)
 	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handles->type, gchandle, NULL);
 }
 
-/**
- * mono_gchandle_free_domain:
- * @unloading: domain that is unloading
- *
- * Function used internally to cleanup any GC handle for objects belonging
- * to the specified domain during appdomain unload.
- */
-void
-mono_gchandle_free_domain (MonoDomain *unloading)
-{
-}
-
 /*
  * Returns whether to remove the link from its hash.
  */
@@ -1184,7 +1165,7 @@ null_link_if_necessary (gpointer hidden, GCHandleType handle_type, int max_gener
 
 	/* Clear link if object is ready for finalization. This check may be redundant wrt is_object_live(). */
 	if (sgen_gc_is_object_ready_for_finalization (obj))
-		return MONO_GC_HANDLE_DOMAIN_POINTER (mono_object_domain (obj), is_weak);
+		return MONO_GC_HANDLE_METADATA_POINTER (sgen_client_metadata_for_object (obj), is_weak);
 
 	ctx->ops->copy_or_mark_object (&copy, ctx->queue);
 	g_assert (copy);
@@ -1237,31 +1218,6 @@ sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generatio
 {
 	WeakLinkAlivePredicateClosure closure = { predicate, data };
 	sgen_gchandle_iterate (track ? HANDLE_WEAK_TRACK : HANDLE_WEAK, generation, null_link_if, &closure);
-}
-
-static gpointer
-null_link_if_in_domain (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
-{
-	MonoDomain *unloading_domain = user;
-	MonoDomain *obj_domain;
-	gboolean is_weak = MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type);
-	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden)) {
-		MonoObject *obj = MONO_GC_REVEAL_POINTER (hidden, is_weak);
-		obj_domain = mono_object_domain (obj);
-	} else {
-		obj_domain = MONO_GC_REVEAL_POINTER (hidden, is_weak);
-	}
-	if (unloading_domain->domain_id == obj_domain->domain_id)
-		return NULL;
-	return hidden;
-}
-
-void
-sgen_null_links_for_domain (MonoDomain *domain)
-{
-	guint type;
-	for (type = HANDLE_TYPE_MIN; type < HANDLE_TYPE_MAX; ++type)
-		sgen_gchandle_iterate (type, GENERATION_OLD, null_link_if_in_domain, domain);
 }
 
 void

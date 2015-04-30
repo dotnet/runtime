@@ -1052,6 +1052,8 @@ gboolean nursery_canaries_enabled (void);
 
 void sgen_gchandle_set_target (guint32 gchandle, GCObject *obj);
 void sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
+gpointer sgen_gchandle_get_metadata (guint32 gchandle);
+void sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer, GCHandleType, int, gpointer), gpointer user);
 
 #endif /* HAVE_SGEN_GC */
 

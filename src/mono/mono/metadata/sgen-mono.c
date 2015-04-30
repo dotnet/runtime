@@ -2594,6 +2594,69 @@ mono_gc_ensure_weak_links_accessible (void)
 	mono_gc_wait_for_bridge_processing ();
 }
 
+gpointer
+sgen_client_default_metadata (void)
+{
+	return mono_domain_get ();
+}
+
+gpointer
+sgen_client_metadata_for_object (GCObject *obj)
+{
+	return mono_object_domain (obj);
+}
+
+/**
+ * mono_gchandle_is_in_domain:
+ * @gchandle: a GCHandle's handle.
+ * @domain: An application domain.
+ *
+ * Returns: true if the object wrapped by the @gchandle belongs to the specific @domain.
+ */
+gboolean
+mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
+{
+	MonoDomain *gchandle_domain = sgen_gchandle_get_metadata (gchandle);
+	return domain->domain_id == gchandle_domain->domain_id;
+}
+
+/**
+ * mono_gchandle_free_domain:
+ * @unloading: domain that is unloading
+ *
+ * Function used internally to cleanup any GC handle for objects belonging
+ * to the specified domain during appdomain unload.
+ */
+void
+mono_gchandle_free_domain (MonoDomain *unloading)
+{
+}
+
+static gpointer
+null_link_if_in_domain (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
+{
+	MonoDomain *unloading_domain = user;
+	MonoDomain *obj_domain;
+	gboolean is_weak = MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type);
+	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden)) {
+		MonoObject *obj = MONO_GC_REVEAL_POINTER (hidden, is_weak);
+		obj_domain = mono_object_domain (obj);
+	} else {
+		obj_domain = MONO_GC_REVEAL_POINTER (hidden, is_weak);
+	}
+	if (unloading_domain->domain_id == obj_domain->domain_id)
+		return NULL;
+	return hidden;
+}
+
+void
+sgen_null_links_for_domain (MonoDomain *domain)
+{
+	guint type;
+	for (type = HANDLE_TYPE_MIN; type < HANDLE_TYPE_MAX; ++type)
+		sgen_gchandle_iterate (type, GENERATION_OLD, null_link_if_in_domain, domain);
+}
+
 void
 mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 {
