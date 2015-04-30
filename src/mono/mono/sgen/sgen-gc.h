@@ -1068,7 +1068,6 @@ gboolean nursery_canaries_enabled (void);
 #define MONO_GC_HANDLE_OBJECT_POINTER(p,h) (MONO_GC_HIDE_POINTER ((p), MONO_GC_HANDLE_OCCUPIED_MASK | MONO_GC_HANDLE_VALID_MASK, (h)))
 
 void sgen_gchandle_set_target (guint32 gchandle, GCObject *obj);
-void sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(GCObject*, GCHandleType, gpointer), gpointer user);
 void sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
 
 #endif /* HAVE_SGEN_GC */

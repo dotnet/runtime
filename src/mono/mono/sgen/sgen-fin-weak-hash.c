@@ -879,8 +879,8 @@ object_older_than (GCObject *object, int generation)
  * Maps a function over all GC handles.
  * This assumes that the world is stopped!
  */
-void
-sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(GCObject*, GCHandleType, gpointer), gpointer user)
+static void
+sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer, GCHandleType, int, gpointer), gpointer user)
 {
 	HandleData *handle_data = gc_handles_for_type (handle_type);
 	size_t bucket, offset;
@@ -893,22 +893,19 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer ca
 		volatile gpointer *entries = handle_data->entries [bucket];
 		for (offset = 0; offset < bucket_size (bucket); ++offset) {
 			gpointer hidden = entries [offset];
-			gpointer revealed;
 			gpointer result;
 			/* Table must contain no garbage pointers. */
 			gboolean occupied = MONO_GC_HANDLE_OCCUPIED (hidden);
 			g_assert (hidden ? occupied : !occupied);
-			if (!occupied || !MONO_GC_HANDLE_VALID (hidden))
+			if (!occupied) // || !MONO_GC_HANDLE_VALID (hidden))
 				continue;
-			revealed = MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type));
-			g_assert (revealed);
-			if (object_older_than (revealed, max_generation))
-				continue;
-			result = callback (revealed, handle_type, user);
-			if (result)
-				g_assert (MONO_GC_HANDLE_OCCUPIED (result));
-			else
+			result = callback (hidden, handle_type, max_generation, user);
+			if (result) {
+				SGEN_ASSERT (0, MONO_GC_HANDLE_OCCUPIED (result), "Why did the callback return an unoccupied entry?");
+				// FIXME: add the dislink_update protocol call here
+			} else {
 				HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
+			}
 			entries [offset] = result;
 		}
 	}
@@ -1202,27 +1199,36 @@ mono_gchandle_free_domain (MonoDomain *unloading)
  * Returns whether to remove the link from its hash.
  */
 static gpointer
-null_link_if_necessary (GCObject *obj, GCHandleType handle_type, gpointer user)
+null_link_if_necessary (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
 {
 	const gboolean is_weak = GC_HANDLE_TYPE_IS_WEAK (handle_type);
 	ScanCopyContext *ctx = (ScanCopyContext *)user;
-	GCObject *copy = obj;
-	g_assert (obj);
+	GCObject *obj;
+	GCObject *copy;
+
+	if (!MONO_GC_HANDLE_VALID (hidden))
+		return hidden;
+
+	obj = MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type));
+	SGEN_ASSERT (0, obj, "Why is the hidden pointer NULL?");
+
+	if (object_older_than (obj, max_generation))
+		return hidden;
+
 	if (major_collector.is_object_live (obj))
-		return MONO_GC_HANDLE_OBJECT_POINTER (obj, is_weak);
-	/*
-	gboolean obj_in_nursery = ptr_in_nursery (obj);
-	if (sgen_get_current_collection_generation () == GENERATION_NURSERY && !obj_in_nursery)
-		return GC_HANDLE_OBJECT_POINTER (obj);
-	*/
+		return hidden;
+
 	/* Clear link if object is ready for finalization. This check may be redundant wrt is_object_live(). */
-	if (sgen_gc_is_object_ready_for_finalization (obj)) {
-		/* binary_protocol_dislink_update (hidden_entry, entry, 0); */
+	if (sgen_gc_is_object_ready_for_finalization (obj))
 		return MONO_GC_HANDLE_DOMAIN_POINTER (mono_object_domain (obj), is_weak);
-	}
+
 	ctx->ops->copy_or_mark_object (&copy, ctx->queue);
 	g_assert (copy);
 	/* binary_protocol_dislink_update (hidden_entry, copy, handle_type == HANDLE_WEAK_TRACK); */
+
+	copy = obj;
+	ctx->ops->copy_or_mark_object (&copy, ctx->queue);
+	SGEN_ASSERT (0, copy, "Why couldn't we copy the object?");
 	/* Update link if object was moved. */
 	return MONO_GC_HANDLE_OBJECT_POINTER (copy, is_weak);
 }
@@ -1240,15 +1246,25 @@ typedef struct {
 } WeakLinkAlivePredicateClosure;
 
 static gpointer
-null_link_if (GCObject *obj, GCHandleType handle_type, gpointer user)
+null_link_if (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
 {
 	/* Strictly speaking, function pointers are not guaranteed to have the same size as data pointers. */
 	WeakLinkAlivePredicateClosure *closure = (WeakLinkAlivePredicateClosure *)user;
-	if (closure->predicate (obj, closure->data)) {
-		/* binary_protocol_dislink_update (hidden_entry, NULL, 0); */
+	GCObject *obj;
+
+	if (!MONO_GC_HANDLE_VALID (hidden))
+		return hidden;
+
+	obj = MONO_GC_REVEAL_POINTER (hidden, MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type));
+	SGEN_ASSERT (0, obj, "Why is the hidden pointer NULL?");
+
+	if (object_older_than (obj, max_generation))
+		return hidden;
+
+	if (closure->predicate (obj, closure->data))
 		return NULL;
-	}
-	return MONO_GC_HANDLE_OBJECT_POINTER (obj, GC_HANDLE_TYPE_IS_WEAK (handle_type));
+
+	return hidden;
 }
 
 /* LOCKING: requires that the GC lock is held */
