@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="CheckRoslyn" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
   <!--
@@ -15,6 +15,8 @@
     <DnxVersion Condition="'$(OsEnvironment)'=='Unix'">1.0.0-beta5-11624</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
+    <RoslynVersion>1.0.0-rc2-20150421-01</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -27,7 +29,7 @@
     <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
     <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages/</PackagesOutDir>
-    
+
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
@@ -58,6 +60,53 @@
     <!-- Current version of DNX does not support all semantics used in our packages, 
          so we ignore the pre-calculation in the lock file and calculate asset applicability in the build task -->
     <NuGetIngoreLockFile>true</NuGetIngoreLockFile>
+  </PropertyGroup>
+
+  <!--
+    Set up Roslyn predefines
+  -->
+  <PropertyGroup>
+    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
+    <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix' and '$(UseRoslynCompiler)'=='true'">
+    <!--
+      PDB support isn't implemented yet. https://github.com/dotnet/roslyn/issues/2449
+      Note that both DebugSymbols and DebugType need set or project references will assume they need to copy pdbs and fail.
+    -->
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <!--
+      Delay signing with the ECMA key currently doesn't work.
+      https://github.com/dotnet/roslyn/issues/2444
+    -->
+    <UseECMAKey>false</UseECMAKey>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(OsEnvironment)'=='Unix' and '$(UseRoslynCompiler)'=='true'">
+    <!--
+      System.Diagnostics.Debug.Tests currently fails trying to resolve types against System.Runtime
+      https://github.com/dotnet/corefx/issues/1609
+    -->
+    <ExcludeProjects Include="System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
+    <!--
+      The OpenSourceSign target complains about System.Diagnostics.FileVersionInfo.TestAssembly.dll not being delay signed.
+      https://github.com/dotnet/corefx/issues/1610
+    -->
+    <ExcludeProjects Include="System.Diagnostics.FileVersionInfo/tests/System.Diagnostics.FileVersionInfo.Tests.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
+    <!--
+      Mono currently doesn't include VB targets for portable, notably /lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.VisualBasic.targets.
+      Fixed in https://github.com/mono/mono/pull/1726.
+    -->
+    <IncludeVbProjects>false</IncludeVbProjects>
+    <!--
+      Building packages fails for two reasons.
+      First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
+      Second, we aren't yet building pdbs, which the nuspecs specify.
+    -->
+    <SkipBuildPackages>true</SkipBuildPackages>
   </PropertyGroup>
 
   <!-- 
@@ -151,4 +200,13 @@
     <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
     <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
   </PropertyGroup>
+
+  <Import Project="$(RoslynPropsFile)"
+          Condition="'$(UseRoslynCompiler)'=='true' and Exists('$(RoslynPropsFile)')" />
+
+  <!-- Building the build.proj should restore successfully, so ignore in that case -->
+  <Target Name="CheckRoslyn" Condition="'$(UseRoslynCompiler)'=='true' and '$(MSBuildProjectFile)'!='build.proj'">
+    <Warning Condition="!Exists('$(RoslynPropsFile)')"
+             Text="The Roslyn targets do not exist- Roslyn will not be used for this build, but the package should be restored if you build again." />
+  </Target>
 </Project>

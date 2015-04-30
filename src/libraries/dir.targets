@@ -88,11 +88,13 @@
     <Copy Condition="Exists('$(NuGetConfigFile)')" SourceFiles="$(NuGetConfigFile)" DestinationFolder="$(PackagesDir)" SkipUnchangedFiles="true" />
     <Copy Condition="Exists('$(NuGetConfigFile)')" SourceFiles="$(NuGetConfigFile)" DestinationFolder="$(IntermediateOutputRootPath)" SkipUnchangedFiles="true" />
 
-    <!-- Add DNU execute rights -->
+    <!-- Add DNU and Roslyn tool execute rights -->
     <Exec Condition="'$(OsEnvironment)'=='Unix'"
           Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnu&quot;" />
     <Exec Condition="'$(OsEnvironment)'=='Unix'"
           Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnx&quot;" />
+    <Exec Condition="'$(OsEnvironment)'=='Unix'"
+          Command="find '$(RoslynPackageDir)tools' -name &quot;*.exe&quot; -exec chmod &quot;+x&quot; '{}' ';'" /> 
 
     <Error Condition="'$(ErrorIfBuildToolsRestoredFromIndividualProject)'=='true'"
            Text="The build tools package was just restored and so we cannot continue the build of an individual project because targets from the build tools package were not able to be imported. Please retry the build the individual project again." />
@@ -110,5 +112,4 @@
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
 
   <Target Name="Test" />
-
 </Project>
