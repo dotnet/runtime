@@ -100,12 +100,39 @@ bucketize (guint index, guint *bucket, guint *offset)
 	*offset = index - bucket_size (*bucket) + MIN_BUCKET_SIZE;
 }
 
-static inline gboolean
+static void
+protocol_gchandle_update (int handle_type, gpointer link, gpointer old_value, gpointer new_value)
+{
+	gboolean old = MONO_GC_HANDLE_IS_OBJECT_POINTER (old_value);
+	gboolean new = MONO_GC_HANDLE_IS_OBJECT_POINTER (new_value);
+	gboolean track = handle_type == HANDLE_WEAK_TRACK;
+
+	if (!MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type))
+		return;
+
+	if (!old && new)
+		binary_protocol_dislink_add (link, MONO_GC_REVEAL_POINTER (new_value, TRUE), track);
+	else if (old && !new)
+		binary_protocol_dislink_remove (link, track);
+	else if (old && new && old_value != new_value)
+		binary_protocol_dislink_update (link, MONO_GC_REVEAL_POINTER (new_value, TRUE), track);
+}
+
+/* Returns the new value in the slot, or NULL if the CAS failed. */
+static inline gpointer
 try_set_slot (volatile gpointer *slot, GCObject *obj, gpointer old, GCHandleType type)
 {
+	gpointer new;
 	if (obj)
-		return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_OBJECT_POINTER (obj, GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
-	return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_METADATA_POINTER (sgen_client_default_metadata (), GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
+		new = MONO_GC_HANDLE_OBJECT_POINTER (obj, GC_HANDLE_TYPE_IS_WEAK (type));
+	else
+		new = MONO_GC_HANDLE_METADATA_POINTER (sgen_client_default_metadata (), GC_HANDLE_TYPE_IS_WEAK (type));
+	SGEN_ASSERT (0, new, "Why is the occupied bit not set?");
+	if (InterlockedCompareExchangePointer (slot, new, old) == old) {
+		protocol_gchandle_update (type, (gpointer)slot, old, new);
+		return new;
+	}
+	return NULL;
 }
 
 /* Try to claim a slot by setting its occupied bit. */
@@ -115,7 +142,7 @@ try_occupy_slot (HandleData *handles, guint bucket, guint offset, GCObject *obj,
 	volatile gpointer *link_addr = &(handles->entries [bucket] [offset]);
 	if (MONO_GC_HANDLE_OCCUPIED (*link_addr))
 		return FALSE;
-	return try_set_slot (link_addr, obj, NULL, handles->type);
+	return try_set_slot (link_addr, obj, NULL, handles->type) != NULL;
 }
 
 #define EMPTY_HANDLE_DATA(type) { { NULL }, 0, 0, (type) }
@@ -231,8 +258,6 @@ retry:
 	if (stat_gc_handles_allocated > stat_gc_handles_max_allocated)
 		stat_gc_handles_max_allocated = stat_gc_handles_allocated;
 #endif
-	if (obj && MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type))
-		binary_protocol_dislink_add ((gpointer)&handles->entries [bucket] [offset], obj, track);
 	/* Ensure that a GC handle cannot be given to another thread without the slot having been set. */
 	mono_memory_write_barrier ();
 	res = MONO_GC_HANDLE (index, handles->type);
@@ -268,17 +293,14 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer ca
 			/* Table must contain no garbage pointers. */
 			gboolean occupied = MONO_GC_HANDLE_OCCUPIED (hidden);
 			g_assert (hidden ? occupied : !occupied);
-			if (!occupied) // || !MONO_GC_HANDLE_VALID (hidden))
+			if (!occupied)
 				continue;
 			result = callback (hidden, handle_type, max_generation, user);
-			if (result) {
+			if (result)
 				SGEN_ASSERT (0, MONO_GC_HANDLE_OCCUPIED (result), "Why did the callback return an unoccupied entry?");
-				// FIXME: add the dislink_update protocol call here
-			} else {
-				// FIXME: enable this for weak links
-				//binary_protocol_dislink_remove ((gpointer)&handles->entries [bucket] [offset], handles->type == HANDLE_WEAK_TRACK);
+			else
 				HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
-			}
+			protocol_gchandle_update (handle_type, (gpointer)&entries [offset], hidden, result);
 			entries [offset] = result;
 		}
 	}
@@ -402,22 +424,16 @@ sgen_gchandle_set_target (guint32 gchandle, GCObject *obj)
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
-	gboolean track = handles->type == HANDLE_WEAK_TRACK;
 	guint bucket, offset;
 	gpointer slot;
 
 	g_assert (index < handles->capacity);
 	bucketize (index, &bucket, &offset);
 
-retry:
-	slot = handles->entries [bucket] [offset];
-	g_assert (MONO_GC_HANDLE_OCCUPIED (slot));
-	if (!try_set_slot (&handles->entries [bucket] [offset], obj, slot, MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type)))
-		goto retry;
-	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (slot))
-		binary_protocol_dislink_remove ((gpointer)&handles->entries [bucket] [offset], track);
-	if (obj)
-		binary_protocol_dislink_add ((gpointer)&handles->entries [bucket] [offset], obj, track);
+	do {
+		slot = handles->entries [bucket] [offset];
+		SGEN_ASSERT (0, MONO_GC_HANDLE_OCCUPIED (slot), "Why are we setting the target on an unoccupied slot?");
+	} while (!try_set_slot (&handles->entries [bucket] [offset], obj, slot, handles->type));
 }
 
 static gpointer
@@ -478,11 +494,12 @@ mono_gchandle_free (guint32 gchandle)
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);
 	guint bucket, offset;
+	gpointer slot;
 	bucketize (index, &bucket, &offset);
-	if (index < handles->capacity && MONO_GC_HANDLE_OCCUPIED (handles->entries [bucket] [offset])) {
-		if (MONO_GC_HANDLE_TYPE_IS_WEAK (handles->type))
-			binary_protocol_dislink_remove ((gpointer)&handles->entries [bucket] [offset], handles->type == HANDLE_WEAK_TRACK);
+	slot = handles->entries [bucket] [offset];
+	if (index < handles->capacity && MONO_GC_HANDLE_OCCUPIED (slot)) {
 		handles->entries [bucket] [offset] = NULL;
+		protocol_gchandle_update (handles->type, (gpointer)&handles->entries [bucket] [offset], slot, NULL);
 		HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
 	} else {
 		/* print a warning? */
