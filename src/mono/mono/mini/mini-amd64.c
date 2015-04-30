@@ -6492,15 +6492,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_GC_SAFE_POINT: {
-			gpointer polling_func = NULL;
+			const char *polling_func = NULL;
 			int compare_val = 0;
 			guint8 *br [1];
 
 #if defined (USE_COOP_GC)
-			polling_func = (gpointer)mono_threads_state_poll;
+			polling_func = "mono_threads_state_poll";
 			compare_val = 1;
 #elif defined(__native_client_codegen__) && defined(__native_client_gc__)
-			polling_func = (gpointer)mono_nacl_gc;
+			polling_func = "mono_nacl_gc";
 			compare_val = 0xFFFFFFFF;
 #endif
 			if (!polling_func)
@@ -6508,7 +6508,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			amd64_test_membase_imm_size (code, ins->sreg1, 0, compare_val, 4);
 			br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, polling_func, TRUE);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, polling_func, FALSE);
 			amd64_patch (br[0], code);
 			break;
 		}

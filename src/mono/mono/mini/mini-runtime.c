@@ -658,11 +658,11 @@ register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpo
 /*
  * For JIT icalls implemented in C.
  * NAME should be the same as the name of the C function whose address is FUNC.
- * If SAVE is TRUE, no wrapper is generated. This is for perf critical icalls which
+ * If @avoid_wrapper is TRUE, no wrapper is generated. This is for perf critical icalls which
  * can't throw exceptions.
  */
 static void
-register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+register_icall (gpointer func, const char *name, const char *sigstr, gboolean avoid_wrapper)
 {
 	MonoMethodSignature *sig;
 
@@ -671,7 +671,7 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, save, FALSE, save ? name : NULL);
+	mono_register_jit_icall_full (func, name, sig, avoid_wrapper, FALSE, avoid_wrapper ? name : NULL);
 }
 
 static void
@@ -3240,10 +3240,10 @@ register_icalls (void)
 #endif
 
 #if defined(__native_client__) || defined(__native_client_codegen__)
-	register_icall (mono_nacl_gc, "mono_nacl_gc", "void", TRUE);
+	register_icall (mono_nacl_gc, "mono_nacl_gc", "void", FALSE);
 #endif
 #if defined(USE_COOP_GC)
-	register_icall (mono_threads_state_poll, "mono_threads_state_poll", "void", TRUE);
+	register_icall (mono_threads_state_poll, "mono_threads_state_poll", "void", FALSE);
 #endif
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
