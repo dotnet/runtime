@@ -1746,7 +1746,6 @@ CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
 #if defined(FEATURE_CORESYSTEM)
     // Debugger attaching to CoreCLR via CoreCLRCreateCordbObject should have already specified CLR module address.
     // Code that help to find it now lives in dbgshim.
-    baseAddress = PTR_TO_CORDB_ADDRESS(0);
 #else
     // get a "snapshot" of all modules in the target
     HandleHolder hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwPid);
