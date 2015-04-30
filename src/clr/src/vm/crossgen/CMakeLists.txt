@@ -68,6 +68,7 @@ set(VM_CROSSGEN_SOURCES
     ../pendingload.cpp
     ../precode.cpp
     ../olevariant.cpp
+    ../readytoruninfo.cpp
     ../security.cpp
     ../securitypolicy.cpp
     ../securityattributes.cpp
@@ -100,12 +101,6 @@ set(VM_CROSSGEN_SOURCES
     ../amd64/stublinkeramd64.cpp
     ../crossgencompile.cpp
 )
-
-if (WIN32)
-  list(APPEND VM_CROSSGEN_SOURCES
-      ../readytoruninfo.cpp
-  )
-endif (WIN32)
 
 include_directories(BEFORE ..)
 include_directories(${CLR_DIR}/src/gc)
