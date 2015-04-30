@@ -41,28 +41,54 @@
  7. Chunk pointers
  8. Chunk encodings
  
+
+ STANDALONE_BUILD
+
+ The STANDALONE_BUILD switch can be used to build the GcInfoEncoder library 
+ independently by clients outside the CoreClr tree.
+
+ The GcInfo library uses some custom data-structures (ex: ArrayList, SimplerHashTable)
+ and includes some utility libraries (ex: UtilCode) which pull in several other 
+ headers with considerable unrelated content. Rather than porting all the 
+ utility code to suite other clients, the  STANDALONE_BUILD switch can be used 
+ to include only the minimal set of headers specific to GcInfo encodings.
+
+ Clients of STANDALONE_BUILD will likely use standard library
+ implementations of data-structures like ArrayList, HashMap etc., in place
+ of the custom implementation currently used by GcInfoEncoder.
+
+ Rather than spew the GcInfoEnoder code with
+ #ifdef STANDALONE_BUILD ... #else .. #endif blocks, we include a special
+ header GcInfoUtil.h in STANDALONE_BUILD mode.  GcInfoUtil.h is expected to 
+ supply the interface/implementation for the data-structures and utilities 
+ used by GcInfoEncoder. This header should be provided by the clients doing 
+ the standalone build in their source tree.
+
 *****************************************************************/
 
 
 #ifndef __GCINFOENCODER_H__
 #define __GCINFOENCODER_H__
 
-
-#include <windows.h>
-
+#ifdef STANDALONE_BUILD
 #include <wchar.h>
 #include <stdio.h>
-
+#include "GcInfoUtil.h"  
+#include "corjit.h"
+#else
+#include <windows.h>
+#include <wchar.h>
+#include <stdio.h>
 #include "utilcode.h"
 #include "corjit.h"
 #include "slist.h"     // for SList
 #include "arraylist.h"
 #include "iallocator.h"
-
 #include "stdmacros.h"
-#include "gcinfotypes.h"
 #include "eexcp.h"
+#endif
 
+#include "gcinfotypes.h"
 
 #ifdef VERIFY_GCINFO
 #include "dbggcinfoencoder.h"
