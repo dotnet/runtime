@@ -7294,7 +7294,7 @@ extern "C" IExecutionEngine * __stdcall IEE()
         // Create a local copy on the stack and then copy it over to the static instance.
         // This avoids race conditions caused by multiple initializations of vtable in the constructor
        CExecutionEngine local;
-       memcpy(&g_CEEInstance, &local, sizeof(CExecutionEngine));
+       memcpy(&g_CEEInstance, (void*)&local, sizeof(CExecutionEngine));
 
        g_pCEE = (IExecutionEngine*)(CExecutionEngine*)&g_CEEInstance;
     }
