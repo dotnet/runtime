@@ -91,7 +91,6 @@ PAL_Enter(PAL_Boundary boundary)
         }
     }
 
-EXIT:
     LOGEXIT("PAL_Enter returns %d\n", palError);
     return palError;
 }
