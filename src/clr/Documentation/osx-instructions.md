@@ -8,6 +8,8 @@ Environment
 
 These instructions were validated on OS X Yosemite, although they probably work on earlier versions. The instructions makes use of both OS X and Windows machines, since parts of the .NET Core developer environment are not yet supported on OS X. Once those parts are supported on OS X, the Windows-specific instructions will be replaced.
 
+If your machine has Command Line Tools for XCode 6.3 installed, you'll need to update them to the 6.3.1 version or higher in order to successfully build. There was an issue with the headers that shipped with version 6.3 that was subsequently fixed in 6.3.1.
+
 Git Setup
 ---------
 
