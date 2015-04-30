@@ -17,5 +17,12 @@ set(ZAP_SOURCES
     ../nativeformatwriter.cpp
 )
 
+if (WIN32)
+    list(APPEND ZAP_SOURCES
+        ../zapreadytorun.cpp
+        ../nativeformatwriter.cpp
+    )
+endif (WIN32)
+
 add_precompiled_header(common.h ../common.cpp ZAP_SOURCES)
 add_library(corzap_crossgen STATIC ${ZAP_SOURCES})
