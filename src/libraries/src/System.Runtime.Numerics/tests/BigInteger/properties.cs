@@ -85,7 +85,7 @@ namespace System.Numerics.Tests
 
             // BigInteger.MinusOne == -1
             Assert.Equal(
-                CultureInfo.CurrentUICulture.NumberFormat.NegativeSign + "1",
+                CultureInfo.CurrentCulture.NumberFormat.NegativeSign + "1",
                 BigInteger.MinusOne.ToString()
             );
             Assert.Equal(new BigInteger((Int64)(-1)), BigInteger.MinusOne);
