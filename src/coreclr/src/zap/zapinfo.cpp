@@ -1337,6 +1337,8 @@ COUNT_T ZapImage::MethodCodeTraits::Hash(key_t k)
             case ZapNodeType_Import_MethodHandle:
                 hash = ((hash << 5) + hash) ^ (COUNT_T)(pTarget);
                 break;
+            default:
+                break;
             }
 
             pRelocs++;

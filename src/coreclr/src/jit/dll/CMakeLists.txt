@@ -2,7 +2,6 @@ project(ClrJit)
 
 # Disable the following for UNIX altjit on Windows
 if(CLR_CMAKE_PLATFORM_UNIX)
-    add_compile_options(-Wno-trigraphs)
     add_compile_options(-fPIC)
     add_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
