@@ -270,6 +270,9 @@ add_definitions(-DDISABLE_CONTRACTS)
 # after hitting just about 20 errors.
 add_compile_options(-ferror-limit=4096)
 
+# All warnings that are not explicitly disabled are reported as errors
+add_compile_options(-Werror)
+
 # Disabled warnings
 add_compile_options(-Wno-unused-private-field)
 add_compile_options(-Wno-implicit-exception-spec-mismatch)
