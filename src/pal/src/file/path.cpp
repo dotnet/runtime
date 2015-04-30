@@ -1519,7 +1519,7 @@ PathFindFileNameW(
             ret++;
         }
     }
-done:
+
     LOGEXIT("PathFindFileNameW returns %S\n", ret);
     PERF_EXIT(PathFindFileNameW);
     return ret;

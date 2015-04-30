@@ -18038,11 +18038,12 @@ void                Compiler::fgSetTreeSeqHelper(GenTreePtr tree)
         fgSetTreeSeqHelper(tree->gtBoundsChk.gtIndex);
         break;
 
-#ifdef DEBUG
     default:
+#ifdef DEBUG
         gtDispTree(tree);
         noway_assert(!"unexpected operator");
 #endif // DEBUG
+        break;
     }
 
     fgSetTreeSeqFinish(tree);

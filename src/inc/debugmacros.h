@@ -68,7 +68,7 @@ extern int _DbgBreakCount;
 
 #define _ASSERTE(expr) ((void)0)
 #define _ASSERTE_MSG(expr, msg) ((void)0)
-#define VERIFY(stmt) (stmt)
+#define VERIFY(stmt) (void)(stmt)
 
 void __FreeBuildDebugBreak();
 void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, const char *szExpr);
