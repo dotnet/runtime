@@ -20,8 +20,11 @@
         #define LOGGING
     #endif
 #endif
+
+#ifndef STANDALONE_BUILD
 #include "log.h"
 #include "simplerhash.h"
+#endif
 
 #ifdef MDIL
 #define MUST_CALL_JITALLOCATOR_FREE 1
@@ -84,7 +87,7 @@ void GcInfoSize::Log(DWORD level, const char * header)
 
 #endif
 
-
+#ifndef DISABLE_EH_VECTORS
 inline BOOL IsEssential(EE_ILEXCEPTION_CLAUSE *pClause)
 {
     _ASSERTE(pClause->TryEndPC >= pClause->TryStartPC);
@@ -93,6 +96,7 @@ inline BOOL IsEssential(EE_ILEXCEPTION_CLAUSE *pClause)
 
      return TRUE;
 }
+#endif
 
 GcInfoEncoder::GcInfoEncoder(
             ICorJitInfo*                pCorJitInfo,

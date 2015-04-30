@@ -74,4 +74,6 @@ install (FILES cor.h
                corjit.h
                opcode.def
                openum.h
+               gcinfoencoder.h
+               gcinfotypes.h
                DESTINATION inc)
