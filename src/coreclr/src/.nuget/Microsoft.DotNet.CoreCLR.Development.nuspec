@@ -41,5 +41,8 @@
     <file src="..\inc\corjit.h" target="inc\corjit.h" />
     <file src="..\inc\opcode.def" target="inc\opcode.def" />
     <file src="..\inc\openum.h" target="inc\openum.h" />
+    <file src="..\inc\gcinfoencoder.h" target="inc\gcinfoencoder.h" />
+    <file src="..\inc\gcinfotypes.h" target="inc\gcinfotypes.h" />
+    <file src="..\.\gcinfo\gcinfoencoder.cpp" target="gcinfo\gcinfoencoder.cpp" />	
   </files>
 </package>
