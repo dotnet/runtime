@@ -34,10 +34,6 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/sgen/gc-internal-agnostic.h"
 #include "mono/utils/mono-membar.h"
-// FIXME: remove!
-#ifndef SGEN_WITHOUT_MONO
-#include "mono/metadata/gc-internal.h"
-#endif
 
 #define ptr_in_nursery sgen_ptr_in_nursery
 
@@ -861,11 +857,8 @@ retry:
 		binary_protocol_dislink_add ((gpointer)&handles->entries [bucket] [offset], obj, track);
 	/* Ensure that a GC handle cannot be given to another thread without the slot having been set. */
 	mono_memory_write_barrier ();
-#ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles++;
-#endif
 	res = MONO_GC_HANDLE (index, handles->type);
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handles->type, res, obj);
+	sgen_client_gchandle_created (handles->type, obj, res);
 	return res;
 }
 
@@ -961,24 +954,6 @@ mono_gchandle_new_weakref (GCObject *obj, gboolean track_resurrection)
 	return alloc_handle (gc_handles_for_type (track_resurrection ? HANDLE_WEAK_TRACK : HANDLE_WEAK), obj, track_resurrection);
 }
 
-static void
-ensure_weak_links_accessible (void)
-{
-	/*
-	 * During the second bridge processing step the world is
-	 * running again.  That step processes all weak links once
-	 * more to null those that refer to dead objects.  Before that
-	 * is completed, those links must not be followed, so we
-	 * conservatively wait for bridge processing when any weak
-	 * link is dereferenced.
-	 */
-	/* FIXME: A GC can occur after this check fails, in which case we
-	 * should wait for bridge processing but would fail to do so.
-	 */
-	if (G_UNLIKELY (bridge_processing_in_progress))
-		mono_gc_wait_for_bridge_processing ();
-}
-
 static GCObject *
 link_get (volatile gpointer *link_addr, gboolean is_weak)
 {
@@ -1013,7 +988,7 @@ retry:
 	mono_memory_barrier ();
 
 	if (is_weak)
-		ensure_weak_links_accessible ();
+		sgen_client_ensure_weak_gchandles_accessible ();
 
 	if ((void*)*link_addr_volatile != ptr)
 		goto retry;
@@ -1134,10 +1109,7 @@ mono_gchandle_free (guint32 gchandle)
 	} else {
 		/* print a warning? */
 	}
-#ifndef DISABLE_PERFCOUNTERS
-	mono_perfcounters->gc_num_handles--;
-#endif
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handles->type, gchandle, NULL);
+	sgen_client_gchandle_destroyed (handles->type, gchandle);
 }
 
 /*

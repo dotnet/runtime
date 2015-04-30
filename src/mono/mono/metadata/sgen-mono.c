@@ -2663,6 +2663,42 @@ mono_gchandle_set_target (guint32 gchandle, MonoObject *obj)
 	sgen_gchandle_set_target (gchandle, obj);
 }
 
+void
+sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	mono_perfcounters->gc_num_handles++;
+#endif
+	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handle_type, handle, obj);
+}
+
+void
+sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
+{
+#ifndef DISABLE_PERFCOUNTERS
+	mono_perfcounters->gc_num_handles--;
+#endif
+	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handle_type, handle, NULL);
+}
+
+void
+sgen_client_ensure_weak_gchandles_accessible (void)
+{
+	/*
+	 * During the second bridge processing step the world is
+	 * running again.  That step processes all weak links once
+	 * more to null those that refer to dead objects.  Before that
+	 * is completed, those links must not be followed, so we
+	 * conservatively wait for bridge processing when any weak
+	 * link is dereferenced.
+	 */
+	/* FIXME: A GC can occur after this check fails, in which case we
+	 * should wait for bridge processing but would fail to do so.
+	 */
+	if (G_UNLIKELY (bridge_processing_in_progress))
+		mono_gc_wait_for_bridge_processing ();
+}
+
 gboolean
 mono_gc_set_allow_synchronous_major (gboolean flag)
 {
