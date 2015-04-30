@@ -22,14 +22,12 @@ namespace System.Runtime.CompilerServices
 
         private Object _syncRoot;
 
-        private static readonly T[] s_emptyArray = new T[0];
-
         /// <summary>
         /// Constructs a ReadOnlyCollectionBuilder.
         /// </summary>
         public ReadOnlyCollectionBuilder()
         {
-            _items = s_emptyArray;
+            _items = Array.Empty<T>();
         }
 
         /// <summary>
@@ -97,7 +95,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else
                     {
-                        _items = s_emptyArray;
+                        _items = Array.Empty<T>();
                     }
                 }
             }
@@ -471,7 +469,7 @@ namespace System.Runtime.CompilerServices
             {
                 items = ToArray();
             }
-            _items = s_emptyArray;
+            _items = Array.Empty<T>();
             _size = 0;
             _version++;
 
