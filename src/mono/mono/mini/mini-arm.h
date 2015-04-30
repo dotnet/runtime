@@ -228,6 +228,7 @@ typedef struct MonoCompileArch {
 	gpointer seq_point_info_var, ss_trigger_page_var;
 	gpointer seq_point_read_var, seq_point_ss_method_var;
 	gpointer seq_point_bp_method_var;
+	gpointer vret_addr_loc;
 	gboolean omit_fp, omit_fp_computed;
 	gpointer cinfo;
 	gpointer *vfp_scratch_slots [2];

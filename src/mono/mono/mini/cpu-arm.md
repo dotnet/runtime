@@ -96,9 +96,9 @@ rcall_membase: dest:g src1:b len:24 clob:c
 lcall: dest:l len:20 clob:c
 lcall_reg: dest:l src1:i len:8 clob:c
 lcall_membase: dest:l src1:b len:16 clob:c
-vcall: len:20 clob:c
-vcall_reg: src1:i len:8 clob:c
-vcall_membase: src1:b len:16 clob:c
+vcall: len:64 clob:c
+vcall_reg: src1:i len:64 clob:c
+vcall_membase: src1:b len:64 clob:c
 tailcall: len:160 clob:c
 iconst: dest:i len:16
 r4const: dest:f len:24
@@ -355,9 +355,9 @@ icompare_imm: src1:i len:12
 
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:36
 
-vcall2: len:20 clob:c
-vcall2_reg: src1:i len:8 clob:c
-vcall2_membase: src1:b len:12 clob:c
+vcall2: len:64clob:c
+vcall2_reg: src1:i len:64 clob:c
+vcall2_membase: src1:b len:64 clob:c
 dyn_call: src1:i src2:i len:120 clob:c
 
 # This is different from the original JIT opcodes
