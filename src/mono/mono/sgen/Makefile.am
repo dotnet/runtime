@@ -32,6 +32,7 @@ monosgen_sources = \
 	sgen-fin-weak-hash.c \
 	sgen-gc.c \
 	sgen-gc.h \
+	sgen-gchandles.c \
 	sgen-gray.c \
 	sgen-gray.h \
 	sgen-hash-table.c \

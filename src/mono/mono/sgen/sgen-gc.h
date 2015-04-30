@@ -940,6 +940,17 @@ sgen_is_object_alive_for_current_gen (GCObject *object)
 
 int sgen_gc_invoke_finalizers (void);
 
+/* GC handles */
+
+void sgen_init_gchandles (void);
+
+void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation, gboolean track);
+
+void sgen_gchandle_set_target (guint32 gchandle, GCObject *obj);
+void sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
+gpointer sgen_gchandle_get_metadata (guint32 gchandle);
+void sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer, GCHandleType, int, gpointer), gpointer user);
+
 /* Other globals */
 
 extern GCMemSection *nursery_section;
@@ -1049,11 +1060,6 @@ gboolean nursery_canaries_enabled (void);
 					else				\
 						g_warning ("CORRUPT CANARY:\naddr->%p\ntype->%s\nexcepted->'%s'\nfound->'%s'\n", (char*) addr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), CANARY_STRING, canary_copy); \
 				} }
-
-void sgen_gchandle_set_target (guint32 gchandle, GCObject *obj);
-void sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
-gpointer sgen_gchandle_get_metadata (guint32 gchandle);
-void sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer, GCHandleType, int, gpointer), gpointer user);
 
 #endif /* HAVE_SGEN_GC */
 
