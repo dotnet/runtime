@@ -7649,7 +7649,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 #ifdef USE_COOP_GC
 	/* local 4, the local to be used when calling the reset_blocking funcs */
 	/* tons of code hardcode 3 to be the return var */
-	coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 #endif
 
 	mono_mb_emit_icon (mb, 0);
