@@ -1891,7 +1891,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	if (cfg->compile_aot || cfg->uses_rgctx_reg || COMPILE_LLVM (cfg))
 		/* V5 is reserved for passing the vtable/rgctx/IMT method */
-		cfg->used_int_regs |= (1 << ARMREG_V5);
+		cfg->used_int_regs |= (1 << MONO_ARCH_IMT_REG);
 
 	offset = 0;
 	curinst = 0;
@@ -5053,51 +5053,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE: {
-			gboolean imt_arg = FALSE;
-
 			g_assert (ins->sreg1 != ARMREG_LR);
 			call = (MonoCallInst*)ins;
 
 			if (IS_HARD_FLOAT)
 				code = emit_float_args (cfg, call, code, &max_len, &offset);
-
-			if (call->dynamic_imt_arg || call->method->klass->flags & TYPE_ATTRIBUTE_INTERFACE)
-				imt_arg = TRUE;
 			if (!arm_is_imm12 (ins->inst_offset))
 				code = mono_arm_emit_load_imm (code, ARMREG_IP, ins->inst_offset);
-#ifdef USE_JUMP_TABLES
-#define LR_BIAS 0
-#else
-#define LR_BIAS 4
-#endif
-			if (imt_arg)
-				ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_PC, LR_BIAS);
-			else
-				ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
-#undef LR_BIAS
+			ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 			if (!arm_is_imm12 (ins->inst_offset))
 				ARM_LDR_REG_REG (code, ARMREG_PC, ins->sreg1, ARMREG_IP);
 			else
 				ARM_LDR_IMM (code, ARMREG_PC, ins->sreg1, ins->inst_offset);
-			if (imt_arg) {
-				/* 
-				 * We can't embed the method in the code stream in PIC code, or
-				 * in gshared code.
-				 * Instead, we put it in V5 in code emitted by 
-				 * mono_arch_emit_imt_argument (), and embed NULL here to 
-				 * signal the IMT thunk that the value is in V5.
-				 */
-#ifdef USE_JUMP_TABLES
-				/* In case of jumptables we always use value in V5. */
-#else
-
-				if (call->dynamic_imt_arg)
-					*((gpointer*)code) = NULL;
-				else
-					*((gpointer*)code) = (gpointer)call->method;
-				code += 4;
-#endif
-			}
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
@@ -6715,85 +6682,10 @@ mono_arch_flush_register_windows (void)
 {
 }
 
-#ifndef DISABLE_JIT
-
-void
-mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
-{
-	int method_reg = mono_alloc_ireg (cfg);
-#ifdef USE_JUMP_TABLES
-	int use_jumptables = TRUE;
-#else
-	int use_jumptables = FALSE;
-#endif
-
-	if (cfg->compile_aot) {
-		MonoInst *ins;
-
-		call->dynamic_imt_arg = TRUE;
-
-		if (imt_arg) {
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
-		} else {
-			MONO_INST_NEW (cfg, ins, OP_AOTCONST);
-			ins->dreg = method_reg;
-			ins->inst_p0 = call->method;
-			ins->inst_c1 = MONO_PATCH_INFO_METHODCONST;
-			MONO_ADD_INS (cfg->cbb, ins);
-		}
-		mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
-	} else if (cfg->generic_context || imt_arg || mono_use_llvm || use_jumptables) {
-		/* Always pass in a register for simplicity */
-		call->dynamic_imt_arg = TRUE;
-
-		cfg->uses_rgctx_reg = TRUE;
-
-		if (imt_arg) {
-			MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, method_reg, imt_arg->dreg);
-		} else {
-			MonoInst *ins;
-
-			MONO_INST_NEW (cfg, ins, OP_PCONST);
-			ins->inst_p0 = call->method;
-			ins->dreg = method_reg;
-			MONO_ADD_INS (cfg->cbb, ins);
-		}
-
-		mono_call_inst_add_outarg_reg (cfg, call, method_reg, ARMREG_V5, FALSE);
-	}
-}
-
-#endif /* DISABLE_JIT */
-
 MonoMethod*
 mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
-#ifdef USE_JUMP_TABLES
-	return (MonoMethod*)regs [ARMREG_V5];
-#else
-	gpointer method;
-	guint32 *code_ptr = (guint32*)code;
-	code_ptr -= 2;
-	method = GUINT_TO_POINTER (code_ptr [1]);
-
-	if (mono_use_llvm)
-		/* Passed in V5 */
-		return (MonoMethod*)regs [ARMREG_V5];
-
-	/* The IMT value is stored in the code stream right after the LDC instruction. */
-	/* This is no longer true for the gsharedvt_in trampoline */
-	/*
-	if (!IS_LDR_PC (code_ptr [0])) {
-		g_warning ("invalid code stream, instruction before IMT value is not a LDC in %s() (code %p value 0: 0x%x -1: 0x%x -2: 0x%x)", __FUNCTION__, code, code_ptr [2], code_ptr [1], code_ptr [0]);
-		g_assert (IS_LDR_PC (code_ptr [0]));
-	}
-	*/
-	if (method == 0)
-		/* This is AOTed code, or the gsharedvt trampoline, the IMT method is in V5 */
-		return (MonoMethod*)regs [ARMREG_V5];
-	else
-		return (MonoMethod*) method;
-#endif
+	return (MonoMethod*)regs [MONO_ARCH_IMT_REG];
 }
 
 MonoVTable*
@@ -6934,8 +6826,6 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 
 #ifdef USE_JUMP_TABLES
 	ARM_PUSH3 (code, ARMREG_R0, ARMREG_R1, ARMREG_R2);
-	/* If jumptables we always pass the IMT method in R5 */
-	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_V5);
 #define VTABLE_JTI 0
 #define IMT_METHOD_OFFSET 0
 #define TARGET_CODE_OFFSET 1
@@ -6957,16 +6847,8 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_LR, -4);
 	vtable_target = code;
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-
-	if (mono_use_llvm) {
-		/* LLVM always passes the IMT method in R5 */
-		ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_V5);
-	} else {
-		/* R0 == 0 means we are called from AOT code. In this case, V5 contains the IMT method */
-		ARM_CMP_REG_IMM8 (code, ARMREG_R0, 0);
-		ARM_MOV_REG_REG_COND (code, ARMREG_R0, ARMREG_V5, ARMCOND_EQ);
-	}
 #endif
+	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_V5);
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];

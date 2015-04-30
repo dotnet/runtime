@@ -302,6 +302,7 @@ typedef struct MonoCompileArch {
 
 /* ARM doesn't have too many registers, so we have to use a callee saved one */
 #define MONO_ARCH_RGCTX_REG ARMREG_V5
+#define MONO_ARCH_IMT_REG MONO_ARCH_RGCTX_REG
 /* First argument reg */
 #define MONO_ARCH_VTABLE_REG ARMREG_R0
 #define MONO_ARCH_EXC_REG ARMREG_R0
