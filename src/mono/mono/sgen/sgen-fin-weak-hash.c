@@ -729,9 +729,9 @@ bucketize (guint index, guint *bucket, guint *offset)
 static inline gboolean
 try_set_slot (volatile gpointer *slot, MonoObject *obj, gpointer old, GCHandleType type)
 {
-    if (obj)
+	if (obj)
 		return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_OBJECT_POINTER (obj, GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
-    return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_DOMAIN_POINTER (mono_domain_get (), GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
+	return InterlockedCompareExchangePointer (slot, MONO_GC_HANDLE_DOMAIN_POINTER (mono_domain_get (), GC_HANDLE_TYPE_IS_WEAK (type)), old) == old;
 }
 
 /* Try to claim a slot by setting its occupied bit. */
@@ -904,6 +904,8 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer ca
 				SGEN_ASSERT (0, MONO_GC_HANDLE_OCCUPIED (result), "Why did the callback return an unoccupied entry?");
 				// FIXME: add the dislink_update protocol call here
 			} else {
+				// FIXME: enable this for weak links
+				//binary_protocol_dislink_remove ((gpointer)&handles->entries [bucket] [offset], handles->type == HANDLE_WEAK_TRACK);
 				HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
 			}
 			entries [offset] = result;
@@ -1155,44 +1157,6 @@ mono_gchandle_free (guint32 gchandle)
 void
 mono_gchandle_free_domain (MonoDomain *unloading)
 {
-	guint type;
-	/* All non-pinned handle types. */
-	for (type = HANDLE_TYPE_MIN; type < HANDLE_PINNED; ++type) {
-		const gboolean is_weak = MONO_GC_HANDLE_TYPE_IS_WEAK (type);
-		guint index;
-		HandleData *handles = gc_handles_for_type (type);
-		guint32 capacity = handles->capacity;
-		for (index = 0; index < capacity; ++index) {
-			guint bucket, offset;
-			gpointer slot;
-			bucketize (index, &bucket, &offset);
-			MonoObject *obj = NULL;
-			MonoDomain *domain;
-			volatile gpointer *slot_addr = &handles->entries [bucket] [offset];
-			/* NB: This should have the same behavior as mono_gchandle_slot_domain(). */
-		retry:
-			slot = *slot_addr;
-			if (!MONO_GC_HANDLE_OCCUPIED (slot))
-				continue;
-			if (MONO_GC_HANDLE_IS_OBJECT_POINTER (slot)) {
-				obj = MONO_GC_REVEAL_POINTER (slot, is_weak);
-				if (*slot_addr != slot)
-					goto retry;
-				domain = mono_object_domain (obj);
-			} else {
-				domain = MONO_GC_REVEAL_POINTER (slot, is_weak);
-			}
-			if (unloading->domain_id == domain->domain_id) {
-				if (MONO_GC_HANDLE_TYPE_IS_WEAK (type) && MONO_GC_REVEAL_POINTER (slot, is_weak))
-					binary_protocol_dislink_remove ((gpointer)&handles->entries [bucket] [offset], handles->type == HANDLE_WEAK_TRACK);
-				*slot_addr = NULL;
-				HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
-			}
-			/* See note [dummy use]. */
-			mono_gc_dummy_use (obj);
-		}
-	}
-
 }
 
 /*
@@ -1273,6 +1237,31 @@ sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generatio
 {
 	WeakLinkAlivePredicateClosure closure = { predicate, data };
 	sgen_gchandle_iterate (track ? HANDLE_WEAK_TRACK : HANDLE_WEAK, generation, null_link_if, &closure);
+}
+
+static gpointer
+null_link_if_in_domain (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
+{
+	MonoDomain *unloading_domain = user;
+	MonoDomain *obj_domain;
+	gboolean is_weak = MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type);
+	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden)) {
+		MonoObject *obj = MONO_GC_REVEAL_POINTER (hidden, is_weak);
+		obj_domain = mono_object_domain (obj);
+	} else {
+		obj_domain = MONO_GC_REVEAL_POINTER (hidden, is_weak);
+	}
+	if (unloading_domain->domain_id == obj_domain->domain_id)
+		return NULL;
+	return hidden;
+}
+
+void
+sgen_null_links_for_domain (MonoDomain *domain)
+{
+	guint type;
+	for (type = HANDLE_TYPE_MIN; type < HANDLE_TYPE_MAX; ++type)
+		sgen_gchandle_iterate (type, GENERATION_OLD, null_link_if_in_domain, domain);
 }
 
 void

@@ -861,11 +861,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
 	to memory returned to the OS.*/
 	null_ephemerons_for_domain (domain);
-
-	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i) {
-		sgen_null_links_if (object_in_domain_predicate, domain, i, FALSE);
-		sgen_null_links_if (object_in_domain_predicate, domain, i, TRUE);
-	}
+	sgen_null_links_for_domain (domain);
 
 	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
 		sgen_remove_finalizers_if (object_in_domain_predicate, domain, i);
