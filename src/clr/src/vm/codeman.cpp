@@ -1176,6 +1176,7 @@ EEJitManager::EEJitManager()
 
 #if defined(_TARGET_AMD64_)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
+extern "C" DWORD __stdcall xmmYmmStateSupport();
 #endif // defined(_TARGET_AMD64_)
 
 void EEJitManager::SetCpuInfo()
@@ -1227,7 +1228,8 @@ void EEJitManager::SetCpuInfo()
         //    SSSE3 - ECX bit 9    (buffer[9]  & 0x02)
         //    SSE4.1 - ECX bit 19  (buffer[10] & 0x08)
         //    SSE4.2 - ECX bit 20  (buffer[10] & 0x10)
-        // CORJIT_FLG_USE_AVX if the following feature bit is set (input EAX of 1):
+        // CORJIT_FLG_USE_AVX if the following feature bits are set (input EAX of 1), and xmmYmmStateSupport returns 1:
+        //    OSXSAVE - ECX bit 27 (buffer[11] & 0x08)
         //    AVX - ECX bit 28     (buffer[11] & 0x10)
         // CORJIT_FLG_USE_AVX2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
         //    AVX2 - EBX bit 5     (buffer[4]  & 0x20)
@@ -1246,15 +1248,18 @@ void EEJitManager::SetCpuInfo()
             {
                 dwCPUCompileFlags |= CORJIT_FLG_USE_SSE3_4;
             }
-            if ((buffer[11] & 0x10) != 0)
+            if ((buffer[11] & 0x18) == 0x18)
             {
-                dwCPUCompileFlags |= CORJIT_FLG_USE_AVX;
-                if (maxCpuId >= 0x07)
+                if (xmmYmmStateSupport() == 1)
                 {
-                    (void) getcpuid(0x07, buffer);
-                    if ((buffer[4]  & 0x20) != 0)
+                    dwCPUCompileFlags |= CORJIT_FLG_USE_AVX;
+                    if (maxCpuId >= 0x07)
                     {
-                        dwCPUCompileFlags |= CORJIT_FLG_USE_AVX2;
+                        (void) getcpuid(0x07, buffer);
+                        if ((buffer[4]  & 0x20) != 0)
+                        {
+                            dwCPUCompileFlags |= CORJIT_FLG_USE_AVX2;
+                        }
                     }
                 }
             }
