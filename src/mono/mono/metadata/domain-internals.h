@@ -184,6 +184,12 @@ typedef struct
 } MonoArchEHJitInfo;
 
 typedef struct {
+	/* Relative to code_start */
+	int thunks_offset;
+	int thunks_size;
+} MonoThunkJitInfo;
+
+typedef struct {
 	gboolean    cas_inited:1;
 	gboolean    cas_class_assert:1;
 	gboolean    cas_class_deny:1;
@@ -198,7 +204,8 @@ typedef enum {
 	JIT_INFO_HAS_CAS_INFO = (1 << 0),
 	JIT_INFO_HAS_GENERIC_JIT_INFO = (1 << 1),
 	JIT_INFO_HAS_TRY_BLOCK_HOLES = (1 << 2),
-	JIT_INFO_HAS_ARCH_EH_INFO = (1 << 3)
+	JIT_INFO_HAS_ARCH_EH_INFO = (1 << 3),
+	JIT_INFO_HAS_THUNK_INFO = (1 << 4)
 } MonoJitInfoFlags;
 
 struct _MonoJitInfo {
@@ -223,6 +230,7 @@ struct _MonoJitInfo {
 	gboolean    has_generic_jit_info:1;
 	gboolean    has_try_block_holes:1;
 	gboolean    has_arch_eh_info:1;
+	gboolean    has_thunk_info:1;
 	gboolean    from_aot:1;
 	gboolean    from_llvm:1;
 	gboolean    dbg_attrs_inited:1;
@@ -244,6 +252,7 @@ struct _MonoJitInfo {
 	/* There is an optional MonoGenericJitInfo after the clauses */
 	/* There is an optional MonoTryBlockHoleTableJitInfo after MonoGenericJitInfo clauses*/
 	/* There is an optional MonoArchEHJitInfo after MonoTryBlockHoleTableJitInfo */
+	/* There is an optional MonoThunkJitInfo after MonoArchEHJitInfo */
 };
 
 #define MONO_SIZEOF_JIT_INFO (offsetof (struct _MonoJitInfo, clauses))
@@ -549,6 +558,9 @@ mono_jit_info_get_try_block_hole_table_info (MonoJitInfo *ji);
 
 MonoArchEHJitInfo*
 mono_jit_info_get_arch_eh_info (MonoJitInfo *ji);
+
+MonoThunkJitInfo*
+mono_jit_info_get_thunk_info (MonoJitInfo *ji);
 
 MonoMethodCasInfo*
 mono_jit_info_get_cas_info (MonoJitInfo *ji);

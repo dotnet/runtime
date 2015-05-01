@@ -786,6 +786,8 @@ mono_jit_info_size (MonoJitInfoFlags flags, int num_clauses, int num_holes)
 		size += sizeof (MonoTryBlockHoleTableJitInfo) + num_holes * sizeof (MonoTryBlockHoleJitInfo);
 	if (flags & JIT_INFO_HAS_ARCH_EH_INFO)
 		size += sizeof (MonoArchEHJitInfo);
+	if (flags & JIT_INFO_HAS_THUNK_INFO)
+		size += sizeof (MonoThunkJitInfo);
 	return size;
 }
 
@@ -805,6 +807,8 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 		ji->has_try_block_holes = 1;
 	if (flags & JIT_INFO_HAS_ARCH_EH_INFO)
 		ji->has_arch_eh_info = 1;
+	if (flags & JIT_INFO_HAS_THUNK_INFO)
+		ji->has_thunk_info = 1;
 }
 
 gpointer
@@ -930,6 +934,23 @@ mono_jit_info_get_arch_eh_info (MonoJitInfo *ji)
 		if (ji->has_try_block_holes)
 			ptr += try_block_hole_table_size (ji);
 		return (MonoArchEHJitInfo*)ptr;
+	} else {
+		return NULL;
+	}
+}
+
+MonoThunkJitInfo*
+mono_jit_info_get_thunk_info (MonoJitInfo *ji)
+{
+	if (ji->has_thunk_info) {
+		char *ptr = (char*)&ji->clauses [ji->num_clauses];
+		if (ji->has_generic_jit_info)
+			ptr += sizeof (MonoGenericJitInfo);
+		if (ji->has_try_block_holes)
+			ptr += try_block_hole_table_size (ji);
+		if (ji->has_arch_eh_info)
+			ptr += sizeof (MonoArchEHJitInfo);
+		return (MonoThunkJitInfo*)ptr;
 	} else {
 		return NULL;
 	}

@@ -2376,6 +2376,7 @@ mono_codegen (MonoCompile *cfg)
 	int max_epilog_size;
 	guint8 *code;
 	MonoDomain *code_domain;
+	guint unwindlen = 0;
 
 	if (mono_using_xdebug)
 		/*
@@ -2475,15 +2476,13 @@ mono_codegen (MonoCompile *cfg)
 		else
 			code = mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + unwindlen);
 	} else {
-		guint unwindlen = 0;
-#ifdef MONO_ARCH_HAVE_UNWIND_TABLE
-		unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
-#endif
-		code = mono_domain_code_reserve (code_domain, cfg->code_size + unwindlen);
+		code = mono_domain_code_reserve (code_domain, cfg->code_size + cfg->thunk_area + unwindlen);
 	}
 #if defined(__native_client_codegen__) && defined(__native_client__)
 	nacl_allow_target_modification (TRUE);
 #endif
+	if (cfg->thunk_area)
+		cfg->thunks_offset = cfg->code_size;
 
 	g_assert (code);
 	memcpy (code, cfg->native_code, cfg->code_len);
@@ -2664,7 +2663,10 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 	if (cfg->has_unwind_info_for_epilog && !(flags & JIT_INFO_HAS_ARCH_EH_INFO))
 		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
-		
+
+	if (cfg->thunk_area)
+		flags |= JIT_INFO_HAS_THUNK_INFO;
+
 	if (cfg->try_block_holes) {
 		for (tmp = cfg->try_block_holes; tmp; tmp = tmp->next) {
 			TryBlockHole *hole = tmp->data;
@@ -2813,6 +2815,14 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		info = mono_jit_info_get_arch_eh_info (jinfo);
 
 		info->stack_size = stack_size;
+	}
+
+	if (cfg->thunk_area) {
+		MonoThunkJitInfo *info;
+
+		info = mono_jit_info_get_thunk_info (jinfo);
+		info->thunks_offset = cfg->thunks_offset;
+		info->thunks_size = cfg->thunk_area;
 	}
 
 	if (COMPILE_LLVM (cfg)) {

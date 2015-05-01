@@ -1567,6 +1567,8 @@ typedef struct {
 	guint32          inline_depth;
 	/* Size of memory reserved for thunks */
 	int              thunk_area;
+	/* Offset between the start of code and the thunks area */
+	int              thunks_offset;
 	guint32          exception_type;	/* MONO_EXCEPTION_* */
 	guint32          exception_data;
 	char*            exception_message;
