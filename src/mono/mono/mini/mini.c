@@ -3406,7 +3406,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		g_free (method_name);
 	}
 
-	if (cfg->opt & (MONO_OPT_ABCREM | MONO_OPT_SSAPRE))
+	if (cfg->opt & MONO_OPT_ABCREM)
 		cfg->opt |= MONO_OPT_SSA;
 
 	/* 
@@ -3482,9 +3482,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	 * create MonoInst* which represents arguments and local variables
 	 */
 	mono_compile_create_vars (cfg);
-
-	/* SSAPRE is not supported on linear IR */
-	cfg->opt &= ~MONO_OPT_SSAPRE;
 
 	i = mono_method_to_ir (cfg, method_to_compile, NULL, NULL, NULL, NULL, 0, FALSE);
 
@@ -3573,7 +3570,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (!COMPILE_LLVM (cfg))
 		mono_if_conversion (cfg);
 
-	if ((cfg->opt & MONO_OPT_SSAPRE) || cfg->globalra)
+	if (cfg->globalra)
 		mono_remove_critical_edges (cfg);
 
 	/* Depth-first ordering on basic blocks */
@@ -3681,11 +3678,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #ifndef DISABLE_SSA
 	if (cfg->comp_done & MONO_COMP_SSA && !COMPILE_LLVM (cfg)) {
 		//mono_ssa_strength_reduction (cfg);
-
-		if (cfg->opt & MONO_OPT_SSAPRE) {
-			mono_perform_ssapre (cfg);
-			//mono_local_cprop (cfg);
-		}
 
 		if (cfg->opt & MONO_OPT_DEADCE)
 			mono_ssa_deadce (cfg);

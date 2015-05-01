@@ -395,8 +395,6 @@ common_sources = \
 	ssa.c			\
 	abcremoval.c		\
 	abcremoval.h		\
-	ssapre.c		\
-	ssapre.h		\
 	local-propagation.c	\
 	driver.c		\
 	debug-mini.c		\
