@@ -5,7 +5,7 @@
 
 // This describes information about the COM+ primitive types
 
-#define NO_SIZE 255
+#define NO_SIZE ((BYTE)-1)
 
 // TYPEINFO(type (CorElementType),  namespace, class,          size,           gcType,         isArray,isPrim, isFloat,isModifier,isGenVariable)
 
