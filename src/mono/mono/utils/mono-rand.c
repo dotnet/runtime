@@ -16,7 +16,9 @@
 #include <glib.h>
 #include <config.h>
 
+#include "atomic.h"
 #include "mono-rand.h"
+#include "mono-threads.h"
 #include "metadata/exception.h"
 #include "metadata/object.h"
 
@@ -188,8 +190,12 @@ get_entropy_from_egd (const char *path, guchar *buffer, int buffer_size)
 gboolean
 mono_rand_open (void)
 {
-	if (use_egd || (file >= 0))
+	static gint32 status = 0;
+	if (status != 0 || InterlockedCompareExchange (&status, 1, 0) != 0) {
+		while (status != 2)
+			mono_thread_info_yield ();
 		return TRUE;
+	}
 
 #ifdef NAME_DEV_URANDOM
 	file = open (NAME_DEV_URANDOM, O_RDONLY);
@@ -200,6 +206,8 @@ mono_rand_open (void)
 #endif
 	if (file < 0)
 		use_egd = g_getenv("MONO_EGD_SOCKET") != NULL;
+
+	status = 2;
 
 	return TRUE;
 }
@@ -257,7 +265,17 @@ mono_rand_close (gpointer provider)
 gboolean
 mono_rand_open (void)
 {
+	static gint32 status = 0;
+	if (status != 0 || InterlockedCompareExchange (&status, 1, 0) != 0) {
+		while (status != 2)
+			mono_thread_info_yield ();
+		return TRUE;
+	}
+
 	srand (time (NULL));
+
+	status = 2;
+
 	return TRUE;
 }
 
