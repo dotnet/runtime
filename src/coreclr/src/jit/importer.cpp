@@ -5449,19 +5449,14 @@ var_types           Compiler::impImportCall (OPCODE         opcode,
 #endif // _TARGET_ARM64_
 
     // We only need to cast the return value of pinvoke inlined calls that return small types
-    bool            checkForSmallType = false;
-
-#ifdef _TARGET_AMD64_
 
     // TODO-AMD64-Cleanup: Remove this when we stop interoperating with JIT64, or if we decide to stop
-    // widening everything!
-
+    // widening everything! CoreCLR does not support JIT64 interoperation so no need to widen there.
     // The existing x64 JIT doesn't bother widening all types to int, so we have to assume for
     // the time being that the callee might be compiled by the other JIT and thus the return
     // value will need to be widened by us (or not widened at all...)
-    checkForSmallType = true;
 
-#endif // _TARGET_AMD64_
+    bool            checkForSmallType = opts.IsJit64Compat();
 
     bool            bIntrinsicImported = false;
 
