@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -209,9 +209,6 @@ namespace TestSupport
             /// <param name="expression">The expression to evaluate.</param>
             /// <param name="message">The message to print to the console if the expression is false.</param>
             /// <returns>true if expression is true else false.</returns>
-#if WINCORESYS
-[System.Security.SecuritySafeCritical]
-#endif
             public bool Eval(bool expression, string message)
             {
                 if (!expression)
