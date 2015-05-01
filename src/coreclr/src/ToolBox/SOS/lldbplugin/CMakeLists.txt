@@ -63,6 +63,7 @@ set(SOURCES
     coreruncommand.cpp
     debugclient.cpp
     ${CLR_DIR}/src/coreclr/hosts/unixcorerun/corerun.cpp
+    ${CLR_DIR}/src/coreclr/hosts/unixcoreruncommon/coreruncommon.cpp
 )
 
 add_library(sosplugin SHARED ${SOURCES})
