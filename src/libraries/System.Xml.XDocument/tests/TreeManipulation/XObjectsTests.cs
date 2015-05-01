@@ -13,7 +13,6 @@ namespace XLinqTests
         public class SkipNotifyTests
         {
             [Fact]
-            [ActiveIssue(54)]
             public void NoXObjectChangeAnnotation()
             {
                 var sut = new FakeXObject();
