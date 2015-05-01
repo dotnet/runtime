@@ -7518,20 +7518,18 @@ emit_managed_static_data_access (MonoCompile *cfg, MonoInst *thread_ins, int off
 	MonoInst *addr;
 	int static_data_reg, array_reg, dreg;
 	int offset2_reg, idx_reg;
-	// inlined access to the tls data
-	// idx = (offset >> 24) - 1;
-	// return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
+	// inlined access to the tls data (see threads.c)
 	static_data_reg = alloc_ireg (cfg);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, MONO_STRUCT_OFFSET (MonoInternalThread, static_data));
 	idx_reg = alloc_ireg (cfg);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, idx_reg, offset_reg, 24);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, idx_reg, idx_reg, 1);
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, idx_reg, offset_reg, 0x3f);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, idx_reg, idx_reg, sizeof (gpointer) == 8 ? 3 : 2);
 	MONO_EMIT_NEW_BIALU (cfg, OP_PADD, static_data_reg, static_data_reg, idx_reg);
 	array_reg = alloc_ireg (cfg);
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, 0);
 	offset2_reg = alloc_ireg (cfg);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset2_reg, offset_reg, 0xffffff);
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, offset2_reg, offset_reg, 6);
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset2_reg, offset2_reg, 0x1ffffff);
 	dreg = alloc_ireg (cfg);
 	EMIT_NEW_BIALU (cfg, addr, OP_PADD, dreg, array_reg, offset2_reg);
 	return addr;
@@ -11040,9 +11038,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				GSHAREDVT_FAILURE (op);
 
-				// offset &= 0x7fffffff;
-				// idx = (offset >> 24) - 1;
-				//	return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
 				MONO_ADD_INS (cfg->cbb, thread_ins);
 				static_data_reg = alloc_ireg (cfg);
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, static_data_reg, thread_ins->dreg, MONO_STRUCT_OFFSET (MonoInternalThread, static_data));
@@ -11055,24 +11050,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					offset_reg = ins->dreg;
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset_reg, offset_reg, 0x7fffffff);
 					idx_reg = alloc_ireg (cfg);
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_IMM, idx_reg, offset_reg, 24);
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISUB_IMM, idx_reg, idx_reg, 1);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, idx_reg, offset_reg, 0x3f);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHL_IMM, idx_reg, idx_reg, sizeof (gpointer) == 8 ? 3 : 2);
 					MONO_EMIT_NEW_BIALU (cfg, OP_PADD, static_data_reg, static_data_reg, idx_reg);
 					array_reg = alloc_ireg (cfg);
 					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, 0);
 					offset2_reg = alloc_ireg (cfg);
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset2_reg, offset_reg, 0xffffff);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ISHR_UN_IMM, offset2_reg, offset_reg, 6);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, offset2_reg, offset2_reg, 0x1ffffff);
 					dreg = alloc_ireg (cfg);
 					EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, array_reg, offset2_reg);
 				} else {
 					offset = (gsize)addr & 0x7fffffff;
-					idx = (offset >> 24) - 1;
+					idx = offset & 0x3f;
 
 					array_reg = alloc_ireg (cfg);
 					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, static_data_reg, idx * sizeof (gpointer));
 					dreg = alloc_ireg (cfg);
-					EMIT_NEW_BIALU_IMM (cfg, ins, OP_ADD_IMM, dreg, array_reg, (offset & 0xffffff));
+					EMIT_NEW_BIALU_IMM (cfg, ins, OP_ADD_IMM, dreg, array_reg, ((offset >> 6) & 0x1ffffff));
 				}
 			} else if ((cfg->opt & MONO_OPT_SHARED) ||
 					(cfg->compile_aot && is_special_static) ||
