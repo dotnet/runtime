@@ -2458,11 +2458,11 @@ mono_codegen (MonoCompile *cfg)
 #endif
 	/* fixme: align to MONO_ARCH_CODE_ALIGNMENT */
 
-	if (cfg->method->dynamic) {
-		guint unwindlen = 0;
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
-		unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
+	unwindlen = mono_arch_unwindinfo_get_size (cfg->arch.unwindinfo);
 #endif
+
+	if (cfg->method->dynamic) {
 		/* Allocate the code into a separate memory pool so it can be freed */
 		cfg->dynamic_info = g_new0 (MonoJitDynamicMethodInfo, 1);
 		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic (cfg->thunk_area);
