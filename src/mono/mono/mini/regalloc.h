@@ -46,3 +46,7 @@ typedef struct {
 
 	int vassign_size;
 } MonoRegState;
+
+MonoRegState* mono_regstate_new (void);
+
+void          mono_regstate_free      (MonoRegState *rs);

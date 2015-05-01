@@ -388,6 +388,7 @@ common_sources = \
 	mini-arch.h		\
 	dominators.c		\
 	cfold.c			\
+	regalloc.c		\
 	regalloc.h		\
 	helpers.c		\
 	liveness.c		\
