@@ -25,7 +25,7 @@ You can see the currently installed DNX versions with `dnvm list`, which will di
 Installing a .NET Core DNX
 ==========================
 
-It's easy to install the latest .NET Core-based DNX, using the ```dnvm install``` command. 
+It's easy to install the latest .NET Core-based DNX, using the `dnvm install` command. 
 
 	C:\coreclr-demo> dnvm install -r coreclr latest -u
 
@@ -73,7 +73,7 @@ public class Program
 } 
 ```
 
-Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to ```C:\coreclr-demo```.
+Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to `C:\coreclr-demo`.
 
 You need a `project.json` that matches your app. Use this one. It will work for both of the apps provided/referenced above. Save the project.json beside your app.
 

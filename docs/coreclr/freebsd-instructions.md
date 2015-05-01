@@ -28,14 +28,14 @@ Note: LLDB is not yet available in the pkg repository on FreeBSD. The LLDB plugi
 
 To install the packages you need:
 
-```janhenke@freebsd-frankfurt:~ % sudo pkg install bash cmake clang35 libunwind gettext```
+`janhenke@freebsd-frankfurt:~ % sudo pkg install bash cmake clang35 libunwind gettext`
 
 You now have all the required components.
 
 Git Setup
 ---------
 
-This guide assumes that you've cloned the coreclr repository into ```~/git/coreclr``` on your FreeBSD machine and the corefx and coreclr repositories into ```D:\git\corefx``` and ```D:\git\coreclr``` on Windows. If your setup is different, you'll need to pay careful attention to the commands you run. In this guide, I'll always show what directory I'm in on both the FreeBSD and Windows machine.
+This guide assumes that you've cloned the coreclr repository into `~/git/coreclr` on your FreeBSD machine and the corefx and coreclr repositories into `D:\git\corefx` and `D:\git\coreclr` on Windows. If your setup is different, you'll need to pay careful attention to the commands you run. In this guide, I'll always show what directory I'm in on both the FreeBSD and Windows machine.
 
 Build the Runtime
 =================
@@ -48,11 +48,11 @@ janhenke@freebsd-frankfurt:~/git/coreclr % ./build.sh
 
 Note: FreeBSD 10.1-RELEASE system's Clang/LLVM is 3.4, the minimum version to compile CoreCLR runtime is 3.5. You may need to specify `./build.sh clang3.5` to find Clang 3.5.
 
-After the build is completed, there should some files placed in ```bin/Product/FreeBSD.x64.Debug```.  The ones we are interested in are:
+After the build is completed, there should some files placed in `bin/Product/FreeBSD.x64.Debug`.  The ones we are interested in are:
 
-* ```corerun```: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
-* ```libcoreclr.so```: The CoreCLR runtime itself.
-* ```libcoreclrpal.so```: The platform abstraction library for the CoreCLR runtime. This library is temporary and the functionality will be merged back into `libcoreclr.so`
+* `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
+* `libcoreclr.so`: The CoreCLR runtime itself.
+* `libcoreclrpal.so`: The platform abstraction library for the CoreCLR runtime. This library is temporary and the functionality will be merged back into `libcoreclr.so`
 
 In order to keep everything tidy, let's create a new directory for the runtime and copy the runtime and corerun into it.
 
@@ -67,13 +67,13 @@ Build the Framework
 
 We don't _yet_ have support for building managed code on FreeBSD, so you'll need a Windows machine with clones of both the CoreCLR and CoreFX projects.
 
-You will build ```mscorlib.dll``` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For mscorlib (from a regular command prompt window) run:
+You will build `mscorlib.dll` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For mscorlib (from a regular command prompt window) run:
 
 ```
 D:\git\coreclr> build.cmd linuxmscorlib
 ```
 
-The output is placed in ```bin\Product\Linux.x64.Debug\mscorlib.dll```.  You'll want to copy this to the runtime folder on your FreeBSD machine. (e.g. ```~/coreclr-demo/runtime```)
+The output is placed in `bin\Product\Linux.x64.Debug\mscorlib.dll`.  You'll want to copy this to the runtime folder on your FreeBSD machine. (e.g. `~/coreclr-demo/runtime`)
 
 For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
@@ -83,9 +83,9 @@ D:\git\corefx> build.cmd /p:OSGroup=Linux /p:SkipTests=true
 
 Note: We are using the Linux build currently, as CoreFX does not yet know about FreeBSD.
 
-It's also possible to add ```/t:rebuild``` to the build.cmd to force it to delete the previously built assemblies.
+It's also possible to add `/t:rebuild` to the build.cmd to force it to delete the previously built assemblies.
 
-For the purposes of Hello World, you need to copy over both ```bin\Linux.AnyCPU.Debug\System.Console\System.Console.dll``` and ```bin\Linux.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll```  into the runtime folder on FreeBSD. (e.g ```~/coreclr-demo/runtime```).
+For the purposes of Hello World, you need to copy over both `bin\Linux.AnyCPU.Debug\System.Console\System.Console.dll` and `bin\Linux.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll`  into the runtime folder on FreeBSD. (e.g `~/coreclr-demo/runtime`).
 
 After you've done these steps, the runtime directory on FreeBSD should look like this:
 
@@ -128,7 +128,7 @@ Download NuGet Packages
 
 With Mono and NuGet in hand, you can use NuGet to get the required dependencies.
 
-Make a ```packages.config``` file with the following text. These are the required dependencies of this particular app. Different apps will have different dependencies and require a different ```packages.config``` - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
+Make a `packages.config` file with the following text. These are the required dependencies of this particular app. Different apps will have different dependencies and require a different `packages.config` - see [Issue #480](https://github.com/dotnet/coreclr/issues/480).
 
 ```
 <?xml version="1.0" encoding="utf-8"?>
@@ -182,7 +182,7 @@ janhenke@freebsd-frankfurt:~/coreclr-demo/packages % cd ~/coreclr-demo/runtime
 janhenke@freebsd-frankfurt:~/coreclr-demo/runtime % curl -O https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs
 ```
 
-Then you just need to build it, with ```mcs```, the Mono C# compiler. FYI: The Roslyn C# compiler will soon be available on FreeBSD.  Because you need to compile the app against the .NET Core surface area, you need to pass references to the contract assemblies you restored using NuGet:
+Then you just need to build it, with `mcs`, the Mono C# compiler. FYI: The Roslyn C# compiler will soon be available on FreeBSD.  Because you need to compile the app against the .NET Core surface area, you need to pass references to the contract assemblies you restored using NuGet:
 
 ```
 janhenke@freebsd-frankfurt:~/coreclr-demo/runtime % mcs /nostdlib /noconfig /r:../packages/System.Console.4.0.0-beta-22703/lib/contract/System.Console.dll /r:../packages/System.Runtime.4.0.20-beta-22703/lib/contract/System.Runtime.dll HelloWorld.cs
