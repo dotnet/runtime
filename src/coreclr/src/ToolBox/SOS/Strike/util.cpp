@@ -1014,7 +1014,7 @@ void DisplayDataMember (DacpFieldDescData* pFD, DWORD_PTR dwAddr, BOOL fAlign=TR
         DWORD_PTR dwTmp = dwAddr;
         bool bVTStatic = (pFD->bIsStatic && pFD->Type == ELEMENT_TYPE_VALUETYPE);
         
-        if (gElementTypeInfo[pFD->Type] != (DWORD)-1 || bVTStatic)
+        if (gElementTypeInfo[pFD->Type] != NO_SIZE || bVTStatic)
         {
             union Value
             {
