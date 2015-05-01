@@ -384,6 +384,21 @@ sgen_client_binary_protocol_world_restarted (int generation, long long timestamp
 }
 
 static void G_GNUC_UNUSED
+sgen_client_binary_protocol_block_alloc (gpointer addr, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_block_free (gpointer addr, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_block_set_state (gpointer addr, size_t size, int old, int new)
+{
+}
+
+static void G_GNUC_UNUSED
 sgen_client_binary_protocol_mark_start (int generation)
 {
 	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, generation);
@@ -447,6 +462,21 @@ sgen_client_binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, size_
 }
 
 static void G_GNUC_UNUSED
+sgen_client_binary_protocol_card_scan (gpointer start, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_pin_stage (gpointer addr_ptr, gpointer addr)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_cement_stage (gpointer addr)
+{
+}
+
+static void G_GNUC_UNUSED
 sgen_client_binary_protocol_pin (gpointer obj, gpointer vtable, size_t size)
 {
 #ifdef ENABLE_DTRACE
@@ -457,6 +487,36 @@ sgen_client_binary_protocol_pin (gpointer obj, gpointer vtable, size_t size)
 				sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), gen);
 	}
 #endif
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_mark (gpointer obj, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_scan_begin (gpointer obj, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_scan_vtype_begin (gpointer obj, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_scan_process_reference (gpointer obj, gpointer ptr, gpointer value)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_scan_stack (gpointer thread, gpointer stack_start, gpointer stack_end, int skip_reason)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_wbarrier (gpointer ptr, gpointer value, gpointer value_vtable)
+{
 }
 
 static void G_GNUC_UNUSED
@@ -494,6 +554,16 @@ sgen_client_binary_protocol_global_remset (gpointer ptr, gpointer value, gpointe
 }
 
 static void G_GNUC_UNUSED
+sgen_client_binary_protocol_ptr_update (gpointer ptr, gpointer old_value, gpointer new_value, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_cleanup (gpointer ptr, gpointer vtable, size_t size)
+{
+}
+
+static void G_GNUC_UNUSED
 sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolean track, gboolean staged)
 {
 #ifdef ENABLE_DTRACE
@@ -507,6 +577,16 @@ sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolea
 				track ? 1 : 0);
 	}
 #endif
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_dislink_update_staged (gpointer link, gpointer obj, gboolean track, int index)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index)
+{
 }
 
 static void G_GNUC_UNUSED
@@ -555,6 +635,16 @@ sgen_client_binary_protocol_domain_unload_begin (gpointer domain)
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_domain_unload_end (gpointer domain)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_gray_enqueue (gpointer queue, gpointer cursor, gpointer value)
+{
+}
+
+static void G_GNUC_UNUSED
+sgen_client_binary_protocol_gray_dequeue (gpointer queue, gpointer cursor, gpointer value)
 {
 }
 
