@@ -12,7 +12,7 @@ The preferred approach to acquire .NET Core is via the [.NET Core DNX SDK](get-d
 NuGet Restore Packages
 ======================
 
-Given that NuGet is the .NET Core distribution mechanism, you need a packages.config to restore the packages. The following packages.config is the most minimal one you can have for console apps. You will need to add packages if your app needs it Save this XML to ```c:\coreclr-demo\packages\packages.config```.
+Given that NuGet is the .NET Core distribution mechanism, you need a packages.config to restore the packages. The following packages.config is the most minimal one you can have for console apps. You will need to add packages if your app needs it Save this XML to `c:\coreclr-demo\packages\packages.config`.
 
 ```
 <?xml version="1.0" encoding="utf-8"?>
@@ -39,9 +39,9 @@ Given that NuGet is the .NET Core distribution mechanism, you need a packages.co
 </packages>
 ```
 
-You will need to update the version numbers to acquire later versions of the NuGet packages. If you do, you'll need to update the copy commands later in the instructions to accomodate. NuGet supports wildcard versions, such as ```version="4.0.0-beta-*"```, which can be helpful.
+You will need to update the version numbers to acquire later versions of the NuGet packages. If you do, you'll need to update the copy commands later in the instructions to accomodate. NuGet supports wildcard versions, such as `version="4.0.0-beta-*"`, which can be helpful.
 
-Download the [NuGet client](https://nuget.org/nuget.exe) if you don't already have it in your path. You can grab it from: https://nuget.org/nuget.exe. Save it to ```c:\coreclr-demo```.
+Download the [NuGet client](https://nuget.org/nuget.exe) if you don't already have it in your path. You can grab it from: https://nuget.org/nuget.exe. Save it to `c:\coreclr-demo`.
 
 You need to restore the packages to the packages directory.
 
@@ -65,7 +65,7 @@ public class Program
 } 
 ```
 
-Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to ```C:\coreclr-demo```.
+Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to `C:\coreclr-demo`.
 
 Compile your App
 ================
@@ -89,9 +89,9 @@ You need to copy the NuGet package assemblies over to the app folder. You need t
 
 	C:\coreclr-demo> copy packages\Microsoft.NETCore.Runtime.CoreCLR.ConsoleHost-x64.1.0.0-beta-22819\native\win\x64\CoreConsole.exe app\HelloWorld.exe
 
-This last step might be a bit surprising, copying ```CoreConsole.exe``` to MyApp.exe, in this case ```HelloWorld.exe```. This is closedly related to compiling the app, in the instructions above, to MyApp.dll, in this case to ```HelloWorld.dll```. 
+This last step might be a bit surprising, copying `CoreConsole.exe` to MyApp.exe, in this case `HelloWorld.exe`. This is closedly related to compiling the app, in the instructions above, to MyApp.dll, in this case to `HelloWorld.dll`. 
 
-We've grown very fond of creating and using managed EXEs that don't require a separate launcher with the .NET Framework on Windows. We wanted the same experience for .NET Core. To enable the experience, we created a launcher that expects a managed assembly of the same name, compiled with a static main method. As a case in point, if you run ```CoreConsole.exe``` without renaming it, it will expect a ```CoreConsole.dll```. The renaming step, which you see above, needs to match the main assembly, compiled as a DLL, and you get an experience that feels launcher-less.
+We've grown very fond of creating and using managed EXEs that don't require a separate launcher with the .NET Framework on Windows. We wanted the same experience for .NET Core. To enable the experience, we created a launcher that expects a managed assembly of the same name, compiled with a static main method. As a case in point, if you run `CoreConsole.exe` without renaming it, it will expect a `CoreConsole.dll`. The renaming step, which you see above, needs to match the main assembly, compiled as a DLL, and you get an experience that feels launcher-less.
 
 Run the demo
 ============
