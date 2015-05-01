@@ -46,6 +46,8 @@ To build the runtime on FreeBSD, run build.sh from the root of the coreclr repos
 janhenke@freebsd-frankfurt:~/git/coreclr % ./build.sh
 ```
 
+Note: FreeBSD 10.1-RELEASE system's Clang/LLVM is 3.4, the minimum version to compile CoreCLR runtime is 3.5. You may need to specify `./build.sh clang3.5` to find Clang 3.5.
+
 After the build is completed, there should some files placed in ```bin/Product/FreeBSD.x64.Debug```.  The ones we are interested in are:
 
 * ```corerun```: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program you want to run to it.
