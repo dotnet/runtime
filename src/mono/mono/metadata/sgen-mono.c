@@ -1381,7 +1381,9 @@ create_allocator (int atype, gboolean slowpath)
 
 	res = mono_mb_create_method (mb, csig, 8);
 	mono_mb_free (mb);
+#ifndef DISABLE_JIT
 	mono_method_get_header (res)->init_locals = FALSE;
+#endif
 
 	info = mono_image_alloc0 (mono_defaults.corlib, sizeof (AllocatorWrapperInfo));
 	info->gc_name = "sgen";
