@@ -29,5 +29,3 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 add_library(debug-pal STATIC ${TWO_WAY_PIPE_SOURCES})
-
-install (TARGETS debug-pal DESTINATION .)

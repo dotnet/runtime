@@ -371,7 +371,7 @@ VOID InternalDeleteCriticalSection(
 
 #ifdef _DEBUG
     CPalThread * pThread = 
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
+        (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
 
     if (0 != pPalCriticalSection->LockCount)
     {
@@ -510,7 +510,7 @@ which has no knowledge of CPalThread, classes and namespaces.
 VOID PALCEnterCriticalSection(CRITICAL_SECTION * pcs)
 {
     CPalThread * pThread = 
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
+        (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
     CorUnix::InternalEnterCriticalSection(pThread, pcs);
 }
 
@@ -524,7 +524,7 @@ which has no knowledge of CPalThread, classes and namespaces.
 VOID PALCLeaveCriticalSection(CRITICAL_SECTION * pcs)
 {
     CPalThread * pThread = 
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
+        (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
     CorUnix::InternalLeaveCriticalSection(pThread, pcs);    
 }
 
@@ -642,7 +642,7 @@ namespace CorUnix
 
 #ifdef _DEBUG
         CPalThread * pThread = 
-            (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
+            (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
 
         pPalCriticalSection->DebugInfo = InternalNew<CRITICAL_SECTION_DEBUG_INFO>(pThread);
         _ASSERT_MSG(NULL != pPalCriticalSection->DebugInfo, 
