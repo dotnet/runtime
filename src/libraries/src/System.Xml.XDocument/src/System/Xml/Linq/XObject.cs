@@ -479,7 +479,7 @@ namespace System.Xml.Linq
                     o = o.parent;
                 }
                 if (o == null) return true;
-                if (o.Annotations<XObjectChangeAnnotation>() != null) return false;
+                if (o.Annotation<XObjectChangeAnnotation>() != null) return false;
                 o = o.parent;
             }
         }
