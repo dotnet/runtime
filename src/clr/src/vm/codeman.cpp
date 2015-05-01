@@ -2162,7 +2162,12 @@ void* EEJitManager::allocCodeRaw(CodeHeapRequestInfo *pInfo,
             // allocation won't fail or handle jump stub allocation gracefully (see DevDiv #381823 and 
             // related bugs for details).
             //
-            size_t reserveForJumpStubs = pCodeHeap->maxCodeHeapSize / 64;
+            static int codeHeapReserveForJumpStubs = -1;
+
+            if (codeHeapReserveForJumpStubs == -1)
+                codeHeapReserveForJumpStubs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CodeHeapReserveForJumpStubs);
+
+            size_t reserveForJumpStubs = codeHeapReserveForJumpStubs * (pCodeHeap->maxCodeHeapSize / 100);
 
             size_t minReserveForJumpStubs = sizeof(CodeHeader) +
                 sizeof(JumpStubBlockHeader) + (size_t) DEFAULT_JUMPSTUBS_PER_BLOCK * BACK_TO_BACK_JUMP_ALLOCATE_SIZE +
