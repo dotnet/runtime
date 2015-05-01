@@ -42,10 +42,7 @@ private:
     void DecomposeNode(GenTreePtr* tree, Compiler::fgWalkData* data);
     void LowerNode(GenTreePtr* tree, Compiler::fgWalkData* data);
     GenTreeStmt* LowerMorphAndSeqTree(GenTree *tree);
-    
-#ifdef _TARGET_AMD64_
     void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
-#endif
 
     // ------------------------------
     // Call Lowering

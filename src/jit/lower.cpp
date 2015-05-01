@@ -1383,12 +1383,12 @@ void Lowering::LowerCall(GenTree* node)
     comp->fgDebugCheckNodeLinks(comp->compCurBB, callStmt);
 #endif
 
-#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
-    CheckVSQuirkStackPaddingNeeded(call);
-#endif
+    if (comp->opts.IsJit64Compat())
+    {
+        CheckVSQuirkStackPaddingNeeded(call);
+    }
 }
 
-#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
 // Though the below described issue gets fixed in intellitrace dll of VS2015 (a.k.a Dev14), 
 // we still need this quirk for desktop so that older version of VS (e.g. VS2010/2012)
 // continues to work.
@@ -1438,6 +1438,7 @@ void Lowering::LowerCall(GenTree* node)
 // more tolerant fix.  One such fix is to padd the struct.
 void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
 {
+    assert(comp->opts.IsJit64Compat());
     // Confine this to IL stub calls which aren't marked as unmanaged.
     if (call->IsPInvoke() && !call->IsUnmanaged())
     {
@@ -1490,7 +1491,6 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
         }
     }
 }
-#endif //_TARGET_AMD64_ && !FEATURE_CORECLR
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
 //
