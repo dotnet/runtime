@@ -219,6 +219,12 @@ gboolean sgen_client_handle_gc_debug (const char *opt);
 void sgen_client_print_gc_debug_usage (void);
 
 /*
+ * Called to obtain an identifier for the current location, such as a method pointer. This
+ * is used for logging the provenances of allocations with the heavy binary protocol.
+ */
+gpointer sgen_client_get_provenance (void);
+
+/*
  * These client binary protocol functions are called from the respective binary protocol
  * functions.  No action is necessary.  We suggest implementing them as inline functions in
  * the client header file so that no overhead is incurred if they don't actually do

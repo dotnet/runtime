@@ -111,7 +111,7 @@ alloc_degraded (GCVTable *vtable, size_t size, gboolean for_mature)
 	p = major_collector.alloc_degraded (vtable, size);
 
 	if (!for_mature)
-		binary_protocol_alloc_degraded (p, vtable, size);
+		binary_protocol_alloc_degraded (p, vtable, size, sgen_client_get_provenance ());
 
 	return p;
 }
@@ -215,7 +215,7 @@ sgen_alloc_obj_nolock (GCVTable *vtable, size_t size)
 
 			CANARIFY_ALLOC(p,real_size);
 			SGEN_LOG (6, "Allocated object %p, vtable: %p (%s), size: %zd", p, vtable, sgen_client_vtable_get_name (vtable), size);
-			binary_protocol_alloc (p , vtable, size);
+			binary_protocol_alloc (p , vtable, size, sgen_client_get_provenance ());
 			g_assert (*p == NULL);
 			mono_atomic_store_seq (p, vtable);
 
@@ -322,7 +322,7 @@ sgen_alloc_obj_nolock (GCVTable *vtable, size_t size)
 
 	if (G_LIKELY (p)) {
 		SGEN_LOG (6, "Allocated object %p, vtable: %p (%s), size: %zd", p, vtable, sgen_client_vtable_get_name (vtable), size);
-		binary_protocol_alloc (p, vtable, size);
+		binary_protocol_alloc (p, vtable, size, sgen_client_get_provenance ());
 		mono_atomic_store_seq (p, vtable);
 	}
 
@@ -409,7 +409,7 @@ sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size)
 
 	CANARIFY_ALLOC(p,real_size);
 	SGEN_LOG (6, "Allocated object %p, vtable: %p (%s), size: %zd", p, vtable, sgen_client_vtable_get_name (vtable), size);
-	binary_protocol_alloc (p, vtable, size);
+	binary_protocol_alloc (p, vtable, size, sgen_client_get_provenance ());
 	g_assert (*p == NULL); /* FIXME disable this in non debug builds */
 
 	mono_atomic_store_seq (p, vtable);
@@ -485,7 +485,7 @@ sgen_alloc_obj_pinned (GCVTable *vtable, size_t size)
 	}
 	if (G_LIKELY (p)) {
 		SGEN_LOG (6, "Allocated pinned object %p, vtable: %p (%s), size: %zd", p, vtable, sgen_client_vtable_get_name (vtable), size);
-		binary_protocol_alloc_pinned (p, vtable, size);
+		binary_protocol_alloc_pinned (p, vtable, size, sgen_client_get_provenance ());
 	}
 	UNLOCK_GC;
 	return p;

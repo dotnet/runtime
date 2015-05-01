@@ -2794,6 +2794,24 @@ sgen_client_print_gc_debug_usage (void)
 	sgen_bridge_print_gc_debug_usage ();
 }
 
+
+gpointer
+sgen_client_get_provenance (void)
+{
+#ifdef SGEN_OBJECT_PROVENANCE
+	MonoGCCallbacks *cb = mono_gc_get_gc_callbacks ();
+	gpointer (*get_provenance_func) (void);
+	if (!cb)
+		return NULL;
+	get_provenance_func = cb->get_provenance_func;
+	if (get_provenance_func)
+		return get_provenance_func ();
+	return NULL;
+#else
+	return NULL;
+#endif
+}
+
 void
 mono_gc_base_init (void)
 {
