@@ -1777,16 +1777,8 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--inside-mdb") == 0) {
 			action = DO_DEBUGGER;
 		} else if (strncmp (argv [i], "--wapi=", 7) == 0) {
-			if (strcmp (argv [i] + 7, "hps") == 0) {
-				return mini_wapi_hps (argc - i, argv + i);
-			} else if (strcmp (argv [i] + 7, "semdel") == 0) {
-				return mini_wapi_semdel (argc - i, argv + i);
-			} else if (strcmp (argv [i] + 7, "seminfo") == 0) {
-				return mini_wapi_seminfo (argc - i, argv + i);
-			} else {
-				fprintf (stderr, "Invalid --wapi suboption: '%s'\n", argv [i]);
-				return 1;
-			}
+			fprintf (stderr, "--wapi= option no longer supported\n.");
+			return 1;
 		} else if (strcmp (argv [i], "--no-x86-stack-align") == 0) {
 			mono_do_x86_stack_align = FALSE;
 #ifdef MONO_JIT_INFO_TABLE_TEST

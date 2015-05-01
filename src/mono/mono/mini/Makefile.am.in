@@ -407,7 +407,6 @@ common_sources = \
 	mini-trampolines.c  	\
 	declsec.c		\
 	declsec.h		\
-	wapihandles.c		\
 	branch-opts.c		\
 	mini-generic-sharing.c	\
 	regalloc2.c		\

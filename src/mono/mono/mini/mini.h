@@ -2866,13 +2866,6 @@ void mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *c
 gpointer mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, MonoGenericSharingContext *gsctx,
 									 gint32 vcall_offset, gboolean calli);
 
-/* wapihandles.c */
-int mini_wapi_hps (int argc, char **argv);
-
-int mini_wapi_semdel (int argc, char **argv);
-
-int mini_wapi_seminfo (int argc, char **argv);
-
 /* SIMD support */
 
 /*
