@@ -650,6 +650,19 @@ mono_print_ins_index (int i, MonoInst *ins)
 
 			list = g_slist_next (list);
 		}
+		list = call->out_freg_args;
+		while (list) {
+			guint32 regpair;
+			int reg, hreg;
+
+			regpair = (guint32)(gssize)(list->data);
+			hreg = regpair >> 24;
+			reg = regpair & 0xffffff;
+
+			printf (" [%s <- R%d]", mono_arch_fregname (hreg), reg);
+
+			list = g_slist_next (list);
+		}
 		break;
 	}
 	case OP_BR:
