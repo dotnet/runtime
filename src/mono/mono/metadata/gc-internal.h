@@ -248,6 +248,11 @@ typedef struct {
 	 *   using precise marking by calling mono_gc_scan_object ().
 	 */
 	void (*thread_mark_func) (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise, void *gc_data);
+	/*
+	 * Function called for debugging to get the current managed method for
+	 * tracking the provenances of objects.
+	 */
+	gpointer (*get_provenance_func) (void);
 } MonoGCCallbacks;
 
 /* Set the callback functions callable by the GC */

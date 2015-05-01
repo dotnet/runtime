@@ -444,19 +444,19 @@ mono_binary_protocol_alloc_generic (gpointer obj, gpointer vtable, size_t size, 
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_alloc (gpointer obj, gpointer vtable, size_t size)
+sgen_client_binary_protocol_alloc (gpointer obj, gpointer vtable, size_t size, gpointer provenance)
 {
 	mono_binary_protocol_alloc_generic (obj, vtable, size, FALSE);
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, size_t size)
+sgen_client_binary_protocol_alloc_pinned (gpointer obj, gpointer vtable, size_t size, gpointer provenance)
 {
 	mono_binary_protocol_alloc_generic (obj, vtable, size, TRUE);
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, size_t size)
+sgen_client_binary_protocol_alloc_degraded (gpointer obj, gpointer vtable, size_t size, gpointer provenance)
 {
 	MONO_GC_MAJOR_OBJ_ALLOC_DEGRADED ((mword)obj, size, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 }

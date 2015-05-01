@@ -61,6 +61,12 @@ typedef guint64 mword;
 //#define SGEN_HEAVY_BINARY_PROTOCOL
 
 /*
+ * This extends the heavy binary protocol to record the provenance of an object
+ * for every allocation.
+ */
+//#define SGEN_OBJECT_PROVENANCE
+
+/*
  * This enables checks whenever objects are enqueued in gray queues.
  * Right now the only check done is that we never enqueue nursery
  * pointers in the concurrent collector.

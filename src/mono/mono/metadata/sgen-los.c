@@ -393,7 +393,7 @@ sgen_los_alloc_large_inner (GCVTable *vtable, size_t size)
 	los_memory_usage += size;
 	los_num_objects++;
 	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %zd", obj->data, vtable, sgen_client_vtable_get_name (vtable), size);
-	binary_protocol_alloc (obj->data, vtable, size);
+	binary_protocol_alloc (obj->data, vtable, size, sgen_client_get_provenance ());
 
 #ifdef LOS_CONSISTENCY_CHECK
 	los_consistency_check ();

@@ -135,7 +135,7 @@ MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY
 
-BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_alloc, TYPE_POINTER, obj, TYPE_POINTER, vtable, TYPE_SIZE, size)
+BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_alloc, TYPE_POINTER, obj, TYPE_POINTER, vtable, TYPE_SIZE, size, TYPE_POINTER, provenance)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (matches_interval (ptr, entry->obj, entry->size) ? 0 : BINARY_PROTOCOL_NO_MATCH)
@@ -275,14 +275,14 @@ MATCH_INDEX (ptr == entry->obj ? 0 : ptr == entry->value ? 3 : ptr == (char*)ent
 IS_VTABLE_MATCH (ptr == entry->obj_vtable || ptr == entry->value_vtable)
 END_PROTOCOL_ENTRY
 
-BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_alloc_pinned, TYPE_POINTER, obj, TYPE_POINTER, vtable, TYPE_SIZE, size)
+BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_alloc_pinned, TYPE_POINTER, obj, TYPE_POINTER, vtable, TYPE_SIZE, size, TYPE_POINTER, provenance)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (matches_interval (ptr, entry->obj, entry->size) ? 0 : BINARY_PROTOCOL_NO_MATCH)
 IS_VTABLE_MATCH (ptr == entry->vtable)
 END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY_HEAVY3 (binary_protocol_alloc_degraded, TYPE_POINTER, obj, TYPE_POINTER, vtable, TYPE_SIZE, size)
+BEGIN_PROTOCOL_ENTRY_HEAVY4 (binary_protocol_alloc_degraded, TYPE_POINTER, obj, TYPE_POINTER, vtable, TYPE_SIZE, size, TYPE_POINTER, provenance)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (matches_interval (ptr, entry->obj, entry->size) ? 0 : BINARY_PROTOCOL_NO_MATCH)

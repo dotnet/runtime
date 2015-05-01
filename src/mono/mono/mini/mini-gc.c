@@ -12,6 +12,28 @@
 #include "mini-gc.h"
 #include <mono/metadata/gc-internal.h>
 
+static gboolean
+get_provenance (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	MonoJitInfo *ji = frame->ji;
+	MonoMethod *method;
+	if (!ji)
+		return FALSE;
+	method = jinfo_get_method (ji);
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+	*(gpointer *)data = method;
+	return TRUE;
+}
+
+static gpointer
+get_provenance_func (void)
+{
+	gpointer provenance = NULL;
+	mono_walk_stack (get_provenance, MONO_UNWIND_DEFAULT, (gpointer)&provenance);
+	return provenance;
+}
+
 #if 0
 //#if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
 
@@ -2492,6 +2514,7 @@ mini_gc_init (void)
 	cb.thread_suspend_func = thread_suspend_func;
 	/* Comment this out to disable precise stack marking */
 	cb.thread_mark_func = thread_mark_func;
+	cb.get_provenance_func = get_provenance_func;
 	mono_gc_set_gc_callbacks (&cb);
 
 	logfile = mono_gc_get_logfile ();
@@ -2551,6 +2574,10 @@ mini_gc_enable_gc_maps_for_aot (void)
 void
 mini_gc_init (void)
 {
+	MonoGCCallbacks cb;
+	memset (&cb, 0, sizeof (cb));
+	cb.get_provenance_func = get_provenance_func;
+	mono_gc_set_gc_callbacks (&cb);
 }
 
 #ifndef DISABLE_JIT
