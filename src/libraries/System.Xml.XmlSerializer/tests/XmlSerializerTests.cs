@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Xunit;
@@ -1118,35 +1118,19 @@ public class XmlSerializerTests
         {
             serializer = serializerFactory();
         }
-
-        Console.WriteLine("Testing input value : {0}", value);
-
         using (MemoryStream ms = new MemoryStream())
         {
             serializer.Serialize(ms, value);
             ms.Position = 0;
-
             string actualOutput = new StreamReader(ms).ReadToEnd();
 
             Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
-
-            if (!result.Equal)
-            {
-                Console.WriteLine(result.ErrorMessage);
-                throw new Exception(string.Format("Test failed for input : {0}", value));
-            }
+            Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}", 
+                Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
 
             ms.Position = 0;
             T deserialized;
-            try
-            {
-                deserialized = (T)serializer.Deserialize(ms);
-            }
-            catch
-            {
-                Console.WriteLine("Error deserializing value. the serialized string was:" + Environment.NewLine + actualOutput);
-                throw;
-            }
+            deserialized = (T)serializer.Deserialize(ms);
 
             return deserialized;
         }
