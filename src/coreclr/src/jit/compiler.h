@@ -7169,6 +7169,17 @@ public :
         inline bool         IsReadyToRun() { return false; }
 #endif
 
+        // true if we must generate compatible code with Jit64 quirks
+        inline bool         IsJit64Compat()
+        {
+#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+            // JIT64 interop not required for ReadyToRun since it can simply fall-back
+            return !IsReadyToRun();
+#else // defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+            return false;
+#endif
+        }
+
 #ifdef DEBUGGING_SUPPORT
         bool                compScopeInfo;  // Generate the LocalVar info ?
         bool                compDbgCode;    // Generate debugger-friendly code?
