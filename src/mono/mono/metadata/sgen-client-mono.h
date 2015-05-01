@@ -571,6 +571,11 @@ sgen_client_binary_protocol_cleanup (gpointer ptr, gpointer vtable, size_t size)
 }
 
 static void G_GNUC_UNUSED
+sgen_client_binary_protocol_dislink_add (gpointer link, gpointer obj, gboolean track)
+{
+}
+
+static void G_GNUC_UNUSED
 sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolean track)
 {
 #ifdef ENABLE_DTRACE
@@ -587,12 +592,7 @@ sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolea
 }
 
 static void G_GNUC_UNUSED
-sgen_client_binary_protocol_dislink_update_staged (gpointer link, gpointer obj, gboolean track, int index)
-{
-}
-
-static void G_GNUC_UNUSED
-sgen_client_binary_protocol_dislink_process_staged (gpointer link, gpointer obj, int index)
+sgen_client_binary_protocol_dislink_remove (gpointer link, gboolean track)
 {
 }
 

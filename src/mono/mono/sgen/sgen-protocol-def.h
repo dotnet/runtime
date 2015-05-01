@@ -321,7 +321,7 @@ MATCH_INDEX (ptr == entry->link ? 0 : ptr == entry->obj ? 1 : BINARY_PROTOCOL_NO
 IS_VTABLE_MATCH (FALSE)
 END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_dislink_remove, TYPE_POINTER, link, TYPE_INT, track)
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_dislink_remove, TYPE_POINTER, link, TYPE_BOOL, track)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (FALSE)
 MATCH_INDEX (ptr == entry->link ? 0 : BINARY_PROTOCOL_NO_MATCH)
