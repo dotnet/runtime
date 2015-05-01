@@ -8,7 +8,7 @@ Visual Studio 2013 (Update 3 or later) or Visual Studio 2015 (Preview or later) 
 
 The following free downloads are compatible:
 * [Visual Studio Community 2013 (with Update 3)](http://www.visualstudio.com/en-us/visual-studio-community-vs.aspx)
-* [Visual Studio Ultimate 2015 Preview](http://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs)
+* [Visual Studio Enterprise 2015 RC](http://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs)
 
 ## Building From the Command Line
 
@@ -31,9 +31,11 @@ You can also run the test for an individual project by building just one test
 project, e.g.:
 ```
 cd src\System.Collections.Immutable\tests
-msbuild /t:BuildAndTest (or /t:Test to just re-run the tests)
+msbuild /t:BuildAndTest (or /t:Test to just run the tests if the binaries are already built)
 ```
 In some test directories there may be multiple test projects or directories so you may need to specify the specific test project to get it to build and run the tests.
+
+Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use msbuild /t:clean;build;test.
 
 The tests can also be filtered based on xunit trait attributes defined in XunitTraitDiscoverers project. These attributes are to be specified over the test method. The available xunit attributes are:
 
