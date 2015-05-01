@@ -581,10 +581,10 @@ static DWORD ShouldInjectFaultInRange()
 #endif
 
 BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
-                                   const BYTE *pMaxAddr,
-                                   SIZE_T dwSize, 
-                                   DWORD flAllocationType,
-                                   DWORD flProtect)
+                                  const BYTE *pMaxAddr,
+                                  SIZE_T dwSize, 
+                                  DWORD flAllocationType,
+                                  DWORD flProtect)
 {
     CONTRACTL
     {
@@ -615,7 +615,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
     {
         return (BYTE*) ClrVirtualAlloc(NULL, dwSize, flAllocationType, flProtect);
-        }
+    }
 
     // If pMaxAddr is not greater than pMinAddr we can not make an allocation
     if (dwSize == 0 || pMaxAddr <= pMinAddr)
@@ -623,48 +623,52 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         return NULL;
     }
 
-        // We will do one scan: [pMinAddr .. pMaxAddr]
+    // We will do one scan: [pMinAddr .. pMaxAddr]
     // Align to 64k. See docs for VirtualAllocEx and lpAddress and 64k alignment for reasons.
     BYTE *tryAddr = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-        // Now scan memory and try to find a free block of the size requested.
+    // Now scan memory and try to find a free block of the size requested.
     while ((tryAddr + dwSize) <= (BYTE *) pMaxAddr)
-        {
+    {
         MEMORY_BASIC_INFORMATION mbInfo;
-            
-            // Use VirtualQuery to find out if this address is MEM_FREE
-            //
-            if (!ClrVirtualQuery((LPCVOID)tryAddr, &mbInfo, sizeof(mbInfo)))
-                break;
-            
-            // Is there enough memory free from this start location?
-            if ((mbInfo.State == MEM_FREE)  && (mbInfo.RegionSize >= (SIZE_T) dwSize))
-            {
-                // Try reserving the memory using VirtualAlloc now
+
+        // Use VirtualQuery to find out if this address is MEM_FREE
+        //
+        if (!ClrVirtualQuery((LPCVOID)tryAddr, &mbInfo, sizeof(mbInfo)))
+            break;
+
+        // Is there enough memory free from this start location?
+        // The PAL version of VirtualQuery sets RegionSize to 0 for free
+        // memory regions, in which case we go just ahead and try
+        // VirtualAlloc without checking the size, and see if it succeeds.
+        if (mbInfo.State == MEM_FREE &&
+            (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0))
+        {
+            // Try reserving the memory using VirtualAlloc now
             pResult = (BYTE*) ClrVirtualAlloc(tryAddr, dwSize, MEM_RESERVE, flProtect);
-                
-                if (pResult != NULL) 
-                {
+
+            if (pResult != NULL) 
+            {
                 return pResult;
-                }
+            }
 #ifdef _DEBUG 
-                // pResult == NULL
-                else if (ShouldInjectFaultInRange())
-                {
+            // pResult == NULL
+            else if (ShouldInjectFaultInRange())
+            {
                 return NULL;
-                }
+            }
 #endif // _DEBUG
 
-                // We could fail in a race.  Just move on to next region and continue trying
+            // We could fail in a race.  Just move on to next region and continue trying
             tryAddr = tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY;
-            }
-            else
-            {
-                // Try another section of memory
-            tryAddr = max(tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY,
-                              (BYTE*) mbInfo.BaseAddress + mbInfo.RegionSize);
-            }
         }
+        else
+        {
+            // Try another section of memory
+            tryAddr = max(tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY,
+                (BYTE*) mbInfo.BaseAddress + mbInfo.RegionSize);
+        }
+    }
 
     // Our tryAddr reached pMaxAddr
     return NULL;
