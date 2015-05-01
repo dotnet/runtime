@@ -22,3 +22,6 @@ add_library(palrt
     STATIC
     ${PALRT_SOURCES}
 )
+
+# Install the static PAL library for VS
+install (TARGETS palrt DESTINATION lib)
