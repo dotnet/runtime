@@ -20,6 +20,7 @@
     <SourceDir>$(__SourceDir)\</SourceDir>
     <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)\src\</SourceDir>
 
+    <PackagesGlobalConfig>$(SourceDir).nuget\packages.config</PackagesGlobalConfig>
     <PackagesDir>$(__PackagesDir)\</PackagesDir>
     <PackagesDir Condition="'$(__PackagesDir)'==''">$(ProjectDir)\packages\</PackagesDir>
 
