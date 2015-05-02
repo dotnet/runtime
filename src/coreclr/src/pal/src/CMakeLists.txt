@@ -198,3 +198,5 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 add_subdirectory(examples)
 
+# Install the static PAL library for VS
+install (TARGETS coreclrpal DESTINATION lib)
