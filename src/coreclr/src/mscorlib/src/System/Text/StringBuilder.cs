@@ -1326,8 +1326,6 @@ namespace System.Text {
             }
 
             while (true) {
-                int p = pos;
-                int i = pos;
                 while (pos < len) {
                     ch = format[pos];
 
@@ -1394,8 +1392,6 @@ namespace System.Text {
                 StringBuilder fmt = null;
                 if (ch == ':') {
                     pos++;
-                    p = pos;
-                    i = pos;
                     while (true) {
                         if (pos == len) FormatError();
                         ch = format[pos];
