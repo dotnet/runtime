@@ -36,7 +36,7 @@
     <!-- Restore build tools -->
     <Exec
       StandardOutputImportance="Low"
-      Command="&quot;$(NuGetToolPath)&quot; install &quot; $(SourceDir).nuget\packages.config &quot;  -o &quot; $(ToolsDir) &quot; $(NuGetConfigCommandLine)" />
+      Command="&quot;$(NuGetToolPath)&quot; install &quot;$(PackagesGlobalConfig)&quot;  -o &quot;$(ToolsDir.Trim('\'))&quot; $(NuGetConfigCommandLine)" />
 
     <Touch Files="$(BuildToolsInstallSemaphore)" AlwaysCreate="true" />
   </Target>
