@@ -1992,9 +1992,10 @@ public:
     void                    gtDispNodeName  (GenTreePtr             tree);
     void                    gtDispRegVal    (GenTreePtr             tree);
 
+    enum IndentInfo { IINone, IIArc, IIArcTop, IIArcBottom, IIEmbedded, IIError, IndentInfoCount };
     void                    gtDispChild     (GenTreePtr             child,
                                              IndentStack*           indentStack,
-                                             unsigned               childNum,
+                                             IndentInfo             arcType,
                                              __in_opt               const char * msg = nullptr,
                                              bool                   topOnly = false);
     void                    gtDispTree      (GenTreePtr             tree,
