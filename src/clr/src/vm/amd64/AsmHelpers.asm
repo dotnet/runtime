@@ -737,6 +737,22 @@ NESTED_ENTRY getcpuid, _TEXT
         ret
 NESTED_END getcpuid, _TEXT
 
+
+;; extern "C" DWORD __stdcall xmmYmmStateSupport();
+LEAF_ENTRY xmmYmmStateSupport, _TEXT
+        mov     ecx, 0                  ; Specify xcr0
+        xgetbv                          ; result in EDX:EAX
+        and eax, 06H
+        cmp eax, 06H                    ; check OS has enabled both XMM and YMM state support
+        jne     not_supported
+        mov     eax, 1
+        jmp     done
+    not_supported:
+        mov     eax, 0
+    done:
+        ret
+LEAF_END xmmYmmStateSupport, _TEXT
+
 ;The following function uses Deterministic Cache Parameter leafs to determine the cache hierarchy information on Prescott & Above platforms. 
 ;  This function takes 3 arguments:
 ;     Arg1 is an input to ECX. Used as index to specify which cache level to return information on by CPUID.
