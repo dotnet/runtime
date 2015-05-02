@@ -55,7 +55,7 @@
     <Compile Include="System\UriBuilder.cs" />
     <Compile Include="System\UriEnumTypes.cs" />
     <Compile Include="System\UriExt.cs" />
-    <Compile Include="System\URIFormatException.cs" />
+    <Compile Include="System\UriFormatException.cs" />
     <Compile Include="System\UriHelper.cs" />
     <Compile Include="System\UriHostNameType.cs" />
     <Compile Include="System\UriPartial.cs" />
