@@ -125,7 +125,10 @@ namespace System.Security.Cryptography {
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         [Obsolete("Rfc2898DeriveBytes replaces PasswordDeriveBytes for deriving key material from a password and is preferred in new applications.")]
-// disable csharp compiler warning #0809: obsolete member overrides non-obsolete member
+    // disable csharp compiler warning #0809: obsolete member overrides non-obsolete member:
+    // Even though the compiler will not generate a warning for the obsolete method, the method still needs
+    // to be marked as obsolete so that generated documentation (such as MSDN) correctly shows that the method
+    // is obsolete and to use Rfc2898DeriveBytes instead.
 #pragma warning disable 0809
         public override byte[] GetBytes(int cb) {
             int         ib = 0;
