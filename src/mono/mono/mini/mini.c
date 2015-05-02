@@ -2009,6 +2009,7 @@ mono_verify_cfg (MonoCompile *cfg)
 void
 mono_destroy_compile (MonoCompile *cfg)
 {
+#ifndef DISABLE_JIT
 	GSList *l;
 
 	if (cfg->header)
@@ -2035,6 +2036,7 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_free (cfg->vars);
 	g_free (cfg->exception_message);
 	g_free (cfg);
+#endif
 }
 
 #ifndef DISABLE_JIT
