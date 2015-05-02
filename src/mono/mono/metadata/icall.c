@@ -6397,12 +6397,12 @@ get_bundled_app_config (void)
 	MonoDomain *domain;
 	MonoString *file;
 	gchar *config_file_name, *config_file_path;
-	gsize len;
+	gsize len, config_file_path_length, config_ext_length;
 	gchar *module;
 
 	domain = mono_domain_get ();
 	file = domain->setup->configuration_file;
-	if (!file)
+	if (!file || file->length == 0)
 		return NULL;
 
 	// Retrieve config file and remove the extension
@@ -6410,7 +6410,13 @@ get_bundled_app_config (void)
 	config_file_path = mono_portability_find_file (config_file_name, TRUE);
 	if (!config_file_path)
 		config_file_path = config_file_name;
-	len = strlen (config_file_path) - strlen (".config");
+
+	config_file_path_length = strlen (config_file_path);
+	config_ext_length = strlen (".config");
+	if (config_file_path_length <= config_ext_length)
+		return NULL;
+
+	len = config_file_path_length - config_ext_length;
 	module = g_malloc0 (len + 1);
 	memcpy (module, config_file_path, len);
 	// Get the config file from the module name
