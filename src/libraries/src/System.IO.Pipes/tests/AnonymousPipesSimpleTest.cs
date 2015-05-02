@@ -15,7 +15,7 @@ public class AnonymousPipesSimpleTest
         using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
         {
             Assert.True(server.IsConnected);
-            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.GetClientHandleAsString()))
             {
                 Assert.True(server.IsConnected);
                 Assert.True(client.IsConnected);
@@ -27,6 +27,57 @@ public class AnonymousPipesSimpleTest
                 Assert.Equal(1, client.Read(received, 0, 1));
                 Assert.Equal(sent[0], received[0]);
             }
+            Assert.Throws<System.IO.IOException>(() => server.WriteByte(5));
+        }
+    }
+
+    [Fact]
+    public static void ServerSendsByteClientReceivesServerClone()
+    {
+        using (AnonymousPipeServerStream serverBase = new AnonymousPipeServerStream(PipeDirection.Out))
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out, serverBase.SafePipeHandle, serverBase.ClientSafePipeHandle))
+            {
+                Assert.True(server.IsConnected);
+                using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.GetClientHandleAsString()))
+                {
+                    Assert.True(server.IsConnected);
+                    Assert.True(client.IsConnected);
+
+                    byte[] sent = new byte[] { 123 };
+                    byte[] received = new byte[] { 0 };
+                    server.Write(sent, 0, 1);
+
+                    Assert.Equal(1, client.Read(received, 0, 1));
+                    Assert.Equal(sent[0], received[0]);
+                }
+                Assert.Throws<System.IO.IOException>(() => server.WriteByte(5));
+            }
+        }
+    }
+
+    [Fact]
+    public static void ServerSendsByteClientReceivesAsync()
+    {
+        using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+        {
+            Assert.True(server.IsConnected);
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(server.GetClientHandleAsString()))
+            {
+                Assert.True(server.IsConnected);
+                Assert.True(client.IsConnected);
+
+                byte[] sent = new byte[] { 123 };
+                byte[] received = new byte[] { 0 };
+                Task writeTask = server.WriteAsync(sent, 0, 1);
+                writeTask.Wait();
+
+                Task<int> readTask = client.ReadAsync(received, 0, 1);
+                readTask.Wait();
+
+                Assert.Equal(1, readTask.Result);
+                Assert.Equal(sent[0], received[0]);
+            }
         }
     }
 
@@ -36,18 +87,25 @@ public class AnonymousPipesSimpleTest
         using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
         {
             Assert.True(server.IsConnected);
+            server.ReadMode = PipeTransmissionMode.Byte;
+
             using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
             {
                 Assert.True(server.IsConnected);
                 Assert.True(client.IsConnected);
+                client.ReadMode = PipeTransmissionMode.Byte;
 
                 byte[] sent = new byte[] { 123 };
                 byte[] received = new byte[] { 0 };
                 client.Write(sent, 0, 1);
 
+                server.DisposeLocalCopyOfClientHandle();
+
                 Assert.Equal(1, server.Read(received, 0, 1));
                 Assert.Equal(sent[0], received[0]);
             }
+            // not sure why the following isn't thrown because pipe is broken
+            //Assert.Throws<System.IO.IOException>(() => server.ReadByte());
         }
     }
 
