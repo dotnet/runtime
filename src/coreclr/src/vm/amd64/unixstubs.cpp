@@ -72,6 +72,18 @@ extern "C"
           );
         return eax;
     }
+
+    DWORD xmmYmmStateSupport()
+    {
+        DWORD eax;
+        __asm("  xgetbv\n" \
+            : "=a"(eax) /*output in eax*/\
+            : "c"(0) /*inputs - 0 in ecx*/\
+            : "eax", "edx" /* registers that are clobbered*/
+          );
+        // check OS has enabled both XMM and YMM state support
+        return ((eax & 0x06) == 0x06) ? 1 : 0;
+    }
     
     void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
