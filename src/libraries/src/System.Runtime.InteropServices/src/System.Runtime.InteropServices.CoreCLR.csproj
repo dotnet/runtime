@@ -23,15 +23,15 @@
     <Compile Include="System\Runtime\InteropServices\HandleCollector.CoreCLR.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\ADVF.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\DATADIR.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\DVASPECT.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\FORMATETC.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\datadir.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\dvaspect.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\formatetc.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\IAdviseSink.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumFORMATETC.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\STATDATA.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\STGMEDIUM.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComTypes\TYMED.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumFormatETC.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\statdata.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
   </ItemGroup>
 
   <ItemGroup>
