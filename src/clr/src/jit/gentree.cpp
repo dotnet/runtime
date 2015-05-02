@@ -79,13 +79,12 @@ genTreeOps        GenTree::OpAsgToOper(genTreeOps op)
 //    The type of arc to print is specified by the IndentInfo enum, and is controlled
 //    by the caller of the Push() method.
 
-enum IndentInfo { IINone, IIArc, IIArcTop, IIArcBottom, IIEmbedded, IIError, IndentInfoCount };
 enum IndentChars {ICVertical, ICBottom, ICTop, ICMiddle, ICDash, ICEmbedded, ICTerminal, ICError, IndentCharCount };
 // Sets of strings for different dumping options            vert             bot             top             mid             dash       embedded    terminal    error
 static const char*  emptyIndents[IndentCharCount]   = {     " ",             " ",            " ",            " ",            " ",           "{",      "",        "?"  };
 static const char*  asciiIndents[IndentCharCount]   = {     "|",            "\\",            "/",            "+",            "-",           "{",      "*",       "?"  };
 static const char*  unicodeIndents[IndentCharCount] = { "\xe2\x94\x82", "\xe2\x94\x94", "\xe2\x94\x8c", "\xe2\x94\x9c", "\xe2\x94\x80",     "{", "\xe2\x96\x8c", "?"  };
-typedef ArrayStack<IndentInfo> IndentInfoStack;
+typedef ArrayStack<Compiler::IndentInfo> IndentInfoStack;
 struct IndentStack
 {
     IndentInfoStack     stack;
@@ -95,11 +94,7 @@ struct IndentStack
     IndentStack(Compiler* compiler) :
         stack(compiler)
     {
-        if (compiler->fgOrder == Compiler::FGOrderTree)
-        {
-            indents = emptyIndents;
-        }
-        else if (compiler->asciiTrees)
+        if (compiler->asciiTrees)
         {
             indents = asciiIndents;
         }
@@ -116,13 +111,13 @@ struct IndentStack
     }
 
     // Push a new indentation onto the stack, of the given type.
-    void Push(IndentInfo info)
+    void Push(Compiler::IndentInfo info)
     {
         stack.Push(info);
     }
 
     // Pop the most recent indentation type off the stack.
-    IndentInfo Pop()
+    Compiler::IndentInfo Pop()
     {
         return stack.Pop();
     }
@@ -136,13 +131,13 @@ struct IndentStack
             unsigned index = indentCount-1-i;
             switch (stack.Index(index))
             {
-            case IINone:
+            case Compiler::IndentInfo::IINone:
                 printf("   ");
                 break;
-            case IIEmbedded:
+            case Compiler::IndentInfo::IIEmbedded:
                 printf("%s  ", indents[ICEmbedded]);
                 break;
-            case IIArc:
+            case Compiler::IndentInfo::IIArc:
                 if (index == 0)
                 {
                     printf("%s%s%s", indents[ICMiddle], indents[ICDash], indents[ICDash]);
@@ -152,13 +147,13 @@ struct IndentStack
                     printf("%s  ", indents[ICVertical]);
                 }
                 break;
-            case IIArcBottom:
+            case Compiler::IndentInfo::IIArcBottom:
                 printf("%s%s%s", indents[ICBottom], indents[ICDash], indents[ICDash]);
                 break;
-            case IIArcTop:
+            case Compiler::IndentInfo::IIArcTop:
                 printf("%s%s%s", indents[ICTop], indents[ICDash], indents[ICDash]);
                 break;
-            case IIError:
+            case Compiler::IndentInfo::IIError:
                 printf("%s%s%s", indents[ICError], indents[ICDash], indents[ICDash]);
                 break;
             default:
@@ -6942,7 +6937,9 @@ void                Compiler::gtDispNode(GenTreePtr     tree,
             assert(prev);
         } while (prev->gtSeqNum == 0);
 
-        if (tree->gtOper != GT_STMT && hasSeqNum)
+        // If we have an indent stack, don't add additional characters,
+        // as it will mess up the alignment.
+        if (tree->gtOper != GT_STMT && hasSeqNum && (indentStack == nullptr))
             printf("N%03u.%02u ", prev->gtSeqNum, dotNum);
         else
             printf("     ");
@@ -7828,7 +7825,7 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
 // Arguments:
 //    tree - the tree to be printed
 //    indentStack - the specification for the current level of indentation & arcs
-//    childNum    - the ordinal number of hte child - used to determine what type of arc to print
+//    arcType     - the type of arc to use for this child
 //    msg         - a contextual method (i.e. from the parent) to print
 //    topOnly     - a boolean indicating whether to print the children, or just the top node
 //
@@ -7842,25 +7839,12 @@ Compiler::gtDispLeaf(GenTree *tree, IndentStack* indentStack)
 
 void                Compiler::gtDispChild(GenTreePtr            child,
                                           IndentStack*          indentStack,
-                                          unsigned              childNum,
+                                          IndentInfo            arcType,
                                           __in_opt const char*  msg,     /* = nullptr  */
                                           bool                  topOnly) /* = false */
 {
     IndentInfo      info;
-    assert(indentStack != nullptr);
-    if (fgOrder == FGOrderTree)
-    {
-        info = IINone;
-    }
-    else if (childNum == 0)
-    {
-        info = IIArcTop;
-    }
-    else
-    {
-        info = IIArc;
-    }
-    indentStack->Push(info);
+    indentStack->Push(arcType);
     gtDispTree(child, indentStack, msg, topOnly);
     indentStack->Pop();
 }
@@ -7933,12 +7917,40 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
         printf("\n");
         if (tree->OperIsLocalStore() && !topOnly)
         {
-            gtDispChild(tree->gtOp.gtOp1, indentStack, 0);
+            gtDispChild(tree->gtOp.gtOp1, indentStack, IINone);
         }
         return;
     }
 
-    unsigned childNum = 0;
+    // Determine what kind of arc to propagate.
+    IndentInfo myArc = IINone;
+    IndentInfo lowerArc = IINone;
+    if (indentStack->Depth() > 0)
+    {
+        myArc = indentStack->Pop();
+        switch(myArc)
+        {
+        case IIArcBottom:
+            indentStack->Push(IIArc);
+            lowerArc = IINone;
+            break;
+        case IIArc:
+            indentStack->Push(IIArc);
+            lowerArc = IIArc;
+            break;
+        case IIArcTop:
+            indentStack->Push(IINone);
+            lowerArc = IIArc;
+            break;
+        case IIEmbedded:
+            indentStack->Push(IIEmbedded);
+            lowerArc = IIEmbedded;
+            break;
+        default:
+            // Should never get here; just use IINone.
+            break;
+        }
+    }
 
     // Special case formatting for PHI nodes -- arg lists like calls.
 
@@ -7950,9 +7962,15 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
 
         if (tree->gtOp.gtOp1 != NULL)
         {
+            IndentInfo arcType = IIArcTop;
             for (GenTreeArgList* args = tree->gtOp.gtOp1->AsArgList(); args != NULL; args = args->Rest())
             {
-                gtDispChild(args->Current(), indentStack, childNum++);
+                if (args->Rest() == nullptr)
+                {
+                   arcType = IIArcBottom;
+                }
+                gtDispChild(args->Current(), indentStack, arcType);
+                arcType = IIArc;
             }
         }
         return;
@@ -7974,11 +7992,24 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
                 if (tree->gtOper == GT_COLON)
                     childMsg = "then";
 
-                gtDispChild(tree->gtOp.gtOp2, indentStack, childNum++, childMsg, topOnly);
+                gtDispChild(tree->gtOp.gtOp2, indentStack, IIArcTop, childMsg, topOnly);
             }
         }
 
+        // Now, get the right type of arc for this node
+        if (myArc != IINone)
+        {
+            indentStack->Pop();
+            indentStack->Push(myArc);
+        }
         gtDispNode(tree, indentStack, msg);
+
+        // Propagate lowerArc to the lower children.
+        if (indentStack->Depth() > 0)
+        {
+            (void) indentStack->Pop();
+            indentStack->Push(lowerArc);
+        }
     
         if (tree->gtOper == GT_CAST)
         {
@@ -8053,15 +8084,29 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
             else if (tree->gtOper == GT_QMARK)
                 childMsg = "   if"; 
 
-            gtDispChild(tree->gtOp.gtOp1, indentStack, childNum++, childMsg, topOnly);
+            gtDispChild(tree->gtOp.gtOp1, indentStack, IIArcBottom, childMsg, topOnly);
         }
 
         return;
     }
 
-    /* See what kind of a special operator we have here */
 
+    // Now, get the right type of arc for this node
+    if (myArc != IINone)
+    {
+        indentStack->Pop();
+        indentStack->Push(myArc);
+    }
     gtDispNode(tree, indentStack, msg);
+
+    // Propagate lowerArc to the lower children.
+    if (indentStack->Depth() > 0)
+    {
+        (void) indentStack->Pop();
+        indentStack->Push(lowerArc);
+    }
+
+    // See what kind of a special operator we have here, and handle its special children.
 
     switch  (tree->gtOper)
     {
@@ -8072,7 +8117,7 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
         {
             gtDispVN(tree);
             printf("\n");
-            gtDispChild(tree->gtField.gtFldObj, indentStack, childNum++);
+            gtDispChild(tree->gtField.gtFldObj, indentStack, IIArcBottom);
         }
         else
         {
@@ -8083,74 +8128,83 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
         break;
 
     case GT_CALL:
-        assert(tree->gtFlags & GTF_CALL);
-
-        if (tree->gtCall.gtCallType != CT_INDIRECT)
         {
-            const char *    methodName;
-            const char *     className;
-
-            methodName = eeGetMethodName(tree->gtCall.gtCallMethHnd, &className);
-
-            printf(" %s.%s", className, methodName);
-        }
-
-        if ((tree->gtFlags & GTF_CALL_UNMANAGED) && (tree->gtCall.gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
-        {
-            printf(" (FramesRoot last use)");
-        }
-
-        if (((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) &&
-            (tree->gtCall.gtInlineCandidateInfo != NULL) &&
-            (tree->gtCall.gtInlineCandidateInfo->exactContextHnd != NULL))
-        {
-            printf(" (exactContextHnd=0x%p)", dspPtr(tree->gtCall.gtInlineCandidateInfo->exactContextHnd));
-        }
-
-        gtDispVN(tree);
-        printf("\n");
-
-        if (!topOnly)
-        {
-            char   buf[64];
-            char * bufp;
-
-            bufp = &buf[0];
-
-            if  ((tree->gtCall.gtCallObjp         != NULL) &&
-                 (tree->gtCall.gtCallObjp->gtOper != GT_NOP) &&
-                 (!tree->gtCall.gtCallObjp->IsArgPlaceHolderNode()))
+            assert(tree->gtFlags & GTF_CALL);
+            unsigned numChildren = tree->NumChildren();
+            GenTree* lastChild = nullptr;
+            if (numChildren != 0)
             {
-                if (tree->gtCall.gtCallObjp->gtOper == GT_ASG)
-                    sprintf_s(bufp, sizeof(buf), "this SETUP%c", 0);
-                else
-                    sprintf_s(bufp, sizeof(buf), "this in %s%c", compRegVarName(REG_ARG_0), 0);
-                gtDispChild(tree->gtCall.gtCallObjp, indentStack, childNum++, bufp, topOnly);
+                lastChild = tree->GetChild(numChildren - 1);
             }
 
-            if (tree->gtCall.gtCallArgs)
-                gtDispArgList(tree, indentStack);
-
-            if  (tree->gtCall.gtCallType == CT_INDIRECT)
-                gtDispChild(tree->gtCall.gtCallAddr, indentStack, childNum++, "calli tgt", topOnly);
-
-            if  (tree->gtCall.gtControlExpr != nullptr)
-                gtDispChild(tree->gtCall.gtControlExpr, indentStack, childNum++, "control expr", topOnly);
-
-#if !FEATURE_FIXED_OUT_ARGS
-            regList list = tree->gtCall.regArgList;
-#endif
-            /* process the late argument list */
-            int lateArgIndex=0;
-            for (GenTreeArgList* lateArgs = tree->gtCall.gtCallLateArgs; lateArgs; (lateArgIndex++, lateArgs = lateArgs->Rest()))
+            if (tree->gtCall.gtCallType != CT_INDIRECT)
             {
-                GenTreePtr argx;
+                const char *    methodName;
+                const char *     className;
 
-                argx    = lateArgs->Current();
+                methodName = eeGetMethodName(tree->gtCall.gtCallMethHnd, &className);
 
-                gtGetLateArgMsg(tree, argx, lateArgIndex, bufp, sizeof(buf));
-                gtDispChild(argx, indentStack, childNum++, bufp, topOnly);
-            } // for (lateArgs = tree->gtCall.gtCallLateArgs; lateArgs; lateArgIndex++)
+                printf(" %s.%s", className, methodName);
+            }
+
+            if ((tree->gtFlags & GTF_CALL_UNMANAGED) && (tree->gtCall.gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
+            {
+                printf(" (FramesRoot last use)");
+            }
+
+            if (((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) &&
+                (tree->gtCall.gtInlineCandidateInfo != NULL) &&
+                (tree->gtCall.gtInlineCandidateInfo->exactContextHnd != NULL))
+            {
+                printf(" (exactContextHnd=0x%p)", dspPtr(tree->gtCall.gtInlineCandidateInfo->exactContextHnd));
+            }
+
+            gtDispVN(tree);
+            printf("\n");
+
+            if (!topOnly)
+            {
+                char   buf[64];
+                char * bufp;
+
+                bufp = &buf[0];
+
+                if  ((tree->gtCall.gtCallObjp         != NULL) &&
+                     (tree->gtCall.gtCallObjp->gtOper != GT_NOP) &&
+                     (!tree->gtCall.gtCallObjp->IsArgPlaceHolderNode()))
+                {
+                    if (tree->gtCall.gtCallObjp->gtOper == GT_ASG)
+                        sprintf_s(bufp, sizeof(buf), "this SETUP%c", 0);
+                    else
+                        sprintf_s(bufp, sizeof(buf), "this in %s%c", compRegVarName(REG_ARG_0), 0);
+                    gtDispChild(tree->gtCall.gtCallObjp, indentStack, (tree->gtCall.gtCallObjp == lastChild) ? IIArcBottom : IIArc, bufp, topOnly);
+                }
+
+                if (tree->gtCall.gtCallArgs)
+                    gtDispArgList(tree, indentStack);
+
+                if  (tree->gtCall.gtCallType == CT_INDIRECT)
+                    gtDispChild(tree->gtCall.gtCallAddr, indentStack, (tree->gtCall.gtCallAddr == lastChild) ? IIArcBottom : IIArc, "calli tgt", topOnly);
+
+                if  (tree->gtCall.gtControlExpr != nullptr)
+                    gtDispChild(tree->gtCall.gtControlExpr, indentStack, (tree->gtCall.gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
+
+    #if !FEATURE_FIXED_OUT_ARGS
+                regList list = tree->gtCall.regArgList;
+    #endif
+                /* process the late argument list */
+                int lateArgIndex=0;
+                for (GenTreeArgList* lateArgs = tree->gtCall.gtCallLateArgs; lateArgs; (lateArgIndex++, lateArgs = lateArgs->Rest()))
+                {
+                    GenTreePtr argx;
+
+                    argx    = lateArgs->Current();
+
+                    IndentInfo arcType = (lateArgs->Rest() == nullptr) ? IIArcBottom : IIArc;
+                    gtGetLateArgMsg(tree, argx, lateArgIndex, bufp, sizeof(buf));
+                    gtDispChild(argx, indentStack, arcType, bufp, topOnly);
+                }
+            }
         }
         break;
 
@@ -8158,7 +8212,7 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
         printf("\n");
 
         if  (!topOnly)
-            gtDispChild(tree->gtStmt.gtStmtExpr, indentStack, childNum++);
+            gtDispChild(tree->gtStmt.gtStmtExpr, indentStack, IIArcBottom);
         break;
 
     case GT_ARR_ELEM:
@@ -8167,11 +8221,14 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
 
         if  (!topOnly)
         {
-            gtDispChild(tree->gtArrElem.gtArrObj, indentStack, childNum++, nullptr, topOnly);
+            gtDispChild(tree->gtArrElem.gtArrObj, indentStack, IIArc, nullptr, topOnly);
 
             unsigned dim;
             for (dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
-                gtDispChild(tree->gtArrElem.gtArrInds[dim], indentStack, childNum++, nullptr, topOnly);
+            {
+                IndentInfo arcType = ((dim + 1) == tree->gtArrElem.gtArrRank) ? IIArcBottom : IIArc;
+                gtDispChild(tree->gtArrElem.gtArrInds[dim], indentStack, arcType, nullptr, topOnly);
+            }
         }
         break;
 
@@ -8180,9 +8237,9 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
         printf("\n");
         if  (!topOnly)
         {
-            gtDispChild(tree->gtArrOffs.gtOffset, indentStack, childNum++, nullptr, topOnly);
-            gtDispChild(tree->gtArrOffs.gtIndex,  indentStack, childNum++, nullptr, topOnly);
-            gtDispChild(tree->gtArrOffs.gtArrObj, indentStack, childNum++, nullptr, topOnly);
+            gtDispChild(tree->gtArrOffs.gtOffset, indentStack, IIArc, nullptr, topOnly);
+            gtDispChild(tree->gtArrOffs.gtIndex,  indentStack, IIArc, nullptr, topOnly);
+            gtDispChild(tree->gtArrOffs.gtArrObj, indentStack, IIArcBottom, nullptr, topOnly);
         }
         break;
 
@@ -8191,9 +8248,9 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
         printf("\n");
         if  (!topOnly)
         {
-            gtDispChild(tree->gtCmpXchg.gtOpLocation,  indentStack, childNum++, nullptr, topOnly);
-            gtDispChild(tree->gtCmpXchg.gtOpValue,     indentStack, childNum++, nullptr, topOnly);
-            gtDispChild(tree->gtCmpXchg.gtOpComparand, indentStack, childNum++, nullptr, topOnly);
+            gtDispChild(tree->gtCmpXchg.gtOpLocation,  indentStack, IIArc, nullptr, topOnly);
+            gtDispChild(tree->gtCmpXchg.gtOpValue,     indentStack, IIArc, nullptr, topOnly);
+            gtDispChild(tree->gtCmpXchg.gtOpComparand, indentStack, IIArcBottom, nullptr, topOnly);
         }
         break;
 
@@ -8205,8 +8262,8 @@ void                Compiler::gtDispTree(GenTreePtr             tree,
         printf("\n");
         if  (!topOnly)
         {
-            gtDispChild(tree->gtBoundsChk.gtArrLen, indentStack, childNum++, nullptr, topOnly);
-            gtDispChild(tree->gtBoundsChk.gtIndex,  indentStack, childNum++, nullptr, topOnly);
+            gtDispChild(tree->gtBoundsChk.gtArrLen, indentStack, IIArc, nullptr, topOnly);
+            gtDispChild(tree->gtBoundsChk.gtIndex,  indentStack, IIArcBottom, nullptr, topOnly);
         }
         break;
 
@@ -8330,11 +8387,14 @@ void                Compiler::gtDispArgList(GenTreePtr      tree,
 {
     GenTree *  args     = tree->gtCall.gtCallArgs;
     unsigned   argnum   = 0;
-    unsigned   childNum = 0;
     const int  BufLength = 256;
     char       buf[BufLength];
     char *     bufp     = &buf[0];
+    unsigned numChildren = tree->NumChildren();
+    assert(numChildren != 0);
+    bool argListIsLastChild = (args == tree->GetChild(numChildren - 1));
 
+    IndentInfo arcType = IIArc;
     if (tree->gtCall.gtCallObjp != NULL)
         argnum++;
 
@@ -8345,7 +8405,11 @@ void                Compiler::gtDispArgList(GenTreePtr      tree,
         if (!arg->IsNothingNode() && !arg->IsArgPlaceHolderNode())
         {
             gtGetArgMsg(tree, arg, argnum, bufp, BufLength);
-            gtDispChild(arg, indentStack, childNum++, bufp, false);
+            if (argListIsLastChild && (args->gtOp.gtOp2 == nullptr))
+            {
+                arcType = IIArcBottom;
+            }
+            gtDispChild(arg, indentStack, arcType, bufp, false);
         }
         args = args->gtOp.gtOp2;
         argnum++;
