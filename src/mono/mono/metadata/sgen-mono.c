@@ -2139,7 +2139,7 @@ sgen_client_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
 #ifdef USE_MONO_CTX
 	memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 #else
-	memset (&info->client_info.regs, 0, sizeof (info->regs));
+	memset (&info->client_info.regs, 0, sizeof (info->client_info.regs));
 #endif
 
 	if (mono_gc_get_gc_callbacks ()->thread_attach_func)

@@ -80,7 +80,7 @@ update_current_thread_stack (void *start)
 	ARCH_STORE_REGS (reg_ptr);
 	memcpy (&info->client_info.regs, reg_ptr, sizeof (info->client_info.regs));
 	if (mono_gc_get_gc_callbacks ()->thread_suspend_func)
-		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->runtime_data, NULL, NULL);
+		mono_gc_get_gc_callbacks ()->thread_suspend_func (info->client_info.runtime_data, NULL, NULL);
 #endif
 }
 
