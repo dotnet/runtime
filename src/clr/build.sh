@@ -26,8 +26,14 @@ setup_dirs()
 
 clean()
 {
-    echo Cleaning binaries directory
-    rm -rf "$__RootBinDir"
+    echo Cleaning previous output for the selected configuration
+    rm -rf "$__BinDir"
+    rm -rf "$__IntermediatesDir"
+	
+    rm -rf "$__TestWorkingDir"
+    rm -rf "$__TestIntermediatesDir"
+	
+    rm -rf "$__LogsDir/*_$__BuildOS__$__BuildArch__$__BuildType.*"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -187,6 +193,7 @@ __PackagesBinDir="$__BinDir/.nuget"
 __ToolsDir="$__RootBinDir/tools"
 __TestWorkingDir="$__RootBinDir/tests/$__BuildOS.$__BuildArch.$__BuildType"
 __IntermediatesDir="$__RootBinDir/obj/$__BuildOS.$__BuildArch.$__BuildType"
+__TestIntermediatesDir="$__RootBinDir/tests/obj/$__BuildOS.$__BuildArch.$__BuildType"
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.

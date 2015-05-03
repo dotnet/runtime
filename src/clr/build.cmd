@@ -51,6 +51,7 @@ set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildTyp
 set "__PackagesBinDir=%__BinDir%\.nuget"
 set "__ToolsDir=%__RootBinDir%\tools"
 set "__TestBinDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -64,8 +65,14 @@ echo.
 :: MSBuild projects would need a rebuild
 set __MSBCleanBuildArgs=/t:rebuild
 
-:: Cleanup the binaries drop folder
-if exist "%__RootBinDir%" rd /s /q "%__RootBinDir%"
+:: Cleanup the previous output for the selected configuration
+if exist "%__BinDir%" rd /s /q "%__BinDir%"
+if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
+
+if exist "%__TestBinDir%" rd /s /q "%__TestBinDir%"
+if exist "%__TestIntermediatesDir%" rd /s /q "%__TestIntermediatesDir%"
+
+if exist "%__LogsDir%" del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__BuildType%.*"
 
 :MakeDirectories
 if not exist "%__BinDir%" md "%__BinDir%"
