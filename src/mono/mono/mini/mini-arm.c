@@ -60,6 +60,8 @@
 #define HAVE_AEABI_READ_TP 1
 #endif
 
+#define THUNK_SIZE (3 * 4)
+
 #ifdef __native_client_codegen__
 const guint kNaClAlignment = kNaClAlignmentARM;
 const guint kNaClAlignmentMask = kNaClAlignmentMaskARM;
@@ -330,6 +332,7 @@ emit_call_seq (MonoCompile *cfg, guint8 *code)
 	} else {
 		ARM_BL (code, 0);
 	}
+	cfg->thunk_area += THUNK_SIZE;
 #endif
 	return code;
 }
@@ -3692,6 +3695,21 @@ typedef struct {
 
 #define is_call_imm(diff) ((gint)(diff) >= -33554432 && (gint)(diff) <= 33554431)
 
+static void
+emit_thunk (guint8 *code, gconstpointer target)
+{
+	guint8 *p = code;
+
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
+	if (thumb_supported)
+		ARM_BX (code, ARMREG_IP);
+	else
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+	*(guint32*)code = (guint32)target;
+	code += 4;
+	mono_arch_flush_icache (p, code - p);
+}
+
 static int
 search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 	PatchData *pdata = (PatchData*)user_data;
@@ -3728,15 +3746,7 @@ search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
 				/* ARMREG_IP is fine to use since this can't be an IMT call
 				 * which is indirect
 				 */
-				code = (guchar*)thunks;
-				ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-				if (thumb_supported)
-					ARM_BX (code, ARMREG_IP);
-				else
-					ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
-				thunks [2] = (guint32)pdata->target;
-				mono_arch_flush_icache ((guchar*)thunks, 12);
-
+				emit_thunk ((guint8*)thunks, pdata->target);
 				arm_patch (pdata->code, (guchar*)thunks);
 				mono_arch_flush_icache (pdata->code, 4);
 				pdata->found = 1;
@@ -3755,9 +3765,43 @@ static void
 handle_thunk (MonoDomain *domain, int absolute, guchar *code, const guchar *target, MonoCodeManager *dyn_code_mp)
 {
 	PatchData pdata;
+	MonoJitInfo *ji;
+	MonoThunkJitInfo *info;
 
 	if (!domain)
 		domain = mono_domain_get ();
+
+	/*
+	 * Try the thunk area right next to the method code first.
+	 * FIXME: This is not going to work during JITting, because the
+	 * method is not yet in the JIT info table.
+	 */
+	ji = mini_jit_info_table_find (domain, (char*)code, NULL);
+	if (ji) {
+		guint8 *thunks, *p;
+
+		info = mono_jit_info_get_thunk_info (ji);
+		g_assert (info);
+
+		thunks = (guint8*)ji->code_start + info->thunks_offset;
+		for (p = thunks; p < thunks + info->thunks_size; p += THUNK_SIZE) {
+			guint32 orig_addr = *(guint32*)(p + 8);
+			if (orig_addr == (guint32)target) {
+				/* Already has a thunk for this address */
+				arm_patch (code, p);
+				mono_arch_flush_icache (code, 4);
+				return;
+			} else if (((guint32*)p) [0] == 0) {
+				/* Free entry */
+				emit_thunk (p, target);
+				arm_patch (code, p);
+				mono_arch_flush_icache (code, 4);
+				return;
+			}
+		}
+		g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, info->thunks_size, mono_method_full_name (jinfo_get_method (ji), TRUE));
+		g_assert_not_reached ();
+	}
 
 	pdata.code = code;
 	pdata.target = target;
@@ -5330,6 +5374,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_CALL_HANDLER: 
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_BB, ins->inst_target_bb);
 			code = mono_arm_patchable_bl (code, ARMCOND_AL);
+			cfg->thunk_area += THUNK_SIZE;
 			mono_cfg_add_try_hole (cfg, ins->inst_eh_block, code, bb);
 			break;
 		case OP_GET_EX_OBJ:
@@ -6770,6 +6815,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->data.name = "mono_arch_throw_corlib_exception";
 			patch_info->ip.i = code - cfg->native_code;
 			ARM_BL (code, 0);
+			cfg->thunk_area += THUNK_SIZE;
 			*(guint32*)(gpointer)code = exc_class->type_token;
 			code += 4;
 #endif
