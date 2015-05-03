@@ -5977,6 +5977,10 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	unsigned char *ip = ji->ip.i + code;
 
 	if (ji->type == MONO_PATCH_INFO_SWITCH) {
+	}
+
+	switch (ji->type) {
+	case MONO_PATCH_INFO_SWITCH: {
 #ifdef USE_JUMP_TABLES
 		gpointer *jt = mono_jumptable_get_entry (ip);
 #else
@@ -5989,18 +5993,16 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 		 */
 		for (i = 0; i < ji->data.table->table_size; i++)
 			jt [i] = code + (int)ji->data.table->table [i];
-		return;
+		break;
 	}
-
-	switch (ji->type) {
 	case MONO_PATCH_INFO_IP:
 		g_assert_not_reached ();
 		patch_lis_ori (ip, ip);
-		continue;
+		break;
 	case MONO_PATCH_INFO_METHOD_REL:
 		g_assert_not_reached ();
 		*((gpointer *)(ip)) = target;
-		continue;
+		break;
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IMAGE:
@@ -6014,25 +6016,25 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 		g_assert_not_reached ();
 		/* from OP_AOTCONST : lis + ori */
 		patch_lis_ori (ip, target);
-		continue;
+		break;
 	case MONO_PATCH_INFO_R4:
 	case MONO_PATCH_INFO_R8:
 		g_assert_not_reached ();
 		*((gconstpointer *)(ip + 2)) = target;
-		continue;
+		break;
 	case MONO_PATCH_INFO_EXC_NAME:
 		g_assert_not_reached ();
 		*((gconstpointer *)(ip + 1)) = target;
-		continue;
+		break;
 	case MONO_PATCH_INFO_NONE:
 	case MONO_PATCH_INFO_BB_OVF:
 	case MONO_PATCH_INFO_EXC_OVF:
 		/* everything is dealt with at epilog output time */
-		continue;
+		break;
 	default:
+		arm_patch_general (cfg, domain, ip, target);
 		break;
 	}
-	arm_patch_general (cfg, domain, ip, target);
 }
 
 #ifndef DISABLE_JIT
