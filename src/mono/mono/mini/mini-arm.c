@@ -3686,13 +3686,6 @@ emit_r4_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size, gb
 
 #endif /* #ifndef DISABLE_JIT */
 
-typedef struct {
-	guchar *code;
-	const guchar *target;
-	int absolute;
-	int found;
-} PatchData;
-
 #define is_call_imm(diff) ((gint)(diff) >= -33554432 && (gint)(diff) <= 33554431)
 
 static void
@@ -3710,63 +3703,15 @@ emit_thunk (guint8 *code, gconstpointer target)
 	mono_arch_flush_icache (p, code - p);
 }
 
-static int
-search_thunk_slot (void *data, int csize, int bsize, void *user_data) {
-	PatchData *pdata = (PatchData*)user_data;
-	guchar *code = data;
-	guint32 *thunks = data;
-	guint32 *endthunks = (guint32*)(code + bsize);
-	int count = 0;
-	int difflow, diffhigh;
-
-	/* always ensure a call from pdata->code can reach to the thunks without further thunks */
-	difflow = (char*)pdata->code - (char*)thunks;
-	diffhigh = (char*)pdata->code - (char*)endthunks;
-	if (!((is_call_imm (thunks) && is_call_imm (endthunks)) || (is_call_imm (difflow) && is_call_imm (diffhigh))))
-		return 0;
-
-	/*
-	 * The thunk is composed of 3 words:
-	 * load constant from thunks [2] into ARM_IP
-	 * bx to ARM_IP
-	 * address constant
-	 * Note that the LR register is already setup
-	 */
-	//g_print ("thunk nentries: %d\n", ((char*)endthunks - (char*)thunks)/16);
-	if ((pdata->found == 2) || (pdata->code >= code && pdata->code <= code + csize)) {
-		while (thunks < endthunks) {
-			//g_print ("looking for target: %p at %p (%08x-%08x)\n", pdata->target, thunks, thunks [0], thunks [1]);
-			if (thunks [2] == (guint32)pdata->target) {
-				arm_patch (pdata->code, (guchar*)thunks);
-				mono_arch_flush_icache (pdata->code, 4);
-				pdata->found = 1;
-				return 1;
-			} else if ((thunks [0] == 0) && (thunks [1] == 0) && (thunks [2] == 0)) {
-				/* found a free slot instead: emit thunk */
-				/* ARMREG_IP is fine to use since this can't be an IMT call
-				 * which is indirect
-				 */
-				emit_thunk ((guint8*)thunks, pdata->target);
-				arm_patch (pdata->code, (guchar*)thunks);
-				mono_arch_flush_icache (pdata->code, 4);
-				pdata->found = 1;
-				return 1;
-			}
-			/* skip 12 bytes, the size of the thunk */
-			thunks += 3;
-			count++;
-		}
-		//g_print ("failed thunk lookup for %p from %p at %p (%d entries)\n", pdata->target, pdata->code, data, count);
-	}
-	return 0;
-}
-
 static void
-handle_thunk (MonoDomain *domain, int absolute, guchar *code, const guchar *target, MonoCodeManager *dyn_code_mp)
+handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
 {
-	PatchData pdata;
-	MonoJitInfo *ji;
+	MonoJitInfo *ji = NULL;
 	MonoThunkJitInfo *info;
+	guint8 *thunks, *p;
+	int thunks_size;
+	guint8 *orig_target;
+	guint8 *target_thunk;
 
 	if (!domain)
 		domain = mono_domain_get ();
@@ -3776,85 +3721,56 @@ handle_thunk (MonoDomain *domain, int absolute, guchar *code, const guchar *targ
 	 * FIXME: This is not going to work during JITting, because the
 	 * method is not yet in the JIT info table.
 	 */
-	ji = mini_jit_info_table_find (domain, (char*)code, NULL);
-	if (ji) {
-		guint8 *thunks, *p;
-
+	if (cfg) {
+		/* During JITting */
+		thunks = cfg->thunks;
+		thunks_size = cfg->thunk_area;
+	} else {
+		ji = mini_jit_info_table_find (domain, (char*)code, NULL);
+		g_assert (ji);
 		info = mono_jit_info_get_thunk_info (ji);
 		g_assert (info);
 
 		thunks = (guint8*)ji->code_start + info->thunks_offset;
-		for (p = thunks; p < thunks + info->thunks_size; p += THUNK_SIZE) {
-			guint32 orig_addr = *(guint32*)(p + 8);
-			if (orig_addr == (guint32)target) {
-				/* Already has a thunk for this address */
-				arm_patch (code, p);
-				mono_arch_flush_icache (code, 4);
-				return;
-			} else if (((guint32*)p) [0] == 0) {
+		thunks_size = info->thunks_size;
+	}
+
+	orig_target = mono_arch_get_call_target (code + 4);
+
+	mono_mini_arch_lock ();
+
+	target_thunk = NULL;
+	if (!cfg && orig_target >= thunks && orig_target < thunks + thunks_size) {
+		/* The call already points to a thunk, because of trampolines etc. */
+		target_thunk = orig_target;
+	} else {
+		for (p = thunks; p < thunks + thunks_size; p += THUNK_SIZE) {
+			if (((guint32*)p) [0] == 0) {
 				/* Free entry */
-				emit_thunk (p, target);
-				arm_patch (code, p);
-				mono_arch_flush_icache (code, 4);
-				return;
+				target_thunk = p;
+				break;
 			}
 		}
-		g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, info->thunks_size, mono_method_full_name (jinfo_get_method (ji), TRUE));
+	}
+
+	//printf ("THUNK: %p %p %p\n", code, target, target_thunk);
+
+	if (target_thunk) {
+		emit_thunk (target_thunk, target);
+		arm_patch (code, target_thunk);
+		mono_arch_flush_icache (code, 4);
+	}
+
+	mono_mini_arch_unlock ();
+
+	if (!target_thunk) {
+		g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, info->thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
 		g_assert_not_reached ();
 	}
-
-	pdata.code = code;
-	pdata.target = target;
-	pdata.absolute = absolute;
-	pdata.found = 0;
-
-	if (dyn_code_mp) {
-		mono_code_manager_foreach (dyn_code_mp, search_thunk_slot, &pdata);
-	}
-
-	if (pdata.found != 1) {
-		mono_domain_lock (domain);
-		mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
-
-		if (!pdata.found) {
-			/* this uses the first available slot */
-			pdata.found = 2;
-			mono_domain_code_foreach (domain, search_thunk_slot, &pdata);
-		}
-		mono_domain_unlock (domain);
-	}
-
-	if (pdata.found != 1) {
-		GHashTable *hash;
-		GHashTableIter iter;
-		MonoJitDynamicMethodInfo *ji;
-
-		/*
-		 * This might be a dynamic method, search its code manager. We can only
-		 * use the dynamic method containing CODE, since the others might be freed later.
-		 */
-		pdata.found = 0;
-
-		mono_domain_lock (domain);
-		hash = domain_jit_info (domain)->dynamic_code_hash;
-		if (hash) {
-			/* FIXME: Speed this up */
-			g_hash_table_iter_init (&iter, hash);
-			while (g_hash_table_iter_next (&iter, NULL, (gpointer*)&ji)) {
-				mono_code_manager_foreach (ji->code_mp, search_thunk_slot, &pdata);
-				if (pdata.found == 1)
-					break;
-			}
-		}
-		mono_domain_unlock (domain);
-	}
-	if (pdata.found != 1)
-		g_print ("thunk failed for %p from %p\n", target, code);
-	g_assert (pdata.found == 1);
 }
 
 static void
-arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target, MonoCodeManager *dyn_code_mp)
+arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
 {
 	guint32 *code32 = (void*)code;
 	guint32 ins = *code32;
@@ -3900,7 +3816,7 @@ arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target, MonoC
 			}
 		}
 		
-		handle_thunk (domain, TRUE, code, target, dyn_code_mp);
+		handle_thunk (cfg, domain, code, target);
 		return;
 	}
 
@@ -4011,7 +3927,7 @@ arm_patch_general (MonoDomain *domain, guchar *code, const guchar *target, MonoC
 void
 arm_patch (guchar *code, const guchar *target)
 {
-	arm_patch_general (NULL, code, target, NULL);
+	arm_patch_general (NULL, NULL, code, target);
 }
 
 /* 
@@ -6121,7 +6037,7 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		default:
 			break;
 		}
-		arm_patch_general (domain, ip, target, dyn_code_mp);
+		arm_patch_general (cfg, domain, ip, target);
 	}
 }
 

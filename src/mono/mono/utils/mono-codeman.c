@@ -492,9 +492,6 @@ mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void
 #if defined(__ppc__) || defined(__powerpc__)
 #define BIND_ROOM 4
 #endif
-#if defined(__arm__)
-#define BIND_ROOM 8
-#endif
 #if defined(TARGET_ARM64)
 #define BIND_ROOM 4
 #endif

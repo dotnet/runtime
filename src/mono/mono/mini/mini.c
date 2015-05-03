@@ -2486,6 +2486,7 @@ mono_codegen (MonoCompile *cfg)
 	if (cfg->thunk_area) {
 		cfg->thunks_offset = cfg->code_size + unwindlen;
 		cfg->thunks = code + cfg->thunks_offset;
+		memset (cfg->thunks, 0, cfg->thunk_area);
 	}
 
 	g_assert (code);
