@@ -129,6 +129,17 @@ namespace System.Numerics.Tests
             VerifyDivideString(Math.Pow(2, 33) + " 2 b/");
         }
 
+        [Fact]
+        public static void RunOverflow()
+        {
+            // these values lead to an "overflow", if dividing digit by digit
+            // we need to ensure that this case is being handled accordingly...
+            var x = new BigInteger(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 });
+            var y = new BigInteger(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 });
+            var z = new BigInteger(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0 });
+
+            Assert.Equal(z, x / y);
+        }
 
         private static void VerifyDivideString(string opstring)
         {
