@@ -5088,94 +5088,75 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
+mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
-	MonoJumpInfo *patch_info;
-	gboolean compile_aot = !run_cctors;
+	unsigned char *ip = ji->ip.i + code;
 
-	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
-		unsigned char *ip = patch_info->ip.i + code;
-		const unsigned char *target;
-
-		if (compile_aot) {
-			switch (patch_info->type) {
-			case MONO_PATCH_INFO_BB:
-			case MONO_PATCH_INFO_LABEL:
-				break;
-			default:
-				/* No need to patch these */
-				continue;
-			}
-		}
-
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
-
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_IP:
-			*((gconstpointer *)(ip)) = target;
-			break;
-		case MONO_PATCH_INFO_CLASS_INIT: {
-			guint8 *code = ip;
-			/* Might already been changed to a nop */
-			x86_call_code (code, 0);
-			x86_patch (ip, target);
-			break;
-		}
-		case MONO_PATCH_INFO_ABS:
-		case MONO_PATCH_INFO_METHOD:
-		case MONO_PATCH_INFO_METHOD_JUMP:
-		case MONO_PATCH_INFO_INTERNAL_METHOD:
-		case MONO_PATCH_INFO_BB:
-		case MONO_PATCH_INFO_LABEL:
-		case MONO_PATCH_INFO_RGCTX_FETCH:
-		case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
-		case MONO_PATCH_INFO_MONITOR_ENTER:
-		case MONO_PATCH_INFO_MONITOR_ENTER_V4:
-		case MONO_PATCH_INFO_MONITOR_EXIT:
-		case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	switch (ji->type) {
+	case MONO_PATCH_INFO_IP:
+		*((gconstpointer *)(ip)) = target;
+		break;
+	case MONO_PATCH_INFO_CLASS_INIT: {
+		guint8 *code = ip;
+		/* Might already been changed to a nop */
+		x86_call_code (code, 0);
+		x86_patch (ip, target);
+		break;
+	}
+	case MONO_PATCH_INFO_ABS:
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHOD_JUMP:
+	case MONO_PATCH_INFO_INTERNAL_METHOD:
+	case MONO_PATCH_INFO_BB:
+	case MONO_PATCH_INFO_LABEL:
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
+	case MONO_PATCH_INFO_MONITOR_ENTER:
+	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
+	case MONO_PATCH_INFO_MONITOR_EXIT:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 #if defined(__native_client_codegen__) && defined(__native_client__)
-			if (nacl_is_code_address (code)) {
-				/* For tail calls, code is patched after being installed */
-				/* but not through the normal "patch callsite" method.   */
-				unsigned char buf[kNaClAlignment];
-				unsigned char *aligned_code = (uintptr_t)code & ~kNaClAlignmentMask;
-				unsigned char *_target = target;
-				int ret;
-				/* All patch targets modified in x86_patch */
-				/* are IP relative.                        */
-				_target = _target + (uintptr_t)buf - (uintptr_t)aligned_code;
-				memcpy (buf, aligned_code, kNaClAlignment);
-				/* Patch a temp buffer of bundle size, */
-				/* then install to actual location.    */
-				x86_patch (buf + ((uintptr_t)code - (uintptr_t)aligned_code), _target);
-				ret = nacl_dyncode_modify (aligned_code, buf, kNaClAlignment);
-				g_assert (ret == 0);
-			}
-			else {
-				x86_patch (ip, target);
-			}
-#else
+		if (nacl_is_code_address (code)) {
+			/* For tail calls, code is patched after being installed */
+			/* but not through the normal "patch callsite" method.   */
+			unsigned char buf[kNaClAlignment];
+			unsigned char *aligned_code = (uintptr_t)code & ~kNaClAlignmentMask;
+			unsigned char *_target = target;
+			int ret;
+			/* All patch targets modified in x86_patch */
+			/* are IP relative.                        */
+			_target = _target + (uintptr_t)buf - (uintptr_t)aligned_code;
+			memcpy (buf, aligned_code, kNaClAlignment);
+			/* Patch a temp buffer of bundle size, */
+			/* then install to actual location.    */
+			x86_patch (buf + ((uintptr_t)code - (uintptr_t)aligned_code), _target);
+			ret = nacl_dyncode_modify (aligned_code, buf, kNaClAlignment);
+			g_assert (ret == 0);
+		}
+		else {
 			x86_patch (ip, target);
-#endif
-			break;
-		case MONO_PATCH_INFO_NONE:
-			break;
-		case MONO_PATCH_INFO_R4:
-		case MONO_PATCH_INFO_R8: {
-			guint32 offset = mono_arch_get_patch_offset (ip);
-			*((gconstpointer *)(ip + offset)) = target;
-			break;
 		}
-		default: {
-			guint32 offset = mono_arch_get_patch_offset (ip);
-#if !defined(__native_client__)
-			*((gconstpointer *)(ip + offset)) = target;
 #else
-			*((gconstpointer *)(ip + offset)) = nacl_modify_patch_target (target);
+		x86_patch (ip, target);
 #endif
-			break;
-		}
-		}
+		break;
+	case MONO_PATCH_INFO_NONE:
+		break;
+	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R8: {
+		guint32 offset = mono_arch_get_patch_offset (ip);
+		*((gconstpointer *)(ip + offset)) = target;
+		break;
+	}
+	default: {
+		guint32 offset = mono_arch_get_patch_offset (ip);
+#if !defined(__native_client__)
+		*((gconstpointer *)(ip + offset)) = target;
+#else
+		*((gconstpointer *)(ip + offset)) = nacl_modify_patch_target (target);
+#endif
+		break;
+	}
 	}
 }
 
