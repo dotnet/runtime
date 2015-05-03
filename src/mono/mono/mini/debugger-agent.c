@@ -5022,12 +5022,16 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
 
+	if (GetCurrentThreadId () == debugger_thread_id)
+		return;
+
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
 
 	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
 	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
+	memcpy (&tls->handler_ctx, ctx, sizeof (MonoContext));
 
 	process_single_step_inner (tls, FALSE);
 
@@ -5041,10 +5045,14 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
 
+	if (GetCurrentThreadId () == debugger_thread_id)
+		return;
+
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
-	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoContext));
+	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
+	memcpy (&tls->handler_ctx, ctx, sizeof (MonoContext));
 
 	process_breakpoint_inner (tls, FALSE);
 
