@@ -3704,7 +3704,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 }
 
 static void
-handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
+handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 {
 	MonoJitInfo *ji = NULL;
 	MonoThunkJitInfo *info;
@@ -3713,14 +3713,6 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 	guint8 *orig_target;
 	guint8 *target_thunk;
 
-	if (!domain)
-		domain = mono_domain_get ();
-
-	/*
-	 * Try the thunk area right next to the method code first.
-	 * FIXME: This is not going to work during JITting, because the
-	 * method is not yet in the JIT info table.
-	 */
 	if (cfg) {
 		/*
 		 * This can be called multiple times during JITting,
@@ -3779,16 +3771,16 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 			g_assert_not_reached ();
 		}
 
-		mono_mini_arch_unlock ();
-
 		emit_thunk (target_thunk, target);
 		arm_patch (code, target_thunk);
 		mono_arch_flush_icache (code, 4);
+
+		mono_mini_arch_unlock ();
 	}
 }
 
 static void
-arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
+arm_patch_general (MonoCompile *cfg, guchar *code, const guchar *target)
 {
 	guint32 *code32 = (void*)code;
 	guint32 ins = *code32;
@@ -3834,7 +3826,7 @@ arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guc
 			}
 		}
 		
-		handle_thunk (cfg, domain, code, target);
+		handle_thunk (cfg, code, target);
 		return;
 	}
 
@@ -3945,7 +3937,7 @@ arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guc
 void
 arm_patch (guchar *code, const guchar *target)
 {
-	arm_patch_general (NULL, NULL, code, target);
+	arm_patch_general (NULL, code, target);
 }
 
 /* 
@@ -6055,7 +6047,7 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		default:
 			break;
 		}
-		arm_patch_general (cfg, domain, ip, target);
+		arm_patch_general (cfg, ip, target);
 	}
 }
 
