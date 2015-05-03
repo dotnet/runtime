@@ -3704,7 +3704,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 }
 
 static void
-handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
+handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
 {
 	MonoJitInfo *ji = NULL;
 	MonoThunkJitInfo *info;
@@ -3712,6 +3712,9 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 	int thunks_size;
 	guint8 *orig_target;
 	guint8 *target_thunk;
+
+	if (!domain)
+		domain = mono_domain_get ();
 
 	if (cfg) {
 		/*
@@ -3780,7 +3783,7 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 }
 
 static void
-arm_patch_general (MonoCompile *cfg, guchar *code, const guchar *target)
+arm_patch_general (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *target)
 {
 	guint32 *code32 = (void*)code;
 	guint32 ins = *code32;
@@ -3826,7 +3829,7 @@ arm_patch_general (MonoCompile *cfg, guchar *code, const guchar *target)
 			}
 		}
 		
-		handle_thunk (cfg, code, target);
+		handle_thunk (cfg, domain, code, target);
 		return;
 	}
 
@@ -3937,7 +3940,7 @@ arm_patch_general (MonoCompile *cfg, guchar *code, const guchar *target)
 void
 arm_patch (guchar *code, const guchar *target)
 {
-	arm_patch_general (NULL, code, target);
+	arm_patch_general (NULL, NULL, code, target);
 }
 
 /* 
@@ -6047,7 +6050,7 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 		default:
 			break;
 		}
-		arm_patch_general (cfg, ip, target);
+		arm_patch_general (cfg, domain, ip, target);
 	}
 }
 
