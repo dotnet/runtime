@@ -2554,7 +2554,33 @@ mono_codegen (MonoCompile *cfg)
 	mono_nacl_fix_patches (cfg->native_code, cfg->patch_info);
 #endif
 
+#ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
+	{
+		MonoJumpInfo *ji;
+		gpointer target;
+
+		for (ji = cfg->patch_info; ji; ji = ji->next) {
+			if (cfg->compile_aot) {
+				switch (ji->type) {
+				case MONO_PATCH_INFO_BB:
+				case MONO_PATCH_INFO_LABEL:
+					break;
+				default:
+					/* No need to patch these */
+					continue;
+				}
+			}
+
+			if (ji->type == MONO_PATCH_INFO_NONE)
+				continue;
+
+			target = mono_resolve_patch_target (cfg->method, cfg->domain, cfg->native_code, ji, cfg->run_cctors);
+			mono_arch_patch_code_new (cfg, cfg->domain, cfg->native_code, ji, target);
+		}
+	}
+#else
 	mono_arch_patch_code (cfg, cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
+#endif
 
 	if (cfg->method->dynamic) {
 		if (mono_using_xdebug)
@@ -4295,8 +4321,15 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			/* These patches are applied after a method has been installed, no target munging is needed. */
 			nacl_allow_target_modification (FALSE);
 #endif
+#ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
+			for (tmp = jlist->list; tmp; tmp = tmp->next) {
+				gpointer target = mono_resolve_patch_target (NULL, target_domain, tmp->data, &patch_info, TRUE);
+				mono_arch_patch_code_new (NULL, target_domain, tmp->data, &patch_info, target);
+			}
+#else
 			for (tmp = jlist->list; tmp; tmp = tmp->next)
 				mono_arch_patch_code (NULL, NULL, target_domain, tmp->data, &patch_info, TRUE);
+#endif
 #if defined(__native_client_codegen__) && defined(__native_client__)
 			nacl_allow_target_modification (TRUE);
 #endif

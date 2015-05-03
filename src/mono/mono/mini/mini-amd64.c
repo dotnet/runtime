@@ -6614,67 +6614,34 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
+mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
-	MonoJumpInfo *patch_info;
-	gboolean compile_aot = !run_cctors;
+	unsigned char *ip = ji->ip.i + code;
 
-	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
-		unsigned char *ip = patch_info->ip.i + code;
-		unsigned char *target;
+	/*
+	 * Debug code to help track down problems where the target of a near call is
+	 * is not valid.
+	 */
+	if (amd64_is_near_call (ip)) {
+		gint64 disp = (guint8*)target - (guint8*)ip;
 
-		if (compile_aot) {
-			switch (patch_info->type) {
-			case MONO_PATCH_INFO_BB:
-			case MONO_PATCH_INFO_LABEL:
+		if (!amd64_is_imm32 (disp)) {
+			printf ("TYPE: %d\n", ji->type);
+			switch (ji->type) {
+			case MONO_PATCH_INFO_INTERNAL_METHOD:
+				printf ("V: %s\n", ji->data.name);
+				break;
+			case MONO_PATCH_INFO_METHOD_JUMP:
+			case MONO_PATCH_INFO_METHOD:
+				printf ("V: %s\n", ji->data.method->name);
 				break;
 			default:
-				/* No need to patch these */
-				continue;
+				break;
 			}
 		}
-
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
-
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_NONE:
-			continue;
-		case MONO_PATCH_INFO_METHOD_REL:
-		case MONO_PATCH_INFO_R8:
-		case MONO_PATCH_INFO_R4:
-			g_assert_not_reached ();
-			continue;
-		case MONO_PATCH_INFO_BB:
-			break;
-		default:
-			break;
-		}
-
-		/* 
-		 * Debug code to help track down problems where the target of a near call is
-		 * is not valid.
-		 */
-		if (amd64_is_near_call (ip)) {
-			gint64 disp = (guint8*)target - (guint8*)ip;
-
-			if (!amd64_is_imm32 (disp)) {
-				printf ("TYPE: %d\n", patch_info->type);
-				switch (patch_info->type) {
-				case MONO_PATCH_INFO_INTERNAL_METHOD:
-					printf ("V: %s\n", patch_info->data.name);
-					break;
-				case MONO_PATCH_INFO_METHOD_JUMP:
-				case MONO_PATCH_INFO_METHOD:
-					printf ("V: %s\n", patch_info->data.method->name);
-					break;
-				default:
-					break;
-				}
-			}
-		}
-
-		amd64_patch (ip, (gpointer)target);
 	}
+
+	amd64_patch (ip, (gpointer)target);
 }
 
 #ifndef DISABLE_JIT
