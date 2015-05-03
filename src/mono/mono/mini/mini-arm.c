@@ -143,8 +143,7 @@ static int i8_align;
 
 static volatile int ss_trigger_var = 0;
 
-static gpointer single_step_func_wrapper;
-static gpointer breakpoint_func_wrapper;
+static gpointer single_step_tramp, breakpoint_tramp;
 
 /*
  * The code generated for sequence points reads from this location, which is
@@ -799,73 +798,6 @@ mono_arch_cpu_init (void)
 #endif
 }
 
-static gpointer
-create_function_wrapper (gpointer function)
-{
-	guint8 *start, *code;
-
-	start = code = mono_global_codeman_reserve (96);
-
-	/*
-	 * Construct the MonoContext structure on the stack.
-	 */
-
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, sizeof (MonoContext));
-
-	/* save ip, lr and pc into their correspodings ctx.regs slots. */
-	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs) + sizeof (mgreg_t) * ARMREG_IP);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
-
-	/* save r0..r10 and fp */
-	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, regs));
-	ARM_STM (code, ARMREG_IP, 0x0fff);
-
-	/* now we can update fp. */
-	ARM_MOV_REG_REG (code, ARMREG_FP, ARMREG_SP);
-
-	/* make ctx.esp hold the actual value of sp at the beginning of this method. */
-	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_FP, sizeof (MonoContext));
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_IP, 4 * ARMREG_SP);
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_SP);
-
-	/* make ctx.eip hold the address of the call. */
-	ARM_SUB_REG_IMM8 (code, ARMREG_LR, ARMREG_LR, 4);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, MONO_STRUCT_OFFSET (MonoContext, pc));
-
-	/* r0 now points to the MonoContext */
-	ARM_MOV_REG_REG (code, ARMREG_R0, ARMREG_FP);
-
-	/* call */
-#ifdef USE_JUMP_TABLES
-	{
-		gpointer *jte = mono_jumptable_add_entry ();
-		code = mono_arm_load_jumptable_entry (code, jte, ARMREG_IP);
-		jte [0] = function;
-	}
-#else
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
-	ARM_B (code, 0);
-	*(gpointer*)code = function;
-	code += 4;
-#endif
-	ARM_BLX_REG (code, ARMREG_IP);
-
-	/* we're back; save ctx.eip and ctx.esp into the corresponding regs slots. */
-	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, pc));
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_LR);
-	ARM_STR_IMM (code, ARMREG_R0, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs) + 4 * ARMREG_PC);
-
-	/* make ip point to the regs array, then restore everything, including pc. */
-	ARM_ADD_REG_IMM8 (code, ARMREG_IP, ARMREG_FP, MONO_STRUCT_OFFSET (MonoContext, regs));
-	ARM_LDM (code, ARMREG_IP, 0xffff);
-
-	mono_arch_flush_icache (start, code - start);
-	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
-
-	return start;
-}
-
 /*
  * Initialize architecture specific code.
  */
@@ -875,14 +807,10 @@ mono_arch_init (void)
 	const char *cpu_arch;
 
 	mono_mutex_init_recursive (&mini_arch_mutex);
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	if (mini_get_debug_options ()->soft_breakpoints) {
-		single_step_func_wrapper = create_function_wrapper (debugger_agent_single_step_from_context);
-		breakpoint_func_wrapper = create_function_wrapper (debugger_agent_breakpoint_from_context);
+		single_step_tramp = mini_get_single_step_trampoline ();
+		breakpoint_tramp = mini_get_breakpoint_trampoline ();
 	} else {
-#else
-	{
-#endif
 		ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
 		bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
 		mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
@@ -6617,17 +6545,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 #ifdef USE_JUMP_TABLES
 		jte = mono_jumptable_add_entries (3);
 		jte [0] = (gpointer)&ss_trigger_var;
-		jte [1] = single_step_func_wrapper;
-		jte [2] = breakpoint_func_wrapper;
+		jte [1] = single_step_tramp;
+		jte [2] = breakpoint_tramp;
 		code = mono_arm_load_jumptable_entry_addr (code, jte, ARMREG_LR);
 #else
 		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 		ARM_B (code, 2);
 		*(volatile int **)code = &ss_trigger_var;
 		code += 4;
-		*(gpointer*)code = single_step_func_wrapper;
+		*(gpointer*)code = single_step_tramp;
 		code += 4;
-		*(gpointer*)code = breakpoint_func_wrapper;
+		*(gpointer*)code = breakpoint_tramp;
 		code += 4;
 #endif
 
