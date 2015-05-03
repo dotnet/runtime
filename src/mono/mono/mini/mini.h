@@ -1567,6 +1567,8 @@ typedef struct {
 	guint32          inline_depth;
 	/* Size of memory reserved for thunks */
 	int              thunk_area;
+	/* Thunks */
+	guint8          *thunks;
 	/* Offset between the start of code and the thunks area */
 	int              thunks_offset;
 	guint32          exception_type;	/* MONO_EXCEPTION_* */
@@ -2477,7 +2479,7 @@ GList    *mono_arch_get_global_fp_regs          (MonoCompile *cfg);
 GList    *mono_arch_get_iregs_clobbered_by_call (MonoCallInst *call);
 GList    *mono_arch_get_fregs_clobbered_by_call (MonoCallInst *call);
 guint32   mono_arch_regalloc_cost               (MonoCompile *cfg, MonoMethodVar *vmv);
-void      mono_arch_patch_code                  (MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, MonoCodeManager *dyn_code_mp, gboolean run_cctors);
+void      mono_arch_patch_code                  (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, MonoCodeManager *dyn_code_mp, gboolean run_cctors);
 void      mono_arch_flush_icache                (guint8 *code, gint size);
 int       mono_arch_max_epilog_size             (MonoCompile *cfg);
 guint8   *mono_arch_emit_prolog                 (MonoCompile *cfg);
