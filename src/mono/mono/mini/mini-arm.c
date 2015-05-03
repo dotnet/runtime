@@ -3722,9 +3722,28 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 	 * method is not yet in the JIT info table.
 	 */
 	if (cfg) {
-		/* During JITting */
-		thunks = cfg->thunks;
-		thunks_size = cfg->thunk_area;
+		/*
+		 * This can be called multiple times during JITting,
+		 * save the current position in cfg->arch to avoid
+		 * doing a O(n^2) search.
+		 */
+		if (!cfg->arch.thunks) {
+			cfg->arch.thunks = cfg->thunks;
+			cfg->arch.thunks_size = cfg->thunk_area;
+		}
+		thunks = cfg->arch.thunks;
+		thunks_size = cfg->arch.thunks_size;
+		if (!thunks_size) {
+			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
+			g_assert_not_reached ();
+		}
+
+		g_assert (*(guint32*)thunks == 0);
+		emit_thunk (thunks, target);
+		arm_patch (code, thunks);
+
+		cfg->arch.thunks += THUNK_SIZE;
+		cfg->arch.thunks_size -= THUNK_SIZE;
 	} else {
 		ji = mini_jit_info_table_find (domain, (char*)code, NULL);
 		g_assert (ji);
@@ -3733,39 +3752,38 @@ handle_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 
 		thunks = (guint8*)ji->code_start + info->thunks_offset;
 		thunks_size = info->thunks_size;
-	}
 
-	orig_target = mono_arch_get_call_target (code + 4);
+		orig_target = mono_arch_get_call_target (code + 4);
 
-	mono_mini_arch_lock ();
+		mono_mini_arch_lock ();
 
-	target_thunk = NULL;
-	if (!cfg && orig_target >= thunks && orig_target < thunks + thunks_size) {
-		/* The call already points to a thunk, because of trampolines etc. */
-		target_thunk = orig_target;
-	} else {
-		for (p = thunks; p < thunks + thunks_size; p += THUNK_SIZE) {
-			if (((guint32*)p) [0] == 0) {
-				/* Free entry */
-				target_thunk = p;
-				break;
+		target_thunk = NULL;
+		if (orig_target >= thunks && orig_target < thunks + thunks_size) {
+			/* The call already points to a thunk, because of trampolines etc. */
+			target_thunk = orig_target;
+		} else {
+			for (p = thunks; p < thunks + thunks_size; p += THUNK_SIZE) {
+				if (((guint32*)p) [0] == 0) {
+					/* Free entry */
+					target_thunk = p;
+					break;
+				}
 			}
 		}
-	}
 
-	//printf ("THUNK: %p %p %p\n", code, target, target_thunk);
+		//printf ("THUNK: %p %p %p\n", code, target, target_thunk);
 
-	if (target_thunk) {
+		if (!target_thunk) {
+			mono_mini_arch_unlock ();
+			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
+			g_assert_not_reached ();
+		}
+
+		mono_mini_arch_unlock ();
+
 		emit_thunk (target_thunk, target);
 		arm_patch (code, target_thunk);
 		mono_arch_flush_icache (code, 4);
-	}
-
-	mono_mini_arch_unlock ();
-
-	if (!target_thunk) {
-		g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, info->thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
-		g_assert_not_reached ();
 	}
 }
 

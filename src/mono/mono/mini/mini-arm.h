@@ -233,6 +233,8 @@ typedef struct MonoCompileArch {
 	gpointer cinfo;
 	gpointer *vfp_scratch_slots [2];
 	int atomic_tmp_offset;
+	guint8 *thunks;
+	int thunks_size;
 } MonoCompileArch;
 
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
