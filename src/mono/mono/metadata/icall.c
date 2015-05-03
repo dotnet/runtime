@@ -2505,8 +2505,6 @@ ves_icall_MonoType_GetCorrespondingInflatedMethod (MonoReflectionType *type,
         return NULL;
 }
 
-
-
 ICALL_EXPORT MonoReflectionMethod *
 ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *ref_type)
 {
@@ -2523,6 +2521,20 @@ ves_icall_MonoType_get_DeclaringMethod (MonoReflectionType *ref_type)
 	method = mono_type_get_generic_param_owner (type)->owner.method;
 	g_assert (method);
 	return mono_method_get_object (mono_object_domain (ref_type), method, method->klass);
+}
+
+ICALL_EXPORT MonoBoolean
+ves_icall_System_RuntimeType_IsTypeExportedToWindowsRuntime (void)
+{
+	mono_set_pending_exception (mono_get_exception_not_implemented (NULL));
+	return FALSE;
+}
+
+ICALL_EXPORT MonoBoolean
+ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType (void)
+{
+	mono_set_pending_exception (mono_get_exception_not_implemented (NULL));
+	return FALSE;
 }
 
 ICALL_EXPORT void
