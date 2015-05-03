@@ -5100,7 +5100,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 		guint8 *code = ip;
 		/* Might already been changed to a nop */
 		x86_call_code (code, 0);
-		x86_patch (ip, target);
+		x86_patch (ip, (unsigned char*)target);
 		break;
 	}
 	case MONO_PATCH_INFO_ABS:
@@ -5134,10 +5134,10 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 			g_assert (ret == 0);
 		}
 		else {
-			x86_patch (ip, target);
+			x86_patch (ip, (unsigned char*)target);
 		}
 #else
-		x86_patch (ip, target);
+		x86_patch (ip, (unsigned char*)target);
 #endif
 		break;
 	case MONO_PATCH_INFO_NONE:
