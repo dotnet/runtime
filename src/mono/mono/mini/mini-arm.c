@@ -5972,86 +5972,67 @@ mono_arch_register_lowlevel_calls (void)
 	} while (0)
 
 void
-mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors)
+mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
-	MonoJumpInfo *patch_info;
-	gboolean compile_aot = !run_cctors;
+	unsigned char *ip = ji->ip.i + code;
 
-	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
-		unsigned char *ip = patch_info->ip.i + code;
-		const unsigned char *target;
-
-		if (patch_info->type == MONO_PATCH_INFO_SWITCH && !compile_aot) {
+	if (ji->type == MONO_PATCH_INFO_SWITCH) {
 #ifdef USE_JUMP_TABLES
-			gpointer *jt = mono_jumptable_get_entry (ip);
+		gpointer *jt = mono_jumptable_get_entry (ip);
 #else
-			gpointer *jt = (gpointer*)(ip + 8);
+		gpointer *jt = (gpointer*)(ip + 8);
 #endif
-			int i;
-			/* jt is the inlined jump table, 2 instructions after ip
-			 * In the normal case we store the absolute addresses,
-			 * otherwise the displacements.
-			 */
-			for (i = 0; i < patch_info->data.table->table_size; i++)
-				jt [i] = code + (int)patch_info->data.table->table [i];
-			continue;
-		}
-
-		if (compile_aot) {
-			switch (patch_info->type) {
-			case MONO_PATCH_INFO_BB:
-			case MONO_PATCH_INFO_LABEL:
-				break;
-			default:
-				/* No need to patch these */
-				continue;
-			}
-		}
-
-		target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors);
-
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_IP:
-			g_assert_not_reached ();
-			patch_lis_ori (ip, ip);
-			continue;
-		case MONO_PATCH_INFO_METHOD_REL:
-			g_assert_not_reached ();
-			*((gpointer *)(ip)) = code + patch_info->data.offset;
-			continue;
-		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IMAGE:
-		case MONO_PATCH_INFO_FIELD:
-		case MONO_PATCH_INFO_VTABLE:
-		case MONO_PATCH_INFO_IID:
-		case MONO_PATCH_INFO_SFLDA:
-		case MONO_PATCH_INFO_LDSTR:
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		case MONO_PATCH_INFO_LDTOKEN:
-			g_assert_not_reached ();
-			/* from OP_AOTCONST : lis + ori */
-			patch_lis_ori (ip, target);
-			continue;
-		case MONO_PATCH_INFO_R4:
-		case MONO_PATCH_INFO_R8:
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 2)) = patch_info->data.target;
-			continue;
-		case MONO_PATCH_INFO_EXC_NAME:
-			g_assert_not_reached ();
-			*((gconstpointer *)(ip + 1)) = patch_info->data.name;
-			continue;
-		case MONO_PATCH_INFO_NONE:
-		case MONO_PATCH_INFO_BB_OVF:
-		case MONO_PATCH_INFO_EXC_OVF:
-			/* everything is dealt with at epilog output time */
-			continue;
-		default:
-			break;
-		}
-		arm_patch_general (cfg, domain, ip, target);
+		int i;
+		/* jt is the inlined jump table, 2 instructions after ip
+		 * In the normal case we store the absolute addresses,
+		 * otherwise the displacements.
+		 */
+		for (i = 0; i < ji->data.table->table_size; i++)
+			jt [i] = code + (int)ji->data.table->table [i];
+		return;
 	}
+
+	switch (ji->type) {
+	case MONO_PATCH_INFO_IP:
+		g_assert_not_reached ();
+		patch_lis_ori (ip, ip);
+		continue;
+	case MONO_PATCH_INFO_METHOD_REL:
+		g_assert_not_reached ();
+		*((gpointer *)(ip)) = target;
+		continue;
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IMAGE:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_LDSTR:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_LDTOKEN:
+		g_assert_not_reached ();
+		/* from OP_AOTCONST : lis + ori */
+		patch_lis_ori (ip, target);
+		continue;
+	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R8:
+		g_assert_not_reached ();
+		*((gconstpointer *)(ip + 2)) = target;
+		continue;
+	case MONO_PATCH_INFO_EXC_NAME:
+		g_assert_not_reached ();
+		*((gconstpointer *)(ip + 1)) = target;
+		continue;
+	case MONO_PATCH_INFO_NONE:
+	case MONO_PATCH_INFO_BB_OVF:
+	case MONO_PATCH_INFO_EXC_OVF:
+		/* everything is dealt with at epilog output time */
+		continue;
+	default:
+		break;
+	}
+	arm_patch_general (cfg, domain, ip, target);
 }
 
 #ifndef DISABLE_JIT
