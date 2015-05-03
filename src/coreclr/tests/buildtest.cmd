@@ -57,8 +57,9 @@ echo.
 :: MSBuild projects would need a rebuild
 set __MSBCleanBuildArgs=/t:rebuild
 
-:: Cleanup the binaries drop folder
-if exist "%__TestBinDir%" rmdir /S /Q "%__TestBinDir%"
+:: Cleanup the binaries drop folder for the current configuration
+if exist "%__TestBinDir%" rd /s /q "%__TestBinDir%"
+if exist "%__NativeTestIntermediatesDir%" rd /s /q "%__NativeTestIntermediatesDir%"
 
 :MakeDirectories
 if not exist "%__TestBinDir%" md "%__TestBinDir%"
