@@ -2554,7 +2554,7 @@ mono_codegen (MonoCompile *cfg)
 	mono_nacl_fix_patches (cfg->native_code, cfg->patch_info);
 #endif
 
-	mono_arch_patch_code (cfg, cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->dynamic_info ? cfg->dynamic_info->code_mp : NULL, cfg->run_cctors);
+	mono_arch_patch_code (cfg, cfg->method, cfg->domain, cfg->native_code, cfg->patch_info, cfg->run_cctors);
 
 	if (cfg->method->dynamic) {
 		if (mono_using_xdebug)
@@ -4296,7 +4296,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			nacl_allow_target_modification (FALSE);
 #endif
 			for (tmp = jlist->list; tmp; tmp = tmp->next)
-				mono_arch_patch_code (NULL, NULL, target_domain, tmp->data, &patch_info, NULL, TRUE);
+				mono_arch_patch_code (NULL, NULL, target_domain, tmp->data, &patch_info, TRUE);
 #if defined(__native_client_codegen__) && defined(__native_client__)
 			nacl_allow_target_modification (TRUE);
 #endif
