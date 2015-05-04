@@ -2409,8 +2409,7 @@ mono_codegen (MonoCompile *cfg)
 		if (cfg->opt & MONO_OPT_PEEPHOLE)
 			mono_arch_peephole_pass_1 (cfg, bb);
 
-		if (!cfg->globalra)
-			mono_local_regalloc (cfg, bb);
+		mono_local_regalloc (cfg, bb);
 
 		if (cfg->opt & MONO_OPT_PEEPHOLE)
 			mono_arch_peephole_pass_2 (cfg, bb);
@@ -3447,52 +3446,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if (cfg->opt & MONO_OPT_ABCREM)
 		cfg->opt |= MONO_OPT_SSA;
 
-	/* 
-	if ((cfg->method->klass->image != mono_defaults.corlib) || (strstr (cfg->method->klass->name, "StackOverflowException") && strstr (cfg->method->name, ".ctor")) || (strstr (cfg->method->klass->name, "OutOfMemoryException") && strstr (cfg->method->name, ".ctor")))
-		cfg->globalra = TRUE;
-	*/
-
-	//cfg->globalra = TRUE;
-
-	//if (!strcmp (cfg->method->klass->name, "Tests") && !cfg->method->wrapper_type)
-	//	cfg->globalra = TRUE;
-
-	{
-		static int count = 0;
-		count ++;
-
-		/*
-		if (g_getenv ("COUNT2")) {
-			cfg->globalra = TRUE;
-			if (count == atoi (g_getenv ("COUNT2")))
-				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-			if (count > atoi (g_getenv ("COUNT2")))
-				cfg->globalra = FALSE;
-		}
-		*/
-	}
-
-	if (header->clauses)
-		cfg->globalra = FALSE;
-
-	if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
-		/* The code in the prolog clobbers caller saved registers */
-		cfg->globalra = FALSE;
-
-	// FIXME: Disable globalra in case of tracing/profiling
-
-	if (cfg->method->save_lmf)
-		/* The LMF saving code might clobber caller saved registers */
-		cfg->globalra = FALSE;
-
-	if (header->code_size > 5000)
-		// FIXME:
-		/* Too large bblocks could overflow the ins positions */
-		cfg->globalra = FALSE;
-
 	cfg->rs = mono_regstate_new ();
-	if (cfg->globalra)
-		cfg->rs->next_vreg = MONO_MAX_IREGS + MONO_MAX_FREGS;
 	cfg->next_vreg = cfg->rs->next_vreg;
 
 	/* FIXME: Fix SSA to handle branches inside bblocks */
@@ -3607,9 +3561,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	/* Disable this for LLVM to make the IR easier to handle */
 	if (!COMPILE_LLVM (cfg))
 		mono_if_conversion (cfg);
-
-	if (cfg->globalra)
-		mono_remove_critical_edges (cfg);
 
 	/* Depth-first ordering on basic blocks */
 	cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
@@ -3733,21 +3684,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			MonoBasicBlock *bb;
 
 			mono_optimize_branches (cfg);
-
-			/* Have to recompute cfg->bblocks and bb->dfn */
-			if (cfg->globalra) {
-				mono_remove_critical_edges (cfg);
-
-				for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-					bb->dfn = 0;
-
-				/* Depth-first ordering on basic blocks */
-				cfg->bblocks = mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
-
-				dfn = 0;
-				df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
-				cfg->num_bblocks = dfn + 1;
-			}
 		}
 	}
 #endif
@@ -3810,17 +3746,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	 */
 	mono_liveness_handle_exception_clauses (cfg);
 
-	if (cfg->globalra) {
-		MonoBasicBlock *bb;
-
-		/* Have to do this before regalloc since it can create vregs */
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-			mono_arch_lowering_pass (cfg, bb);
-
-		mono_global_regalloc (cfg);
-	}
-
-	if ((cfg->opt & MONO_OPT_LINEARS) && !cfg->globalra) {
+	if (cfg->opt & MONO_OPT_LINEARS) {
 		GList *vars, *regs, *l;
 		
 		/* fixme: maybe we can avoid to compute livenesss here if already computed ? */
@@ -3848,7 +3774,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
     //print_dfn (cfg);
 	
 	/* variables are allocated after decompose, since decompose could create temps */
-	if (!cfg->globalra && !COMPILE_LLVM (cfg)) {
+	if (!COMPILE_LLVM (cfg)) {
 		mono_arch_allocate_vars (cfg);
 		if (cfg->exception_type)
 			return cfg;
@@ -3858,7 +3784,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		MonoBasicBlock *bb;
 		gboolean need_local_opts;
 
-		if (!cfg->globalra && !COMPILE_LLVM (cfg)) {
+		if (!COMPILE_LLVM (cfg)) {
 			mono_spill_global_vars (cfg, &need_local_opts);
 
 			if (need_local_opts || cfg->compile_aot) {
@@ -3891,7 +3817,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			}
 		}
 
-		if (cfg->verbose_level >= 4 && !cfg->globalra) {
+		if (cfg->verbose_level >= 4) {
 			for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 				MonoInst *tree = bb->code;	
 				g_print ("DUMP BLOCK %d:\n", bb->block_num);
