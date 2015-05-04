@@ -22,9 +22,9 @@ namespace System.Reflection.Metadata
             _treatmentAndRowId = treatmentAndRowId;
         }
 
-        private uint RowId
+        private int RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return (int)(_treatmentAndRowId & TokenTypeIds.RIDMask); }
         }
 
         private CustomAttributeHandle Handle
@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// Corresponds to Type field of CustomAttribute table in ECMA-335 Standard.
         /// </remarks>
-        public Handle Constructor
+        public EntityHandle Constructor
         {
             get
             {
@@ -57,7 +57,7 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// Corresponds to Parent field of CustomAttribute table in ECMA-335 Standard.
         /// </remarks>
-        public Handle Parent
+        public EntityHandle Parent
         {
             get
             {

@@ -22,9 +22,9 @@ namespace System.Reflection.Metadata
             _treatmentAndRowId = treatmentAndRowId;
         }
 
-        private uint RowId
+        private int RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return (int)(_treatmentAndRowId & TokenTypeIds.RIDMask); }
         }
 
         private MethodDefTreatment Treatment
@@ -119,13 +119,13 @@ namespace System.Reflection.Metadata
 
         public MethodImport GetImport()
         {
-            uint implMapRid = _reader.ImplMapTable.FindImplForMethod(Handle);
+            int implMapRid = _reader.ImplMapTable.FindImplForMethod(Handle);
             if (implMapRid == 0)
             {
                 return default(MethodImport);
             }
 
-            return _reader.ImplMapTable[implMapRid];
+            return _reader.ImplMapTable.GetImport(implMapRid);
         }
 
         public CustomAttributeHandleCollection GetCustomAttributes()

@@ -142,9 +142,9 @@ namespace System.Reflection.Metadata
             {
                 localSignatureHandle = default(StandaloneSignatureHandle);
             }
-            else if ((localSignatureToken & TokenTypeIds.TokenTypeMask) == TokenTypeIds.Signature)
+            else if ((localSignatureToken & TokenTypeIds.TypeMask) == TokenTypeIds.Signature)
             {
-                localSignatureHandle = StandaloneSignatureHandle.FromRowId((uint)localSignatureToken & TokenTypeIds.RIDMask);
+                localSignatureHandle = StandaloneSignatureHandle.FromRowId((int)((uint)localSignatureToken & TokenTypeIds.RIDMask));
             }
             else
             {

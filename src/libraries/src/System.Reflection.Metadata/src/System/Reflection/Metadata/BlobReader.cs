@@ -500,17 +500,17 @@ namespace System.Reflection.Metadata
         /// Reads a type handle encoded in a signature as TypeDefOrRefOrSpecEncoded (see ECMA-335 II.23.2.8).
         /// </summary>
         /// <returns>The handle or nil if the encoding is invalid.</returns>
-        public Handle ReadTypeHandle()
+        public EntityHandle ReadTypeHandle()
         {
             uint value = (uint)ReadCompressedIntegerOrInvalid();
             uint tokenType = s_corEncodeTokenArray[value & 0x3];
 
             if (value == InvalidCompressedInteger || tokenType == 0)
             {
-                return default(Handle);
+                return default(EntityHandle);
             }
 
-            return new Handle(tokenType | (value >> 2));
+            return new EntityHandle(tokenType | (value >> 2));
         }
 
         private static readonly uint[] s_corEncodeTokenArray = new uint[] { TokenTypeIds.TypeDef, TokenTypeIds.TypeRef, TokenTypeIds.TypeSpec, 0 };

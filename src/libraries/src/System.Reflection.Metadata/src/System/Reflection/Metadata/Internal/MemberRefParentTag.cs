@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class MemberRefParentTag
     {
         internal const int NumberOfBits = 3;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint TypeDef = 0x00000000;
         internal const uint TypeRef = 0x00000001;
         internal const uint ModuleRef = 0x00000002;
@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata.Ecma335
             | (ulong)TokenTypeIds.TypeSpec << 8;
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint memberRef)
+        internal static EntityHandle ConvertToHandle(uint memberRef)
         {
             uint tokenType = unchecked((uint)((TagToTokenTypeByteVector >> ((int)(memberRef & TagMask) << 3)) << TokenTypeIds.RowIdBitCount));
             uint rowId = (memberRef >> NumberOfBits);
@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
     }
 }

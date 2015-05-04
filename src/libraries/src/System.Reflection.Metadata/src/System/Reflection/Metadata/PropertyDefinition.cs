@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal PropertyDefinition(MetadataReader reader, PropertyDefinitionHandle handle)
         {
@@ -62,14 +62,14 @@ namespace System.Reflection.Metadata
 
         public PropertyAccessors GetAccessors()
         {
-            uint getter = 0;
-            uint setter = 0;
+            int getter = 0;
+            int setter = 0;
 
             ushort methodCount;
-            var firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);
+            int firstRowId = (int)_reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);
             for (ushort i = 0; i < methodCount; i++)
             {
-                uint rowId = firstRowId + i;
+                int rowId = firstRowId + i;
                 switch (_reader.MethodSemanticsTable.GetSemantics(rowId))
                 {
                     case MethodSemanticsAttributes.Getter:

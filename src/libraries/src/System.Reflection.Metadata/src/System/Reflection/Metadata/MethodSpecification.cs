@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal MethodSpecification(MetadataReader reader, MethodSpecificationHandle handle)
         {
@@ -30,7 +30,7 @@ namespace System.Reflection.Metadata
         /// MethodDef or MemberRef handle specifying to which generic method this <see cref="MethodSpecification"/> refers,
         /// that is which generic method is it an instantiation of.
         /// </summary>
-        public Handle Method
+        public EntityHandle Method
         {
             get
             {

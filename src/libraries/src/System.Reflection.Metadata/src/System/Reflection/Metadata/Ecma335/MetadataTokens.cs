@@ -23,19 +23,14 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <returns>One based row number.</returns>
         /// <exception cref="ArgumentException">The <paramref name="handle"/> is not a valid metadata table handle.</exception>
-        public static int GetRowNumber(this MetadataReader reader, Handle handle)
+        public static int GetRowNumber(this MetadataReader reader, EntityHandle handle)
         {
-            if (handle.IsHeapHandle)
-            {
-                ThrowTableHandleRequired();
-            }
-
             if (handle.IsVirtual)
             {
                 return MapVirtualHandleRowId(reader, handle);
             }
 
-            return (int)handle.RowId;
+            return handle.RowId;
         }
 
         /// <summary>
@@ -57,7 +52,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return MapVirtualHandleRowId(reader, handle);
             }
 
-            return (int)handle.RowId;
+            return handle.Offset;
         }
 
         /// <summary>
@@ -68,19 +63,20 @@ namespace System.Reflection.Metadata.Ecma335
         /// Handle represents a metadata entity that doesn't have a token.
         /// A token can only be retrieved for a metadata table handle or a heap handle of type <see cref="HandleKind.UserString"/>.
         /// </exception>
+        /// <exception cref="NotSupportedException">The operation is not supported for the specified <paramref name="handle"/>.</exception>
         public static int GetToken(this MetadataReader reader, Handle handle)
         {
-            if (!TokenTypeIds.IsEcmaToken(handle.value))
+            if (!handle.IsEntityOrUserStringHandle)
             {
-                ThrowTableHandleOrUserStringRequired();
+                ThrowEntityOrUserStringHandleRequired();
             }
 
             if (handle.IsVirtual)
             {
-                return MapVirtualHandleRowId(reader, handle) | (int)(handle.value & TokenTypeIds.TokenTypeMask);
+                return (int)handle.EntityHandleType | MapVirtualHandleRowId(reader, handle);
             }
 
-            return (int)handle.value;
+            return handle.Token;
         }
 
         private static int MapVirtualHandleRowId(MetadataReader reader, Handle handle)
@@ -89,7 +85,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 case HandleKind.AssemblyReference:
                     // pretend that virtual rows immediately follow real rows:
-                    return (int)(reader.AssemblyRefTable.NumberOfNonVirtualRows + 1 + handle.RowId);
+                    return reader.AssemblyRefTable.NumberOfNonVirtualRows + 1 + handle.RowId;
 
                 case HandleKind.String:
                 case HandleKind.Blob:
@@ -108,21 +104,11 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <returns>
         /// One based row number, or -1 if <paramref name="handle"/> can only be interpreted in a context of a specific <see cref="MetadataReader"/>.
-        /// See <see cref="GetRowNumber(MetadataReader, Handle)"/>.
+        /// See <see cref="GetRowNumber(MetadataReader, EntityHandle)"/>.
         /// </returns>
-        public static int GetRowNumber(Handle handle)
+        public static int GetRowNumber(EntityHandle handle)
         {
-            if (handle.IsHeapHandle)
-            {
-                ThrowTableHandleRequired();
-            }
-
-            if (handle.IsVirtual)
-            {
-                return -1;
-            }
-
-            return (int)handle.RowId;
+            return handle.IsVirtual ? -1 : handle.RowId;
         }
 
         /// <summary>
@@ -145,7 +131,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return -1;
             }
 
-            return (int)handle.RowId;
+            return handle.Offset;
         }
 
         /// <summary>
@@ -161,9 +147,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// </exception>
         public static int GetToken(Handle handle)
         {
-            if (!TokenTypeIds.IsEcmaToken(handle.value))
+            if (!handle.IsEntityOrUserStringHandle)
             {
-                ThrowTableHandleOrUserStringRequired();
+                ThrowEntityOrUserStringHandleRequired();
             }
 
             if (handle.IsVirtual)
@@ -171,7 +157,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return 0;
             }
 
-            return (int)handle.value;
+            return handle.Token;
         }
 
         /// <summary>
@@ -236,12 +222,26 @@ namespace System.Reflection.Metadata.Ecma335
         /// </exception>
         public static Handle Handle(int token)
         {
-            if (!TokenTypeIds.IsEcmaToken(unchecked((uint)token)))
+            if (!TokenTypeIds.IsEntityOrUserStringToken(unchecked((uint)token)))
             {
                 ThrowInvalidToken();
             }
 
-            return new Handle((uint)token);
+            return Metadata.Handle.FromVToken((uint)token);
+        }
+
+        /// <summary>
+        /// Creates an entity handle from a token value.
+        /// </summary>
+        /// <exception cref="ArgumentException"><paramref name="token"/> is not a valid metadata entity token.</exception>
+        public static EntityHandle EntityHandle(int token)
+        {
+            if (!TokenTypeIds.IsEntityToken(unchecked((uint)token)))
+            {
+                ThrowInvalidToken();
+            }
+
+            return new EntityHandle((uint)token);
         }
 
         /// <summary>
@@ -249,152 +249,157 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         /// <exception cref="ArgumentException">
         /// <paramref name="tableIndex"/> is not a valid table index.</exception>
-        public static Handle Handle(TableIndex tableIndex, int rowNumber)
+        public static EntityHandle Handle(TableIndex tableIndex, int rowNumber)
         {
             int token = ((int)tableIndex << TokenTypeIds.RowIdBitCount) | rowNumber;
 
-            if (!TokenTypeIds.IsEcmaToken(unchecked((uint)token)))
+            if (!TokenTypeIds.IsEntityOrUserStringToken(unchecked((uint)token)))
             {
                 ThrowInvalidTableIndex();
             }
 
-            return new Handle((uint)token);
+            return new EntityHandle((uint)token);
+        }
+
+        private static int ToRowId(int rowNumber)
+        {
+            return rowNumber & (int)TokenTypeIds.RIDMask;
         }
 
         public static MethodDefinitionHandle MethodDefinitionHandle(int rowNumber)
         {
-            return Metadata.MethodDefinitionHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.MethodDefinitionHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static MethodImplementationHandle MethodImplementationHandle(int rowNumber)
         {
-            return Metadata.MethodImplementationHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.MethodImplementationHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static MethodSpecificationHandle MethodSpecificationHandle(int rowNumber)
         {
-            return Metadata.MethodSpecificationHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.MethodSpecificationHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static TypeDefinitionHandle TypeDefinitionHandle(int rowNumber)
         {
-            return Metadata.TypeDefinitionHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.TypeDefinitionHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static ExportedTypeHandle ExportedTypeHandle(int rowNumber)
         {
-            return Metadata.ExportedTypeHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.ExportedTypeHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static TypeReferenceHandle TypeReferenceHandle(int rowNumber)
         {
-            return Metadata.TypeReferenceHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.TypeReferenceHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static TypeSpecificationHandle TypeSpecificationHandle(int rowNumber)
         {
-            return Metadata.TypeSpecificationHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.TypeSpecificationHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static MemberReferenceHandle MemberReferenceHandle(int rowNumber)
         {
-            return Metadata.MemberReferenceHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.MemberReferenceHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static FieldDefinitionHandle FieldDefinitionHandle(int rowNumber)
         {
-            return Metadata.FieldDefinitionHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.FieldDefinitionHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static EventDefinitionHandle EventDefinitionHandle(int rowNumber)
         {
-            return Metadata.EventDefinitionHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.EventDefinitionHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static PropertyDefinitionHandle PropertyDefinitionHandle(int rowNumber)
         {
-            return Metadata.PropertyDefinitionHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.PropertyDefinitionHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static StandaloneSignatureHandle StandaloneSignatureHandle(int rowNumber)
         {
-            return Metadata.StandaloneSignatureHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.StandaloneSignatureHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static ParameterHandle ParameterHandle(int rowNumber)
         {
-            return Metadata.ParameterHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.ParameterHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static GenericParameterHandle GenericParameterHandle(int rowNumber)
         {
-            return Metadata.GenericParameterHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.GenericParameterHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static GenericParameterConstraintHandle GenericParameterConstraintHandle(int rowNumber)
         {
-            return Metadata.GenericParameterConstraintHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.GenericParameterConstraintHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static ModuleReferenceHandle ModuleReferenceHandle(int rowNumber)
         {
-            return Metadata.ModuleReferenceHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.ModuleReferenceHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static AssemblyReferenceHandle AssemblyReferenceHandle(int rowNumber)
         {
-            return Metadata.AssemblyReferenceHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.AssemblyReferenceHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static CustomAttributeHandle CustomAttributeHandle(int rowNumber)
         {
-            return Metadata.CustomAttributeHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.CustomAttributeHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static DeclarativeSecurityAttributeHandle DeclarativeSecurityAttributeHandle(int rowNumber)
         {
-            return Metadata.DeclarativeSecurityAttributeHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.DeclarativeSecurityAttributeHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static ConstantHandle ConstantHandle(int rowNumber)
         {
-            return Metadata.ConstantHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.ConstantHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static ManifestResourceHandle ManifestResourceHandle(int rowNumber)
         {
-            return Metadata.ManifestResourceHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.ManifestResourceHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static AssemblyFileHandle AssemblyFileHandle(int rowNumber)
         {
-            return Metadata.AssemblyFileHandle.FromRowId((uint)(rowNumber & TokenTypeIds.RIDMask));
+            return Metadata.AssemblyFileHandle.FromRowId(ToRowId(rowNumber));
         }
 
         public static UserStringHandle UserStringHandle(int offset)
         {
-            return Metadata.UserStringHandle.FromIndex((uint)(offset & TokenTypeIds.RIDMask));
+            return Metadata.UserStringHandle.FromOffset(offset & (int)TokenTypeIds.RIDMask);
         }
 
         public static StringHandle StringHandle(int offset)
         {
-            return Metadata.StringHandle.FromIndex((uint)(offset & TokenTypeIds.RIDMask));
+            return Metadata.StringHandle.FromOffset(offset);
         }
 
         public static BlobHandle BlobHandle(int offset)
         {
-            return Metadata.BlobHandle.FromIndex((uint)(offset & TokenTypeIds.RIDMask));
+            return Metadata.BlobHandle.FromOffset(offset);
         }
 
         public static GuidHandle GuidHandle(int offset)
         {
-            return Metadata.GuidHandle.FromIndex((uint)(offset & TokenTypeIds.RIDMask));
+            return Metadata.GuidHandle.FromIndex(offset);
         }
 
         #endregion
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowTableHandleRequired()
+        private static void ThrowEntityHandleRequired()
         {
             throw new ArgumentException(MetadataResources.NotMetadataTableHandle, "handle");
         }
@@ -406,7 +411,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowTableHandleOrUserStringRequired()
+        private static void ThrowEntityOrUserStringHandleRequired()
         {
             throw new ArgumentException(MetadataResources.NotMetadataTableOrUserStringHandle, "handle");
         }

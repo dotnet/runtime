@@ -23,9 +23,9 @@ namespace System.Reflection.Metadata
             _treatmentAndRowId = treatmentAndRowId;
         }
 
-        private uint RowId
+        private int RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return (int)(_treatmentAndRowId & TokenTypeIds.RIDMask); }
         }
 
         private TypeDefTreatment Treatment
@@ -68,15 +68,31 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Namespace of the type, or nil if the type is nested or defined in a root namespace.
+        /// Full name of the namespace where the type is defined, or nil if the type is nested or defined in a root namespace.
         /// </summary>
-        public NamespaceDefinitionHandle Namespace
+        public StringHandle Namespace
         {
             get
             {
                 if (Treatment == 0)
                 {
                     return _reader.TypeDefTable.GetNamespace(Handle);
+                }
+
+                return GetProjectedNamespaceString();
+            }
+        }
+
+        /// <summary>
+        /// The definition handle of the namespace where the type is defined, or nil if the type is nested or defined in a root namespace.
+        /// </summary>
+        public NamespaceDefinitionHandle NamespaceDefinition
+        {
+            get
+            {
+                if (Treatment == 0)
+                {
+                    return _reader.TypeDefTable.GetNamespaceDefinition(Handle);
                 }
 
                 return GetProjectedNamespace();
@@ -87,7 +103,7 @@ namespace System.Reflection.Metadata
         /// The base type of the type definition: either
         /// <see cref="TypeSpecificationHandle"/>, <see cref="TypeReferenceHandle"/> or <see cref="TypeDefinitionHandle"/>.
         /// </summary>
-        public Handle BaseType
+        public EntityHandle BaseType
         {
             get
             {
@@ -102,7 +118,7 @@ namespace System.Reflection.Metadata
 
         public TypeLayout GetLayout()
         {
-            uint classLayoutRowId = _reader.ClassLayoutTable.FindRow(Handle);
+            int classLayoutRowId = _reader.ClassLayoutTable.FindRow(Handle);
             if (classLayoutRowId == 0)
             {
                 // NOTE: We don't need a bool/TryGetLayout because zero also means use default:
@@ -119,9 +135,18 @@ namespace System.Reflection.Metadata
                 return default(TypeLayout);
             }
 
-            int size = (int)_reader.ClassLayoutTable.GetClassSize(classLayoutRowId);
+            uint size = _reader.ClassLayoutTable.GetClassSize(classLayoutRowId);
+
+            // The spec doesn't limit the size to 31bit. It only limits the size to 1MB if Parent is a value type.
+            // It however doesn't make much sense to define classes with >2GB size. So in order to keep the API
+            // clean of unsigned ints we impose the limit.
+            if (unchecked((int)size) != size)
+            {
+                throw new BadImageFormatException(MetadataResources.InvalidTypeSize);
+            }
+
             int packingSize = _reader.ClassLayoutTable.GetPackingSize(classLayoutRowId);
-            return new TypeLayout(size, packingSize);
+            return new TypeLayout((int)size, packingSize);
         }
 
         /// <summary>
@@ -254,14 +279,21 @@ namespace System.Reflection.Metadata
             //       to a virtual namespace name, then that assumption will need to be removed.
 
             // no change:
+            return _reader.TypeDefTable.GetNamespaceDefinition(Handle);
+        }
+
+        private StringHandle GetProjectedNamespaceString()
+        {
+            // no change:
             return _reader.TypeDefTable.GetNamespace(Handle);
         }
 
-        private Handle GetProjectedBaseType()
+        private EntityHandle GetProjectedBaseType()
         {
             // no change:
             return _reader.TypeDefTable.GetExtends(Handle);
         }
+
         #endregion
     }
 }

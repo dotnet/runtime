@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal Parameter(MetadataReader reader, ParameterHandle handle)
         {
@@ -57,7 +57,7 @@ namespace System.Reflection.Metadata
 
         public BlobHandle GetMarshallingDescriptor()
         {
-            uint marshalRowId = _reader.FieldMarshalTable.FindFieldMarshalRowId(Handle);
+            int marshalRowId = _reader.FieldMarshalTable.FindFieldMarshalRowId(Handle);
             if (marshalRowId == 0)
             {
                 return default(BlobHandle);
