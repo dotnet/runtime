@@ -3,7 +3,7 @@
 
 using System;
 
-namespace System.Text.Encodings.Web
+namespace System.Text.Unicode
 {
     /// <summary>
     /// Represents a contiguous range of Unicode code points.

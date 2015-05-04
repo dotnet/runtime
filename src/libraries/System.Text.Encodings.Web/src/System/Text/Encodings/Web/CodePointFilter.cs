@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Text.Internal;
+using System.Text.Unicode;
 
 namespace System.Text.Encodings.Web
 {
@@ -49,46 +50,46 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Allows the character specified by <paramref name="c"/> through the filter.
+        /// Allows the character specified by <paramref name="character"/> through the filter.
         /// </summary>
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter AllowChar(char c)
+        public CodePointFilter AllowChar(char character)
         {
-            _allowedCharsBitmap.AllowCharacter(c);
+            _allowedCharsBitmap.AllowCharacter(character);
             return this;
         }
 
         /// <summary>
-        /// Allows all characters specified by <paramref name="chars"/> through the filter.
+        /// Allows all characters specified by <paramref name="characters"/> through the filter.
         /// </summary>
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter AllowChars(params char[] chars)
+        public CodePointFilter AllowChars(params char[] characters)
         {
-            if (chars != null)
+            if (characters != null)
             {
-                for (int i = 0; i < chars.Length; i++)
+                for (int i = 0; i < characters.Length; i++)
                 {
-                    _allowedCharsBitmap.AllowCharacter(chars[i]);
+                    _allowedCharsBitmap.AllowCharacter(characters[i]);
                 }
             }
             return this;
         }
 
         /// <summary>
-        /// Allows all characters in the string <paramref name="chars"/> through the filter.
+        /// Allows all characters in the string <paramref name="characters"/> through the filter.
         /// </summary>
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter AllowChars(string chars)
+        public CodePointFilter AllowChars(string characters)
         {
-            for (int i = 0; i < chars.Length; i++)
+            for (int i = 0; i < characters.Length; i++)
             {
-                _allowedCharsBitmap.AllowCharacter(chars[i]);
+                _allowedCharsBitmap.AllowCharacter(characters[i]);
             }
             return this;
         }
@@ -161,46 +162,46 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Disallows the character <paramref name="c"/> through the filter.
+        /// Disallows the character <paramref name="character"/> through the filter.
         /// </summary>
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter ForbidChar(char c)
+        public CodePointFilter ForbidChar(char character)
         {
-            _allowedCharsBitmap.ForbidCharacter(c);
+            _allowedCharsBitmap.ForbidCharacter(character);
             return this;
         }
 
         /// <summary>
-        /// Disallows all characters specified by <paramref name="chars"/> through the filter.
+        /// Disallows all characters specified by <paramref name="characters"/> through the filter.
         /// </summary>
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter ForbidChars(params char[] chars)
+        public CodePointFilter ForbidChars(params char[] characters)
         {
-            if (chars != null)
+            if (characters != null)
             {
-                for (int i = 0; i < chars.Length; i++)
+                for (int i = 0; i < characters.Length; i++)
                 {
-                    _allowedCharsBitmap.ForbidCharacter(chars[i]);
+                    _allowedCharsBitmap.ForbidCharacter(characters[i]);
                 }
             }
             return this;
         }
 
         /// <summary>
-        /// Disallows all characters in the string <paramref name="chars"/> through the filter.
+        /// Disallows all characters in the string <paramref name="characters"/> through the filter.
         /// </summary>
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter ForbidChars(string chars)
+        public CodePointFilter ForbidChars(string characters)
         {
-            for (int i = 0; i < chars.Length; i++)
+            for (int i = 0; i < characters.Length; i++)
             {
-                _allowedCharsBitmap.ForbidCharacter(chars[i]);
+                _allowedCharsBitmap.ForbidCharacter(characters[i]);
             }
             return this;
         }
@@ -264,11 +265,11 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Returns a value stating whether the character <paramref name="c"/> is allowed through the filter.
+        /// Returns a value stating whether the character <paramref name="character"/> is allowed through the filter.
         /// </summary>
-        public bool IsCharacterAllowed(char c)
+        public bool IsCharacterAllowed(char character)
         {
-            return _allowedCharsBitmap.IsCharacterAllowed(c);
+            return _allowedCharsBitmap.IsCharacterAllowed(character);
         }
 
         /// <summary>

@@ -4,12 +4,12 @@
 using System;
 using System.IO;
 
-namespace System.Text.Encodings.Web
+namespace Microsoft.Framework.WebEncoders
 {
     /// <summary>
     /// Provides services for HTML-encoding input.
     /// </summary>
-    public interface IHtmlEncoder
+    internal interface IHtmlEncoder
     {
         /// <summary>
         /// HTML-encodes a character array and writes the result to the supplied

@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace System.Text.Encodings.Web
+namespace System.Text.Unicode
 {
     /// <summary>
     /// Contains predefined <see cref="UnicodeRange"/> instances which correspond to blocks
