@@ -4187,7 +4187,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				else if (cfg->exception_type == MONO_EXCEPTION_TYPE_LOAD)
 					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", cfg->exception_message);
 				else if (cfg->exception_type == MONO_EXCEPTION_FILE_NOT_FOUND)
-					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FileNotFoundException", cfg->exception_message);
+					ex = mono_exception_from_name_msg (mono_defaults.corlib, "System.IO", "FileNotFoundException", cfg->exception_message);
 				else if (cfg->exception_type == MONO_EXCEPTION_BAD_IMAGE)
 					ex = mono_get_exception_bad_image_format (cfg->exception_message);
 				else
