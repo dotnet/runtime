@@ -123,5 +123,11 @@ namespace System.Reflection.Compatibility.UnitTests.TypeTests
             BindingFlags allBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericArrayWrapperClass`1[System.String]", allBindingFlags, new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "System.String get_Item(Int32)", "Void set_Item(Int32, System.String)", "Void .ctor(System.String[])", "Int32 myProperty", "System.String Item [Int32]", "System.String[] _field", "Int32 _field1" });
         }
+
+        [Fact]
+        public void Test7()
+        {
+            TryGetMembers("System.Reflection.Compatibility.UnitTests.TypeTests.GenericArrayWrapperClass`1[System.String]", new string[] { "Int32 get_myProperty()", "Void set_myProperty(Int32)", "System.String get_Item(Int32)", "Void set_Item(Int32, System.String)", "Void .ctor(System.String[])", "Int32 myProperty", "System.String Item [Int32]", "System.String ToString()", "Boolean Equals(System.Object)", "Int32 GetHashCode()", "System.Type GetType()" });
+        }
     }
 }
