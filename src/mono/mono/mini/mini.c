@@ -2467,14 +2467,14 @@ mono_codegen (MonoCompile *cfg)
 	if (cfg->method->dynamic) {
 		/* Allocate the code into a separate memory pool so it can be freed */
 		cfg->dynamic_info = g_new0 (MonoJitDynamicMethodInfo, 1);
-		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic (cfg->thunk_area);
+		cfg->dynamic_info->code_mp = mono_code_manager_new_dynamic ();
 		mono_domain_lock (cfg->domain);
 		mono_dynamic_code_hash_insert (cfg->domain, cfg->method, cfg->dynamic_info);
 		mono_domain_unlock (cfg->domain);
 
 		if (mono_using_xdebug)
 			/* See the comment for cfg->code_domain */
-			code = mono_domain_code_reserve (code_domain, cfg->code_size + unwindlen);
+			code = mono_domain_code_reserve (code_domain, cfg->code_size + cfg->thunk_area + unwindlen);
 		else
 			code = mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + cfg->thunk_area + unwindlen);
 	} else {
