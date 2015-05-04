@@ -141,7 +141,7 @@ DECL_OFFSET(MonoContinuation, return_sp)
 DECL_OFFSET(MonoContinuation, lmf)
 DECL_OFFSET(MonoContinuation, return_ip)
 
-#ifdef TARGET_X86
+#if defined(TARGET_X86)
 DECL_OFFSET(MonoContext, eax)
 DECL_OFFSET(MonoContext, ebx)
 DECL_OFFSET(MonoContext, ecx)
@@ -160,6 +160,39 @@ DECL_OFFSET(MonoLMF, edi)
 DECL_OFFSET(MonoLMF, esi)
 DECL_OFFSET(MonoLMF, ebp)
 DECL_OFFSET(MonoLMF, eip)
+#elif defined(TARGET_AMD64)
+DECL_OFFSET(MonoContext, rax)
+DECL_OFFSET(MonoContext, rcx)
+DECL_OFFSET(MonoContext, rdx)
+DECL_OFFSET(MonoContext, rbx)
+DECL_OFFSET(MonoContext, rbp)
+DECL_OFFSET(MonoContext, rsi)
+DECL_OFFSET(MonoContext, rdi)
+DECL_OFFSET(MonoContext, rsp)
+DECL_OFFSET(MonoContext, r8)
+DECL_OFFSET(MonoContext, r9)
+DECL_OFFSET(MonoContext, r10)
+DECL_OFFSET(MonoContext, r11)
+DECL_OFFSET(MonoContext, r12)
+DECL_OFFSET(MonoContext, r13)
+DECL_OFFSET(MonoContext, r14)
+DECL_OFFSET(MonoContext, r15)
+DECL_OFFSET(MonoContext, rip)
+
+#ifdef TARGET_WIN32
+DECL_OFFSET(MonoLMF, lmf_addr)
+#endif
+
+DECL_OFFSET(MonoLMF, rsp)
+DECL_OFFSET(MonoLMF, rbp)
+DECL_OFFSET(MonoLMF, rip)
+
+DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
+
+DECL_OFFSET(DynCallArgs, res)
+
+DECL_OFFSET(MonoLMFTramp, regs)
+DECL_OFFSET(MonoLMFTramp, lmf_addr)
 #endif
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
@@ -189,43 +222,6 @@ DECL_OFFSET(MonoLMF, gregs)
 DECL_OFFSET(DynCallArgs, fpregs)
 DECL_OFFSET(DynCallArgs, n_fpargs)
 DECL_OFFSET(DynCallArgs, n_fpret)
-#endif
-
-#ifdef TARGET_AMD64
-DECL_OFFSET(MonoContext, rax)
-DECL_OFFSET(MonoContext, rcx)
-DECL_OFFSET(MonoContext, rdx)
-DECL_OFFSET(MonoContext, rbx)
-DECL_OFFSET(MonoContext, rbp)
-DECL_OFFSET(MonoContext, rsi)
-DECL_OFFSET(MonoContext, rdi)
-DECL_OFFSET(MonoContext, rsp)
-DECL_OFFSET(MonoContext, r8)
-DECL_OFFSET(MonoContext, r9)
-DECL_OFFSET(MonoContext, r10)
-DECL_OFFSET(MonoContext, r11)
-DECL_OFFSET(MonoContext, r12)
-DECL_OFFSET(MonoContext, r13)
-DECL_OFFSET(MonoContext, r14)
-DECL_OFFSET(MonoContext, r15)
-DECL_OFFSET(MonoContext, rip)
-
-#ifdef TARGET_WIN32
-DECL_OFFSET(MonoLMF, lmf_addr)
-#endif
-
-DECL_OFFSET(MonoLMF, rsp)
-DECL_OFFSET(MonoLMF, rbp)
-DECL_OFFSET(MonoLMF, rip)
-
-DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
-DECL_OFFSET(SeqPointInfo, bp_addrs)
-
-DECL_OFFSET(DynCallArgs, res)
-
-DECL_OFFSET(MonoLMFTramp, regs)
-DECL_OFFSET(MonoLMFTramp, lmf_addr)
-
 #endif
 	
 DECL_OFFSET(MonoDelegateTrampInfo, invoke_impl)
