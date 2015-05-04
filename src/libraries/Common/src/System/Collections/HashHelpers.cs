@@ -93,7 +93,7 @@ namespace System.Collections
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
             {
-                Contract.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
+                Debug.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
                 return MaxPrimeArrayLength;
             }
 

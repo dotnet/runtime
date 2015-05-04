@@ -915,9 +915,9 @@ namespace System.Collections.Generic
         /// </summary>
         private void SetCapacity(int newSize, bool forceNewHashCodes)
         {
-            Contract.Assert(HashHelpers.IsPrime(newSize), "New size is not prime!");
+            Debug.Assert(HashHelpers.IsPrime(newSize), "New size is not prime!");
 
-            Contract.Assert(_buckets != null, "SetCapacity called on a set with no elements");
+            Debug.Assert(_buckets != null, "SetCapacity called on a set with no elements");
 
             Slot[] newSlots;
             if (_slots == null)
