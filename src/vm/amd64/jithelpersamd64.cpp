@@ -4,9 +4,6 @@
 //
 // ===========================================================================
 // File: JITHelpers.CPP
-//
-// Copyright (c) 1999 Microsoft Corporation.  All Rights Reserved.
-// Microsoft Confidential.
 // ===========================================================================
 
 // This contains JITinterface routines that are specific to the

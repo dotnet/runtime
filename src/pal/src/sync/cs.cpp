@@ -4,21 +4,12 @@
 //
 
 ///////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2004 Microsoft Corporation.  All Rights Reserved.
 //
 // File:
 //     cs.cpp
 //
 // Purpose:
 //     Implementation of critical sections
-//
-//     This implementation is derived from Windows Server 2003 SP1
-//     and Windows Longhorn Critical Sections.
-//     
-//     These algorithms are intellectual property of Microsoft and they 
-//     should be considered Microsoft confidential material.
-//
-
 //
 ///////////////////////////////////////////////////////////////////////////////
 
