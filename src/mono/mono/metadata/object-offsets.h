@@ -193,8 +193,6 @@ DECL_OFFSET(MonoLMF, rsp)
 DECL_OFFSET(MonoLMF, rbp)
 DECL_OFFSET(MonoLMF, rip)
 
-DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
-
 DECL_OFFSET(DynCallArgs, res)
 
 DECL_OFFSET(MonoLMFTramp, regs)
@@ -224,13 +222,18 @@ DECL_OFFSET (MonoContext, fregs)
 DECL_OFFSET(MonoLMF, method)
 DECL_OFFSET(MonoLMF, lmf_addr)
 
-DECL_OFFSET(SeqPointInfo, bp_addrs)
 DECL_OFFSET(SeqPointInfo, ss_trigger_page)
 
 DECL_OFFSET(DynCallArgs, res)
 DECL_OFFSET(DynCallArgs, res2)
 #endif
 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
+#endif
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
+DECL_OFFSET(SeqPointInfo, bp_addrs)
 #endif
 
 #endif //DISABLE_JIT_OFFSETS
