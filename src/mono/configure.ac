@@ -3884,12 +3884,6 @@ mono/arch/mips/Makefile
 mono/tests/Makefile
 mono/tests/tests-config
 mono/tests/assemblyresolve/Makefile
-mono/tests/cas/Makefile
-mono/tests/cas/assembly/Makefile
-mono/tests/cas/demand/Makefile
-mono/tests/cas/inheritance/Makefile
-mono/tests/cas/linkdemand/Makefile
-mono/tests/cas/threads/Makefile
 mono/tests/gc-descriptors/Makefile
 mono/unit-tests/Makefile
 mono/benchmark/Makefile
