@@ -141,6 +141,12 @@ DECL_OFFSET(MonoContinuation, return_sp)
 DECL_OFFSET(MonoContinuation, lmf)
 DECL_OFFSET(MonoContinuation, return_ip)
 
+DECL_OFFSET(MonoDelegateTrampInfo, invoke_impl)
+DECL_OFFSET(MonoDelegateTrampInfo, method_ptr)
+
+// Architecture-specific offsets
+// -----------------------------
+
 #if defined(TARGET_X86)
 DECL_OFFSET(MonoContext, eax)
 DECL_OFFSET(MonoContext, ebx)
@@ -193,7 +199,22 @@ DECL_OFFSET(DynCallArgs, res)
 
 DECL_OFFSET(MonoLMFTramp, regs)
 DECL_OFFSET(MonoLMFTramp, lmf_addr)
+#elif defined(TARGET_ARM)
+DECL_OFFSET(MonoLMF, sp)
+DECL_OFFSET(MonoLMF, fp)
+DECL_OFFSET(MonoLMF, ip)
+DECL_OFFSET(MonoLMF, iregs)
+DECL_OFFSET(MonoLMF, fregs)
+#elif defined(TARGET_ARM64)
+DECL_OFFSET(MonoLMF, pc)
+DECL_OFFSET(MonoLMF, gregs)
+DECL_OFFSET(DynCallArgs, fpregs)
+DECL_OFFSET(DynCallArgs, n_fpargs)
+DECL_OFFSET(DynCallArgs, n_fpret)
 #endif
+
+// Shared architecture offfsets
+// ----------------------------
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
 DECL_OFFSET (MonoContext, pc)
@@ -210,22 +231,7 @@ DECL_OFFSET(DynCallArgs, res)
 DECL_OFFSET(DynCallArgs, res2)
 #endif
 
-#if defined(TARGET_ARM)
-DECL_OFFSET(MonoLMF, sp)
-DECL_OFFSET(MonoLMF, fp)
-DECL_OFFSET(MonoLMF, ip)
-DECL_OFFSET(MonoLMF, iregs)
-DECL_OFFSET(MonoLMF, fregs)
-#elif defined(TARGET_ARM64)
-DECL_OFFSET(MonoLMF, pc)
-DECL_OFFSET(MonoLMF, gregs)
-DECL_OFFSET(DynCallArgs, fpregs)
-DECL_OFFSET(DynCallArgs, n_fpargs)
-DECL_OFFSET(DynCallArgs, n_fpret)
 #endif
-	
-DECL_OFFSET(MonoDelegateTrampInfo, invoke_impl)
-DECL_OFFSET(MonoDelegateTrampInfo, method_ptr)
 
 #endif //DISABLE_JIT_OFFSETS
 
