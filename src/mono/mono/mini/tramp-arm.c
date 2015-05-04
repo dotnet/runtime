@@ -1092,6 +1092,13 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert_not_reached ();
 	return NULL;
 }
+
+guint8*
+mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
 	
 #endif /* DISABLE_JIT */
 
