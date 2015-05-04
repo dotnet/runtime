@@ -227,9 +227,9 @@ DECL_OFFSET(DynCallArgs, n_fpret)
 DECL_OFFSET(MonoDelegateTrampInfo, invoke_impl)
 DECL_OFFSET(MonoDelegateTrampInfo, method_ptr)
 
-#endif
+#endif //DISABLE_JIT_OFFSETS
 
-#endif
+#endif //USED_CROSS_COMPILER_OFFSETS
 
 #undef DECL_OFFSET
 #undef DECL_OFFSET2
