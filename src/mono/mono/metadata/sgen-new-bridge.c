@@ -44,11 +44,11 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "sgen-gc.h"
+#include "sgen/sgen-gc.h"
 #include "sgen-bridge-internal.h"
-#include "sgen-hash-table.h"
-#include "sgen-qsort.h"
-#include "sgen-client.h"
+#include "sgen/sgen-hash-table.h"
+#include "sgen/sgen-qsort.h"
+#include "sgen/sgen-client.h"
 #include "tabledefs.h"
 #include "utils/mono-logger-internal.h"
 
@@ -672,7 +672,7 @@ dfs1 (HashEntry *obj_entry)
 				dyn_array_ptr_push (&dfs_stack, obj_entry);
 				dyn_array_ptr_push (&dfs_stack, NULL);
 
-#include "sgen-scan-object.h"
+#include "sgen/sgen-scan-object.h"
 
 				/*
 				 * We can remove non-bridge objects with a single outgoing

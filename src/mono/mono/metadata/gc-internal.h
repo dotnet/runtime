@@ -13,7 +13,7 @@
 #include <glib.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/gc-internal-agnostic.h>
+#include <mono/sgen/gc-internal-agnostic.h>
 #include <mono/utils/gc_wrapper.h>
 
 #define mono_domain_finalizers_lock(domain) mono_mutex_lock (&(domain)->finalizable_objects_hash_lock);

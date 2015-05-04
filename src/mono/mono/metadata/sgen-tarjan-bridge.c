@@ -43,10 +43,10 @@
 
 #include <stdlib.h>
 
-#include "sgen-gc.h"
+#include "sgen/sgen-gc.h"
 #include "sgen-bridge-internal.h"
-#include "sgen-hash-table.h"
-#include "sgen-qsort.h"
+#include "sgen/sgen-hash-table.h"
+#include "sgen/sgen-qsort.h"
 #include "tabledefs.h"
 #include "utils/mono-logger-internal.h"
 
@@ -664,7 +664,7 @@ push_all (ScanData *data)
 	printf ("**scanning %p %s\n", obj, safe_name_bridge (obj));
 #endif
 
-	#include "sgen-scan-object.h"
+	#include "sgen/sgen-scan-object.h"
 }
 
 
@@ -712,7 +712,7 @@ compute_low (ScanData *data)
 	char *start = (char*)obj;
 	mword desc = sgen_obj_get_descriptor_safe (start);
 
-	#include "sgen-scan-object.h"
+	#include "sgen/sgen-scan-object.h"
 }
 
 static ColorData*

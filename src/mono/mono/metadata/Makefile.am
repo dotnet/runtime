@@ -129,9 +129,6 @@ common_sources = \
 	filewatcher.c		\
 	filewatcher.h		\
 	gc-internal.h		\
-	gc-internal-agnostic.h	\
-	gc-memfuncs.c		\
-	gc-parse.c		\
 	icall.c			\
 	icall-def.h		\
 	image.c			\
@@ -242,11 +239,6 @@ sgen_sources = \
 	sgen-os-posix.c		\
 	sgen-os-mach.c		\
 	sgen-os-win32.c		\
-	sgen-gc.c		\
-	sgen-internal.c		\
-	sgen-marksweep.c	\
-	sgen-los.c		\
-	sgen-protocol.c \
 	sgen-bridge.c		\
 	sgen-bridge.h		\
 	sgen-bridge-internal.h	\
@@ -255,51 +247,8 @@ sgen_sources = \
 	sgen-tarjan-bridge.c		\
 	sgen-toggleref.c		\
 	sgen-toggleref.h		\
-	sgen-gc.h		\
-	sgen-conf.h		\
-	sgen-archdep.h		\
-	sgen-cardtable.c	\
-	sgen-cardtable.h	\
-	sgen-pointer-queue.c	\
-	sgen-pointer-queue.h	\
-	sgen-pinning.c	\
-	sgen-pinning.h	\
-	sgen-pinning-stats.c	\
-	sgen-workers.c	\
-	sgen-workers.h	\
-	sgen-gray.c	\
-	sgen-gray.h	\
-	sgen-major-copy-object.h \
-	sgen-minor-copy-object.h \
-	sgen-copy-object.h \
-	sgen-marksweep-scan-object-concurrent.h \
-	sgen-minor-scan-object.h \
-	sgen-marksweep-drain-gray-stack.h	\
-	sgen-protocol.h		\
-	sgen-protocol-def.h		\
-	sgen-scan-object.h	\
-	sgen-nursery-allocator.c	\
-	sgen-hash-table.c	\
-	sgen-hash-table.h	\
-	sgen-descriptor.c		\
-	sgen-descriptor.h		\
-	sgen-alloc.c		\
-	sgen-debug.c		\
-	sgen-simple-nursery.c	\
-	sgen-split-nursery.c	\
-	sgen-memory-governor.c	\
-	sgen-memory-governor.h	\
 	sgen-stw.c				\
-	sgen-fin-weak-hash.c	\
-	sgen-layout-stats.c	\
-	sgen-layout-stats.h	\
-	sgen-qsort.c	\
-	sgen-qsort.h	\
-	sgen-thread-pool.c	\
-	sgen-thread-pool.h	\
-	sgen-tagged-pointer.h	\
 	sgen-mono.c		\
-	sgen-client.h		\
 	sgen-client-mono.h
 
 libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)

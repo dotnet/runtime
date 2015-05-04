@@ -1,5 +1,5 @@
 /*
- * gc-stats.c: GC statistics.
+ * memfuncs.h: Our own bzero/memmove.
  *
  * Copyright (C) 2015 Xamarin Inc
  *
@@ -17,10 +17,18 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "mono/sgen/gc-internal-agnostic.h"
+#ifndef __MONO_UTILS_MEMFUNCS_H__
+#define __MONO_UTILS_MEMFUNCS_H__
+
+#include <stdlib.h>
 
 /*
- * Due to a bug in the linker on Darwin we need to initialize this struct, or there will be
- * "undefined symbol" errors.
- */
-GCStats gc_stats = {};
+These functions must be used when it's possible that either destination is not
+word aligned or size is not a multiple of word size.
+*/
+void mono_gc_bzero_atomic (void *dest, size_t size);
+void mono_gc_bzero_aligned (void *dest, size_t size);
+void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
+void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
+
+#endif

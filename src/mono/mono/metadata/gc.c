@@ -25,7 +25,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/threadpool-internals.h>
 #include <mono/metadata/threads-types.h>
-#include <mono/metadata/sgen-conf.h>
+#include <mono/sgen/sgen-conf.h>
 #include <mono/utils/mono-logger-internal.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */

@@ -1,5 +1,5 @@
 /*
- * gc-stats.c: GC statistics.
+ * parse.h: Parsing for GC options.
  *
  * Copyright (C) 2015 Xamarin Inc
  *
@@ -17,10 +17,12 @@
  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "mono/sgen/gc-internal-agnostic.h"
+#ifndef __MONO_UTILS_PARSE_H__
+#define __MONO_UTILS_PARSE_H__
 
-/*
- * Due to a bug in the linker on Darwin we need to initialize this struct, or there will be
- * "undefined symbol" errors.
- */
-GCStats gc_stats = {};
+#include <glib.h>
+#include <stdlib.h>
+
+gboolean mono_gc_parse_environment_string_extract_number (const char *str, size_t *out);
+
+#endif
