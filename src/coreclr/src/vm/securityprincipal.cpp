@@ -3,16 +3,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-//+--------------------------------------------------------------------------
-//
-//  Microsoft Confidential.
-//
-//---------------------------------------------------------------------------
-//
-
-//
-
-
 #include "common.h"
 
 #include "securityprincipal.h"
