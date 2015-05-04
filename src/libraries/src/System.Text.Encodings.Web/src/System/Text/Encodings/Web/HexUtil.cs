@@ -23,6 +23,16 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
+        /// Converts a number 0 - 15 to its associated hex character '0' - 'F'.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToHexDigit(int value)
+        {
+            Debug.Assert(value < 16);
+            return (char)((value < 10) ? ('0' + value) : ('A' + (value - 10)));
+        }
+
+        /// <summary>
         /// Returns the integral form of this hexadecimal character.
         /// </summary>
         /// <returns>0 - 15 if the character is valid, -1 if the character is invalid.</returns>

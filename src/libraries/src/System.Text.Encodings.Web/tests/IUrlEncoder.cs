@@ -3,12 +3,12 @@
 
 using System.IO;
 
-namespace System.Text.Encodings.Web
+namespace Microsoft.Framework.WebEncoders
 {
     /// <summary>
     /// Provides services for URL-escaping strings.
     /// </summary>
-    public interface IUrlEncoder
+    internal interface IUrlEncoder
     {
         /// <summary>
         /// URL-escapes a character array and writes the result to the supplied

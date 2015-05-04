@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using Xunit;
 
 namespace Microsoft.Framework.WebEncoders

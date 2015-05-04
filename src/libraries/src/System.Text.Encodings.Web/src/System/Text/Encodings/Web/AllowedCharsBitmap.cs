@@ -1,9 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Diagnostics;
-using System.Text.Encodings.Web;
+using System.Runtime.CompilerServices;
+using System.Text.Unicode;
 
 namespace System.Text.Internal
 {
@@ -21,9 +21,9 @@ namespace System.Text.Internal
         // Marks a character as allowed (can be returned unencoded)
         public void AllowCharacter(char c)
         {
-            uint codePoint = (uint)c;
-            int index = (int)(codePoint >> 5);
-            int offset = (int)(codePoint & 0x1FU);
+            int codePoint = c;
+            int index = codePoint >> 5;
+            int offset = codePoint & 0x1F;
             _allowedCharsBitmap[index] |= 0x1U << offset;
         }
 
@@ -48,9 +48,9 @@ namespace System.Text.Internal
         // Marks a character as forbidden (must be returned encoded)
         public void ForbidCharacter(char c)
         {
-            uint codePoint = (uint)c;
-            int index = (int)(codePoint >> 5);
-            int offset = (int)(codePoint & 0x1FU);
+            int codePoint = c;
+            int index = codePoint >> 5;
+            int offset = codePoint & 0x1F;
             _allowedCharsBitmap[index] &= ~(0x1U << offset);
         }
 
@@ -69,10 +69,29 @@ namespace System.Text.Internal
         // Determines whether the given character can be returned unencoded.
         public bool IsCharacterAllowed(char c)
         {
-            uint codePoint = (uint)c;
-            int index = (int)(codePoint >> 5);
-            int offset = (int)(codePoint & 0x1FU);
+            int codePoint = c;
+            int index = codePoint >> 5;
+            int offset = codePoint & 0x1F;
             return ((_allowedCharsBitmap[index] >> offset) & 0x1U) != 0;
+        }
+
+        // Determines whether the given character can be returned unencoded.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsUnicodeScalarAllowed(int unicodeScalar)
+        {
+            int index = unicodeScalar >> 5;
+            int offset = unicodeScalar & 0x1F;
+            return ((_allowedCharsBitmap[index] >> offset) & 0x1U) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static int FindFirstCharacterToEncode(AllowedCharsBitmap bitmap, char* text, int charCount)
+        {
+            for (int i = 0; i < charCount; i++)
+            {
+                if (!bitmap.IsCharacterAllowed(text[i])) { return i; }
+            }
+            return -1;
         }
     }
 }
