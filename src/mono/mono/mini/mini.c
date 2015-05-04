@@ -3680,11 +3680,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if (cfg->opt & MONO_OPT_DEADCE)
 			mono_local_deadce (cfg);
 
-		if (cfg->opt & MONO_OPT_BRANCH) {
-			MonoBasicBlock *bb;
-
+		if (cfg->opt & MONO_OPT_BRANCH)
 			mono_optimize_branches (cfg);
-		}
 	}
 #endif
 
