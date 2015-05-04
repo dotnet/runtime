@@ -3202,10 +3202,6 @@ register_icalls (void)
 				ves_icall_get_trace);
 	mono_add_internal_call ("System.Exception::get_trace",
 				ves_icall_System_Exception_get_trace);
-	mono_add_internal_call ("System.Security.SecurityFrame::_GetSecurityFrame",
-				ves_icall_System_Security_SecurityFrame_GetSecurityFrame);
-	mono_add_internal_call ("System.Security.SecurityFrame::_GetSecurityStack",
-				ves_icall_System_Security_SecurityFrame_GetSecurityStack);
 	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers",
 				mono_runtime_install_handlers);
 

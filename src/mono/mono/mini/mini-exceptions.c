@@ -979,20 +979,6 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	return TRUE;
 }
 
-/* Obsolete */
-MonoObject*
-ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
-{
-	return NULL;
-}
-
-/* Obsolete */
-MonoArray*
-ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
-{
-	return NULL;
-}
-
 static MonoArray *
 glist_to_array (GList *list, MonoClass *eclass) 
 {

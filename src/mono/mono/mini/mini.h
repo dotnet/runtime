@@ -2741,10 +2741,6 @@ mono_local_deadce (MonoCompile *cfg);
 void
 mono_local_alias_analysis (MonoCompile *cfg);
 
-/* CAS - stack walk */
-MonoObject* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip);
-MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip);
-
 /* Generic sharing */
 
 void
