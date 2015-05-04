@@ -130,7 +130,7 @@ The top-level function of interest is Compiler::compCompile. It invokes the foll
 |[Importation](#importation)|GenTree nodes created and linked in to Statements, and Statements into BasicBlocks. Inlining candidates identified.|
 |[Inlining](#inlining)|The IR for inlined methods is incorporated into the flowgraph.|
 |[Struct Promotion](#struct-promotion)|New lclVars are created for each field of a promoted struct.|
-|[Mark Address-Exposed Locals](#mark-addr-exposed)|LclVars with references occuring in an address-taken context are marked.  This must be kept up-to-date.|
+|[Mark Address-Exposed Locals](#mark-addr-exposed)|LclVars with references occurring in an address-taken context are marked.  This must be kept up-to-date.|
 |[Morph Blocks](#morph-blocks)|Performs localized transformations, including mandatory normalization as well as simple optimizations.|
 |[Eliminate Qmarks](#eliminate-qmarks)|All GT_QMARK nodes are eliminated, other than simple ones that do not require control flow.|
 |[Flowgraph Analysis](#flowgraph-analysis)|BasicBlock predecessors are computed, and must be kept valid. Loops are identified, and normalized, cloned and/or unrolled.|
@@ -530,7 +530,7 @@ Below are some of the most useful COMPLUS variables. Where {method-list} is spec
 * COMPLUS_JitDump={method-list} – dump lots of useful information about what the JIT is doing (see below).
 * COMPLUS_JitDisasm={method-list} – dump a disassembly listing of each method.
 * COMPLUS_JitDiffableDasm – set to 1 to tell the JIT to avoid printing things like pointer values that can change from one invocation to the next, so that the disassembly can be more easily compared.
-* COMPLUS_JITGCDump={method-list} – dump the GC information.
+* COMPLUS_JitGCDump={method-list} – dump the GC information.
 * COMPLUS_JitUnwindDump={method-list} – dump the unwind tables.
 * COMPLUS_JitEHDump={method-list} – dump the exception handling tables.
 * COMPLUS_JitTimeLogFile={file name} – this specifies a log file to which timing information is written.
