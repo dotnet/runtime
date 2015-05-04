@@ -1722,19 +1722,15 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--security") == 0) {
 #ifndef DISABLE_SECURITY
 			mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
-			mono_security_set_mode (MONO_SECURITY_MODE_CAS);
-			mono_activate_security_manager ();
 #else
 			fprintf (stderr, "error: --security: not compiled with security manager support");
 			return 1;
 #endif
 		} else if (strncmp (argv [i], "--security=", 11) == 0) {
-			/* Note: temporary-smcs-hack, validil, and verifiable need to be
+			/* Note: validil, and verifiable need to be
 			   accepted even if DISABLE_SECURITY is defined. */
 
-			if (strcmp (argv [i] + 11, "temporary-smcs-hack") == 0) {
-				mono_security_set_mode (MONO_SECURITY_MODE_SMCS_HACK);
-			} else if (strcmp (argv [i] + 11, "core-clr") == 0) {
+			if (strcmp (argv [i] + 11, "core-clr") == 0) {
 #ifndef DISABLE_SECURITY
 				mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
 				mono_security_set_mode (MONO_SECURITY_MODE_CORE_CLR);
@@ -1753,9 +1749,7 @@ mono_main (int argc, char* argv[])
 #endif
 			} else if (strcmp (argv [i] + 11, "cas") == 0) {
 #ifndef DISABLE_SECURITY
-				mono_verifier_set_mode (MONO_VERIFIER_MODE_VERIFIABLE);
-				mono_security_set_mode (MONO_SECURITY_MODE_CAS);
-				mono_activate_security_manager ();
+				fprintf (stderr, "warning: --security=cas not supported.");
 #else
 				fprintf (stderr, "error: --security: not compiled with CAS support");
 				return 1;

@@ -2716,9 +2716,6 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			printf ("Number of try block holes %d\n", num_holes);
 	}
 
-	if (mono_security_method_has_declsec (cfg->method_to_register))
-		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
-
 	if (COMPILE_LLVM (cfg))
 		num_clauses = cfg->llvm_ex_info_len;
 	else
@@ -4299,7 +4296,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	mono_jit_stats.regvars += cfg->stat_n_regvars;
 	mono_jit_stats.inlineable_methods += cfg->stat_inlineable_methods;
 	mono_jit_stats.inlined_methods += cfg->stat_inlined_methods;
-	mono_jit_stats.cas_demand_generation += cfg->stat_cas_demand_generation;
 	mono_jit_stats.code_reallocs += cfg->stat_code_reallocs;
 
 	mono_destroy_compile (cfg);

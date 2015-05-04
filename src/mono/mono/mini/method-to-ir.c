@@ -5138,13 +5138,6 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 			return FALSE;
 	}
 
-	/*
-	 * CAS - do not inline methods with declarative security
-	 * Note: this has to be before any possible return TRUE;
-	 */
-	if (mono_security_method_has_declsec (method))
-		return FALSE;
-
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	if (mono_arch_is_soft_float ()) {
 		/* FIXME: */
@@ -7171,41 +7164,6 @@ mini_get_signature (MonoMethod *method, guint32 token, MonoGenericContext *conte
 	return fsig;
 }
 
-/*
- * Returns TRUE if the JIT should abort inlining because "callee"
- * is influenced by security attributes.
- */
-static
-gboolean check_linkdemand (MonoCompile *cfg, MonoMethod *caller, MonoMethod *callee)
-{
-	guint32 result;
-	
-	if ((cfg->method != caller) && mono_security_method_has_declsec (callee)) {
-		return TRUE;
-	}
-	
-	result = mono_declsec_linkdemand (cfg->domain, caller, callee);
-	if (result == MONO_JIT_SECURITY_OK)
-		return FALSE;
-
-	if (result == MONO_JIT_LINKDEMAND_ECMA) {
-		/* Generate code to throw a SecurityException before the actual call/link */
-		MonoSecurityManager *secman = mono_security_manager_get_methods ();
-		MonoInst *args [2];
-
-		NEW_ICONST (cfg, args [0], 4);
-		NEW_METHODCONST (cfg, args [1], caller);
-		mono_emit_method_call (cfg, secman->linkdemandsecurityexception, args, NULL);
-	} else if (cfg->exception_type == MONO_EXCEPTION_NONE) {
-		 /* don't hide previous results */
-		mono_cfg_set_exception (cfg, MONO_EXCEPTION_SECURITY_LINKDEMAND);
-		cfg->exception_data = result;
-		return TRUE;
-	}
-	
-	return FALSE;
-}
-
 static MonoMethod*
 throw_exception (void)
 {
@@ -7732,9 +7690,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	int num_calls = 0, inline_costs = 0;
 	int breakpoint_id = 0;
 	guint num_args;
-	MonoBoolean security, pinvoke;
-	MonoSecurityManager* secman = NULL;
-	MonoDeclSecurityActions actions;
 	GSList *class_inits = NULL;
 	gboolean dont_verify, dont_verify_stloc, readonly = FALSE;
 	int context_used;
@@ -7754,8 +7709,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  	dont_verify |= method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE; /* bug #77896 */
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP;
 	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP_INVOKE;
-
-	dont_verify |= mono_security_smcs_hack_enabled ();
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
@@ -8036,46 +7989,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		}
 	}
 
-	if (mono_security_cas_enabled ())
-		secman = mono_security_manager_get_methods ();
-
-	security = (secman && mono_security_method_has_declsec (method));
-	/* at this point having security doesn't mean we have any code to generate */
-	if (security && (cfg->method == method)) {
-		/* Only Demand, NonCasDemand and DemandChoice requires code generation.
-		 * And we do not want to enter the next section (with allocation) if we
-		 * have nothing to generate */
-		security = mono_declsec_get_demands (method, &actions);
-	}
-
-	/* we must Demand SecurityPermission.Unmanaged before P/Invoking */
-	pinvoke = (secman && (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE));
-	if (pinvoke) {
-		MonoMethod *wrapped = mono_marshal_method_from_wrapper (method);
-		if (wrapped && (wrapped->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-			MonoCustomAttrInfo* custom = mono_custom_attrs_from_method (wrapped);
-
-			/* unless the method or it's class has the [SuppressUnmanagedCodeSecurity] attribute */
-			if (custom && mono_custom_attrs_has_attr (custom, secman->suppressunmanagedcodesecurity)) {
-				pinvoke = FALSE;
-			}
-			if (custom)
-				mono_custom_attrs_free (custom);
-
-			if (pinvoke) {
-				custom = mono_custom_attrs_from_class (wrapped->klass);
-				if (custom && mono_custom_attrs_has_attr (custom, secman->suppressunmanagedcodesecurity)) {
-					pinvoke = FALSE;
-				}
-				if (custom)
-					mono_custom_attrs_free (custom);
-			}
-		} else {
-			/* not a P/Invoke after all */
-			pinvoke = FALSE;
-		}
-	}
-	
 	/* we use a separate basic block for the initialization code */
 	NEW_BBLOCK (cfg, init_localsbb);
 	cfg->bb_init = init_localsbb;
@@ -8126,41 +8039,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (init_locals)
 			ins->flags |= MONO_INST_INIT;
 		*/
-	}
-
-	/* at this point we know, if security is TRUE, that some code needs to be generated */
-	if (security && (cfg->method == method)) {
-		MonoInst *args [2];
-
-		cfg->stat_cas_demand_generation++;
-
-		if (actions.demand.blob) {
-			/* Add code for SecurityAction.Demand */
-			EMIT_NEW_DECLSECCONST (cfg, args[0], image, actions.demand);
-			EMIT_NEW_ICONST (cfg, args [1], actions.demand.size);
-			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
-			mono_emit_method_call (cfg, secman->demand, args, NULL);
-		}
-		if (actions.noncasdemand.blob) {
-			/* CLR 1.x uses a .noncasdemand (but 2.x doesn't) */
-			/* For Mono we re-route non-CAS Demand to Demand (as the managed code must deal with it anyway) */
-			EMIT_NEW_DECLSECCONST (cfg, args[0], image, actions.noncasdemand);
-			EMIT_NEW_ICONST (cfg, args [1], actions.noncasdemand.size);
-			/* Calls static void SecurityManager.InternalDemand (byte* permissions, int size); */
-			mono_emit_method_call (cfg, secman->demand, args, NULL);
-		}
-		if (actions.demandchoice.blob) {
-			/* New in 2.0, Demand must succeed for one of the permissions (i.e. not all) */
-			EMIT_NEW_DECLSECCONST (cfg, args[0], image, actions.demandchoice);
-			EMIT_NEW_ICONST (cfg, args [1], actions.demandchoice.size);
-			/* Calls static void SecurityManager.InternalDemandChoice (byte* permissions, int size); */
-			mono_emit_method_call (cfg, secman->demandchoice, args, NULL);
-		}
-	}
-
-	/* we must Demand SecurityPermission.Unmanaged before p/invoking */
-	if (pinvoke) {
-		mono_emit_method_call (cfg, secman->demandunmanaged, NULL, NULL);
 	}
 
 	if (mono_security_core_clr_enabled ()) {
@@ -8670,9 +8548,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->generic_sharing_context && mono_method_check_context_used (cmethod))
 				GENERIC_SHARING_FAILURE (CEE_JMP);
 
-			if (mono_security_cas_enabled ())
-				CHECK_CFG_EXCEPTION;
-
 			emit_instrumentation_call (cfg, mono_profiler_method_leave);
 
 			if (ARCH_HAVE_OP_TAIL_CALL) {
@@ -8953,12 +8828,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			  GSHAREDVT_FAILURE (*ip);
 			  }
 			*/
-
-			if (mono_security_cas_enabled ()) {
-				if (check_linkdemand (cfg, method, cmethod))
-					INLINE_FAILURE ("linkdemand");
-				CHECK_CFG_EXCEPTION;
-			}
 
 			if (cmethod->string_ctor && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
 				g_assert_not_reached ();
@@ -10432,13 +10301,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
-			if (mono_security_cas_enabled ()) {
-				if (check_linkdemand (cfg, method, cmethod))
-					INLINE_FAILURE ("linkdemand");
-				CHECK_CFG_EXCEPTION;
-			} else if (mono_security_core_clr_enabled ()) {
+			if (mono_security_core_clr_enabled ())
 				ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
- 			}
 
 			if (cfg->generic_sharing_context && cmethod && cmethod->klass != method->klass && cmethod->klass->generic_class && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
 				emit_generic_class_init (cfg, cmethod->klass);
@@ -12567,13 +12431,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_method (method, cmethod))
 					METHOD_ACCESS_FAILURE (method, cil_method);
 
-				if (mono_security_cas_enabled ()) {
-					if (check_linkdemand (cfg, method, cmethod))
-						INLINE_FAILURE ("linkdemand");
-					CHECK_CFG_EXCEPTION;
-				} else if (mono_security_core_clr_enabled ()) {
+				if (mono_security_core_clr_enabled ())
 					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
-				}
 
 				/* 
 				 * Optimize the common case of ldftn+delegate creation
@@ -12645,13 +12504,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
  
 				context_used = mini_method_check_context_used (cfg, cmethod);
 
-				if (mono_security_cas_enabled ()) {
-					if (check_linkdemand (cfg, method, cmethod))
-						INLINE_FAILURE ("linkdemand");
-					CHECK_CFG_EXCEPTION;
-				} else if (mono_security_core_clr_enabled ()) {
+				if (mono_security_core_clr_enabled ())
 					ensure_method_is_allowed_to_call_method (cfg, method, cmethod, bblock, ip);
-				}
 
 				/*
 				 * Optimize the common case of ldvirtftn+delegate creation

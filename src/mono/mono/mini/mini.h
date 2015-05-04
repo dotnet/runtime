@@ -39,9 +39,17 @@
 
 #include "mini-arch.h"
 #include "regalloc.h"
-#include "declsec.h"
 #include "mini-unwind.h"
 #include "jit.h"
+
+#include "mono/metadata/class-internals.h"
+#include "mono/metadata/domain-internals.h"
+#include "mono/metadata/object.h"
+#include "mono/metadata/tabledefs.h"
+#include "mono/metadata/marshal.h"
+#include "mono/metadata/security-manager.h"
+#include "mono/metadata/exception.h"
+#include "mono/utils/mono-compiler.h"
 
 #ifdef __native_client_codegen__
 #include <nacl/nacl_dyncode.h>
@@ -1703,7 +1711,6 @@ typedef struct {
 	int stat_n_regvars;
 	int stat_inlineable_methods;
 	int stat_inlined_methods;
-	int stat_cas_demand_generation;
 	int stat_code_reallocs;
 } MonoCompile;
 
@@ -1737,12 +1744,6 @@ typedef struct {
 	gint32 max_basic_blocks;
 	gint32 locals_stack_size;
 	gint32 regvars;
-	gint32 cas_declsec_check;
-	gint32 cas_linkdemand_icall;
-	gint32 cas_linkdemand_pinvoke;
-	gint32 cas_linkdemand_aptc;
-	gint32 cas_linkdemand;
-	gint32 cas_demand_generation;
 	gint32 generic_virtual_invocations;
 	gint32 alias_found;
 	gint32 alias_removed;
@@ -2741,7 +2742,7 @@ void
 mono_local_alias_analysis (MonoCompile *cfg);
 
 /* CAS - stack walk */
-MonoSecurityFrame* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip);
+MonoObject* ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip);
 MonoArray* ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip);
 
 /* Generic sharing */

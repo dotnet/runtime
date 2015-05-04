@@ -41,8 +41,6 @@ enum {
 typedef enum {
 	MONO_SECURITY_MODE_NONE,
 	MONO_SECURITY_MODE_CORE_CLR,
-	MONO_SECURITY_MODE_CAS,
-	MONO_SECURITY_MODE_SMCS_HACK
 } MonoSecurityMode;
 
 /* Structures */
@@ -87,14 +85,10 @@ MonoBoolean ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (Mon
 
 #ifndef DISABLE_SECURITY
 #define mono_security_enabled() (mono_is_security_manager_active ())
-#define mono_security_cas_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_CAS)
 #define mono_security_core_clr_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
-#define mono_security_smcs_hack_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_SMCS_HACK)
 #else
 #define mono_security_enabled() (FALSE)
-#define mono_security_cas_enabled() (FALSE)
 #define mono_security_core_clr_enabled() (FALSE)
-#define mono_security_smcs_hack_enabled() (FALSE)
 #endif
 
 #endif /* _MONO_METADATA_SECURITY_MANAGER_H_ */

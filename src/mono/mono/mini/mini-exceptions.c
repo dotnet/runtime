@@ -979,119 +979,18 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 	return TRUE;
 }
 
-typedef struct {
-	guint32 skips;
-	MonoSecurityFrame *frame;
-} MonoFrameSecurityInfo;
-
-static gboolean
-callback_get_first_frame_security_info (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
-{
-	MonoFrameSecurityInfo *si = (MonoFrameSecurityInfo*) data;
-	MonoJitInfo *ji = frame->ji;
-	MonoMethod *method;
-
-	if (!ji)
-		return FALSE;
-
-	/* FIXME: skip all wrappers ?? probably not - case by case testing is required */
-	method = jinfo_get_method (ji);
-	if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
-	    method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
-	    method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
-	    method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-	    method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE) {
-		return FALSE;
-	}
-
-	if (si->skips > 0) {
-		si->skips--;
-		return FALSE;
-	}
-
-	si->frame = mono_declsec_create_frame (frame->domain, ji);
-
-	/* Stop - we only want the first frame (e.g. LinkDemand and InheritanceDemand) */
-	return TRUE;
-}
-
-/**
- * ves_icall_System_Security_SecurityFrame_GetSecurityFrame:
- * @skip: the number of stack frames to skip
- *
- * This function returns a the security informations of a single stack frame 
- * (after the skipped ones). This is required for [NonCas]LinkDemand[Choice]
- * and [NonCas]InheritanceDemand[Choice] as only the caller security is 
- * evaluated.
- */
-MonoSecurityFrame*
+/* Obsolete */
+MonoObject*
 ves_icall_System_Security_SecurityFrame_GetSecurityFrame (gint32 skip)
 {
-	MonoFrameSecurityInfo si;
-
-	si.skips = skip;
-	si.frame = NULL;
-
-	mono_walk_stack (callback_get_first_frame_security_info, MONO_UNWIND_DEFAULT, &si);
-
-	return (si.skips == 0) ? si.frame : NULL;
+	return NULL;
 }
 
-
-typedef struct {
-	guint32 skips;
-	MonoArray *stack;
-	guint32 count;
-	guint32 maximum;
-} MonoSecurityStack;
-
-static void
-grow_array (MonoSecurityStack *stack)
+/* Obsolete */
+MonoArray*
+ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 {
-	MonoDomain *domain = mono_domain_get ();
-	guint32 newsize = (stack->maximum << 1);
-	MonoArray *newstack = mono_array_new (domain, mono_defaults.runtimesecurityframe_class, newsize);
-	int i;
-	for (i=0; i < stack->maximum; i++) {
-		gpointer frame = mono_array_get (stack->stack, gpointer, i);
-		mono_array_setref (newstack, i, frame);
-	}
-	stack->maximum = newsize;
-	stack->stack = newstack;
-}
-
-static gboolean
-callback_get_stack_frames_security_info (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
-{
-	MonoSecurityStack *ss = (MonoSecurityStack*) data;
-	MonoJitInfo *ji = frame->ji;
-	MonoMethod *method;
-
-	if (!ji)
-		return FALSE;
-
-	/* FIXME: skip all wrappers ?? probably not - case by case testing is required */
-	method = jinfo_get_method (ji);
-	if (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE ||
-	    method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE ||
-	    method->wrapper_type == MONO_WRAPPER_XDOMAIN_DISPATCH ||
-	    method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
-	    method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE) {
-		return FALSE;
-	}
-
-	if (ss->skips > 0) {
-		ss->skips--;
-		return FALSE;
-	}
-
-	if (ss->count == ss->maximum)
-		grow_array (ss);
-
-	mono_array_setref (ss->stack, ss->count++, mono_declsec_create_frame (frame->domain, ji));
-
-	/* continue down the stack */
-	return FALSE;
+	return NULL;
 }
 
 static MonoArray *
@@ -1111,33 +1010,6 @@ glist_to_array (GList *list, MonoClass *eclass)
 		mono_array_set (res, gpointer, i, list->data);
 
 	return res;
-}
-
-/**
- * ves_icall_System_Security_SecurityFrame_GetSecurityStack:
- * @skip: the number of stack frames to skip
- *
- * This function returns an managed array of containing the security
- * informations for each frame (after the skipped ones). This is used for
- * [NonCas]Demand[Choice] where the complete evaluation of the stack is 
- * required.
- */
-MonoArray*
-ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
-{
-	MonoSecurityStack ss;
-
-#if	defined(__ia64__) || defined(__s390__) || defined(__s390x__)
-	skip--;
-#endif
-
-	ss.skips = skip;
-	ss.count = 0;
-	ss.maximum = MONO_CAS_INITIAL_STACK_SIZE;
-	ss.stack = mono_array_new (mono_domain_get (), mono_defaults.runtimesecurityframe_class, ss.maximum);
-	mono_walk_stack (callback_get_stack_frames_security_info, MONO_UNWIND_DEFAULT, &ss);
-	/* g_warning ("STACK RESULT: %d out of %d", ss.count, ss.maximum); */
-	return ss.stack;
 }
 
 static MonoClass*

@@ -189,23 +189,12 @@ typedef struct {
 	int thunks_size;
 } MonoThunkJitInfo;
 
-typedef struct {
-	gboolean    cas_inited:1;
-	gboolean    cas_class_assert:1;
-	gboolean    cas_class_deny:1;
-	gboolean    cas_class_permitonly:1;
-	gboolean    cas_method_assert:1;
-	gboolean    cas_method_deny:1;
-	gboolean    cas_method_permitonly:1;
-} MonoMethodCasInfo;
-
 typedef enum {
 	JIT_INFO_NONE = 0,
-	JIT_INFO_HAS_CAS_INFO = (1 << 0),
-	JIT_INFO_HAS_GENERIC_JIT_INFO = (1 << 1),
-	JIT_INFO_HAS_TRY_BLOCK_HOLES = (1 << 2),
-	JIT_INFO_HAS_ARCH_EH_INFO = (1 << 3),
-	JIT_INFO_HAS_THUNK_INFO = (1 << 4)
+	JIT_INFO_HAS_GENERIC_JIT_INFO = (1 << 0),
+	JIT_INFO_HAS_TRY_BLOCK_HOLES = (1 << 1),
+	JIT_INFO_HAS_ARCH_EH_INFO = (1 << 2),
+	JIT_INFO_HAS_THUNK_INFO = (1 << 3)
 } MonoJitInfoFlags;
 
 struct _MonoJitInfo {
@@ -226,7 +215,6 @@ struct _MonoJitInfo {
 	guint32     num_clauses:15;
 	/* Whenever the code is domain neutral or 'shared' */
 	gboolean    domain_neutral:1;
-	gboolean    has_cas_info:1;
 	gboolean    has_generic_jit_info:1;
 	gboolean    has_try_block_holes:1;
 	gboolean    has_arch_eh_info:1;
@@ -561,9 +549,6 @@ mono_jit_info_get_arch_eh_info (MonoJitInfo *ji);
 
 MonoThunkJitInfo*
 mono_jit_info_get_thunk_info (MonoJitInfo *ji);
-
-MonoMethodCasInfo*
-mono_jit_info_get_cas_info (MonoJitInfo *ji);
 
 /* 
  * Installs a new function which is used to return a MonoJitInfo for a method inside

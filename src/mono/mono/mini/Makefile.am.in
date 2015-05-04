@@ -404,8 +404,6 @@ common_sources = \
 	mini-codegen.c		\
 	mini-exceptions.c	\
 	mini-trampolines.c  	\
-	declsec.c		\
-	declsec.h		\
 	branch-opts.c		\
 	mini-generic-sharing.c	\
 	regalloc2.c		\

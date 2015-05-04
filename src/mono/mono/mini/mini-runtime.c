@@ -3466,15 +3466,6 @@ print_jit_stats (void)
 		g_print ("JIT info table removes: %ld\n", mono_stats.jit_info_table_remove_count);
 		g_print ("JIT info table lookups: %ld\n", mono_stats.jit_info_table_lookup_count);
 
-		if (mono_security_cas_enabled ()) {
-			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);
-			g_print ("LinkDemand (user)     : %ld\n", mono_jit_stats.cas_linkdemand);
-			g_print ("LinkDemand (icall)    : %ld\n", mono_jit_stats.cas_linkdemand_icall);
-			g_print ("LinkDemand (pinvoke)  : %ld\n", mono_jit_stats.cas_linkdemand_pinvoke);
-			g_print ("LinkDemand (aptc)     : %ld\n", mono_jit_stats.cas_linkdemand_aptc);
-			g_print ("Demand (code gen)     : %ld\n", mono_jit_stats.cas_demand_generation);
-		}
-
 		g_free (mono_jit_stats.max_ratio_method);
 		mono_jit_stats.max_ratio_method = NULL;
 		g_free (mono_jit_stats.biggest_method);

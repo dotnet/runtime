@@ -1769,9 +1769,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	if (image_is_dynamic (assembly->image) || assembly->ref_only)
 		return;
 
-	if (mono_security_cas_enabled ())
-		return;
-
 	mono_aot_lock ();
 	if (static_aot_modules)
 		info = g_hash_table_lookup (static_aot_modules, assembly->aname.name);

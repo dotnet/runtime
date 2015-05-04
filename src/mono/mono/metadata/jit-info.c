@@ -778,8 +778,6 @@ mono_jit_info_size (MonoJitInfoFlags flags, int num_clauses, int num_holes)
 	int size = MONO_SIZEOF_JIT_INFO;
 
 	size += num_clauses * sizeof (MonoJitExceptionInfo);
-	if (flags & JIT_INFO_HAS_CAS_INFO)
-		size += sizeof (MonoMethodCasInfo);
 	if (flags & JIT_INFO_HAS_GENERIC_JIT_INFO)
 		size += sizeof (MonoGenericJitInfo);
 	if (flags & JIT_INFO_HAS_TRY_BLOCK_HOLES)
@@ -799,8 +797,6 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 	ji->code_start = code;
 	ji->code_size = code_size;
 	ji->num_clauses = num_clauses;
-	if (flags & JIT_INFO_HAS_CAS_INFO)
-		ji->has_cas_info = 1;
 	if (flags & JIT_INFO_HAS_GENERIC_JIT_INFO)
 		ji->has_generic_jit_info = 1;
 	if (flags & JIT_INFO_HAS_TRY_BLOCK_HOLES)
@@ -951,23 +947,6 @@ mono_jit_info_get_thunk_info (MonoJitInfo *ji)
 		if (ji->has_arch_eh_info)
 			ptr += sizeof (MonoArchEHJitInfo);
 		return (MonoThunkJitInfo*)ptr;
-	} else {
-		return NULL;
-	}
-}
-
-MonoMethodCasInfo*
-mono_jit_info_get_cas_info (MonoJitInfo *ji)
-{
-	if (ji->has_cas_info) {
-		char *ptr = (char*)&ji->clauses [ji->num_clauses];
-		if (ji->has_generic_jit_info)
-			ptr += sizeof (MonoGenericJitInfo);
-		if (ji->has_try_block_holes)
-			ptr += try_block_hole_table_size (ji);
-		if (ji->has_arch_eh_info)
-			ptr += sizeof (MonoArchEHJitInfo);
-		return (MonoMethodCasInfo*)ptr;
 	} else {
 		return NULL;
 	}
