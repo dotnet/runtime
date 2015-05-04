@@ -10,9 +10,9 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
-        internal Constant(MetadataReader reader, uint rowId)
+        internal Constant(MetadataReader reader, int rowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(rowId != 0);
@@ -63,7 +63,7 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// Corresponds to Parent field of Constant table in ECMA-335 Standard.
         /// </remarks>
-        public Handle Parent
+        public EntityHandle Parent
         {
             get
             {

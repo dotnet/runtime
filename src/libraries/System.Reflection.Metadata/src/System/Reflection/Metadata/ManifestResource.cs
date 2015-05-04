@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal ManifestResource(MetadataReader reader, ManifestResourceHandle handle)
         {
@@ -68,7 +68,7 @@ namespace System.Reflection.Metadata
         /// If nil then <see cref="Offset"/> is an offset in the PE image that contains the metadata, 
         /// starting from the Resource entry in the CLI header.
         /// </remarks>
-        public Handle Implementation
+        public EntityHandle Implementation
         {
             get { return _reader.ManifestResourceTable.GetImplementation(Handle); }
         }
