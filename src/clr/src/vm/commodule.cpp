@@ -1217,8 +1217,6 @@ Object* GetTypesInner(Module* pModule)
 
 #if defined(FEATURE_X509) && defined(FEATURE_CAS_POLICY)
 //+--------------------------------------------------------------------------
-//
-//  Microsoft Confidential.
 //  
 //  Member:     COMModule::GetSignerCertificate()
 //  
@@ -1231,8 +1229,6 @@ Object* GetTypesInner(Module* pModule)
 //  Returns:    OBJECTREF to an X509Certificate object containing the 
 //              signer certificate.
 //
-
-// 
 //---------------------------------------------------------------------------
 
 void QCALLTYPE COMModule::GetSignerCertificate(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retData)
