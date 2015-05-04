@@ -508,7 +508,6 @@ void CordbCommonBase::InitializeCommon()
 // NT, so we won't treat that as a critical failure. 
 // This also will let us call OpenProcess() on anything, regardless of DACL. This allows an
 // Admin debugger to attach to a debuggee in the guest account.
-// This code was taken directly from code in the Win32 debugger, given to us by Matt Hendel.
 // Ideally, the debugger would set this (and we wouldn't mess with privileges at all). However, we've been
 // setting this since V1.0 and removing it may be a breaking change.
 void CordbCommonBase::AddDebugPrivilege()
