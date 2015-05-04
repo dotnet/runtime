@@ -60,9 +60,6 @@ namespace System.Collections.Generic
         private ValueList _valueList;
         private Object _syncRoot;
 
-        private static TKey[] s_emptyKeys = new TKey[0];
-        private static TValue[] s_emptyValues = new TValue[0];
-
         private const int DefaultCapacity = 4;
 
         // Constructs a new sorted list. The sorted list is initially empty and has
@@ -73,8 +70,8 @@ namespace System.Collections.Generic
         // all entries added to the sorted list.
         public SortedList()
         {
-            _keys = s_emptyKeys;
-            _values = s_emptyValues;
+            _keys = Array.Empty<TKey>();
+            _values = Array.Empty<TValue>();
             _size = 0;
             _comparer = Comparer<TKey>.Default;
         }
@@ -233,8 +230,8 @@ namespace System.Collections.Generic
                     }
                     else
                     {
-                        _keys = s_emptyKeys;
-                        _values = s_emptyValues;
+                        _keys = Array.Empty<TKey>();
+                        _values = Array.Empty<TValue>();
                     }
                 }
             }
