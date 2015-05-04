@@ -2658,7 +2658,7 @@ AC_ARG_WITH(llvm, [  --with-llvm=<llvm prefix>    Enable the LLVM back-end], ena
 if test "x$enable_llvm" = "xyes"; then
    if test "x$with_llvm" != "x"; then
    	  LLVM_CONFIG=$with_llvm/bin/llvm-config
-   	  if test x$target_win32 = xyes; then
+   	  if test x$host_win32 = xyes; then
    	  	LLVM_CONFIG=$LLVM_CONFIG.exe
    	  fi
 	  if test ! -x $LLVM_CONFIG; then
@@ -2678,7 +2678,7 @@ if test "x$enable_llvm" = "xyes"; then
 		;;
    esac
 
-   if test "x$target_win32" = "xno"; then
+   if test "x$host_win32" = "xno"; then
 
    # The output of --cflags seems to include optimizations flags too
    LLVM_CFLAGS=`$LLVM_CONFIG --cflags | sed -e 's/-O2//g' | sed -e 's/-O0//g' | sed -e 's/-fomit-frame-pointer//g' | sed -e 's/-fPIC//g'`
