@@ -12,5 +12,8 @@
     "System.Runtime": "4.0.20-beta-22809",
     "System.Runtime.Extensions": "4.0.10-beta-22809",
     "System.Threading": "4.0.10-beta-22809"
+  },
+  "frameworks": {
+    "dnxcore50": {}
   }
 }

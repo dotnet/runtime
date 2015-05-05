@@ -54,7 +54,7 @@
     <Compile Include="MethodInfo\GetBaseDefinition.cs" />
     <Compile Include="MethodInfo\MethodInfoGetGenericArguments.cs" />
     <Compile Include="Nullable\NullableMisc.cs" />
-	<Compile Include="PropertyCompat\PropertyCompat.cs" />
+    <Compile Include="PropertyCompat\PropertyCompat.cs" />
     <Compile Include="PropertyInfo\GetAccessors.cs" />
     <Compile Include="PropertyInfo\PropertyGetAccessors2.cs" />
     <Compile Include="PropertyInfo\PropertyInfoGetAccessors1.cs" />
@@ -72,7 +72,6 @@
   </ItemGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
