@@ -180,6 +180,9 @@ namespace System.Reflection.Internal
                 catch (MemberAccessException)
                 {
                 }
+                catch (InvalidOperationException)
+                {
+                }
             }
 
             // .NET Framework < 4.6
@@ -220,6 +223,9 @@ namespace System.Reflection.Internal
                         return (encoding, bytes, byteCount) => GetStringUsingCreateStringFromEncoding(createStringFromEncoding, bytes, byteCount, encoding);
                     }
                     catch (MemberAccessException)
+                    {
+                    }
+                    catch (InvalidOperationException)
                     {
                     }
                 }
