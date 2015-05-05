@@ -8,6 +8,7 @@
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetFrameworkMoniker>ASP.NetCore, version=v5.0</NuGetTargetFrameworkMoniker>
+    <ProjectGuid>{1e689c1b-690c-4799-bde9-6e7990585894}</ProjectGuid>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the configurations -->
