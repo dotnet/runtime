@@ -135,7 +135,11 @@ monoutils_sources = \
 	networking-windows.c	\
 	networking.h	\
 	mono-rand.c	\
-	mono-rand.h
+	mono-rand.h \
+	memfuncs.c \
+	memfuncs.h \
+	parse.c \
+	parse.h
 
 arch_sources = 
 

@@ -20,13 +20,13 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
+#include "sgen/sgen-gc.h"
+#include "sgen/sgen-protocol.h"
 #include "metadata/monitor.h"
-#include "metadata/sgen-layout-stats.h"
-#include "metadata/sgen-client.h"
-#include "metadata/sgen-cardtable.h"
-#include "metadata/sgen-pinning.h"
+#include "sgen/sgen-layout-stats.h"
+#include "sgen/sgen-client.h"
+#include "sgen/sgen-cardtable.h"
+#include "sgen/sgen-pinning.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
@@ -92,7 +92,7 @@ static void
 scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword desc)
 {
 #define SCAN_OBJECT_NOVTABLE
-#include "sgen-scan-object.h"
+#include "sgen/sgen-scan-object.h"
 }
 #endif
 
@@ -2031,7 +2031,7 @@ collect_references (HeapWalkInfo *hwi, char *start, size_t size)
 {
 	mword desc = sgen_obj_get_descriptor (start);
 
-#include "sgen-scan-object.h"
+#include "sgen/sgen-scan-object.h"
 }
 
 static void

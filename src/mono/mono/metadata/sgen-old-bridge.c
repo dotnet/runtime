@@ -43,11 +43,11 @@
 
 #include <stdlib.h>
 
-#include "sgen-gc.h"
+#include "sgen/sgen-gc.h"
 #include "sgen-bridge-internal.h"
-#include "sgen-hash-table.h"
-#include "sgen-qsort.h"
-#include "sgen-client.h"
+#include "sgen/sgen-hash-table.h"
+#include "sgen/sgen-qsort.h"
+#include "sgen/sgen-client.h"
 #include "utils/mono-logger-internal.h"
 
 typedef struct {
@@ -542,7 +542,7 @@ dfs1 (HashEntry *obj_entry)
 			/* NULL marks that the next entry is to be finished */
 			dyn_array_ptr_push (&dfs_stack, NULL);
 
-#include "sgen-scan-object.h"
+#include "sgen/sgen-scan-object.h"
 		} else {
 			obj_entry = dyn_array_ptr_pop (&dfs_stack);
 

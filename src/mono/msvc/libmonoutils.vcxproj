@@ -74,6 +74,8 @@
     <ClCompile Include="..\mono\utils\mono-hwcap.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap-x86.c" />
     <ClCompile Include="..\mono\utils\bsearch.c" />
+    <ClCompile Include="..\mono\utils\memfuncs.c" />
+    <ClCompile Include="..\mono\utils\parse.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\utils\dlmalloc.h" />
@@ -136,6 +138,8 @@
     <ClInclude Include="..\mono\utils\mono-hwcap.h" />
     <ClInclude Include="..\mono\utils\mono-hwcap-x86.h" />
     <ClInclude Include="..\mono\utils\bsearch.h" />
+    <ClInclude Include="..\mono\utils\memfuncs.h" />
+    <ClInclude Include="..\mono\utils\parse.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="..\mono\utils\win64.asm">

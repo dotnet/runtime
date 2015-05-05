@@ -28,10 +28,10 @@
 
 
 #include <glib.h>
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-archdep.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-thread-pool.h"
+#include "sgen/sgen-gc.h"
+#include "sgen/sgen-archdep.h"
+#include "sgen/sgen-protocol.h"
+#include "sgen/sgen-thread-pool.h"
 #include "metadata/object-internals.h"
 #include "metadata/gc-internal.h"
 

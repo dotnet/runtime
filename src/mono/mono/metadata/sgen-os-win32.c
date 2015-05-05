@@ -4,7 +4,7 @@
 
 #include "io-layer/io-layer.h"
 
-#include "metadata/sgen-gc.h"
+#include "sgen/sgen-gc.h"
 #include "metadata/gc-internal.h"
 
 gboolean

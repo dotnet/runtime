@@ -5,7 +5,7 @@
 /*.la
 /*.lo
 /*.trs
-/test-gc-memfuncs
+/test-memfuncs
 /test-mono-linked-list-set
 /test-sgen-qsort
 /test-conc-hashtable

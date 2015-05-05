@@ -27,12 +27,12 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
-#include "metadata/sgen-gc.h"
-#include "metadata/sgen-protocol.h"
-#include "metadata/sgen-memory-governor.h"
-#include "metadata/sgen-thread-pool.h"
+#include "sgen/sgen-gc.h"
+#include "sgen/sgen-protocol.h"
+#include "sgen/sgen-memory-governor.h"
+#include "sgen/sgen-thread-pool.h"
 #include "metadata/profiler-private.h"
-#include "metadata/sgen-client.h"
+#include "sgen/sgen-client.h"
 #include "metadata/sgen-bridge-internal.h"
 #include "metadata/gc-internal.h"
 

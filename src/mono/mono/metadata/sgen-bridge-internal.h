@@ -26,7 +26,7 @@
 
 #include "mono/utils/mono-compiler.h"
 
-#include "mono/metadata/sgen-gc.h"
+#include "mono/sgen/sgen-gc.h"
 #include "mono/metadata/sgen-bridge.h"
 
 extern gboolean bridge_processing_in_progress;

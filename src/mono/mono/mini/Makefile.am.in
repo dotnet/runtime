@@ -20,6 +20,7 @@ libs=	\
 
 sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
+	$(monodir)/mono/sgen/libmonosgen.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
@@ -33,6 +34,7 @@ static_libs=	\
 
 sgenstatic_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen-static.la	\
+	$(monodir)/mono/sgen/libmonosgen-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
@@ -189,9 +191,9 @@ mono_boehm-main.$(OBJEXT): buildver-boehm.h
 endif
 
 if DISABLE_EXECUTABLES
-buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen.la
+buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
 else
-buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la
+buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la $(monodir)/mono/sgen/libmonosgen-static.la
 endif
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h

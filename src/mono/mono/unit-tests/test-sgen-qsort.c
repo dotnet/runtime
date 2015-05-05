@@ -19,8 +19,8 @@
 
 #include "config.h"
 
-#include <metadata/sgen-gc.h>
-#include <metadata/sgen-qsort.h>
+#include <sgen/sgen-gc.h>
+#include <sgen/sgen-qsort.h>
 
 #include <stdlib.h>
 #include <string.h>

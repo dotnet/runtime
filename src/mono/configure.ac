@@ -3881,6 +3881,7 @@ mono/arch/arm/Makefile
 mono/arch/arm64/Makefile
 mono/arch/ia64/Makefile
 mono/arch/mips/Makefile
+mono/sgen/Makefile
 mono/tests/Makefile
 mono/tests/tests-config
 mono/tests/assemblyresolve/Makefile

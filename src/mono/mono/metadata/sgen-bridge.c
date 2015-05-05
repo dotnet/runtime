@@ -43,10 +43,10 @@
 
 #include <stdlib.h>
 
-#include "sgen-gc.h"
+#include "sgen/sgen-gc.h"
 #include "sgen-bridge-internal.h"
-#include "sgen-hash-table.h"
-#include "sgen-qsort.h"
+#include "sgen/sgen-hash-table.h"
+#include "sgen/sgen-qsort.h"
 #include "utils/mono-logger-internal.h"
 
 MonoGCBridgeCallbacks bridge_callbacks;
