@@ -5044,9 +5044,13 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
+	guint8 *orig_ip;
 
 	if (GetCurrentThreadId () == debugger_thread_id)
 		return;
+
+	orig_ip = MONO_CONTEXT_GET_IP (ctx);
+	MONO_CONTEXT_SET_IP (ctx, orig_ip - 1);
 
 	tls = mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
@@ -5058,6 +5062,8 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 
 	memcpy (ctx, &tls->restore_state.ctx, sizeof (MonoContext));
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
+	if (MONO_CONTEXT_GET_IP (ctx) == orig_ip - 1)
+		MONO_CONTEXT_SET_IP (ctx, orig_ip);
 }
 
 /*
