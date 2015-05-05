@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal EventDefinition(MetadataReader reader, EventDefinitionHandle handle)
         {
@@ -42,7 +42,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public Handle Type
+        public EntityHandle Type
         {
             get
             {
@@ -57,15 +57,15 @@ namespace System.Reflection.Metadata
 
         public EventAccessors GetAccessors()
         {
-            uint adder = 0;
-            uint remover = 0;
-            uint fire = 0;
+            int adder = 0;
+            int remover = 0;
+            int fire = 0;
 
             ushort methodCount;
-            var firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForEvent(Handle, out methodCount);
+            int firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForEvent(Handle, out methodCount);
             for (ushort i = 0; i < methodCount; i++)
             {
-                uint rowId = firstRowId + i;
+                int rowId = firstRowId + i;
                 switch (_reader.MethodSemanticsTable.GetSemantics(rowId))
                 {
                     case MethodSemanticsAttributes.Adder:

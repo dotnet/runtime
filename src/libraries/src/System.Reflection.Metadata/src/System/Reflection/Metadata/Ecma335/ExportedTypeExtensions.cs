@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         public static int GetTypeDefinitionId(this ExportedType exportedType)
         {
-            return (int)exportedType.reader.ExportedTypeTable.GetTypeDefId(exportedType.rowId);
+            return exportedType.reader.ExportedTypeTable.GetTypeDefId(exportedType.rowId);
         }
     }
 }

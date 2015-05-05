@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal GenericParameter(MetadataReader reader, GenericParameterHandle handle)
         {
@@ -32,7 +32,7 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// Corresponds to Owner field of GenericParam table in ECMA-335 Standard.
         /// </remarks>
-        public Handle Parent
+        public EntityHandle Parent
         {
             get
             {

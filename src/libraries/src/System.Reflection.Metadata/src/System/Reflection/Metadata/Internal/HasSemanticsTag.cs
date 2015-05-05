@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class HasSemanticsTag
     {
         internal const int NumberOfBits = 1;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint Event = 0x00000000;
         internal const uint Property = 0x00000001;
         internal const uint TagMask = 0x00000001;
@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal const uint TagToTokenTypeByteVector = TokenTypeIds.Event >> 24 | TokenTypeIds.Property >> 16;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint hasSemantic)
+        internal static EntityHandle ConvertToHandle(uint hasSemantic)
         {
             uint tokenType = (TagToTokenTypeByteVector >> ((int)(hasSemantic & TagMask) << 3)) << TokenTypeIds.RowIdBitCount;
             uint rowId = (hasSemantic >> NumberOfBits);
@@ -28,17 +28,17 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
 
         internal static uint ConvertEventHandleToTag(EventDefinitionHandle eventDef)
         {
-            return eventDef.RowId << NumberOfBits | Event;
+            return (uint)eventDef.RowId << NumberOfBits | Event;
         }
 
         internal static uint ConvertPropertyHandleToTag(PropertyDefinitionHandle propertyDef)
         {
-            return propertyDef.RowId << NumberOfBits | Property;
+            return (uint)propertyDef.RowId << NumberOfBits | Property;
         }
     }
 }

@@ -280,10 +280,10 @@ namespace System.Reflection.Metadata.Ecma335
                 throw new ArgumentNullException("reader");
             }
 
-            for (uint rid = 1; rid <= reader.EncLogTable.NumberOfRows; rid++)
+            for (int rid = 1; rid <= reader.EncLogTable.NumberOfRows; rid++)
             {
                 yield return new EditAndContinueLogEntry(
-                    new Handle(reader.EncLogTable.GetToken(rid)),
+                    new EntityHandle(reader.EncLogTable.GetToken(rid)),
                     reader.EncLogTable.GetFuncCode(rid));
             }
         }
@@ -292,16 +292,16 @@ namespace System.Reflection.Metadata.Ecma335
         /// Enumerates entries of EnC map.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
-        public static IEnumerable<Handle> GetEditAndContinueMapEntries(this MetadataReader reader)
+        public static IEnumerable<EntityHandle> GetEditAndContinueMapEntries(this MetadataReader reader)
         {
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
 
-            for (uint rid = 1; rid <= reader.EncMapTable.NumberOfRows; rid++)
+            for (int rid = 1; rid <= reader.EncMapTable.NumberOfRows; rid++)
             {
-                yield return new Handle(reader.EncMapTable.GetToken(rid));
+                yield return new EntityHandle(reader.EncMapTable.GetToken(rid));
             }
         }
 
@@ -319,7 +319,7 @@ namespace System.Reflection.Metadata.Ecma335
                 throw new ArgumentNullException("reader");
             }
 
-            for (uint rid = 1; rid <= reader.PropertyMapTable.NumberOfRows; rid++)
+            for (int rid = 1; rid <= reader.PropertyMapTable.NumberOfRows; rid++)
             {
                 yield return reader.PropertyMapTable.GetParentType(rid);
             }
@@ -339,7 +339,7 @@ namespace System.Reflection.Metadata.Ecma335
                 throw new ArgumentNullException("reader");
             }
 
-            for (uint rid = 1; rid <= reader.EventMapTable.NumberOfRows; rid++)
+            for (int rid = 1; rid <= reader.EventMapTable.NumberOfRows; rid++)
             {
                 yield return reader.EventMapTable.GetParentType(rid);
             }

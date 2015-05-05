@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class HasConstantTag
     {
         internal const int NumberOfBits = 2;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint Field = 0x00000000;
         internal const uint Param = 0x00000001;
         internal const uint Property = 0x00000002;
@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal const uint TagToTokenTypeByteVector = TokenTypeIds.FieldDef >> 24 | TokenTypeIds.ParamDef >> 16 | TokenTypeIds.Property >> 8;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint hasConstant)
+        internal static EntityHandle ConvertToHandle(uint hasConstant)
         {
             uint tokenType = (TagToTokenTypeByteVector >> ((int)(hasConstant & TagMask) << 3)) << TokenTypeIds.RowIdBitCount;
             uint rowId = (hasConstant >> NumberOfBits);
@@ -30,13 +30,13 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
 
-        internal static uint ConvertToTag(Handle token)
+        internal static uint ConvertToTag(EntityHandle token)
         {
             HandleKind tokenKind = token.Kind;
-            uint rowId = token.RowId;
+            uint rowId = (uint)token.RowId;
             if (tokenKind == HandleKind.FieldDefinition)
             {
                 return rowId << NumberOfBits | Field;

@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class ImplementationTag
     {
         internal const int NumberOfBits = 2;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint File = 0x00000000;
         internal const uint AssemblyRef = 0x00000001;
         internal const uint ExportedType = 0x00000002;
@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata.Ecma335
           | TableMask.ExportedType;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint implementation)
+        internal static EntityHandle ConvertToHandle(uint implementation)
         {
             uint tokenType = (TagToTokenTypeByteVector >> ((int)(implementation & TagMask) << 3)) << TokenTypeIds.RowIdBitCount;
             uint rowId = (implementation >> NumberOfBits);
@@ -30,7 +30,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
     }
 }

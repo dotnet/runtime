@@ -152,13 +152,20 @@ namespace System.Reflection.Internal
         }
 
         // When reference has tag bits.
-        internal UInt32 PeekTaggedReference(int offset, bool smallRefSize)
+        internal uint PeekTaggedReference(int offset, bool smallRefSize)
+        {
+            return PeekReferenceUnchecked(offset, smallRefSize);
+        }
+
+        // Use when searching for a tagged or non-tagged reference.
+        // The result may be an invalid reference and shall only be used to compare with a valid reference.
+        internal uint PeekReferenceUnchecked(int offset, bool smallRefSize)
         {
             return smallRefSize ? PeekUInt16(offset) : PeekUInt32(offset);
         }
 
         // When reference has at most 24 bits.
-        internal UInt32 PeekReference(int offset, bool smallRefSize)
+        internal int PeekReference(int offset, bool smallRefSize)
         {
             if (smallRefSize)
             {
@@ -172,7 +179,25 @@ namespace System.Reflection.Internal
                 ThrowReferenceOverflow();
             }
 
-            return value;
+            return (int)value;
+        }
+
+        // #String, #Blob heaps
+        internal int PeekHeapReference(int offset, bool smallRefSize)
+        {
+            if (smallRefSize)
+            {
+                return PeekUInt16(offset);
+            }
+
+            uint value = PeekUInt32(offset);
+
+            if (!HeapHandleType.IsValidHeapOffset(value))
+            {
+                ThrowReferenceOverflow();
+            }
+
+            return (int)value;
         }
 
         internal Guid PeekGuid(int offset)
@@ -515,16 +540,16 @@ namespace System.Reflection.Internal
 
         // Returns row number [0..RowCount) or -1 if not found.
         internal int BinarySearchForSlot(
-            uint rowCount,
+            int rowCount,
             int rowSize,
             int referenceOffset,
             uint referenceValue,
             bool isReferenceSmall)
         {
             int startRowNumber = 0;
-            int endRowNumber = (int)rowCount - 1;
-            uint startValue = PeekReference(startRowNumber * rowSize + referenceOffset, isReferenceSmall);
-            uint endValue = PeekReference(endRowNumber * rowSize + referenceOffset, isReferenceSmall);
+            int endRowNumber = rowCount - 1;
+            uint startValue = PeekReferenceUnchecked(startRowNumber * rowSize + referenceOffset, isReferenceSmall);
+            uint endValue = PeekReferenceUnchecked(endRowNumber * rowSize + referenceOffset, isReferenceSmall);
             if (endRowNumber == 1)
             {
                 if (referenceValue >= endValue)
@@ -541,13 +566,14 @@ namespace System.Reflection.Internal
                 {
                     return referenceValue == startValue ? startRowNumber : startRowNumber - 1;
                 }
-                else if (referenceValue >= endValue)
+
+                if (referenceValue >= endValue)
                 {
                     return referenceValue == endValue ? endRowNumber : endRowNumber + 1;
                 }
 
                 int midRowNumber = (startRowNumber + endRowNumber) / 2;
-                uint midReferenceValue = PeekReference(midRowNumber * rowSize + referenceOffset, isReferenceSmall);
+                uint midReferenceValue = PeekReferenceUnchecked(midRowNumber * rowSize + referenceOffset, isReferenceSmall);
                 if (referenceValue > midReferenceValue)
                 {
                     startRowNumber = midRowNumber;
@@ -569,18 +595,18 @@ namespace System.Reflection.Internal
 
         // Returns row number [0..RowCount) or -1 if not found.
         internal int BinarySearchReference(
-            uint rowCount,
+            int rowCount,
             int rowSize,
             int referenceOffset,
             uint referenceValue,
             bool isReferenceSmall)
         {
             int startRowNumber = 0;
-            int endRowNumber = (int)rowCount - 1;
+            int endRowNumber = rowCount - 1;
             while (startRowNumber <= endRowNumber)
             {
                 int midRowNumber = (startRowNumber + endRowNumber) / 2;
-                uint midReferenceValue = PeekReference(midRowNumber * rowSize + referenceOffset, isReferenceSmall);
+                uint midReferenceValue = PeekReferenceUnchecked(midRowNumber * rowSize + referenceOffset, isReferenceSmall);
                 if (referenceValue > midReferenceValue)
                 {
                     startRowNumber = midRowNumber + 1;
@@ -600,7 +626,7 @@ namespace System.Reflection.Internal
 
         // Row number [0, ptrTable.Length) or -1 if not found.
         internal int BinarySearchReference(
-            uint[] ptrTable,
+            int[] ptrTable,
             int rowSize,
             int referenceOffset,
             uint referenceValue,
@@ -611,7 +637,7 @@ namespace System.Reflection.Internal
             while (startRowNumber <= endRowNumber)
             {
                 int midRowNumber = (startRowNumber + endRowNumber) / 2;
-                uint midReferenceValue = PeekReference(((int)ptrTable[midRowNumber] - 1) * rowSize + referenceOffset, isReferenceSmall);
+                uint midReferenceValue = PeekReferenceUnchecked((ptrTable[midRowNumber] - 1) * rowSize + referenceOffset, isReferenceSmall);
                 if (referenceValue > midReferenceValue)
                 {
                     startRowNumber = midRowNumber + 1;
@@ -633,7 +659,7 @@ namespace System.Reflection.Internal
         /// Calculates a range of rows that have specified value in the specified column in a table that is sorted by that column.
         /// </summary>
         internal void BinarySearchReferenceRange(
-            uint rowCount,
+            int rowCount,
             int rowSize,
             int referenceOffset,
             uint referenceValue,
@@ -658,14 +684,14 @@ namespace System.Reflection.Internal
 
             startRowNumber = foundRowNumber;
             while (startRowNumber > 0 &&
-                   PeekReference((startRowNumber - 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
+                   PeekReferenceUnchecked((startRowNumber - 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
             {
                 startRowNumber--;
             }
 
             endRowNumber = foundRowNumber;
             while (endRowNumber + 1 < rowCount &&
-                   PeekReference((endRowNumber + 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
+                   PeekReferenceUnchecked((endRowNumber + 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
             {
                 endRowNumber++;
             }
@@ -675,7 +701,7 @@ namespace System.Reflection.Internal
         /// Calculates a range of rows that have specified value in the specified column in a table that is sorted by that column.
         /// </summary>
         internal void BinarySearchReferenceRange(
-            uint[] ptrTable,
+            int[] ptrTable,
             int rowSize,
             int referenceOffset,
             uint referenceValue,
@@ -700,14 +726,14 @@ namespace System.Reflection.Internal
 
             startRowNumber = foundRowNumber;
             while (startRowNumber > 0 &&
-                   PeekReference(((int)ptrTable[startRowNumber - 1] - 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
+                   PeekReferenceUnchecked((ptrTable[startRowNumber - 1] - 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
             {
                 startRowNumber--;
             }
 
             endRowNumber = foundRowNumber;
             while (endRowNumber + 1 < ptrTable.Length &&
-                   PeekReference(((int)ptrTable[endRowNumber + 1] - 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
+                   PeekReferenceUnchecked((ptrTable[endRowNumber + 1] - 1) * rowSize + referenceOffset, isReferenceSmall) == referenceValue)
             {
                 endRowNumber++;
             }
@@ -724,7 +750,7 @@ namespace System.Reflection.Internal
             int totalSize = this.Length;
             while (currOffset < totalSize)
             {
-                uint currReference = PeekReference(currOffset, isReferenceSmall);
+                uint currReference = PeekReferenceUnchecked(currOffset, isReferenceSmall);
                 if (currReference == referenceValue)
                 {
                     return currOffset / rowSize;
@@ -747,7 +773,7 @@ namespace System.Reflection.Internal
             uint previous = 0;
             while (offset < totalSize)
             {
-                uint current = PeekReference(offset, isReferenceSmall);
+                uint current = PeekReferenceUnchecked(offset, isReferenceSmall);
                 if (current < previous)
                 {
                     return false;
@@ -760,22 +786,22 @@ namespace System.Reflection.Internal
             return true;
         }
 
-        internal uint[] BuildPtrTable(
+        internal int[] BuildPtrTable(
             int numberOfRows,
             int rowSize,
             int referenceOffset,
             bool isReferenceSmall)
         {
-            uint[] ptrTable = new uint[numberOfRows];
+            int[] ptrTable = new int[numberOfRows];
             uint[] unsortedReferences = new uint[numberOfRows];
 
             for (int i = 0; i < ptrTable.Length; i++)
             {
-                ptrTable[i] = (uint)(i + 1);
+                ptrTable[i] = i + 1;
             }
 
             ReadColumn(unsortedReferences, rowSize, referenceOffset, isReferenceSmall);
-            Array.Sort(ptrTable, (uint a, uint b) => { return unsortedReferences[a - 1].CompareTo(unsortedReferences[b - 1]); });
+            Array.Sort(ptrTable, (int a, int b) => { return unsortedReferences[a - 1].CompareTo(unsortedReferences[b - 1]); });
             return ptrTable;
         }
 
@@ -791,7 +817,7 @@ namespace System.Reflection.Internal
             int i = 0;
             while (offset < totalSize)
             {
-                result[i] = PeekTaggedReference(offset, isReferenceSmall);
+                result[i] = PeekReferenceUnchecked(offset, isReferenceSmall);
                 offset += rowSize;
                 i++;
             }
