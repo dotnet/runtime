@@ -10,7 +10,7 @@
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
     <DefineConstants>$(DefineConstants);PUBLIC_DEBUG</DefineConstants>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <NuGetTargetFrameworkMoniker>ASP.NetCore, version=v5.0</NuGetTargetFrameworkMoniker>
+    <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

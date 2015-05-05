@@ -8,5 +8,8 @@
     "System.Resources.ResourceManager": "4.0.0-beta-22809",
     "System.Text.Encoding": "4.0.10-beta-22809",
     "System.Threading.Tasks": "4.0.10-beta-22809"
+  },
+  "frameworks": {
+    "dnxcore50": {}
   }
 }
