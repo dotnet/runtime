@@ -1110,8 +1110,6 @@ mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 		return FALSE;
 	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
 		return FALSE;
-	if (mono_security_enabled ())
-		return FALSE;
 	return mono_assembly_has_skip_verification (assembly);
 }
 
@@ -4128,21 +4126,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	case MONO_EXCEPTION_FIELD_ACCESS:
 		ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "FieldAccessException", cfg->exception_message);
 		break;
-#ifndef DISABLE_SECURITY
-	/* this can only be set if the security manager is active */
-	case MONO_EXCEPTION_SECURITY_LINKDEMAND: {
-		MonoSecurityManager* secman = mono_security_manager_get_methods ();
-		MonoObject *exc = NULL;
-		gpointer args [2];
-
-		args [0] = &cfg->exception_data;
-		args [1] = &method;
-		mono_runtime_invoke (secman->linkdemandsecurityexception, NULL, args, &exc);
-
-		ex = (MonoException*)exc;
-		break;
-	}
-#endif
 	case MONO_EXCEPTION_OBJECT_SUPPLIED: {
 		MonoException *exp = cfg->exception_ptr;
 		MONO_GC_UNREGISTER_ROOT (cfg->exception_ptr);

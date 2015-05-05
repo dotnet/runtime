@@ -47,32 +47,14 @@ typedef enum {
 
 typedef struct {
 	MonoClass *securitymanager;		/* System.Security.SecurityManager */
-	MonoMethod *demand;			/* SecurityManager.InternalDemand */
-	MonoMethod *demandchoice;		/* SecurityManager.InternalDemandChoice */
-	MonoMethod *demandunmanaged;		/* SecurityManager.DemandUnmanaged */
-	MonoMethod *inheritancedemand;		/* SecurityManager.InheritanceDemand */
-	MonoMethod *inheritsecurityexception;	/* SecurityManager.InheritanceDemandSecurityException */
-	MonoMethod *linkdemand;			/* SecurityManager.LinkDemand */
-	MonoMethod *linkdemandfulltrust;	/* SecurityManager.LinkDemandFullTrust */
-	MonoMethod *linkdemandunmanaged;	/* SecurityManager.LinkDemandUnmanaged */
-	MonoMethod *linkdemandsecurityexception;/* SecurityManager.LinkDemandSecurityException */
-
-	MonoClass *allowpartiallytrustedcallers;	/* System.Security.AllowPartiallyTrustedCallersAttribute */
-	MonoClass *suppressunmanagedcodesecurity;	/* System.Security.SuppressUnmanagedCodeSecurityAttribute */
 } MonoSecurityManager;
 
 gboolean mono_is_ecma_key (const char *publickey, int size);
 MonoMethod* mono_get_context_capture_method (void);
 
-void mono_secman_inheritancedemand_class (MonoClass *klass, MonoClass *parent);
-void mono_secman_inheritancedemand_method (MonoMethod *override, MonoMethod *base);
-
-/* Initialization/utility functions */
-void mono_activate_security_manager (void);
 MonoSecurityManager* mono_security_manager_get_methods (void);
 
 /* Security mode */
-gboolean mono_is_security_manager_active (void);
 void mono_security_set_mode (MonoSecurityMode mode);
 MonoSecurityMode mono_security_get_mode (void);
 
@@ -84,10 +66,8 @@ void ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoo
 MonoBoolean ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions);
 
 #ifndef DISABLE_SECURITY
-#define mono_security_enabled() (mono_is_security_manager_active ())
 #define mono_security_core_clr_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
 #else
-#define mono_security_enabled() (FALSE)
 #define mono_security_core_clr_enabled() (FALSE)
 #endif
 

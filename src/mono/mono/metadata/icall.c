@@ -3999,18 +3999,12 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssembly *as
 	if (type->type == MONO_TYPE_CLASS) {
 		MonoClass *klass = mono_type_get_class (type);
 
-		if (mono_security_enabled () && !klass->exception_type)
-			/* Some security problems are detected during generic vtable construction */
-			mono_class_setup_vtable (klass);
-
 		/* need to report exceptions ? */
 		if (throwOnError && klass->exception_type) {
 			/* report SecurityException (or others) that occured when loading the assembly */
 			MonoException *exc = mono_class_get_exception_for_failure (klass);
 			mono_loader_clear_error ();
 			mono_set_pending_exception (exc);
-			return NULL;
-		} else if (mono_security_enabled () && klass->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND) {
 			return NULL;
 		}
 	}

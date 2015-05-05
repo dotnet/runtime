@@ -3909,7 +3909,8 @@ is_wcf_hack_disabled (void)
 }
 
 static gboolean
-check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *cm, gboolean require_newslot, gboolean interface_is_explicitly_implemented_by_class, gboolean slot_is_empty, gboolean security_enabled) {
+check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *cm, gboolean require_newslot, gboolean interface_is_explicitly_implemented_by_class, gboolean slot_is_empty)
+{
 	MonoMethodSignature *cmsig, *imsig;
 	if (strcmp (im->name, cm->name) == 0) {
 		if (! (cm->flags & METHOD_ATTRIBUTE_PUBLIC)) {
@@ -3944,11 +3945,6 @@ check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *c
 			return FALSE;
 		}
 		TRACE_INTERFACE_VTABLE (printf ("[SECURITY CHECKS]"));
-		/* CAS - SecurityAction.InheritanceDemand on interface */
-		if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
-			mono_secman_inheritancedemand_method (cm, im);
-		}
-
 		if (mono_security_core_clr_enabled ())
 			mono_security_core_clr_check_override (class, cm, im);
 
@@ -4030,11 +4026,6 @@ check_interface_method_override (MonoClass *class, MonoMethod *im, MonoMethod *c
 		}
 		
 		TRACE_INTERFACE_VTABLE (printf ("[SECURITY CHECKS (INJECTED CASE)]"));
-		/* CAS - SecurityAction.InheritanceDemand on interface */
-		if (security_enabled && (im->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
-			mono_secman_inheritancedemand_method (cm, im);
-		}
-
 		if (mono_security_core_clr_enabled ())
 			mono_security_core_clr_check_override (class, cm, im);
 
@@ -4267,7 +4258,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 	int i, max_vtsize = 0, max_iid, cur_slot = 0;
 	GPtrArray *ifaces = NULL;
 	GHashTable *override_map = NULL;
-	gboolean security_enabled = mono_security_enabled ();
 	MonoMethod *cm;
 #if (DEBUG_INTERFACE_VTABLE_CODE|TRACE_INTERFACE_VTABLE_CODE)
 	int first_non_interface_slot;
@@ -4511,7 +4501,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 				for (l = virt_methods; l; l = l->next) {
 					cm = l->data;
 					TRACE_INTERFACE_VTABLE (printf ("    For slot %d ('%s'.'%s':'%s'), trying method '%s'.'%s':'%s'... [EXPLICIT IMPLEMENTATION = %d][SLOT IS NULL = %d]", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL)));
-					if (check_interface_method_override (class, im, cm, TRUE, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL), security_enabled)) {
+					if (check_interface_method_override (class, im, cm, TRUE, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL))) {
 						TRACE_INTERFACE_VTABLE (printf ("[check ok]: ASSIGNING"));
 						vtable [im_slot] = cm;
 						/* Why do we need this? */
@@ -4532,7 +4522,7 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 						MonoMethod *cm = parent->vtable [cm_index];
 						
 						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("    For slot %d ('%s'.'%s':'%s'), trying (ancestor) method '%s'.'%s':'%s'... ", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name));
-						if ((cm != NULL) && check_interface_method_override (class, im, cm, FALSE, FALSE, TRUE, security_enabled)) {
+						if ((cm != NULL) && check_interface_method_override (class, im, cm, FALSE, FALSE, TRUE)) {
 							TRACE_INTERFACE_VTABLE (printf ("[everything ok]: ASSIGNING"));
 							vtable [im_slot] = cm;
 							/* Why do we need this? */
@@ -4609,11 +4599,6 @@ mono_class_setup_vtable_general (MonoClass *class, MonoMethod **overrides, int o
 
 					if (!strcmp(cm->name, m1->name) && 
 					    mono_metadata_signature_equal (cmsig, m1sig)) {
-
-						/* CAS - SecurityAction.InheritanceDemand */
-						if (security_enabled && (m1->flags & METHOD_ATTRIBUTE_HAS_SECURITY)) {
-							mono_secman_inheritancedemand_method (cm, m1);
-						}
 
 						if (mono_security_core_clr_enabled ())
 							mono_security_core_clr_check_override (class, cm, m1);
@@ -5102,11 +5087,6 @@ mono_class_init (MonoClass *class)
 			mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 			goto leave;
 		}
-	}
-
-	/* CAS - SecurityAction.InheritanceDemand */
-	if (mono_security_enabled () && class->parent && (class->parent->flags & TYPE_ATTRIBUTE_HAS_SECURITY)) {
-		mono_secman_inheritancedemand_class (class, class->parent);
 	}
 
 	mono_stats.initialized_class_count++;
@@ -9777,24 +9757,6 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 	gpointer exception_data = mono_class_get_exception_data (klass);
 
 	switch (klass->exception_type) {
-#ifndef DISABLE_SECURITY
-	case MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND: {
-		MonoDomain *domain = mono_domain_get ();
-		MonoSecurityManager* secman = mono_security_manager_get_methods ();
-		MonoMethod *method = exception_data;
-		guint32 error = (method) ? MONO_METADATA_INHERITANCEDEMAND_METHOD : MONO_METADATA_INHERITANCEDEMAND_CLASS;
-		MonoObject *exc = NULL;
-		gpointer args [4];
-
-		args [0] = &error;
-		args [1] = mono_assembly_get_object (domain, mono_image_get_assembly (klass->image));
-		args [2] = mono_type_get_object (domain, &klass->byval_arg);
-		args [3] = (method) ? mono_method_get_object (domain, method, NULL) : NULL;
-
-		mono_runtime_invoke (secman->inheritsecurityexception, NULL, args, &exc);
-		return (MonoException*) exc;
-	}
-#endif
 	case MONO_EXCEPTION_TYPE_LOAD: {
 		MonoString *name;
 		MonoException *ex;

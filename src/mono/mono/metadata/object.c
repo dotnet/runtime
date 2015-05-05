@@ -2197,10 +2197,6 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 
-	/* Initialization is now complete, we can throw if the InheritanceDemand aren't satisfied */
-	if (mono_security_enabled () && (class->exception_type == MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND) && raise_on_error)
-		mono_raise_exception (mono_class_get_exception_for_failure (class));
-
 	/* make sure the parent is initialized */
 	/*FIXME shouldn't this fail the current type?*/
 	if (class->parent)

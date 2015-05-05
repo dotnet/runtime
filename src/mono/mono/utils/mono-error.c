@@ -339,10 +339,6 @@ mono_error_set_from_loader_error (MonoError *oerror)
 	case MONO_EXCEPTION_NONE:
 		mono_error_set_generic_error (oerror, "System", "ExecutionEngineException", "Runtime tried to produce a mono-error from a non-error loader-error");
 		break;
-	case MONO_EXCEPTION_SECURITY_LINKDEMAND:
-	case MONO_EXCEPTION_SECURITY_INHERITANCEDEMAND:
-		mono_error_set_generic_error (oerror, "System.Security", "SecurityException", "Failed for unknown reasons.");
-		break;
 
 	case MONO_EXCEPTION_INVALID_PROGRAM:
 		mono_error_set_generic_error (oerror, "System", "InvalidProgramException", "Failed for unknown reasons.");
