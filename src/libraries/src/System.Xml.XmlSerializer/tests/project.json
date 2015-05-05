@@ -22,6 +22,13 @@
     "System.Threading.Thread": "4.0.0-beta-22809",
     "System.Xml.ReaderWriter": "4.0.10-beta-22809",
     "System.Xml.XmlDocument": "4.0.0-beta-22809",
-    "System.Xml.XDocument": "4.0.10-beta-22809"
+    "System.Xml.XDocument": "4.0.10-beta-22809",
+    "xunit": "2.0.0-beta5-build2785",
+    "xunit.abstractions.netcore": "1.0.0-prerelease",
+    "xunit.assert": "2.0.0-beta5-build2785",
+    "xunit.core.netcore": "1.0.1-prerelease"
+  },
+  "frameworks": {
+    "dnxcore50": {}
   }
 }

@@ -6,5 +6,8 @@
     "System.IO": "4.0.10-beta-22809",
     "System.Collections": "4.0.10-beta-22809",
     "System.Diagnostics.Debug": "4.0.10-beta-22809"
+  },
+  "frameworks": {
+    "dnxcore50": {}
   }
 }

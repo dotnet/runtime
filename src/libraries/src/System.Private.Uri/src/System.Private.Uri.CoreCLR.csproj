@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_GLOBALIZATION_EXTENSIONS</DefineConstants>
-    <NugetTargetFrameworkMoniker>ASP.NetCore, version=v5.0</NugetTargetFrameworkMoniker>
+    <NugetTargetFrameworkMoniker>DNXCore,Version=v5.0</NugetTargetFrameworkMoniker>
     <IgnoreArchitectureMismatches>true</IgnoreArchitectureMismatches>
     <PostFilterNugetReferences>true</PostFilterNugetReferences>
   </PropertyGroup>
