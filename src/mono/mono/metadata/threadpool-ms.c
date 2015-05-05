@@ -1222,10 +1222,49 @@ heuristic_adjust (void)
 void
 mono_threadpool_ms_cleanup (void)
 {
-#ifndef DISABLE_SOCKETS
-	mono_threadpool_ms_io_cleanup ();
-#endif
-	ensure_cleanedup ();
+	/* FIXME: reenable threadpool cleanup
+	 *
+	 * The way we do cleanup make things difficult : because we wait on every worker
+	 * thread to finish before cleaning up the rest, we can pretty easily get to a
+	 * deadlock. To reproduce this behavior, you can run the following command :
+	 *  cd mcs/docs;
+	 *  MONO_THREADPOOL=microsoft MONO_PATH=../class/lib/net_4_5 PATH="../../runtime/_tmpinst/bin:$PATH" \
+	     ../../mono/mini/mono ../class/lib/net_4_5/mdoc.exe --debug assemble -o cs-errors -f error cs-errors.config
+	 *
+	 * The mono process will never exit because of the following chain of events :
+	 *  - the process start asynchonously to read from a subprocess (thus calling
+	 *     System.Diagnostics.Process/ProcessAsyncReader:ReadHandler.BeginInvoke)
+	 *  - mono_threadpool_io_add will be called, as ProcessAsyncReader is a special 
+	 *     BeginInvoke case for the threadpool
+	 *  - an entry will be added to ThreadPoolIO.states, with a reference to the
+	 *     previous ProcessAsyncReader object
+	 *  - a new threadpool work item will be added, and its work is to : finish
+	 *     reading asynchronously the subprocess output, and wait on it to
+	 *     exit (by calling Process.Wait)
+	 *  - the runtime will start shutting down, calling the current function
+	 *  - the ThreadPoolIO.states will be cleared, thus removing the previous
+	 *     ProcessAsyncReader object; this will prevent the calback unlocking
+	 *     the threadpool work item from being called
+	 *  - the threadpool work item will then never stop waiting on the subprocess
+	 *     output to finish reading asynchronously, even if the subprocess already
+	 *     exited
+	 *  - the cleanup will wait on this work item to finish executing, without success
+	 *
+	 * There are different ways to diffuse this deadlock, and the first and simplest
+	 * one is to not wait on the threadpool worker threads to finish. This can cause
+	 * issues, such as segmentation fault: when the worker thread gets out of managed,
+	 * it will try to access the global threadpool variable which has been cleaned
+	 * up. To fix it, we can simply do not clean up the threadpool. This causes less
+	 * issues than we can think because :
+	 *  - we are only cleaning it up when the runtime is shutting down, so we are
+	 *     leaving the OS clearing the memory for us
+	 *  - this is also the way it is done in CoreCLR, as well as in the previous
+	 *     threadpool implementation
+	 */
+	//#ifndef DISABLE_SOCKETS
+	//	mono_threadpool_ms_io_cleanup ();
+	//#endif
+	//ensure_cleanedup ();
 }
 
 MonoAsyncResult *
