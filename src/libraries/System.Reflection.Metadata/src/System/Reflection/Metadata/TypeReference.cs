@@ -22,9 +22,9 @@ namespace System.Reflection.Metadata
             _treatmentAndRowId = treatmentAndRowId;
         }
 
-        private uint RowId
+        private int RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return (int)(_treatmentAndRowId & TokenTypeIds.RIDMask); }
         }
 
         private TypeRefTreatment Treatment
@@ -45,12 +45,12 @@ namespace System.Reflection.Metadata
         /// <list type="bullet">
         /// <item><description><see cref="TypeReferenceHandle"/> of the enclosing type, if the target type is a nested type.</description></item>
         /// <item><description><see cref="ModuleReferenceHandle"/>, if the target type is defined in another module within the same assembly as this one.</description></item>
-        /// <item><description><see cref="Metadata.Handle.ModuleDefinition"/>, if the target type is defined in the current module. This should not occur in a CLI compressed metadata module.</description></item>
+        /// <item><description><see cref="EntityHandle.ModuleDefinition"/>, if the target type is defined in the current module. This should not occur in a CLI compressed metadata module.</description></item>
         /// <item><description><see cref="AssemblyReferenceHandle"/>, if the target type is defined in a different assembly from the current module.</description></item>
         /// <item><description>Nil handle if the target type must be resolved by searching the <see cref="MetadataReader.ExportedTypes"/> for a matching <see cref="Namespace"/> and <see cref="Name"/>.</description></item>
         /// </list>
         /// </remarks>
-        public Handle ResolutionScope
+        public EntityHandle ResolutionScope
         {
             get
             {
@@ -80,7 +80,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Name of the namespace where the target type is defined, or nil if the type is nested or defined in a root namespace.
+        /// Full name of the namespace where the target type is defined, or nil if the type is nested or defined in a root namespace.
         /// </summary>
         public StringHandle Namespace
         {
@@ -97,7 +97,7 @@ namespace System.Reflection.Metadata
 
         #region Projections
 
-        private Handle GetProjectedResolutionScope()
+        private EntityHandle GetProjectedResolutionScope()
         {
             switch (Treatment)
             {

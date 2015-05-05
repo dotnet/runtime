@@ -5,10 +5,10 @@ namespace System.Reflection.Metadata.Ecma335
 {
     public struct EditAndContinueLogEntry : IEquatable<EditAndContinueLogEntry>
     {
-        public readonly Handle Handle;
+        public readonly EntityHandle Handle;
         public readonly EditAndContinueOperation Operation;
 
-        public EditAndContinueLogEntry(Handle handle, EditAndContinueOperation operation)
+        public EditAndContinueLogEntry(EntityHandle handle, EditAndContinueOperation operation)
         {
             this.Handle = handle;
             this.Operation = operation;

@@ -165,7 +165,7 @@ namespace System.Reflection.Metadata
         OptionalModifier = CorElementType.ELEMENT_TYPE_CMOD_OPT,       // optional C modifier : E_T_CMOD_OPT <mdTypeRef/mdTypeDef>
 
         /// <summary>
-        /// Precedes a type <see cref="Handle"/> in signatures.
+        /// Precedes a type <see cref="EntityHandle"/> in signatures.
         /// </summary>
         /// <remarks>
         /// In raw metadata, this will be encoded as either ELEMENT_TYPE_CLASS (0x12) for reference

@@ -16,8 +16,8 @@ namespace System.Reflection.Metadata.Tests
             public Func<int> GetNumberOfBits;
             public Func<uint[]> GetTagToTokenTypeArray;
             public Func<TableMask> GetTablesReferenced;
-            public Func<uint, Handle> ConvertToToken;
-            public Func<Handle, uint?> ConvertToTag;
+            public Func<uint, EntityHandle> ConvertToHandle;
+            public Func<EntityHandle, uint?> ConvertToTag;
             public Func<uint> GetTagMask;
             public Func<string, uint?> GetTagValue;
             public string Name;
@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata.Tests
                        },
 
                        GetNumberOfBits = () => (int)typeInfo.GetDeclaredField("NumberOfBits").GetValue(null),
-                       ConvertToToken = (Func<uint, Handle>)typeInfo.GetDeclaredMethod("ConvertToToken").CreateDelegate(typeof(Func<uint, Handle>)),
+                       ConvertToHandle = (Func<uint, EntityHandle>)typeInfo.GetDeclaredMethod("ConvertToHandle").CreateDelegate(typeof(Func<uint, EntityHandle>)),
                        ConvertToTag = handle => { var m = typeInfo.GetDeclaredMethod("ConvertToTag"); return m == null ? null : (uint?)m.Invoke(null, new object[] { handle }); },
                        GetTablesReferenced = () => (TableMask)typeInfo.GetDeclaredField("TablesReferenced").GetValue(null),
                        GetTagMask = () => (uint)typeInfo.GetDeclaredField("TagMask").GetValue(null),
@@ -105,11 +105,11 @@ namespace System.Reflection.Metadata.Tests
                     uint rowId = (uint)random.Next(((int)TokenTypeIds.RIDMask + 1));
                     uint codedIndex = i | (rowId << tag.GetNumberOfBits());
 
-                    Handle handle;
+                    EntityHandle handle;
 
                     try
                     {
-                        handle = tag.ConvertToToken(codedIndex);
+                        handle = tag.ConvertToHandle(codedIndex);
                     }
                     catch (BadImageFormatException)
                     {
@@ -121,9 +121,9 @@ namespace System.Reflection.Metadata.Tests
                         tag.Name + " did not return correct row id.");
 
                     uint badRowId = (uint)random.Next((int)TokenTypeIds.RIDMask + 1, int.MaxValue);
-                    Assert.Throws<BadImageFormatException>(() => tag.ConvertToToken(i | ~tag.GetTagMask()));
-                    Assert.Throws<BadImageFormatException>(() => tag.ConvertToToken(i | ((TokenTypeIds.RIDMask + 1) << tag.GetNumberOfBits())));
-                    Assert.Throws<BadImageFormatException>(() => tag.ConvertToToken(i | (badRowId << tag.GetNumberOfBits())));
+                    Assert.Throws<BadImageFormatException>(() => tag.ConvertToHandle(i | ~tag.GetTagMask()));
+                    Assert.Throws<BadImageFormatException>(() => tag.ConvertToHandle(i | ((TokenTypeIds.RIDMask + 1) << tag.GetNumberOfBits())));
+                    Assert.Throws<BadImageFormatException>(() => tag.ConvertToHandle(i | (badRowId << tag.GetNumberOfBits())));
 
                     Assert.True((uint)(handle.Kind) << 24 == tag.GetTagToTokenTypeArray()[i],
                         tag.Name + " did not return handle type matching its TagToTokenTypeArray or TagToTokenTypeByteVector");

@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal AssemblyFile(MetadataReader reader, AssemblyFileHandle handle)
         {

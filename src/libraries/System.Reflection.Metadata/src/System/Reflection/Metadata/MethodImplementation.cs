@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal MethodImplementation(MetadataReader reader, MethodImplementationHandle handle)
         {
@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public Handle MethodBody
+        public EntityHandle MethodBody
         {
             get
             {
@@ -42,7 +42,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public Handle MethodDeclaration
+        public EntityHandle MethodDeclaration
         {
             get
             {
