@@ -168,7 +168,7 @@ static gboolean missing_remsets;
 	if (*(ptr) && sgen_ptr_in_nursery ((char*)*(ptr))) { \
 		if (!sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup (*(ptr))) { \
 			GCVTable *__vt = SGEN_LOAD_VTABLE ((obj));	\
-			SGEN_LOG (0, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
+			SGEN_LOG (0, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
 			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			if (!object_is_pinned (*(ptr)))								\
 				missing_remsets = TRUE;									\
@@ -230,7 +230,7 @@ is_major_or_los_object_marked (char *obj)
 	if (*(ptr) && !sgen_ptr_in_nursery ((char*)*(ptr)) && !is_major_or_los_object_marked ((char*)*(ptr))) { \
 		if (!sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
 			GCVTable *__vt = SGEN_LOAD_VTABLE ((obj));	\
-			SGEN_LOG (0, "major->major reference %p at offset %td in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
+			SGEN_LOG (0, "major->major reference %p at offset %zd in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
 			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			missing_remsets = TRUE;				\
 		}																\
@@ -389,7 +389,7 @@ describe_nursery_ptr (char *ptr, gboolean need_setup)
 		if (obj == ptr)
 			SGEN_LOG (0, "nursery-ptr %p", obj);
 		else
-			SGEN_LOG (0, "nursery-ptr %p (interior-ptr offset %td)", obj, ptr - obj);
+			SGEN_LOG (0, "nursery-ptr %p (interior-ptr offset %zd)", obj, ptr - obj);
 		return obj;
 	}
 }
@@ -414,7 +414,7 @@ bad_pointer_spew (char *obj, char **slot)
 	char *ptr = *slot;
 	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
 
-	SGEN_LOG (0, "Invalid object pointer %p at offset %td in object %p (%s.%s):", ptr,
+	SGEN_LOG (0, "Invalid object pointer %p at offset %zd in object %p (%s.%s):", ptr,
 			(char*)slot - obj,
 			obj, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 	describe_pointer (ptr, FALSE);
@@ -427,7 +427,7 @@ missing_remset_spew (char *obj, char **slot)
 	char *ptr = *slot;
 	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
 
-	SGEN_LOG (0, "Oldspace->newspace reference %p at offset %td in object %p (%s.%s) not found in remsets.",
+	SGEN_LOG (0, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.",
 			ptr, (char*)slot - obj, obj, 
 			sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 
@@ -724,7 +724,7 @@ static gboolean scan_object_for_specific_ref_precise = TRUE;
 #define HANDLE_PTR(ptr,obj) do {					\
 		if ((GCObject*)*(ptr) == key) {				\
 			GCVTable *vtable = SGEN_LOAD_VTABLE (*(ptr));	\
-			g_print ("found ref to %p in object %p (%s.%s) at offset %td\n", \
+			g_print ("found ref to %p in object %p (%s.%s) at offset %zd\n", \
 					key, (obj), sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), ((char*)(ptr) - (char*)(obj))); \
 		}							\
 	} while (0)
@@ -747,7 +747,7 @@ scan_object_for_specific_ref (char *start, GCObject *key)
 		for (i = 0; i < size / sizeof (mword); ++i) {
 			if (words [i] == (mword)key) {
 				GCVTable *vtable = SGEN_LOAD_VTABLE (start);
-				g_print ("found possible ref to %p in object %p (%s.%s) at offset %td\n",
+				g_print ("found possible ref to %p in object %p (%s.%s) at offset %zd\n",
 						key, start, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), i * sizeof (mword));
 			}
 		}
@@ -1055,7 +1055,7 @@ static FILE *heap_dump_file = NULL;
 void
 sgen_dump_occupied (char *start, char *end, char *section_start)
 {
-	fprintf (heap_dump_file, "<occupied offset=\"%td\" size=\"%td\"/>\n", start - section_start, end - start);
+	fprintf (heap_dump_file, "<occupied offset=\"%zd\" size=\"%zd\"/>\n", start - section_start, end - start);
 }
 
 void

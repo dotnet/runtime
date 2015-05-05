@@ -959,9 +959,9 @@ major_describe_pointer (char *ptr)
 				SGEN_LOG (0, "dead-object");
 		} else {
 			if (live)
-				SGEN_LOG (0, "interior-ptr offset %td", ptr - obj);
+				SGEN_LOG (0, "interior-ptr offset %zd", ptr - obj);
 			else
-				SGEN_LOG (0, "dead-interior-ptr offset %td", ptr - obj);
+				SGEN_LOG (0, "dead-interior-ptr offset %zd", ptr - obj);
 		}
 
 		SGEN_LOG (0, " marked %d)\n", marked ? 1 : 0);
