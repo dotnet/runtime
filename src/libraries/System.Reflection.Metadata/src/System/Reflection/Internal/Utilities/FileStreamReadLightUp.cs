@@ -65,6 +65,11 @@ namespace System.Reflection.Internal
                 safeFileHandleNotAvailable = true;
                 return null;
             }
+            catch (InvalidOperationException)
+            {
+                safeFileHandleNotAvailable = true;
+                return null;
+            }
             catch (TargetInvocationException)
             {
                 // Some FileStream implementations (e.g. IsolatedStorage) restrict access to the underlying handle by throwing 
