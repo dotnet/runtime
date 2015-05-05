@@ -21,7 +21,10 @@ bld/
 [Oo]bj/
 msbuild.log
 
-# Roslyn stuff
+# Visual Studio 2015
+.vs/
+
+# Visual Studio 2015 Pre-CTP6
 *.sln.ide
 *.ide/
 
