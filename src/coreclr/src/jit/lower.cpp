@@ -1439,6 +1439,8 @@ void Lowering::LowerCall(GenTree* node)
 void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
 {
     assert(comp->opts.IsJit64Compat());
+
+#ifdef _TARGET_AMD64_
     // Confine this to IL stub calls which aren't marked as unmanaged.
     if (call->IsPInvoke() && !call->IsUnmanaged())
     {
@@ -1490,6 +1492,7 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
             comp->compVSQuirkStackPaddingNeeded = VSQUIRK_STACK_PAD;
         }
     }
+#endif // _TARGET_AMD64_
 }
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
