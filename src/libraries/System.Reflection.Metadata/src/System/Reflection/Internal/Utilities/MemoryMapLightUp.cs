@@ -183,6 +183,7 @@ namespace System.Reflection.Internal
             }
             catch (InvalidOperationException)
             {
+                // thrown when accessing unapproved API in a Windows Store app
                 s_lazyIsAvailable = false;
                 return null;
             }
@@ -253,6 +254,7 @@ namespace System.Reflection.Internal
             }
             catch (InvalidOperationException)
             {
+                // thrown when accessing unapproved API in a Windows Store app
                 s_lazyIsAvailable = false;
                 return null;
             }
