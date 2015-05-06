@@ -75,9 +75,9 @@
 typedef union {
 	struct {
 		gint16 max_working; /* determined by heuristic */
-		gint16 active; /* working or waiting on thread_work_sem; warm threads */
-		gint16 working;
-		gint16 parked;
+		gint16 active; /* executing worker_thread */
+		gint16 working; /* actively executing worker_thread, not parked */
+		gint16 parked; /* parked */
 	} _;
 	gint64 as_gint64;
 } ThreadPoolCounter;
@@ -178,6 +178,7 @@ static ThreadPool* threadpool;
 #define COUNTER_CHECK(counter) \
 	do { \
 		g_assert (counter._.max_working > 0); \
+		g_assert (counter._.working >= 0); \
 		g_assert (counter._.active >= 0); \
 	} while (0)
 
@@ -344,7 +345,7 @@ ensure_cleanedup (void)
 	for (;;) {
 		guint i;
 		ThreadPoolCounter counter = COUNTER_READ ();
-		if (counter._.active == 0 && counter._.parked == 0)
+		if (counter._.active == 0)
 			break;
 		if (counter._.active == 1) {
 			MonoInternalThread *thread = mono_thread_internal_current ();
@@ -585,7 +586,10 @@ worker_thread (gpointer data)
 	g_assert (tpdomain->domain);
 
 	if (mono_runtime_is_shutting_down () || mono_domain_is_unloading (tpdomain->domain)) {
-		COUNTER_ATOMIC (counter, { counter._.active --; });
+		COUNTER_ATOMIC (counter, {
+			counter._.working --;
+			counter._.active --;
+		});
 		return;
 	}
 
@@ -602,6 +606,10 @@ worker_thread (gpointer data)
 	thread = mono_thread_internal_current ();
 	g_assert (thread);
 
+	mono_mutex_lock (&threadpool->working_threads_lock);
+	g_ptr_array_add (threadpool->working_threads, thread);
+	mono_mutex_unlock (&threadpool->working_threads_lock);
+
 	mono_mutex_lock (&threadpool->domains_lock);
 
 	do {
@@ -613,12 +621,6 @@ worker_thread (gpointer data)
 		tpdomain->domain->threadpool_jobs ++;
 
 		mono_mutex_unlock (&threadpool->domains_lock);
-
-		mono_mutex_lock (&threadpool->working_threads_lock);
-		g_ptr_array_add (threadpool->working_threads, thread);
-		mono_mutex_unlock (&threadpool->working_threads_lock);
-
-		COUNTER_ATOMIC (counter, { counter._.working ++; });
 
 		mono_thread_push_appdomain_ref (tpdomain->domain);
 		if (mono_domain_set (tpdomain->domain, FALSE)) {
@@ -634,12 +636,6 @@ worker_thread (gpointer data)
 				ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
 		}
 		mono_thread_pop_appdomain_ref ();
-
-		COUNTER_ATOMIC (counter, { counter._.working --; });
-
-		mono_mutex_lock (&threadpool->working_threads_lock);
-		g_ptr_array_remove_fast (threadpool->working_threads, thread);
-		mono_mutex_unlock (&threadpool->working_threads_lock);
 
 		mono_mutex_lock (&threadpool->domains_lock);
 
@@ -669,11 +665,11 @@ worker_thread (gpointer data)
 				gboolean park = TRUE;
 
 				COUNTER_ATOMIC (counter, {
-					if (counter._.active <= counter._.max_working) {
+					if (counter._.working <= counter._.max_working) {
 						park = FALSE;
 						break;
 					}
-					counter._.active --;
+					counter._.working --;
 					counter._.parked ++;
 				});
 
@@ -685,7 +681,7 @@ worker_thread (gpointer data)
 					mono_mutex_lock (&threadpool->domains_lock);
 
 					COUNTER_ATOMIC (counter, {
-						counter._.active ++;
+						counter._.working ++;
 						counter._.parked --;
 					});
 				}
@@ -697,7 +693,14 @@ worker_thread (gpointer data)
 
 	mono_mutex_unlock (&threadpool->domains_lock);
 
-	COUNTER_ATOMIC (counter, { counter._.active --; });
+	mono_mutex_lock (&threadpool->working_threads_lock);
+	g_ptr_array_remove_fast (threadpool->working_threads, thread);
+	mono_mutex_unlock (&threadpool->working_threads_lock);
+
+	COUNTER_ATOMIC (counter, {
+		counter._.working--;
+		counter._.active --;
+	});
 }
 
 static gboolean
@@ -738,15 +741,19 @@ worker_request (MonoDomain *domain)
 		return TRUE;
 
 	COUNTER_ATOMIC (counter, {
-		if (counter._.active >= counter._.max_working)
+		if (counter._.working >= counter._.max_working)
 			return FALSE;
+		counter._.working ++;
 		counter._.active ++;
 	});
 
 	if (worker_try_create (tpdomain))
 		return TRUE;
 
-	COUNTER_ATOMIC (counter, { counter._.active --; });
+	COUNTER_ATOMIC (counter, {
+		counter._.working --;
+		counter._.active --;
+	});
 	return FALSE;
 }
 
@@ -858,8 +865,9 @@ monitor_thread (void)
 					break;
 
 				COUNTER_TRY_ATOMIC (success, counter, {
-					if (counter._.active >= counter._.max_working)
+					if (counter._.working >= counter._.max_working)
 						break;
+					counter._.working ++;
 					counter._.active ++;
 				});
 
@@ -870,7 +878,10 @@ monitor_thread (void)
 				if (tpdomain && worker_try_create (tpdomain))
 					break;
 
-				COUNTER_ATOMIC (counter, { counter._.active --; });
+				COUNTER_ATOMIC (counter, {
+					counter._.working --;
+					counter._.active --;
+				});
 			}
 		}
 	} while (monitor_should_keep_running ());
@@ -1182,7 +1193,7 @@ heuristic_should_adjust (void)
 
 	if (threadpool->heuristic_last_dequeue > threadpool->heuristic_last_adjustment + threadpool->heuristic_adjustment_interval) {
 		ThreadPoolCounter counter = COUNTER_READ ();
-		if (counter._.active <= counter._.max_working)
+		if (counter._.working <= counter._.max_working)
 			return TRUE;
 	}
 
@@ -1510,7 +1521,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemComplete (void)
 		heuristic_adjust ();
 
 	counter = COUNTER_READ ();
-	return counter._.active <= counter._.max_working;
+	return counter._.working <= counter._.max_working;
 }
 
 void
