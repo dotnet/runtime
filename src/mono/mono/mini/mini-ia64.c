@@ -4631,12 +4631,6 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 	return (MonoMethod*)regs [IA64_R9];
 }
 
-void
-mono_arch_emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoInst *imt_arg)
-{
-	/* Done by the implementation of the CALL_MEMBASE opcodes */
-}
-
 gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {

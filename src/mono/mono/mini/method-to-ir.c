@@ -2439,16 +2439,10 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, Mon
 #ifdef ENABLE_LLVM
 		call->imt_arg_reg = method_reg;
 #endif
-#ifdef MONO_ARCH_IMT_REG
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
-#else
-	/* Need this to keep the IMT arg alive */
-	mono_call_inst_add_outarg_reg (cfg, call, method_reg, 0, FALSE);
-#endif
 		return;
 	}
 
-#ifdef MONO_ARCH_IMT_REG
 	method_reg = alloc_preg (cfg);
 
 	if (imt_arg) {
@@ -2464,9 +2458,6 @@ emit_imt_argument (MonoCompile *cfg, MonoCallInst *call, MonoMethod *method, Mon
 	}
 
 	mono_call_inst_add_outarg_reg (cfg, call, method_reg, MONO_ARCH_IMT_REG, FALSE);
-#else
-	mono_arch_emit_imt_argument (cfg, call, imt_arg);
-#endif
 }
 
 static MonoJumpInfo *
