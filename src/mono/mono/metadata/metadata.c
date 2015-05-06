@@ -2397,6 +2397,17 @@ delete_image_set (MonoImageSet *set)
 	g_hash_table_destroy (set->gmethod_cache);
 	g_hash_table_destroy (set->gsignature_cache);
 
+	if (set->runtime_invoke_cache)
+		g_hash_table_destroy (set->runtime_invoke_cache);
+	if (set->delegate_invoke_cache)
+		g_hash_table_destroy (set->delegate_invoke_cache);
+	if (set->delegate_begin_invoke_cache)
+		g_hash_table_destroy (set->delegate_begin_invoke_cache);
+	if (set->delegate_end_invoke_cache)
+		g_hash_table_destroy (set->delegate_end_invoke_cache);
+	if (set->synchronized_cache)
+		g_hash_table_destroy (set->synchronized_cache);
+
 	image_sets_lock ();
 
 	for (i = 0; i < set->nimages; ++i)
@@ -2862,6 +2873,7 @@ mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
 	res = g_hash_table_lookup (set->gmethod_cache, method);
 	if (!res && cache) {
 		g_hash_table_insert (set->gmethod_cache, method, method);
+		method->owner = set;
 		res = method;
 	}
 

@@ -27,6 +27,7 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/domain-internals.h"
 #include "mono/metadata/gc-internal.h"
@@ -2714,7 +2715,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&method->klass->image->delegate_begin_invoke_generic_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->delegate_begin_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
@@ -2924,7 +2925,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&method->klass->image->delegate_end_invoke_generic_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->delegate_end_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
@@ -3083,7 +3084,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&method->klass->image->delegate_invoke_generic_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->delegate_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
@@ -3116,6 +3117,8 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		if (res)
 			return res;
 	} else {
+		// Inflated methods should not be in this cache because it's not stored on the imageset.
+		g_assert (!method->is_inflated);
 		cache = get_cache (&method->klass->image->delegate_invoke_cache,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
@@ -3875,15 +3878,23 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		MonoMethodSignature *tmp_sig;
 
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
+		GHashTable **cache_table = NULL;
 
-		if (method->klass->valuetype && mono_method_signature (method)->hasthis)
-			/* These have a different csig */
-			cache = get_cache (&target_klass->image->runtime_invoke_vtype_cache,
-							   (GHashFunc)mono_signature_hash,
-							   (GCompareFunc)runtime_invoke_signature_equal);
-		else
-			cache = get_cache (&target_klass->image->runtime_invoke_cache,
-							   (GHashFunc)mono_signature_hash,
+
+		if (method->is_inflated) {
+			MonoMethodInflated *imethod = (MonoMethodInflated *)method;
+			if (method->klass->valuetype && mono_method_signature (method)->hasthis)
+				cache_table = &imethod->owner->runtime_invoke_vtype_cache;
+			else
+				cache_table = &imethod->owner->runtime_invoke_cache;
+		} else {
+			if (method->klass->valuetype && mono_method_signature (method)->hasthis)
+				cache_table = &target_klass->image->runtime_invoke_vtype_cache;
+			else
+				cache_table = &target_klass->image->runtime_invoke_cache;
+		}
+
+		cache = get_cache (cache_table, (GHashFunc)mono_signature_hash,
 							   (GCompareFunc)runtime_invoke_signature_equal);
 
 		/* from mono_marshal_find_in_cache */
@@ -8706,7 +8717,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&method->klass->image->synchronized_generic_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->synchronized_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_wrapper_cache (cache, orig_method, orig_method, method);
 		if (res)
 			return res;
@@ -11271,7 +11282,10 @@ signature_pointer_pair_matches_signature (gpointer key, gpointer value, gpointer
 void
 mono_marshal_free_inflated_wrappers (MonoMethod *method)
 {
-       MonoMethodSignature *sig = method->signature;
+			g_assert (method->is_inflated);
+
+			MonoMethodInflated *imethod = (MonoMethodInflated *)method;
+			MonoMethodSignature *sig = method->signature;
 
        g_assert (method->is_inflated);
 
@@ -11289,16 +11303,16 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
          * indexed by MonoMethodSignature
          */
 	   /* FIXME: This could remove unrelated wrappers as well */
-       if (sig && method->klass->image->delegate_begin_invoke_cache)
-               g_hash_table_remove (method->klass->image->delegate_begin_invoke_cache, sig);
-       if (sig && method->klass->image->delegate_end_invoke_cache)
-               g_hash_table_remove (method->klass->image->delegate_end_invoke_cache, sig);
-       if (sig && method->klass->image->delegate_invoke_cache)
-               g_hash_table_remove (method->klass->image->delegate_invoke_cache, sig);
-       if (sig && method->klass->image->runtime_invoke_cache)
-               g_hash_table_remove (method->klass->image->runtime_invoke_cache, sig);
-       if (sig && method->klass->image->runtime_invoke_vtype_cache)
-               g_hash_table_remove (method->klass->image->runtime_invoke_vtype_cache, sig);
+       if (sig && imethod->owner->delegate_begin_invoke_cache)
+               g_hash_table_remove (imethod->owner->delegate_begin_invoke_cache, sig);
+       if (sig && imethod->owner->delegate_end_invoke_cache)
+               g_hash_table_remove (imethod->owner->delegate_end_invoke_cache, sig);
+       if (sig && imethod->owner->delegate_invoke_cache)
+               g_hash_table_remove (imethod->owner->delegate_invoke_cache, sig);
+       if (sig && imethod->owner->runtime_invoke_cache)
+               g_hash_table_remove (imethod->owner->runtime_invoke_cache, sig);
+       if (sig && imethod->owner->runtime_invoke_vtype_cache)
+               g_hash_table_remove (imethod->owner->runtime_invoke_vtype_cache, sig);
 
         /*
          * indexed by SignaturePointerPair
