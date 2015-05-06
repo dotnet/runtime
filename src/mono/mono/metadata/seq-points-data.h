@@ -40,40 +40,40 @@ typedef struct {
 } SeqPointIterator;
 
 void
-seq_point_info_free (gpointer info);
+mono_seq_point_info_free (gpointer info);
 
 gboolean
-seq_point_iterator_next (SeqPointIterator* it);
+mono_seq_point_iterator_next (SeqPointIterator* it);
 
 void
-seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info);
+mono_seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info);
 
 void
-seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next);
+mono_seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next);
 
 int
-seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer);
+mono_seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer);
 
 int
-seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy);
+mono_seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy);
 
 int
-seq_point_info_get_write_size (MonoSeqPointInfo* info);
+mono_seq_point_info_get_write_size (MonoSeqPointInfo* info);
 
 gboolean
-seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data);
+mono_seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data);
 
 MonoSeqPointInfo*
-seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_debug_data, int *out_size);
+mono_seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_debug_data, int *out_size);
 
 gboolean
-seq_point_find_prev_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point);
+mono_seq_point_find_prev_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point);
 
 gboolean
-seq_point_find_next_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point);
+mono_seq_point_find_next_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point);
 
 gboolean
-seq_point_find_by_il_offset (MonoSeqPointInfo* info, int il_offset, SeqPoint* seq_point);
+mono_seq_point_find_by_il_offset (MonoSeqPointInfo* info, int il_offset, SeqPoint* seq_point);
 
 /*
  * SeqPointData struct and functions
@@ -94,24 +94,24 @@ typedef struct {
 } SeqPointData;
 
 void
-seq_point_data_init (SeqPointData *data, int entry_capacity);
+mono_seq_point_data_init (SeqPointData *data, int entry_capacity);
 
 void
-seq_point_data_free (SeqPointData *data);
+mono_seq_point_data_free (SeqPointData *data);
 
 gboolean
-seq_point_data_read (SeqPointData *data, char *path);
+mono_seq_point_data_read (SeqPointData *data, char *path);
 
 gboolean
-seq_point_data_write (SeqPointData *data, char *path);
+mono_seq_point_data_write (SeqPointData *data, char *path);
 
 void
-seq_point_data_add (SeqPointData *data, guint32 methodToken, guint32 methodIndex, MonoSeqPointInfo* info);
+mono_seq_point_data_add (SeqPointData *data, guint32 methodToken, guint32 methodIndex, MonoSeqPointInfo* info);
 
 gboolean
-seq_point_data_get (SeqPointData *data, guint32 methodToken, guint32 methodIndex, MonoSeqPointInfo** info);
+mono_seq_point_data_get (SeqPointData *data, guint32 methodToken, guint32 methodIndex, MonoSeqPointInfo** info);
 
 gboolean
-seq_point_data_get_il_offset (char *path, guint32 methodToken, guint32 methodIndex, guint32 native_offset, guint32 *il_offset);
+mono_seq_point_data_get_il_offset (char *path, guint32 methodToken, guint32 methodIndex, guint32 native_offset, guint32 *il_offset);
 
 #endif /* __MONO_SEQ_POINTS_DATA_H__ */

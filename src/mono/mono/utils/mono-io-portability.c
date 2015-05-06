@@ -12,7 +12,7 @@
 
 #include <dirent.h>
 
-int __mono_io_portability_helpers = PORTABILITY_UNKNOWN;
+int mono_io_portability_helpers = PORTABILITY_UNKNOWN;
 
 static inline gchar *mono_portability_find_file_internal (GString **report, const gchar *pathname, gboolean last_exists);
 
@@ -20,10 +20,10 @@ void mono_portability_helpers_init (void)
 {
         const gchar *env;
 
-	if (__mono_io_portability_helpers != PORTABILITY_UNKNOWN)
+	if (mono_io_portability_helpers != PORTABILITY_UNKNOWN)
 		return;
 	
-        __mono_io_portability_helpers = PORTABILITY_NONE;
+        mono_io_portability_helpers = PORTABILITY_NONE;
 	
         env = g_getenv ("MONO_IOMAP");
         if (env != NULL) {
@@ -44,11 +44,11 @@ void mono_portability_helpers_init (void)
                                    options[i]);
 #endif
                         if (!strncasecmp (options[i], "drive", 5)) {
-                                __mono_io_portability_helpers |= PORTABILITY_DRIVE;
+                                mono_io_portability_helpers |= PORTABILITY_DRIVE;
                         } else if (!strncasecmp (options[i], "case", 4)) {
-                                __mono_io_portability_helpers |= PORTABILITY_CASE;
+                                mono_io_portability_helpers |= PORTABILITY_CASE;
                         } else if (!strncasecmp (options[i], "all", 3)) {
-                                __mono_io_portability_helpers |= (PORTABILITY_DRIVE | PORTABILITY_CASE);
+                                mono_io_portability_helpers |= (PORTABILITY_DRIVE | PORTABILITY_CASE);
 			}
                 }
 	}

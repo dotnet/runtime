@@ -986,7 +986,7 @@ mono_gchandle_free_domain (MonoDomain *domain)
 }
 
 MonoBoolean
-GCHandle_CheckCurrentDomain (guint32 gchandle)
+mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle)
 {
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }

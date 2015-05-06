@@ -2413,7 +2413,7 @@ mono_codegen (MonoCompile *cfg)
 			mono_arch_peephole_pass_2 (cfg, bb);
 
 		if (cfg->gen_seq_points && !cfg->gen_sdb_seq_points)
-			bb_deduplicate_op_il_seq_points (cfg, bb);
+			mono_bb_deduplicate_op_il_seq_points (cfg, bb);
 	}
 
 	if (cfg->prof_options & MONO_PROFILE_COVERAGE)

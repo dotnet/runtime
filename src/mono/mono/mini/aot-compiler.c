@@ -360,52 +360,52 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, const char *format,
 static inline void
 emit_section_change (MonoAotCompile *acfg, const char *section_name, int subsection_index)
 {
-	img_writer_emit_section_change (acfg->w, section_name, subsection_index);
+	mono_img_writer_emit_section_change (acfg->w, section_name, subsection_index);
 }
 
 static inline void
 emit_local_symbol (MonoAotCompile *acfg, const char *name, const char *end_label, gboolean func) 
 { 
-	img_writer_emit_local_symbol (acfg->w, name, end_label, func); 
+	mono_img_writer_emit_local_symbol (acfg->w, name, end_label, func); 
 }
 
 static inline void
 emit_label (MonoAotCompile *acfg, const char *name) 
 { 
-	img_writer_emit_label (acfg->w, name); 
+	mono_img_writer_emit_label (acfg->w, name); 
 }
 
 static inline void
 emit_bytes (MonoAotCompile *acfg, const guint8* buf, int size) 
 { 
-	img_writer_emit_bytes (acfg->w, buf, size); 
+	mono_img_writer_emit_bytes (acfg->w, buf, size); 
 }
 
 static inline void
 emit_string (MonoAotCompile *acfg, const char *value) 
 { 
-	img_writer_emit_string (acfg->w, value); 
+	mono_img_writer_emit_string (acfg->w, value); 
 }
 
 static inline void
 emit_line (MonoAotCompile *acfg) 
 { 
-	img_writer_emit_line (acfg->w); 
+	mono_img_writer_emit_line (acfg->w); 
 }
 
 static inline void
 emit_alignment (MonoAotCompile *acfg, int size)
 { 
-	img_writer_emit_alignment (acfg->w, size);
+	mono_img_writer_emit_alignment (acfg->w, size);
 }
 
 static inline void
 emit_alignment_code (MonoAotCompile *acfg, int size)
 {
 	if (acfg->align_pad_value)
-		img_writer_emit_alignment_fill (acfg->w, size, acfg->align_pad_value);
+		mono_img_writer_emit_alignment_fill (acfg->w, size, acfg->align_pad_value);
 	else
-		img_writer_emit_alignment (acfg->w, size);
+		mono_img_writer_emit_alignment (acfg->w, size);
 }
 
 static inline void
@@ -432,7 +432,7 @@ emit_padding (MonoAotCompile *acfg, int size)
 static inline void
 emit_pointer (MonoAotCompile *acfg, const char *target) 
 { 
-	img_writer_emit_pointer (acfg->w, target); 
+	mono_img_writer_emit_pointer (acfg->w, target); 
 }
 
 static inline void
@@ -440,55 +440,55 @@ emit_pointer_2 (MonoAotCompile *acfg, const char *prefix, const char *target)
 { 
 	if (prefix [0] != '\0') {
 		char *s = g_strdup_printf ("%s%s", prefix, target);
-		img_writer_emit_pointer (acfg->w, s);
+		mono_img_writer_emit_pointer (acfg->w, s);
 		g_free (s);
 	} else {
-		img_writer_emit_pointer (acfg->w, target);
+		mono_img_writer_emit_pointer (acfg->w, target);
 	}
 }
 
 static inline void
 emit_int16 (MonoAotCompile *acfg, int value) 
 { 
-	img_writer_emit_int16 (acfg->w, value); 
+	mono_img_writer_emit_int16 (acfg->w, value); 
 }
 
 static inline void
 emit_int32 (MonoAotCompile *acfg, int value) 
 { 
-	img_writer_emit_int32 (acfg->w, value); 
+	mono_img_writer_emit_int32 (acfg->w, value); 
 }
 
 static inline void
 emit_symbol_diff (MonoAotCompile *acfg, const char *end, const char* start, int offset) 
 { 
-	img_writer_emit_symbol_diff (acfg->w, end, start, offset); 
+	mono_img_writer_emit_symbol_diff (acfg->w, end, start, offset); 
 }
 
 static inline void
 emit_zero_bytes (MonoAotCompile *acfg, int num) 
 { 
-	img_writer_emit_zero_bytes (acfg->w, num); 
+	mono_img_writer_emit_zero_bytes (acfg->w, num); 
 }
 
 static inline void
 emit_byte (MonoAotCompile *acfg, guint8 val) 
 { 
-	img_writer_emit_byte (acfg->w, val); 
+	mono_img_writer_emit_byte (acfg->w, val); 
 }
 
 #ifdef __native_client_codegen__
 static inline void
 emit_nacl_call_alignment (MonoAotCompile *acfg)
 {
-	img_writer_emit_nacl_call_alignment (acfg->w);
+	mono_img_writer_emit_nacl_call_alignment (acfg->w);
 }
 #endif
 
 static G_GNUC_UNUSED void
 emit_global_inner (MonoAotCompile *acfg, const char *name, gboolean func)
 {
-	img_writer_emit_global (acfg->w, name, func);
+	mono_img_writer_emit_global (acfg->w, name, func);
 }
 
 static void
@@ -496,28 +496,28 @@ emit_global (MonoAotCompile *acfg, const char *name, gboolean func)
 {
 	if (acfg->aot_opts.no_dlsym) {
 		g_ptr_array_add (acfg->globals, g_strdup (name));
-		img_writer_emit_local_symbol (acfg->w, name, NULL, func);
+		mono_img_writer_emit_local_symbol (acfg->w, name, NULL, func);
 	} else {
-		img_writer_emit_global (acfg->w, name, func);
+		mono_img_writer_emit_global (acfg->w, name, func);
 	}
 }
 
 static void
 emit_symbol_size (MonoAotCompile *acfg, const char *name, const char *end_label)
 {
-	img_writer_emit_symbol_size (acfg->w, name, end_label);
+	mono_img_writer_emit_symbol_size (acfg->w, name, end_label);
 }
 
 static void
 emit_string_symbol (MonoAotCompile *acfg, const char *name, const char *value)
 {
-	img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
+	mono_img_writer_emit_section_change (acfg->w, RODATA_SECT, 1);
 #ifdef TARGET_MACH
 	/* On apple, all symbols need to be aligned to avoid warnings from ld */
 	emit_alignment (acfg, 4);
 #endif
-	img_writer_emit_label (acfg->w, name);
-	img_writer_emit_string (acfg->w, value);
+	mono_img_writer_emit_label (acfg->w, name);
+	mono_img_writer_emit_string (acfg->w, value);
 }
 
 static G_GNUC_UNUSED void
@@ -610,7 +610,7 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 static void
 emit_unset_mode (MonoAotCompile *acfg)
 {
-	img_writer_emit_unset_mode (acfg->w);
+	mono_img_writer_emit_unset_mode (acfg->w);
 }
 
 static G_GNUC_UNUSED void
@@ -816,7 +816,7 @@ arch_emit_direct_call (MonoAotCompile *acfg, const char *target, gboolean extern
 		code = buf;
 		ARM_BL (code, 0);
 
-		img_writer_emit_reloc (acfg->w, R_ARM_CALL, target, -8);
+		mono_img_writer_emit_reloc (acfg->w, R_ARM_CALL, target, -8);
 		emit_bytes (acfg, buf, 4);
 	} else {
 		emit_unset_mode (acfg);
@@ -998,7 +998,7 @@ arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int 
 	sprintf (symbol2, "L_OBJC_SELECTOR_REFERENCES_%d", index);
 
 	emit_label (acfg, symbol1);
-	img_writer_emit_unset_mode (acfg->w);
+	mono_img_writer_emit_unset_mode (acfg->w);
 	fprintf (acfg->fp, ".long %s-(%s+12)", symbol2, symbol1);
 
 	*code_size = 12;
@@ -1593,7 +1593,7 @@ arch_emit_unbox_trampoline (MonoAotCompile *acfg, MonoCompile *cfg, MonoMethod *
 		code = buf;
 		ARM_B (code, 0);
 
-		img_writer_emit_reloc (acfg->w, R_ARM_JUMP24, call_target, -8);
+		mono_img_writer_emit_reloc (acfg->w, R_ARM_JUMP24, call_target, -8);
 		emit_bytes (acfg, buf, 4);
 	} else {
 		if (acfg->thumb_mixed && cfg->compile_llvm)
@@ -5471,7 +5471,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	}
 
 	seq_points = cfg->seq_point_info;
-	seq_points_size = (store_seq_points)? seq_point_info_get_write_size (seq_points) : 0;
+	seq_points_size = (store_seq_points)? mono_seq_point_info_get_write_size (seq_points) : 0;
 
 	buf_size = header->num_clauses * 256 + debug_info_size + 2048 + seq_points_size + cfg->gc_map_size;
 
@@ -5685,7 +5685,7 @@ emit_exception_debug_info (MonoAotCompile *acfg, MonoCompile *cfg, gboolean stor
 	}
 
 	if (seq_points_size)
-		p += seq_point_info_write (seq_points, p);
+		p += mono_seq_point_info_write (seq_points, p);
 
 	g_assert (debug_info_size < buf_size);
 
@@ -7932,10 +7932,10 @@ emit_exception_info (MonoAotCompile *acfg)
 
 			if (method_seq_points_to_file) {
 				if (!seq_points_to_file) {
-					seq_point_data_init (&sp_data, acfg->nmethods);
+					mono_seq_point_data_init (&sp_data, acfg->nmethods);
 					seq_points_to_file = TRUE;
 				}
-				seq_point_data_add (&sp_data, cfg->method->token, cfg->method_index, cfg->seq_point_info);
+				mono_seq_point_data_add (&sp_data, cfg->method->token, cfg->method_index, cfg->seq_point_info);
 			}
 		} else {
 			offsets [i] = 0;
@@ -7945,8 +7945,8 @@ emit_exception_info (MonoAotCompile *acfg)
 	if (seq_points_to_file) {
 		char *seq_points_aot_file;
 		mono_image_get_aot_seq_point_path (acfg->image, &seq_points_aot_file);
-		seq_point_data_write (&sp_data, seq_points_aot_file);
-		seq_point_data_free (&sp_data);
+		mono_seq_point_data_write (&sp_data, seq_points_aot_file);
+		mono_seq_point_data_free (&sp_data);
 		g_free (seq_points_aot_file);
 	}
 
@@ -8578,7 +8578,7 @@ emit_objc_selectors (MonoAotCompile *acfg)
 	 * EOF
 	 */
 
-	img_writer_emit_unset_mode (acfg->w);
+	mono_img_writer_emit_unset_mode (acfg->w);
 	g_assert (acfg->fp);
 	fprintf (acfg->fp, ".section	__DATA,__objc_selrefs,literal_pointers,no_dead_strip\n");
 	fprintf (acfg->fp, ".align	3\n");
@@ -9022,7 +9022,7 @@ acfg_free (MonoAotCompile *acfg)
 {
 	int i;
 
-	img_writer_destroy (acfg->w);
+	mono_img_writer_destroy (acfg->w);
 	for (i = 0; i < acfg->nmethods; ++i)
 		if (acfg->cfgs [i])
 			g_free (acfg->cfgs [i]);
@@ -9080,14 +9080,14 @@ static void aot_dump (MonoAotCompile *acfg)
 	char * dumpname;
 
 	JsonWriter writer;
-	json_writer_init (&writer);
+	mono_json_writer_init (&writer);
 
-	json_writer_object_begin(&writer);
+	mono_json_writer_object_begin(&writer);
 
 	// Methods
-	json_writer_indent (&writer);
-	json_writer_object_key(&writer, "methods");
-	json_writer_array_begin (&writer);
+	mono_json_writer_indent (&writer);
+	mono_json_writer_object_key(&writer, "methods");
+	mono_json_writer_array_begin (&writer);
 
 	int i;
 	for (i = 0; i < acfg->nmethods; ++i) {
@@ -9101,53 +9101,53 @@ static void aot_dump (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		json_writer_indent (&writer);
-		json_writer_object_begin(&writer);
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_begin(&writer);
 
-		json_writer_indent (&writer);
-		json_writer_object_key(&writer, "name");
-		json_writer_printf (&writer, "\"%s\",\n", method->name);
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_key(&writer, "name");
+		mono_json_writer_printf (&writer, "\"%s\",\n", method->name);
 
-		json_writer_indent (&writer);
-		json_writer_object_key(&writer, "signature");
-		json_writer_printf (&writer, "\"%s\",\n", mono_method_full_name (method,
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_key(&writer, "signature");
+		mono_json_writer_printf (&writer, "\"%s\",\n", mono_method_full_name (method,
 			/*signature=*/TRUE));
 
-		json_writer_indent (&writer);
-		json_writer_object_key(&writer, "code_size");
-		json_writer_printf (&writer, "\"%d\",\n", cfg->code_size);
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_key(&writer, "code_size");
+		mono_json_writer_printf (&writer, "\"%d\",\n", cfg->code_size);
 
 		klass = method->klass;
 
-		json_writer_indent (&writer);
-		json_writer_object_key(&writer, "class");
-		json_writer_printf (&writer, "\"%s\",\n", klass->name);
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_key(&writer, "class");
+		mono_json_writer_printf (&writer, "\"%s\",\n", klass->name);
 
-		json_writer_indent (&writer);
-		json_writer_object_key(&writer, "namespace");
-		json_writer_printf (&writer, "\"%s\",\n", klass->name_space);
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_key(&writer, "namespace");
+		mono_json_writer_printf (&writer, "\"%s\",\n", klass->name_space);
 
-		json_writer_indent (&writer);
-		json_writer_object_key(&writer, "wrapper_type");
-		json_writer_printf (&writer, "\"%s\",\n", get_wrapper_type_name(method->wrapper_type));
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_key(&writer, "wrapper_type");
+		mono_json_writer_printf (&writer, "\"%s\",\n", get_wrapper_type_name(method->wrapper_type));
 
-		json_writer_indent_pop (&writer);
-		json_writer_indent (&writer);
-		json_writer_object_end (&writer);
-		json_writer_printf (&writer, ",\n");
+		mono_json_writer_indent_pop (&writer);
+		mono_json_writer_indent (&writer);
+		mono_json_writer_object_end (&writer);
+		mono_json_writer_printf (&writer, ",\n");
 	}
 
-	json_writer_indent_pop (&writer);
-	json_writer_indent (&writer);
-	json_writer_array_end (&writer);
-	json_writer_printf (&writer, ",\n");
+	mono_json_writer_indent_pop (&writer);
+	mono_json_writer_indent (&writer);
+	mono_json_writer_array_end (&writer);
+	mono_json_writer_printf (&writer, ",\n");
 
 	// PLT entries
 #ifdef DUMP_PLT
-	json_writer_indent_push (&writer);
-	json_writer_indent (&writer);
-	json_writer_object_key(&writer, "plt");
-	json_writer_array_begin (&writer);
+	mono_json_writer_indent_push (&writer);
+	mono_json_writer_indent (&writer);
+	mono_json_writer_object_key(&writer, "plt");
+	mono_json_writer_array_begin (&writer);
 
 	for (i = 0; i < acfg->plt_offset; ++i) {
 		MonoPltEntry *plt_entry = NULL;
@@ -9162,44 +9162,44 @@ static void aot_dump (MonoAotCompile *acfg)
 		plt_entry = g_hash_table_lookup (acfg->plt_offset_to_entry, GUINT_TO_POINTER (i));
 		ji = plt_entry->ji;
 
-		json_writer_indent (&writer);
-		json_writer_printf (&writer, "{ ");
-		json_writer_object_key(&writer, "symbol");
-		json_writer_printf (&writer, "\"%s\" },\n", plt_entry->symbol);
+		mono_json_writer_indent (&writer);
+		mono_json_writer_printf (&writer, "{ ");
+		mono_json_writer_object_key(&writer, "symbol");
+		mono_json_writer_printf (&writer, "\"%s\" },\n", plt_entry->symbol);
 	}
 
-	json_writer_indent_pop (&writer);
-	json_writer_indent (&writer);
-	json_writer_array_end (&writer);
-	json_writer_printf (&writer, ",\n");
+	mono_json_writer_indent_pop (&writer);
+	mono_json_writer_indent (&writer);
+	mono_json_writer_array_end (&writer);
+	mono_json_writer_printf (&writer, ",\n");
 #endif
 
 	// GOT entries
 #ifdef DUMP_GOT
-	json_writer_indent_push (&writer);
-	json_writer_indent (&writer);
-	json_writer_object_key(&writer, "got");
-	json_writer_array_begin (&writer);
+	mono_json_writer_indent_push (&writer);
+	mono_json_writer_indent (&writer);
+	mono_json_writer_object_key(&writer, "got");
+	mono_json_writer_array_begin (&writer);
 
-	json_writer_indent_push (&writer);
+	mono_json_writer_indent_push (&writer);
 	for (i = 0; i < acfg->got_info.got_patches->len; ++i) {
 		MonoJumpInfo *ji = g_ptr_array_index (acfg->got_info.got_patches, i);
 
-		json_writer_indent (&writer);
-		json_writer_printf (&writer, "{ ");
-		json_writer_object_key(&writer, "patch_name");
-		json_writer_printf (&writer, "\"%s\" },\n", get_patch_name (ji->type));
+		mono_json_writer_indent (&writer);
+		mono_json_writer_printf (&writer, "{ ");
+		mono_json_writer_object_key(&writer, "patch_name");
+		mono_json_writer_printf (&writer, "\"%s\" },\n", get_patch_name (ji->type));
 	}
 
-	json_writer_indent_pop (&writer);
-	json_writer_indent (&writer);
-	json_writer_array_end (&writer);
-	json_writer_printf (&writer, ",\n");
+	mono_json_writer_indent_pop (&writer);
+	mono_json_writer_indent (&writer);
+	mono_json_writer_array_end (&writer);
+	mono_json_writer_printf (&writer, ",\n");
 #endif
 
-	json_writer_indent_pop (&writer);
-	json_writer_indent (&writer);
-	json_writer_object_end (&writer);
+	mono_json_writer_indent_pop (&writer);
+	mono_json_writer_indent (&writer);
+	mono_json_writer_object_end (&writer);
 
 	dumpname = g_strdup_printf ("%s.json", g_path_get_basename (acfg->image->name));
 	dumpfile = fopen (dumpname, "w+");
@@ -9208,7 +9208,7 @@ static void aot_dump (MonoAotCompile *acfg)
 	fprintf (dumpfile, "%s", writer.text->str);
 	fclose (dumpfile);
 
-	json_writer_destroy (&writer);
+	mono_json_writer_destroy (&writer);
 }
 
 int
@@ -9333,7 +9333,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->num_trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = acfg->aot_opts.full_aot ? acfg->aot_opts.ngsharedvt_arg_trampolines : 0;
 #endif
 
-	acfg->temp_prefix = img_writer_get_temp_label_prefix (NULL);
+	acfg->temp_prefix = mono_img_writer_get_temp_label_prefix (NULL);
 
 	arch_init (acfg);
 
@@ -9447,7 +9447,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	}
 #endif
 
-	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && bin_writer_supported ()) {
+	if (!acfg->aot_opts.asm_only && !acfg->aot_opts.asm_writer && mono_bin_writer_supported ()) {
 		if (acfg->aot_opts.outfile)
 			outfile_name = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 		else
@@ -9465,7 +9465,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			return 1;
 		}
 
-		acfg->w = img_writer_create (acfg->fp, TRUE);
+		acfg->w = mono_img_writer_create (acfg->fp, TRUE);
 		acfg->use_bin_writer = TRUE;
 	} else {
 		if (acfg->aot_opts.asm_only) {
@@ -9482,7 +9482,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
 			return 1;
 		}
-		acfg->w = img_writer_create (acfg->fp, FALSE);
+		acfg->w = mono_img_writer_create (acfg->fp, FALSE);
 		
 		tmp_outfile_name = NULL;
 		outfile_name = NULL;
@@ -9521,7 +9521,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		acfg->dwarf = mono_dwarf_writer_create (acfg->w, NULL, 0, FALSE, !acfg->gas_line_numbers);
 	}
 
-	img_writer_emit_start (acfg->w);
+	mono_img_writer_emit_start (acfg->w);
 
 	if (acfg->dwarf)
 		mono_dwarf_writer_emit_base_info (acfg->dwarf, g_path_get_basename (acfg->image->name), mono_unwind_get_cie_program ());
@@ -9627,7 +9627,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		aot_printf (acfg, "%d methods have other problems (%d%%)\n", acfg->stats.ocount, acfg->stats.mcount ? (acfg->stats.ocount * 100) / acfg->stats.mcount : 100);
 
 	TV_GETTIME (atv);
-	res = img_writer_emit_writeout (acfg->w);
+	res = mono_img_writer_emit_writeout (acfg->w);
 	if (res != 0) {
 		acfg_free (acfg);
 		return res;

@@ -94,12 +94,12 @@ mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_st
 	w->appending = appending;
 
 	if (appending)
-		g_assert (img_writer_subsections_supported (w->w));
+		g_assert (mono_img_writer_subsections_supported (w->w));
 
 	w->emit_line = TRUE;
 
 	if (appending) {
-		if (!img_writer_subsections_supported (w->w))
+		if (!mono_img_writer_subsections_supported (w->w))
 			/* Can't emit line number info without subsections */
 			w->emit_line = FALSE;
 	} else {
@@ -112,8 +112,8 @@ mono_dwarf_writer_create (MonoImageWriter *writer, FILE *il_file, int il_file_st
 		w->collect_line_info = FALSE;
 	}
 
-	w->fp = img_writer_get_fp (w->w);
-	w->temp_prefix = img_writer_get_temp_label_prefix (w->w);
+	w->fp = mono_img_writer_get_fp (w->w);
+	w->temp_prefix = mono_img_writer_get_temp_label_prefix (w->w);
 
 	w->class_to_die = g_hash_table_new (NULL, NULL);
 	w->class_to_vtype_die = g_hash_table_new (NULL, NULL);
@@ -141,85 +141,85 @@ mono_dwarf_writer_get_il_file_line_index (MonoDwarfWriter *w)
 static inline void
 emit_section_change (MonoDwarfWriter *w, const char *section_name, int subsection_index)
 {
-	img_writer_emit_section_change (w->w, section_name, subsection_index);
+	mono_img_writer_emit_section_change (w->w, section_name, subsection_index);
 }
 
 static inline void
 emit_push_section (MonoDwarfWriter *w, const char *section_name, int subsection)
 {
-	img_writer_emit_push_section (w->w, section_name, subsection);
+	mono_img_writer_emit_push_section (w->w, section_name, subsection);
 }
 
 static inline void
 emit_pop_section (MonoDwarfWriter *w)
 {
-	img_writer_emit_pop_section (w->w);
+	mono_img_writer_emit_pop_section (w->w);
 }
 
 static inline void
 emit_label (MonoDwarfWriter *w, const char *name) 
 { 
-	img_writer_emit_label (w->w, name); 
+	mono_img_writer_emit_label (w->w, name); 
 }
 
 static inline void
 emit_bytes (MonoDwarfWriter *w, const guint8* buf, int size) 
 { 
-	img_writer_emit_bytes (w->w, buf, size); 
+	mono_img_writer_emit_bytes (w->w, buf, size); 
 }
 
 static inline void
 emit_string (MonoDwarfWriter *w, const char *value) 
 { 
-	img_writer_emit_string (w->w, value); 
+	mono_img_writer_emit_string (w->w, value); 
 }
 
 static inline void
 emit_line (MonoDwarfWriter *w) 
 { 
-	img_writer_emit_line (w->w); 
+	mono_img_writer_emit_line (w->w); 
 }
 
 static inline void
 emit_alignment (MonoDwarfWriter *w, int size) 
 { 
-	img_writer_emit_alignment (w->w, size); 
+	mono_img_writer_emit_alignment (w->w, size); 
 }
 
 static inline void
 emit_pointer_unaligned (MonoDwarfWriter *w, const char *target) 
 { 
-	img_writer_emit_pointer_unaligned (w->w, target); 
+	mono_img_writer_emit_pointer_unaligned (w->w, target); 
 }
 
 static inline void
 emit_pointer (MonoDwarfWriter *w, const char *target) 
 { 
-	img_writer_emit_pointer (w->w, target); 
+	mono_img_writer_emit_pointer (w->w, target); 
 }
 
 static inline void
 emit_int16 (MonoDwarfWriter *w, int value) 
 { 
-	img_writer_emit_int16 (w->w, value); 
+	mono_img_writer_emit_int16 (w->w, value); 
 }
 
 static inline void
 emit_int32 (MonoDwarfWriter *w, int value) 
 { 
-	img_writer_emit_int32 (w->w, value); 
+	mono_img_writer_emit_int32 (w->w, value); 
 }
 
 static inline void
 emit_symbol_diff (MonoDwarfWriter *w, const char *end, const char* start, int offset) 
 { 
-	img_writer_emit_symbol_diff (w->w, end, start, offset); 
+	mono_img_writer_emit_symbol_diff (w->w, end, start, offset); 
 }
 
 static inline void
 emit_byte (MonoDwarfWriter *w, guint8 val) 
 { 
-	img_writer_emit_byte (w->w, val); 
+	mono_img_writer_emit_byte (w->w, val); 
 }
 
 static G_GNUC_UNUSED void
@@ -841,7 +841,7 @@ emit_debug_info_end (MonoDwarfWriter *w)
 {
 	/* This doesn't seem to work/required with recent iphone sdk versions */
 #if 0
-	if (!img_writer_subsections_supported (w->w))
+	if (!mono_img_writer_subsections_supported (w->w))
 		fprintf (w->fp, "\n.set %sdebug_info_end,.\n", w->temp_prefix);
 #endif
 }
@@ -901,7 +901,7 @@ mono_dwarf_writer_emit_base_info (MonoDwarfWriter *w, const char *cu_name, GSLis
 	emit_int32 (w, 0); /* .debug_abbrev offset */
 	emit_byte (w, sizeof (gpointer)); /* address size */
 
-	if (img_writer_subsections_supported (w->w) && w->appending) {
+	if (mono_img_writer_subsections_supported (w->w) && w->appending) {
 		/* Emit this into a separate section so it gets placed at the end */
 		emit_section_change (w, ".debug_info", 1);
 		emit_byte (w, 0); /* close COMPILE_UNIT */

@@ -115,7 +115,7 @@ gboolean    mono_gc_ephemeron_array_add (MonoObject *obj);
 gboolean    mono_gc_set_allow_synchronous_major (gboolean flag);
 
 MonoBoolean
-GCHandle_CheckCurrentDomain (guint32 gchandle);
+mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle);
 
 /* User defined marking function */
 /* It should work like this:

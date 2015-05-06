@@ -3089,7 +3089,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	if (info->il_offset == -1) {
 		/* mono_debug_il_offset_from_address () doesn't seem to be precise enough (#2092) */
 		if (ud->frames == NULL) {
-			if (find_prev_seq_point_for_native_offset (info->domain, method, info->native_offset, NULL, &sp))
+			if (mono_find_prev_seq_point_for_native_offset (info->domain, method, info->native_offset, NULL, &sp))
 				info->il_offset = sp.il_offset;
 		}
 		if (info->il_offset == -1)
@@ -4202,8 +4202,8 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	if (error)
 		mono_error_init (error);
 
-	seq_point_iterator_init (&it, seq_points);
-	while (seq_point_iterator_next (&it)) {
+	mono_seq_point_iterator_init (&it, seq_points);
+	while (mono_seq_point_iterator_next (&it)) {
 		if (it.seq_point.il_offset == bp->il_offset) {
 			it_has_sp = TRUE;
 			break;
@@ -4215,8 +4215,8 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 		 * The set of IL offsets with seq points doesn't completely match the
 		 * info returned by CMD_METHOD_GET_DEBUG_INFO (#407).
 		 */
-		seq_point_iterator_init (&it, seq_points);
-		while (seq_point_iterator_next (&it)) {
+		mono_seq_point_iterator_init (&it, seq_points);
+		while (mono_seq_point_iterator_next (&it)) {
 			if (it.seq_point.il_offset != METHOD_ENTRY_IL_OFFSET &&
 				it.seq_point.il_offset != METHOD_EXIT_IL_OFFSET &&
 				it.seq_point.il_offset + 1 == bp->il_offset) {
@@ -4229,8 +4229,8 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 	if (!it_has_sp) {
 		char *s = g_strdup_printf ("Unable to insert breakpoint at %s:%d", mono_method_full_name (jinfo_get_method (ji), TRUE), bp->il_offset);
 
-		seq_point_iterator_init (&it, seq_points);
-		while (seq_point_iterator_next (&it))
+		mono_seq_point_iterator_init (&it, seq_points);
+		while (mono_seq_point_iterator_next (&it))
 			DEBUG_PRINTF (1, "%d\n", it.seq_point.il_offset);
 
 		if (error) {
@@ -4688,7 +4688,7 @@ process_breakpoint_inner (DebuggerTlsData *tls, gboolean from_signal)
 	 * The ip points to the instruction causing the breakpoint event, which is after
 	 * the offset recorded in the seq point map, so find the prev seq point before ip.
 	 */
-	found_sp = find_prev_seq_point_for_native_offset (mono_domain_get (), method, native_offset, &info, &sp);
+	found_sp = mono_find_prev_seq_point_for_native_offset (mono_domain_get (), method, native_offset, &info, &sp);
 
 	if (!found_sp)
 		no_seq_points_found (method);
@@ -4946,7 +4946,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	 * The ip points to the instruction causing the single step event, which is before
 	 * the offset recorded in the seq point map, so find the next seq point after ip.
 	 */
-	if (!find_next_seq_point_for_native_offset (domain, method, (guint8*)ip - (guint8*)ji->code_start, &info, &sp))
+	if (!mono_find_next_seq_point_for_native_offset (domain, method, (guint8*)ip - (guint8*)ji->code_start, &info, &sp))
 		return;
 
 	il_offset = sp.il_offset;
@@ -5187,7 +5187,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 				StackFrame *frame = frames [frame_index];
 
 				method = frame->method;
-				found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
 				sp = (found_sp)? &local_sp : NULL;
 				frame_index ++;
 				if (sp && sp->next_len != 0)
@@ -5202,7 +5202,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 					StackFrame *frame = frames [frame_index];
 
 					method = frame->method;
-					found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
 					sp = (found_sp)? &local_sp : NULL;
 					if (sp && sp->next_len != 0)
 						break;
@@ -5215,7 +5215,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 					StackFrame *frame = frames [frame_index];
 
 					parent_sp_method = frame->method;
-					found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &parent_info, &local_parent_sp);
+					found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &parent_info, &local_parent_sp);
 					parent_sp = found_sp ? &local_parent_sp : NULL;
 					if (found_sp && parent_sp->next_len != 0)
 						break;
@@ -5228,7 +5228,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		if (sp && sp->next_len > 0) {
 			SeqPoint* next = g_new(SeqPoint, sp->next_len);
 
-			seq_point_init_next (info, *sp, next);
+			mono_seq_point_init_next (info, *sp, next);
 			for (i = 0; i < sp->next_len; i++) {
 				next_sp = &next[i];
 
@@ -5241,7 +5241,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 		if (parent_sp) {
 			SeqPoint* next = g_new(SeqPoint, parent_sp->next_len);
 
-			seq_point_init_next (parent_info, *parent_sp, next);
+			mono_seq_point_init_next (parent_info, *parent_sp, next);
 			for (i = 0; i < parent_sp->next_len; i++) {
 				next_sp = &next[i];
 
@@ -5275,7 +5275,7 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 					for (j = 0; j < jinfo->num_clauses; ++j) {
 						MonoJitExceptionInfo *ei = &jinfo->clauses [j];
 
-						found_sp = find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp);
+						found_sp = mono_find_next_seq_point_for_native_offset (frame->domain, frame->method, (char*)ei->handler_start - (char*)jinfo->code_start, NULL, &local_sp);
 						sp = (found_sp)? &local_sp : NULL;
 						if (sp) {
 							bp = set_breakpoint (frame->method, sp->il_offset, ss_req->req, NULL);
@@ -5386,7 +5386,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 		 * Find the seq point corresponding to the landing site ip, which is the first seq
 		 * point after ip.
 		 */
-		found_sp = find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &local_sp);
+		found_sp = mono_find_next_seq_point_for_native_offset (frame.domain, frame.method, frame.native_offset, &info, &local_sp);
 		sp = (found_sp)? &local_sp : NULL;
 		if (!sp)
 			no_seq_points_found (frame.method);
@@ -5432,7 +5432,7 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 		if (frame) {
 			if (!method && frame->il_offset != -1) {
 				/* FIXME: Sort the table and use a binary search */
-				found_sp = find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
+				found_sp = mono_find_prev_seq_point_for_native_offset (frame->domain, frame->method, frame->native_offset, &info, &local_sp);
 				sp = (found_sp)? &local_sp : NULL;
 				if (!sp)
 					no_seq_points_found (frame->method);
@@ -8864,7 +8864,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (tls->frame_count == 0 || tls->frames [0]->actual_method != method)
 			return ERR_INVALID_ARGUMENT;
 
-		found_sp = find_seq_point (domain, method, il_offset, &seq_points, &sp);
+		found_sp = mono_find_seq_point (domain, method, il_offset, &seq_points, &sp);
 
 		g_assert (seq_points);
 
@@ -8951,7 +8951,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	sig = mono_method_signature (frame->actual_method);
 
-	if (!get_seq_points (frame->domain, frame->actual_method))
+	if (!mono_get_seq_points (frame->domain, frame->actual_method))
 		/*
 		 * The method is probably from an aot image compiled without soft-debug, variables might be dead, etc.
 		 */

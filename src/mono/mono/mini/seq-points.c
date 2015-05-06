@@ -156,7 +156,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 			if (has_debug_data)
 				next_list = next[i];
 
-			if (seq_point_info_add_seq_point (array, sp, last_seq_point, next_list, has_debug_data))
+			if (mono_seq_point_info_add_seq_point (array, sp, last_seq_point, next_list, has_debug_data))
 				last_seq_point = sp;
 
 			if (has_debug_data)
@@ -167,7 +167,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 	if (has_debug_data)
 		g_free (next);
 
-	cfg->seq_point_info = seq_point_info_new (array->len, TRUE, array->data, has_debug_data, &seq_info_size);
+	cfg->seq_point_info = mono_seq_point_info_new (array->len, TRUE, array->data, has_debug_data, &seq_info_size);
 	mono_jit_stats.allocated_seq_points_size += seq_info_size;
 
 	g_byte_array_free (array, TRUE);
@@ -186,7 +186,7 @@ mono_save_seq_point_info (MonoCompile *cfg)
 }
 
 MonoSeqPointInfo*
-get_seq_points (MonoDomain *domain, MonoMethod *method)
+mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
 {
 	MonoSeqPointInfo *seq_points;
 
@@ -204,16 +204,16 @@ get_seq_points (MonoDomain *domain, MonoMethod *method)
 }
 
 /*
- * find_next_seq_point_for_native_offset:
+ * mono_find_next_seq_point_for_native_offset:
  *
  *   Find the first sequence point after NATIVE_OFFSET.
  */
 gboolean
-find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
+mono_find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
 {
 	MonoSeqPointInfo *seq_points;
 
-	seq_points = get_seq_points (domain, method);
+	seq_points = mono_get_seq_points (domain, method);
 	if (!seq_points) {
 		if (info)
 			*info = NULL;
@@ -222,20 +222,20 @@ find_next_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	if (info)
 		*info = seq_points;
 
-	return seq_point_find_next_by_native_offset (seq_points, native_offset, seq_point);
+	return mono_seq_point_find_next_by_native_offset (seq_points, native_offset, seq_point);
 }
 
 /*
- * find_prev_seq_point_for_native_offset:
+ * mono_find_prev_seq_point_for_native_offset:
  *
  *   Find the first sequence point before NATIVE_OFFSET.
  */
 gboolean
-find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
+mono_find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, gint32 native_offset, MonoSeqPointInfo **info, SeqPoint* seq_point)
 {
 	MonoSeqPointInfo *seq_points;
 
-	seq_points = get_seq_points (domain, method);
+	seq_points = mono_get_seq_points (domain, method);
 	if (!seq_points) {
 		if (info)
 			*info = NULL;
@@ -244,21 +244,21 @@ find_prev_seq_point_for_native_offset (MonoDomain *domain, MonoMethod *method, g
 	if (info)
 		*info = seq_points;
 
-	return seq_point_find_prev_by_native_offset (seq_points, native_offset, seq_point);
+	return mono_seq_point_find_prev_by_native_offset (seq_points, native_offset, seq_point);
 }
 
 /*
- * find_seq_point:
+ * mono_find_seq_point:
  *
  *   Find the sequence point corresponding to the IL offset IL_OFFSET, which
  * should be the location of a sequence point.
  */
 gboolean
-find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info, SeqPoint *seq_point)
+mono_find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSeqPointInfo **info, SeqPoint *seq_point)
 {
 	MonoSeqPointInfo *seq_points;
 
-	seq_points = get_seq_points (domain, method);
+	seq_points = mono_get_seq_points (domain, method);
 	if (!seq_points) {
 		if (info)
 			*info = NULL;
@@ -267,11 +267,11 @@ find_seq_point (MonoDomain *domain, MonoMethod *method, gint32 il_offset, MonoSe
 	if (info)
 		*info = seq_points;
 
-	return seq_point_find_by_il_offset (seq_points, il_offset, seq_point);
+	return mono_seq_point_find_by_il_offset (seq_points, il_offset, seq_point);
 }
 
 void
-bb_deduplicate_op_il_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
+mono_bb_deduplicate_op_il_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n, *prev;
 

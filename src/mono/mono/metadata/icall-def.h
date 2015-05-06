@@ -634,7 +634,7 @@ ICALL(RUNH_5h, "SufficientExecutionStack", ves_icall_System_Runtime_CompilerServ
 ICALL(RUNH_6, "get_OffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData)
 
 ICALL_TYPE(GCH, "System.Runtime.InteropServices.GCHandle", GCH_1)
-ICALL(GCH_1, "CheckCurrentDomain", GCHandle_CheckCurrentDomain)
+ICALL(GCH_1, "CheckCurrentDomain", mono_gc_GCHandle_CheckCurrentDomain)
 ICALL(GCH_2, "FreeHandle", ves_icall_System_GCHandle_FreeHandle)
 ICALL(GCH_3, "GetAddrOfPinnedObject", ves_icall_System_GCHandle_GetAddrOfPinnedObject)
 ICALL(GCH_4, "GetTarget", ves_icall_System_GCHandle_GetTarget)

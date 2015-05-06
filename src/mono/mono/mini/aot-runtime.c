@@ -2846,7 +2846,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 	if (method && has_seq_points) {
 		MonoSeqPointInfo *seq_points;
 
-		p += seq_point_info_read (&seq_points, p, FALSE);
+		p += mono_seq_point_info_read (&seq_points, p, FALSE);
 
 		mono_domain_lock (domain);
 		g_hash_table_insert (domain_jit_info (domain)->seq_points, method, seq_points);

@@ -58,7 +58,7 @@ enum {
 	STATE_WORKING,
 	STATE_WORK_ENQUEUED,
 	STATE_NURSERY_COLLECTION
-} WorkersStateName;
+};
 
 typedef gint32 State;
 

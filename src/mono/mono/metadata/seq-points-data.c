@@ -95,7 +95,7 @@ seq_point_info_inflate (MonoSeqPointInfo *info)
 }
 
 MonoSeqPointInfo*
-seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_debug_data, int *out_size)
+mono_seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_debug_data, int *out_size)
 {
 	MonoSeqPointInfo *info;
 	guint8 *info_ptr;
@@ -128,7 +128,7 @@ seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_deb
 }
 
 void
-seq_point_info_free (gpointer ptr)
+mono_seq_point_info_free (gpointer ptr)
 {
 	MonoSeqPointInfo* info = (MonoSeqPointInfo*) ptr;
 	g_free (info);
@@ -168,7 +168,7 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 }
 
 gboolean
-seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data)
+mono_seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data)
 {
 	int il_delta, native_delta;
 	GSList *l;
@@ -218,11 +218,11 @@ seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_se
 }
 
 gboolean
-seq_point_find_next_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point)
+mono_seq_point_find_next_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point)
 {
 	SeqPointIterator it;
-	seq_point_iterator_init (&it, info);
-	while (seq_point_iterator_next (&it)) {
+	mono_seq_point_iterator_init (&it, info);
+	while (mono_seq_point_iterator_next (&it)) {
 		if (it.seq_point.native_offset >= native_offset) {
 			memcpy (seq_point, &it.seq_point, sizeof (SeqPoint));
 			return TRUE;
@@ -233,13 +233,13 @@ seq_point_find_next_by_native_offset (MonoSeqPointInfo* info, int native_offset,
 }
 
 gboolean
-seq_point_find_prev_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point)
+mono_seq_point_find_prev_by_native_offset (MonoSeqPointInfo* info, int native_offset, SeqPoint* seq_point)
 {
 	SeqPoint prev_seq_point;
 	gboolean  is_first = TRUE;
 	SeqPointIterator it;
-	seq_point_iterator_init (&it, info);
-	while (seq_point_iterator_next (&it) && it.seq_point.native_offset <= native_offset) {
+	mono_seq_point_iterator_init (&it, info);
+	while (mono_seq_point_iterator_next (&it) && it.seq_point.native_offset <= native_offset) {
 		memcpy (&prev_seq_point, &it.seq_point, sizeof (SeqPoint));
 		is_first = FALSE;
 	}
@@ -253,11 +253,11 @@ seq_point_find_prev_by_native_offset (MonoSeqPointInfo* info, int native_offset,
 }
 
 gboolean
-seq_point_find_by_il_offset (MonoSeqPointInfo* info, int il_offset, SeqPoint* seq_point)
+mono_seq_point_find_by_il_offset (MonoSeqPointInfo* info, int il_offset, SeqPoint* seq_point)
 {
 	SeqPointIterator it;
-	seq_point_iterator_init (&it, info);
-	while (seq_point_iterator_next (&it)) {
+	mono_seq_point_iterator_init (&it, info);
+	while (mono_seq_point_iterator_next (&it)) {
 		if (it.seq_point.il_offset == il_offset) {
 			memcpy (seq_point, &it.seq_point, sizeof (SeqPoint));
 			return TRUE;
@@ -268,7 +268,7 @@ seq_point_find_by_il_offset (MonoSeqPointInfo* info, int il_offset, SeqPoint* se
 }
 
 void
-seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
+mono_seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 {
 	int i;
 	guint8* ptr;
@@ -278,8 +278,8 @@ seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 
 	g_assert (info_inflated.has_debug_data);
 
-	seq_point_iterator_init (&it, info);
-	while (seq_point_iterator_next (&it))
+	mono_seq_point_iterator_init (&it, info);
+	while (mono_seq_point_iterator_next (&it))
 		g_array_append_vals (seq_points, &it.seq_point, 1);
 
 	ptr = info_inflated.data + sp.next_offset;
@@ -294,7 +294,7 @@ seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 }
 
 gboolean
-seq_point_iterator_next (SeqPointIterator* it)
+mono_seq_point_iterator_next (SeqPointIterator* it)
 {
 	if (it->ptr >= it->end)
 		return FALSE;
@@ -305,7 +305,7 @@ seq_point_iterator_next (SeqPointIterator* it)
 }
 
 void
-seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info)
+mono_seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info)
 {
 	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
 	it->ptr = info_inflated.data;
@@ -316,7 +316,7 @@ seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info)
 }
 
 int
-seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
+mono_seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
 {
 	guint8* buffer0 = buffer;
 	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
@@ -332,7 +332,7 @@ seq_point_info_write (MonoSeqPointInfo* info, guint8* buffer)
 }
 
 int
-seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
+mono_seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 {
 	guint8* buffer0 = buffer;
 	int size, info_size;
@@ -341,7 +341,7 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
 	has_debug_data = decode_var_int (buffer, &buffer);
 
 	size = decode_var_int (buffer, &buffer);
-	(*info) = seq_point_info_new (size, copy, buffer, has_debug_data, &info_size);
+	(*info) = mono_seq_point_info_new (size, copy, buffer, has_debug_data, &info_size);
 	buffer += size;
 
 	return buffer - buffer0;
@@ -351,7 +351,7 @@ seq_point_info_read (MonoSeqPointInfo** info, guint8* buffer, gboolean copy)
  * Returns the maximum size of mono_seq_point_info_write.
  */
 int
-seq_point_info_get_write_size (MonoSeqPointInfo* info)
+mono_seq_point_info_get_write_size (MonoSeqPointInfo* info)
 {
 	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
 
@@ -368,7 +368,7 @@ seq_point_info_get_write_size (MonoSeqPointInfo* info)
  */
 
 void
-seq_point_data_init (SeqPointData *data, int entry_capacity)
+mono_seq_point_data_init (SeqPointData *data, int entry_capacity)
 {
 	data->entry_count = 0;
 	data->entry_capacity = entry_capacity;
@@ -376,7 +376,7 @@ seq_point_data_init (SeqPointData *data, int entry_capacity)
 }
 
 void
-seq_point_data_free (SeqPointData *data)
+mono_seq_point_data_free (SeqPointData *data)
 {
 	int i;
 	for (i=0; i<data->entry_count; i++) {
@@ -387,7 +387,7 @@ seq_point_data_free (SeqPointData *data)
 }
 
 gboolean
-seq_point_data_read (SeqPointData *data, char *path)
+mono_seq_point_data_read (SeqPointData *data, char *path)
 {
 	guint8 *buffer, *buffer_orig;
 	int entry_count, i;
@@ -407,13 +407,13 @@ seq_point_data_read (SeqPointData *data, char *path)
 	fclose(f);
 
 	entry_count = decode_var_int (buffer, &buffer);
-	seq_point_data_init (data, entry_count);
+	mono_seq_point_data_init (data, entry_count);
 	data->entry_count = entry_count;
 
 	for (i=0; i<entry_count; i++) {
 		data->entries [i].method_token = decode_var_int (buffer, &buffer);
 		data->entries [i].method_index = decode_var_int (buffer, &buffer);
-		buffer += seq_point_info_read (&data->entries [i].seq_points, buffer, TRUE);
+		buffer += mono_seq_point_info_read (&data->entries [i].seq_points, buffer, TRUE);
 		data->entries [i].free_seq_points = TRUE;
 	}
 
@@ -422,7 +422,7 @@ seq_point_data_read (SeqPointData *data, char *path)
 }
 
 gboolean
-seq_point_data_write (SeqPointData *data, char *path)
+mono_seq_point_data_write (SeqPointData *data, char *path)
 {
 	guint8 *buffer, *buffer_orig;
 	FILE *f;
@@ -433,7 +433,7 @@ seq_point_data_write (SeqPointData *data, char *path)
 		return FALSE;
 
 	for (i=0; i<data->entry_count; i++) {
-		size += seq_point_info_get_write_size (data->entries [i].seq_points);
+		size += mono_seq_point_info_get_write_size (data->entries [i].seq_points);
 	}
 	// Add size of entry_count and native_base_offsets
 	size += 4 + data->entry_count * 4;
@@ -445,7 +445,7 @@ seq_point_data_write (SeqPointData *data, char *path)
 	for (i=0; i<data->entry_count; i++) {
 		encode_var_int (buffer, &buffer, data->entries [i].method_token);
 		encode_var_int (buffer, &buffer, data->entries [i].method_index);
-		buffer += seq_point_info_write (data->entries [i].seq_points, buffer);
+		buffer += mono_seq_point_info_write (data->entries [i].seq_points, buffer);
 	}
 
 	fwrite (buffer_orig, 1, buffer - buffer_orig, f);
@@ -455,7 +455,7 @@ seq_point_data_write (SeqPointData *data, char *path)
 }
 
 void
-seq_point_data_add (SeqPointData *data, guint32 method_token, guint32 method_index, MonoSeqPointInfo* info)
+mono_seq_point_data_add (SeqPointData *data, guint32 method_token, guint32 method_index, MonoSeqPointInfo* info)
 {
 	int i;
 
@@ -468,7 +468,7 @@ seq_point_data_add (SeqPointData *data, guint32 method_token, guint32 method_ind
 }
 
 gboolean
-seq_point_data_get (SeqPointData *data, guint32 method_token, guint32 method_index, MonoSeqPointInfo** info)
+mono_seq_point_data_get (SeqPointData *data, guint32 method_token, guint32 method_index, MonoSeqPointInfo** info)
 {
 	int i;
 
@@ -482,19 +482,19 @@ seq_point_data_get (SeqPointData *data, guint32 method_token, guint32 method_ind
 }
 
 gboolean
-seq_point_data_get_il_offset (char *path, guint32 method_token, guint32 method_index, guint32 native_offset, guint32 *il_offset)
+mono_seq_point_data_get_il_offset (char *path, guint32 method_token, guint32 method_index, guint32 native_offset, guint32 *il_offset)
 {
 	SeqPointData sp_data;
 	MonoSeqPointInfo *seq_points;
 	SeqPoint sp;
 
-	if (!seq_point_data_read (&sp_data, path))
+	if (!mono_seq_point_data_read (&sp_data, path))
 		return FALSE;
 
-	if (!seq_point_data_get (&sp_data, method_token, method_index, &seq_points))
+	if (!mono_seq_point_data_get (&sp_data, method_token, method_index, &seq_points))
 		return FALSE;
 
-	if (!seq_point_find_prev_by_native_offset (seq_points, native_offset, &sp))
+	if (!mono_seq_point_find_prev_by_native_offset (seq_points, native_offset, &sp))
 		return FALSE;
 
 	*il_offset = sp.il_offset;
