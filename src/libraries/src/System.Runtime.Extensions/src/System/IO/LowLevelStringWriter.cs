@@ -5,7 +5,7 @@ using System.Text;
 
 namespace System.IO
 {
-    internal class LowLevelStringWriter : LowLevelTextWriter
+    internal sealed class LowLevelStringWriter : LowLevelTextWriter
     {
         public LowLevelStringWriter()
         {
@@ -27,7 +27,7 @@ namespace System.IO
             return _sb.ToString();
         }
 
-        private StringBuilder _sb = new StringBuilder();
+        private readonly StringBuilder _sb = new StringBuilder();
     }
 }
 

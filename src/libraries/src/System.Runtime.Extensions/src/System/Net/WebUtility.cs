@@ -38,7 +38,7 @@ namespace System.Net
 
         #region HtmlEncode / HtmlDecode methods
 
-        private static char[] s_htmlEntityEndingChars = new char[] { ';', '&' };
+        private static readonly char[] s_htmlEntityEndingChars = new char[] { ';', '&' };
 
         public static string HtmlEncode(string value)
         {
