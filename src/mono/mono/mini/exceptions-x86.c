@@ -718,7 +718,7 @@ mono_arch_exceptions_init (void)
  * for SEHs to behave. This requires hotfix http://support.microsoft.com/kb/976038
  * or (eventually) Windows 7 SP1.
  */
-#ifdef HOST_WIN32
+#ifdef TARGET_WIN32
 	DWORD flags;
 	FARPROC getter;
 	FARPROC setter;
