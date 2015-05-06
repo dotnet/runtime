@@ -30,19 +30,19 @@ internal partial class Interop
             internal const int ERROR_NEGATIVE_SEEK = 0x83;
             internal const int ERROR_DIR_NOT_EMPTY = 0x91;
             internal const int ERROR_BAD_PATHNAME = 0xA1;
-            internal const int ERROR_LOCK_FAILED = 167; // 0xA7
-            internal const int ERROR_BUSY = 170; //0xAA
+            internal const int ERROR_LOCK_FAILED = 0xA7;
+            internal const int ERROR_BUSY = 0xAA;
             internal const int ERROR_ALREADY_EXISTS = 0xB7;
-            internal const int ERROR_BAD_EXE_FORMAT = 193; // 0xC1
+            internal const int ERROR_BAD_EXE_FORMAT = 0xC1;
             internal const int ERROR_ENVVAR_NOT_FOUND = 0xCB;
             internal const int ERROR_FILENAME_EXCED_RANGE = 0xCE;
-            internal const int ERROR_EXE_MACHINE_TYPE_MISMATCH = 216; //0xD8
+            internal const int ERROR_EXE_MACHINE_TYPE_MISMATCH = 0xD8;
             internal const int ERROR_PIPE_BUSY = 0xE7;
             internal const int ERROR_NO_DATA = 0xE8;
             internal const int ERROR_PIPE_NOT_CONNECTED = 0xE9;
             internal const int ERROR_MORE_DATA = 0xEA;
             internal const int ERROR_NO_MORE_ITEMS = 0x103;
-            internal const int ERROR_PARTIAL_COPY = 299; //0x12B
+            internal const int ERROR_PARTIAL_COPY = 0x12B;
             internal const int ERROR_ARITHMETIC_OVERFLOW = 0x216;
             internal const int ERROR_PIPE_CONNECTED = 0x217;
             internal const int ERROR_PIPE_LISTENING = 0x218;
@@ -52,6 +52,10 @@ internal partial class Interop
             internal const int ERROR_NOT_FOUND = 0x490;
             internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
             internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
+            internal const int ERROR_NO_TOKEN = 0x3f0;
+            internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;
+            internal const int ERROR_INVALID_SID = 0x539;
+            internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
             internal const int EFail = unchecked((int)0x80004005);
         }
     }
