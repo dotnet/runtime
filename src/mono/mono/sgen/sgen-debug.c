@@ -859,7 +859,7 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 	} SGEN_HASH_TABLE_FOREACH_END;
 
 	if (sgen_is_world_stopped ())
-		find_pinning_ref_from_thread ((char*)key, sizeof (MonoObject));
+		find_pinning_ref_from_thread ((char*)key, sizeof (GCObject));
 }
 
 #ifndef SGEN_WITHOUT_MONO

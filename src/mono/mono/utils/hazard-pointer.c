@@ -16,8 +16,8 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-mutex.h>
 #ifdef SGEN_WITHOUT_MONO
-#include <mono/metadata/sgen-gc.h>
-#include <mono/metadata/sgen-client.h>
+#include <mono/sgen/sgen-gc.h>
+#include <mono/sgen/sgen-client.h>
 #else
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads.h>
