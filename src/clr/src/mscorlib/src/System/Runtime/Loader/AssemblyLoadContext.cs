@@ -203,9 +203,9 @@ namespace System.Runtime.Loader
         // Custom AssemblyLoadContext implementations can override this
         // method to perform the load of unmanaged native dll
         // This function needs to return the HMODULE of the dll it loads
-        protected virtual  IntPtr LoadUnmanagedDll(String unmanagedDllName)
+        protected virtual IntPtr LoadUnmanagedDll(String unmanagedDllName)
         {
-            //defer to default coreclr poilcy of loading unmanaged dll
+            //defer to default coreclr policy of loading unmanaged dll
             return IntPtr.Zero; 
         }
 
