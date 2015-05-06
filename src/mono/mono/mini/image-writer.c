@@ -121,7 +121,7 @@
 #define USE_ELF_RELA 1
 #endif
 
-#if defined(TARGET_X86) && !defined(TARGET_WIN32) && !defined(__APPLE__)
+#if defined(TARGET_X86) && !defined(HOST_WIN32) && !defined(__APPLE__)
 #define USE_ELF_WRITER 1
 #endif
 
