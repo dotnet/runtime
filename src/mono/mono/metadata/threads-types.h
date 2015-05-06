@@ -184,6 +184,8 @@ void ves_icall_System_Threading_Thread_MemoryBarrier (void);
 void ves_icall_System_Threading_Thread_Interrupt_internal (MonoInternalThread *this_obj);
 void ves_icall_System_Threading_Thread_SpinWait_nop (void);
 
+void ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContext *ctx);
+
 MonoInternalThread *mono_thread_internal_current (void);
 
 void mono_thread_internal_stop (MonoInternalThread *thread);
@@ -193,7 +195,6 @@ gboolean mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, Mon
 void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 
 void mono_alloc_special_static_data_free (GHashTable *special_static_fields);
-void mono_special_static_data_free_slot (guint32 offset, guint32 size);
 uint32_t mono_thread_alloc_tls   (MonoReflectionType *type);
 void     mono_thread_destroy_tls (uint32_t tls_offset);
 void     mono_thread_destroy_domain_tls (MonoDomain *domain);

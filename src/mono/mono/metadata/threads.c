@@ -31,6 +31,7 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/mono-debug-debugger.h>
+#include <mono/utils/monobitset.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-membar.h>
@@ -104,9 +105,9 @@ typedef union {
 	gdouble fval;
 } LongDoubleUnion;
  
-typedef struct _MonoThreadDomainTls MonoThreadDomainTls;
-struct _MonoThreadDomainTls {
-	MonoThreadDomainTls *next;
+typedef struct _StaticDataFreeList StaticDataFreeList;
+struct _StaticDataFreeList {
+	StaticDataFreeList *next;
 	guint32 offset;
 	guint32 size;
 };
@@ -114,7 +115,7 @@ struct _MonoThreadDomainTls {
 typedef struct {
 	int idx;
 	int offset;
-	MonoThreadDomainTls *freelist;
+	StaticDataFreeList *freelist;
 } StaticDataInfo;
 
 /* Number of cached culture objects in the MonoThread->cached_culture_info array
@@ -130,11 +131,6 @@ static void mono_threads_lock (void);
 static void mono_threads_unlock (void);
 static mono_mutex_t threads_mutex;
 
-/* Controls access to context static data */
-#define mono_contexts_lock() mono_mutex_lock (&contexts_mutex)
-#define mono_contexts_unlock() mono_mutex_unlock (&contexts_mutex)
-static mono_mutex_t contexts_mutex;
-
 /* Controls access to the 'joinable_threads' hash table */
 #define joinable_threads_lock() mono_mutex_lock (&joinable_threads_mutex)
 #define joinable_threads_unlock() mono_mutex_unlock (&joinable_threads_mutex)
@@ -148,6 +144,11 @@ static StaticDataInfo context_static_info;
  * MonoInternalThread*) that need joining before exit
  */
 static MonoGHashTable *threads=NULL;
+
+/* List of app context GC handles.
+ * Added to from ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext ().
+ */
+static GHashTable *contexts = NULL;
 
 /*
  * Threads which are starting up and they are not in the 'threads' hash yet.
@@ -200,7 +201,8 @@ static guint32 default_stacksize = 0;
 #define default_stacksize_for_thread(thread) ((thread)->stack_size? (thread)->stack_size: default_stacksize)
 
 static void thread_adjust_static_data (MonoInternalThread *thread);
-static void mono_free_static_data (gpointer* static_data, gboolean threadlocal);
+static void context_adjust_static_data (MonoAppContext *ctx);
+static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
 static gboolean mono_thread_resume (MonoInternalThread* thread);
@@ -473,7 +475,7 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 	thread->cached_culture_info = NULL;
 
-	mono_free_static_data (thread->static_data, TRUE);
+	mono_free_static_data (thread->static_data);
 	thread->static_data = NULL;
 	ref_stack_destroy (thread->appdomain_refs);
 	thread->appdomain_refs = NULL;
@@ -487,14 +489,51 @@ static void thread_cleanup (MonoInternalThread *thread)
 	}
 }
 
+/*
+ * A special static data offset (guint32) consists of 3 parts:
+ *
+ * [0]   6-bit index into the array of chunks.
+ * [6]   25-bit offset into the array.
+ * [31]  Bit indicating thread or context static.
+ */
+
+typedef union {
+	struct {
+		guint32 index : 6;
+		guint32 offset : 25;
+		guint32 type : 1;
+	} fields;
+	guint32 raw;
+} SpecialStaticOffset;
+
+#define SPECIAL_STATIC_OFFSET_TYPE_THREAD 0
+#define SPECIAL_STATIC_OFFSET_TYPE_CONTEXT 1
+
+#define MAKE_SPECIAL_STATIC_OFFSET(index, offset, type) \
+	((SpecialStaticOffset) { .fields = { (index), (offset), (type) } }.raw)
+#define ACCESS_SPECIAL_STATIC_OFFSET(x,f) \
+	(((SpecialStaticOffset *) &(x))->fields.f)
+
 static gpointer
 get_thread_static_data (MonoInternalThread *thread, guint32 offset)
 {
-	int idx;
-	g_assert ((offset & 0x80000000) == 0);
-	offset &= 0x7fffffff;
-	idx = (offset >> 24) - 1;
-	return ((char*) thread->static_data [idx]) + (offset & 0xffffff);
+	g_assert (ACCESS_SPECIAL_STATIC_OFFSET (offset, type) == SPECIAL_STATIC_OFFSET_TYPE_THREAD);
+
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (offset, index);
+	int off = ACCESS_SPECIAL_STATIC_OFFSET (offset, offset);
+
+	return ((char *) thread->static_data [idx]) + off;
+}
+
+static gpointer
+get_context_static_data (MonoAppContext *ctx, guint32 offset)
+{
+	g_assert (ACCESS_SPECIAL_STATIC_OFFSET (offset, type) == SPECIAL_STATIC_OFFSET_TYPE_CONTEXT);
+
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (offset, index);
+	int off = ACCESS_SPECIAL_STATIC_OFFSET (offset, offset);
+
+	return ((char *) ctx->static_data [idx]) + off;
 }
 
 static MonoThread**
@@ -2527,6 +2566,23 @@ ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value)
 }
 
 void
+ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContext *ctx)
+{
+	mono_threads_lock ();
+
+	//g_print ("Registering context %d in domain %d\n", ctx->context_id, ctx->domain_id);
+
+	if (!contexts)
+		contexts = g_hash_table_new (NULL, NULL);
+
+	context_adjust_static_data (ctx);
+	gpointer gch = GUINT_TO_POINTER (mono_gchandle_new_weakref (&ctx->obj, FALSE));
+	g_hash_table_insert (contexts, gch, gch);
+
+	mono_threads_unlock ();
+}
+
+void
 mono_thread_init_tls (void)
 {
 	MONO_FAST_TLS_INIT (tls_current_object);
@@ -2538,7 +2594,6 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 {
 	mono_mutex_init_recursive(&threads_mutex);
 	mono_mutex_init_recursive(&interlocked_mutex);
-	mono_mutex_init_recursive(&contexts_mutex);
 	mono_mutex_init_recursive(&joinable_threads_mutex);
 	
 	background_change_event = CreateEvent (NULL, TRUE, FALSE, NULL);
@@ -2582,7 +2637,6 @@ void mono_thread_cleanup (void)
 	 */
 	mono_mutex_destroy (&threads_mutex);
 	mono_mutex_destroy (&interlocked_mutex);
-	mono_mutex_destroy (&contexts_mutex);
 	mono_mutex_destroy (&delayed_free_table_mutex);
 	mono_mutex_destroy (&small_id_mutex);
 	CloseHandle (background_change_event);
@@ -3487,32 +3541,39 @@ static const int static_data_size [NUM_STATIC_DATA_IDX] = {
 };
 #endif
 
-static uintptr_t* static_reference_bitmaps [NUM_STATIC_DATA_IDX];
+static MonoBitSet *thread_reference_bitmaps [NUM_STATIC_DATA_IDX];
+static MonoBitSet *context_reference_bitmaps [NUM_STATIC_DATA_IDX];
+
+static void
+mark_slots (void *addr, MonoBitSet **bitmaps, MonoGCMarkFunc mark_func, void *gc_data)
+{
+	gpointer *static_data = addr;
+
+	for (int i = 0; i < NUM_STATIC_DATA_IDX; ++i) {
+		void **ptr = static_data [i];
+
+		if (!ptr)
+			continue;
+
+		MONO_BITSET_FOREACH (bitmaps [i], idx, {
+			void **p = ptr + idx;
+
+			if (*p)
+				mark_func (p, gc_data);
+		});
+	}
+}
 
 static void
 mark_tls_slots (void *addr, MonoGCMarkFunc mark_func, void *gc_data)
 {
-	int i;
-	gpointer *static_data = addr;
-	for (i = 0; i < NUM_STATIC_DATA_IDX; ++i) {
-		int j, numwords;
-		void **ptr;
-		if (!static_data [i])
-			continue;
-		numwords = 1 + static_data_size [i] / sizeof (gpointer) / (sizeof(uintptr_t) * 8);
-		ptr = static_data [i];
-		for (j = 0; j < numwords; ++j, ptr += sizeof (uintptr_t) * 8) {
-			uintptr_t bmap = static_reference_bitmaps [i][j];
-			void ** p = ptr;
-			while (bmap) {
-				if ((bmap & 1) && *p) {
-					mark_func (p, gc_data);
-				}
-				p++;
-				bmap >>= 1;
-			}
-		}
-	}
+	mark_slots (addr, thread_reference_bitmaps, mark_func, gc_data);
+}
+
+static void
+mark_ctx_slots (void *addr, MonoGCMarkFunc mark_func, void *gc_data)
+{
+	mark_slots (addr, context_reference_bitmaps, mark_func, gc_data);
 }
 
 /*
@@ -3523,15 +3584,23 @@ mark_tls_slots (void *addr, MonoGCMarkFunc mark_func, void *gc_data)
 static void 
 mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean threadlocal)
 {
-	guint idx = (offset >> 24) - 1;
+	guint idx = ACCESS_SPECIAL_STATIC_OFFSET (offset, index);
 	int i;
 
 	gpointer* static_data = *static_data_ptr;
 	if (!static_data) {
-		static void* tls_desc = NULL;
-		if (mono_gc_user_markers_supported () && !tls_desc)
-			tls_desc = mono_gc_make_root_descr_user (mark_tls_slots);
-		static_data = mono_gc_alloc_fixed (static_data_size [0], threadlocal?tls_desc:NULL);
+		static void *tls_desc = NULL;
+		static void *ctx_desc = NULL;
+
+		if (mono_gc_user_markers_supported ()) {
+			if (!tls_desc)
+				tls_desc = mono_gc_make_root_descr_user (mark_tls_slots);
+
+			if (!ctx_desc)
+				ctx_desc = mono_gc_make_root_descr_user (mark_ctx_slots);
+		}
+
+		static_data = mono_gc_alloc_fixed (static_data_size [0], threadlocal ? tls_desc : ctx_desc);
 		*static_data_ptr = static_data;
 		static_data [0] = static_data;
 	}
@@ -3539,7 +3608,8 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 	for (i = 1; i <= idx; ++i) {
 		if (static_data [i])
 			continue;
-		if (mono_gc_user_markers_supported () && threadlocal)
+
+		if (mono_gc_user_markers_supported ())
 			static_data [i] = g_malloc0 (static_data_size [i]);
 		else
 			static_data [i] = mono_gc_alloc_fixed (static_data_size [i], NULL);
@@ -3547,7 +3617,7 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 }
 
 static void 
-mono_free_static_data (gpointer* static_data, gboolean threadlocal)
+mono_free_static_data (gpointer* static_data)
 {
 	int i;
 	for (i = 1; i < NUM_STATIC_DATA_IDX; ++i) {
@@ -3558,12 +3628,12 @@ mono_free_static_data (gpointer* static_data, gboolean threadlocal)
 		 * At this point, the static data pointer array is still registered with the
 		 * GC, so must ensure that mark_tls_slots() will not encounter any invalid
 		 * data.  Freeing the individual arrays without first nulling their slots
-		 * would make it possible for mark_tls_slots() to encounter a pointer to
+		 * would make it possible for mark_tls/ctx_slots() to encounter a pointer to
 		 * such an already freed array.  See bug #13813.
 		 */
 		static_data [i] = NULL;
 		mono_memory_write_barrier ();
-		if (mono_gc_user_markers_supported () && threadlocal)
+		if (mono_gc_user_markers_supported ())
 			g_free (p);
 		else
 			mono_gc_free_fixed (p);
@@ -3592,8 +3662,6 @@ static void mono_init_static_data_info (StaticDataInfo *static_data)
 static guint32
 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align)
 {
-	guint32 offset;
-
 	if (!static_data->idx && !static_data->offset) {
 		/* 
 		 * we use the first chunk of the first allocation also as
@@ -3609,7 +3677,7 @@ mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 
 		g_assert (static_data->idx < NUM_STATIC_DATA_IDX);
 		static_data->offset = 0;
 	}
-	offset = static_data->offset | ((static_data->idx + 1) << 24);
+	guint32 offset = MAKE_SPECIAL_STATIC_OFFSET (static_data->idx, static_data->offset, 0);
 	static_data->offset += size;
 	return offset;
 }
@@ -3621,17 +3689,31 @@ mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 
 static void
 thread_adjust_static_data (MonoInternalThread *thread)
 {
-	guint32 offset;
-
 	mono_threads_lock ();
 	if (thread_static_info.offset || thread_static_info.idx > 0) {
 		/* get the current allocated size */
-		offset = thread_static_info.offset | ((thread_static_info.idx + 1) << 24);
-		mono_alloc_static_data (&(thread->static_data), offset, TRUE);
+		guint32 offset = MAKE_SPECIAL_STATIC_OFFSET (thread_static_info.idx, thread_static_info.offset, 0);
+		mono_alloc_static_data (&thread->static_data, offset, TRUE);
 	}
 	mono_threads_unlock ();
 }
 
+static void
+context_adjust_static_data (MonoAppContext *ctx)
+{
+	mono_threads_lock ();
+
+	if (context_static_info.offset || context_static_info.idx > 0) {
+		guint32 offset = MAKE_SPECIAL_STATIC_OFFSET (context_static_info.idx, context_static_info.offset, 0);
+		mono_alloc_static_data (&ctx->static_data, offset, FALSE);
+	}
+
+	mono_threads_unlock ();
+}
+
+/*
+ * LOCKING: requires that threads_mutex is held
+ */
 static void 
 alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
@@ -3641,11 +3723,30 @@ alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 	mono_alloc_static_data (&(thread->static_data), offset, TRUE);
 }
 
-static MonoThreadDomainTls*
-search_tls_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 align)
+/*
+ * LOCKING: requires that threads_mutex is held
+ */
+static void
+alloc_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
-	MonoThreadDomainTls* prev = NULL;
-	MonoThreadDomainTls* tmp = static_data->freelist;
+	uint32_t gch = GPOINTER_TO_INT (key);
+	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (gch);
+
+	if (!ctx) {
+		g_hash_table_remove (contexts, key);
+		mono_gchandle_free (gch);
+		return;
+	}
+
+	guint32 offset = GPOINTER_TO_UINT (user);
+	mono_alloc_static_data (&ctx->static_data, offset, FALSE);
+}
+
+static StaticDataFreeList*
+search_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 align)
+{
+	StaticDataFreeList* prev = NULL;
+	StaticDataFreeList* tmp = static_data->freelist;
 	while (tmp) {
 		if (tmp->size == size) {
 			if (prev)
@@ -3667,100 +3768,88 @@ search_tls_slot_in_freelist (StaticDataInfo *static_data, guint32 size, guint32 
 #endif
 
 static void
-update_tls_reference_bitmap (guint32 offset, uintptr_t *bitmap, int numbits)
+update_reference_bitmap (MonoBitSet **sets, guint32 offset, uintptr_t *bitmap, int numbits)
 {
-	int i;
-	int idx = (offset >> 24) - 1;
-	uintptr_t *rb;
-	if (!static_reference_bitmaps [idx])
-		static_reference_bitmaps [idx] = g_new0 (uintptr_t, 1 + static_data_size [idx] / sizeof(gpointer) / (sizeof(uintptr_t) * 8));
-	rb = static_reference_bitmaps [idx];
-	offset &= 0xffffff;
-	offset /= sizeof (gpointer);
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (offset, index);
+	if (!sets [idx])
+		sets [idx] = mono_bitset_new (static_data_size [idx] / sizeof (uintptr_t), 0);
+	MonoBitSet *rb = sets [idx];
+	offset = ACCESS_SPECIAL_STATIC_OFFSET (offset, offset);
+	offset /= sizeof (uintptr_t);
 	/* offset is now the bitmap offset */
-	for (i = 0; i < numbits; ++i) {
+	for (int i = 0; i < numbits; ++i) {
 		if (bitmap [i / sizeof (uintptr_t)] & (ONE_P << (i & (sizeof (uintptr_t) * 8 -1))))
-			rb [(offset + i) / (sizeof (uintptr_t) * 8)] |= (ONE_P << ((offset + i) & (sizeof (uintptr_t) * 8 -1)));
+			mono_bitset_set_fast (rb, offset + i);
 	}
 }
 
 static void
-clear_reference_bitmap (guint32 offset, guint32 size)
+clear_reference_bitmap (MonoBitSet **sets, guint32 offset, guint32 size)
 {
-	int idx = (offset >> 24) - 1;
-	uintptr_t *rb;
-	rb = static_reference_bitmaps [idx];
-	offset &= 0xffffff;
-	offset /= sizeof (gpointer);
-	size /= sizeof (gpointer);
-	size += offset;
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (offset, index);
+	MonoBitSet *rb = sets [idx];
+	offset = ACCESS_SPECIAL_STATIC_OFFSET (offset, offset);
+	offset /= sizeof (uintptr_t);
 	/* offset is now the bitmap offset */
-	for (; offset < size; ++offset)
-		rb [offset / (sizeof (uintptr_t) * 8)] &= ~(1L << (offset & (sizeof (uintptr_t) * 8 -1)));
+	for (int i = 0; i < size / sizeof (uintptr_t); i++)
+		mono_bitset_clear_fast (rb, offset + i);
 }
-
-/*
- * The offset for a special static variable is composed of three parts:
- * a bit that indicates the type of static data (0:thread, 1:context),
- * an index in the array of chunks of memory for the thread (thread->static_data)
- * and an offset in that chunk of mem. This allows allocating less memory in the 
- * common case.
- */
 
 guint32
 mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align, uintptr_t *bitmap, int numbits)
 {
-	guint32 offset;
+	g_assert (static_type == SPECIAL_STATIC_THREAD || static_type == SPECIAL_STATIC_CONTEXT);
+
+	StaticDataInfo *info;
+	MonoBitSet **sets;
+
 	if (static_type == SPECIAL_STATIC_THREAD) {
-		MonoThreadDomainTls *item;
-		mono_threads_lock ();
-		item = search_tls_slot_in_freelist (&thread_static_info, size, align);
-		/*g_print ("TLS alloc: %d in domain %p (total: %d), cached: %p\n", size, mono_domain_get (), thread_static_info.offset, item);*/
-		if (item) {
-			offset = item->offset;
-			g_free (item);
-		} else {
-			offset = mono_alloc_static_data_slot (&thread_static_info, size, align);
-		}
-		update_tls_reference_bitmap (offset, bitmap, numbits);
+		info = &thread_static_info;
+		sets = thread_reference_bitmaps;
+	} else {
+		info = &context_static_info;
+		sets = context_reference_bitmaps;
+	}
+
+	mono_threads_lock ();
+
+	StaticDataFreeList *item = search_slot_in_freelist (info, size, align);
+	guint32 offset;
+
+	if (item) {
+		offset = item->offset;
+		g_free (item);
+	} else {
+		offset = mono_alloc_static_data_slot (info, size, align);
+	}
+
+	update_reference_bitmap (sets, offset, bitmap, numbits);
+
+	if (static_type == SPECIAL_STATIC_THREAD) {
 		/* This can be called during startup */
 		if (threads != NULL)
 			mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
-		mono_threads_unlock ();
 	} else {
-		g_assert (static_type == SPECIAL_STATIC_CONTEXT);
-		mono_contexts_lock ();
-		offset = mono_alloc_static_data_slot (&context_static_info, size, align);
-		mono_contexts_unlock ();
-		offset |= 0x80000000;	/* Set the high bit to indicate context static data */
+		if (contexts != NULL)
+			g_hash_table_foreach (contexts, alloc_context_static_data_helper, GUINT_TO_POINTER (offset));
+
+		ACCESS_SPECIAL_STATIC_OFFSET (offset, type) = SPECIAL_STATIC_OFFSET_TYPE_CONTEXT;
 	}
+
+	mono_threads_unlock ();
+
 	return offset;
 }
 
 gpointer
 mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset)
 {
-	/* The high bit means either thread (0) or static (1) data. */
+	guint32 static_type = ACCESS_SPECIAL_STATIC_OFFSET (offset, type);
 
-	guint32 static_type = (offset & 0x80000000);
-	int idx;
-
-	offset &= 0x7fffffff;
-	idx = (offset >> 24) - 1;
-
-	if (static_type == 0) {
+	if (static_type == SPECIAL_STATIC_OFFSET_TYPE_THREAD) {
 		return get_thread_static_data (thread, offset);
 	} else {
-		/* Allocate static data block under demand, since we don't have a list
-		// of contexts
-		*/
-		MonoAppContext *context = mono_context_get ();
-		if (!context->static_data || !context->static_data [idx]) {
-			mono_contexts_lock ();
-			mono_alloc_static_data (&(context->static_data), offset, FALSE);
-			mono_contexts_unlock ();
-		}
-		return ((char*) context->static_data [idx]) + (offset & 0xffffff);	
+		return get_context_static_data (thread->current_appcontext, offset);
 	}
 }
 
@@ -3773,47 +3862,90 @@ mono_get_special_static_data (guint32 offset)
 typedef struct {
 	guint32 offset;
 	guint32 size;
-} TlsOffsetSize;
+} OffsetSize;
 
+/*
+ * LOCKING: requires that threads_mutex is held
+ */
 static void 
 free_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
 	MonoInternalThread *thread = value;
-	TlsOffsetSize *data = user;
-	int idx = (data->offset >> 24) - 1;
+	OffsetSize *data = user;
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (data->offset, index);
+	int off = ACCESS_SPECIAL_STATIC_OFFSET (data->offset, offset);
 	char *ptr;
 
 	if (!thread->static_data || !thread->static_data [idx])
 		return;
-	ptr = ((char*) thread->static_data [idx]) + (data->offset & 0xffffff);
+	ptr = ((char*) thread->static_data [idx]) + off;
+	mono_gc_bzero_atomic (ptr, data->size);
+}
+
+/*
+ * LOCKING: requires that threads_mutex is held
+ */
+static void
+free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
+{
+	uint32_t gch = GPOINTER_TO_INT (key);
+	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (gch);
+
+	if (!ctx) {
+		g_hash_table_remove (contexts, key);
+		mono_gchandle_free (gch);
+		return;
+	}
+
+	OffsetSize *data = user;
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (data->offset, index);
+	int off = ACCESS_SPECIAL_STATIC_OFFSET (data->offset, offset);
+	char *ptr;
+
+	if (!ctx->static_data || !ctx->static_data [idx])
+		return;
+
+	ptr = ((char*) ctx->static_data [idx]) + off;
 	mono_gc_bzero_atomic (ptr, data->size);
 }
 
 static void
 do_free_special_slot (guint32 offset, guint32 size)
 {
-	guint32 static_type = (offset & 0x80000000);
-	/*g_print ("free %s , size: %d, offset: %x\n", field->name, size, offset);*/
-	if (static_type == 0) {
-		TlsOffsetSize data;
-		MonoThreadDomainTls *item = g_new0 (MonoThreadDomainTls, 1);
-		data.offset = offset & 0x7fffffff;
-		data.size = size;
-		clear_reference_bitmap (data.offset, data.size);
+	guint32 static_type = ACCESS_SPECIAL_STATIC_OFFSET (offset, type);
+	MonoBitSet **sets;
+	StaticDataInfo *info;
+
+	if (static_type == SPECIAL_STATIC_OFFSET_TYPE_THREAD) {
+		info = &thread_static_info;
+		sets = thread_reference_bitmaps;
+	} else {
+		info = &context_static_info;
+		sets = context_reference_bitmaps;
+	}
+
+	guint32 data_offset = offset;
+	ACCESS_SPECIAL_STATIC_OFFSET (data_offset, type) = 0;
+	OffsetSize data = { data_offset, size };
+
+	clear_reference_bitmap (sets, data.offset, data.size);
+
+	if (static_type == SPECIAL_STATIC_OFFSET_TYPE_THREAD) {
 		if (threads != NULL)
 			mono_g_hash_table_foreach (threads, free_thread_static_data_helper, &data);
+	} else {
+		if (contexts != NULL)
+			g_hash_table_foreach (contexts, free_context_static_data_helper, &data);
+	}
+
+	if (!mono_runtime_is_shutting_down ()) {
+		StaticDataFreeList *item = g_new0 (StaticDataFreeList, 1);
+
 		item->offset = offset;
 		item->size = size;
 
-		if (!mono_runtime_is_shutting_down ()) {
-			item->next = thread_static_info.freelist;
-			thread_static_info.freelist = item;
-		} else {
-			/* We could be called during shutdown after mono_thread_cleanup () is called */
-			g_free (item);
-		}
-	} else {
-		/* FIXME: free context static data as well */
+		item->next = info->freelist;
+		info->freelist = item;
 	}
 }
 
@@ -3832,13 +3964,18 @@ void
 mono_alloc_special_static_data_free (GHashTable *special_static_fields)
 {
 	mono_threads_lock ();
+
 	g_hash_table_foreach (special_static_fields, do_free_special, NULL);
+
 	mono_threads_unlock ();
 }
 
-void
+static void
 mono_special_static_data_free_slot (guint32 offset, guint32 size)
 {
+	/* Only ever called for ThreadLocal instances */
+	g_assert (ACCESS_SPECIAL_STATIC_OFFSET (offset, type) == SPECIAL_STATIC_OFFSET_TYPE_THREAD);
+
 	mono_threads_lock ();
 	do_free_special_slot (offset, size);
 	mono_threads_unlock ();
