@@ -610,6 +610,11 @@ mono_process_current_pid ()
 int
 mono_cpu_count (void)
 {
+#ifdef HOST_WIN32
+	SYSTEM_INFO info;
+	GetSystemInfo (&info);
+	return info.dwNumberOfProcessors;
+#else
 	int count = 0;
 #ifdef PLATFORM_ANDROID
 	/* Android tries really hard to save power by powering off CPUs on SMP phones which
@@ -645,12 +650,6 @@ mono_cpu_count (void)
 			return count;
 	}
 #endif
-#ifdef HOST_WIN32
-	{
-		SYSTEM_INFO info;
-		GetSystemInfo (&info);
-		return info.dwNumberOfProcessors;
-	}
 #endif
 	/* FIXME: warn */
 	return 1;
