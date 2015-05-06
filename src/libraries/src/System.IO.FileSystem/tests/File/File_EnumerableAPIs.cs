@@ -11,7 +11,7 @@ using Xunit;
 
 namespace EnumerableTests
 {
-    class File_FileEnumerableTests
+    public class File_FileEnumerableTests
     {
         private static EnumerableUtils utils;
 
