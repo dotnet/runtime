@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata.Tests
         {
             GCHandle handle = GCHandle.Alloc(tokens, GCHandleType.Pinned);
             var block = new MemoryBlock((byte*)handle.AddrOfPinnedObject(), tokens.Length * sizeof(uint));
-            return new EnCMapTableReader((uint)tokens.Length, block, containingBlockOffset: 0);
+            return new EnCMapTableReader(tokens.Length, block, containingBlockOffset: 0);
         }
 
         private static EnCMapTableReader[] CreateEncMapTables(int[][] tables)
@@ -35,12 +35,12 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(expected, string.Join(" | ", actual));
         }
 
-        private static void TestGenerationHandle(MetadataAggregator aggregator, int token, int expectedToken, int expectedGeneration)
+        private static void TestGenerationHandle(MetadataAggregator aggregator, Handle handle, Handle expectedHandle, int expectedGeneration)
         {
             int actualGeneration;
-            var actualHandle = aggregator.GetGenerationHandle(new Handle((uint)token), out actualGeneration);
+            var actualHandle = aggregator.GetGenerationHandle(handle, out actualGeneration);
             Assert.Equal(expectedGeneration, actualGeneration);
-            Assert.Equal(expectedToken, (int)actualHandle.value);
+            Assert.Equal(expectedHandle, actualHandle);
         }
 
         [Fact]
@@ -108,19 +108,19 @@ namespace System.Reflection.Metadata.Tests
 
             var aggregator = new MetadataAggregator(rowCounts, new int[0][]);
 
-            TestGenerationHandle(aggregator, 0x11000031, expectedToken: 0x11000001, expectedGeneration: 3);
-            TestGenerationHandle(aggregator, 0x11000030, expectedToken: 0x11000030, expectedGeneration: 0);
-            TestGenerationHandle(aggregator, 0x11000001, expectedToken: 0x11000001, expectedGeneration: 0);
-            TestGenerationHandle(aggregator, 0x11000015, expectedToken: 0x11000015, expectedGeneration: 0);
-            TestGenerationHandle(aggregator, 0x11000000, expectedToken: 0x11000000, expectedGeneration: 0);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000031), expectedHandle: MetadataTokens.Handle(0x11000001), expectedGeneration: 3);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000030), expectedHandle: MetadataTokens.Handle(0x11000030), expectedGeneration: 0);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000001), expectedHandle: MetadataTokens.Handle(0x11000001), expectedGeneration: 0);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000015), expectedHandle: MetadataTokens.Handle(0x11000015), expectedGeneration: 0);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000000), expectedHandle: MetadataTokens.Handle(0x11000000), expectedGeneration: 0);
 
-            TestGenerationHandle(aggregator, 0x06000075, expectedToken: 0x06000075, expectedGeneration: 0);
-            TestGenerationHandle(aggregator, 0x0600009e, expectedToken: 0x06000001, expectedGeneration: 1);
-            TestGenerationHandle(aggregator, 0x0600009f, expectedToken: 0x06000002, expectedGeneration: 1);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x06000075), expectedHandle: MetadataTokens.Handle(0x06000075), expectedGeneration: 0);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x0600009e), expectedHandle: MetadataTokens.Handle(0x06000001), expectedGeneration: 1);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x0600009f), expectedHandle: MetadataTokens.Handle(0x06000002), expectedGeneration: 1);
 
-            TestGenerationHandle(aggregator, 0x1800003a, expectedToken: 0x18000002, expectedGeneration: 3);
+            TestGenerationHandle(aggregator, MetadataTokens.Handle(0x1800003a), expectedHandle: MetadataTokens.Handle(0x18000002), expectedGeneration: 3);
 
-            Assert.Throws<ArgumentException>(() => TestGenerationHandle(aggregator, 0x11000032, expectedToken: 0x00000000, expectedGeneration: 0));
+            Assert.Throws<ArgumentException>(() => TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000032), expectedHandle: MetadataTokens.Handle(0x00000000), expectedGeneration: 0));
         }
 
         [Fact]
@@ -164,13 +164,13 @@ namespace System.Reflection.Metadata.Tests
 
             var aggregator = new MetadataAggregator(new RowCounts[0][], heapSizes);
 
-            TestGenerationHandle(aggregator, (int)TokenTypeIds.Blob | 99, expectedToken: (int)TokenTypeIds.Blob | 99, expectedGeneration: 0);
-            TestGenerationHandle(aggregator, (int)TokenTypeIds.Blob | 100, expectedToken: (int)TokenTypeIds.Blob | 0, expectedGeneration: 3);
-            TestGenerationHandle(aggregator, (int)TokenTypeIds.Blob | 200, expectedToken: (int)TokenTypeIds.Blob | 0, expectedGeneration: 4);
-            TestGenerationHandle(aggregator, (int)TokenTypeIds.UserString | 12, expectedToken: (int)TokenTypeIds.UserString | 2, expectedGeneration: 2);
-            TestGenerationHandle(aggregator, (int)TokenTypeIds.String | 0, expectedToken: (int)TokenTypeIds.String | 0, expectedGeneration: 2);
+            TestGenerationHandle(aggregator, MetadataTokens.BlobHandle(99), expectedHandle: MetadataTokens.BlobHandle(99), expectedGeneration: 0);
+            TestGenerationHandle(aggregator, MetadataTokens.BlobHandle(100), expectedHandle: MetadataTokens.BlobHandle(0), expectedGeneration: 3);
+            TestGenerationHandle(aggregator, MetadataTokens.BlobHandle(200), expectedHandle: MetadataTokens.BlobHandle(0), expectedGeneration: 4);
+            TestGenerationHandle(aggregator, MetadataTokens.UserStringHandle(12), expectedHandle: MetadataTokens.UserStringHandle(2), expectedGeneration: 2);
+            TestGenerationHandle(aggregator, MetadataTokens.StringHandle(0), expectedHandle: MetadataTokens.StringHandle(0), expectedGeneration: 2);
 
-            Assert.Throws<ArgumentException>(() => TestGenerationHandle(aggregator, (int)TokenTypeIds.String | 22, expectedToken: 0x00000000, expectedGeneration: 0));
+            Assert.Throws<ArgumentException>(() => TestGenerationHandle(aggregator, MetadataTokens.StringHandle(22), expectedHandle: MetadataTokens.StringHandle(0), expectedGeneration: 0));
         }
     }
 }

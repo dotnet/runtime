@@ -4,4 +4,5 @@
   -->
 
   <Import Project="mono.targets" Condition="'$(OsEnvironment)'=='Unix'" />
+  <Import Project="roslyn.xplat.targets" Condition="'$(OsEnvironment)'=='Unix' and '$(UseRoslynCompiler)'=='true'" />
 </Project>

@@ -83,7 +83,7 @@ namespace System.Reflection.Metadata.Ecma335
             StringHandle handleContainingSegment = fullNamespaceHandle.GetFullName();
             Debug.Assert(!handleContainingSegment.IsVirtual);
 
-            int lastFoundIndex = fullNamespaceHandle.Index - 1;
+            int lastFoundIndex = fullNamespaceHandle.GetHeapOffset() - 1;
             int currentSegment = 0;
             while (currentSegment < segmentIndex)
             {
@@ -100,8 +100,8 @@ namespace System.Reflection.Metadata.Ecma335
 
             // + 1 because lastFoundIndex will either "point" to a '.', or will be -1. Either way,
             // we want the next char.
-            uint resultIndex = (uint)(lastFoundIndex + 1);
-            return StringHandle.FromIndex(resultIndex).WithDotTermination();
+            int resultIndex = lastFoundIndex + 1;
+            return StringHandle.FromOffset(resultIndex).WithDotTermination();
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace System.Reflection.Metadata.Ecma335
                 // that we never hand back a handle to the user that doesn't have a typeid as that prevents
                 // round-trip conversion to Handle and back. (We may discover other handle aliases for the
                 // root namespace (any nil/empty string will do), but we need this one to always be there.
-                NamespaceDefinitionHandle rootNamespace = NamespaceDefinitionHandle.FromIndexOfFullName(0);
+                NamespaceDefinitionHandle rootNamespace = NamespaceDefinitionHandle.FromFullNameOffset(0);
                 namespaceBuilderTable.Add(
                     rootNamespace,
                     new NamespaceDataBuilder(
@@ -226,7 +226,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             StringHandle simpleName = GetSimpleName(realChild, numberOfSegments);
-            var namespaceHandle = NamespaceDefinitionHandle.FromIndexOfSimpleName((uint)simpleName.Index);
+            var namespaceHandle = NamespaceDefinitionHandle.FromSimpleNameOffset(simpleName.GetHeapOffset());
             return new NamespaceDataBuilder(namespaceHandle, simpleName, fullName);
         }
 
@@ -339,7 +339,7 @@ namespace System.Reflection.Metadata.Ecma335
                     continue;
                 }
 
-                NamespaceDefinitionHandle namespaceHandle = _metadataReader.TypeDefTable.GetNamespace(typeHandle);
+                NamespaceDefinitionHandle namespaceHandle = _metadataReader.TypeDefTable.GetNamespaceDefinition(typeHandle);
                 NamespaceDataBuilder builder;
                 if (table.TryGetValue(namespaceHandle, out builder))
                 {
@@ -371,7 +371,7 @@ namespace System.Reflection.Metadata.Ecma335
                     continue; // skip nested exported types.
                 }
 
-                NamespaceDefinitionHandle namespaceHandle = exportedType.Namespace;
+                NamespaceDefinitionHandle namespaceHandle = exportedType.NamespaceDefinition;
                 NamespaceDataBuilder builder;
                 if (table.TryGetValue(namespaceHandle, out builder))
                 {

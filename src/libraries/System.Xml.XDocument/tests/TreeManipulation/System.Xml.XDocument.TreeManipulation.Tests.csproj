@@ -54,6 +54,7 @@
     <Compile Include="XNodeReplaceOnDocument3.cs" />
     <Compile Include="XNodeReplaceOnElement.cs" />
     <Compile Include="XNodeSequenceRemove.cs" />
+    <Compile Include="XObjectsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\SystemXml\ModuleCore\ModuleCore.csproj">
@@ -89,9 +90,6 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

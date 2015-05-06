@@ -11,9 +11,9 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
-        internal DeclarativeSecurityAttribute(MetadataReader reader, uint rowId)
+        internal DeclarativeSecurityAttribute(MetadataReader reader, int rowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(rowId != 0);
@@ -22,19 +22,9 @@ namespace System.Reflection.Metadata
             _rowId = rowId;
         }
 
-        private uint RowId
-        {
-            get { return _rowId & TokenTypeIds.RIDMask; }
-        }
-
         private DeclarativeSecurityAttributeHandle Handle
         {
-            get { return DeclarativeSecurityAttributeHandle.FromRowId(RowId); }
-        }
-
-        private MethodDefTreatment Treatment
-        {
-            get { return (MethodDefTreatment)(_rowId >> TokenTypeIds.RowIdBitCount); }
+            get { return DeclarativeSecurityAttributeHandle.FromRowId(_rowId); }
         }
 
         public DeclarativeSecurityAction Action
@@ -45,7 +35,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        public Handle Parent
+        public EntityHandle Parent
         {
             get
             {

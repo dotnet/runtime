@@ -22,5 +22,8 @@
     "System.Threading.Tasks": "4.0.10-beta-22809",
     "System.Xml.ReaderWriter": "4.0.10-beta-22809",
     "System.Xml.XmlSerializer": "4.0.10-beta-22809"
+  },
+  "frameworks": {
+    "dnxcore50": {}
   }
 }

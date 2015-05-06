@@ -216,8 +216,8 @@ namespace System.Reflection.PortableExecutable
         /// Disposes all memory allocated by the reader.
         /// </summary>
         /// <remarks>
-        /// <see cref="Dispose"/>  can be called multiple times (even in parallel). 
-        /// However, it is not safe to call <see cref="Dispose"/> in parallel with any other operation on the <see cref="PEReader"/>
+        /// <see cref="Dispose"/>  can be called multiple times (but not in parallel).
+        /// It is not safe to call <see cref="Dispose"/> in parallel with any other operation on the <see cref="PEReader"/>
         /// or reading from <see cref="PEMemoryBlock"/>s retrieved from the reader.
         /// </remarks>
         public void Dispose()

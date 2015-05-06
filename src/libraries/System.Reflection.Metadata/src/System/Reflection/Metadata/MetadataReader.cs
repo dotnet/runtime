@@ -24,7 +24,7 @@ namespace System.Reflection.Metadata
         internal readonly MemoryBlock Block;
 
         // A row id of "mscorlib" AssemblyRef in a WinMD file (each WinMD file must have such a reference).
-        internal readonly uint WinMDMscorlibRef;
+        internal readonly int WinMDMscorlibRef;
 
         #region Constructors
 
@@ -103,7 +103,7 @@ namespace System.Reflection.Metadata
 
             memReader = new BlobReader(metadataTableStream);
 
-            uint[] metadataTableRowCounts;
+            int[] metadataTableRowCounts;
             this.ReadMetadataTableHeader(ref memReader, out metadataTableRowCounts);
             this.InitializeTableReaders(memReader.GetMemoryBlockAt(0, memReader.RemainingBytes), metadataTableRowCounts);
 
@@ -333,7 +333,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// A row count for each possible table. May be indexed by <see cref="TableIndex"/>.
         /// </summary>
-        internal uint[] TableRowCounts;
+        internal int[] TableRowCounts;
 
         internal ModuleTableReader ModuleTable;
         internal TypeRefTableReader TypeRefTable;
@@ -381,7 +381,7 @@ namespace System.Reflection.Metadata
         internal MethodSpecTableReader MethodSpecTable;
         internal GenericParamConstraintTableReader GenericParamConstraintTable;
 
-        private void ReadMetadataTableHeader(ref BlobReader memReader, out uint[] metadataTableRowCounts)
+        private void ReadMetadataTableHeader(ref BlobReader memReader, out int[] metadataTableRowCounts)
         {
             if (memReader.RemainingBytes < MetadataStreamConstants.SizeOfMetadataTableHeader)
             {
@@ -427,10 +427,16 @@ namespace System.Reflection.Metadata
                 throw new BadImageFormatException(MetadataResources.TableRowCountSpaceTooSmall);
             }
 
-            var rowCounts = new uint[numberOfTables];
+            var rowCounts = new int[numberOfTables];
             for (int i = 0; i < rowCounts.Length; i++)
             {
-                rowCounts[i] = memReader.ReadUInt32();
+                uint rowCount = memReader.ReadUInt32();
+                if (rowCount > TokenTypeIds.RIDMask)
+                {
+                    throw new BadImageFormatException(string.Format(MetadataResources.InvalidRowCount, rowCount));
+                }
+
+                rowCounts[i] = (int)rowCount;
             }
 
             metadataTableRowCounts = rowCounts;
@@ -439,11 +445,11 @@ namespace System.Reflection.Metadata
         private const int SmallIndexSize = 2;
         private const int LargeIndexSize = 4;
 
-        private void InitializeTableReaders(MemoryBlock metadataTablesMemoryBlock, uint[] compressedRowCounts)
+        private void InitializeTableReaders(MemoryBlock metadataTablesMemoryBlock, int[] compressedRowCounts)
         {
             // Only sizes of tables present in metadata are recorded in rowCountCompressedArray.
             // This array contains a slot for each possible table, not just those that are present in the metadata.
-            uint[] rowCounts = new uint[TableIndexExtensions.Count];
+            int[] rowCounts = new int[TableIndexExtensions.Count];
 
             // Size of reference tags in each table.
             int[] referenceSizes = new int[TableIndexExtensions.Count];
@@ -456,7 +462,7 @@ namespace System.Reflection.Metadata
 
                 if ((validTables & 1UL) != 0)
                 {
-                    uint rowCount = compressedRowCounts[compressedRowCountIndex++];
+                    int rowCount = compressedRowCounts[compressedRowCountIndex++];
                     rowCounts[i] = rowCount;
                     fitsSmall = rowCount < MetadataStreamConstants.LargeTableRowCount;
                 }
@@ -647,7 +653,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private int ComputeCodedTokenSize(uint largeRowSize, uint[] rowCountArray, TableMask tablesReferenced)
+        private int ComputeCodedTokenSize(int largeRowSize, int[] rowCountArray, TableMask tablesReferenced)
         {
             if (IsMinimalDelta)
             {
@@ -711,9 +717,9 @@ namespace System.Reflection.Metadata
 
         internal void GetFieldRange(TypeDefinitionHandle typeDef, out int firstFieldRowId, out int lastFieldRowId)
         {
-            uint typeDefRowId = typeDef.RowId;
+            int typeDefRowId = typeDef.RowId;
 
-            firstFieldRowId = (int)this.TypeDefTable.GetFieldStart(typeDefRowId);
+            firstFieldRowId = this.TypeDefTable.GetFieldStart(typeDefRowId);
             if (firstFieldRowId == 0)
             {
                 firstFieldRowId = 1;
@@ -721,18 +727,18 @@ namespace System.Reflection.Metadata
             }
             else if (typeDefRowId == this.TypeDefTable.NumberOfRows)
             {
-                lastFieldRowId = (int)(this.UseFieldPtrTable ? this.FieldPtrTable.NumberOfRows : this.FieldTable.NumberOfRows);
+                lastFieldRowId = (this.UseFieldPtrTable) ? this.FieldPtrTable.NumberOfRows : this.FieldTable.NumberOfRows;
             }
             else
             {
-                lastFieldRowId = (int)this.TypeDefTable.GetFieldStart(typeDefRowId + 1) - 1;
+                lastFieldRowId = this.TypeDefTable.GetFieldStart(typeDefRowId + 1) - 1;
             }
         }
 
         internal void GetMethodRange(TypeDefinitionHandle typeDef, out int firstMethodRowId, out int lastMethodRowId)
         {
-            uint typeDefRowId = typeDef.RowId;
-            firstMethodRowId = (int)this.TypeDefTable.GetMethodStart(typeDefRowId);
+            int typeDefRowId = typeDef.RowId;
+            firstMethodRowId = this.TypeDefTable.GetMethodStart(typeDefRowId);
             if (firstMethodRowId == 0)
             {
                 firstMethodRowId = 1;
@@ -740,17 +746,17 @@ namespace System.Reflection.Metadata
             }
             else if (typeDefRowId == this.TypeDefTable.NumberOfRows)
             {
-                lastMethodRowId = (int)(this.UseMethodPtrTable ? this.MethodPtrTable.NumberOfRows : this.MethodDefTable.NumberOfRows);
+                lastMethodRowId = (this.UseMethodPtrTable) ? this.MethodPtrTable.NumberOfRows : this.MethodDefTable.NumberOfRows;
             }
             else
             {
-                lastMethodRowId = (int)this.TypeDefTable.GetMethodStart(typeDefRowId + 1) - 1;
+                lastMethodRowId = this.TypeDefTable.GetMethodStart(typeDefRowId + 1) - 1;
             }
         }
 
         internal void GetEventRange(TypeDefinitionHandle typeDef, out int firstEventRowId, out int lastEventRowId)
         {
-            uint eventMapRowId = this.EventMapTable.FindEventMapRowIdFor(typeDef);
+            int eventMapRowId = this.EventMapTable.FindEventMapRowIdFor(typeDef);
             if (eventMapRowId == 0)
             {
                 firstEventRowId = 1;
@@ -758,7 +764,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            firstEventRowId = (int)this.EventMapTable.GetEventListStartFor(eventMapRowId);
+            firstEventRowId = this.EventMapTable.GetEventListStartFor(eventMapRowId);
             if (eventMapRowId == this.EventMapTable.NumberOfRows)
             {
                 lastEventRowId = (int)(this.UseEventPtrTable ? this.EventPtrTable.NumberOfRows : this.EventTable.NumberOfRows);
@@ -771,7 +777,7 @@ namespace System.Reflection.Metadata
 
         internal void GetPropertyRange(TypeDefinitionHandle typeDef, out int firstPropertyRowId, out int lastPropertyRowId)
         {
-            uint propertyMapRowId = this.PropertyMapTable.FindPropertyMapRowIdFor(typeDef);
+            int propertyMapRowId = this.PropertyMapTable.FindPropertyMapRowIdFor(typeDef);
             if (propertyMapRowId == 0)
             {
                 firstPropertyRowId = 1;
@@ -779,22 +785,22 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            firstPropertyRowId = (int)this.PropertyMapTable.GetPropertyListStartFor(propertyMapRowId);
+            firstPropertyRowId = this.PropertyMapTable.GetPropertyListStartFor(propertyMapRowId);
             if (propertyMapRowId == this.PropertyMapTable.NumberOfRows)
             {
-                lastPropertyRowId = (int)(this.UsePropertyPtrTable ? this.PropertyPtrTable.NumberOfRows : this.PropertyTable.NumberOfRows);
+                lastPropertyRowId = (this.UsePropertyPtrTable) ? this.PropertyPtrTable.NumberOfRows : this.PropertyTable.NumberOfRows;
             }
             else
             {
-                lastPropertyRowId = (int)this.PropertyMapTable.GetPropertyListStartFor(propertyMapRowId + 1) - 1;
+                lastPropertyRowId = this.PropertyMapTable.GetPropertyListStartFor(propertyMapRowId + 1) - 1;
             }
         }
 
         internal void GetParameterRange(MethodDefinitionHandle methodDef, out int firstParamRowId, out int lastParamRowId)
         {
-            uint rid = methodDef.RowId;
+            int rid = methodDef.RowId;
 
-            firstParamRowId = (int)this.MethodDefTable.GetParamStart(rid);
+            firstParamRowId = this.MethodDefTable.GetParamStart(rid);
             if (firstParamRowId == 0)
             {
                 firstParamRowId = 1;
@@ -802,11 +808,11 @@ namespace System.Reflection.Metadata
             }
             else if (rid == this.MethodDefTable.NumberOfRows)
             {
-                lastParamRowId = (int)(this.UseParamPtrTable ? this.ParamPtrTable.NumberOfRows : this.ParamTable.NumberOfRows);
+                lastParamRowId = (this.UseParamPtrTable ? this.ParamPtrTable.NumberOfRows : this.ParamTable.NumberOfRows);
             }
             else
             {
-                lastParamRowId = (int)this.MethodDefTable.GetParamStart(rid + 1) - 1;
+                lastParamRowId = this.MethodDefTable.GetParamStart(rid + 1) - 1;
             }
         }
 
@@ -976,7 +982,7 @@ namespace System.Reflection.Metadata
 
         public AssemblyReference GetAssemblyReference(AssemblyReferenceHandle handle)
         {
-            return new AssemblyReference(this, handle.Token & TokenTypeIds.VirtualBitAndRowIdMask);
+            return new AssemblyReference(this, handle.Value);
         }
 
         public TypeDefinition GetTypeDefinition(TypeDefinitionHandle handle)
@@ -1002,7 +1008,7 @@ namespace System.Reflection.Metadata
             // PERF: This code pattern is JIT friendly and results in very efficient code.
             if (_metadataKind == MetadataKind.Ecma335)
             {
-                return handle.RowId;
+                return (uint)handle.RowId;
             }
 
             return CalculateTypeDefTreatmentAndRowId(handle);
@@ -1019,7 +1025,7 @@ namespace System.Reflection.Metadata
             // PERF: This code pattern is JIT friendly and results in very efficient code.
             if (_metadataKind == MetadataKind.Ecma335)
             {
-                return handle.RowId;
+                return (uint)handle.RowId;
             }
 
             return CalculateTypeRefTreatmentAndRowId(handle);
@@ -1030,7 +1036,7 @@ namespace System.Reflection.Metadata
             return new ExportedType(this, handle.RowId);
         }
 
-        public CustomAttributeHandleCollection GetCustomAttributes(Handle handle)
+        public CustomAttributeHandleCollection GetCustomAttributes(EntityHandle handle)
         {
             Debug.Assert(!handle.IsNil);
             return new CustomAttributeHandleCollection(this, handle);
@@ -1047,7 +1053,7 @@ namespace System.Reflection.Metadata
             // PERF: This code pattern is JIT friendly and results in very efficient code.
             if (_metadataKind == MetadataKind.Ecma335)
             {
-                return handle.RowId;
+                return (uint)handle.RowId;
             }
 
             return TreatmentAndRowId((byte)CustomAttributeTreatment.WinMD, handle.RowId);
@@ -1075,7 +1081,7 @@ namespace System.Reflection.Metadata
             // PERF: This code pattern is JIT friendly and results in very efficient code.
             if (_metadataKind == MetadataKind.Ecma335)
             {
-                return handle.RowId;
+                return (uint)handle.RowId;
             }
 
             return CalculateMethodDefTreatmentAndRowId(handle);
@@ -1092,7 +1098,7 @@ namespace System.Reflection.Metadata
             // PERF: This code pattern is JIT friendly and results in very efficient code.
             if (_metadataKind == MetadataKind.Ecma335)
             {
-                return handle.RowId;
+                return (uint)handle.RowId;
             }
 
             return CalculateFieldDefTreatmentAndRowId(handle);
@@ -1124,7 +1130,7 @@ namespace System.Reflection.Metadata
             // PERF: This code pattern is JIT friendly and results in very efficient code.
             if (_metadataKind == MetadataKind.Ecma335)
             {
-                return handle.RowId;
+                return (uint)handle.RowId;
             }
 
             return CalculateMemberRefTreatmentAndRowId(handle);
@@ -1182,7 +1188,7 @@ namespace System.Reflection.Metadata
 
         internal TypeDefinitionHandle GetDeclaringType(MethodDefinitionHandle methodDef)
         {
-            uint methodRowId;
+            int methodRowId;
             if (UseMethodPtrTable)
             {
                 methodRowId = MethodPtrTable.GetRowIdForMethodDefRow(methodDef.RowId);
@@ -1192,12 +1198,12 @@ namespace System.Reflection.Metadata
                 methodRowId = methodDef.RowId;
             }
 
-            return TypeDefTable.FindTypeContainingMethod(methodRowId, (int)MethodDefTable.NumberOfRows);
+            return TypeDefTable.FindTypeContainingMethod(methodRowId, MethodDefTable.NumberOfRows);
         }
 
         internal TypeDefinitionHandle GetDeclaringType(FieldDefinitionHandle fieldDef)
         {
-            uint fieldRowId;
+            int fieldRowId;
             if (UseFieldPtrTable)
             {
                 fieldRowId = FieldPtrTable.GetRowIdForFieldDefRow(fieldDef.RowId);
@@ -1207,7 +1213,7 @@ namespace System.Reflection.Metadata
                 fieldRowId = fieldDef.RowId;
             }
 
-            return TypeDefTable.FindTypeContainingField(fieldRowId, (int)FieldTable.NumberOfRows);
+            return TypeDefTable.FindTypeContainingField(fieldRowId, FieldTable.NumberOfRows);
         }
 
         #endregion
@@ -1218,11 +1224,11 @@ namespace System.Reflection.Metadata
         {
             var groupedNestedTypes = new Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>.Builder>();
 
-            uint numberOfNestedTypes = NestedClassTable.NumberOfRows;
+            int numberOfNestedTypes = NestedClassTable.NumberOfRows;
             ImmutableArray<TypeDefinitionHandle>.Builder builder = null;
             TypeDefinitionHandle previousEnclosingClass = default(TypeDefinitionHandle);
 
-            for (uint i = 1; i <= numberOfNestedTypes; i++)
+            for (int i = 1; i <= numberOfNestedTypes; i++)
             {
                 TypeDefinitionHandle enclosingClass = NestedClassTable.GetEnclosingClass(i);
 

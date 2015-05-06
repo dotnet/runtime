@@ -164,7 +164,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(SignatureTypeCode.Invalid, reader.ReadSignatureTypeCode());
 
                 Assert.Equal(4, reader.Offset);
-                Assert.Equal(default(Handle), reader.ReadTypeHandle());
+                Assert.Equal(default(EntityHandle), reader.ReadTypeHandle());
 
                 Assert.Equal(4, reader.Offset);
                 Assert.Throws<BadImageFormatException>(() => reader.ReadBoolean());
@@ -223,8 +223,8 @@ namespace System.Reflection.Metadata.Tests
                 var block = new MemoryBlock(bufferPtr, buffer.Length);
 
                 // small ref size always fits in 16 bits
-                Assert.Equal(0xFFFFU, block.PeekReference(0, smallRefSize: true));
-                Assert.Equal(0xFFFFU, block.PeekReference(4, smallRefSize: true));
+                Assert.Equal(0xFFFF, block.PeekReference(0, smallRefSize: true));
+                Assert.Equal(0xFFFF, block.PeekReference(4, smallRefSize: true));
                 Assert.Equal(0xFFFFU, block.PeekTaggedReference(0, smallRefSize: true));
                 Assert.Equal(0xFFFFU, block.PeekTaggedReference(4, smallRefSize: true));
                 Assert.Equal(0x01FFU, block.PeekTaggedReference(6, smallRefSize: true));

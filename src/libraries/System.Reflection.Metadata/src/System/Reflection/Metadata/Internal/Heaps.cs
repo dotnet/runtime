@@ -149,15 +149,14 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal string GetString(StringHandle handle, MetadataStringDecoder utf8Decoder)
         {
-            int index = handle.Index;
             byte[] prefix;
 
             if (handle.IsVirtual)
             {
                 switch (handle.StringKind)
                 {
-                    case StringKind.Plain:
-                        return s_virtualValues[index];
+                    case StringKind.Virtual:
+                        return s_virtualValues[(int)handle.GetVirtualIndex()];
 
                     case StringKind.WinRTPrefixed:
                         prefix = MetadataReader.WinRTPrefix;
@@ -175,7 +174,7 @@ namespace System.Reflection.Metadata.Ecma335
 
             int bytesRead;
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return this.Block.PeekUtf8NullTerminated(index, prefix, utf8Decoder, out bytesRead, otherTerminator);
+            return this.Block.PeekUtf8NullTerminated(handle.GetHeapOffset(), prefix, utf8Decoder, out bytesRead, otherTerminator);
         }
 
         internal StringHandle GetNextHandle(StringHandle handle)
@@ -185,13 +184,13 @@ namespace System.Reflection.Metadata.Ecma335
                 return default(StringHandle);
             }
 
-            int terminator = this.Block.IndexOf(0, handle.Index);
+            int terminator = this.Block.IndexOf(0, handle.GetHeapOffset());
             if (terminator == -1 || terminator == Block.Length - 1)
             {
                 return default(StringHandle);
             }
 
-            return StringHandle.FromIndex((uint)(terminator + 1));
+            return StringHandle.FromOffset(terminator + 1);
         }
 
         internal bool Equals(StringHandle handle, string value, MetadataStringDecoder utf8Decoder)
@@ -210,7 +209,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return this.Block.Utf8NullTerminatedEquals(handle.Index, value, utf8Decoder, otherTerminator);
+            return this.Block.Utf8NullTerminatedEquals(handle.GetHeapOffset(), value, utf8Decoder, otherTerminator);
         }
 
         internal bool StartsWith(StringHandle handle, string value, MetadataStringDecoder utf8Decoder)
@@ -229,7 +228,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             char otherTerminator = handle.StringKind == StringKind.DotTerminated ? '.' : '\0';
-            return this.Block.Utf8NullTerminatedStartsWith(handle.Index, value, utf8Decoder, otherTerminator);
+            return this.Block.Utf8NullTerminatedStartsWith(handle.GetHeapOffset(), value, utf8Decoder, otherTerminator);
         }
 
         /// <summary>
@@ -239,7 +238,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(!rawHandle.IsVirtual);
             Debug.Assert(rawHandle.StringKind != StringKind.DotTerminated, "Not supported");
-            return this.Block.CompareUtf8NullTerminatedStringWithAsciiString(rawHandle.Index, asciiString) == 0;
+            return this.Block.CompareUtf8NullTerminatedStringWithAsciiString(rawHandle.GetHeapOffset(), asciiString) == 0;
         }
 
         /// <summary>
@@ -258,7 +257,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(!rawHandle.IsVirtual);
             Debug.Assert(rawHandle.StringKind != StringKind.DotTerminated, "Not supported");
-            return this.Block.Utf8NullTerminatedStringStartsWithAsciiPrefix(rawHandle.Index, asciiPrefix);
+            return this.Block.Utf8NullTerminatedStringStartsWithAsciiPrefix(rawHandle.GetHeapOffset(), asciiPrefix);
         }
 
         /// <summary>
@@ -268,7 +267,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(!rawHandle.IsVirtual);
             Debug.Assert(rawHandle.StringKind != StringKind.DotTerminated, "Not supported");
-            return this.Block.BinarySearch(asciiKeys, rawHandle.Index);
+            return this.Block.BinarySearch(asciiKeys, rawHandle.GetHeapOffset());
         }
     }
 
@@ -397,7 +396,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return GetVirtualBlobArray(handle, unique: true);
             }
 
-            int offset = handle.Index;
+            int offset = handle.GetHeapOffset();
             int bytesRead;
             int numberOfBytes = this.Block.PeekCompressedInteger(offset, out bytesRead);
             if (numberOfBytes == BlobReader.InvalidCompressedInteger)
@@ -434,7 +433,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             int offset, size;
-            Block.PeekHeapValueOffsetAndSize(handle.Index, out offset, out size);
+            Block.PeekHeapValueOffsetAndSize(handle.GetHeapOffset(), out offset, out size);
             return new BlobReader(this.Block.GetMemoryBlockAt(offset, size));
         }
 
@@ -446,7 +445,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             int offset, size;
-            if (!Block.PeekHeapValueOffsetAndSize(handle.Index, out offset, out size))
+            if (!Block.PeekHeapValueOffsetAndSize(handle.GetHeapOffset(), out offset, out size))
             {
                 return default(BlobHandle);
             }
@@ -457,7 +456,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return default(BlobHandle);
             }
 
-            return BlobHandle.FromIndex((uint)nextIndex);
+            return BlobHandle.FromOffset(nextIndex);
         }
 
         internal byte[] GetVirtualBlobArray(BlobHandle handle, bool unique)
@@ -520,7 +519,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal string GetString(UserStringHandle handle)
         {
             int offset, size;
-            if (!Block.PeekHeapValueOffsetAndSize(handle.Index, out offset, out size))
+            if (!Block.PeekHeapValueOffsetAndSize(handle.GetHeapOffset(), out offset, out size))
             {
                 return string.Empty;
             }
@@ -533,7 +532,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal UserStringHandle GetNextHandle(UserStringHandle handle)
         {
             int offset, size;
-            if (!Block.PeekHeapValueOffsetAndSize(handle.Index, out offset, out size))
+            if (!Block.PeekHeapValueOffsetAndSize(handle.GetHeapOffset(), out offset, out size))
             {
                 return default(UserStringHandle);
             }
@@ -544,7 +543,7 @@ namespace System.Reflection.Metadata.Ecma335
                 return default(UserStringHandle);
             }
 
-            return UserStringHandle.FromIndex((uint)nextIndex);
+            return UserStringHandle.FromOffset(nextIndex);
         }
     }
 }

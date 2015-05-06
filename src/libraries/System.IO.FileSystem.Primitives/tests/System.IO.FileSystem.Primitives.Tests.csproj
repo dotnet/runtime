@@ -16,7 +16,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>

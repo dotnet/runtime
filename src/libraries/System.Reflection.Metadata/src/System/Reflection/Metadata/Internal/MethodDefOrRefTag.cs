@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class MethodDefOrRefTag
     {
         internal const int NumberOfBits = 1;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint MethodDef = 0x00000000;
         internal const uint MemberRef = 0x00000001;
         internal const uint TagMask = 0x00000001;
@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal const uint TagToTokenTypeByteVector = TokenTypeIds.MethodDef >> 24 | TokenTypeIds.MemberRef >> 16;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint methodDefOrRef)
+        internal static EntityHandle ConvertToHandle(uint methodDefOrRef)
         {
             uint tokenType = (TagToTokenTypeByteVector >> ((int)(methodDefOrRef & TagMask) << 3)) << TokenTypeIds.RowIdBitCount;
             uint rowId = (methodDefOrRef >> NumberOfBits);
@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
     }
 }

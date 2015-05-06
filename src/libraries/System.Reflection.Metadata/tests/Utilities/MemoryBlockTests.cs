@@ -372,10 +372,10 @@ namespace System.Reflection.Metadata.Tests
             {
                 var block = new MemoryBlock(tablePtr, table.Length);
 
-                Assert.Equal(0x0004U, block.PeekReference(6, smallRefSize: true));
+                Assert.Equal(0x0004, block.PeekReference(6, smallRefSize: true));
 
                 var actual = block.BuildPtrTable(rowCount, rowSize, secondColumnOffset, isReferenceSmall: true);
-                var expected = new uint[] { 4, 2, 1, 5, 3 };
+                var expected = new int[] { 4, 2, 1, 5, 3 };
                 AssertEx.Equal(expected, actual);
             }
         }
@@ -401,11 +401,46 @@ namespace System.Reflection.Metadata.Tests
             {
                 var block = new MemoryBlock(tablePtr, table.Length);
 
-                Assert.Equal(0x00040010U, block.PeekReference(8, smallRefSize: false));
+                Assert.Equal(0x00040010, block.PeekReference(8, smallRefSize: false));
 
                 var actual = block.BuildPtrTable(rowCount, rowSize, secondColumnOffset, isReferenceSmall: false);
-                var expected = new uint[] { 4, 2, 1, 5, 3 };
+                var expected = new int[] { 4, 2, 1, 5, 3 };
                 AssertEx.Equal(expected, actual);
+            }
+        }
+
+        [Fact]
+        public unsafe void PeekReference()
+        {
+            var table = new byte[]
+            {
+                0xff, 0xff, 0xff, 0x00, // offset 0
+                0xff, 0xff, 0xff, 0x01, // offset 4
+                0xff, 0xff, 0xff, 0x1f, // offset 8
+                0xff, 0xff, 0xff, 0x2f, // offset 12
+                0xff, 0xff, 0xff, 0xff, // offset 16
+            };
+
+            fixed (byte* tablePtr = table)
+            {
+                var block = new MemoryBlock(tablePtr, table.Length);
+
+                Assert.Equal(0x0000ffff, block.PeekReference(0, smallRefSize: true));
+                Assert.Equal(0x0000ffff, block.PeekHeapReference(0, smallRefSize: true));
+                Assert.Equal(0x0000ffffu, block.PeekReferenceUnchecked(0, smallRefSize: true));
+
+                Assert.Equal(0x00ffffff, block.PeekReference(0, smallRefSize: false));
+                Assert.Throws<BadImageFormatException>(() => block.PeekReference(4, smallRefSize: false));
+                Assert.Throws<BadImageFormatException>(() => block.PeekReference(16, smallRefSize: false));
+
+                Assert.Equal(0x1fffffff, block.PeekHeapReference(8, smallRefSize: false));
+                Assert.Throws<BadImageFormatException>(() => block.PeekHeapReference(12, smallRefSize: false));
+                Assert.Throws<BadImageFormatException>(() => block.PeekHeapReference(16, smallRefSize: false));
+
+                Assert.Equal(0x01ffffffu, block.PeekReferenceUnchecked(4, smallRefSize: false));
+                Assert.Equal(0x1fffffffu, block.PeekReferenceUnchecked(8, smallRefSize: false));
+                Assert.Equal(0x2fffffffu, block.PeekReferenceUnchecked(12, smallRefSize: false));
+                Assert.Equal(0xffffffffu, block.PeekReferenceUnchecked(16, smallRefSize: false));
             }
         }
     }
