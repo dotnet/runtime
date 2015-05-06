@@ -24,7 +24,6 @@
     </Compile>
     <Compile Include="System\Linq\Enumerable.cs" />
     <Compile Include="System\Linq\Errors.cs" />
-    <Compile Include="Var.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
