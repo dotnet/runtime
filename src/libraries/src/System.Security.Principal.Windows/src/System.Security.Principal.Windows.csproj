@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{f9e9894e-2513-4085-9046-311ad49d8ae6}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Principal.Windows</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' "/>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' "/>
+  <ItemGroup>
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs"/>
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"/>
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeSecurityHandles.cs"/>
+    <Compile Include="System\Security\Principal\IdentityNotMappedException.cs"/>
+    <Compile Include="System\Security\Principal\IdentityReference.cs"/>
+    <Compile Include="System\Security\Principal\IRCollection.cs"/>
+    <Compile Include="System\Security\Principal\NTAccount.cs"/>
+    <Compile Include="System\Security\Principal\SID.cs"/>
+    <Compile Include="System\Security\Principal\TokenAccessLevels.cs"/>
+    <Compile Include="System\Security\Principal\Win32.cs"/>
+    <Compile Include="System\Security\Principal\WindowsIdentity.cs"/>
+    <Compile Include="System\Security\Principal\WindowsPrincipal.cs"/>
+
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.Tokens.cs">
+      <Link>Common\Interop\Interop.Tokens.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+      <Link>Common\Interop\Interop.WinError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.Winnt.cs">
+      <Link>Common\Interop\Interop.Winnt.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs">
+      <Link>Common\Interop\Interop.NtStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.LSAStructs.cs">
+      <Link>Common\Interop\Interop.LSAStructs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.SECURITY_LOGON_SESSION_DATA.cs">
+      <Link>Common\Interop\Interop.SECURITY_LOGON_SESSION_DATA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.UNICODE_STRING.cs">
+      <Link>Common\Interop\Interop.UNICODE_STRING.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentProcess_IntPtr.cs">
+      <Link>Common\Interop\Interop.GetCurrentProcess.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetCurrentThread.cs">
+      <Link>Common\Interop\Interop.GetCurrentThread.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
+      <Link>Common\Interop\Interop.OpenProcessToken.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CheckTokenMembership.cs">
+      <Link>Common\Interop\Interop.CheckTokenMembership.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetTokenInformation.cs">
+      <Link>Common\Interop\Interop.GetTokenInformation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateTokenEx.cs">
+      <Link>Common\Interop\Interop.DuplicateTokenEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.DuplicateHandle.cs">
+      <Link>Common\Interop\Interop.DuplicateHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Interop.CloseHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LsaGetLogonSessionData.cs">
+      <Link>Common\Interop\Interop.LsaGetLogonSessionData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LsaFreeReturnBuffer.cs">
+      <Link>Common\Interop\Interop.LsaFreeReturnBuffer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LsaLookupNames2.cs">
+      <Link>Common\Interop\Interop.LsaLookupNames2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LsaLookupSids.cs">
+      <Link>Common\Interop\Interop.LsaLookupSids.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LsaClose.cs">
+      <Link>Common\Interop\Interop.LsaClose.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LsaFreeMemory.cs">
+      <Link>Common\Interop\Interop.LsaFreeMemory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.LsaOpenPolicy.cs">
+      <Link>Common\Interop\Interop.LsaOpenPolicy.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ConvertStringSidToSid.cs">
+      <Link>Common\Interop\Interop.ConvertStringSidToSid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CreateWellKnownSid.cs">
+      <Link>Common\Interop\Interop.CreateWellKnownSid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetWindowsAccountDomainSid.cs">
+      <Link>Common\Interop\Interop.GetWindowsAccountDomainSid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsWellKnownSid.cs">
+      <Link>Common\Interop\Interop.IsWellKnownSid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.IsEqualDomainSid.cs">
+      <Link>Common\Interop\Interop.IsEqualDomainSid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.OpenThreadToken.cs">
+      <Link>Common\Interop\Interop.OpenThreadToken.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RevertToSelf.cs">
+      <Link>Common\Interop\Interop.RevertToSelf.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ImpersonateLoggedOnUser.cs">
+      <Link>Common\Interop\Interop.ImpersonateLoggedOnUser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RtlNtStatusToDosError.cs">
+      <Link>Common\Interop\Interop.RtlNtStatusToDosError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalFree.cs">
+      <Link>Common\Interop\Interop.LocalFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore_obsolete\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Interop.LocalAlloc.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

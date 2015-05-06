@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Principal.Tests</AssemblyName>
+    <RootNamespace>System.Security.Principal.Tests</RootNamespace>
+    <ProjectGuid>{49A64F00-C66B-472C-B7D0-6D1FBCC3E7CD}</ProjectGuid>
+    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <!--<Compile Include="AddTestsHere.cs" /> -->
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Principal.csproj">
+      <Project>{FBE16BC8-AE2D-422C-861E-861814F53AF7}</Project>
+      <Name>System.Security.Principal</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
