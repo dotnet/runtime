@@ -21,20 +21,20 @@ namespace System.Reflection.Metadata
             Debug.Assert(treatmentAndRowId != 0);
 
             // only virtual bit can be set in highest byte:
-            Debug.Assert((treatmentAndRowId & ~(TokenTypeIds.VirtualTokenMask | TokenTypeIds.RIDMask)) == 0);
+            Debug.Assert((treatmentAndRowId & ~(TokenTypeIds.VirtualBit | TokenTypeIds.RIDMask)) == 0);
 
             _reader = reader;
             _treatmentAndRowId = treatmentAndRowId;
         }
 
-        private uint RowId
+        private int RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return (int)(_treatmentAndRowId & TokenTypeIds.RIDMask); }
         }
 
         private bool IsVirtual
         {
-            get { return (_treatmentAndRowId & TokenTypeIds.VirtualTokenMask) != 0; }
+            get { return (_treatmentAndRowId & TokenTypeIds.VirtualBit) != 0; }
         }
 
         public Version Version

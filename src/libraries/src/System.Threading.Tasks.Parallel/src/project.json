@@ -13,5 +13,8 @@
     "System.Threading": "4.0.10-beta-22809",
     "System.Threading.Tasks": "4.0.10-beta-22809",
     "System.Globalization": "4.0.10-beta-22809"
+  },
+  "frameworks": {
+    "dnxcore50": {}
   }
 }

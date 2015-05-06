@@ -66,7 +66,7 @@ namespace System.Reflection.Metadata
                 return TypeDefTreatment.None;
             }
 
-            StringHandle namespaceName = TypeDefTable.GetNamespaceString(typeDef);
+            StringHandle namespaceName = TypeDefTable.GetNamespace(typeDef);
             if (StringStream.EqualsRaw(namespaceName, StringStream.GetVirtualValue(s_projectionInfos[index].ClrNamespace)))
             {
                 return s_projectionInfos[index].Treatment;
@@ -209,14 +209,14 @@ namespace System.Reflection.Metadata
 
         #endregion
 
-        private static uint TreatmentAndRowId(byte treatment, uint rowId)
+        private static uint TreatmentAndRowId(byte treatment, int rowId)
         {
-            return ((uint)treatment << TokenTypeIds.RowIdBitCount) | rowId;
+            return ((uint)treatment << TokenTypeIds.RowIdBitCount) | (uint)rowId;
         }
 
         #region TypeDef
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal uint CalculateTypeDefTreatmentAndRowId(TypeDefinitionHandle handle)
         {
             Debug.Assert(_metadataKind != MetadataKind.Ecma335);
@@ -224,7 +224,7 @@ namespace System.Reflection.Metadata
             TypeDefTreatment treatment;
 
             TypeAttributes flags = TypeDefTable.GetFlags(handle);
-            Handle extends = TypeDefTable.GetExtends(handle);
+            EntityHandle extends = TypeDefTable.GetExtends(handle);
 
             if ((flags & TypeAttributes.WindowsRuntime) != 0)
             {
@@ -322,7 +322,7 @@ namespace System.Reflection.Metadata
             int projectionIndex = GetProjectionIndexForTypeReference(handle, out isIDisposable);
             if (projectionIndex >= 0)
             {
-                return TreatmentAndRowId((byte)TypeRefTreatment.UseProjectionInfo, (uint)projectionIndex);
+                return TreatmentAndRowId((byte)TypeRefTreatment.UseProjectionInfo, projectionIndex);
             }
             else
             {
@@ -362,7 +362,7 @@ namespace System.Reflection.Metadata
                    StringStream.EqualsRaw(TypeRefTable.GetName(handle), "Enum");
         }
 
-        private bool NeedsWinRTPrefix(TypeAttributes flags, Handle extends)
+        private bool NeedsWinRTPrefix(TypeAttributes flags, EntityHandle extends)
         {
             if ((flags & (TypeAttributes.VisibilityMask | TypeAttributes.Interface)) != TypeAttributes.Public)
             {
@@ -455,7 +455,7 @@ namespace System.Reflection.Metadata
                     MethodImplementation methodImpl = GetMethodImplementation(methodImplHandle);
                     if (methodImpl.MethodBody == methodDef)
                     {
-                        Handle declaration = methodImpl.MethodDeclaration;
+                        EntityHandle declaration = methodImpl.MethodDeclaration;
 
                         // See if this MethodImpl implements a redirected interface
                         // In WinMD, MethodImpl will always use MemberRef and TypeRefs to refer to redirected interfaces,
@@ -553,7 +553,7 @@ namespace System.Reflection.Metadata
             {
                 TypeDefinitionHandle typeDef = GetDeclaringType(handle);
 
-                Handle baseTypeHandle = TypeDefTable.GetExtends(typeDef);
+                EntityHandle baseTypeHandle = TypeDefTable.GetExtends(typeDef);
                 if (baseTypeHandle.Kind == HandleKind.TypeReference)
                 {
                     var typeRef = (TypeReferenceHandle)baseTypeHandle;
@@ -612,7 +612,7 @@ namespace System.Reflection.Metadata
         {
             isIDisposable = false;
 
-            Handle parent = MemberRefTable.GetClass(memberRef);
+            EntityHandle parent = MemberRefTable.GetClass(memberRef);
 
             TypeReferenceHandle typeRef;
             if (parent.Kind == HandleKind.TypeReference)
@@ -631,7 +631,7 @@ namespace System.Reflection.Metadata
                     return false;
                 }
 
-                Handle token = sig.ReadTypeHandle();
+                EntityHandle token = sig.ReadTypeHandle();
                 if (token.Kind != HandleKind.TypeReference)
                 {
                     return false;
@@ -651,9 +651,9 @@ namespace System.Reflection.Metadata
 
         #region AssemblyRef
 
-        private uint FindMscorlibAssemblyRefNoProjection()
+        private int FindMscorlibAssemblyRefNoProjection()
         {
-            for (uint i = 1; i <= AssemblyRefTable.NumberOfNonVirtualRows; i++)
+            for (int i = 1; i <= AssemblyRefTable.NumberOfNonVirtualRows; i++)
             {
                 if (StringStream.EqualsRaw(AssemblyRefTable.GetName(i), "mscorlib"))
                 {
@@ -684,7 +684,7 @@ namespace System.Reflection.Metadata
             }
 
             var targetTypeDef = (TypeDefinitionHandle)parent;
-            if (StringStream.EqualsRaw(TypeDefTable.GetNamespaceString(targetTypeDef), "Windows.Foundation.Metadata"))
+            if (StringStream.EqualsRaw(TypeDefTable.GetNamespace(targetTypeDef), "Windows.Foundation.Metadata"))
             {
                 if (StringStream.EqualsRaw(TypeDefTable.GetName(targetTypeDef), "VersionAttribute"))
                 {
@@ -701,7 +701,7 @@ namespace System.Reflection.Metadata
             return allowMultiple ? CustomAttributeValueTreatment.AttributeUsageAllowMultiple : CustomAttributeValueTreatment.AttributeUsageAllowSingle;
         }
 
-        private bool IsWindowsAttributeUsageAttribute(Handle targetType, CustomAttributeHandle attributeHandle)
+        private bool IsWindowsAttributeUsageAttribute(EntityHandle targetType, CustomAttributeHandle attributeHandle)
         {
             // Check for Windows.Foundation.Metadata.AttributeUsageAttribute.
             // WinMD rules: 
@@ -730,7 +730,7 @@ namespace System.Reflection.Metadata
                    StringStream.EqualsRaw(TypeRefTable.GetNamespace(attributeTypeRef), "Windows.Foundation.Metadata");
         }
 
-        private bool HasAttribute(Handle token, string asciiNamespaceName, string asciiTypeName)
+        private bool HasAttribute(EntityHandle token, string asciiNamespaceName, string asciiTypeName)
         {
             foreach (var caHandle in GetCustomAttributes(token))
             {
@@ -750,7 +750,7 @@ namespace System.Reflection.Metadata
         {
             namespaceName = typeName = default(StringHandle);
 
-            Handle typeDefOrRef = GetAttributeTypeRaw(caHandle);
+            EntityHandle typeDefOrRef = GetAttributeTypeRaw(caHandle);
             if (typeDefOrRef.IsNil)
             {
                 return false;
@@ -783,7 +783,7 @@ namespace System.Reflection.Metadata
                 }
 
                 typeName = TypeDefTable.GetName(typeDef);
-                namespaceName = TypeDefTable.GetNamespaceString(typeDef);
+                namespaceName = TypeDefTable.GetNamespace(typeDef);
             }
             else
             {
@@ -798,7 +798,7 @@ namespace System.Reflection.Metadata
         /// Returns the type definition or reference handle of the attribute type.
         /// </summary>
         /// <returns><see cref="TypeDefinitionHandle"/> or <see cref="TypeReferenceHandle"/> or nil token if the metadata is invalid and the type can't be determined.</returns>
-        private Handle GetAttributeTypeRaw(CustomAttributeHandle handle)
+        private EntityHandle GetAttributeTypeRaw(CustomAttributeHandle handle)
         {
             var ctor = CustomAttributeTable.GetConstructor(handle);
 
@@ -811,7 +811,7 @@ namespace System.Reflection.Metadata
             {
                 // In general the parent can be MethodDef, ModuleRef, TypeDef, TypeRef, or TypeSpec.
                 // For attributes only TypeDef and TypeRef are applicable.
-                Handle typeDefOrRef = MemberRefTable.GetClass((MemberReferenceHandle)ctor);
+                EntityHandle typeDefOrRef = MemberRefTable.GetClass((MemberReferenceHandle)ctor);
                 HandleKind handleType = typeDefOrRef.Kind;
 
                 if (handleType == HandleKind.TypeReference || handleType == HandleKind.TypeDefinition)
@@ -820,7 +820,7 @@ namespace System.Reflection.Metadata
                 }
             }
 
-            return default(Handle);
+            return default(EntityHandle);
         }
         #endregion
     }

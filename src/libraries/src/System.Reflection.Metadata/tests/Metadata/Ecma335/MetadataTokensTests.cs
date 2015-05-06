@@ -8,28 +8,21 @@ namespace System.Reflection.Metadata.Tests
 {
     public class MetadataTokensTests
     {
-        private static readonly Handle s_assemblyRefHandle = AssemblyReferenceHandle.FromRowId(1);
-        private static readonly Handle s_virtualAssemblyRefHandle = AssemblyReferenceHandle.FromVirtualIndex(AssemblyReferenceHandle.VirtualIndex.System_Runtime);
+        private static readonly EntityHandle s_assemblyRefHandle = AssemblyReferenceHandle.FromRowId(1);
+        private static readonly EntityHandle s_virtualAssemblyRefHandle = AssemblyReferenceHandle.FromVirtualIndex(AssemblyReferenceHandle.VirtualIndex.System_Runtime);
         private static readonly Handle s_virtualBlobHandle = BlobHandle.FromVirtualIndex(BlobHandle.VirtualIndex.AttributeUsage_AllowSingle, 0);
-        private static readonly Handle s_userStringHandle = UserStringHandle.FromIndex(1);
-        private static readonly Handle s_stringHandle = StringHandle.FromIndex(1);
-        private static readonly Handle s_winrtPrefixedStringHandle = StringHandle.FromIndex(1).WithWinRTPrefix();
-        private static readonly Handle s_blobHandle = BlobHandle.FromIndex(1);
+        private static readonly Handle s_userStringHandle = UserStringHandle.FromOffset(1);
+        private static readonly Handle s_stringHandle = StringHandle.FromOffset(1);
+        private static readonly Handle s_winrtPrefixedStringHandle = StringHandle.FromOffset(1).WithWinRTPrefix();
+        private static readonly Handle s_blobHandle = BlobHandle.FromOffset(1);
         private static readonly Handle s_guidHandle = GuidHandle.FromIndex(16);
-        private static readonly Handle s_exportedTypeHandle = ExportedTypeHandle.FromRowId(42);
+        private static readonly EntityHandle s_exportedTypeHandle = ExportedTypeHandle.FromRowId(42);
 
         [Fact]
         public void GetRowNumber()
         {
             Assert.Equal(1, MetadataTokens.GetRowNumber(s_assemblyRefHandle));
             Assert.Equal(-1, MetadataTokens.GetRowNumber(s_virtualAssemblyRefHandle));
-
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetRowNumber(s_virtualBlobHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetRowNumber(s_userStringHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetRowNumber(s_stringHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetRowNumber(s_winrtPrefixedStringHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetRowNumber(s_blobHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetRowNumber(s_guidHandle));
         }
 
         [Fact]

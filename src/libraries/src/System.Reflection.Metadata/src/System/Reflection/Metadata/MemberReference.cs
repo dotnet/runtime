@@ -22,9 +22,9 @@ namespace System.Reflection.Metadata
             _treatmentAndRowId = treatmentAndRowId;
         }
 
-        private uint RowId
+        private int RowId
         {
-            get { return _treatmentAndRowId & TokenTypeIds.RIDMask; }
+            get { return (int)(_treatmentAndRowId & TokenTypeIds.RIDMask); }
         }
 
         private MemberRefTreatment Treatment
@@ -40,7 +40,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// MethodDef, ModuleRef,TypeDef, TypeRef, or TypeSpec handle.
         /// </summary>
-        public Handle Parent
+        public EntityHandle Parent
         {
             get
             {
@@ -107,7 +107,7 @@ namespace System.Reflection.Metadata
 
         #region Projections
 
-        private Handle GetProjectedParent()
+        private EntityHandle GetProjectedParent()
         {
             // no change
             return _reader.MemberRefTable.GetClass(Handle);

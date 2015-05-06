@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata
         private readonly MetadataReader _reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        private readonly uint _rowId;
+        private readonly int _rowId;
 
         internal GenericParameterConstraint(MetadataReader reader, GenericParameterConstraintHandle handle)
         {
@@ -45,7 +45,7 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// Corresponds to Constraint field of GenericParamConstraint table in ECMA-335 Standard.
         /// </remarks>
-        public Handle Type
+        public EntityHandle Type
         {
             get { return _reader.GenericParamConstraintTable.GetConstraint(Handle); }
         }

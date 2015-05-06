@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class ResolutionScopeTag
     {
         internal const int NumberOfBits = 2;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint Module = 0x00000000;
         internal const uint ModuleRef = 0x00000001;
         internal const uint AssemblyRef = 0x00000002;
@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata.Ecma335
           | TableMask.TypeRef;
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint resolutionScope)
+        internal static EntityHandle ConvertToHandle(uint resolutionScope)
         {
             uint tokenType = (TagToTokenTypeByteVector >> ((int)(resolutionScope & TagMask) << 3)) << TokenTypeIds.RowIdBitCount;
             uint rowId = (resolutionScope >> NumberOfBits);
@@ -32,7 +32,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
     }
 }

@@ -181,6 +181,12 @@ namespace System.Reflection.Internal
                 s_lazyIsAvailable = false;
                 return null;
             }
+            catch (InvalidOperationException)
+            {
+                // thrown when accessing unapproved API in a Windows Store app
+                s_lazyIsAvailable = false;
+                return null;
+            }
             catch (TargetInvocationException ex)
             {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
@@ -205,6 +211,11 @@ namespace System.Reflection.Internal
                 s_lazyIsAvailable = false;
                 return null;
             }
+            catch (InvalidOperationException)
+            {
+                s_lazyIsAvailable = false;
+                return null;
+            }
             catch (TargetInvocationException ex)
             {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
@@ -221,18 +232,37 @@ namespace System.Reflection.Internal
             byte* ptr = null;
             safeBuffer.AcquirePointer(ref ptr);
 
-            long offset;
-            if (s_lazyPointerOffset != null)
+            try
             {
-                offset = (long)s_lazyPointerOffset.GetValue(accessor);
-            }
-            else
-            {
-                object internalView = s_lazyInternalViewField.GetValue(accessor);
-                offset = (long)s_lazyInternalPointerOffset.GetValue(internalView);
-            }
+                long offset;
+                if (s_lazyPointerOffset != null)
+                {
+                    offset = (long)s_lazyPointerOffset.GetValue(accessor);
+                }
+                else
+                {
+                    object internalView = s_lazyInternalViewField.GetValue(accessor);
+                    offset = (long)s_lazyInternalPointerOffset.GetValue(internalView);
+                }
 
-            return ptr + offset;
+                return ptr + offset;
+            }
+            catch (MemberAccessException)
+            {
+                s_lazyIsAvailable = false;
+                return null;
+            }
+            catch (InvalidOperationException)
+            {
+                // thrown when accessing unapproved API in a Windows Store app
+                s_lazyIsAvailable = false;
+                return null;
+            }
+            catch (TargetInvocationException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw;
+            }
         }
     }
 }

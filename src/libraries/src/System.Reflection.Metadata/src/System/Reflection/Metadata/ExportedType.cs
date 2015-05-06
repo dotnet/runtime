@@ -10,9 +10,9 @@ namespace System.Reflection.Metadata
         internal readonly MetadataReader reader;
 
         // Workaround: JIT doesn't generate good code for nested structures, so use RowId.
-        internal readonly uint rowId;
+        internal readonly int rowId;
 
-        internal ExportedType(MetadataReader reader, uint rowId)
+        internal ExportedType(MetadataReader reader, int rowId)
         {
             Debug.Assert(reader != null);
             Debug.Assert(rowId != 0);
@@ -36,12 +36,29 @@ namespace System.Reflection.Metadata
             get { return Attributes.IsForwarder() && Implementation.Kind == HandleKind.AssemblyReference; }
         }
 
+        /// <summary>
+        /// Name of the target type, or nil if the type is nested or defined in a root namespace.
+        /// </summary>
         public StringHandle Name
         {
             get { return reader.ExportedTypeTable.GetTypeName(rowId); }
         }
 
-        public NamespaceDefinitionHandle Namespace
+        /// <summary>
+        /// Full name of the namespace where the target type, or nil if the type is nested or defined in a root namespace.
+        /// </summary>
+        public StringHandle Namespace
+        {
+            get
+            {
+                return reader.ExportedTypeTable.GetTypeNamespaceString(rowId);
+            }
+        }
+
+        /// <summary>
+        /// The definition handle of the namespace where the target type is defined, or nil if the type is nested or defined in a root namespace.
+        /// </summary>
+        public NamespaceDefinitionHandle NamespaceDefinition
         {
             get
             {
@@ -61,7 +78,7 @@ namespace System.Reflection.Metadata
         /// <item><description><see cref="ExportedTypeHandle"/> representing the declaring exported type in which this was is nested.</description></item>
         /// </list>
         /// </returns>
-        public Handle Implementation
+        public EntityHandle Implementation
         {
             get
             {

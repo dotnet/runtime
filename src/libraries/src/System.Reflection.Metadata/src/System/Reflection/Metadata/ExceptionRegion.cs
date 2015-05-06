@@ -76,9 +76,9 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Returns a TypeRef, TypeDef, or TypeSpec handle if the region represents a catch, nil token otherwise. 
         /// </summary>
-        public Handle CatchType
+        public EntityHandle CatchType
         {
-            get { return (Kind == ExceptionRegionKind.Catch) ? new Handle((uint)_classTokenOrFilterOffset) : default(Handle); }
+            get { return (Kind == ExceptionRegionKind.Catch) ? new EntityHandle((uint)_classTokenOrFilterOffset) : default(EntityHandle); }
         }
     }
 }

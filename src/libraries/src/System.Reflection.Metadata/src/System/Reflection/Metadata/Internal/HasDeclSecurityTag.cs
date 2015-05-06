@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class HasDeclSecurityTag
     {
         internal const int NumberOfBits = 2;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint TypeDef = 0x00000000;
         internal const uint MethodDef = 0x00000001;
         internal const uint Assembly = 0x00000002;
@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal const uint TagToTokenTypeByteVector = (TokenTypeIds.TypeDef >> 24) | (TokenTypeIds.MethodDef >> 16) | (TokenTypeIds.Assembly >> 8);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint hasDeclSecurity)
+        internal static EntityHandle ConvertToHandle(uint hasDeclSecurity)
         {
             uint tokenType = (TagToTokenTypeByteVector >> ((int)(hasDeclSecurity & TagMask) << 3)) << TokenTypeIds.RowIdBitCount;
             uint rowId = (hasDeclSecurity >> NumberOfBits);
@@ -30,13 +30,13 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
 
-        internal static uint ConvertToTag(Handle handle)
+        internal static uint ConvertToTag(EntityHandle handle)
         {
-            uint tokenType = handle.TokenType;
-            uint rowId = handle.RowId;
+            uint tokenType = handle.Type;
+            uint rowId = (uint)handle.RowId;
             switch (tokenType >> TokenTypeIds.RowIdBitCount)
             {
                 case TokenTypeIds.TypeDef >> TokenTypeIds.RowIdBitCount:

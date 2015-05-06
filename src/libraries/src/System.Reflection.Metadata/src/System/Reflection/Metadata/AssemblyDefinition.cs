@@ -15,14 +15,6 @@ namespace System.Reflection.Metadata
             _reader = reader;
         }
 
-        private Handle Handle
-        {
-            get
-            {
-                return Handle.AssemblyDefinition;
-            }
-        }
-
         public AssemblyHashAlgorithm HashAlgorithm
         {
             get
@@ -73,12 +65,12 @@ namespace System.Reflection.Metadata
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return new CustomAttributeHandleCollection(_reader, Handle);
+            return new CustomAttributeHandleCollection(_reader, EntityHandle.AssemblyDefinition);
         }
 
         public DeclarativeSecurityAttributeHandleCollection GetDeclarativeSecurityAttributes()
         {
-            return new DeclarativeSecurityAttributeHandleCollection(_reader, Handle);
+            return new DeclarativeSecurityAttributeHandleCollection(_reader, EntityHandle.AssemblyDefinition);
         }
     }
 }

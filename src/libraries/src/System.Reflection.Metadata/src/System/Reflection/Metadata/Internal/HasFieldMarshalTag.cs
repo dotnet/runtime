@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class HasFieldMarshalTag
     {
         internal const int NumberOfBits = 1;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint Field = 0x00000000;
         internal const uint Param = 0x00000001;
         internal const uint TagMask = 0x00000001;
@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal const uint TagToTokenTypeByteVector = TokenTypeIds.FieldDef >> 24 | TokenTypeIds.ParamDef >> 16;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint hasFieldMarshal)
+        internal static EntityHandle ConvertToHandle(uint hasFieldMarshal)
         {
             uint tokenType = (TagToTokenTypeByteVector >> ((int)(hasFieldMarshal & TagMask) << 3)) << TokenTypeIds.RowIdBitCount;
             uint rowId = (hasFieldMarshal >> NumberOfBits);
@@ -28,18 +28,18 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
 
-        internal static uint ConvertToTag(Handle handle)
+        internal static uint ConvertToTag(EntityHandle handle)
         {
-            if (handle.TokenType == TokenTypeIds.FieldDef)
+            if (handle.Type == TokenTypeIds.FieldDef)
             {
-                return handle.RowId << NumberOfBits | Field;
+                return (uint)handle.RowId << NumberOfBits | Field;
             }
-            else if (handle.TokenType == TokenTypeIds.ParamDef)
+            else if (handle.Type == TokenTypeIds.ParamDef)
             {
-                return handle.RowId << NumberOfBits | Param;
+                return (uint)handle.RowId << NumberOfBits | Param;
             }
 
             return 0;

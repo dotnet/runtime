@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 using System.Resources;
 using System.Runtime.CompilerServices;
 
@@ -60,7 +61,6 @@ namespace System
 
         internal static string Format(string resourceFormat, object p1)
         {
-
             if (UsingResourceKeys())
             {
                 return String.Join(", ", resourceFormat, p1);

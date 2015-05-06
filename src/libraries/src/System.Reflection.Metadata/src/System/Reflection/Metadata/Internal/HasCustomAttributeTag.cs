@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Ecma335
     internal static class HasCustomAttributeTag
     {
         internal const int NumberOfBits = 5;
-        internal const uint LargeRowSize = 0x00000001 << (16 - NumberOfBits);
+        internal const int LargeRowSize = 0x00000001 << (16 - NumberOfBits);
         internal const uint MethodDef = 0x00000000;
         internal const uint Field = 0x00000001;
         internal const uint TypeRef = 0x00000002;
@@ -98,7 +98,7 @@ namespace System.Reflection.Metadata.Ecma335
           | TableMask.MethodSpec;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Handle ConvertToToken(uint hasCustomAttribute)
+        internal static EntityHandle ConvertToHandle(uint hasCustomAttribute)
         {
             uint tokenType = TagToTokenTypeArray[hasCustomAttribute & TagMask];
             uint rowId = (hasCustomAttribute >> NumberOfBits);
@@ -108,13 +108,13 @@ namespace System.Reflection.Metadata.Ecma335
                 Handle.ThrowInvalidCodedIndex();
             }
 
-            return new Handle(tokenType | rowId);
+            return new EntityHandle(tokenType | rowId);
         }
 
-        internal static uint ConvertToTag(Handle handle)
+        internal static uint ConvertToTag(EntityHandle handle)
         {
-            uint tokenType = handle.TokenType;
-            uint rowId = handle.RowId;
+            uint tokenType = handle.Type;
+            uint rowId = (uint)handle.RowId;
             switch (tokenType >> TokenTypeIds.RowIdBitCount)
             {
                 case TokenTypeIds.MethodDef >> TokenTypeIds.RowIdBitCount:
