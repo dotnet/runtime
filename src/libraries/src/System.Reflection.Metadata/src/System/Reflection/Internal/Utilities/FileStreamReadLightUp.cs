@@ -65,6 +65,12 @@ namespace System.Reflection.Internal
                 safeFileHandleNotAvailable = true;
                 return null;
             }
+            catch (InvalidOperationException)
+            {
+                // thrown when accessing unapproved API in a Windows Store app
+                safeFileHandleNotAvailable = true;
+                return null;
+            }
             catch (TargetInvocationException)
             {
                 // Some FileStream implementations (e.g. IsolatedStorage) restrict access to the underlying handle by throwing 

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Reflection.Internal
@@ -105,10 +106,10 @@ namespace System.Reflection.Internal
 
             if (_useMemoryMap && size > MemoryMapThreshold)
             {
-                IDisposable accessor;
-                if (TryCreateMemoryMapAccessor(absoluteStart, size, out accessor))
+                MemoryMappedFileBlock block;
+                if (TryCreateMemoryMappedFileBlock(absoluteStart, size, out block))
                 {
-                    return new MemoryMappedFileBlock(accessor, size);
+                    return block;
                 }
 
                 _useMemoryMap = false;
@@ -126,7 +127,7 @@ namespace System.Reflection.Internal
             return _stream;
         }
 
-        private bool TryCreateMemoryMapAccessor(long start, int size, out IDisposable accessor)
+        private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, out MemoryMappedFileBlock block)
         {
             if (_lazyMemoryMap == null)
             {
@@ -141,7 +142,7 @@ namespace System.Reflection.Internal
 
                 if (newMemoryMap == null)
                 {
-                    accessor = null;
+                    block = null;
                     return false;
                 }
 
@@ -151,8 +152,23 @@ namespace System.Reflection.Internal
                 }
             }
 
-            accessor = MemoryMapLightUp.CreateViewAccessor(_lazyMemoryMap, start, size);
-            return accessor != null;
+            IDisposable accessor = MemoryMapLightUp.CreateViewAccessor(_lazyMemoryMap, start, size);
+            if (accessor == null)
+            {
+                block = null;
+                return false;
+            }
+
+            SafeBuffer safeBuffer;
+            byte* pointer = MemoryMapLightUp.AcquirePointer(accessor, out safeBuffer);
+            if (pointer == null)
+            {
+                block = null;
+                return false;
+            }
+
+            block = new MemoryMappedFileBlock(accessor, safeBuffer, pointer, size);
+            return true;
         }
     }
 }

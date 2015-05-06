@@ -180,6 +180,10 @@ namespace System.Reflection.Internal
                 catch (MemberAccessException)
                 {
                 }
+                catch (InvalidOperationException)
+                {
+                    // thrown when accessing unapproved API in a Windows Store app
+                }
             }
 
             // .NET Framework < 4.6
@@ -221,6 +225,10 @@ namespace System.Reflection.Internal
                     }
                     catch (MemberAccessException)
                     {
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // thrown when accessing unapproved API in a Windows Store app
                     }
                 }
             }

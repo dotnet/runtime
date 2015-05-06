@@ -13,10 +13,11 @@ namespace System.Reflection.Internal
         private byte* _pointer;
         private SafeBuffer _safeBuffer;
 
-        internal unsafe MemoryMappedFileBlock(IDisposable accessor, int size)
+        internal unsafe MemoryMappedFileBlock(IDisposable accessor, SafeBuffer safeBuffer, byte* pointer, int size)
         {
             _accessor = accessor;
-            _pointer = MemoryMapLightUp.AcquirePointer(accessor, out _safeBuffer);
+            _safeBuffer = safeBuffer;
+            _pointer = pointer;
             _size = size;
         }
 

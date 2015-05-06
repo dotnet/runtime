@@ -5,13 +5,23 @@ namespace System.Reflection.Metadata.Ecma335
 {
     public struct EditAndContinueLogEntry : IEquatable<EditAndContinueLogEntry>
     {
-        public readonly EntityHandle Handle;
-        public readonly EditAndContinueOperation Operation;
+        private readonly EntityHandle _handle;
+        private readonly EditAndContinueOperation _operation;
 
         public EditAndContinueLogEntry(EntityHandle handle, EditAndContinueOperation operation)
         {
-            this.Handle = handle;
-            this.Operation = operation;
+            _handle = handle;
+            _operation = operation;
+        }
+
+        public EntityHandle Handle
+        {
+            get { return _handle; }
+        }
+
+        public EditAndContinueOperation Operation
+        {
+            get { return _operation; }
         }
 
         public override bool Equals(object obj)
