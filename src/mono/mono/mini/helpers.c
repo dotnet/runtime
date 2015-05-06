@@ -99,6 +99,7 @@ mono_inst_name (int op) {
 	g_error ("unknown opcode name for %d", op);
 	return NULL;
 #else
+	g_error ("unknown opcode name for %d", op);
 	g_assert_not_reached ();
 #endif
 }
