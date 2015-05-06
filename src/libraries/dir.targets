@@ -68,6 +68,8 @@
           Outputs="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath);$(DnuToolPath)">
     <Message Importance="High" Text="Restoring build tools..." />
 
+    <Copy Condition="Exists('$(NuGetCachedPath)')" SourceFiles="$(NuGetCachedPath)" DestinationFiles="$(NuGetToolPath)" SkipUnchangedFiles="true" />
+
     <!-- Download latest nuget.exe -->
     <DownloadFile FileName="$(NuGetToolPath)"
                   Address="https://www.nuget.org/nuget.exe"

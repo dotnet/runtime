@@ -24,11 +24,13 @@ internal static partial class Interop
         internal const string NtDll = "ntdll.dll";
         internal const string OleAut32 = "oleaut32.dll";
         internal const string Pipe = "api-ms-win-core-namedpipe-l1-1-0.dll";
+        internal const string Pipe_L2 = "api-ms-win-core-namedpipe-l1-2-1.dll";
         internal const string ProcessEnvironment = "api-ms-win-core-processenvironment-l1-1-0.dll";
         internal const string ProcessThread_L1 = "api-ms-win-core-processthreads-l1-1-0.dll";
         internal const string ProcessThread_L1_1 = "api-ms-win-core-processthreads-l1-1-1.dll";
         internal const string ProcessThread_L1_2 = "api-ms-win-core-processthreads-l1-1-2.dll";
         internal const string ProcessTopology = "api-ms-win-core-processtopology-obsolete-l1-1-0.dll";
+        internal const string Profile = "api-ms-win-core-profile-l1-1-0.dll";
         internal const string Psapi = "api-ms-win-core-psapi-l1-1-0.dll";
         internal const string Psapi_Obsolete = "api-ms-win-core-psapi-obsolete-l1-1-0.dll";
         internal const string Registry_L1 = "api-ms-win-core-registry-l1-1-0.dll";

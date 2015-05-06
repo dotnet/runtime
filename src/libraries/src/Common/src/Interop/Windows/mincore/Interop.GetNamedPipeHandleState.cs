@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "GetNamedPipeHandleStateW")]
+        [DllImport(Libraries.Pipe_L2, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "GetNamedPipeHandleStateW")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetNamedPipeHandleState(
             SafePipeHandle hNamedPipe,
@@ -21,7 +21,7 @@ internal partial class Interop
             IntPtr lpUserName,
             int nMaxUserNameSize);
 
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "GetNamedPipeHandleStateW")]
+        [DllImport(Libraries.Pipe_L2, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "GetNamedPipeHandleStateW")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetNamedPipeHandleState(
             SafePipeHandle hNamedPipe,
@@ -32,7 +32,7 @@ internal partial class Interop
             StringBuilder lpUserName,
             int nMaxUserNameSize);
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        [DllImport(Libraries.Pipe_L2, SetLastError = true, EntryPoint="GetNamedPipeHandleStateW")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetNamedPipeHandleState(
             SafePipeHandle hNamedPipe,

@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <AssemblyName>System.Runtime.Extensions</AssemblyName>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
+  </PropertyGroup>
+
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <ItemGroup>
+    <Compile Include="System\Diagnostics\Stopwatch.cs" />
+    <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
+    <Compile Include="System\Net\WebUtility.cs" />
+    <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
+    <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
+    <Compile Include="System\IO\LowLevelTextWriter.cs" />
+    <Compile Include="System\IO\LowLevelStringWriter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\ArrayT.cs">
+      <Link>System\ArrayT.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
+      <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
+      <Link>System\IO\StringBuilderCache.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
+      <Link>System\IO\Win32Marshal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
+      <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
+      <Link>Interop\Windows\mincore\Interop.FormatMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetLastError.cs">
+      <Link>Interop\Windows\mincore\Interop.GetLastError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs">
+      <Link>Interop\Windows\mincore\Interop.QueryPerformanceCounter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs">
+      <Link>Interop\Windows\mincore\Interop.QueryPerformanceFrequency.cs</Link>
+    </Compile>
+    
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Diagnostics\Stopwatch.Unix.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs">
+      <Link>Interop\Unix\libcoreclr\Interop.QueryPerformanceCounter.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.CoreCLR.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

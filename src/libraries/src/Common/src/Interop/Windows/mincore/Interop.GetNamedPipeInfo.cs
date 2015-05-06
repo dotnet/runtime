@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class mincore
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        [DllImport(Libraries.Pipe_L2, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetNamedPipeInfo(
             SafePipeHandle hNamedPipe,
@@ -19,7 +19,7 @@ internal partial class Interop
             IntPtr lpMaxInstances
         );
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        [DllImport(Libraries.Pipe_L2, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetNamedPipeInfo(
             SafePipeHandle hNamedPipe,
@@ -29,7 +29,7 @@ internal partial class Interop
             IntPtr lpMaxInstances
         );
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        [DllImport(Libraries.Pipe_L2, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetNamedPipeInfo(
             SafePipeHandle hNamedPipe,
