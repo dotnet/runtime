@@ -33,10 +33,6 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
       <Project>{f3e433c8-352f-4944-bf7f-765ce435370d}</Project>
       <Name>System.Reflection.Metadata</Name>

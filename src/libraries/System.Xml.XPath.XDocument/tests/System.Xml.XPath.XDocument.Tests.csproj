@@ -208,10 +208,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\System.Xml.XPath.XmlDocument\src\System.Xml.XPath.XmlDocument.csproj">
       <Project>{17cb2e3c-2904-4241-94db-3894d24f35da}</Project>
       <Name>System.Xml.XPath.XmlDocument</Name>

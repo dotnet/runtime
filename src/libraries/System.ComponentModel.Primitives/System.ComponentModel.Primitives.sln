@@ -12,8 +12,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Primi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Primitives.Tests", "tests\System.ComponentModel.Primitives.Tests.csproj", "{C9534425-93FB-494F-8DD8-1E4E3E626FDE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,10 +26,6 @@ Global
 		{C9534425-93FB-494F-8DD8-1E4E3E626FDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9534425-93FB-494F-8DD8-1E4E3E626FDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C9534425-93FB-494F-8DD8-1E4E3E626FDE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

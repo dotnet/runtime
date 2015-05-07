@@ -27,10 +27,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Threading.Tasks.Dataflow.csproj">
       <Project>{1dd0ff15-6234-4bd6-850a-317f05479554}</Project>
       <Name>System.Threading.Tasks.Dataflow</Name>

@@ -34,10 +34,6 @@
       <Project>{D62A6082-5229-4845-8BE9-75753E08C65A}</Project>
       <Name>System.Xml.XmlSerializer</Name>
     </ProjectReference>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
