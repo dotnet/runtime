@@ -904,6 +904,8 @@ monitor_ensure_running (void)
 			InterlockedCompareExchange (&monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_WAITING_FOR_REQUEST);
 			break;
 		case MONITOR_STATUS_NOT_RUNNING:
+			if (mono_runtime_is_shutting_down ())
+				return;
 			if (InterlockedCompareExchange (&monitor_status, MONITOR_STATUS_REQUESTED, MONITOR_STATUS_NOT_RUNNING) == MONITOR_STATUS_NOT_RUNNING) {
 				if (!mono_thread_create_internal (mono_get_root_domain (), monitor_thread, NULL, TRUE, SMALL_STACK))
 					monitor_status = MONITOR_STATUS_NOT_RUNNING;
