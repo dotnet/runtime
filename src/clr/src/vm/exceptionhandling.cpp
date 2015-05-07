@@ -2053,6 +2053,13 @@ bool ExceptionTracker::HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstP
 
         if (!fIsFirstPass)
         {
+
+            // During unwind, at each frame we collapse exception trackers only once i.e. there cannot be multiple
+            // exception trackers that are collapsed at each frame. Store the information of collapsed exception 
+            // tracker in current tracker to be able to find the parent frame when nested exception escapes.
+            m_csfEHClauseOfCollapsedTracker = m_pPrevNestedInfo->m_EHClauseInfo.GetCallerStackFrameForEHClause();
+            m_EnclosingClauseInfoOfCollapsedTracker = m_pPrevNestedInfo->m_EnclosingClauseInfoForGCReporting;
+
             EH_LOG((LL_INFO100, "    - removing previous tracker\n"));
 
             ExceptionTracker* pTrackerToFree = m_pPrevNestedInfo;
@@ -3258,6 +3265,19 @@ DWORD_PTR ExceptionTracker::CallHandler(
     this->m_EHClauseInfo.SetManagedCodeEntered(TRUE);
     this->m_EHClauseInfo.SetCallerStackFrame(csfFunclet);
 
+    switch(funcletType)
+    {
+    case EHFuncletType::Filter:
+        ETW::ExceptionLog::ExceptionFilterBegin(pMD, (PVOID)uHandlerStartPC);
+        break;
+    case EHFuncletType::FaultFinally:
+        ETW::ExceptionLog::ExceptionFinallyBegin(pMD, (PVOID)uHandlerStartPC);
+        break;
+    case EHFuncletType::Catch:
+        ETW::ExceptionLog::ExceptionCatchBegin(pMD, (PVOID)uHandlerStartPC);
+        break;
+    }
+
 #if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     // Invoke the funclet. We pass throwable only when invoking the catch block.
     // Since the actual caller of the funclet is the assembly helper, pass the reference
@@ -3296,6 +3316,20 @@ DWORD_PTR ExceptionTracker::CallHandler(
     //    
     dwResumePC = pfnHandler(sf.SP, OBJECTREFToObject(throwable));
 #endif // _TARGET_ARM_
+
+    switch(funcletType)
+    {
+    case EHFuncletType::Filter:
+        ETW::ExceptionLog::ExceptionFilterEnd();
+        break;
+    case EHFuncletType::FaultFinally:
+        ETW::ExceptionLog::ExceptionFinallyEnd();
+        break;
+    case EHFuncletType::Catch:
+        ETW::ExceptionLog::ExceptionCatchEnd();
+        ETW::ExceptionLog::ExceptionThrownEnd();
+        break;
+    }
 
     this->m_EHClauseInfo.SetManagedCodeEntered(FALSE);
 
@@ -6213,7 +6247,11 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
                 // For case (2) above, sfLastUnwoundEstbalisherFrame would be the same as the managed frame's SP (or upper bound)
                 //
                 // For these scenarios, the frame is considered unwound.
-                if (GetRegdisplaySP(pCF->GetRegisterSet()) == sfUpperBound.SP)
+
+                // For most cases which satisfy above condition GetRegdisplaySP(pCF->GetRegisterSet()) will be equal to sfUpperBound.SP. 
+                // However, frames where Sp is modified after prolog ( eg. localloc) this might not be the case. For those scenarios,
+                // we need to check if sfUpperBound.SP is in between GetRegdisplaySP(pCF->GetRegisterSet()) & callerSp.
+                if (GetRegdisplaySP(pCF->GetRegisterSet()) <= sfUpperBound.SP && sfUpperBound < csfToCheck)
                 {
                     if (csfToCheck == sfCurrentEstablisherFrame)
                     {
@@ -6605,7 +6643,7 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
         // Since the current frame is a non-filter funclet, determine if its caller is the same one
         // as was saved against the exception tracker before the funclet was invoked in ExceptionTracker::CallHandler.
         CallerStackFrame csfFunclet = pCurrentTracker->m_EHClauseInfo.GetCallerStackFrameForEHClause();
-        if (csfCurrent == csfFunclet)
+        if (csfCurrent == csfFunclet) 
         {
             // The EnclosingClauseCallerSP is initialized in ExceptionTracker::ProcessManagedCallFrame, just before
             // invoking the funclets. Basically, we are using the SP of the caller of the frame containing the funclet
@@ -6635,6 +6673,17 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
             }
 
             break;
+        }
+        // Check if this tracker was collapsed with another tracker and if caller of funclet clause for collapsed exception tracker matches.
+        else if (fForGCReporting && !(pCurrentTracker->m_csfEHClauseOfCollapsedTracker.IsNull()) && csfCurrent == pCurrentTracker->m_csfEHClauseOfCollapsedTracker)
+        {
+            EnclosingClauseInfo srcEnclosingClause = pCurrentTracker->m_EnclosingClauseInfoOfCollapsedTracker;
+            sfResult = (StackFrame)(CallerStackFrame(srcEnclosingClause.GetEnclosingClauseCallerSP()));
+
+            _ASSERTE(!sfResult.IsNull());
+
+            break;
+
         }
     }
 

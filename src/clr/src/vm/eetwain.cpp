@@ -4090,7 +4090,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                                 EECodeInfo     *pCodeInfo,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                LPVOID          hCallBack,
+                                DWORD           relOffsetOverride)
 {
     CONTRACTL {
         NOTHROW;
@@ -4731,7 +4732,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                                 EECodeInfo     *pCodeInfo,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                LPVOID          hCallBack,
+                                DWORD           relOffsetOverride)
 {
     CONTRACTL {
         NOTHROW;
@@ -4796,13 +4798,13 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
 #ifdef USE_GC_INFO_DECODER
     /* If we are not in the active method, we are currently pointing
-     * to the return address; at the return address stack variables
-     * can become dead if the call is the last instruction of a try block
-     * and the return address is the jump around the catch block. Therefore
-     * we simply assume an offset inside of call instruction.
-     * NOTE: The GcInfoDecoder depends on this; if you change it, you must
-     * revisit the GcInfoEncoder/Decoder
-     */
+         * to the return address; at the return address stack variables
+         * can become dead if the call is the last instruction of a try block
+         * and the return address is the jump around the catch block. Therefore
+         * we simply assume an offset inside of call instruction.
+         * NOTE: The GcInfoDecoder depends on this; if you change it, you must
+         * revisit the GcInfoEncoder/Decoder
+         */
 
     if (!(flags & ExecutionAborted))
     {
@@ -4827,6 +4829,34 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                 methodName, curOffs));
         }
     }
+
+    // Check if we have been given an override value for relOffset
+    if (relOffsetOverride != NO_OVERRIDE_OFFSET)
+    {
+        // We've been given an override offset for GC Info
+#ifdef _DEBUG
+        GcInfoDecoder _gcInfoDecoder(
+                            gcInfoAddr,
+                            DECODE_CODE_LENGTH,
+                            0
+                            );
+
+        // We only use override offset for wantsReportOnlyLeaf
+        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
+#endif // _DEBUG
+
+        curOffs = relOffsetOverride;
+
+#ifdef _TARGET_ARM_
+        // On ARM, the low-order bit of an instruction pointer indicates Thumb vs. ARM mode.
+        // Mask this off; all instructions are two-byte aligned.
+        curOffs &= (~THUMB_CODE);
+#endif // _TARGET_ARM_
+
+        LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n", 
+            methodName, curOffs));
+    }
+
 #endif  // USE_GC_INFO_DECODER
 
 #if defined(WIN64EXCEPTIONS)   // funclets
@@ -4948,7 +4978,8 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
                                 EECodeInfo     *pCodeInfo,
                                 unsigned        flags,
                                 GCEnumCallback  pCallBack,
-                                LPVOID          hCallBack)
+                                LPVOID          hCallBack,
+                                DWORD           relOffsetOverride)
 {
     PORTABILITY_ASSERT("EECodeManager::EnumGcRefs is not implemented on this platform.");
     return false;

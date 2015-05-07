@@ -3890,9 +3890,18 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk, bool newVNsForPhis)
         ValueNumPair sameVNPair;
 
         GenTreePtr phiFunc = phiDef->gtOp.gtOp2;
+
+        // At this point a GT_PHI node should never have a nullptr for gtOp1
+        // and the gtOp1 should always be a GT_LIST node.
+        GenTreePtr phiOp1 = phiFunc->gtOp.gtOp1;
+        noway_assert(phiOp1 != nullptr);
+        noway_assert(phiOp1->OperGet() == GT_LIST);
+
         GenTreeArgList* phiArgs = phiFunc->gtOp.gtOp1->AsArgList();
-        // Phi's should have more than one argument.
-        assert(phiArgs->Rest() != nullptr);
+
+        // A GT_PHI node should have more than one argument.
+        noway_assert(phiArgs->Rest() != nullptr);
+
         GenTreeLclVarCommon* phiArg = phiArgs->Current()->AsLclVarCommon();
         phiArgs = phiArgs->Rest();
 

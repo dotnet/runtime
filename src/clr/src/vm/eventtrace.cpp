@@ -4599,6 +4599,145 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
 
+
+VOID ETW::ExceptionLog::ExceptionThrownEnd()
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ExceptionThrownStop))
+    {
+        return;
+    }
+
+    FireEtwExceptionThrownStop();
+}
+
+/****************************************************************************/
+/* This is called by the runtime when an exception is handled by the runtime */
+/****************************************************************************/
+VOID ETW::ExceptionLog::ExceptionCatchBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ExceptionCatchStart))
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+        SString methodName;
+        pMethodDesc->GetFullMethodInfo(methodName);
+
+        FireEtwExceptionCatchStart((uint64_t)pEntryEIP,
+            (uint64_t)pMethodDesc,
+            methodName.GetUnicode(),
+            GetClrInstanceId());
+
+    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+}
+
+VOID ETW::ExceptionLog::ExceptionCatchEnd()
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ExceptionCatchStop))
+    {
+        return;
+    }
+
+    FireEtwExceptionCatchStop();
+}
+
+VOID ETW::ExceptionLog::ExceptionFinallyBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ExceptionFinallyStart))
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+        SString methodName;
+        pMethodDesc->GetFullMethodInfo(methodName);
+     
+        FireEtwExceptionFinallyStart((uint64_t)pEntryEIP,
+            (uint64_t)pMethodDesc,
+            methodName.GetUnicode(),
+            GetClrInstanceId());
+
+    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+}
+
+VOID ETW::ExceptionLog::ExceptionFinallyEnd()
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ExceptionFinallyStop))
+    {
+        return;
+    }
+
+    FireEtwExceptionFinallyStop();
+}
+
+VOID ETW::ExceptionLog::ExceptionFilterBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ExceptionFilterStart))
+    {
+        return;
+    }
+
+    EX_TRY
+    {
+        SString methodName;
+        pMethodDesc->GetFullMethodInfo(methodName);
+
+        FireEtwExceptionFilterStart((uint64_t)pEntryEIP,
+            (uint64_t)pMethodDesc,
+            methodName.GetUnicode(),
+            GetClrInstanceId());
+
+    } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+}
+
+VOID ETW::ExceptionLog::ExceptionFilterEnd()
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (!ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ExceptionFilterStop))
+    {
+        return;
+    }
+
+    FireEtwExceptionFilterStop();
+}
+
 /****************************************************************************/
 /* This is called by the runtime when a domain is loaded */
 /****************************************************************************/

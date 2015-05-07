@@ -405,6 +405,17 @@ public:
 
         return fShouldCrawlframeReportGCReferences;
     }
+    
+    bool ShouldParentToFuncletUseUnwindTargetLocationForGCReporting()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fShouldParentFrameUseUnwindTargetPCforGCReporting;
+    }
+
+    const EE_ILEXCEPTION_CLAUSE& GetEHClauseForCatch()
+    {
+        return ehClauseForCatch;
+    }
 
 #endif // WIN64EXCEPTIONS
 
@@ -452,6 +463,8 @@ private:
     bool              isFilterFuncletCached;
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
+    bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
+    EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //WIN64EXCEPTIONS
     Thread*           pThread;
 
