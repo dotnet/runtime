@@ -22,6 +22,7 @@
     "System.Threading.ThreadPool": "4.0.10-beta-22809"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {},
+    "netcore50": {}
   }
 }
