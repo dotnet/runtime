@@ -9,6 +9,7 @@ using Xunit;
 public partial class FileSystemWatcher_4000_Tests
 {
     [Fact]
+    [ActiveIssue(1657)]
     public static void FileSystemWatcher_IncludeSubDirectories_File()
     {
         using (var dir = Utility.CreateTestDirectory())
