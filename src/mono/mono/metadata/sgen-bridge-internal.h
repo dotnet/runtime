@@ -74,8 +74,6 @@ void sgen_tarjan_bridge_init (SgenBridgeProcessor *collector);
 void sgen_set_bridge_implementation (const char *name);
 void sgen_bridge_set_dump_prefix (const char *prefix);
 
-gboolean sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcessor *b);
-
 #endif
 
 #endif
