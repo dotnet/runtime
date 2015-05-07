@@ -1661,7 +1661,7 @@ class WinMDImport : public IMetaDataImport2
             _ASSERTE(phInternalEnum->m_EnumType == MDSimpleEnum);
 
             _ASSERTE( phInternalEnum->m_ulCount == m_pWinMDAdapter->GetRawAssemblyRefCount());
-            int n = WinMDAdapter::GetExtraAssemblyRefCount();
+            int n = m_pWinMDAdapter->GetExtraAssemblyRefCount();
             phInternalEnum->m_ulCount += n;
             phInternalEnum->u.m_ulEnd += n;
 

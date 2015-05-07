@@ -1874,19 +1874,32 @@ Lowering::TreeNodeInfoInitSIMD(GenTree* tree, LinearScan* lsra)
         // Otherwise, if the baseType is floating point, the targetReg will be a xmm reg and we
         // can use that in the process of extracting the element.
         // 
-        // If the index is a constant and base type is a small int we can use pextrw.
+        // If the index is a constant and base type is a small int we can use pextrw, but on AVX
+        // we will need a temp if are indexing into the upper half of the AVX register.
         // In all other cases with constant index, we need a temp xmm register to extract the 
         // element if index is other than zero.
+
         if (!op2->IsCnsIntOrI())
         {
             (void) comp->getSIMDInitTempVarNum();
         }
-        else if (!varTypeIsFloating(simdTree->gtSIMDBaseType) &&
-                 !varTypeIsSmallInt(simdTree->gtSIMDBaseType) &&
-                 !op2->IsZero())
+        else if (!varTypeIsFloating(simdTree->gtSIMDBaseType))
         {
-            info->internalFloatCount = 1;
-            info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+            bool needFloatTemp;
+            if (varTypeIsSmallInt(simdTree->gtSIMDBaseType) && (comp->getSIMDInstructionSet() == InstructionSet_AVX))
+            {
+                int byteShiftCnt = (int) op2->AsIntCon()->gtIconVal * genTypeSize(simdTree->gtSIMDBaseType);
+                needFloatTemp = (byteShiftCnt >= 16);
+            }
+            else
+            {
+                needFloatTemp = !op2->IsZero();
+            }
+            if (needFloatTemp)
+            {
+                info->internalFloatCount = 1;
+                info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+            }
         }
         break;
 

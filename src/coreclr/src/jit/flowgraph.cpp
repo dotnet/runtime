@@ -16430,6 +16430,27 @@ void                Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             HBtab->ebdHndBeg = bPrev;
             bPrev->bbFlags |=  BBF_DONT_REMOVE | BBF_HAS_LABEL;
             bPrev->bbRefs++;
+
+            // If this is a handler for a filter, the last block of the filter will end with 
+            // a BBJ_EJFILTERRET block that has a bbJumpDest that jumps to the first block of 
+            // it's handler.  So we need to update it to keep things in sync.
+            //
+            if (HBtab->HasFilter())
+            {
+                BasicBlock* bFilterLast = HBtab->BBFilterLast();
+                assert(bFilterLast != nullptr);
+                assert(bFilterLast->bbJumpKind == BBJ_EHFILTERRET);
+                assert(bFilterLast->bbJumpDest == block);
+#ifdef DEBUG
+                if (verbose)
+                {
+                    printf("EH#%u: Updating bbJumpDest for filter ret block: BB%02u => BB%02u\n",
+                           ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
+                }
+#endif // DEBUG
+                // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
+                bFilterLast->bbJumpDest = bPrev;
+            }
         }
 
         if (HBtab->HasFilter() && (HBtab->ebdFilter == block))

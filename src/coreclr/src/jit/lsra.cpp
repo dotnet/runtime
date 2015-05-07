@@ -2974,6 +2974,17 @@ LinearScan::buildRefPositionsForNode(GenTree *tree,
                         srcInterval->assignRelatedInterval(varDefInterval);
                     }
                 }
+                // We can have a case where the source of the store has a different register type,
+                // e.g. when the store is of a return value temp, and op1 is a Vector2
+                // (8-byte SIMD, which is TYP_DOUBLE at this point).  We will need to set the
+                // src candidates accordingly on op1 so that LSRA will generate a copy.
+                // We could do this during Lowering, but at that point we don't know whether
+                // this lclVar will be a register candidate, and if not, we would prefer to leave
+                // the type alone.
+                if (regType(tree->gtGetOp1()->TypeGet()) != regType(tree->TypeGet()))
+                {
+                    tree->gtGetOp1()->gtLsraInfo.setSrcCandidates(this, allRegs(tree->TypeGet()));
+                }
             }
 
             if ((tree->gtFlags & GTF_VAR_DEATH) == 0)
@@ -4154,7 +4165,7 @@ LinearScan::registerIsAvailable(RegRecord *physRegRecord, LsraLocation currentLo
 // Notes:
 //    This will nearly always be identical to the registerType of the interval, except in the case
 //    of SIMD types of 8 bytes (currently only Vector2) when they are passed and returned in integer
-//    registers.
+//    registers, or copied to a return temp.
 //    This method need only be called in situations where we may be dealing with the register requirements
 //    of a RefTypeUse RefPosition (i.e. not when we are only looking at the type of an interval, nor when
 //    we are interested in the "defining" type of the interval).  This is because the situation of interest
@@ -4169,10 +4180,9 @@ LinearScan::getRegisterType(Interval *currentInterval, RefPosition* refPosition)
 #if defined(FEATURE_SIMD) && defined(_TARGET_AMD64_)
     if ((candidates & allRegs(regType)) == RBM_NONE)
     {
-        assert(genMaxOneBit(candidates)              &&
-                (regType == TYP_DOUBLE)              &&
-                (refPosition->refType == RefTypeUse) &&
-                ((candidates & (RBM_ARG_REGS | RBM_LNGRET)) != RBM_NONE));
+        assert((regType == TYP_DOUBLE)              &&
+               (refPosition->refType == RefTypeUse) &&
+               ((candidates & allRegs(TYP_INT)) != RBM_NONE));
         regType = TYP_INT;
     }
 #else // !(defined(FEATURE_SIMD) && defined(_TARGET_AMD64_))
@@ -6694,9 +6704,8 @@ LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* refPosi
     assert(lclVarInterval->isLocalVar == true);
     LclVarDsc *  varDsc = compiler->lvaTable + lclVarInterval->varNum;
     assert(varDsc->lvType == LargeVectorType);
-    regNumber lclVarReg = varDsc->lvRegNum;
-    assert(lclVarReg != REG_NA);
-    if (lclVarReg == REG_STK)
+    regNumber lclVarReg = lclVarInterval->physReg;
+    if (lclVarReg == REG_NA)
     {
         return;
     }

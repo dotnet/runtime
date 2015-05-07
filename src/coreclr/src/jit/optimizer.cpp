@@ -1813,6 +1813,24 @@ void                Compiler::optFindNaturalLoops()
                     goto NO_LOOP;
                 }
 
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+                // Disqualify loops where the first block of the loop is a finally target.
+                // The main problem is when multiple loops share a 'first' block that is a finally
+                // target and we canonicalize the loops by adding a new loop head. In that case, we
+                // need to update the blocks so the finally target bit is moved to the newly created
+                // block, and removed from the old 'first' block. This is 'hard', so at this point
+                // in the RyuJIT codebase (when we don't expect to keep the "old" ARM32 code generator
+                // long-term), it's easier to disallow the loop than to update the flow graph to
+                // support this case.
+
+                if ((first->bbFlags & BBF_FINALLY_TARGET) != 0)
+                {
+                    JITDUMP("Loop 'first' BB%02u is a finally target. Rejecting loop.\n",
+                           first->bbNum);
+                    goto NO_LOOP;
+                }
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+
                 /* At this point we have a loop - record it in the loop table
                  * If we found only one exit, record it in the table too
                  * (otherwise an exit = 0 in the loop table means multiple exits) */

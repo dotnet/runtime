@@ -11807,11 +11807,15 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     if (IsValueClass())
         return FALSE;
 
-    // READYTORUN: TODO: This logic is not correct when NGen image depends on ReadyToRun image. In this case,
-    // GetModule()->IsReadyToRun() flag is going to be false at NGen time, but it is going to be true at runtime.
-    // Thus, the offsets between the two cases are going to be different.
-    if (!(IsReadyToRunCompilation() || GetModule()->IsReadyToRun()))
-        return FALSE;
+    // Always use the ReadyToRun field layout algorithm if the source IL image was ReadyToRun, independent on
+    // whether ReadyToRun is actually enabled for the module. It is required to allow mixing and matching 
+    // ReadyToRun images with NGen.
+    if (!GetModule()->GetFile()->IsILImageReadyToRun())
+    {
+        // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
+        if (!IsReadyToRunCompilation())
+            return FALSE;
+    }
 
     MethodTable * pParentMT = GetParentMethodTable();
 
