@@ -124,7 +124,11 @@
     <Compile Include="Generic\SortedList\Values.cs" />
     <Compile Include="Generic\SortedSet\SortedSetSpecificTests.cs" />
     <Compile Include="Generic\SortedSet\SortedSetTest.cs" />
+    <Compile Include="Generic\Common\TestDebugger.cs" />
     <Compile Include="Generic\Stack\Stack_GetEnumerator.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
