@@ -172,7 +172,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		memcpy ((char*)header->code, mb->code, mb->pos);
 
 		for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
-			header->locals [i] = (MonoType *)l->data;
+			header->locals [i] = mono_metadata_type_dup (NULL, (MonoType*)l->data);
 		}
 #endif
 	}

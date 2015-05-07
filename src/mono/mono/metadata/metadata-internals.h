@@ -753,6 +753,7 @@ void mono_unload_interface_ids (MonoBitSet *bitset);
 MonoType *mono_metadata_type_dup (MonoImage *image, const MonoType *original);
 MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container);

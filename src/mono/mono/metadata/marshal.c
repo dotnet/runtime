@@ -160,25 +160,12 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	mono_register_jit_icall (func, name, sig, save);
 }
 
-static MonoMethodSignature*
-signature_dup (MonoImage *image, MonoMethodSignature *sig)
-{
-	MonoMethodSignature *res;
-	int sigsize;
-
-	res = mono_metadata_signature_alloc (image, sig->param_count);
-	sigsize = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
-	memcpy (res, sig, sigsize);
-
-	return res;
-}
-
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method)
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
 	if (sig->pinvoke) {
-		sig = signature_dup (method->klass->image, sig);
+		sig = mono_metadata_signature_dup_full (method->klass->image, sig);
 		sig->pinvoke = FALSE;
 	}
 	
@@ -3138,7 +3125,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		cache_key = sig;
 	}
 
-	static_sig = signature_dup (method->klass->image, sig);
+	static_sig = mono_metadata_signature_dup_full (method->klass->image, sig);
 	static_sig->hasthis = 0;
 	if (!static_method_with_first_arg_bound)
 		invoke_sig = static_sig;
@@ -3372,28 +3359,6 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	return mono_marshal_get_delegate_invoke_internal (method, callvirt, static_method_with_first_arg_bound, target_method);
 }
 
-/*
- * signature_dup_add_this:
- *
- *  Make a copy of @sig, adding an explicit this argument.
- */
-static MonoMethodSignature*
-signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass)
-{
-	MonoMethodSignature *res;
-	int i;
-
-	res = mono_metadata_signature_alloc (image, sig->param_count + 1);
-	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
-	res->param_count = sig->param_count + 1;
-	res->hasthis = FALSE;
-	for (i = sig->param_count - 1; i >= 0; i --)
-		res->params [i + 1] = sig->params [i];
-	res->params [0] = klass->valuetype ? &klass->this_arg : &klass->byval_arg;
-
-	return res;
-}
-
 typedef struct {
 	MonoMethodSignature *ctor_sig;
 	MonoMethodSignature *sig;
@@ -3431,7 +3396,7 @@ add_string_ctor_signature (MonoMethod *method)
 	MonoMethodSignature *callsig;
 	CtorSigPair *cs;
 
-	callsig = signature_dup (method->klass->image, mono_method_signature (method));
+	callsig = mono_metadata_signature_dup_full (method->klass->image, mono_method_signature (method));
 	callsig->ret = &mono_defaults.string_class->byval_arg;
 	cs = g_new (CtorSigPair, 1);
 	cs->sig = callsig;
@@ -3888,7 +3853,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		need_direct_wrapper = TRUE;
 	} else {
 		if (method_is_dynamic (method))
-			callsig = signature_dup (method->klass->image, mono_method_signature (method));
+			callsig = mono_metadata_signature_dup_full (method->klass->image, mono_method_signature (method));
 		else
 			callsig = mono_method_signature (method);
 	}
@@ -4171,9 +4136,9 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 
 	/* Add an explicit this argument */
 	if (sig->hasthis)
-		csig2 = signature_dup_add_this (mono_defaults.corlib, sig, mono_defaults.object_class);
+		csig2 = mono_metadata_signature_dup_add_this (mono_defaults.corlib, sig, mono_defaults.object_class);
 	else
-		csig2 = signature_dup (mono_defaults.corlib, sig);
+		csig2 = mono_metadata_signature_dup_full (mono_defaults.corlib, sig);
 
 #ifndef DISABLE_JIT
 	if (sig->hasthis)
@@ -4190,7 +4155,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	csig = signature_dup (mono_defaults.corlib, sig);
+	csig = mono_metadata_signature_dup_full (mono_defaults.corlib, sig);
 	csig->pinvoke = 0;
 	if (csig->call_convention == MONO_CALL_VARARG)
 		csig->call_convention = 0;
@@ -7023,7 +6988,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		g_assert (!sig->hasthis);
 		param_shift += 1;
 	}
-	csig = signature_dup (mb->method->klass->image, sig);
+	csig = mono_metadata_signature_dup_full (mb->method->klass->image, sig);
 	csig->pinvoke = 1;
 	m.csig = csig;
 	m.image = image;
@@ -7306,7 +7271,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		g_assert (sig->hasthis);
 
 		/* CreateString returns a value */
-		csig = signature_dup (method->klass->image, sig);
+		csig = mono_metadata_signature_dup_full (method->klass->image, sig);
 		csig->ret = &mono_defaults.string_class->byval_arg;
 		csig->pinvoke = 0;
 
@@ -7362,7 +7327,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 		info->d.managed_to_native.method = method;
 
-		csig = signature_dup (method->klass->image, sig);
+		csig = mono_metadata_signature_dup_full (method->klass->image, sig);
 		csig->pinvoke = 0;
 		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
 											 csig->param_count + 16, info, NULL);
@@ -7374,9 +7339,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		if (sig->hasthis)
-			csig = signature_dup_add_this (method->klass->image, sig, method->klass);
+			csig = mono_metadata_signature_dup_add_this (method->klass->image, sig, method->klass);
 		else
-			csig = signature_dup (method->klass->image, sig);
+			csig = mono_metadata_signature_dup_full (method->klass->image, sig);
 
 		/* hack - string constructors returns a value */
 		if (method->string_ctor)
@@ -7416,7 +7381,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 		info->d.managed_to_native.method = method;
 
-		csig = signature_dup (method->klass->image, csig);
+		csig = mono_metadata_signature_dup_full (method->klass->image, csig);
 		csig->pinvoke = 0;
 		res = mono_mb_create_and_cache_full (cache, method, mb, csig, csig->param_count + 16,
 											 info, NULL);
@@ -7438,7 +7403,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_PINVOKE);
 	info->d.managed_to_native.method = method;
 
-	csig = signature_dup (method->klass->image, sig);
+	csig = mono_metadata_signature_dup_full (method->klass->image, sig);
 	csig->pinvoke = 0;
 	res = mono_mb_create_and_cache_full (cache, method, mb, csig, csig->param_count + 16,
 										 info, NULL);
@@ -7493,7 +7458,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, FALSE, TRUE, FALSE);
 #endif
 
-	csig = signature_dup (image, sig);
+	csig = mono_metadata_signature_dup_full (image, sig);
 	csig->pinvoke = 0;
 
 	new_key = g_new (SignaturePointerPair,1);
@@ -7561,7 +7526,7 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	info->d.managed_to_native.method = invoke;
 
 	g_assert (!sig->hasthis);
-	csig = signature_dup_add_this (image, sig, mono_defaults.object_class);
+	csig = mono_metadata_signature_dup_add_this (image, sig, mono_defaults.object_class);
 	csig->pinvoke = 0;
 	res = mono_mb_create_and_cache_full (cache, invoke,
 										 mb, csig, csig->param_count + 16,
@@ -7911,7 +7876,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 		/* Need to free this later */
 		csig = mono_metadata_signature_dup (invoke_sig);
 	else
-		csig = signature_dup (method->klass->image, invoke_sig);
+		csig = mono_metadata_signature_dup_full (method->klass->image, invoke_sig);
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
@@ -8056,7 +8021,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		mono_method_get_marshal_info (method, mspecs);
 
 		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
-		csig = signature_dup (image, sig);
+		csig = mono_metadata_signature_dup_full (image, sig);
 		csig->hasthis = 0;
 		csig->pinvoke = 1;
 
@@ -8613,7 +8578,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 		 	  static void PtrToStructure (IntPtr ptr, object structure);
 		   defined in class/corlib/System.Runtime.InteropServices/Marshal.cs */
 		sig = mono_create_icall_signature ("void ptr object");
-		sig = signature_dup (mono_defaults.corlib, sig);
+		sig = mono_metadata_signature_dup_full (mono_defaults.corlib, sig);
 		sig->pinvoke = 0;
 		mono_memory_barrier ();
 		ptostr = sig;
@@ -8689,7 +8654,7 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	mono_mb_emit_exception_full (mb, "System", "ExecutionEngineException", "Shouldn't be called.");
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
-	sig = signature_dup (method->klass->image, mono_method_signature (method));
+	sig = mono_metadata_signature_dup_full (method->klass->image, mono_method_signature (method));
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
 	info->d.synchronized_inner.method = method;
@@ -8751,7 +8716,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 			return res;
 	}
 
-	sig = signature_dup (method->klass->image, mono_method_signature (method));
+	sig = mono_metadata_signature_dup_full (method->klass->image, mono_method_signature (method));
 	sig->pinvoke = 0;
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_SYNCHRONIZED);
@@ -9876,7 +9841,7 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 			return res;
 	}
 
-	sig = signature_dup (method->klass->image, mono_method_signature (method));
+	sig = mono_metadata_signature_dup_full (method->klass->image, mono_method_signature (method));
 	sig->pinvoke = 0;
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNKNOWN);
@@ -11031,7 +10996,7 @@ mono_marshal_get_generic_array_helper (MonoClass *class, MonoClass *iface, gchar
 		METHOD_ATTRIBUTE_NEW_SLOT | METHOD_ATTRIBUTE_HIDE_BY_SIG | METHOD_ATTRIBUTE_FINAL;
 
 	sig = mono_method_signature (method);
-	csig = signature_dup (method->klass->image, sig);
+	csig = mono_metadata_signature_dup_full (method->klass->image, sig);
 	csig->generic_param_count = 0;
 
 #ifndef DISABLE_JIT

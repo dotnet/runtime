@@ -1858,11 +1858,13 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 }
 
 static MonoMethodSignature*
-mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig)
+mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig, size_t padding)
 {
-	int sigsize;
+	int sigsize, sig_header_size;
 	MonoMethodSignature *ret;
-	sigsize = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *);
+	sigsize = sig_header_size = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *) + padding;
+	if (sig->ret)
+		sigsize += sizeof (MonoType);
 
 	if (image) {
 		ret = mono_image_alloc (image, sigsize);
@@ -1871,14 +1873,62 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMet
 	} else {
 		ret = g_malloc (sigsize);
 	}
-	memcpy (ret, sig, sigsize);
+
+	memcpy (ret, sig, sig_header_size - padding);
+
+	// Copy return value because of ownership semantics.
+	if (sig->ret) {
+		// Danger! Do not alter padding use without changing the dup_add_this below
+		intptr_t end_of_header = (intptr_t)( (char*)(ret) + sig_header_size);
+		ret->ret = (MonoType *)end_of_header;
+		*ret->ret = *sig->ret;
+	}
+
 	return ret;
 }
+
+static MonoMethodSignature*
+mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	return mono_metadata_signature_dup_internal_with_padding (image, mp, sig, 0);
+}
+/*
+ * signature_dup_add_this:
+ *
+ *  Make a copy of @sig, adding an explicit this argument.
+ */
+MonoMethodSignature*
+mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass)
+{
+	MonoMethodSignature *ret;
+	ret = mono_metadata_signature_dup_internal_with_padding (image, NULL, sig, sizeof (MonoType *));
+
+	ret->param_count = sig->param_count + 1;
+	ret->hasthis = FALSE;
+
+	for (int i = sig->param_count - 1; i >= 0; i --)
+		ret->params [i + 1] = sig->params [i];
+	ret->params [0] = klass->valuetype ? &klass->this_arg : &klass->byval_arg;
+
+	for (int i = sig->param_count - 1; i >= 0; i --)
+		g_assert(ret->params [i + 1]->type == sig->params [i]->type && ret->params [i+1]->type != MONO_TYPE_END);
+	g_assert (ret->ret->type == sig->ret->type && ret->ret->type != MONO_TYPE_END);
+
+	return ret;
+}
+
+
 
 MonoMethodSignature*
 mono_metadata_signature_dup_full (MonoImage *image, MonoMethodSignature *sig)
 {
-	return mono_metadata_signature_dup_internal (image, NULL, sig);
+	MonoMethodSignature *ret = mono_metadata_signature_dup_internal (image, NULL, sig);
+
+	for (int i = 0 ; i < sig->param_count; i ++)
+		g_assert(ret->params [i]->type == sig->params [i]->type);
+	g_assert (ret->ret->type == sig->ret->type);
+
+	return ret;
 }
 
 /*The mempool is accessed without synchronization*/
