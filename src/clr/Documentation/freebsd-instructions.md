@@ -32,6 +32,31 @@ To install the packages you need:
 
 You now have all the required components.
 
+Debugging CoreCLR (Optional)
+----------------------------
+
+Note: This step is *optional* and is not required to build CoreCLR itself. If you intend on hacking or debugging the CoreCLR source code, you need to follow these steps. You must follow these steps *before* starting the build itself.
+
+In order to debug CoreCLR you will also need to install LLDB, the LLVM debugger. LLDB is still in the process of being ported to FreeBSD, so no official packages exist (see the FreeBSD LLDB Wiki page for more information on what has been ported so far: https://wiki.freebsd.org/lldb). However, it is possible to manually download and install LLDB from the LLVM source tree by following the instructions below: 
+
+Firstly, install the following packages: python ninja swig13 git (in addition to the packages above), i.e.
+
+```janhenke@freebsd-frankfurt:~ % sudo pkg install python ninja swig13 git```
+
+Then, run the install script in ~/coreclr/src/pal/tools: 
+
+```janhenke@freebsd-frankfurt:~ % ~/coreclr/src/pal/tools/freebsd-install-lldb.sh```
+
+Note: LLDB will run su in order to install the LLDB build to /usr/local/include. 
+
+(Optional) If you wish to run sudo instead of su, you can change line 29-31 to:
+
+```sudo $NINJA lldb install```
+
+
+You now have all the required components to debug CoreCLR installed.
+
+
 Git Setup
 ---------
 
