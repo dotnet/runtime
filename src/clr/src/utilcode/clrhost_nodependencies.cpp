@@ -383,6 +383,9 @@ FastFreeInProcessHeapFunc __ClrFreeInProcessHeap = (FastFreeInProcessHeapFunc) C
 
 const NoThrow nothrow = { 0 };
 
+#ifdef __llvm__
+__attribute__((visibility("hidden")))
+#endif
 void * __cdecl
 operator new(size_t n)
 {
@@ -404,7 +407,9 @@ operator new(size_t n)
     return result;
 }
 
-
+#ifdef __llvm__
+__attribute__((visibility("hidden")))
+#endif
 void * __cdecl
 operator new[](size_t n)
 {
@@ -426,6 +431,9 @@ operator new[](size_t n)
     return result;
 };
 
+#ifdef __llvm__
+__attribute__((visibility("hidden")))
+#endif
 void * __cdecl operator new(size_t n, const NoThrow&)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -441,6 +449,9 @@ void * __cdecl operator new(size_t n, const NoThrow&)
     return result;
 }
 
+#ifdef __llvm__
+__attribute__((visibility("hidden")))
+#endif
 void * __cdecl operator new[](size_t n, const NoThrow&)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -456,6 +467,9 @@ void * __cdecl operator new[](size_t n, const NoThrow&)
     return result;
 }
 
+#ifdef __llvm__
+__attribute__((visibility("hidden")))
+#endif
 void __cdecl
 operator delete(void *p)
 {
@@ -469,6 +483,9 @@ operator delete(void *p)
     TRASH_LASTERROR;
 }
 
+#ifdef __llvm__
+__attribute__((visibility("hidden")))
+#endif
 void __cdecl
 operator delete[](void *p)
 {
