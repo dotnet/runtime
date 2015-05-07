@@ -1948,6 +1948,13 @@ static BOOL RuntimeVerifyNativeImageTimestamps(const CORCOMPILE_VERSION_INFO *in
 
         if (hMod == NULL)
         {
+            // Unless this is an NGen worker process, we don't want to load JIT compiler just to do a timestamp check.
+            // In an ideal case, all assemblies have native images, and JIT compiler never needs to be loaded at runtime.
+            // Loading JIT compiler just to check its timestamp would reduce the benefits of have native images.
+            // Since CLR and JIT are intended to be serviced together, the possibility of accidentally using native
+            // images created by an older JIT is very small, and is deemed an acceptable risk.
+            // Note that when multiple JIT compilers are used (e.g., clrjit.dll and compatjit.dll on x64 in .NET 4.6),
+            // they must all be in the same patch family.
             if (!IsCompilationProcess())
                 continue;
 
@@ -2159,6 +2166,19 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, Loggab
         return FALSE;
     }
 #endif // CROSSGEN_COMPILE
+
+#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+    //
+    // Check the right JIT compiler
+    //
+
+    bool nativeImageBuiltWithRyuJit = ((info->wCodegenFlags & CORCOMPILE_CODEGEN_USE_RYUJIT) != 0);
+    if (UseRyuJit() != nativeImageBuiltWithRyuJit)
+    {
+        RuntimeVerifyLog(LL_ERROR, pLogAsm, W("JIT compiler used to generate native image doesn't match current JIT compiler."));
+        return FALSE;
+    }
+#endif
 
     //
     // The zap is up to date.

@@ -5355,6 +5355,7 @@ const NativeImageDumper::EnumMnemonics s_CorCompileHdrFlags[] =
 #define CCHF_ENTRY(f) NativeImageDumper::EnumMnemonics(f, W(#f))
     CCHF_ENTRY(CORCOMPILE_HEADER_HAS_SECURITY_DIRECTORY),
     CCHF_ENTRY(CORCOMPILE_HEADER_IS_IBC_OPTIMIZED),
+    CCHF_ENTRY(CORCOMPILE_HEADER_IS_READY_TO_RUN),
 #undef CCHF_ENTRY
 };
 

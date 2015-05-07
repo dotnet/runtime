@@ -753,14 +753,17 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
                     // We have a variable i that is defined in block j and live at l, and l belongs to dom frontier of j.
                     // So insert a phi node at l.
                     JITDUMP("Inserting phi definition for V%02u at start of BB%02u.\n", lclNum, bbInDomFront->bbNum);
-                    GenTreePtr phiLhs = m_pCompiler->gtNewLclvNode(lclNum, m_pCompiler->lvaTable[lclNum].TypeGet());
-                    GenTreePtr phiAsg = m_pCompiler->gtNewAssignNode(
-                                                         phiLhs,
-                                                         m_pCompiler->gtNewOperNode(
-                                                                          GT_PHI,
-                                                                          m_pCompiler->lvaTable[lclNum].TypeGet(),
-                                                                          NULL)
-                                                         DEBUG_ARG(/*isPhiDefn*/true));
+
+                    GenTreePtr phiLhs  = m_pCompiler->gtNewLclvNode(lclNum, m_pCompiler->lvaTable[lclNum].TypeGet());
+
+                    // Create 'phiRhs' as a GT_PHI node for 'lclNum', it will eventually hold a GT_LIST of GT_PHI_ARG nodes.
+                    // However we have to construct this list so for now the gtOp1 of 'phiRhs' is a nullptr.
+                    // It will get replaced with a GT_LIST of GT_PHI_ARG nodes in SsaBuilder::AssignPhiNodeRhsVariables()
+                    // and in SsaBuilder::AddDefToHandlerPhis()
+                    //
+                    GenTreePtr phiRhs = m_pCompiler->gtNewOperNode(GT_PHI, m_pCompiler->lvaTable[lclNum].TypeGet(), nullptr);
+
+                    GenTreePtr phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs  DEBUG_ARG(/*isPhiDefn*/true));
 
                     GenTreePtr stmt = m_pCompiler->fgInsertStmtAtBeg(bbInDomFront, phiAsg);
                     m_pCompiler->gtSetStmtInfo(stmt);

@@ -6759,6 +6759,7 @@ void        CodeGen::genEmitHelperCall(unsigned    helper,
     emitter::EmitCallType  callType = emitter::EC_FUNC_TOKEN;
     addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
     regNumber callTarget = REG_NA;
+    regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (!addr)
     {        
@@ -6782,13 +6783,16 @@ void        CodeGen::genEmitHelperCall(unsigned    helper,
                 // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
                 // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
                 callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+                regMaskTP callTargetMask = genRegMask(callTargetReg);
+                noway_assert((callTargetMask & killMask) == callTargetMask);
             }
-
-            regMaskTP callTargetMask = genRegMask(callTargetReg);
-            regMaskTP callKillSet = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
-
-            // assert that all registers in callTargetMask are in the callKillSet
-            noway_assert((callTargetMask & callKillSet) == callTargetMask);
+            else
+            {
+                // The call target must not overwrite any live variable, though it may not be in the
+                // kill set for the call.
+                regMaskTP callTargetMask = genRegMask(callTargetReg);
+                noway_assert((callTargetMask & regSet.rsMaskVars) == RBM_NONE);
+            }
 #endif
             callTarget = callTargetReg;
             CodeGen::genSetRegToIcon(callTarget, (ssize_t) pAddr, TYP_I_IMPL);
@@ -6812,7 +6816,6 @@ void        CodeGen::genEmitHelperCall(unsigned    helper,
                                 emitter::emitNoGChelper(helper));
 
     
-    regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regTracker.rsTrashRegSet(killMask);
     regTracker.rsTrashRegsForGCInterruptability();
 }

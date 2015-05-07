@@ -303,6 +303,7 @@ public:
 
     BOOL HasSecurityDirectory();
     BOOL IsIbcOptimized();
+    BOOL IsILImageReadyToRun();
     WORD GetSubsystem();
     mdToken GetEntryPointToken(
 #ifdef _DEBUG        
