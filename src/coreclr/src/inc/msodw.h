@@ -188,7 +188,7 @@
 
 // shared reg values between DW and DW COM EXE
 #define DEFAULT_SUBPATH L"Microsoft\\PCHealth\\ErrorReporting\\DW"
-#define QUEUE_REG_SUBPATH  L"Software\\"DEFAULT_SUBPATH
+#define QUEUE_REG_SUBPATH  L"Software\\" DEFAULT_SUBPATH
 #define QUEUE_REG_OKTOREPORT_VALUE L"OkToReportFromTheseQueues"
 #define WATSON_INSTALLED_REG_SUBPATH QUEUE_REG_SUBPATH L"\\Installed"
 #define WATSON_INSTALLED_REG_SUBPATH_IA64 L"Software\\Wow6432Node\\"DEFAULT_SUBPATH L"\\Installed"

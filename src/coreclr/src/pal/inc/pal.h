@@ -5472,9 +5472,11 @@ PALIMPORT double __cdecl cosh(double);
 PALIMPORT double __cdecl sinh(double);
 PALIMPORT double __cdecl tanh(double);
 PALIMPORT double __cdecl fmod(double, double);
+PALIMPORT float __cdecl fmodf(float, float);
 PALIMPORT double __cdecl floor(double);
 PALIMPORT double __cdecl ceil(double);
 PALIMPORT double __cdecl fabs(double);
+PALIMPORT float __cdecl fabsf(float);
 PALIMPORT double __cdecl modf(double, double *);
 PALIMPORT float __cdecl modff(float, float *);
 
@@ -5484,10 +5486,6 @@ PALIMPORT double __cdecl _copysign(double, double);
 
 #ifdef __cplusplus
 extern "C++" {
-inline float fabsf(float _X)
-{
-    return ((float)fabs((double)_X));
-}
 
 #ifdef BIT64
 inline __int64 abs(__int64 _X) {
