@@ -208,12 +208,13 @@ function_name() to call the system's implementation
 #define tanh DUMMY_tanh
 #define modf DUMMY_modf
 #define fmod DUMMY_fmod
+#define fmodf DUMMY_fmodf
 #define sqrt DUMMY_sqrt
 #define ceil DUMMY_ceil
 #define fabs DUMMY_fabs
+#define fabsf DUMMY_fabsf
 #define floor DUMMY_floor
 #define modff DUMMY_modff
-#define fabsf DUMMY_fabsf
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including 
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX 
@@ -455,12 +456,13 @@ function_name() to call the system's implementation
 #undef tanh
 #undef modf
 #undef fmod
+#undef fmodf
 #undef sqrt
 #undef ceil
 #undef fabs
+#undef fabsf
 #undef floor
 #undef modff
-#undef fabsf
 
 #undef wchar_t
 #undef ptrdiff_t

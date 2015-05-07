@@ -4801,7 +4801,7 @@ typedef enum
 DacpGcHeapData *g_pHeapData = NULL;
 DacpGcHeapData g_HeapData;
 
-inline BOOL InitializeHeapData()
+BOOL InitializeHeapData()
 {
     if (g_pHeapData == NULL)
     {        
