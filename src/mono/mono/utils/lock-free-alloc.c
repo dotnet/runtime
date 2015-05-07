@@ -155,7 +155,7 @@ alloc_sb (Descriptor *desc)
 		pagesize = mono_pagesize ();
 
 	sb_header = desc->block_size == pagesize ?
-		mono_valloc (0, desc->block_size, prot_flags_for_activate (TRUE)) :
+		mono_valloc (NULL, desc->block_size, prot_flags_for_activate (TRUE)) :
 		mono_valloc_aligned (desc->block_size, desc->block_size, prot_flags_for_activate (TRUE));
 
 	g_assert (sb_header == sb_header_for_addr (sb_header, desc->block_size));
@@ -196,7 +196,7 @@ desc_alloc (void)
 			Descriptor *d;
 			int i;
 
-			desc = (Descriptor *) mono_valloc (0, desc_size * NUM_DESC_BATCH, prot_flags_for_activate (TRUE));
+			desc = (Descriptor *) mono_valloc (NULL, desc_size * NUM_DESC_BATCH, prot_flags_for_activate (TRUE));
 
 			/* Organize into linked list. */
 			d = desc;

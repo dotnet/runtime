@@ -149,7 +149,7 @@ thread_func (void *thread_data)
 		}
 	}
 
-	return 0;
+	return (mono_native_thread_return_t)0;
 }
 
 void
