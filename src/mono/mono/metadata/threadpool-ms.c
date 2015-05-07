@@ -826,8 +826,10 @@ monitor_thread (void)
 				break;
 			interval_left -= mono_msec_ticks () - ts;
 
+			mono_gc_set_skip_thread (FALSE);
 			if ((current_thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
 				mono_thread_interruption_checkpoint ();
+			mono_gc_set_skip_thread (TRUE);
 		} while (interval_left > 0 && ++awake < 10);
 
 		mono_gc_set_skip_thread (FALSE);
