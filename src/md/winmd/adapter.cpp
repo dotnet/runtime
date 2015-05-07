@@ -207,6 +207,7 @@ WinMDAdapter::WinMDAdapter(IMDCommon *pRawMDCommon)
   , m_redirectedTypeSpecSigMemoTable(pRawMDCommon->GetMetaModelCommonRO()->CommonGetRowCount(mdtTypeSpec), NULL)
   , m_redirectedMethodSpecSigMemoTable(pRawMDCommon->GetMetaModelCommonRO()->CommonGetRowCount(mdtMethodSpec), NULL)
   , m_mangledTypeNameTable(pRawMDCommon->GetMetaModelCommonRO()->CommonGetRowCount(mdtTypeDef), NULL)
+  , m_extraAssemblyRefCount(-1)
 {
     m_rawAssemblyRefCount = pRawMDCommon->GetMetaModelCommonRO()->CommonGetRowCount(mdtAssemblyRef);
     m_pRedirectedVersionString = NULL;
@@ -1091,6 +1092,60 @@ HRESULT WinMDAdapter::ModifyExportedTypeName(
         }
     }
     return S_OK;
+}
+
+//------------------------------------------------------------------------------
+
+// We must optionaly add an assembly ref for System.Numerics.Vectors.dll since this assembly is not available
+// on downlevel platforms. 
+//
+// This function assumes that System.Numerics.Vectors.dll is the last assembly that
+// we add so if we find a reference then we return ContractAssembly_Count otherwise we return 
+// ContractAssembly_Count - 1. 
+int WinMDAdapter::GetExtraAssemblyRefCount()
+{
+    HRESULT hr;
+
+    if (m_extraAssemblyRefCount == -1)
+    {
+        mdAssemblyRef tkSystemNumericsVectors = TokenFromRid(m_rawAssemblyRefCount + ContractAssembly_SystemNumericsVectors + 1, mdtAssemblyRef);
+        ULONG cTypeRefRecs = m_pRawMetaModelCommonRO->CommonGetRowCount(mdtTypeRef);
+        BOOL systemNumericsVectorsTypeFound = FALSE;
+
+        for (ULONG i = 1; i <= cTypeRefRecs; i++)
+        {
+            mdToken tkResolutionScope;
+            mdTypeRef tkTypeRef = TokenFromRid(i, mdtTypeRef);
+
+            // Get the resolution scope(AssemblyRef) token for the type. GetTypeRefProps does the type redirection.
+            IfFailGo(GetTypeRefProps(tkTypeRef, nullptr, nullptr, &tkResolutionScope));
+
+            if (tkResolutionScope == tkSystemNumericsVectors)
+            {
+                systemNumericsVectorsTypeFound = TRUE;
+                break;
+            }
+        }
+
+        if (systemNumericsVectorsTypeFound)
+        {
+            m_extraAssemblyRefCount = ContractAssembly_Count;
+        }
+        else
+        {
+            m_extraAssemblyRefCount = ContractAssembly_Count - 1;
+        }
+    }
+
+ErrExit:
+    if (m_extraAssemblyRefCount == -1)
+    {
+        // Setting m_extraAssemblyRefCount to ContractAssembly_Count so that this function returns a stable value and
+        // that if there is a System.Numerics type ref that it does not have a dangling assembly ref
+        m_extraAssemblyRefCount = ContractAssembly_Count; 
+    }
+
+    return m_extraAssemblyRefCount;
 }
 
 //------------------------------------------------------------------------------

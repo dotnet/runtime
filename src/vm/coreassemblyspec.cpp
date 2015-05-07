@@ -618,7 +618,7 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     {
         SString sSimpleName(SString::Utf8, m_pAssemblyName);
 
-        fNativeImage = pAppDomain->ToCompilationDomain()->IsInHardBindList(sSimpleName);
+        fNativeImage = !IsReadyToRunCompilation() && pAppDomain->ToCompilationDomain()->IsInHardBindList(sSimpleName);
 
         SString sFileName(sSimpleName, fNativeImage ? W(".ni.dll") : W(".dll"));
 

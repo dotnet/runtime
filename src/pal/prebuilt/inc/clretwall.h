@@ -218,7 +218,7 @@ Remarks:
 #endif
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 //+
-// Provider Microsoft-Windows-DotNETRuntime Event Count 159
+// Provider Microsoft-Windows-DotNETRuntime Event Count 166
 //+
 EXTERN_C __declspec(selectany) const GUID MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER = {0xe13c0d23, 0xccbc, 0x4e12, {0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4}};
 
@@ -327,6 +327,12 @@ EXTERN_C __declspec(selectany) const GUID IOThreadRetirementId = {0x840c8456, 0x
 EXTERN_C __declspec(selectany) const GUID ThreadpoolSuspensionId = {0xc424b3e3, 0x2ae0, 0x416e, {0xa0, 0x39, 0x41, 0x0c, 0x5d, 0x8e, 0x5f, 0x14}};
 #define CLR_EXCEPTION_TASK 0x7
 EXTERN_C __declspec(selectany) const GUID ExceptionId = {0x300ce105, 0x86d1, 0x41f8, {0xb9, 0xd2, 0x83, 0xfc, 0xbf, 0xf3, 0x2d, 0x99}};
+#define CLR_EXCEPTION_CATCH_TASK 0x1b
+EXTERN_C __declspec(selectany) const GUID ExceptionCatchId = {0x5bbf9499, 0x1715, 0x4658, {0x88, 0xdc, 0xaf, 0xd7, 0x69, 0x0a, 0x87, 0x11}};
+#define CLR_EXCEPTION_FINALLY_TASK 0x1c
+EXTERN_C __declspec(selectany) const GUID ExceptionFinallyId = {0x9565bc31, 0x300f, 0x4ea2, {0xa5, 0x32, 0x30, 0xbc, 0xe9, 0xa1, 0x41, 0x99}};
+#define CLR_EXCEPTION_FILTER_TASK 0x1d
+EXTERN_C __declspec(selectany) const GUID ExceptionFilterId = {0x72e72606, 0xbb71, 0x4290, {0xa2, 0x42, 0xd5, 0xf3, 0x6c, 0xe5, 0x31, 0x2e}};
 #define CLR_CONTENTION_TASK 0x8
 EXTERN_C __declspec(selectany) const GUID ContentionId = {0x561410f5, 0xa138, 0x4ab3, {0x94, 0x5e, 0x51, 0x64, 0x83, 0xcd, 0xdf, 0xbc}};
 #define CLR_METHOD_TASK 0x9
@@ -396,6 +402,7 @@ EXTERN_C __declspec(selectany) const GUID DebugExceptionProcessingId = {0xc44121
 #define CLR_STACK_KEYWORD 0x40000000
 #define CLR_THREADTRANSFER_KEYWORD 0x80000000
 #define CLR_DEBUGGER_KEYWORD 0x100000000
+#define CLR_MONITORING_KEYWORD 0x200000000
 
 //
 // Event Descriptors
@@ -568,8 +575,22 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ThreadRunning = {0x47, 0x0
 #define ThreadRunning_value 0x47
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionThrown = {0x50, 0x0, 0x0, 0x4, 0x1, 0x7, 0x0};
 #define ExceptionThrown_value 0x50
-EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionThrown_V1 = {0x50, 0x1, 0x0, 0x2, 0x1, 0x7, 0x8000};
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionThrown_V1 = {0x50, 0x1, 0x0, 0x2, 0x1, 0x7, 0x200008000};
 #define ExceptionThrown_V1_value 0x50
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionCatchStart = {0xfa, 0x0, 0x0, 0x4, 0x1, 0x1b, 0x8000};
+#define ExceptionCatchStart_value 0xfa
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionCatchStop = {0xfb, 0x0, 0x0, 0x4, 0x2, 0x1b, 0x8000};
+#define ExceptionCatchStop_value 0xfb
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionFinallyStart = {0xfc, 0x0, 0x0, 0x4, 0x1, 0x1c, 0x8000};
+#define ExceptionFinallyStart_value 0xfc
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionFinallyStop = {0xfd, 0x0, 0x0, 0x4, 0x2, 0x1c, 0x8000};
+#define ExceptionFinallyStop_value 0xfd
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionFilterStart = {0xfe, 0x0, 0x0, 0x4, 0x1, 0x1d, 0x8000};
+#define ExceptionFilterStart_value 0xfe
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionFilterStop = {0xff, 0x0, 0x0, 0x4, 0x2, 0x1d, 0x8000};
+#define ExceptionFilterStop_value 0xff
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ExceptionThrownStop = {0x100, 0x0, 0x0, 0x4, 0x2, 0x7, 0x8000};
+#define ExceptionThrownStop_value 0x100
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR Contention = {0x51, 0x0, 0x0, 0x4, 0x1, 0x8, 0x0};
 #define Contention_value 0x51
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR ContentionStart_V1 = {0x51, 0x1, 0x0, 0x4, 0x1, 0x8, 0x4000};
@@ -747,9 +768,9 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR DebugExceptionProcessingEn
 //
 
 EXTERN_C __declspec(selectany) DECLSPEC_CACHEALIGN ULONG Microsoft_Windows_DotNETRuntimeEnableBits[1];
-EXTERN_C __declspec(selectany) const ULONGLONG Microsoft_Windows_DotNETRuntimeKeywords[30] = {0x1, 0x1, 0x10001, 0x80000, 0x100000, 0x200000, 0x400000, 0x2, 0x2000000, 0x10000, 0x10000, 0x80010000, 0x80010000, 0x0, 0x8000, 0x4000, 0x40000000, 0x800, 0x10800, 0x2000, 0x30, 0x10, 0x1000, 0x20000, 0x8, 0x20000008, 0x20000000, 0x400, 0x400, 0x100000000};
-EXTERN_C __declspec(selectany) const UCHAR Microsoft_Windows_DotNETRuntimeLevels[30] = {4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4, 2, 4, 0, 4, 4, 4, 4, 5, 5, 5, 4, 4, 4, 5, 4, 4};
-EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context = {0, 0, 0, 0, 0, 0, 0, 0, 30, Microsoft_Windows_DotNETRuntimeEnableBits, Microsoft_Windows_DotNETRuntimeKeywords, Microsoft_Windows_DotNETRuntimeLevels};
+EXTERN_C __declspec(selectany) const ULONGLONG Microsoft_Windows_DotNETRuntimeKeywords[31] = {0x1, 0x1, 0x10001, 0x80000, 0x100000, 0x200000, 0x400000, 0x2, 0x2000000, 0x10000, 0x10000, 0x80010000, 0x80010000, 0x0, 0x200008000, 0x8000, 0x4000, 0x40000000, 0x800, 0x10800, 0x2000, 0x30, 0x10, 0x1000, 0x20000, 0x8, 0x20000008, 0x20000000, 0x400, 0x400, 0x100000000};
+EXTERN_C __declspec(selectany) const UCHAR Microsoft_Windows_DotNETRuntimeLevels[31] = {4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 4, 4, 2, 4, 4, 0, 4, 4, 4, 4, 5, 5, 5, 4, 4, 4, 5, 4, 4};
+EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context = {0, 0, 0, 0, 0, 0, 0, 0, 31, Microsoft_Windows_DotNETRuntimeEnableBits, Microsoft_Windows_DotNETRuntimeKeywords, Microsoft_Windows_DotNETRuntimeLevels};
 
 EXTERN_C __declspec(selectany) REGHANDLE Microsoft_Windows_DotNETRuntimeHandle = (REGHANDLE)0;
 
@@ -2037,6 +2058,104 @@ Remarks:
         : ERROR_SUCCESS\
 
 //
+// Enablement check macro for ExceptionCatchStart
+//
+
+#define EventEnabledExceptionCatchStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+
+//
+// Event Macro for ExceptionCatchStart
+//
+#define FireEtwExceptionCatchStart(EntryEIP, MethodID, MethodName, ClrInstanceID)\
+        EventEnabledExceptionCatchStart() ?\
+        CoTemplate_xxzh(Microsoft_Windows_DotNETRuntimeHandle, &ExceptionCatchStart, EntryEIP, MethodID, MethodName, ClrInstanceID)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ExceptionCatchStop
+//
+
+#define EventEnabledExceptionCatchStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+
+//
+// Event Macro for ExceptionCatchStop
+//
+#define FireEtwExceptionCatchStop()\
+        EventEnabledExceptionCatchStop() ?\
+        CoTemplateEventDescriptor(Microsoft_Windows_DotNETRuntimeHandle, &ExceptionCatchStop)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ExceptionFinallyStart
+//
+
+#define EventEnabledExceptionFinallyStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+
+//
+// Event Macro for ExceptionFinallyStart
+//
+#define FireEtwExceptionFinallyStart(EntryEIP, MethodID, MethodName, ClrInstanceID)\
+        EventEnabledExceptionFinallyStart() ?\
+        CoTemplate_xxzh(Microsoft_Windows_DotNETRuntimeHandle, &ExceptionFinallyStart, EntryEIP, MethodID, MethodName, ClrInstanceID)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ExceptionFinallyStop
+//
+
+#define EventEnabledExceptionFinallyStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+
+//
+// Event Macro for ExceptionFinallyStop
+//
+#define FireEtwExceptionFinallyStop()\
+        EventEnabledExceptionFinallyStop() ?\
+        CoTemplateEventDescriptor(Microsoft_Windows_DotNETRuntimeHandle, &ExceptionFinallyStop)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ExceptionFilterStart
+//
+
+#define EventEnabledExceptionFilterStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+
+//
+// Event Macro for ExceptionFilterStart
+//
+#define FireEtwExceptionFilterStart(EntryEIP, MethodID, MethodName, ClrInstanceID)\
+        EventEnabledExceptionFilterStart() ?\
+        CoTemplate_xxzh(Microsoft_Windows_DotNETRuntimeHandle, &ExceptionFilterStart, EntryEIP, MethodID, MethodName, ClrInstanceID)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ExceptionFilterStop
+//
+
+#define EventEnabledExceptionFilterStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+
+//
+// Event Macro for ExceptionFilterStop
+//
+#define FireEtwExceptionFilterStop()\
+        EventEnabledExceptionFilterStop() ?\
+        CoTemplateEventDescriptor(Microsoft_Windows_DotNETRuntimeHandle, &ExceptionFilterStop)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for ExceptionThrownStop
+//
+
+#define EventEnabledExceptionThrownStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+
+//
+// Event Macro for ExceptionThrownStop
+//
+#define FireEtwExceptionThrownStop()\
+        EventEnabledExceptionThrownStop() ?\
+        CoTemplateEventDescriptor(Microsoft_Windows_DotNETRuntimeHandle, &ExceptionThrownStop)\
+        : ERROR_SUCCESS\
+
+//
 // Enablement check macro for Contention
 //
 
@@ -2054,7 +2173,7 @@ Remarks:
 // Enablement check macro for ContentionStart_V1
 //
 
-#define EventEnabledContentionStart_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+#define EventEnabledContentionStart_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for ContentionStart_V1
@@ -2068,7 +2187,7 @@ Remarks:
 // Enablement check macro for ContentionStop
 //
 
-#define EventEnabledContentionStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00008000) != 0)
+#define EventEnabledContentionStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00010000) != 0)
 
 //
 // Event Macro for ContentionStop
@@ -2082,7 +2201,7 @@ Remarks:
 // Enablement check macro for CLRStackWalk
 //
 
-#define EventEnabledCLRStackWalk() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00010000) != 0)
+#define EventEnabledCLRStackWalk() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00020000) != 0)
 
 //
 // Event Macro for CLRStackWalk
@@ -2096,7 +2215,7 @@ Remarks:
 // Enablement check macro for AppDomainMemAllocated
 //
 
-#define EventEnabledAppDomainMemAllocated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00020000) != 0)
+#define EventEnabledAppDomainMemAllocated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00040000) != 0)
 
 //
 // Event Macro for AppDomainMemAllocated
@@ -2110,7 +2229,7 @@ Remarks:
 // Enablement check macro for AppDomainMemSurvived
 //
 
-#define EventEnabledAppDomainMemSurvived() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00020000) != 0)
+#define EventEnabledAppDomainMemSurvived() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00040000) != 0)
 
 //
 // Event Macro for AppDomainMemSurvived
@@ -2124,7 +2243,7 @@ Remarks:
 // Enablement check macro for ThreadCreated
 //
 
-#define EventEnabledThreadCreated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00040000) != 0)
+#define EventEnabledThreadCreated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for ThreadCreated
@@ -2138,7 +2257,7 @@ Remarks:
 // Enablement check macro for ThreadTerminated
 //
 
-#define EventEnabledThreadTerminated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00040000) != 0)
+#define EventEnabledThreadTerminated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for ThreadTerminated
@@ -2152,7 +2271,7 @@ Remarks:
 // Enablement check macro for ThreadDomainEnter
 //
 
-#define EventEnabledThreadDomainEnter() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00040000) != 0)
+#define EventEnabledThreadDomainEnter() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00080000) != 0)
 
 //
 // Event Macro for ThreadDomainEnter
@@ -2166,7 +2285,7 @@ Remarks:
 // Enablement check macro for ILStubGenerated
 //
 
-#define EventEnabledILStubGenerated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00080000) != 0)
+#define EventEnabledILStubGenerated() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for ILStubGenerated
@@ -2180,7 +2299,7 @@ Remarks:
 // Enablement check macro for ILStubCacheHit
 //
 
-#define EventEnabledILStubCacheHit() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00080000) != 0)
+#define EventEnabledILStubCacheHit() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
 
 //
 // Event Macro for ILStubCacheHit
@@ -2194,7 +2313,7 @@ Remarks:
 // Enablement check macro for DCStartCompleteV2
 //
 
-#define EventEnabledDCStartCompleteV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledDCStartCompleteV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for DCStartCompleteV2
@@ -2208,7 +2327,7 @@ Remarks:
 // Enablement check macro for DCEndCompleteV2
 //
 
-#define EventEnabledDCEndCompleteV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledDCEndCompleteV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for DCEndCompleteV2
@@ -2222,7 +2341,7 @@ Remarks:
 // Enablement check macro for MethodDCStartV2
 //
 
-#define EventEnabledMethodDCStartV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodDCStartV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodDCStartV2
@@ -2236,7 +2355,7 @@ Remarks:
 // Enablement check macro for MethodDCEndV2
 //
 
-#define EventEnabledMethodDCEndV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodDCEndV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodDCEndV2
@@ -2250,7 +2369,7 @@ Remarks:
 // Enablement check macro for MethodDCStartVerboseV2
 //
 
-#define EventEnabledMethodDCStartVerboseV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodDCStartVerboseV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodDCStartVerboseV2
@@ -2264,7 +2383,7 @@ Remarks:
 // Enablement check macro for MethodDCEndVerboseV2
 //
 
-#define EventEnabledMethodDCEndVerboseV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodDCEndVerboseV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodDCEndVerboseV2
@@ -2278,7 +2397,7 @@ Remarks:
 // Enablement check macro for MethodLoad
 //
 
-#define EventEnabledMethodLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodLoad
@@ -2292,7 +2411,7 @@ Remarks:
 // Enablement check macro for MethodLoad_V1
 //
 
-#define EventEnabledMethodLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodLoad_V1
@@ -2306,7 +2425,7 @@ Remarks:
 // Enablement check macro for MethodLoad_V2
 //
 
-#define EventEnabledMethodLoad_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodLoad_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodLoad_V2
@@ -2320,7 +2439,7 @@ Remarks:
 // Enablement check macro for MethodUnload
 //
 
-#define EventEnabledMethodUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodUnload
@@ -2334,7 +2453,7 @@ Remarks:
 // Enablement check macro for MethodUnload_V1
 //
 
-#define EventEnabledMethodUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodUnload_V1
@@ -2348,7 +2467,7 @@ Remarks:
 // Enablement check macro for MethodUnload_V2
 //
 
-#define EventEnabledMethodUnload_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodUnload_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodUnload_V2
@@ -2362,7 +2481,7 @@ Remarks:
 // Enablement check macro for MethodLoadVerbose
 //
 
-#define EventEnabledMethodLoadVerbose() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodLoadVerbose() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodLoadVerbose
@@ -2376,7 +2495,7 @@ Remarks:
 // Enablement check macro for MethodLoadVerbose_V1
 //
 
-#define EventEnabledMethodLoadVerbose_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodLoadVerbose_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodLoadVerbose_V1
@@ -2390,7 +2509,7 @@ Remarks:
 // Enablement check macro for MethodLoadVerbose_V2
 //
 
-#define EventEnabledMethodLoadVerbose_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodLoadVerbose_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodLoadVerbose_V2
@@ -2404,7 +2523,7 @@ Remarks:
 // Enablement check macro for MethodUnloadVerbose
 //
 
-#define EventEnabledMethodUnloadVerbose() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodUnloadVerbose() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodUnloadVerbose
@@ -2418,7 +2537,7 @@ Remarks:
 // Enablement check macro for MethodUnloadVerbose_V1
 //
 
-#define EventEnabledMethodUnloadVerbose_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodUnloadVerbose_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodUnloadVerbose_V1
@@ -2432,7 +2551,7 @@ Remarks:
 // Enablement check macro for MethodUnloadVerbose_V2
 //
 
-#define EventEnabledMethodUnloadVerbose_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00100000) != 0)
+#define EventEnabledMethodUnloadVerbose_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
 
 //
 // Event Macro for MethodUnloadVerbose_V2
@@ -2446,7 +2565,7 @@ Remarks:
 // Enablement check macro for MethodJittingStarted
 //
 
-#define EventEnabledMethodJittingStarted() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
+#define EventEnabledMethodJittingStarted() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00400000) != 0)
 
 //
 // Event Macro for MethodJittingStarted
@@ -2460,7 +2579,7 @@ Remarks:
 // Enablement check macro for MethodJittingStarted_V1
 //
 
-#define EventEnabledMethodJittingStarted_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00200000) != 0)
+#define EventEnabledMethodJittingStarted_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00400000) != 0)
 
 //
 // Event Macro for MethodJittingStarted_V1
@@ -2474,7 +2593,7 @@ Remarks:
 // Enablement check macro for MethodJitInliningSucceeded
 //
 
-#define EventEnabledMethodJitInliningSucceeded() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00400000) != 0)
+#define EventEnabledMethodJitInliningSucceeded() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for MethodJitInliningSucceeded
@@ -2488,7 +2607,7 @@ Remarks:
 // Enablement check macro for MethodJitInliningFailed
 //
 
-#define EventEnabledMethodJitInliningFailed() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00400000) != 0)
+#define EventEnabledMethodJitInliningFailed() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for MethodJitInliningFailed
@@ -2502,7 +2621,7 @@ Remarks:
 // Enablement check macro for MethodJitTailCallSucceeded
 //
 
-#define EventEnabledMethodJitTailCallSucceeded() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00400000) != 0)
+#define EventEnabledMethodJitTailCallSucceeded() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for MethodJitTailCallSucceeded
@@ -2516,7 +2635,7 @@ Remarks:
 // Enablement check macro for MethodJitTailCallFailed
 //
 
-#define EventEnabledMethodJitTailCallFailed() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00400000) != 0)
+#define EventEnabledMethodJitTailCallFailed() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00800000) != 0)
 
 //
 // Event Macro for MethodJitTailCallFailed
@@ -2530,7 +2649,7 @@ Remarks:
 // Enablement check macro for MethodILToNativeMap
 //
 
-#define EventEnabledMethodILToNativeMap() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x00800000) != 0)
+#define EventEnabledMethodILToNativeMap() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
 
 //
 // Event Macro for MethodILToNativeMap
@@ -2544,7 +2663,7 @@ Remarks:
 // Enablement check macro for ModuleDCStartV2
 //
 
-#define EventEnabledModuleDCStartV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledModuleDCStartV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for ModuleDCStartV2
@@ -2558,7 +2677,7 @@ Remarks:
 // Enablement check macro for ModuleDCEndV2
 //
 
-#define EventEnabledModuleDCEndV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledModuleDCEndV2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for ModuleDCEndV2
@@ -2572,7 +2691,7 @@ Remarks:
 // Enablement check macro for DomainModuleLoad
 //
 
-#define EventEnabledDomainModuleLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledDomainModuleLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for DomainModuleLoad
@@ -2586,7 +2705,7 @@ Remarks:
 // Enablement check macro for DomainModuleLoad_V1
 //
 
-#define EventEnabledDomainModuleLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledDomainModuleLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for DomainModuleLoad_V1
@@ -2600,7 +2719,7 @@ Remarks:
 // Enablement check macro for ModuleLoad
 //
 
-#define EventEnabledModuleLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledModuleLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for ModuleLoad
@@ -2614,7 +2733,7 @@ Remarks:
 // Enablement check macro for ModuleLoad_V1
 //
 
-#define EventEnabledModuleLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
+#define EventEnabledModuleLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x04000000) != 0)
 
 //
 // Event Macro for ModuleLoad_V1
@@ -2628,7 +2747,7 @@ Remarks:
 // Enablement check macro for ModuleLoad_V2
 //
 
-#define EventEnabledModuleLoad_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
+#define EventEnabledModuleLoad_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x04000000) != 0)
 
 //
 // Event Macro for ModuleLoad_V2
@@ -2642,7 +2761,7 @@ Remarks:
 // Enablement check macro for ModuleUnload
 //
 
-#define EventEnabledModuleUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledModuleUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for ModuleUnload
@@ -2656,7 +2775,7 @@ Remarks:
 // Enablement check macro for ModuleUnload_V1
 //
 
-#define EventEnabledModuleUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
+#define EventEnabledModuleUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x04000000) != 0)
 
 //
 // Event Macro for ModuleUnload_V1
@@ -2670,7 +2789,7 @@ Remarks:
 // Enablement check macro for ModuleUnload_V2
 //
 
-#define EventEnabledModuleUnload_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
+#define EventEnabledModuleUnload_V2() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x04000000) != 0)
 
 //
 // Event Macro for ModuleUnload_V2
@@ -2684,7 +2803,7 @@ Remarks:
 // Enablement check macro for AssemblyLoad
 //
 
-#define EventEnabledAssemblyLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAssemblyLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AssemblyLoad
@@ -2698,7 +2817,7 @@ Remarks:
 // Enablement check macro for AssemblyLoad_V1
 //
 
-#define EventEnabledAssemblyLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAssemblyLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AssemblyLoad_V1
@@ -2712,7 +2831,7 @@ Remarks:
 // Enablement check macro for AssemblyUnload
 //
 
-#define EventEnabledAssemblyUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAssemblyUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AssemblyUnload
@@ -2726,7 +2845,7 @@ Remarks:
 // Enablement check macro for AssemblyUnload_V1
 //
 
-#define EventEnabledAssemblyUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAssemblyUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AssemblyUnload_V1
@@ -2740,7 +2859,7 @@ Remarks:
 // Enablement check macro for AppDomainLoad
 //
 
-#define EventEnabledAppDomainLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAppDomainLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AppDomainLoad
@@ -2754,7 +2873,7 @@ Remarks:
 // Enablement check macro for AppDomainLoad_V1
 //
 
-#define EventEnabledAppDomainLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAppDomainLoad_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AppDomainLoad_V1
@@ -2768,7 +2887,7 @@ Remarks:
 // Enablement check macro for AppDomainUnload
 //
 
-#define EventEnabledAppDomainUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAppDomainUnload() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AppDomainUnload
@@ -2782,7 +2901,7 @@ Remarks:
 // Enablement check macro for AppDomainUnload_V1
 //
 
-#define EventEnabledAppDomainUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x01000000) != 0)
+#define EventEnabledAppDomainUnload_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x02000000) != 0)
 
 //
 // Event Macro for AppDomainUnload_V1
@@ -2796,7 +2915,7 @@ Remarks:
 // Enablement check macro for ModuleRangeLoad
 //
 
-#define EventEnabledModuleRangeLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x04000000) != 0)
+#define EventEnabledModuleRangeLoad() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x08000000) != 0)
 
 //
 // Event Macro for ModuleRangeLoad
@@ -2810,7 +2929,7 @@ Remarks:
 // Enablement check macro for StrongNameVerificationStart
 //
 
-#define EventEnabledStrongNameVerificationStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x08000000) != 0)
+#define EventEnabledStrongNameVerificationStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
 
 //
 // Event Macro for StrongNameVerificationStart
@@ -2824,7 +2943,7 @@ Remarks:
 // Enablement check macro for StrongNameVerificationStart_V1
 //
 
-#define EventEnabledStrongNameVerificationStart_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x08000000) != 0)
+#define EventEnabledStrongNameVerificationStart_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
 
 //
 // Event Macro for StrongNameVerificationStart_V1
@@ -2838,7 +2957,7 @@ Remarks:
 // Enablement check macro for StrongNameVerificationStop
 //
 
-#define EventEnabledStrongNameVerificationStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
+#define EventEnabledStrongNameVerificationStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
 
 //
 // Event Macro for StrongNameVerificationStop
@@ -2852,7 +2971,7 @@ Remarks:
 // Enablement check macro for StrongNameVerificationStop_V1
 //
 
-#define EventEnabledStrongNameVerificationStop_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
+#define EventEnabledStrongNameVerificationStop_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
 
 //
 // Event Macro for StrongNameVerificationStop_V1
@@ -2866,7 +2985,7 @@ Remarks:
 // Enablement check macro for AuthenticodeVerificationStart
 //
 
-#define EventEnabledAuthenticodeVerificationStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x08000000) != 0)
+#define EventEnabledAuthenticodeVerificationStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
 
 //
 // Event Macro for AuthenticodeVerificationStart
@@ -2880,7 +2999,7 @@ Remarks:
 // Enablement check macro for AuthenticodeVerificationStart_V1
 //
 
-#define EventEnabledAuthenticodeVerificationStart_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x08000000) != 0)
+#define EventEnabledAuthenticodeVerificationStart_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
 
 //
 // Event Macro for AuthenticodeVerificationStart_V1
@@ -2894,7 +3013,7 @@ Remarks:
 // Enablement check macro for AuthenticodeVerificationStop
 //
 
-#define EventEnabledAuthenticodeVerificationStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
+#define EventEnabledAuthenticodeVerificationStop() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
 
 //
 // Event Macro for AuthenticodeVerificationStop
@@ -2908,7 +3027,7 @@ Remarks:
 // Enablement check macro for AuthenticodeVerificationStop_V1
 //
 
-#define EventEnabledAuthenticodeVerificationStop_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x10000000) != 0)
+#define EventEnabledAuthenticodeVerificationStop_V1() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
 
 //
 // Event Macro for AuthenticodeVerificationStop_V1
@@ -3020,7 +3139,7 @@ Remarks:
 // Enablement check macro for DebugIPCEventStart
 //
 
-#define EventEnabledDebugIPCEventStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
+#define EventEnabledDebugIPCEventStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x40000000) != 0)
 
 //
 // Event Macro for DebugIPCEventStart
@@ -3034,7 +3153,7 @@ Remarks:
 // Enablement check macro for DebugIPCEventEnd
 //
 
-#define EventEnabledDebugIPCEventEnd() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
+#define EventEnabledDebugIPCEventEnd() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x40000000) != 0)
 
 //
 // Event Macro for DebugIPCEventEnd
@@ -3048,7 +3167,7 @@ Remarks:
 // Enablement check macro for DebugExceptionProcessingStart
 //
 
-#define EventEnabledDebugExceptionProcessingStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
+#define EventEnabledDebugExceptionProcessingStart() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x40000000) != 0)
 
 //
 // Event Macro for DebugExceptionProcessingStart
@@ -3062,7 +3181,7 @@ Remarks:
 // Enablement check macro for DebugExceptionProcessingEnd
 //
 
-#define EventEnabledDebugExceptionProcessingEnd() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x20000000) != 0)
+#define EventEnabledDebugExceptionProcessingEnd() ((Microsoft_Windows_DotNETRuntimeEnableBits[0] & 0x40000000) != 0)
 
 //
 // Event Macro for DebugExceptionProcessingEnd
@@ -8727,6 +8846,50 @@ MCGEN_CALLOUT(RegHandle,
 #endif
 
 //
+//Template from manifest : ExceptionHandling
+//
+#ifndef CoTemplate_xxzh_def
+#define CoTemplate_xxzh_def
+ETW_INLINE
+ULONG
+CoTemplate_xxzh(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ unsigned __int64  _Arg0,
+    _In_ unsigned __int64  _Arg1,
+    _In_opt_ PCWSTR  _Arg2,
+    _In_ const unsigned short  _Arg3
+    )
+{
+#define ARGUMENT_COUNT_xxzh 4
+    ULONG Error = ERROR_SUCCESS;
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_xxzh];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(unsigned __int64)  );
+
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(unsigned __int64)  );
+
+    EventDataDescCreate(&EventData[2], 
+                        (_Arg2 != NULL) ? _Arg2 : L"NULL",
+                        (_Arg2 != NULL) ? (ULONG)((wcslen(_Arg2) + 1) * sizeof(WCHAR)) : (ULONG)sizeof(L"NULL"));
+
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned short)  );
+
+    Error = EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_xxzh, EventData);
+
+#ifdef MCGEN_CALLOUT
+MCGEN_CALLOUT(RegHandle,
+              Descriptor,
+              ARGUMENT_COUNT_xxzh,
+              EventData);
+#endif
+
+    return Error;
+}
+#endif
+
+//
 //Template from manifest : Contention
 //
 #ifndef CoTemplate_ch_def
@@ -12274,6 +12437,7 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_StackKeywordMessage 0x1000001FL
 #define MSG_RuntimePublisher_ThreadTransferKeywordMessage 0x10000020L
 #define MSG_RuntimePublisher_DebuggerKeywordMessage 0x10000021L
+#define MSG_RuntimePublisher_MonitoringKeywordMessage 0x10000022L
 #define MSG_RundownPublisher_LoaderKeywordMessage 0x11000004L
 #define MSG_RundownPublisher_JitKeywordMessage 0x11000005L
 #define MSG_RundownPublisher_NGenKeywordMessage 0x11000006L
@@ -12558,6 +12722,9 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_ThreadTaskMessage 0x70000018L
 #define MSG_RuntimePublisher_DebugIPCEventTaskMessage 0x70000019L
 #define MSG_RuntimePublisher_DebugExceptionProcessingTaskMessage 0x7000001AL
+#define MSG_RuntimePublisher_ExceptionCatchTaskMessage 0x7000001BL
+#define MSG_RuntimePublisher_ExceptionFinallyTaskMessage 0x7000001CL
+#define MSG_RuntimePublisher_ExceptionFilterTaskMessage 0x7000001DL
 #define MSG_RundownPublisher_MethodTaskMessage 0x71000001L
 #define MSG_RundownPublisher_LoaderTaskMessage 0x71000002L
 #define MSG_RundownPublisher_StackTaskMessage 0x7100000BL
@@ -12679,6 +12846,8 @@ MCGEN_CALLOUT(RegHandle,
 #define MSG_RuntimePublisher_IncreaseMemoryPressureEventMessage 0xB00000C8L
 #define MSG_RuntimePublisher_DecreaseMemoryPressureEventMessage 0xB00000C9L
 #define MSG_RuntimePublisher_GCMarkWithTypeEventMessage 0xB00000CAL
+#define MSG_RuntimePublisher_ExceptionExceptionHandlingEventMessage 0xB00000FAL
+#define MSG_RuntimePublisher_ExceptionExceptionHandlingNoneEventMessage 0xB00000FBL
 #define MSG_RuntimePublisher_GCStart_V1EventMessage 0xB0010001L
 #define MSG_RuntimePublisher_GCEnd_V1EventMessage 0xB0010002L
 #define MSG_RuntimePublisher_GCRestartEEEnd_V1EventMessage 0xB0010003L

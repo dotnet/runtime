@@ -1033,7 +1033,7 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
         mscorlib.InitializeSpec(SystemDomain::SystemFile());
         GetAppDomain()->BindAssemblySpec(&mscorlib,TRUE,FALSE);
 
-        if (!SystemDomain::SystemFile()->HasNativeImage())
+        if (!IsReadyToRunCompilation() && !SystemDomain::SystemFile()->HasNativeImage())
         {
             if (!CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenAllowMscorlibSoftbind))
             {
@@ -2525,6 +2525,11 @@ BOOL CEECompileInfo::NeedsTypeLayoutCheck(CORINFO_CLASS_HANDLE classHnd)
     MethodTable * pMT = th.AsMethodTable();
 
     if (!pMT->IsValueType())
+        return FALSE;
+
+    // Skip this check for equivalent types. Equivalent types are used for interop that ensures
+    // matching layout.
+    if (pMT->GetClass()->IsEquivalentType())
         return FALSE;
 
     return !pMT->IsLayoutFixedInCurrentVersionBubble();
@@ -8190,5 +8195,17 @@ HRESULT CompilationDomain::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
     return S_OK;
 }
 #endif // CROSSGEN_COMPILE
+
+#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+bool UseRyuJit()
+{
+#ifdef CROSSGEN_COMPILE
+    return true;
+#else
+    static ConfigDWORD useRyuJitValue;
+    return useRyuJitValue.val(CLRConfig::INTERNAL_UseRyuJit) == 1 || IsNgenOffline();
+#endif
+}
+#endif
 
 #endif // FEATURE_PREJIT

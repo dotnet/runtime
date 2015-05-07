@@ -2776,52 +2776,71 @@ DWORD WINAPI DoFaultReportWorkerCallback(LPVOID pParam)
         }
         EX_END_CATCH(SwallowAllExceptions);
     }
-
-    SetupThread();
-
-    GCX_COOP();
     
-    if (pData->pThread != NULL && pExceptionInfo != NULL && 
-        pExceptionInfo->ContextRecord == NULL &&
-        pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW &&
-        pExceptionInfo->ExceptionRecord->ExceptionAddress == 0)
+    // The purpose of the loop below is to avoid deadlocks during the abnormal process termination.
+    // We will try to acquire the lock for 100 times to see whether we can successfully grap it. If we
+    // can, then we can setup the thread and report the fault without worrying about the deadlock. 
+    // Otherwise we won't report the fault. It's still possible that we can enter the critical section 
+    // and report the fault without having deadlocks after this spin, but compared to the risky of 
+    // having deadlock, we still prefer not to report the fault if we can't get the lock after spin.
+    BOOL isThreadSetup = false;
+    for (int i = 0; i < 100; i++)
     {
-        // In the case of a soft SO on a managed thread, we set the ExceptionAddress to one of the following
-        // 
-        // 1. The first method on the stack that is in a non-system module.
-        // 2. Failing that, the first method on the stack that is in a system module
-
-        CONTEXT ContextRecord;
-        memset(&ContextRecord, 0, sizeof(CONTEXT));
-
-        ExceptionInfo.ContextRecord = &ContextRecord; // To display the "Send" button, dw20 wants a non-NULL pointer
-        ExceptionRecord = *(pExceptionInfo->ExceptionRecord);
-        ExceptionInfo.ExceptionRecord = &ExceptionRecord;
-        pExceptionInfo = &ExceptionInfo;
-
-        WatsonSOExceptionAddress WatsonExceptionAddresses;
-        
-        pData->pThread->StackWalkFrames(
-                                 WatsonSOStackCrawlCallback, 
-                                 &WatsonExceptionAddresses, 
-                                 FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK);
-        
-        if (WatsonExceptionAddresses.m_UserMethod != NULL)
+        if (ThreadStore::CanAcquireLock())
         {
-            pExceptionInfo->ExceptionRecord->ExceptionAddress = WatsonExceptionAddresses.m_UserMethod;
+            SetupThread();
+            isThreadSetup = true;
+            break;
         }
-        else if (WatsonExceptionAddresses.m_SystemMethod != NULL)
-        {
-            pExceptionInfo->ExceptionRecord->ExceptionAddress = WatsonExceptionAddresses.m_SystemMethod;
-        }
-            
+        __SwitchToThread(30, CALLER_LIMITS_SPINNING);
     }
+    
+    if (isThreadSetup)
+    {
+        GCX_COOP();
+    
+        if (pData->pThread != NULL && pExceptionInfo != NULL && 
+            pExceptionInfo->ContextRecord == NULL &&
+            pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW &&
+            pExceptionInfo->ExceptionRecord->ExceptionAddress == 0)
+        {
+            // In the case of a soft SO on a managed thread, we set the ExceptionAddress to one of the following
+            // 
+            // 1. The first method on the stack that is in a non-system module.
+            // 2. Failing that, the first method on the stack that is in a system module
 
-    pData->result = DoFaultReportWorker(
-                        pExceptionInfo, 
-                        pData->tore,
-                        pData->pThread,
-                        pData->dwThreadID);
+            CONTEXT ContextRecord;
+            memset(&ContextRecord, 0, sizeof(CONTEXT));
+
+            ExceptionInfo.ContextRecord = &ContextRecord; // To display the "Send" button, dw20 wants a non-NULL pointer
+            ExceptionRecord = *(pExceptionInfo->ExceptionRecord);
+            ExceptionInfo.ExceptionRecord = &ExceptionRecord;
+            pExceptionInfo = &ExceptionInfo;
+
+            WatsonSOExceptionAddress WatsonExceptionAddresses;
+        
+            pData->pThread->StackWalkFrames(
+                                     WatsonSOStackCrawlCallback, 
+                                     &WatsonExceptionAddresses, 
+                                     FUNCTIONSONLY|ALLOW_ASYNC_STACK_WALK);
+        
+            if (WatsonExceptionAddresses.m_UserMethod != NULL)
+            {
+                pExceptionInfo->ExceptionRecord->ExceptionAddress = WatsonExceptionAddresses.m_UserMethod;
+            }
+            else if (WatsonExceptionAddresses.m_SystemMethod != NULL)
+            {
+                pExceptionInfo->ExceptionRecord->ExceptionAddress = WatsonExceptionAddresses.m_SystemMethod;
+            }
+            
+        }
+
+        pData->result = DoFaultReportWorker(
+                            pExceptionInfo, 
+                            pData->tore,
+                            pData->pThread,
+                            pData->dwThreadID);
+    }
 
 
     return 0;
@@ -3162,6 +3181,11 @@ FaultReportResult DoFaultReport(            // Was Watson attempted, successful?
         GCX_PREEMP();
     
         if (!g_pDebugInterface || 
+            // When GC is in progress and current thread is either a GC thread or a managed 
+            // thread under Coop mode, this will let the new generated DoFaultReportCallBack 
+            // thread trigger a deadlock. So in this case, we should directly abort the fault 
+            // report to avoid the deadlock.
+            ((IsGCThread() || pThread->PreemptiveGCDisabled()) && GCHeap::IsGCInProgress()) ||
              FAILED(g_pDebugInterface->RequestFavor(DoFaultReportFavorWorker, pData)))
         {
             // If we can't initialize the debugger helper thread or we are running on the debugger helper

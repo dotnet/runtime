@@ -1945,6 +1945,9 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_SO_INTOLERANT;
 
+    ETW::ExceptionLog::ExceptionCatchEnd();
+    ETW::ExceptionLog::ExceptionThrownEnd();
+
     void* esp = COMPlusEndCatchWorker(GetThread());
 
     // We are going to resume at a handler nesting level whose esp is dEsp. Pop off any SEH records below it. This
@@ -3324,6 +3327,8 @@ void ResumeAtJitEH(CrawlFrame* pCf,
     // that the handle for the current ExInfo has been freed has been delivered
     pExInfo->m_EHClauseInfo.SetManagedCodeEntered(TRUE);
 
+    ETW::ExceptionLog::ExceptionCatchBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
+
     ResumeAtJitEHHelper(&context);
     UNREACHABLE_MSG("Should never return from ResumeAtJitEHHelper!");
 
@@ -3394,7 +3399,12 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
     // returning from UnwindFrames.
 
     FrameWithCookie<ExceptionFilterFrame> exceptionFilterFrame(pShadowSP);
+    
+    ETW::ExceptionLog::ExceptionFilterBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
+    
     retVal = CallJitEHFilterWorker(pShadowSP, &context);
+
+    ETW::ExceptionLog::ExceptionFilterEnd();
 
     exceptionFilterFrame.Pop();
 
@@ -3421,7 +3431,11 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
         *pFinallyEnd = EHClausePtr->HandlerEndPC;
     }
 
+    ETW::ExceptionLog::ExceptionFinallyBegin(pCf->GetCodeInfo()->GetMethodDesc(), (PVOID)pCf->GetCodeInfo()->GetStartAddress());
+    
     CallJitEHFinallyHelper(pShadowSP, &context);
+
+    ETW::ExceptionLog::ExceptionFinallyEnd();
 
     //
     // Update the registers using new context

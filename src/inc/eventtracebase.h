@@ -650,8 +650,23 @@ namespace ETW
     public:
 #ifdef FEATURE_EVENT_TRACE
         static VOID ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownException, BOOL bIsNewException);
+        static VOID ExceptionThrownEnd();
+        static VOID ExceptionCatchBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP);
+        static VOID ExceptionCatchEnd();
+        static VOID ExceptionFinallyBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP);
+        static VOID ExceptionFinallyEnd();
+        static VOID ExceptionFilterBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP);
+        static VOID ExceptionFilterEnd();
+
 #else
         static VOID ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownException, BOOL bIsNewException) {};
+        static VOID ExceptionThrownEnd() {};
+        static VOID ExceptionCatchBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP) {};
+        static VOID ExceptionCatchEnd() {};
+        static VOID ExceptionFinallyBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP) {};
+        static VOID ExceptionFinallyEnd() {};
+        static VOID ExceptionFilterBegin(MethodDesc * pMethodDesc, PVOID pEntryEIP) {};
+        static VOID ExceptionFilterEnd() {};
 #endif // FEATURE_EVENT_TRACE
         typedef union _ExceptionStructs
         {
