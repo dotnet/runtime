@@ -1046,6 +1046,21 @@ inline BOOL PEDecoder::GetNativeILIsIbcOptimized() const
     return (GetNativeHeader()->Flags & CORCOMPILE_HEADER_IS_IBC_OPTIMIZED) != 0;
 }
 
+inline BOOL PEDecoder::GetNativeILHasReadyToRunHeader() const
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(CheckNativeHeader());
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    PREFIX_ASSUME (GetNativeHeader()!=NULL);
+    return (GetNativeHeader()->Flags & CORCOMPILE_HEADER_IS_READY_TO_RUN) != 0;
+}
+
 inline BOOL PEDecoder::IsNativeILILOnly() const
 {
     CONTRACTL

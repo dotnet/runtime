@@ -904,10 +904,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     //
     // Also see the code and comments in EEJitManager::LoadJIT().
 
-    static ConfigDWORD useRyuJitValue;
-    bool fUseRyuJit = (useRyuJitValue.val(CLRConfig::INTERNAL_UseRyuJit) == 1);
-
-    if (!fUseRyuJit)        // Do we need to fall back to JIT64 for NGEN?
+    if (!UseRyuJit())        // Do we need to fall back to JIT64 for NGEN?
     {
         LPCWSTR pwzJitName = MAKEDLLNAME_W(L"compatjit");
 
@@ -2639,7 +2636,7 @@ HRESULT Zapper::Compile(LPCWSTR string, CORCOMPILE_NGEN_SIGNATURE * pNativeImage
 #endif
 
 #if defined(CROSSGEN_COMPILE) || defined(FEATURE_CORECLR)
-    if (fMscorlib)
+    if (fMscorlib || IsReadyToRunCompilation())
     {
         //
         // Disallow use of native image to force a new native image generation for mscorlib

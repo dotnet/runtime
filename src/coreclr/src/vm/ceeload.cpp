@@ -3756,7 +3756,7 @@ void Module::FreeClassTables()
                 if (!th.IsTypeDesc())
                 {
                     MethodTable *pMT = th.AsMethodTable();
-                    if (pMT->HasCCWTemplate())
+                    if (pMT->HasCCWTemplate() && (!pMT->IsZapped() || pMT->GetZapModule() == this))
                     {
                         // code:MethodTable::GetComCallWrapperTemplate() may go through canonical methodtable indirection cell.
                         // The module load could be aborted before completing code:FILE_LOAD_EAGER_FIXUPS phase that's responsible 
@@ -3786,7 +3786,7 @@ void Module::FreeClassTables()
                 if (!th.IsTypeDesc())
                 {
                     MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable())
+                    if (pMT->IsCanonicalMethodTable() && (!pMT->IsZapped() || pMT->GetZapModule() == this))
                         pMT->GetClass()->Destruct(pMT);
                 }
             }
@@ -6502,6 +6502,12 @@ mdTypeRef Module::LookupTypeRefByMethodTable(MethodTable *pMT)
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
     {
+        if (pMT->GetClass()->IsEquivalentType())
+        {
+            GetSvcLogger()->Log(W("ReadyToRun: Type reference to equivalent type cannot be encoded\n"));
+            ThrowHR(E_NOTIMPL);
+        }
+
         // FUTURE: Encoding of new cross-module references for ReadyToRun
         // This warning is hit for recursive cross-module inlining. It is commented out to avoid noise.
         // GetSvcLogger()->Log(W("ReadyToRun: Type reference outside of current version bubble cannot be encoded\n"));

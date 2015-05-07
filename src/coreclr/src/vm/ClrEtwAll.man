@@ -71,6 +71,8 @@
                              message="$(string.RuntimePublisher.ThreadTransferKeywordMessage)" symbol="CLR_THREADTRANSFER_KEYWORD"/>
                     <keyword name="DebuggerKeyword" mask="0x100000000"
                              message="$(string.RuntimePublisher.DebuggerKeywordMessage)" symbol="CLR_DEBUGGER_KEYWORD" />
+                    <keyword name="MonitoringKeyword" mask="0x200000000"
+                             message="$(string.RuntimePublisher.MonitoringKeywordMessage)" symbol="CLR_MONITORING_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -163,7 +165,28 @@
                         </opcodes>
                     </task>
 
-                    <task name="Contention" symbol="CLR_CONTENTION_TASK"
+                    <task name="ExceptionCatch" symbol="CLR_EXCEPTION_CATCH_TASK"
+                          value="27" eventGUID="{5BBF9499-1715-4658-88DC-AFD7690A8711}"
+                          message="$(string.RuntimePublisher.ExceptionCatchTaskMessage)">
+                      <opcodes>
+                      </opcodes>
+                    </task>
+
+                    <task name="ExceptionFinally" symbol="CLR_EXCEPTION_FINALLY_TASK"
+                          value="28" eventGUID="{9565BC31-300F-4EA2-A532-30BCE9A14199}"
+                          message="$(string.RuntimePublisher.ExceptionFinallyTaskMessage)">
+                      <opcodes>
+                      </opcodes>
+                    </task>
+
+                    <task name="ExceptionFilter" symbol="CLR_EXCEPTION_FILTER_TASK"
+                          value="29" eventGUID="{72E72606-BB71-4290-A242-D5F36CE5312E}"
+                          message="$(string.RuntimePublisher.ExceptionFilterTaskMessage)">
+                      <opcodes>
+                      </opcodes>
+                    </task>
+
+                  <task name="Contention" symbol="CLR_CONTENTION_TASK"
                           value="8" eventGUID="{561410f5-a138-4ab3-945e-516483cddfbc}"
                           message="$(string.RuntimePublisher.ContentionTaskMessage)">
                         <opcodes>
@@ -339,6 +362,7 @@
                     <opcodes>
                     </opcodes>
                   </task>
+                <!--Next available ID is 30-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -1323,6 +1347,21 @@
                                 <ExceptionFlags> %5 </ExceptionFlags>
                                 <ClrInstanceID> %6 </ClrInstanceID>
                             </Exception>
+                        </UserData>
+                    </template>
+
+                    <template tid="ExceptionHandling">
+                        <data name="EntryEIP" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodName" inType="win:UnicodeString" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <ExceptionHandling xmlns="myNs">
+                                <EntryEIP> %1 </EntryEIP>
+                                <MethodID> %2 </MethodID>
+                                <MethodName> %3 </MethodName>
+                                <ClrInstanceID> %4 </ClrInstanceID>
+                            </ExceptionHandling>
                         </UserData>
                     </template>
 
@@ -2660,10 +2699,45 @@
                            symbol="ExceptionThrown" message="$(string.RuntimePublisher.ExceptionExceptionThrownEventMessage)"/>
 
                     <event value="80" version="1" level="win:Error"  template="Exception"
-                           keywords ="ExceptionKeyword"  opcode="win:Start"
+                           keywords ="ExceptionKeyword MonitoringKeyword"  opcode="win:Start"
                            task="Exception"
                            symbol="ExceptionThrown_V1" message="$(string.RuntimePublisher.ExceptionExceptionThrown_V1EventMessage)"/>
 
+                    <event value="250" version="0" level="win:Informational"  template="ExceptionHandling"
+                           keywords ="ExceptionKeyword"  opcode="win:Start"
+                           task="ExceptionCatch"
+                           symbol="ExceptionCatchStart" message="$(string.RuntimePublisher.ExceptionExceptionHandlingEventMessage)"/>
+
+                    <event value="251" version="0" level="win:Informational"
+                           keywords ="ExceptionKeyword"  opcode="win:Stop"
+                           task="ExceptionCatch"
+                           symbol="ExceptionCatchStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
+                  
+                    <event value="252" version="0" level="win:Informational"  template="ExceptionHandling"
+                           keywords ="ExceptionKeyword"  opcode="win:Start"
+                           task="ExceptionFinally"
+                           symbol="ExceptionFinallyStart" message="$(string.RuntimePublisher.ExceptionExceptionHandlingEventMessage)"/>
+
+                    <event value="253" version="0" level="win:Informational"
+                           keywords ="ExceptionKeyword"  opcode="win:Stop"
+                           task="ExceptionFinally"
+                           symbol="ExceptionFinallyStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
+                  
+                    <event value="254" version="0" level="win:Informational"  template="ExceptionHandling"
+                           keywords ="ExceptionKeyword"  opcode="win:Start"
+                           task="ExceptionFilter"
+                           symbol="ExceptionFilterStart" message="$(string.RuntimePublisher.ExceptionExceptionHandlingEventMessage)"/>
+
+                    <event value="255" version="0" level="win:Informational"
+                           keywords ="ExceptionKeyword"  opcode="win:Stop"
+                           task="ExceptionFilter"
+                           symbol="ExceptionFilterStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
+                  
+                    <event value="256" version="0" level="win:Informational"
+                           keywords ="ExceptionKeyword"  opcode="win:Stop"
+                           task="Exception"
+                           symbol="ExceptionThrownStop" message="$(string.RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage)"/>
+                           
                     <!-- CLR Contention events -->
                     <event value="81" version="0" level="win:Informational"
                            opcode="win:Start"
@@ -6118,6 +6192,8 @@
                 <string id="RuntimePublisher.ThreadRunningEventMessage" value="ID=%1;%nClrInstanceID=%s" />
                 <string id="RuntimePublisher.ExceptionExceptionThrownEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ExceptionExceptionThrown_V1EventMessage" value="ExceptionType=%1;%nExceptionMessage=%2;%nExceptionEIP=%3;%nExceptionHRESULT=%4;%nExceptionFlags=%5;%nClrInstanceID=%6" />
+                <string id="RuntimePublisher.ExceptionExceptionHandlingEventMessage" value="EntryEIP=%1;%nMethodID=%2;%nMethodName=%3;%nClrInstanceID=%4" />
+                <string id="RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ContentionStartEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ContentionStart_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
@@ -6321,6 +6397,9 @@
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadRetirementTaskMessage" value="ThreadPoolWorkerThreadRetirement" />
                 <string id="RuntimePublisher.ThreadPoolWorkerThreadAdjustmentTaskMessage" value="ThreadPoolWorkerThreadAdjustment" />
                 <string id="RuntimePublisher.ExceptionTaskMessage" value="Exception" />
+                <string id="RuntimePublisher.ExceptionCatchTaskMessage" value="ExceptionCatch" />
+                <string id="RuntimePublisher.ExceptionFinallyTaskMessage" value="ExceptionFinally" />
+                <string id="RuntimePublisher.ExceptionFilterTaskMessage" value="ExceptionFilter" />
                 <string id="RuntimePublisher.ContentionTaskMessage" value="Contention" />
                 <string id="RuntimePublisher.MethodTaskMessage" value="Method" />
                 <string id="RuntimePublisher.LoaderTaskMessage" value="Loader" />
@@ -6609,6 +6688,7 @@
                 <string id="RuntimePublisher.GCHandleKeywordMessage" value="GCHandle" />
                 <string id="RuntimePublisher.ThreadTransferKeywordMessage" value="ThreadTransfer" />
                 <string id="RuntimePublisher.DebuggerKeywordMessage" value="Debugger" />
+                <string id="RuntimePublisher.MonitoringKeywordMessage" value="Monitoring" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />

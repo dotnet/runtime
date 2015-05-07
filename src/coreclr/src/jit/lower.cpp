@@ -417,76 +417,6 @@ GenTreePtr Lowering::CreateLocalTempAsg(GenTreePtr rhs,
     return store;
 }
 
-/** Creates a byref to byref assignment where the actual values are not
-  * GC pointers.  The assignment has the following shape:
-  * [dstObj + scale*index + offset] = [srcObj + scale*index + offset]
-  * The IR generated for this is:
-  *     GT_ASG(
-  *              GT_IND(
-  *                         GT_LEA(dstObj, index, scale, offset)),
-  *              GT_IND(
-  *                         GT_LEA(srcObj, index, scale, offset)))
-  */
-GenTreePtr  Lowering::CreateAsgByRefNonGcStmt (Compiler* comp,
-                                               BasicBlock* block,
-                                               GenTreePtr srcObj,
-                                               GenTreePtr dstObj,
-                                               GenTreePtr index,
-                                               unsigned scale,
-                                               unsigned offset)
-{
-    assert(srcObj != nullptr && dstObj != nullptr);
-    var_types type = TYP_INT;
-    switch (scale)
-    {
-    case 4:
-        type = TYP_INT;
-        break;
-    case 2:
-        type = TYP_USHORT;
-        break;
-    case 1:
-        type = TYP_UBYTE;
-        break;
-    default:
-        noway_assert(!"Unsupported scale size for addressing modes");
-    }
-    GenTreePtr gtClonedSrc = comp->gtClone(srcObj);
-    GenTreePtr gtClonedDst = comp->gtClone(dstObj);
-    GenTreePtr gtClonedIndex = nullptr;
-    GenTreePtr gtClonedIndex2 = nullptr;
-
-    assert(gtClonedSrc != nullptr && gtClonedDst != nullptr);
-
-    if (index != nullptr)
-    {
-        gtClonedIndex = comp->gtClone(index);
-        gtClonedIndex2 = comp->gtClone(index);
-        assert(gtClonedIndex != nullptr && gtClonedIndex2 != nullptr);
-    }
-
-    GenTreePtr gtSrcAddrNode = new(comp, GT_LEA) GenTreeAddrMode(type,
-        gtClonedSrc,
-        gtClonedIndex,
-        scale,
-        offset);
-    GenTreePtr gtSrcIndirNode = comp->gtNewOperNode(GT_IND,
-        type,
-        gtSrcAddrNode);
-    GenTreePtr gtDstAddrNode = new(comp, GT_LEA) GenTreeAddrMode(type,
-        gtClonedDst,
-        gtClonedIndex2,
-        scale,
-        offset);
-    GenTreePtr gtDstIndirNode = comp->gtNewOperNode(GT_IND,
-        type,
-        gtDstAddrNode);
-    GenTreePtr gtByRefAsgStmt = comp->fgNewStmtFromTree(
-        comp->gtNewAssignNode(gtDstIndirNode, gtSrcIndirNode),
-        block);
-    return gtByRefAsgStmt;
-}
-
 // This is the main entry point for Lowering.  
 
 // In addition to that, LowerNode is also responsible for initializing the
@@ -2086,6 +2016,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     originalThisValue->InsertAfterSelf(newThisAddr);
 
     GenTree* newThis = comp->gtNewOperNode(GT_IND, TYP_REF, newThisAddr);
+    newThis->SetCosts(IND_COST_EX, 2);
     newThisAddr->InsertAfterSelf(newThis);
     *pThisExpr = newThis;
 

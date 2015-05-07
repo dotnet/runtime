@@ -168,13 +168,6 @@ private:
                                          GenTreePtr indirCandidate);
 
     GenTreePtr  CreateLocalTempAsg      (GenTreePtr rhs, unsigned refCount, GenTreePtr *ppLclVar = nullptr);
-    GenTreePtr  CreateAsgByRefNonGcStmt (Compiler* comp,
-                                         BasicBlock* block,
-                                         GenTreePtr srcObj,
-                                         GenTreePtr dstObj,
-                                         GenTreePtr index,
-                                         unsigned scale,
-                                         unsigned offset);
 
     bool AreSourcesPossiblyModified     (GenTree* use, GenTree* src1, GenTree *src2);
     void ReplaceNode                    (GenTree** ppTreeLocation,

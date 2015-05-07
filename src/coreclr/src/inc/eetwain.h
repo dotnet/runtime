@@ -43,6 +43,8 @@
 #define CHECK_APP_DOMAIN    0
 #endif
 
+#define NO_OVERRIDE_OFFSET (DWORD)-1
+
 struct EHContext;
 
 #ifdef DACCESS_COMPILE
@@ -231,7 +233,8 @@ virtual bool EnumGcRefs(PREGDISPLAY     pContext,
                         EECodeInfo     *pCodeInfo,
                         unsigned        flags,
                         GCEnumCallback  pCallback,
-                        LPVOID          hCallBack) = 0;
+                        LPVOID          hCallBack,
+                        DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET) = 0;
 
 /*
     Return the address of the local security object reference
@@ -460,7 +463,8 @@ bool EnumGcRefs(PREGDISPLAY     pContext,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags,
                 GCEnumCallback  pCallback,
-                LPVOID          hCallBack);
+                LPVOID          hCallBack,
+                DWORD           relOffsetOverride = NO_OVERRIDE_OFFSET);
 
 #ifdef FEATURE_CONSERVATIVE_GC
 // Temporary conservative collection, for testing purposes, until we have
