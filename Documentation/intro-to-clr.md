@@ -88,8 +88,7 @@ At any time some other thread of execution might perform an allocation that requ
 
 What this means is that the CLR needs to track _all_ references to the GC heap _almost_ all the time.  Since GC references may reside in machine registers, in local variables, statics, or other fields, there is quite a bit to track.  The most problematic of these locations are machine registers and local variables because they are so intimately related to the actual execution of user code.  Effectively, what this means is that the _machine code_ that manipulates GC references has another requirement: it must track all the GC references that it uses.  This implies some extra work for the compiler to emit the instructions to track the references.
 
-TODO: Update GC BOTR link
-To learn more, check out the [Garbage Collector design document]().
+To learn more, check out the [Garbage Collector design document](garbage-collection.md).
 
 ## The Concept of "Managed Code"
 
