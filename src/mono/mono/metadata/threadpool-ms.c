@@ -1432,7 +1432,7 @@ mono_threadpool_ms_resume (void)
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_GetAvailableThreadsNative (gint *worker_threads, gint *completion_port_threads)
+ves_icall_System_Threading_Microsoft_ThreadPool_GetAvailableThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
 {
 	if (!worker_threads || !completion_port_threads)
 		return;
@@ -1444,7 +1444,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_GetAvailableThreadsNative (gint 
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_GetMinThreadsNative (gint *worker_threads, gint *completion_port_threads)
+ves_icall_System_Threading_Microsoft_ThreadPool_GetMinThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
 {
 	if (!worker_threads || !completion_port_threads)
 		return;
@@ -1456,7 +1456,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_GetMinThreadsNative (gint *worke
 }
 
 void
-ves_icall_System_Threading_Microsoft_ThreadPool_GetMaxThreadsNative (gint *worker_threads, gint *completion_port_threads)
+ves_icall_System_Threading_Microsoft_ThreadPool_GetMaxThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads)
 {
 	if (!worker_threads || !completion_port_threads)
 		return;
@@ -1468,7 +1468,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_GetMaxThreadsNative (gint *worke
 }
 
 MonoBoolean
-ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint worker_threads, gint completion_port_threads)
+ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
 {
 	ensure_initialized (NULL);
 
@@ -1484,7 +1484,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_SetMinThreadsNative (gint worker
 }
 
 MonoBoolean
-ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint worker_threads, gint completion_port_threads)
+ves_icall_System_Threading_Microsoft_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads)
 {
 	gint cpu_count = mono_cpu_count ();
 
