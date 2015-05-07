@@ -32663,7 +32663,7 @@ gc_heap::verify_heap (BOOL begin_gc_p)
                 {
                     // If the current brick contains a negative value make sure
                     // that the indirection terminates at the last  valid brick
-                    if (brick_table [curr_brick] < 0)
+                    if (brick_table [curr_brick] <= 0)
                     {
                         if (brick_table [curr_brick] == 0)
                         {
