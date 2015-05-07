@@ -87,6 +87,9 @@ typedef struct {
 	gint32 outstanding_request;
 } ThreadPoolDomain;
 
+typedef MonoInternalThread ThreadPoolWorkingThread;
+typedef mono_cond_t ThreadPoolParkedThread;
+
 typedef struct {
 	gint32 wave_period;
 	gint32 samples_to_measure;
@@ -314,9 +317,14 @@ ensure_initialized (MonoBoolean *enable_worker_tracking)
 	status = STATUS_INITIALIZED;
 }
 
+static void worker_unpark (ThreadPoolParkedThread *thread);
+static void worker_kill (ThreadPoolWorkingThread *thread);
+
 static void
 ensure_cleanedup (void)
 {
+	guint i;
+
 	if (status == STATUS_NOT_INITIALIZED && InterlockedCompareExchange (&status, STATUS_CLEANED_UP, STATUS_NOT_INITIALIZED) == STATUS_NOT_INITIALIZED)
 		return;
 	if (status == STATUS_INITIALIZING) {
@@ -336,10 +344,22 @@ ensure_cleanedup (void)
 	 * cleaning up only if the runtime is shutting down */
 	g_assert (mono_runtime_is_shutting_down ());
 
-	/* Unpark all worker threads */
+	while (monitor_status != MONITOR_STATUS_NOT_RUNNING)
+		usleep (1000);
+
 	mono_mutex_lock (&threadpool->active_threads_lock);
+
+	/* stop all threadpool->working_threads */
+	for (i = 0; i < threadpool->working_threads->len; ++i)
+		worker_kill ((ThreadPoolWorkingThread*) g_ptr_array_index (threadpool->working_threads, i));
+
+	/* unpark all threadpool->parked_threads */
+	for (i = 0; i < threadpool->parked_threads->len; ++i)
+		worker_unpark ((ThreadPoolParkedThread*) g_ptr_array_index (threadpool->parked_threads, i));
+
+	mono_mutex_unlock (&threadpool->active_threads_lock);
+
 	for (;;) {
-		guint i;
 		ThreadPoolCounter counter = COUNTER_READ ();
 		if (counter._.active == 0)
 			break;
@@ -351,18 +371,9 @@ ensure_cleanedup (void)
 				break;
 			}
 		}
-		for (i = 0; i < threadpool->parked_threads->len; ++i) {
-			mono_cond_t *cond = (mono_cond_t*) g_ptr_array_index (threadpool->parked_threads, i);
-			mono_cond_signal (cond);
-		}
-		mono_mutex_unlock (&threadpool->active_threads_lock);
-		usleep (1000);
-		mono_mutex_lock (&threadpool->active_threads_lock);
-	}
-	mono_mutex_unlock (&threadpool->active_threads_lock);
 
-	while (monitor_status != MONITOR_STATUS_NOT_RUNNING)
 		usleep (1000);
+	}
 
 	g_ptr_array_free (threadpool->domains, TRUE);
 	mono_mutex_destroy (&threadpool->domains_lock);
@@ -577,6 +588,28 @@ worker_try_unpark (void)
 	}
 	mono_mutex_unlock (&threadpool->active_threads_lock);
 	return res;
+}
+
+static void
+worker_unpark (ThreadPoolParkedThread *thread)
+{
+	mono_cond_signal ((mono_cond_t*) thread);
+}
+
+static void
+worker_kill (ThreadPoolWorkingThread *thread)
+{
+	ThreadPoolCounter counter;
+
+	if (thread == mono_thread_internal_current ())
+		return;
+
+	mono_thread_internal_stop ((MonoInternalThread*) thread);
+
+	COUNTER_ATOMIC (counter, {
+		counter._.active --;
+		counter._.working --;
+	});
 }
 
 static void
@@ -1223,49 +1256,10 @@ heuristic_adjust (void)
 void
 mono_threadpool_ms_cleanup (void)
 {
-	/* FIXME: reenable threadpool cleanup
-	 *
-	 * The way we do cleanup make things difficult : because we wait on every worker
-	 * thread to finish before cleaning up the rest, we can pretty easily get to a
-	 * deadlock. To reproduce this behavior, you can run the following command :
-	 *  cd mcs/docs;
-	 *  MONO_THREADPOOL=microsoft MONO_PATH=../class/lib/net_4_5 PATH="../../runtime/_tmpinst/bin:$PATH" \
-	     ../../mono/mini/mono ../class/lib/net_4_5/mdoc.exe --debug assemble -o cs-errors -f error cs-errors.config
-	 *
-	 * The mono process will never exit because of the following chain of events :
-	 *  - the process start asynchonously to read from a subprocess (thus calling
-	 *     System.Diagnostics.Process/ProcessAsyncReader:ReadHandler.BeginInvoke)
-	 *  - mono_threadpool_io_add will be called, as ProcessAsyncReader is a special 
-	 *     BeginInvoke case for the threadpool
-	 *  - an entry will be added to ThreadPoolIO.states, with a reference to the
-	 *     previous ProcessAsyncReader object
-	 *  - a new threadpool work item will be added, and its work is to : finish
-	 *     reading asynchronously the subprocess output, and wait on it to
-	 *     exit (by calling Process.Wait)
-	 *  - the runtime will start shutting down, calling the current function
-	 *  - the ThreadPoolIO.states will be cleared, thus removing the previous
-	 *     ProcessAsyncReader object; this will prevent the calback unlocking
-	 *     the threadpool work item from being called
-	 *  - the threadpool work item will then never stop waiting on the subprocess
-	 *     output to finish reading asynchronously, even if the subprocess already
-	 *     exited
-	 *  - the cleanup will wait on this work item to finish executing, without success
-	 *
-	 * There are different ways to diffuse this deadlock, and the first and simplest
-	 * one is to not wait on the threadpool worker threads to finish. This can cause
-	 * issues, such as segmentation fault: when the worker thread gets out of managed,
-	 * it will try to access the global threadpool variable which has been cleaned
-	 * up. To fix it, we can simply do not clean up the threadpool. This causes less
-	 * issues than we can think because :
-	 *  - we are only cleaning it up when the runtime is shutting down, so we are
-	 *     leaving the OS clearing the memory for us
-	 *  - this is also the way it is done in CoreCLR, as well as in the previous
-	 *     threadpool implementation
-	 */
-	//#ifndef DISABLE_SOCKETS
-	//	mono_threadpool_ms_io_cleanup ();
-	//#endif
-	//ensure_cleanedup ();
+	#ifndef DISABLE_SOCKETS
+		mono_threadpool_ms_io_cleanup ();
+	#endif
+	ensure_cleanedup ();
 }
 
 MonoAsyncResult *
