@@ -456,7 +456,7 @@ domain_remove (ThreadPoolDomain *tpdomain)
 }
 
 static ThreadPoolDomain *
-domain_get_or_create (MonoDomain *domain)
+domain_get (MonoDomain *domain, gboolean create)
 {
 	ThreadPoolDomain *tpdomain = NULL;
 	guint i;
@@ -471,13 +471,19 @@ domain_get_or_create (MonoDomain *domain)
 			break;
 		}
 	}
-	if (!tpdomain) {
+	if (!tpdomain && create) {
 		tpdomain = g_new0 (ThreadPoolDomain, 1);
 		tpdomain->domain = domain;
 		domain_add (tpdomain);
 	}
 	mono_mutex_unlock (&threadpool->domains_lock);
 	return tpdomain;
+}
+
+static void
+domain_free (ThreadPoolDomain *tpdomain)
+{
+	g_free (tpdomain);
 }
 
 static gboolean
@@ -521,8 +527,6 @@ domain_get_next (ThreadPoolDomain *current)
 			ThreadPoolDomain *tmp = g_ptr_array_index (threadpool->domains, i % len);
 			if (tmp->outstanding_request > 0) {
 				tpdomain = tmp;
-				tpdomain->outstanding_request --;
-				g_assert (tpdomain->outstanding_request >= 0);
 				break;
 			}
 		}
@@ -581,23 +585,11 @@ worker_thread (gpointer data)
 	static MonoClass *threadpool_wait_callback_class = NULL;
 	static MonoMethod *perform_wait_callback_method = NULL;
 	MonoInternalThread *thread;
-	ThreadPoolDomain *tpdomain;
+	ThreadPoolDomain *tpdomain, *previous_tpdomain;
 	ThreadPoolCounter counter;
 	gboolean retire = FALSE;
 
 	g_assert (status >= STATUS_INITIALIZED);
-
-	tpdomain = data;
-	g_assert (tpdomain);
-	g_assert (tpdomain->domain);
-
-	if (mono_runtime_is_shutting_down () || mono_domain_is_unloading (tpdomain->domain)) {
-		COUNTER_ATOMIC (counter, {
-			counter._.working --;
-			counter._.active --;
-		});
-		return;
-	}
 
 	if (!threadpool_wait_callback_class)
 		threadpool_wait_callback_class = mono_class_from_name (mono_defaults.corlib, "System.Threading.Microsoft", "_ThreadPoolWaitCallback");
@@ -612,18 +604,51 @@ worker_thread (gpointer data)
 	thread = mono_thread_internal_current ();
 	g_assert (thread);
 
+	mono_thread_set_name_internal (thread, mono_string_new (mono_domain_get (), "Threadpool worker"), FALSE);
+
 	mono_mutex_lock (&threadpool->active_threads_lock);
 	g_ptr_array_add (threadpool->working_threads, thread);
 	mono_mutex_unlock (&threadpool->active_threads_lock);
 
+	previous_tpdomain = NULL;
+
 	mono_mutex_lock (&threadpool->domains_lock);
 
-	do {
-		guint i, c;
+	while (!mono_runtime_is_shutting_down ()) {
+		tpdomain = NULL;
 
-		g_assert (tpdomain);
+		if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
+			mono_mutex_unlock (&threadpool->domains_lock);
+			mono_thread_interruption_checkpoint ();
+			mono_mutex_lock (&threadpool->domains_lock);
+		}
+
+		if (retire || !(tpdomain = domain_get_next (previous_tpdomain))) {
+			COUNTER_ATOMIC (counter, {
+				counter._.working --;
+				counter._.parked ++;
+			});
+
+			mono_mutex_unlock (&threadpool->domains_lock);
+			worker_park ();
+			mono_mutex_lock (&threadpool->domains_lock);
+
+			COUNTER_ATOMIC (counter, {
+				counter._.working ++;
+				counter._.parked --;
+			});
+
+			if (retire)
+				retire = FALSE;
+
+			continue;
+		}
+
+		tpdomain->outstanding_request --;
+		g_assert (tpdomain->outstanding_request >= 0);
+
 		g_assert (tpdomain->domain);
-
+		g_assert (tpdomain->domain->threadpool_jobs >= 0);
 		tpdomain->domain->threadpool_jobs ++;
 
 		mono_mutex_unlock (&threadpool->domains_lock);
@@ -640,6 +665,8 @@ worker_thread (gpointer data)
 			mono_thread_clr_state (thread , ~ThreadState_Background);
 			if (!mono_thread_test_state (thread , ThreadState_Background))
 				ves_icall_System_Threading_Thread_SetState (thread, ThreadState_Background);
+
+			mono_domain_set (mono_get_root_domain (), TRUE);
 		}
 		mono_thread_pop_appdomain_ref ();
 
@@ -653,47 +680,12 @@ worker_thread (gpointer data)
 			g_assert (removed);
 			if (tpdomain->domain->cleanup_semaphore)
 				ReleaseSemaphore (tpdomain->domain->cleanup_semaphore, 1, NULL);
-			g_free (tpdomain);
+			domain_free (tpdomain);
 			tpdomain = NULL;
 		}
 
-		for (i = 0, c = 5; i < c; ++i) {
-			if (mono_runtime_is_shutting_down ())
-				break;
-
-			if (!retire) {
-				tpdomain = domain_get_next (tpdomain);
-				if (tpdomain)
-					break;
-			}
-
-			if (i < c - 1) {
-				gboolean park = TRUE;
-
-				COUNTER_ATOMIC (counter, {
-					if (counter._.working <= counter._.max_working) {
-						park = FALSE;
-						break;
-					}
-					counter._.working --;
-					counter._.parked ++;
-				});
-
-				if (park) {
-					mono_mutex_unlock (&threadpool->domains_lock);
-					worker_park ();
-					mono_mutex_lock (&threadpool->domains_lock);
-
-					COUNTER_ATOMIC (counter, {
-						counter._.working ++;
-						counter._.parked --;
-					});
-				}
-			}
-
-			retire = FALSE;
-		}
-	} while (tpdomain && !mono_runtime_is_shutting_down ());
+		previous_tpdomain = tpdomain;
+	}
 
 	mono_mutex_unlock (&threadpool->domains_lock);
 
@@ -708,12 +700,26 @@ worker_thread (gpointer data)
 }
 
 static gboolean
-worker_try_create (ThreadPoolDomain *tpdomain)
+worker_try_create (void)
 {
-	g_assert (tpdomain);
-	g_assert (tpdomain->domain);
+	ThreadPoolCounter counter;
 
-	return mono_thread_create_internal (tpdomain->domain, worker_thread, tpdomain, TRUE, 0) != NULL;
+	COUNTER_ATOMIC (counter, {
+		if (counter._.working >= counter._.max_working)
+			return FALSE;
+		counter._.working ++;
+		counter._.active ++;
+	});
+
+	if (mono_thread_create_internal (mono_get_root_domain (), worker_thread, NULL, TRUE, 0) != NULL)
+		return TRUE;
+
+	COUNTER_ATOMIC (counter, {
+		counter._.working --;
+		counter._.active --;
+	});
+
+	return FALSE;
 }
 
 static void monitor_ensure_running (void);
@@ -722,18 +728,25 @@ static gboolean
 worker_request (MonoDomain *domain)
 {
 	ThreadPoolDomain *tpdomain;
-	ThreadPoolCounter counter;
 
 	g_assert (domain);
 	g_assert (threadpool);
 
-	if (mono_runtime_is_shutting_down () || mono_domain_is_unloading (domain))
+	if (mono_runtime_is_shutting_down ())
 		return FALSE;
 
 	mono_mutex_lock (&threadpool->domains_lock);
-	tpdomain = domain_get_or_create (domain);
+
+	/* synchronize check with worker_thread */
+	if (mono_domain_is_unloading (domain)) {
+		mono_mutex_unlock (&threadpool->domains_lock);
+		return FALSE;
+	}
+
+	tpdomain = domain_get (domain, TRUE);
 	g_assert (tpdomain);
 	tpdomain->outstanding_request ++;
+
 	mono_mutex_unlock (&threadpool->domains_lock);
 
 	if (threadpool->suspended)
@@ -744,20 +757,9 @@ worker_request (MonoDomain *domain)
 	if (worker_try_unpark ())
 		return TRUE;
 
-	COUNTER_ATOMIC (counter, {
-		if (counter._.working >= counter._.max_working)
-			return FALSE;
-		counter._.working ++;
-		counter._.active ++;
-	});
-
-	if (worker_try_create (tpdomain))
+	if (worker_try_create ())
 		return TRUE;
 
-	COUNTER_ATOMIC (counter, {
-		counter._.working --;
-		counter._.active --;
-	});
 	return FALSE;
 }
 
@@ -860,34 +862,14 @@ monitor_thread (void)
 
 		if (monitor_sufficient_delay_since_last_dequeue ()) {
 			for (i = 0; i < 5; ++i) {
-				ThreadPoolDomain *tpdomain;
-				ThreadPoolCounter counter;
-				gboolean success;
-
 				if (mono_runtime_is_shutting_down ())
 					break;
 
 				if (worker_try_unpark ())
 					break;
 
-				COUNTER_TRY_ATOMIC (success, counter, {
-					if (counter._.working >= counter._.max_working)
-						break;
-					counter._.working ++;
-					counter._.active ++;
-				});
-
-				if (!success)
-					continue;
-
-				tpdomain = domain_get_next (NULL);
-				if (tpdomain && worker_try_create (tpdomain))
+				if (worker_try_create ())
 					break;
-
-				COUNTER_ATOMIC (counter, {
-					counter._.working --;
-					counter._.active --;
-				});
 			}
 		}
 	} while (monitor_should_keep_running ());
@@ -1384,6 +1366,8 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 	g_assert (domain);
 	g_assert (timeout >= -1);
 
+	g_assert (mono_domain_is_unloading (domain));
+
 	if (timeout != -1)
 		start = mono_msec_ticks ();
 
@@ -1395,6 +1379,7 @@ mono_threadpool_ms_remove_domain_jobs (MonoDomain *domain, int timeout)
 			return FALSE;
 	}
 #endif
+
 	/*
 	 * There might be some threads out that could be about to execute stuff from the given domain.
 	 * We avoid that by setting up a semaphore to be pulsed by the thread that reaches zero.
