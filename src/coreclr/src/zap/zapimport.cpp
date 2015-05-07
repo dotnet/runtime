@@ -1134,7 +1134,18 @@ ZapImport * ZapImportTable::GetClassHandleImport(CORINFO_CLASS_HANDLE handle, PV
         return GetImport<ZapClassHandleImport, ZapNodeType_Import_ClassHandle>(handle, pUniqueId);
     }
 
-    return GetImport<ZapClassHandleImport, ZapNodeType_Import_ClassHandle>(handle);
+    ZapImport * pImport = GetImport<ZapClassHandleImport, ZapNodeType_Import_ClassHandle>(handle);
+
+    if (IsReadyToRunCompilation() && !pImport->HasBlob())
+    {
+        SigBuilder sigBuilder;
+
+        EncodeClass(ENCODE_TYPE_HANDLE, handle, &sigBuilder);
+
+        pImport->SetBlob(GetBlob(&sigBuilder));
+    }
+ 
+    return pImport;
 }
 
 class ZapFieldHandleImport : public ZapImport

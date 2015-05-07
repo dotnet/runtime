@@ -5076,14 +5076,14 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
 
             X86EmitOp(0x8b, kEAX, kValueReg, 0 AMD64_ARG(k64BitOp));    // mov EAX, [kValueReg]  ; possibly trashes kValueReg
                                                                         // cmp EAX, [ESI/R10+m_ElementType]
-            X86_64BitOperands();
-            X86EmitOp(0x3b, kEAX, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle());
+
+            X86EmitOp(0x3b, kEAX, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle() AMD64_ARG(k64BitOp));
             X86EmitCondJump(CheckPassed, X86CondCode::kJZ);             // Exact match is OK
 
             X86EmitRegLoad(kEAX, (UINT_PTR)g_pObjectClass);             // mov EAX, g_pObjectMethodTable
                                                                         // cmp EAX, [ESI/R10+m_ElementType]
-            X86_64BitOperands();
-            X86EmitOp(0x3b, kEAX, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle());
+
+            X86EmitOp(0x3b, kEAX, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle() AMD64_ARG(k64BitOp));
             X86EmitCondJump(CheckPassed, X86CondCode::kJZ);             // Assigning to array of object is OK
 
             // Try to call the fast helper first ( ObjIsInstanceOfNoGC ).

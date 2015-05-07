@@ -1547,7 +1547,14 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
                 SetLayout(IMAGE_FLAT,pFlatLayout);
                 pLoadLayout = new ConvertedImageLayout(pFlatLayout);
             }
-#endif
+#ifdef FEATURE_READYTORUN
+            else if (ReadyToRunInfo::IsReadyToRunEnabled() && IsFile())
+            {
+                pLoadLayout = PEImageLayout::Load(this, FALSE, FALSE);
+            }
+#endif // FEATURE_READYTORUN
+
+#endif // FEATURE_CORECLR
 
             if (pLoadLayout != NULL)
             {

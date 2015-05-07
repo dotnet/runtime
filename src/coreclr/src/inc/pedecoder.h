@@ -307,6 +307,7 @@ class PEDecoder
     const void *GetNativePreferredBase() const;
     BOOL GetNativeILHasSecurityDirectory() const;
     BOOL GetNativeILIsIbcOptimized() const;
+    BOOL GetNativeILHasReadyToRunHeader() const;
     BOOL IsNativeILILOnly() const;
     BOOL IsNativeILDll() const;
     void GetNativeILPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine) const;

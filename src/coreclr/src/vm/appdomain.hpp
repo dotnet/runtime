@@ -2032,6 +2032,7 @@ public:
 #ifndef FEATURE_CORECLR
     inline BOOL AppDomainManagerSetFromConfig();
     Assembly *GetAppDomainManagerEntryAssembly();
+    void ComputeTargetFrameworkName();
 #endif // FEATURE_CORECLR
 
 #if defined(FEATURE_CORECLR) && defined(FEATURE_COMINTEROP)
@@ -4520,7 +4521,7 @@ public:
 #endif // DACCESS_COMPILE
 
 #ifndef FEATURE_CORECLR    
-    static void ExecuteMainMethod(HMODULE hMod, __in_opt LPWSTR path = NULL);
+	static void ExecuteMainMethod(HMODULE hMod, __in_opt LPWSTR path = NULL);
 #endif
     static void ActivateApplication(int *pReturnValue);
 

@@ -3365,6 +3365,13 @@ void DomainAssembly::GetCurrentVersionInfo(CORCOMPILE_VERSION_INFO *pNativeVersi
         pNativeVersionInfo->wConfigFlags |= CORCOMPILE_CONFIG_INSTRUMENTATION_NONE;
     }
 
+#if defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+    if (UseRyuJit())
+    {
+        pNativeVersionInfo->wCodegenFlags |= CORCOMPILE_CODEGEN_USE_RYUJIT;
+    }
+#endif
+
     GetTimeStampsForNativeImage(pNativeVersionInfo);
 
     // Store signature of source assembly.

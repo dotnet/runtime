@@ -1521,7 +1521,7 @@ BOOL EEJitManager::LoadJIT()
     //
     // See the document "RyuJIT Compatibility Fallback Specification.docx" for details.
 
-    bool fUseRyuJit = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseRyuJit) == 1); // uncached access, since this code is run no more than one time
+    bool fUseRyuJit = UseRyuJit();
 
     if ((!IsCompilationProcess() || !fUseRyuJit) &&     // Use RyuJIT for all NGEN, unless we're falling back to JIT64 for everything.
         (newJitCompiler != nullptr))    // the main JIT must successfully load before we try loading the fallback JIT

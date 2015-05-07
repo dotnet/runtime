@@ -11597,9 +11597,13 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler * comp)
         unreached();  // Should have been covered by assert above.
 
     case BBJ_EHFILTERRET:
+    {
         assert(comp != NULL); // Or else we're not looking for successors.
+        BasicBlock* result = comp->fgFirstBlockOfHandler(this);
+        noway_assert(result == bbJumpDest);
         // Handler is the (sole) normal successor of the filter.
-        return comp->fgFirstBlockOfHandler(this);
+        return result;
+    }
 
     case BBJ_EHFINALLYRET:
         return comp->fgSuccOfFinallyRet(this, i);
