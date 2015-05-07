@@ -4053,7 +4053,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 			else
 				ARM_FSTD (code, cinfo->ret.reg + (i * 2), ARMREG_LR, i * 8);
 		}
-		break;
+		return code;
 	}
 	default:
 		break;
