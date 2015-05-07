@@ -108,16 +108,22 @@ void __stdcall sxsJitStartup(CoreClrCallbacks const & cccallbacks)
 
 /*****************************************************************************/
 
-// placement new is normally hidden but just use it this once...
-void *__cdecl operator new(size_t, void *_P);
+struct CILJitSingletonAllocator { int x; };
+const CILJitSingletonAllocator CILJitSingleton = { 0 };
+
+void *__cdecl operator new(size_t, const CILJitSingletonAllocator&)
+{
+    static char CILJitBuff[sizeof(CILJit)];
+    return CILJitBuff;
+}
+
 ICorJitCompiler* g_realJitCompiler = nullptr;
 
 ICorJitCompiler* __stdcall getJit()
 {
-    static char CILJitBuff[sizeof(CILJit)];
     if (ILJitter == 0)
     {
-        ILJitter = new (CILJitBuff) CILJit();
+        ILJitter = new (CILJitSingleton) CILJit();
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
         Compiler::compStartup();
 #endif

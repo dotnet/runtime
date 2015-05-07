@@ -42,6 +42,9 @@
 #pragma warning(3               :4212)   // function declaration used ellipsis
 #pragma warning(error           :4259)   // pure virtual function was not defined
 #pragma warning(disable         :4291)   // delete not defined for new, c++ exception may cause leak
+#pragma warning(disable         :4302)   // truncation from '%$S' to '%$S'
+#pragma warning(disable         :4311)   // pointer truncation from '%$S' to '%$S'
+#pragma warning(disable         :4312)   // '<function-style-cast>' : conversion from '%$S' to '%$S' of greater size
 #pragma warning(disable :4334)   // result of 32-bit shift implicitly converted to 64 bits
 #pragma warning(disable :4345)   // behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
 #pragma warning(disable :4430)   // missing type specifier: C++ doesn't support default-int

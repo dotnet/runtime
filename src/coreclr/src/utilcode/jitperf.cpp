@@ -8,6 +8,7 @@
 #include "perflog.h"
 #include "clrhost.h"
 #include "contract.h"
+#include "utilcode.h"
 
 //=============================================================================
 // ALL THE JIT PERF STATS GATHERING CODE IS COMPILED ONLY IF THE ENABLE_JIT_PERF WAS DEFINED.

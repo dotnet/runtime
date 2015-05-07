@@ -12,9 +12,7 @@
 include <AsmMacros.inc>
 include AsmConstants.inc
 
-SHF_GETMETHODFRAMEVPTR              equ ?GetMethodFrameVPtr@StubHelperFrame@@SA_KXZ
-
-extern SHF_GETMETHODFRAMEVPTR:proc
+extern s_pStubHelperFrameVPtr:qword
 extern JIT_FailFast:proc
 extern s_gsCookie:qword
 
@@ -84,7 +82,7 @@ NESTED_ENTRY InstantiatingMethodStubWorker, _TEXT
         ;
         ; fully initialize the StubHelperFrame
         ;
-        call    SHF_GETMETHODFRAMEVPTR
+        mov     rax, s_pStubHelperFrameVPtr
         mov     [rbp + OFFSETOF_FRAME], rax
 
         mov     rax, s_gsCookie

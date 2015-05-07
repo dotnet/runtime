@@ -19820,7 +19820,9 @@ void gc_heap::realloc_plan_generation_start (generation* gen, generation* consin
     }
 
     dprintf (1, ("plan re-alloc gen%d start at %Ix (ptr: %Ix, limit: %Ix)", gen->gen_num, 
-        generation_allocation_pointer (consing_gen), generation_allocation_limit (consing_gen))); 
+        generation_plan_allocation_start (consing_gen),
+        generation_allocation_pointer (consing_gen), 
+        generation_allocation_limit (consing_gen))); 
 }
 
 void gc_heap::plan_generation_starts (generation*& consing_gen)
@@ -28476,7 +28478,7 @@ void gc_heap::realloc_plug (size_t last_plug_size, BYTE*& last_plug,
             }
 #endif //SHORT_PLUGS
 
-            dprintf (3, ("ra plug %Ix was shortened, adjusting plug size to %Ix", last_plug_size))
+            dprintf (3, ("ra plug %Ix was shortened, adjusting plug size to %Ix", last_plug, last_plug_size))
         }
 
 #ifdef SHORT_PLUGS
@@ -30549,7 +30551,7 @@ void gc_heap::should_check_bgc_mark (heap_segment* seg,
         // FALSE if the address is the same as reserved.
         if ((seg->flags & heap_segment_flags_swept) || (current_sweep_pos == heap_segment_reserved (seg)))
         {
-            dprintf (3, ("seg %Ix is already swept by bgc"));
+            dprintf (3, ("seg %Ix is already swept by bgc", seg));
         }
         else
         {
