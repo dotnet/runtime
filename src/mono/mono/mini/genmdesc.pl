@@ -178,6 +178,9 @@ sub build_spec {
 		if (defined $vals [$i]) {
 			if ($i == INST_LEN) {
 			        $n = $vals [$i];
+			        if ($n =~ /[^0-9]/) {
+						die "Invalid instruction length $n\n";
+			        }
 			        if ((defined $vals [INST_NACL]) and $nacl == 1){
 				    $n = $vals [INST_NACL];
 			        }
