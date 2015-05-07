@@ -212,60 +212,70 @@ namespace MS.Internal.Xml.XPath
 
         private string Normalize(XPathNodeIterator nodeIterator)
         {
-            string str1;
+            string value;
             if (_argList.Count > 0)
             {
-                str1 = _argList[0].Evaluate(nodeIterator).ToString();
+                value = _argList[0].Evaluate(nodeIterator).ToString();
             }
             else
             {
-                str1 = nodeIterator.Current.Value;
+                value = nodeIterator.Current.Value;
             }
-            str1 = XmlConvertEx.TrimString(str1);
-            int count = 0;
-            StringBuilder str2 = new StringBuilder();
-            bool FirstSpace = true;
+            int modifyPos = -1;
+            char[] chars = value.ToCharArray();
+            bool firstSpace = false; // Start false to trim the beginning
             XmlCharType xmlCharType = XmlCharType.Instance;
-            while (count < str1.Length)
+
+            for (int comparePos = 0; comparePos < chars.Length; comparePos++)
             {
-                if (!xmlCharType.IsWhiteSpace(str1[count]))
+                if (!xmlCharType.IsWhiteSpace(chars[comparePos]))
                 {
-                    FirstSpace = true;
-                    str2.Append(str1[count]);
+                    firstSpace = true;
+                    modifyPos++;
+                    chars[modifyPos] = chars[comparePos];
                 }
-                else if (FirstSpace)
+                else if (firstSpace)
                 {
-                    FirstSpace = false;
-                    str2.Append(' ');
+                    firstSpace = false;
+                    modifyPos++;
+                    chars[modifyPos] = ' ';
                 }
-                count++;
             }
-            return str2.ToString();
+
+            // Trim end
+            if (modifyPos > -1 && chars[modifyPos] == ' ')
+                modifyPos--;
+
+            return new string(chars, 0, modifyPos + 1);
         }
+
         private string Translate(XPathNodeIterator nodeIterator)
         {
-            string str1 = _argList[0].Evaluate(nodeIterator).ToString();
-            string str2 = _argList[1].Evaluate(nodeIterator).ToString();
-            string str3 = _argList[2].Evaluate(nodeIterator).ToString();
-            int count = 0, index;
-            StringBuilder str = new StringBuilder();
-            while (count < str1.Length)
+            string value = _argList[0].Evaluate(nodeIterator).ToString();
+            string mapFrom = _argList[1].Evaluate(nodeIterator).ToString();
+            string mapTo = _argList[2].Evaluate(nodeIterator).ToString();
+            int modifyPos = -1;
+            char[] chars = value.ToCharArray();
+
+            for (int comparePos = 0; comparePos < chars.Length; comparePos++)
             {
-                index = str2.IndexOf(str1[count]);
+                int index = mapFrom.IndexOf(chars[comparePos]);
                 if (index != -1)
                 {
-                    if (index < str3.Length)
+                    if (index < mapTo.Length)
                     {
-                        str.Append(str3[index]);
+                        modifyPos++;
+                        chars[modifyPos] = mapTo[index];
                     }
                 }
                 else
                 {
-                    str.Append(str1[count]);
+                    modifyPos++;
+                    chars[modifyPos] = chars[comparePos];
                 }
-                count++;
             }
-            return str.ToString();
+
+            return new string(chars, 0, modifyPos + 1);
         }
 
         public override XPathNodeIterator Clone() { return new StringFunctions(this); }
