@@ -6807,6 +6807,7 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
         return NULL;
     }
 
+#ifdef FEATURE_COMINTEROP
     CLRPrivBinderWinRT *pWinRTBinder = pDomain->GetWinRtBinder();
     if (AreSameBinderInstance(pCurrentBinder, pWinRTBinder))
     {
@@ -6816,6 +6817,7 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
         // For this, we should use the standard mechanism to make pinvoke call as well.
         return NULL;
     }
+#endif // FEATURE_COMINTEROP
     
     //Step 1: If the assembly was not bound using TPA,
     //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnamanagedDll to give
