@@ -165,6 +165,9 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 * **System.Runtime**. Provides the fundamental primitives, classes, and base classes that define commonly-used value 
   and reference data types, events and event handlers, interfaces, attributes, and exceptions.
 
+* **System.Runtime.Environment**. Provides types that expose information about the runtime and operating system
+  environment in which code is executing.
+
 * **System.Runtime.Extensions**. Provides commonly-used classes for performing mathematical functions, conversions, 
   string comparisons, and querying environment information
 
@@ -183,6 +186,12 @@ The repo contains the following components. More libraries are coming soon. ['Wa
 
 * **System.Runtime.Serialization.Xml**. Provides classes for serializing objects to the Extensible Markup Language (XML) 
   and deserializing XML data to objects.
+
+* **System.Security.Principal**. Provides the base interfaces for principal and identity objects that represent the 
+  security context under which code is running.
+
+* **System.Security.Principal.Windows**. Provides classes for retrieving the current Windows user and for interacting 
+  with Windows users and groups.
 
 * **System.Security.SecureString**. Provides support for accessing and modifying text that should be kept confidential.
 
