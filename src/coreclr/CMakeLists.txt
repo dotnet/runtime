@@ -236,7 +236,6 @@ set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i
 # Linker flags
 #
 # Disable the following line for UNIX altjit on Windows
-set(CMAKE_SHARED_LINKER_FLAGS "/NODEFAULTLIB") #do not use default libraries when resolving external references
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO") #Do not create Side-by-Side Assembly Manifest
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SUBSYSTEM:WINDOWS,6.00") #windows subsystem
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE") # can handle addresses larger than 2 gigabytes
