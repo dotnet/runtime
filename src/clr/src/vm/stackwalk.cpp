@@ -1510,6 +1510,7 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isFilterFunclet       = false;
     m_crawl.isFilterFuncletCached = false;
     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
+    m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = false;
 #endif // WIN64EXCEPTIONS
 
     m_crawl.pThread = this->m_pThread;
@@ -1668,6 +1669,10 @@ StackWalkAction StackFrameIterator::Filter(void)
         // By default, assume that we are going to report GC references for this
         // CrawlFrame
         m_crawl.fShouldCrawlframeReportGCReferences = true;
+
+        // By default, assume that parent frame is going to report GC references from 
+        // the actual location reported by the stack walk.
+        m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = false;
 
         if (!m_sfParent.IsNull())
         {
@@ -1887,7 +1892,7 @@ ProcessFuncletsForGCReporting:
 
                                 _ASSERTE(m_fDidFuncletReportGCReferences);
                                 m_fDidFuncletReportGCReferences = false;
-                                
+
                                 STRESS_LOG0(LF_GCROOTS, LL_INFO100, "Unwound funclet will skip reporting references\n");
                             }
                         }
@@ -1913,6 +1918,9 @@ ProcessFuncletsForGCReporting:
                                 if (m_sfParent.IsMaxVal() ||
                                     ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, m_sfParent))
                                 {
+                                    // Reset flag as we have reached target method frame so no more skipping required
+                                    fSkippingFunclet = false;
+
                                     // We've finished skipping as told.  Now check again.
                                     
                                     if ((m_fProcessIntermediaryNonFilterFunclet == true) || (m_fProcessNonFilterFunclet == true))
@@ -1997,6 +2005,23 @@ ProcessFuncletsForGCReporting:
                                             
                                             // now that we've found the parent that will report roots reset our state.
                                             m_fDidFuncletReportGCReferences = true;
+
+                                            // After funclet gets unwound parent will begin to report gc references. Reporting GC references
+                                            // using the IP of throw in parent method can crash application. Parent could have locals objects 
+                                            // which might not have been reported by funclet as live and would have already been collected 
+                                            // when funclet was on stack. Now if parent starts using IP of throw to report gc references it 
+                                            // would report garbage values as live objects. So instead parent can use the IP of the resume 
+                                            // address of catch funclet to report live GC references.
+                                            m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = true;
+                                            // Store catch clause info. Helps retrieve IP of resume address.
+                                            m_crawl.ehClauseForCatch = pTracker->GetEHClauseForCatch();
+
+                                            STRESS_LOG3(LF_GCROOTS, LL_INFO100,
+                                            "STACKWALK: Parent of funclet which didn't report GC roots is handling an exception at 0x%p"
+                                            "(EH handler range [%x, %x) ), so we need to specially report roots to ensure variables alive"
+                                            " in its handler stay live.\n",
+                                            pTracker->GetCatchToCallPC(), m_crawl.ehClauseForCatch.HandlerStartPC, 
+                                            m_crawl.ehClauseForCatch.HandlerEndPC);
                                         }
                                         else if (!m_crawl.IsFunclet())
                                         {

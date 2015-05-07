@@ -1428,6 +1428,39 @@ CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     noway_assert(op2->isContained());
     int byteShiftCnt = (int) op2->gtIntCon.gtIconVal * genTypeSize(baseType);
 
+    regNumber tmpReg = REG_NA;
+    if (simdNode->gtRsvdRegs != RBM_NONE)
+    {
+        assert(genCountBits(simdNode->gtRsvdRegs) == 1);
+        tmpReg = genRegNumFromMask(simdNode->gtRsvdRegs);
+    }
+    else
+    {
+        assert((byteShiftCnt == 0) ||
+               varTypeIsFloating(baseType) ||
+               (varTypeIsSmallInt(baseType) && (byteShiftCnt < 16)));
+    }
+
+    if (byteShiftCnt >= 16)
+    {
+        assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+        byteShiftCnt -= 16;
+        regNumber newSrcReg;
+        if (varTypeIsFloating(baseType))
+        {
+            newSrcReg = targetReg;
+        }
+        else
+        {
+            // Integer types
+            assert(tmpReg != REG_NA);
+            newSrcReg = tmpReg;
+        }
+        getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, newSrcReg, srcReg, 0x01);
+
+        srcReg = newSrcReg;
+    }
+
     // Generate the following sequence:
     // 1) baseType is floating point
     //   movaps    targetReg, srcReg
@@ -1435,6 +1468,7 @@ CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     //   
     // 2) baseType is not floating point
     //   movaps    tmpReg, srcReg           <-- not generated if accessing zero'th element
+    //                                          OR if tmpReg == srcReg
     //   psrldq    tmpReg, byteShiftCnt     <-- not generated if accessing zero'th element
     //   mov_xmm2i targetReg, tmpReg
     if (varTypeIsFloating(baseType))
@@ -1463,6 +1497,14 @@ CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             if (baseSize == 1)
             {
                 index /= 2;
+            }
+            // We actually want index % 8 for the AVX case (for SSE it will never be > 8).
+            // Note that this doesn't matter functionally, because the instruction uses just the
+            // low 3 bits of index, but it's better to use the right value.
+            if (index > 8)
+            {
+                assert(compiler->getSIMDInstructionSet() == InstructionSet_AVX);
+                index -= 8;
             }
 
             getEmitter()->emitIns_R_R_I(INS_pextrw, emitTypeSize(TYP_INT), targetReg, srcReg, index);
@@ -1497,14 +1539,11 @@ CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         {
             // We need a temp xmm register if the baseType is not floating point and
             // accessing non-zero'th element.            
-            regNumber tmpReg = REG_NA;
             instruction ins;
 
             if (byteShiftCnt != 0)
             {
-                assert(simdNode->gtRsvdRegs != RBM_NONE);
-                assert(genCountBits(simdNode->gtRsvdRegs) == 1);
-                tmpReg = genRegNumFromMask(simdNode->gtRsvdRegs);
+                assert(tmpReg != REG_NA);
 
                 if (tmpReg != srcReg)
                 {
@@ -1516,7 +1555,6 @@ CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
             }
             else
             {
-                assert(simdNode->gtRsvdRegs == RBM_NONE);
                 tmpReg = srcReg;
             }
 

@@ -209,10 +209,7 @@ namespace System {
                     _AppDomainSortingSetupInfo = new AppDomainSortingSetupInfo(copy._AppDomainSortingSetupInfo);
                 }
 #endif
-                // The behavior of computing the TargetFrameworkName should be preserved!
-                // This value needs to be computed before the copy constructor returns the value.
-                // Note: The computed value can be null if the assembly does not have a TargetFrameworkAttribute
-                _TargetFrameworkName = copy.TargetFrameworkName;
+                _TargetFrameworkName = copy._TargetFrameworkName;
 
 #if FEATURE_RANDOMIZED_STRING_HASHING
                 _UseRandomizedStringHashing = copy._UseRandomizedStringHashing;
@@ -650,23 +647,6 @@ namespace System {
         // A target Framework moniker, in a format parsible by the FrameworkName class.
         public String TargetFrameworkName {
             get {
-                if (!CheckedForTargetFrameworkName && _TargetFrameworkName == null && AppDomain.CurrentDomain.IsDefaultAppDomain() && AppDomain.CurrentDomain.FusionStore == this)
-                {
-                    // This should only be run for the default appdomain.  All other appdomains should have
-                    // values copied from the default appdomain and/or specified by the host.
-                    Assembly assembly = Assembly.GetEntryAssembly();
-                    if (assembly != null)
-                    {
-                        TargetFrameworkAttribute[] attrs = (TargetFrameworkAttribute[])assembly.GetCustomAttributes(typeof(TargetFrameworkAttribute));
-                        if (attrs != null && attrs.Length > 0)
-                        {
-                            Contract.Assert(attrs.Length == 1);
-                            _TargetFrameworkName = attrs[0].FrameworkName;
-                        }
-                    }
-                    CheckedForTargetFrameworkName = true;
-                }
-
                 return _TargetFrameworkName;
             }
             set {

@@ -383,4 +383,7 @@
     <AssembleArm64 Include="$(IntermediateOutputDirectory)\PInvokeStubs.i" />
     <AssembleArm64 Include="$(IntermediateOutputDirectory)\crtHelpers.i" />
   </ItemGroup>
+  <ItemGroup>
+    <CppCompile Condition="'$(FeatureTraceLogging)' == 'true'" Include="$(VmSourcesDir)\clrtracelogging.cpp" />
+ </ItemGroup>
 </Project>

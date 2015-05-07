@@ -492,7 +492,11 @@ namespace System.Reflection.Emit {
             else
             {
                 if (destType.IsValueType)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_ConstantNull"));
+                {
+                    // nullable types can hold null value.
+                    if (!(destType.IsGenericType && destType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                        throw new ArgumentException(Environment.GetResourceString("Argument_ConstantNull"));
+                }
 
                 SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.Class, null);
             }
