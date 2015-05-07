@@ -71,7 +71,6 @@ namespace System.IO
             // thus freeing the pinned buffer.
             _stopListening = true;
             _directoryHandle.Dispose();
-            _directoryHandle = null;
 
             // Start ignoring all events occurring after this.
             Interlocked.Increment(ref _currentSession);
