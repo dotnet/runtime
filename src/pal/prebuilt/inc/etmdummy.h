@@ -88,6 +88,13 @@
 #define FireEtwThreadRunning(ID, ClrInstanceID) 0
 #define FireEtwExceptionThrown() 0
 #define FireEtwExceptionThrown_V1(ExceptionType, ExceptionMessage, ExceptionEIP, ExceptionHRESULT, ExceptionFlags, ClrInstanceID) 0
+#define FireEtwExceptionCatchStart(EntryEIP, MethodID, MethodName, ClrInstanceID) 0
+#define FireEtwExceptionCatchStop() 0
+#define FireEtwExceptionFinallyStart(EntryEIP, MethodID, MethodName, ClrInstanceID) 0
+#define FireEtwExceptionFinallyStop() 0
+#define FireEtwExceptionFilterStart(EntryEIP, MethodID, MethodName, ClrInstanceID) 0
+#define FireEtwExceptionFilterStop() 0
+#define FireEtwExceptionThrownStop() 0
 #define FireEtwContention() 0
 #define FireEtwContentionStart_V1(ContentionFlags, ClrInstanceID) 0
 #define FireEtwContentionStop(ContentionFlags, ClrInstanceID) 0

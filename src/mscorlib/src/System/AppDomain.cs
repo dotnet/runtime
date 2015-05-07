@@ -606,7 +606,27 @@ namespace System {
         [SecuritySafeCritical]
         internal String GetTargetFrameworkName()
         {
-            return _FusionStore.TargetFrameworkName;
+            String targetFrameworkName = _FusionStore.TargetFrameworkName;
+
+            if (targetFrameworkName == null && IsDefaultAppDomain() && !_FusionStore.CheckedForTargetFrameworkName)
+            {
+                // This should only be run in the default appdomain.  All other appdomains should have
+                // values copied from the default appdomain and/or specified by the host.
+                Assembly assembly = Assembly.GetEntryAssembly();
+                if (assembly != null)
+                {
+                    TargetFrameworkAttribute[] attrs = (TargetFrameworkAttribute[])assembly.GetCustomAttributes(typeof(TargetFrameworkAttribute));
+                    if (attrs != null && attrs.Length > 0)
+                    {
+                        Contract.Assert(attrs.Length == 1);
+                        targetFrameworkName = attrs[0].FrameworkName;
+                        _FusionStore.TargetFrameworkName = targetFrameworkName;
+                    }
+                }
+                _FusionStore.CheckedForTargetFrameworkName = true;
+            }
+
+            return targetFrameworkName;
         }
 
         /// <summary>

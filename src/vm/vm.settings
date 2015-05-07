@@ -26,6 +26,7 @@
         $(ClrSrcDirectory)\debug\inc\dump;
         $(ClrSrcDirectory)\zap;
         $(ClrSrcDirectory)\strongname\inc;
+        $(ClrSrcDirectory)\TraceLog;  
         $(ClrSrcDirectory)\gc
     </UserIncludes>
 

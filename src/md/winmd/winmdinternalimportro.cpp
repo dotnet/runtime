@@ -160,7 +160,7 @@ class WinMDInternalImportRO : public IMDInternalImport, IWinMDImport, IMetaModel
     {
         if (tkKind == mdtAssemblyRef)
         {
-            return m_pRawInternalImport->GetCountWithTokenKind(tkKind) + WinMDAdapter::GetExtraAssemblyRefCount();
+            return m_pRawInternalImport->GetCountWithTokenKind(tkKind) + m_pWinMDAdapter->GetExtraAssemblyRefCount();
         }
         else
         {
@@ -297,7 +297,7 @@ class WinMDInternalImportRO : public IMDInternalImport, IWinMDImport, IMetaModel
         if (tkKind == mdtAssemblyRef)
         {
             _ASSERTE( phEnum->m_ulCount == m_pWinMDAdapter->GetRawAssemblyRefCount());
-            int n = WinMDAdapter::GetExtraAssemblyRefCount();
+            int n = m_pWinMDAdapter->GetExtraAssemblyRefCount();
             phEnum->m_ulCount += n;
             phEnum->u.m_ulEnd += n;
         }
@@ -320,7 +320,7 @@ ErrExit:
         if (tkKind == mdtAssemblyRef)
         {
             _ASSERTE( phEnum->m_ulCount == m_pWinMDAdapter->GetRawAssemblyRefCount());
-            int n = WinMDAdapter::GetExtraAssemblyRefCount();
+            int n = m_pWinMDAdapter->GetExtraAssemblyRefCount();
             phEnum->m_ulCount += n;
             phEnum->u.m_ulEnd += n;
         }

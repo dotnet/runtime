@@ -108,6 +108,7 @@ public:
         m_sfLastUnwoundEstablisherFrame.Clear();
         m_pInitialExplicitFrame = NULL;
         m_pLimitFrame = NULL;
+        m_csfEHClauseOfCollapsedTracker.Clear();
     }
 
     ExceptionTracker(DWORD_PTR             dwExceptionPc,
@@ -166,6 +167,7 @@ public:
         m_sfCurrentEstablisherFrame.Clear();
         m_sfLastUnwoundEstablisherFrame.Clear();
         m_pInitialExplicitFrame = NULL;
+        m_csfEHClauseOfCollapsedTracker.Clear();
     }
 
     ~ExceptionTracker()
@@ -500,6 +502,11 @@ public:
         return m_uCatchToCallPC;
     }
 
+    EE_ILEXCEPTION_CLAUSE GetEHClauseForCatch()
+    {
+        return m_ClauseForCatch;
+    }
+
     // Returns the topmost frame seen during the first pass.
     StackFrame GetTopmostStackFrameFromFirstPass()
     {
@@ -757,6 +764,8 @@ private: ;
     StackFrame              m_sfCurrentEstablisherFrame;
     StackFrame              m_sfLastUnwoundEstablisherFrame;
     PTR_Frame               m_pInitialExplicitFrame;
+    CallerStackFrame        m_csfEHClauseOfCollapsedTracker;
+    EnclosingClauseInfo     m_EnclosingClauseInfoOfCollapsedTracker;
 };
 
 #if defined(WIN64EXCEPTIONS)

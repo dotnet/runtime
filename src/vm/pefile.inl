@@ -772,6 +772,28 @@ inline BOOL PEFile::IsIbcOptimized()
     return FALSE;
 }
 
+inline BOOL PEFile::IsILImageReadyToRun()
+{
+    WRAPPER_NO_CONTRACT;
+
+#ifdef FEATURE_PREJIT
+    if (IsNativeLoaded())
+    {
+        CONSISTENCY_CHECK(HasNativeImage());
+
+        return GetLoadedNative()->GetNativeILHasReadyToRunHeader();
+    }
+    else
+#endif // FEATURE_PREJIT
+    if (HasOpenedILimage())
+    {
+        return GetLoadedIL()->HasReadyToRunHeader();
+    }
+    else
+    {
+        return FALSE;
+    }
+}
 
 inline WORD PEFile::GetSubsystem()
 {
