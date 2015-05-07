@@ -6800,12 +6800,25 @@ HMODULE NDirect::LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pD
     IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
         
     ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-   
+
+    // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
     if (AreSameBinderInstance(pCurrentBinder, pTPABinder))
     {
         return NULL;
     }
 
+#ifdef FEATURE_COMINTEROP
+    CLRPrivBinderWinRT *pWinRTBinder = pDomain->GetWinRtBinder();
+    if (AreSameBinderInstance(pCurrentBinder, pWinRTBinder))
+    {
+        // We could be here when a non-WinRT assembly load is triggerred by a winmd (e.g. System.Runtime being loaded due to
+        // types being referenced from Windows.Foundation.Winmd) or when dealing with a winmd (which is bound using WinRT binder).
+        //
+        // For this, we should use the standard mechanism to make pinvoke call as well.
+        return NULL;
+    }
+#endif // FEATURE_COMINTEROP
+    
     //Step 1: If the assembly was not bound using TPA,
     //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnamanagedDll to give
     //        The custom assembly context a chance to load the unmanaged dll.
@@ -6859,9 +6872,16 @@ HINSTANCE NDirect::LoadLibraryModule( NDirectMethodDesc * pMD, LoadLibErrorTrack
     AppDomain* pDomain = GetAppDomain();
 
 #if defined(FEATURE_HOST_ASSEMBLY_RESOLVER)
-    hmod = LoadLibraryModuleViaHost(pMD, pDomain, wszLibName);
+    // AssemblyLoadContext is not supported in AppX mode and thus,
+    // we should not perform PInvoke resolution via it when operating in
+    // AppX mode.
+    if (!AppX::IsAppXProcess())
+    {
+        hmod = LoadLibraryModuleViaHost(pMD, pDomain, wszLibName);
+    }
 #endif  //FEATURE_HOST_ASSEMBLY_RESOLVER
-
+    
+    
     if(hmod == NULL)
     {
        hmod = pDomain->FindUnmanagedImageInCache(wszLibName);
