@@ -30,8 +30,10 @@ extern g_TrapReturningThreads:dword
 extern UM2MDoADCallBack:proc
 extern ReverseEnterRuntimeHelper:proc
 extern ReverseLeaveRuntimeHelper:proc
+ifdef FEATURE_INCLUDE_ALL_INTERFACES
 extern gfHostConfig:dword
 extern NDirect__IsHostHookEnabled:proc
+endif
 extern UMThunkStubRareDisableWorker:proc
 
 

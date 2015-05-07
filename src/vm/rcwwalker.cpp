@@ -25,6 +25,7 @@
 #include "cominterfacemarshaler.h"
 #include "excep.h"
 #include "finalizerthread.h"
+#include "interoputil.inl"
 
 const IID IID_ICLRServices = __uuidof(ICLRServices);
 

@@ -1952,7 +1952,7 @@ float ValueNumStore::EvalOpIntegral<float>(VNFunc vnf, float v0, float v1, Value
     switch (oper)
     {
     case GT_MOD:
-        return fmod(v0, v1);
+        return fmodf(v0, v1);
     default:
         // For any other values of 'oper', we will assert and return 0.0f
         break;
