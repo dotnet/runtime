@@ -524,7 +524,7 @@ CorUnix::InternalCreateThread(
     BOOL fHoldingProcessLock = FALSE;
     int iError = 0;
 
-    if(0 != terminator)
+    if (0 != terminator)
     {
         //
         // Since the PAL is in the middle of shutting down we don't want to
@@ -1450,7 +1450,7 @@ CPalThread::ThreadEntry(
 
     pThread = reinterpret_cast<CPalThread*>(pvParam);
 
-    if(NULL == pThread)
+    if (NULL == pThread)
     {
         ASSERT("THREAD pointer is NULL!\n");
         goto fail;
@@ -1484,9 +1484,7 @@ CPalThread::ThreadEntry(
     // Check if the thread should be started suspended.
     if (pThread->GetCreateSuspended())
     {
-        DWORD dwSuspendCount;
-        
-        palError = pThread->suspensionInfo.InternalSuspendThreadFromData(pThread, pThread, &dwSuspendCount);
+        palError = pThread->suspensionInfo.InternalSuspendNewThreadFromData(pThread);
         if (NO_ERROR != palError)
         {
             ASSERT("Error %i attempting to suspend new thread\n", palError);
@@ -2200,7 +2198,7 @@ CPalThread::SetStartStatus(
     iError = pthread_mutex_lock(&m_startMutex);
     if (0 != iError)
     {
-        ASSERT("pthread primative failure\n");
+        ASSERT("pthread primitive failure\n");
         // bugcheck?
     }
 
@@ -2210,14 +2208,14 @@ CPalThread::SetStartStatus(
     iError = pthread_cond_signal(&m_startCond);
     if (0 != iError)
     {
-        ASSERT("pthread primative failure\n");
+        ASSERT("pthread primitive failure\n");
         // bugcheck?
     }
 
     iError = pthread_mutex_unlock(&m_startMutex);
     if (0 != iError)
     {
-        ASSERT("pthread primative failure\n");
+        ASSERT("pthread primitive failure\n");
         // bugcheck?
     }
 }
@@ -2232,7 +2230,7 @@ CPalThread::WaitForStartStatus(
     iError = pthread_mutex_lock(&m_startMutex);
     if (0 != iError)
     {
-        ASSERT("pthread primative failure\n");
+        ASSERT("pthread primitive failure\n");
         // bugcheck?
     }
 
@@ -2241,7 +2239,7 @@ CPalThread::WaitForStartStatus(
         iError = pthread_cond_wait(&m_startCond, &m_startMutex);
         if (0 != iError)
         {
-            ASSERT("pthread primative failure\n");
+            ASSERT("pthread primitive failure\n");
             // bugcheck?
         }
     }
@@ -2249,7 +2247,7 @@ CPalThread::WaitForStartStatus(
     iError = pthread_mutex_unlock(&m_startMutex);
     if (0 != iError)
     {
-        ASSERT("pthread primative failure\n");
+        ASSERT("pthread primitive failure\n");
         // bugcheck?
     }
 
