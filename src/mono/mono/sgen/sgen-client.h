@@ -225,6 +225,12 @@ void sgen_client_print_gc_debug_usage (void);
 gpointer sgen_client_get_provenance (void);
 
 /*
+ * Called by the debugging infrastructure to describe pointers that have an invalid vtable.
+ * Should usually print to `stdout`.
+ */
+void sgen_client_describe_invalid_pointer (GCObject *ptr);
+
+/*
  * These client binary protocol functions are called from the respective binary protocol
  * functions.  No action is necessary.  We suggest implementing them as inline functions in
  * the client header file so that no overhead is incurred if they don't actually do

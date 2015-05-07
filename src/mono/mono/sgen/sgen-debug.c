@@ -35,9 +35,6 @@
 #include "mono/sgen/sgen-memory-governor.h"
 #include "mono/sgen/sgen-pinning.h"
 #include "mono/sgen/sgen-client.h"
-#ifndef SGEN_WITHOUT_MONO
-#include "mono/metadata/sgen-bridge-internal.h"
-#endif
 
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
@@ -125,11 +122,11 @@ describe_pointer (char *ptr, gboolean need_setup)
 	printf ("VTable: %p\n", vtable);
 	if (vtable == NULL) {
 		printf ("VTable is invalid (empty).\n");
-		goto bridge;
+		goto invalid_vtable;
 	}
 	if (sgen_ptr_in_nursery (vtable)) {
 		printf ("VTable is invalid (points inside nursery).\n");
-		goto bridge;
+		goto invalid_vtable;
 	}
 	printf ("Class: %s.%s\n", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 
@@ -142,11 +139,9 @@ describe_pointer (char *ptr, gboolean need_setup)
 	size = sgen_safe_object_get_size ((GCObject*)ptr);
 	printf ("Size: %d\n", (int)size);
 
- bridge:
+ invalid_vtable:
 	;
-#ifndef SGEN_WITHOUT_MONO
-	sgen_bridge_describe_pointer ((GCObject*)ptr);
-#endif
+	sgen_client_describe_invalid_pointer ((GCObject *) ptr);
 }
 
 void
@@ -1232,170 +1227,5 @@ sgen_find_object_for_ptr (char *ptr)
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, find_object_for_ptr_callback, ptr);
 	return found_obj;
 }
-
-#ifndef SGEN_WITHOUT_MONO
-
-static int
-compare_xrefs (const void *a_ptr, const void *b_ptr)
-{
-	const MonoGCBridgeXRef *a = a_ptr;
-	const MonoGCBridgeXRef *b = b_ptr;
-
-	if (a->src_scc_index < b->src_scc_index)
-		return -1;
-	if (a->src_scc_index > b->src_scc_index)
-		return 1;
-
-	if (a->dst_scc_index < b->dst_scc_index)
-		return -1;
-	if (a->dst_scc_index > b->dst_scc_index)
-		return 1;
-
-	return 0;
-}
-
-/*
-static void
-dump_processor_state (SgenBridgeProcessor *p)
-{
-	int i;
-
-	printf ("------\n");
-	printf ("SCCS %d\n", p->num_sccs);
-	for (i = 0; i < p->num_sccs; ++i) {
-		int j;
-		MonoGCBridgeSCC *scc = p->api_sccs [i];
-		printf ("\tSCC %d:", i);
-		for (j = 0; j < scc->num_objs; ++j) {
-			MonoObject *obj = scc->objs [j];
-			printf (" %p", obj);
-		}
-		printf ("\n");
-	}
-
-	printf ("XREFS %d\n", p->num_xrefs);
-	for (i = 0; i < p->num_xrefs; ++i)
-		printf ("\t%d -> %d\n", p->api_xrefs [i].src_scc_index, p->api_xrefs [i].dst_scc_index);
-
-	printf ("-------\n");
-}
-*/
-
-gboolean
-sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcessor *b)
-{
-	int i;
-	SgenHashTable obj_to_a_scc = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DEBUG, INTERNAL_MEM_BRIDGE_DEBUG, sizeof (int), mono_aligned_addr_hash, NULL);
-	SgenHashTable b_scc_to_a_scc = SGEN_HASH_TABLE_INIT (INTERNAL_MEM_BRIDGE_DEBUG, INTERNAL_MEM_BRIDGE_DEBUG, sizeof (int), g_direct_hash, NULL);
-	MonoGCBridgeXRef *a_xrefs, *b_xrefs;
-	size_t xrefs_alloc_size;
-
-	// dump_processor_state (a);
-	// dump_processor_state (b);
-
-	if (a->num_sccs != b->num_sccs)
-		g_error ("SCCS count expected %d but got %d", a->num_sccs, b->num_sccs);
-	if (a->num_xrefs != b->num_xrefs)
-		g_error ("SCCS count expected %d but got %d", a->num_xrefs, b->num_xrefs);
-
-	/*
-	 * First we build a hash of each object in `a` to its respective SCC index within
-	 * `a`.  Along the way we also assert that no object is more than one SCC.
-	 */
-	for (i = 0; i < a->num_sccs; ++i) {
-		int j;
-		MonoGCBridgeSCC *scc = a->api_sccs [i];
-
-		g_assert (scc->num_objs > 0);
-
-		for (j = 0; j < scc->num_objs; ++j) {
-			GCObject *obj = scc->objs [j];
-			gboolean new_entry = sgen_hash_table_replace (&obj_to_a_scc, obj, &i, NULL);
-			g_assert (new_entry);
-		}
-	}
-
-	/*
-	 * Now we check whether each of the objects in `b` are in `a`, and whether the SCCs
-	 * of `b` contain the same sets of objects as those of `a`.
-	 *
-	 * While we're doing this, build a hash table to map from `b` SCC indexes to `a` SCC
-	 * indexes.
-	 */
-	for (i = 0; i < b->num_sccs; ++i) {
-		MonoGCBridgeSCC *scc = b->api_sccs [i];
-		MonoGCBridgeSCC *a_scc;
-		int *a_scc_index_ptr;
-		int a_scc_index;
-		int j;
-		gboolean new_entry;
-
-		g_assert (scc->num_objs > 0);
-		a_scc_index_ptr = sgen_hash_table_lookup (&obj_to_a_scc, scc->objs [0]);
-		g_assert (a_scc_index_ptr);
-		a_scc_index = *a_scc_index_ptr;
-
-		//g_print ("A SCC %d -> B SCC %d\n", a_scc_index, i);
-
-		a_scc = a->api_sccs [a_scc_index];
-		g_assert (a_scc->num_objs == scc->num_objs);
-
-		for (j = 1; j < scc->num_objs; ++j) {
-			a_scc_index_ptr = sgen_hash_table_lookup (&obj_to_a_scc, scc->objs [j]);
-			g_assert (a_scc_index_ptr);
-			g_assert (*a_scc_index_ptr == a_scc_index);
-		}
-
-		new_entry = sgen_hash_table_replace (&b_scc_to_a_scc, GINT_TO_POINTER (i), &a_scc_index, NULL);
-		g_assert (new_entry);
-	}
-
-	/*
-	 * Finally, check that we have the same xrefs.  We do this by making copies of both
-	 * xref arrays, and replacing the SCC indexes in the copy for `b` with the
-	 * corresponding indexes in `a`.  Then we sort both arrays and assert that they're
-	 * the same.
-	 *
-	 * At the same time, check that no xref is self-referential and that there are no
-	 * duplicate ones.
-	 */
-
-	xrefs_alloc_size = a->num_xrefs * sizeof (MonoGCBridgeXRef);
-	a_xrefs = sgen_alloc_internal_dynamic (xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG, TRUE);
-	b_xrefs = sgen_alloc_internal_dynamic (xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG, TRUE);
-
-	memcpy (a_xrefs, a->api_xrefs, xrefs_alloc_size);
-	for (i = 0; i < b->num_xrefs; ++i) {
-		MonoGCBridgeXRef *xref = &b->api_xrefs [i];
-		int *scc_index_ptr;
-
-		g_assert (xref->src_scc_index != xref->dst_scc_index);
-
-		scc_index_ptr = sgen_hash_table_lookup (&b_scc_to_a_scc, GINT_TO_POINTER (xref->src_scc_index));
-		g_assert (scc_index_ptr);
-		b_xrefs [i].src_scc_index = *scc_index_ptr;
-
-		scc_index_ptr = sgen_hash_table_lookup (&b_scc_to_a_scc, GINT_TO_POINTER (xref->dst_scc_index));
-		g_assert (scc_index_ptr);
-		b_xrefs [i].dst_scc_index = *scc_index_ptr;
-	}
-
-	qsort (a_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
-	qsort (b_xrefs, a->num_xrefs, sizeof (MonoGCBridgeXRef), compare_xrefs);
-
-	for (i = 0; i < a->num_xrefs; ++i) {
-		g_assert (a_xrefs [i].src_scc_index == b_xrefs [i].src_scc_index);
-		g_assert (a_xrefs [i].dst_scc_index == b_xrefs [i].dst_scc_index);
-	}
-
-	sgen_hash_table_clean (&obj_to_a_scc);
-	sgen_hash_table_clean (&b_scc_to_a_scc);
-	sgen_free_internal_dynamic (a_xrefs, xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG);
-	sgen_free_internal_dynamic (b_xrefs, xrefs_alloc_size, INTERNAL_MEM_BRIDGE_DEBUG);
-
-	return TRUE;
-}
-
-#endif
 
 #endif /*HAVE_SGEN_GC*/

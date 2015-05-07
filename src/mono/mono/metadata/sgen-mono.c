@@ -2813,6 +2813,12 @@ sgen_client_get_provenance (void)
 }
 
 void
+sgen_client_describe_invalid_pointer (GCObject *ptr)
+{
+	sgen_bridge_describe_pointer (ptr);
+}
+
+void
 mono_gc_base_init (void)
 {
 	mono_counters_init ();
