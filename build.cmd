@@ -58,7 +58,7 @@ set "__CMakeBinDir=%__BinDir%"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 
 :: Configure environment if we are doing a clean build.
-if not defined __CleanBuild goto MakeDirectories
+if not defined __CleanBuild goto MakeDirs
 echo Doing a clean build
 echo.
 
@@ -74,7 +74,7 @@ if exist "%__TestIntermediatesDir%" rd /s /q "%__TestIntermediatesDir%"
 
 if exist "%__LogsDir%" del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__BuildType%.*"
 
-:MakeDirectories
+:MakeDirs
 if not exist "%__BinDir%" md "%__BinDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%" md "%__LogsDir%"
