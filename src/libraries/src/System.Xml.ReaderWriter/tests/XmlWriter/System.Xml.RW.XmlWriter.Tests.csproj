@@ -25,10 +25,6 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\System.Text.Encoding.CodePages\src\System.Text.Encoding.CodePages.csproj">
       <Project>{16ee6633-f557-5c9e-9ef3-b5334b044f47}</Project>
       <Name>System.Text.Encoding.CodePages</Name>

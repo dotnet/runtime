@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{CF6DAB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.RW.CharCheckingReader.Tests", "tests\Readers\CharCheckingReader\System.Xml.RW.CharCheckingReader.Tests.csproj", "{6DC15D23-8213-4700-9815-AD8DEED1CE5F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleCore", "..\Common\tests\SystemXml\ModuleCore\ModuleCore.csproj", "{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlCoreTest", "..\Common\tests\SystemXml\XmlCoreTest\XmlCoreTest.csproj", "{89701565-F68B-46D9-BD78-95B0F052C50B}"
@@ -100,22 +98,6 @@ Global
 		{6DC15D23-8213-4700-9815-AD8DEED1CE5F}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6DC15D23-8213-4700-9815-AD8DEED1CE5F}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6DC15D23-8213-4700-9815-AD8DEED1CE5F}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Linux_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Linux_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Linux_Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Linux_Release|Any CPU.Build.0 = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.OSX_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.OSX_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.OSX_Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.OSX_Release|Any CPU.Build.0 = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Windows_Release|Any CPU.Build.0 = Release|Any CPU
 		{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}.Linux_Debug|Any CPU.ActiveCfg = Debug|Any CPU
