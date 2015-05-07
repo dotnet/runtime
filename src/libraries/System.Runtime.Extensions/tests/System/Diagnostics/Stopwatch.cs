@@ -37,6 +37,11 @@ public static class StopwatchTests
         var e2 = watch.Elapsed;
         Assert.Equal(e1, e2);
         Assert.Equal((long)e1.TotalMilliseconds, watch.ElapsedMilliseconds);
+
+        var t1 = watch.ElapsedTicks;
+        Sleep();
+        var t2 = watch.ElapsedTicks;
+        Assert.Equal(t1, t2);
     }
 
     [Fact]
