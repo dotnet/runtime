@@ -140,8 +140,12 @@ load_file (const char *name) {
 				*/
 			} else if (strncmp (p, "len:", 4) == 0) {
 				unsigned long size;
+				char* endptr;
 				p += 4;
-				size = strtoul (p, &p, 10);
+				size = strtoul (p, &endptr, 10);
+				if (size == 0 || p == endptr)
+					g_error ("Invalid length '%s' at line %d in %s\n", p, line, name);
+				p = endptr;
 				if (!nacl_length_set) {
 					desc->spec [MONO_INST_LEN] = size;
 				}
