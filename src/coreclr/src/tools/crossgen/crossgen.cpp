@@ -186,13 +186,13 @@ void PrintUsageHelper()
 #ifdef FEATURE_CORECLR
        W(" Size on Disk Parameters\n")
        W("    /NoMetaData     - Do not copy metadata and IL into native image.\n")
+#endif // FEATURE_CORECLR
 #ifndef NO_NGENPDB
        W(" Debugging Parameters\n")
        W("    /CreatePDB <Dir to store PDB> [/lines [<search path for managed PDB>] ]\n")
        W("        When specifying /CreatePDB, the native image should be created\n")
        W("        first, and <assembly name> should be the path to the NI.")
 #endif // NO_NGENPDB
-#endif // FEATURE_CORECLR
        );
 }
 
@@ -665,7 +665,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argc--;
         }
 #endif // FEATURE_COMINTEROP
-#if defined(FEATURE_CORECLR) && !defined(NO_NGENPDB)
+#ifndef NO_NGENPDB
         else if (MatchParameter(*argv, W("CreatePDB")) && (argc > 1))
         {
             // syntax: /CreatePDB <directory to store PDB> [/lines  [<search path for managed PDB>] ]
@@ -737,7 +737,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv--;
             argc++;
         }
-#endif // FEATURE_CORECLR && !NO_NGENPDB
+#endif // !NO_NGENPDB
         else
         {
             if (argc == 1)
