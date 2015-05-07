@@ -108,6 +108,7 @@ sub load_file {
 	my ($name) = @_;
 	my $line = 0;
 	my $comment = "";
+	our @spec_names;
 
 	open (DESC, $name) || die "Cannot open $name: $!";
 	while (<DESC>) {
@@ -149,6 +150,7 @@ sub load_file {
 					die "Invalid template name $2 at line $line\n" unless defined $tdesc;
 					$desc->{"spec"} = {%{$tdesc->{"spec"}}};
 				} else {
+					die "Invalid specifier $val at line $line" unless grep {$_ eq $1} @spec_names;
 					$desc->{"spec"}->{$1} = $2;
 				}
 			}
