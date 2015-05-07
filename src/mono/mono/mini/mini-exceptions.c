@@ -1739,8 +1739,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 
 					return 0;
 				}
-				if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
-					(ei->flags == MONO_EXCEPTION_CLAUSE_FAULT)) {
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT) {
 					if (mono_trace_is_enabled () && mono_trace_eval (method))
 						g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (method, TRUE));
 					jit_tls->orig_ex_ctx_set = TRUE;
@@ -1748,8 +1747,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gboolean resume,
 					jit_tls->orig_ex_ctx_set = FALSE;
 					call_filter (ctx, ei->handler_start);
 				}
-				if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (ctx)) &&
-					(ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY)) {
+				if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					if (mono_trace_is_enabled () && mono_trace_eval (method))
 						g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (method, TRUE));
 					jit_tls->orig_ex_ctx_set = TRUE;
