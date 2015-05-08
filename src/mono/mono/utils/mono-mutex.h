@@ -53,6 +53,11 @@ typedef pthread_cond_t mono_cond_t;
 #define mono_cond_broadcast(cond) pthread_cond_broadcast (cond)
 #define mono_cond_destroy(cond)
 
+/*
+ * This should be used instead of mono_cond_timedwait, since that function is not implemented on windows.
+ */
+int mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, int timeout_ms);
+
 /* This is a function so it can be passed to pthread_cleanup_push -
  * that is a macro and giving it a macro as a parameter breaks.
  */
@@ -96,14 +101,11 @@ mono_cond_init (mono_cond_t *cond, int attr)
 }
 
 static inline int
-mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, DWORD timeout)
+mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
-	BOOL res;
+	int res;
 
-	// FIXME: This needs to take a struct timespec
-	g_assert_not_reached ();
-
-	res = SleepConditionVariableCS (cond, mutex, timeout);
+	res = SleepConditionVariableCS (cond, mutex, INFINITE);
 	if (res)
 		/* Success */
 		return 0;
@@ -112,9 +114,11 @@ mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, DWORD timeout)
 }
 
 static inline int
-mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
+mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, struct timespec *timeout)
 {
-	return mono_cond_timedwait (cond, mutex, INFINITE);
+	// FIXME:
+	g_assert_not_reached ();
+	return 0;
 }
 
 static inline int
@@ -132,6 +136,19 @@ mono_cond_broadcast (mono_cond_t *cond)
 static inline int
 mono_cond_destroy (mono_cond_t *cond)
 {
+}
+
+static inline int
+mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, int timeout_ms)
+{
+	int res;
+
+	res = SleepConditionVariableCS (cond, mutex, timeout_ms);
+	if (res)
+		/* Success */
+		return 0;
+	else
+		return 1;
 }
 
 #endif

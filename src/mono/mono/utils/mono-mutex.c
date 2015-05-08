@@ -18,7 +18,7 @@
 #include <assert.h>
 #include <mono/utils/mono-memory-model.h>
 
-#ifndef HOST_WIN32
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 
@@ -156,3 +156,31 @@ mono_mutex_init_suspend_safe (mono_mutex_t *mutex)
 	return mono_mutex_init (mutex);
 #endif
 }
+
+#ifndef HOST_WIN32
+int
+mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, int timeout_ms)
+{
+	struct timeval tv;
+	struct timespec ts;
+	gint64 usecs;
+	int res;
+
+	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */
+
+	gettimeofday (&tv, NULL);
+	tv.tv_sec += timeout_ms / 1000;
+	usecs = tv.tv_usec + ((timeout_ms % 1000) * 1000);
+	if (usecs >= 1000000) {
+		usecs -= 1000000;
+		tv.tv_sec ++;
+	}
+	ts.tv_sec = tv.tv_sec;
+	ts.tv_nsec = usecs * 1000;
+
+	res = pthread_cond_timedwait (cond, mutex, &ts);
+	g_assert (res != EINVAL);
+	return res;
+}
+
+#endif
