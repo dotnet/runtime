@@ -6,6 +6,7 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Threading.Tests</AssemblyName>
+    <ProjectGuid>{33F5A50E-B823-4FDD-8571-365C909ACEAE}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
@@ -20,6 +21,7 @@
     <Compile Include="ManualResetEventSlimTests.cs" />
     <Compile Include="SemaphoreSlimCancellationTests.cs" />
     <Compile Include="SemaphoreSlimTests.cs" />
+    <Compile Include="SemaphoreTests.cs" />
     <Compile Include="SpinLockTests.cs" />
     <Compile Include="ThreadLocalTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
