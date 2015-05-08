@@ -7680,12 +7680,14 @@ emit_code (MonoAotCompile *acfg)
 
 			if (!saved_unbox_info) {
 				char user_symbol [128];
+				GSList *unwind_ops;
 				sprintf (user_symbol, "%sunbox_trampoline_p", acfg->user_symbol_prefix);
 
 				emit_label (acfg, "ut_end");
-				emit_section_change (acfg, RODATA_SECT, 0);
-				emit_global (acfg, user_symbol, FALSE);
-				emit_label (acfg, user_symbol);
+
+				unwind_ops = mono_unwind_get_cie_program ();
+				save_unwind_info (acfg, user_symbol, unwind_ops);
+				mono_free_unwind_info (unwind_ops);
 
 				/* Save the unbox trampoline size */
 				emit_symbol_diff (acfg, "ut_end", symbol, 0);

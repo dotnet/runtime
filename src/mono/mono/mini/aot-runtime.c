@@ -4637,12 +4637,7 @@ mono_aot_get_trampoline (const char *name)
 	return code;
 }
 
-#ifdef MONOTOUCH
-#include <mach/mach.h>
-
-static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
-
-static void
+static gpointer
 read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbol_name)
 {
 	gpointer symbol_addr;
@@ -4652,7 +4647,7 @@ read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbo
 	find_symbol (amodule->sofile, amodule->globals, symbol_name, &symbol_addr);
 
 	if (!symbol_addr)
-		return;
+		return NULL;
 
 	uw_offset = *(guint32*)symbol_addr;
 	uw_info = amodule->unwind_info + uw_offset;
@@ -4660,7 +4655,15 @@ read_unwind_info (MonoAotModule *amodule, MonoTrampInfo *info, const char *symbo
 
 	info->uw_info = uw_info;
 	info->uw_info_len = uw_info_len;
+
+	/* If successful return the address of the following data */
+	return (guint32*)symbol_addr + 1;
 }
+
+#ifdef MONOTOUCH
+#include <mach/mach.h>
+
+static TrampolinePage* trampoline_pages [MONO_AOT_TRAMP_NUM];
 
 static void
 read_page_trampoline_uwinfo (MonoTrampInfo *info, int tramp_type, gboolean is_generic)
@@ -4990,6 +4993,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	guint32 *ut, *ut_end, *entry;
 	int low, high, entry_index = 0;
 	gpointer symbol_addr;
+	MonoTrampInfo *tinfo;
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_aot_method (method, &amodule);
@@ -5029,11 +5033,16 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	code = get_call_table_entry (amodule->unbox_trampoline_addresses, entry_index);
 	g_assert (code);
 
-	find_symbol (amodule->sofile, amodule->globals, "unbox_trampoline_p", &symbol_addr);
+	tinfo = mono_tramp_info_create (NULL, code, 0, NULL, NULL);
 
-	g_assert (symbol_addr);
+	symbol_addr = read_unwind_info (amodule, tinfo, "unbox_trampoline_p");
+	if (!symbol_addr) {
+		mono_tramp_info_free (tinfo);
+		return FALSE;
+	}
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, code, *(guint32*)symbol_addr, NULL, NULL), NULL);
+	tinfo->code_size = *(guint32*)symbol_addr;
+	mono_tramp_info_register (tinfo, NULL);
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);
