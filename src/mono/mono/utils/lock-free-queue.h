@@ -29,6 +29,7 @@
 #define __MONO_LOCKFREEQUEUE_H__
 
 #include <glib.h>
+#include <mono/utils/mono-publib.h>
 
 //#define QUEUE_DEBUG	1
 
@@ -55,13 +56,13 @@ typedef struct {
 	volatile gint32 has_dummy;
 } MonoLockFreeQueue;
 
-void mono_lock_free_queue_init (MonoLockFreeQueue *q);
+MONO_API void mono_lock_free_queue_init (MonoLockFreeQueue *q);
 
-void mono_lock_free_queue_node_init (MonoLockFreeQueueNode *node, gboolean to_be_freed);
-void mono_lock_free_queue_node_free (MonoLockFreeQueueNode *node);
+MONO_API void mono_lock_free_queue_node_init (MonoLockFreeQueueNode *node, gboolean to_be_freed);
+MONO_API void mono_lock_free_queue_node_free (MonoLockFreeQueueNode *node);
 
-void mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node);
+MONO_API void mono_lock_free_queue_enqueue (MonoLockFreeQueue *q, MonoLockFreeQueueNode *node);
 
-MonoLockFreeQueueNode* mono_lock_free_queue_dequeue (MonoLockFreeQueue *q);
+MONO_API MonoLockFreeQueueNode* mono_lock_free_queue_dequeue (MonoLockFreeQueue *q);
 
 #endif
