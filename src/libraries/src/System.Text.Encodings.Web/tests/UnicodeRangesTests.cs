@@ -19,7 +19,7 @@ namespace Microsoft.Framework.WebEncoders
 
             // Test 1: the range should be empty
             Assert.Equal(0, range.FirstCodePoint);
-            Assert.Equal(0, range.RangeSize);
+            Assert.Equal(0, range.Length);
 
             // Test 2: calling the property multiple times should cache and return the same range instance
             UnicodeRange range2 = UnicodeRanges.None;
@@ -202,7 +202,7 @@ namespace Microsoft.Framework.WebEncoders
 
             // Test 1: the range should span the range first..last
             Assert.Equal(first, range.FirstCodePoint);
-            Assert.Equal(last, range.FirstCodePoint + range.RangeSize - 1);
+            Assert.Equal(last, range.FirstCodePoint + range.Length - 1);
 
             // Test 2: calling the property multiple times should cache and return the same range instance
             UnicodeRange range2 = (UnicodeRange)propInfo.GetValue(null);

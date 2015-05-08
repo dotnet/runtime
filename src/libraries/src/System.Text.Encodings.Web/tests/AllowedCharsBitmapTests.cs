@@ -15,7 +15,7 @@ namespace Microsoft.Framework.WebEncoders
         public void Ctor_EmptyByDefault()
         {
             // Act
-            var bitmap = AllowedCharsBitmap.CreateNew();
+            var bitmap = AllowedCharactersBitmap.CreateNew();
 
             // Assert
             for (int i = 0; i <= Char.MaxValue; i++)
@@ -28,7 +28,7 @@ namespace Microsoft.Framework.WebEncoders
         public void Allow_Forbid_ZigZag()
         {
             // Arrange
-            var bitmap = AllowedCharsBitmap.CreateNew();
+            var bitmap = AllowedCharactersBitmap.CreateNew();
 
             // Act
             // The only chars which are allowed are those whose code points are multiples of 3 or 7
@@ -61,7 +61,7 @@ namespace Microsoft.Framework.WebEncoders
         public void Clear_ForbidsEverything()
         {
             // Arrange
-            var bitmap = AllowedCharsBitmap.CreateNew();
+            var bitmap = AllowedCharactersBitmap.CreateNew();
             for (int i = 1; i <= Char.MaxValue; i++)
             {
                 bitmap.AllowCharacter((char)i);
@@ -81,7 +81,7 @@ namespace Microsoft.Framework.WebEncoders
         public void Clone_MakesDeepCopy()
         {
             // Arrange
-            var originalBitmap = AllowedCharsBitmap.CreateNew();
+            var originalBitmap = AllowedCharactersBitmap.CreateNew();
             originalBitmap.AllowCharacter('x');
 
             // Act
@@ -102,7 +102,7 @@ namespace Microsoft.Framework.WebEncoders
             // We only allow odd-numbered characters in this test so that
             // we can validate that we properly merged the two bitmaps together
             // rather than simply overwriting the target.
-            var bitmap = AllowedCharsBitmap.CreateNew();
+            var bitmap = AllowedCharactersBitmap.CreateNew();
             for (int i = 1; i <= Char.MaxValue; i += 2)
             {
                 bitmap.AllowCharacter((char)i);
