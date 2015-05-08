@@ -34,6 +34,7 @@
 #include <mono/utils/mono-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-time.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
@@ -69,6 +70,10 @@ static mono_mutex_t reference_queue_mutex;
 static GSList *domains_to_finalize= NULL;
 static MonoMList *threads_to_finalize = NULL;
 
+static gboolean finalizer_thread_exited;
+/* Uses finalizer_mutex */
+static mono_cond_t exited_cond;
+
 static MonoInternalThread *gc_thread;
 
 static void object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*));
@@ -80,7 +85,6 @@ static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
 #ifndef HAVE_NULL_GC
 static HANDLE pending_done_event;
-static HANDLE shutdown_event;
 #endif
 
 static guint32
@@ -1151,7 +1155,11 @@ finalizer_thread (gpointer unused)
 #endif
 	}
 
-	SetEvent (shutdown_event);
+	mono_finalizer_lock ();
+	finalizer_thread_exited = TRUE;
+	mono_cond_signal (&exited_cond);
+	mono_finalizer_unlock ();
+
 	return 0;
 }
 
@@ -1191,11 +1199,10 @@ mono_gc_init (void)
 	}
 	
 	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
+	g_assert (finalizer_event);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	shutdown_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (finalizer_event == NULL || pending_done_event == NULL || shutdown_event == NULL) {
-		g_assert_not_reached ();
-	}
+	g_assert (pending_done_event);
+	mono_cond_init (&exited_cond, 0);
 #ifdef MONO_HAS_SEMAPHORES
 	MONO_SEM_INIT (&finalizer_sem, 0);
 #endif
@@ -1213,15 +1220,32 @@ mono_gc_cleanup (void)
 #endif
 
 	if (!gc_disabled) {
-		ResetEvent (shutdown_event);
 		finished = TRUE;
 		if (mono_thread_internal_current () != gc_thread) {
 			gboolean timed_out = FALSE;
+			guint32 start_ticks = mono_msec_ticks ();
+			guint32 end_ticks = start_ticks + 2000;
 
 			mono_gc_finalize_notify ();
 			/* Finishing the finalizer thread, so wait a little bit... */
 			/* MS seems to wait for about 2 seconds */
-			if (guarded_wait (shutdown_event, 2000, FALSE) == WAIT_TIMEOUT) {
+			while (!finalizer_thread_exited) {
+				guint32 current_ticks = mono_msec_ticks ();
+				guint32 timeout;
+
+				if (current_ticks >= end_ticks)
+					break;
+				else
+					timeout = end_ticks - current_ticks;
+				MONO_PREPARE_BLOCKING;
+				mono_finalizer_lock ();
+				if (!finalizer_thread_exited)
+					mono_cond_timedwait_ms (&exited_cond, &finalizer_mutex, timeout);
+				mono_finalizer_unlock ();
+				MONO_FINISH_BLOCKING;
+			}
+
+			if (!finalizer_thread_exited) {
 				int ret;
 
 				/* Set a flag which the finalizer thread can check */
