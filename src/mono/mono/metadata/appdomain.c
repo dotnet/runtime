@@ -2272,18 +2272,17 @@ unload_thread_main (void *arg)
 	/* Force it to be attached to avoid racing during shutdown. */
 	thread = mono_thread_attach_full (mono_get_root_domain (), TRUE);
 
-
-	if (!mono_thread_pool_remove_domain_jobs (domain, -1)) {
-		data->failure_reason = g_strdup_printf ("Cleanup of threadpool jobs of domain %s timed out.", domain->friendly_name);
-		goto failure;
-	}
-
 	/* 
 	 * FIXME: Abort our parent thread last, so we can return a failure 
 	 * indication if aborting times out.
 	 */
 	if (!mono_threads_abort_appdomain_threads (domain, -1)) {
 		data->failure_reason = g_strdup_printf ("Aborting of threads in domain %s timed out.", domain->friendly_name);
+		goto failure;
+	}
+
+	if (!mono_thread_pool_remove_domain_jobs (domain, -1)) {
+		data->failure_reason = g_strdup_printf ("Cleanup of threadpool jobs of domain %s timed out.", domain->friendly_name);
 		goto failure;
 	}
 
