@@ -1,3 +1,5 @@
+#include <config.h>
+
 #ifdef HOST_WIN32
 /* For select */
 #include <winsock2.h>
