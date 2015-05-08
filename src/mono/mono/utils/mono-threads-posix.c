@@ -452,6 +452,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	if (current->syscall_break_signal) {
 		current->syscall_break_signal = FALSE;
 		THREADS_SUSPEND_DEBUG ("\tsyscall break for %p\n", current);
+		mono_threads_notify_initiator_of_abort (current);
 		goto done;
 	}
 
@@ -582,7 +583,8 @@ mono_threads_core_abort_syscall (MonoThreadInfo *info)
 	This signal should not be interpreted as a suspend request.
 	*/
 	info->syscall_break_signal = TRUE;
-	mono_threads_pthread_kill (info, abort_signal_num);
+	if (!mono_threads_pthread_kill (info, abort_signal_num))
+		mono_threads_add_to_pending_operation_set (info);
 }
 
 gboolean

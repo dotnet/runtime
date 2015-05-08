@@ -64,7 +64,15 @@ static gboolean unified_suspend_enabled;
 /*abort at 1 sec*/
 #define SLEEP_DURATION_BEFORE_ABORT 200
 
-static int suspend_posts, resume_posts, waits_done, pending_ops;
+static int suspend_posts, resume_posts, abort_posts, waits_done, pending_ops;
+
+void
+mono_threads_notify_initiator_of_abort (MonoThreadInfo* info)
+{
+	THREADS_SUSPEND_DEBUG ("[INITIATOR-NOTIFY-ABORT] %p\n", mono_thread_info_get_tid (info));
+	MONO_SEM_POST (&suspend_semaphore);
+	InterlockedIncrement (&abort_posts);
+}
 
 void
 mono_threads_notify_initiator_of_suspend (MonoThreadInfo* info)
@@ -121,7 +129,8 @@ void
 mono_threads_begin_global_suspend (void)
 {
 	g_assert (pending_suspends == 0);
-	THREADS_SUSPEND_DEBUG ("------ BEGIN GLOBAL OP sp %d rp %d wd %d po %d\n", suspend_posts, resume_posts, waits_done, pending_ops);
+	THREADS_SUSPEND_DEBUG ("------ BEGIN GLOBAL OP sp %d rp %d ap %d wd %d po %d\n", suspend_posts, resume_posts,
+		abort_posts, waits_done, pending_ops);
 	mono_threads_core_begin_global_suspend ();
 }
 
@@ -129,7 +138,8 @@ void
 mono_threads_end_global_suspend (void) 
 {
 	g_assert (pending_suspends == 0);
-	THREADS_SUSPEND_DEBUG ("------ END GLOBAL OP sp %d rp %d wd %d po %d\n", suspend_posts, resume_posts, waits_done, pending_ops);
+	THREADS_SUSPEND_DEBUG ("------ END GLOBAL OP sp %d rp %d ap %d wd %d po %d\n", suspend_posts, resume_posts,
+		abort_posts, waits_done, pending_ops);
 	mono_threads_core_end_global_suspend ();
 }
 
@@ -997,10 +1007,14 @@ mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
 	}
 
 	mono_thread_info_suspend_lock ();
+	mono_threads_begin_global_suspend ();
 
 	mono_threads_core_abort_syscall (info);
+	mono_threads_wait_pending_operations ();
 
 	mono_hazard_pointer_clear (hp, 1);
+
+	mono_threads_end_global_suspend ();
 	mono_thread_info_suspend_unlock ();
 }
 
