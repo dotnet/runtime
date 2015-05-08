@@ -808,11 +808,11 @@ CorUnix::InternalCreateProcess(
         &hDummyThread
         );
     
-    if(dwCreationFlags & CREATE_SUSPENDED)
+    if (dwCreationFlags & CREATE_SUSPENDED)
     {
         int pipe_descs[2];
 
-        if(-1 == pipe(pipe_descs))
+        if (-1 == pipe(pipe_descs))
         {
             ERROR("pipe() failed! error is %d (%s)\n", errno, strerror(errno));
             palError = ERROR_NOT_ENOUGH_MEMORY;
@@ -861,11 +861,13 @@ CorUnix::InternalCreateProcess(
 
     if (processId == -1)
     {
-        ASSERT("unable to create a new process with fork()\n");
-        if(-1 != child_blocking_pipe)
+        ASSERT("Unable to create a new process with fork()\n");
+        if (-1 != child_blocking_pipe)
         {
             close(child_blocking_pipe);
+            close(parent_blocking_pipe);
         }
+
         palError = ERROR_INTERNAL_ERROR;
         goto InternalCreateProcessExit;
     }
@@ -902,7 +904,7 @@ CorUnix::InternalCreateProcess(
             _exit(EXIT_FAILURE);
         }
         
-        if(dwCreationFlags & CREATE_SUSPENDED)
+        if (dwCreationFlags & CREATE_SUSPENDED)
         {
             BYTE resume_code = 0;
             ssize_t read_ret;
@@ -913,7 +915,7 @@ CorUnix::InternalCreateProcess(
             read_again:
             /* block until ResumeThread writes something to the pipe */
             read_ret = read(child_blocking_pipe, &resume_code, sizeof(resume_code));
-            if(sizeof(resume_code) != read_ret)
+            if (sizeof(resume_code) != read_ret)
             {
                 if (read_ret == -1 && EINTR == errno)
                 {
@@ -932,6 +934,7 @@ CorUnix::InternalCreateProcess(
                 // resume_code should always equal WAKEUPCODE.
                 _exit(EXIT_FAILURE);
             }
+
             close(child_blocking_pipe);
         }
 

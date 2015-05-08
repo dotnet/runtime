@@ -514,6 +514,11 @@ namespace CorUnix
             void
             ReleaseSuspensionLock(
                 CPalThread *pthrCurrent
+            );
+
+            PAL_ERROR
+            InternalSuspendNewThreadFromData(
+                CPalThread *pThread
             );  
 
             PAL_ERROR
