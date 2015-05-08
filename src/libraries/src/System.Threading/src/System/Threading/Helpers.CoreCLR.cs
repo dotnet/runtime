@@ -8,11 +8,9 @@ namespace System.Threading
     /// </summary>
     internal static class Helpers
     {
-        private static readonly WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
-
-        internal static void Sleep(uint milliseconds)
+        internal static void Sleep(int milliseconds)
         {
-            s_sleepHandle.WaitOne((int)milliseconds);
+            Thread.Sleep(milliseconds);
         }
 
         internal static void Spin(int iterations)
