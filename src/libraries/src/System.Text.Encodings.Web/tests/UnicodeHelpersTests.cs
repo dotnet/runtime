@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using Xunit;
 
 namespace Microsoft.Framework.WebEncoders
@@ -33,7 +34,7 @@ namespace Microsoft.Framework.WebEncoders
         [Fact]
         public void GetScalarValueFromUtf16()
         {
-            // TODO: [ActiveIssue(846, PlatformID.AnyUnix)]
+            // TODO: [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
             // This loop should instead be implemented as a [Theory] with multiple [InlineData]s.
             // However, until globalization support is implemented on Unix, this causes failures when
             // the xunit runner is configured with -xml to trace out results.  When it does so with 

@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using Xunit;
 
 namespace Microsoft.Framework.WebEncoders

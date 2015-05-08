@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-namespace System.Text.Encodings.Web
+namespace System.Text.Unicode
 {
     public static partial class UnicodeRanges
     {

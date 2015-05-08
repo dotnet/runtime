@@ -4,12 +4,12 @@
 using System;
 using System.IO;
 
-namespace System.Text.Encodings.Web
+namespace Microsoft.Framework.WebEncoders
 {
     /// <summary>
     /// Helpful extension methods for the encoder classes.
     /// </summary>
-    public static class EncoderExtensions
+    internal static class EncoderExtensions
     {
         /// <summary>
         /// HTML-encodes a string and writes the result to the supplied output.
