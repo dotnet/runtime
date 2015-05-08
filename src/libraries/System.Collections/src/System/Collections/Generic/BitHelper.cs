@@ -50,16 +50,16 @@ namespace System.Collections.Generic
         private const byte IntSize = 32;
 
         // m_length of underlying int array (not logical bit array)
-        private int _length;
+        private readonly int _length;
 
         // ptr to stack alloc'd array of ints
-        private int* _arrayPtr;
+        private readonly int* _arrayPtr;
 
         // array of ints
-        private int[] _array;
+        private readonly int[] _array;
 
         // whether to operate on stack alloc'd or heap alloc'd array 
-        private bool _useStackAlloc;
+        private readonly bool _useStackAlloc;
 
         /// <summary>
         /// Instantiates a BitHelper with a heap alloc'd array of ints
@@ -88,18 +88,19 @@ namespace System.Collections.Generic
         /// Mark bit at specified position
         /// </summary>
         /// <param name="bitPosition"></param>
-        internal unsafe void MarkBit(int bitPosition)
+        internal void MarkBit(int bitPosition)
         {
             int bitArrayIndex = bitPosition / IntSize;
             if (bitArrayIndex < _length && bitArrayIndex >= 0)
             {
+                int flag = (MarkedBitFlag << (bitPosition % IntSize));
                 if (_useStackAlloc)
                 {
-                    _arrayPtr[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
+                    _arrayPtr[bitArrayIndex] |= flag;
                 }
                 else
                 {
-                    _array[bitArrayIndex] |= (MarkedBitFlag << (bitPosition % IntSize));
+                    _array[bitArrayIndex] |= flag;
                 }
             }
         }
@@ -109,18 +110,19 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="bitPosition"></param>
         /// <returns></returns>
-        internal unsafe bool IsMarked(int bitPosition)
+        internal bool IsMarked(int bitPosition)
         {
             int bitArrayIndex = bitPosition / IntSize;
             if (bitArrayIndex < _length && bitArrayIndex >= 0)
             {
+                int flag = (MarkedBitFlag << (bitPosition % IntSize));
                 if (_useStackAlloc)
                 {
-                    return ((_arrayPtr[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
+                    return ((_arrayPtr[bitArrayIndex] & flag) != 0);
                 }
                 else
                 {
-                    return ((_array[bitArrayIndex] & (MarkedBitFlag << (bitPosition % IntSize))) != 0);
+                    return ((_array[bitArrayIndex] & flag) != 0);
                 }
             }
             return false;
