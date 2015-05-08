@@ -45,9 +45,6 @@
     <Compile Include="$(CommonPath)\System\Collections\HashHelpers.cs">
       <Link>Common\System\Collections\HashHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\CommonRuntimeTypes.cs">
-      <Link>Common\System\Collections\CommonRuntimeTypes.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\ArrayT.cs">
       <Link>Common\System\ArrayT.cs</Link>
     </Compile>
