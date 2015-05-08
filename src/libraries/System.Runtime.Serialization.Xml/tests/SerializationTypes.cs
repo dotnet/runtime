@@ -1178,25 +1178,25 @@ namespace SerializationTypes
         public object Value;
 
         [OnSerializing()]
-        internal void OnSerializingMethod(StreamingContext context)
+        private void OnSerializingMethod(StreamingContext context)
         {
             OnSerializingMethodInvoked = true;
         }
 
         [OnSerialized()]
-        internal void OnSerializedMethod(StreamingContext context)
+        private void OnSerializedMethod(StreamingContext context)
         {
             OnSerializedMethodInvoked = true;
         }
 
         [OnDeserializing()]
-        internal void OnDeserializingMethod(StreamingContext context)
+        private void OnDeserializingMethod(StreamingContext context)
         {
             OnDeserializingMethodInvoked = true;
         }
 
         [OnDeserialized()]
-        internal void OnDeserializedMethod(StreamingContext context)
+        private void OnDeserializedMethod(StreamingContext context)
         {
             OnDeserializedMethodInvoked = true;
         }
