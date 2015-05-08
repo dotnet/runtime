@@ -228,6 +228,13 @@ binary_protocol_check_file_overflow (void)
 }
 #endif
 
+/*
+ * Flushing buffers takes an exclusive lock, so it must only be done when the world is
+ * stopped, otherwise we might end up with a deadlock because a stopped thread owns the
+ * lock.
+ *
+ * The protocol entries that do flush have `FLUSH()` in their definition.
+ */
 void
 binary_protocol_flush_buffers (gboolean force)
 {

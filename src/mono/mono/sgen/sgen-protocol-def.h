@@ -1,5 +1,4 @@
 BEGIN_PROTOCOL_ENTRY3 (binary_protocol_collection_requested, TYPE_INT, generation, TYPE_SIZE, requested_size, TYPE_BOOL, force)
-FLUSH ()
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
