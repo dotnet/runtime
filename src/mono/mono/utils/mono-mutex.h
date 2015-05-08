@@ -100,6 +100,9 @@ mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, DWORD timeout)
 {
 	BOOL res;
 
+	// FIXME: This needs to take a struct timespec
+	g_assert_not_reached ();
+
 	res = SleepConditionVariableCS (cond, mutex, timeout);
 	if (res)
 		/* Success */
