@@ -4,8 +4,6 @@ VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument", "src\System.Xml.XDocument.csproj", "{442C5A88-29C2-4B00-B1DF-730D646D3861}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XDocument.Axes.Tests", "tests\axes\System.Xml.XDocument.Axes.Tests.csproj", "{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XDocument.Common", "tests\XDocument.Common\XDocument.Common.csproj", "{52666206-B6C9-49FA-A1D7-D0A0C68807B0}"
@@ -118,7 +116,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A} = {2B620568-877B-4A96-919B-F24B0B3E761D}
 		{6D9B0285-5E8A-4C20-9C53-9E2084EF64C4} = {2B620568-877B-4A96-919B-F24B0B3E761D}
 		{52666206-B6C9-49FA-A1D7-D0A0C68807B0} = {2B620568-877B-4A96-919B-F24B0B3E761D}
 		{C560E194-5B14-4112-ABC6-3208491E53E6} = {2B620568-877B-4A96-919B-F24B0B3E761D}

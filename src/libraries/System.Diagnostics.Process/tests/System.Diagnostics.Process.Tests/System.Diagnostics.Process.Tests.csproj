@@ -32,10 +32,6 @@
       <Project>{63634289-90d7-4947-8bf3-dbbe98d76c85}</Project>
       <Name>System.Diagnostics.Process</Name>
     </ProjectReference>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\System.Diagnostics.Process.TestConsoleApp\System.Diagnostics.Process.TestConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>System.Diagnostics.Process.TestConsoleApp</Name>
