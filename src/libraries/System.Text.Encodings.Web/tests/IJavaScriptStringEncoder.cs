@@ -3,13 +3,12 @@
 
 using System.IO;
 
-
-namespace System.Text.Encodings.Web
+namespace Microsoft.Framework.WebEncoders
 {
     /// <summary>
     /// Provides services for JavaScript-escaping strings.
     /// </summary>
-    public interface IJavaScriptStringEncoder
+    internal interface IJavaScriptStringEncoder
     {
         /// <summary>
         /// JavaScript-escapes a character array and writes the result to the

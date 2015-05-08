@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.22726.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Text.Encodings.Web", "src\System.Text.Encodings.Web.csproj", "{1DD0FF15-6234-4BD6-850A-317F05479554}"
 EndProject
@@ -38,11 +38,14 @@ Global
 		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|ARM.ActiveCfg = Debug|Any CPU
 		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|ARM.ActiveCfg = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x64.ActiveCfg = Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x86.ActiveCfg = Release|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|ARM.ActiveCfg = Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|ARM.Build.0 = Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x64.ActiveCfg = Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x64.Build.0 = Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x86.ActiveCfg = Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|x86.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
