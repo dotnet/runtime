@@ -189,7 +189,6 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
 {
     PAL_ERROR palError = NO_ERROR;
 
-#if USE_PIPES_FOR_CREATING_SUSPENDED_THREADS
     AcquireSuspensionLock(pThread);
     pThread->suspensionInfo.SetSelfSusp(TRUE);
     pThread->suspensionInfo.IncrSuspCount();
@@ -229,11 +228,6 @@ CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
     // Close the pipes regardless of whether we were successful.
     close(pipe_descs[0]);
     close(pipe_descs[1]);
-
-#else // USE_PIPES_FOR_CREATING_SUSPENDED_THREADS
-    DWORD dwSuspendCount = 0;
-    palError = InternalSuspendThreadFromData(pThread, pThread, &dwSuspendCount);
-#endif // USE_PIPES_FOR_CREATING_SUSPENDED_THREADS
 
     return palError;
 }
