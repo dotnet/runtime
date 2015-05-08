@@ -47,6 +47,7 @@
 MonoStats mono_stats;
 
 gboolean mono_print_vtable = FALSE;
+gboolean mono_align_small_structs = FALSE;
 
 /* Statistics */
 guint32 inflated_classes, inflated_classes_size, inflated_methods_size;
@@ -2043,12 +2044,17 @@ mono_class_layout_fields (MonoClass *class)
 
 	if (layout != TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 		/*
+		 * This leads to all kinds of problems with nested structs, so only
+		 * enable it when a MONO_DEBUG property is set.
+		 *
 		 * For small structs, set min_align to at least the struct size to improve
 		 * performance, and since the JIT memset/memcpy code assumes this and generates 
 		 * unaligned accesses otherwise. See #78990 for a testcase.
 		 */
-		if (class->instance_size <= sizeof (MonoObject) + sizeof (gpointer))
-			class->min_align = MAX (class->min_align, class->instance_size - sizeof (MonoObject));
+		if (mono_align_small_structs) {
+			if (class->instance_size <= sizeof (MonoObject) + sizeof (gpointer))
+				class->min_align = MAX (class->min_align, class->instance_size - sizeof (MonoObject));
+		}
 	}
 
 	mono_memory_barrier ();

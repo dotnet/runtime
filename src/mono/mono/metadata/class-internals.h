@@ -19,6 +19,7 @@
 #define MONO_DEFAULT_SUPERTABLE_SIZE 6
 
 extern gboolean mono_print_vtable;
+extern gboolean mono_align_small_structs;
 
 typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;
