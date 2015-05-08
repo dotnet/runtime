@@ -262,8 +262,6 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 	mono_mutex_init_recursive (&mono_strtod_mutex);
 	
 	mono_thread_attach (domain);
-	mono_context_init (domain);
-	mono_context_set (domain->default_context);
 
 	mono_type_initialization_init ();
 
@@ -272,6 +270,10 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb,
 
 	/* GC init has to happen after thread init */
 	mono_gc_init ();
+
+	/* contexts use GC handles, so they must be initialized after the GC */
+	mono_context_init (domain);
+	mono_context_set (domain->default_context);
 
 #ifndef DISABLE_SOCKETS
 	mono_network_init ();
