@@ -2892,6 +2892,7 @@ static void
 suspend_current (void)
 {
 	DebuggerTlsData *tls;
+	int err;
 
 	g_assert (debugger_thread_id != GetCurrentThreadId ());
 
