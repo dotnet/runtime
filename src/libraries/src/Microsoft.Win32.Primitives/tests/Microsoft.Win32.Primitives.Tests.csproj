@@ -26,10 +26,6 @@
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>Microsoft.Win32.Primitives</Name>
     </ProjectReference>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

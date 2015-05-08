@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.NonGener
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.NonGeneric.Tests", "tests\System.Collections.NonGeneric.Tests.csproj", "{EE95AE39-845A-42D3-86D0-8065DBE56612}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{EE95AE39-845A-42D3-86D0-8065DBE56612}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE95AE39-845A-42D3-86D0-8065DBE56612}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE95AE39-845A-42D3-86D0-8065DBE56612}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

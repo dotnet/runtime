@@ -6,8 +6,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata.Tests", "tests\System.Reflection.Metadata.Tests.csproj", "{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{5C5F1FFD-CC57-4DFF-9CAF-0A2852323AD6}"
 	ProjectSection(SolutionItems) = preProject
 		..\.nuget\packages.config = ..\.nuget\packages.config
@@ -27,10 +25,6 @@ Global
 		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

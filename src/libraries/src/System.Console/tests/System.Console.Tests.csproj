@@ -28,10 +28,6 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Console.csproj">
       <Project>{F9DF2357-81B4-4317-908E-512DA9395583}</Project>
       <Name>System.Console</Name>

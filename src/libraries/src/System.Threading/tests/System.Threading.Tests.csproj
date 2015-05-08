@@ -28,10 +28,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <!-- Compile tests against the System.Runtime contract, but copy our local-built implementation for testing -->
     <ProjectReference Include="..\src\System.Threading.CoreCLR.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

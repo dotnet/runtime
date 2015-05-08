@@ -5,8 +5,6 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Tests", "tests\System.Collections.Tests.csproj", "{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XunitTraitsDiscoverers", "..\Common\tests\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj", "{BE8ED8C1-C314-4C4E-A929-64C9C8B3552A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections", "src\System.Collections.csproj", "{D5FF747F-7A0B-9003-885A-FE9A63E755E5}"
 EndProject
 Global

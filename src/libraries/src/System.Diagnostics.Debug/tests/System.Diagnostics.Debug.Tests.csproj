@@ -19,10 +19,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Diagnostics.Debug.csproj">
       <Project>{E7E8DE8A-9EC1-46A8-A6EE-727DB32DBEB8}</Project>
       <Name>System.Diagnostics.Debug</Name>

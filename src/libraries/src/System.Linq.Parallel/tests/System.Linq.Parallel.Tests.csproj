@@ -63,10 +63,6 @@
   </ItemGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Linq.Parallel.csproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>
       <Name>System.Linq.Parallel</Name>

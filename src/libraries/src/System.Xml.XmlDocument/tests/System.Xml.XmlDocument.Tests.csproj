@@ -102,10 +102,6 @@
     <Compile Include="XmlTextTests\SplitTextTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\XunitTraitsDiscoverers\XunitTraitsDiscoverers.csproj">
-      <Project>{be8ed8c1-c314-4c4e-a929-64c9c8b3552a}</Project>
-      <Name>XunitTraitsDiscoverers</Name>
-    </ProjectReference>
     <ProjectReference Include="..\src\System.Xml.XmlDocument.csproj">
       <Project>{16EE5522-F387-4C9E-9EF2-B5134B043F37}</Project>
       <Name>System.Xml.XmlDocument</Name>
