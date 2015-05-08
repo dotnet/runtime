@@ -1607,25 +1607,13 @@ stop_debugger_thread (void)
 	 *
 	 * If we continue with the shutdown without waiting for it, then the client might
 	 * not receive an answer to its last command like a resume.
-	 * The WaitForSingleObject infrastructure doesn't seem to work during shutdown, so
-	 * use pthreads.
 	 */
-	//WaitForSingleObject (debugger_thread_handle, INFINITE);
 	if (GetCurrentThreadId () != debugger_thread_id) {
 		do {
 			MONO_TRY_BLOCKING
 			mono_mutex_lock (&debugger_thread_exited_mutex);
-			if (!debugger_thread_exited) {
-#ifdef HOST_WIN32
-				if (WAIT_TIMEOUT == WaitForSingleObject(debugger_thread_exited_cond, 0)) {
-					mono_mutex_unlock (&debugger_thread_exited_mutex);
-					Sleep(1);
-					mono_mutex_lock (&debugger_thread_exited_mutex);
-				}
-#else
+			if (!debugger_thread_exited)
 				mono_cond_wait (&debugger_thread_exited_cond, &debugger_thread_exited_mutex);
-#endif
-			}
 			mono_mutex_unlock (&debugger_thread_exited_mutex);
 			MONO_FINISH_TRY_BLOCKING
 		} while (!debugger_thread_exited);
@@ -2903,9 +2891,6 @@ invalidate_frames (DebuggerTlsData *tls)
 static void
 suspend_current (void)
 {
-#ifndef HOST_WIN32
-	int err;
-#endif
 	DebuggerTlsData *tls;
 
 	g_assert (debugger_thread_id != GetCurrentThreadId ());
@@ -2937,20 +2922,8 @@ suspend_current (void)
 
 	MONO_TRY_BLOCKING
 	while (suspend_count - tls->resume_count > 0) {
-#ifdef HOST_WIN32
-		if (WAIT_TIMEOUT == WaitForSingleObject(suspend_cond, 0))
-		{
-			mono_mutex_unlock (&suspend_mutex);
-			Sleep(1);
-			mono_mutex_lock (&suspend_mutex);
-		}
-		else
-		{
-		}
-#else
 		err = mono_cond_wait (&suspend_cond, &suspend_mutex);
 		g_assert (err == 0);
-#endif
 	}
 	MONO_FINISH_TRY_BLOCKING
 
