@@ -4058,7 +4058,8 @@ mono_thread_destroy_domain_tls (MonoDomain *domain)
 		destroy_tls (domain, domain->tlsrec_list->tls_offset);
 }
 
-static MonoClassField *local_slots = NULL;
+static MonoClassField *thread_local_slots = NULL;
+static MonoClassField *context_local_slots = NULL;
 
 typedef struct {
 	/* local tls data to get locals_slot from a thread */
@@ -4067,60 +4068,104 @@ typedef struct {
 	int slot;
 } LocalSlotID;
 
+/*
+ * LOCKING: requires that threads_mutex is held
+ */
 static void
-clear_local_slot (gpointer key, gpointer value, gpointer user_data)
+clear_thread_local_slot (gpointer key, gpointer value, gpointer user_data)
 {
+	MonoInternalThread *thread = (MonoInternalThread *) value;
 	LocalSlotID *sid = user_data;
-	MonoInternalThread *thread = (MonoInternalThread*)value;
-	MonoArray *slots_array;
-	/*
-	 * the static field is stored at: ((char*) thread->static_data [idx]) + (offset & 0xffffff);
-	 * it is for the right domain, so we need to check if it is allocated an initialized
-	 * for the current thread.
-	 */
-	/*g_print ("handling thread %p\n", thread);*/
 
 	int idx = ACCESS_SPECIAL_STATIC_OFFSET (sid->offset, index);
 	int off = ACCESS_SPECIAL_STATIC_OFFSET (sid->offset, offset);
 
 	if (!thread->static_data || !thread->static_data [idx])
 		return;
-	slots_array = *(MonoArray **)(((char*) thread->static_data [idx]) + off);
+
+	MonoArray *slots_array = *(MonoArray **)(((char *) thread->static_data [idx]) + off);
+
 	if (!slots_array || sid->slot >= mono_array_length (slots_array))
 		return;
-	mono_array_set (slots_array, MonoObject*, sid->slot, NULL);
+
+	mono_array_set (slots_array, MonoObject *, sid->slot, NULL);
+}
+
+/*
+ * LOCKING: requires that threads_mutex is held
+ */
+static void
+clear_context_local_slot (gpointer key, gpointer value, gpointer user_data)
+{
+	uint32_t gch = GPOINTER_TO_UINT (key);
+	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (gch);
+
+	if (!ctx) {
+		g_hash_table_remove (contexts, key);
+		mono_gchandle_free (gch);
+		return;
+	}
+
+	LocalSlotID *sid = user_data;
+
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (sid->offset, index);
+	int off = ACCESS_SPECIAL_STATIC_OFFSET (sid->offset, offset);
+
+	if (!ctx->static_data || !ctx->static_data [idx])
+		return;
+
+	MonoArray *slots_array = *(MonoArray **) (((char *) ctx->static_data [idx]) + off);
+
+	if (!slots_array || sid->slot >= mono_array_length (slots_array))
+		return;
+
+	mono_array_set (slots_array, MonoObject *, sid->slot, NULL);
 }
 
 void
 mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local)
 {
-	MonoDomain *domain;
-	LocalSlotID sid;
-	sid.slot = slot;
-	if (thread_local) {
-		void *addr = NULL;
-		if (!local_slots) {
-			local_slots = mono_class_get_field_from_name (mono_defaults.thread_class, "local_slots");
-			if (!local_slots) {
-				g_warning ("local_slots field not found in Thread class");
-				return;
-			}
-		}
-		domain = mono_domain_get ();
-		mono_domain_lock (domain);
-		if (domain->special_static_fields)
-			addr = g_hash_table_lookup (domain->special_static_fields, local_slots);
-		mono_domain_unlock (domain);
-		if (!addr)
+	if (!thread_local_slots) {
+		thread_local_slots = mono_class_get_field_from_name (mono_defaults.thread_class, "local_slots");
+		if (!thread_local_slots) {
+			g_warning ("local_slots field not found in Thread class");
 			return;
-		/*g_print ("freeing slot %d at %p\n", slot, addr);*/
-		sid.offset = GPOINTER_TO_UINT (addr);
-		mono_threads_lock ();
-		mono_g_hash_table_foreach (threads, clear_local_slot, &sid);
-		mono_threads_unlock ();
-	} else {
-		/* FIXME: clear the slot for MonoAppContexts, too */
+		}
 	}
+
+	if (!context_local_slots) {
+		MonoClass *ctx_class = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
+		context_local_slots = mono_class_get_field_from_name (ctx_class, "local_slots");
+		if (!context_local_slots) {
+			g_warning ("local_slots field not found in Context class");
+			return;
+		}
+	}
+
+	void *addr = NULL;
+	MonoDomain *domain = mono_domain_get ();
+
+	mono_domain_lock (domain);
+
+	if (domain->special_static_fields)
+		addr = g_hash_table_lookup (domain->special_static_fields, thread_local ? thread_local_slots : context_local_slots);
+
+	mono_domain_unlock (domain);
+
+	if (!addr)
+		return;
+
+	LocalSlotID sid = { .slot = slot, .offset = GPOINTER_TO_UINT (addr) };
+
+	mono_threads_lock ();
+
+	if (thread_local) {
+		mono_g_hash_table_foreach (threads, clear_thread_local_slot, &sid);
+	} else {
+		g_hash_table_foreach (contexts, clear_context_local_slot, &sid);
+	}
+
+	mono_threads_unlock ();
 }
 
 #ifdef HOST_WIN32
