@@ -25,7 +25,7 @@ namespace System.Text.Encodings.Web
 
     public sealed class DefaultUrlEncoder : UrlEncoder
     {
-        private AllowedCharsBitmap _allowedCharsBitmap;
+        private AllowedCharactersBitmap _allowedCharacters;
 
         internal readonly static DefaultUrlEncoder Singleton = new DefaultUrlEncoder(new CodePointFilter(UnicodeRanges.BasicLatin));
 
@@ -33,25 +33,30 @@ namespace System.Text.Encodings.Web
         // 9 output chars per input char: [input] U+FFFF -> [output] "%XX%YY%ZZ".
         // We don't need to worry about astral code points since they consume 2 input
         // chars to produce 12 output chars "%XX%YY%ZZ%WW", which is 6 output chars per input char.
-        public override int MaxOutputCharsPerInputChar
+        public override int MaxOutputCharactersPerInputCharacter
         {
             get { return 9; }
         }
 
         public DefaultUrlEncoder(CodePointFilter filter)
         {
-            _allowedCharsBitmap = filter.GetAllowedCharsBitmap();
+            if (filter == null)
+            {
+                throw new ArgumentNullException("filter");
+            }
+
+            _allowedCharacters = filter.GetAllowedCharacters();
 
             // Forbid codepoints which aren't mapped to characters or which are otherwise always disallowed
             // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
-            _allowedCharsBitmap.ForbidUndefinedCharacters();
+            _allowedCharacters.ForbidUndefinedCharacters();
 
             // Forbid characters that are special in HTML.
             // Even though this is a not HTML encoder, 
             // it's unfortunately common for developers to
             // forget to HTML-encode a string once it has been URL-encoded,
             // so this offers extra protection.
-            DefaultHtmlEncoder.ForbidHtmlCharacters(_allowedCharsBitmap);
+            DefaultHtmlEncoder.ForbidHtmlCharacters(_allowedCharacters);
 
             // Per RFC 3987, Sec. 2.2, we want encodings that are safe for
             // four particular components: 'isegment', 'ipath-noscheme',
@@ -99,18 +104,16 @@ namespace System.Text.Encodings.Web
             // ALPHA / DIGIT / "-" / "." / "_" / "~" / "!" / "$" / "(" / ")" / "*" / "," / ";" / "@"
 
             const string forbiddenChars = @" #%/:=?[\]^`{|}"; // chars from Basic Latin which aren't already disallowed by the base encoder
-            foreach (char c in forbiddenChars)
+            foreach (char character in forbiddenChars)
             {
-                _allowedCharsBitmap.ForbidCharacter(c);
+                _allowedCharacters.ForbidCharacter(character);
             }
 
             // Specials (U+FFF0 .. U+FFFF) are forbidden by the definition of 'ucschar' above
             for (int i = 0; i < 16; i++)
             {
-                _allowedCharsBitmap.ForbidCharacter((char)(0xFFF0 | i));
+                _allowedCharacters.ForbidCharacter((char)(0xFFF0 | i));
             }
-
-            // Supplementary characters are forbidden anyway by the base encoder //TODO: make sure it's true after the changes
         }
 
         public DefaultUrlEncoder(params UnicodeRange[] allowedRanges) : this(new CodePointFilter(allowedRanges))
@@ -120,35 +123,46 @@ namespace System.Text.Encodings.Web
         public override bool Encodes(int unicodeScalar)
         {
             if (UnicodeHelpers.IsSupplementaryCodePoint(unicodeScalar)) return true;
-            return !_allowedCharsBitmap.IsUnicodeScalarAllowed(unicodeScalar);
+            return !_allowedCharacters.IsUnicodeScalarAllowed(unicodeScalar);
         }
 
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe override int FindFirstCharacterToEncode(char* text, int charCount)
+        public unsafe override int FindFirstCharacterToEncode(char* text, int textLength)
         {
-            return AllowedCharsBitmap.FindFirstCharacterToEncode(_allowedCharsBitmap, text, charCount);
+            if (text == null)
+            {
+                throw new ArgumentNullException("text");
+            }
+            return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
         }
 
-        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int length, out int writtenChars)
+        [CLSCompliant(false)]
+        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int length, out int numberOfCharactersWritten)
         {
-            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, length, out writtenChars); }
+            if (buffer == null)
+            {
+                throw new ArgumentNullException("buffer");
+            }
 
-            writtenChars = 0;
+            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, length, out numberOfCharactersWritten); }
+
+            numberOfCharactersWritten = 0;
             uint asUtf8 = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)unicodeScalar);
             do
             {
                 char highNibble, lowNibble;
-                HexUtil.WriteHexEncodedByte((byte)asUtf8, out highNibble, out lowNibble);
+                HexUtil.ByteToHexDigits((byte)asUtf8, out highNibble, out lowNibble);
                 if (length < 3)
                 {
-                    writtenChars = 0;
+                    numberOfCharactersWritten = 0;
                     return false;
                 }
                 *buffer = '%'; buffer++;
                 *buffer = highNibble; buffer++;
                 *buffer = lowNibble; buffer++;
 
-                writtenChars += 3;
+                numberOfCharactersWritten += 3;
             }
             while ((asUtf8 >>= 8) != 0);
             return true;

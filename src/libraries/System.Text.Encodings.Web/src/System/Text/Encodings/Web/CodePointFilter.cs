@@ -12,14 +12,14 @@ namespace System.Text.Encodings.Web
     /// </summary>
     public sealed class CodePointFilter : ICodePointFilter
     {
-        private AllowedCharsBitmap _allowedCharsBitmap;
+        private AllowedCharactersBitmap _allowedCharactersBitmap;
 
         /// <summary>
         /// Instantiates an empty filter (allows no code points through by default).
         /// </summary>
         public CodePointFilter()
         {
-            _allowedCharsBitmap = AllowedCharsBitmap.CreateNew();
+            _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
         }
 
         /// <summary>
@@ -30,11 +30,11 @@ namespace System.Text.Encodings.Web
             CodePointFilter otherAsCodePointFilter = other as CodePointFilter;
             if (otherAsCodePointFilter != null)
             {
-                _allowedCharsBitmap = otherAsCodePointFilter.GetAllowedCharsBitmap();
+                _allowedCharactersBitmap = otherAsCodePointFilter.GetAllowedCharacters();
             }
             else
             {
-                _allowedCharsBitmap = AllowedCharsBitmap.CreateNew();
+                _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
                 AllowFilter(other);
             }
         }
@@ -45,7 +45,11 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public CodePointFilter(params UnicodeRange[] allowedRanges)
         {
-            _allowedCharsBitmap = AllowedCharsBitmap.CreateNew();
+            if(allowedRanges == null)
+            {
+                throw new ArgumentNullException("allowedRanges");
+            }
+            _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
             AllowRanges(allowedRanges);
         }
 
@@ -55,9 +59,9 @@ namespace System.Text.Encodings.Web
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter AllowChar(char character)
+        public CodePointFilter AllowCharacter(char character)
         {
-            _allowedCharsBitmap.AllowCharacter(character);
+            _allowedCharactersBitmap.AllowCharacter(character);
             return this;
         }
 
@@ -67,15 +71,18 @@ namespace System.Text.Encodings.Web
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter AllowChars(params char[] characters)
+        public CodePointFilter AllowCharacters(params char[] characters)
         {
-            if (characters != null)
+            if (characters == null)
             {
-                for (int i = 0; i < characters.Length; i++)
-                {
-                    _allowedCharsBitmap.AllowCharacter(characters[i]);
-                }
+                throw new ArgumentNullException("characters");
             }
+
+            for (int i = 0; i < characters.Length; i++)
+            {
+                _allowedCharactersBitmap.AllowCharacter(characters[i]);
+            }
+
             return this;
         }
 
@@ -85,11 +92,16 @@ namespace System.Text.Encodings.Web
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter AllowChars(string characters)
+        public CodePointFilter AllowCharacters(string characters)
         {
+            if (characters == null)
+            {
+                throw new ArgumentNullException("characters");
+            }
+
             for (int i = 0; i < characters.Length; i++)
             {
-                _allowedCharsBitmap.AllowCharacter(characters[i]);
+                _allowedCharactersBitmap.AllowCharacter(characters[i]);
             }
             return this;
         }
@@ -102,13 +114,18 @@ namespace System.Text.Encodings.Web
         /// </returns>
         public CodePointFilter AllowFilter(ICodePointFilter filter)
         {
+            if (filter == null)
+            {
+                throw new ArgumentNullException("filter");
+            }
+
             foreach (var allowedCodePoint in filter.GetAllowedCodePoints())
             {
                 // If the code point can't be represented as a BMP character, skip it.
                 char codePointAsChar = (char)allowedCodePoint;
                 if (allowedCodePoint == codePointAsChar)
                 {
-                    _allowedCharsBitmap.AllowCharacter(codePointAsChar);
+                    _allowedCharactersBitmap.AllowCharacter(codePointAsChar);
                 }
             }
             return this;
@@ -122,11 +139,16 @@ namespace System.Text.Encodings.Web
         /// </returns>
         public CodePointFilter AllowRange(UnicodeRange range)
         {
+            if (range == null)
+            {
+                throw new ArgumentNullException("range");
+            }
+
             int firstCodePoint = range.FirstCodePoint;
-            int rangeSize = range.RangeSize;
+            int rangeSize = range.Length;
             for (int i = 0; i < rangeSize; i++)
             {
-                _allowedCharsBitmap.AllowCharacter((char)(firstCodePoint + i));
+                _allowedCharactersBitmap.AllowCharacter((char)(firstCodePoint + i));
             }
             return this;
         }
@@ -139,13 +161,16 @@ namespace System.Text.Encodings.Web
         /// </returns>
         public CodePointFilter AllowRanges(params UnicodeRange[] ranges)
         {
-            if (ranges != null)
+            if (ranges == null)
             {
-                for (int i = 0; i < ranges.Length; i++)
-                {
-                    AllowRange(ranges[i]);
-                }
+                throw new ArgumentNullException("ranges");
             }
+
+            for (int i = 0; i < ranges.Length; i++)
+            {
+                AllowRange(ranges[i]);
+            }
+
             return this;
         }
 
@@ -157,7 +182,7 @@ namespace System.Text.Encodings.Web
         /// </returns>
         public CodePointFilter Clear()
         {
-            _allowedCharsBitmap.Clear();
+            _allowedCharactersBitmap.Clear();
             return this;
         }
 
@@ -167,9 +192,9 @@ namespace System.Text.Encodings.Web
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter ForbidChar(char character)
+        public CodePointFilter ForbidCharacter(char character)
         {
-            _allowedCharsBitmap.ForbidCharacter(character);
+            _allowedCharactersBitmap.ForbidCharacter(character);
             return this;
         }
 
@@ -179,15 +204,18 @@ namespace System.Text.Encodings.Web
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter ForbidChars(params char[] characters)
+        public CodePointFilter ForbidCharacters(params char[] characters)
         {
-            if (characters != null)
+            if (characters == null)
             {
-                for (int i = 0; i < characters.Length; i++)
-                {
-                    _allowedCharsBitmap.ForbidCharacter(characters[i]);
-                }
+                throw new ArgumentNullException("characters");
             }
+
+            for (int i = 0; i < characters.Length; i++)
+            {
+                _allowedCharactersBitmap.ForbidCharacter(characters[i]);
+            }
+
             return this;
         }
 
@@ -197,11 +225,16 @@ namespace System.Text.Encodings.Web
         /// <returns>
         /// The 'this' instance.
         /// </returns>
-        public CodePointFilter ForbidChars(string characters)
+        public CodePointFilter ForbidCharacters(string characters)
         {
+            if (characters == null)
+            {
+                throw new ArgumentNullException("characters");
+            }
+
             for (int i = 0; i < characters.Length; i++)
             {
-                _allowedCharsBitmap.ForbidCharacter(characters[i]);
+                _allowedCharactersBitmap.ForbidCharacter(characters[i]);
             }
             return this;
         }
@@ -214,11 +247,16 @@ namespace System.Text.Encodings.Web
         /// </returns>
         public CodePointFilter ForbidRange(UnicodeRange range)
         {
+            if (range == null)
+            {
+                throw new ArgumentNullException("range");
+            }
+
             int firstCodePoint = range.FirstCodePoint;
-            int rangeSize = range.RangeSize;
+            int rangeSize = range.Length;
             for (int i = 0; i < rangeSize; i++)
             {
-                _allowedCharsBitmap.ForbidCharacter((char)(firstCodePoint + i));
+                _allowedCharactersBitmap.ForbidCharacter((char)(firstCodePoint + i));
             }
             return this;
         }
@@ -231,13 +269,16 @@ namespace System.Text.Encodings.Web
         /// </returns>
         public CodePointFilter ForbidRanges(params UnicodeRange[] ranges)
         {
-            if (ranges != null)
+            if (ranges == null)
             {
-                for (int i = 0; i < ranges.Length; i++)
-                {
-                    ForbidRange(ranges[i]);
-                }
+                throw new ArgumentNullException("range");
             }
+
+            for (int i = 0; i < ranges.Length; i++)
+            {
+                ForbidRange(ranges[i]);
+            }
+
             return this;
         }
 
@@ -245,9 +286,9 @@ namespace System.Text.Encodings.Web
         /// Retrieves the bitmap of allowed characters from this filter.
         /// The returned bitmap is a clone of the original bitmap to avoid unintentional modification.
         /// </summary>
-        internal AllowedCharsBitmap GetAllowedCharsBitmap()
+        internal AllowedCharactersBitmap GetAllowedCharacters()
         {
-            return _allowedCharsBitmap.Clone();
+            return _allowedCharactersBitmap.Clone();
         }
 
         /// <summary>
@@ -257,7 +298,7 @@ namespace System.Text.Encodings.Web
         {
             for (int i = 0; i < 0x10000; i++)
             {
-                if (_allowedCharsBitmap.IsCharacterAllowed((char)i))
+                if (_allowedCharactersBitmap.IsCharacterAllowed((char)i))
                 {
                     yield return i;
                 }
@@ -269,7 +310,7 @@ namespace System.Text.Encodings.Web
         /// </summary>
         public bool IsCharacterAllowed(char character)
         {
-            return _allowedCharsBitmap.IsCharacterAllowed(character);
+            return _allowedCharactersBitmap.IsCharacterAllowed(character);
         }
 
         /// <summary>

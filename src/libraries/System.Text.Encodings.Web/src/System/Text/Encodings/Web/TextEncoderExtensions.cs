@@ -12,9 +12,13 @@ namespace System.Text.Encodings.Web
     {
         public static string Encode(this TextEncoder encoder, string value)
         {
+            if (encoder == null)
+            {
+                throw new ArgumentNullException("encoder");
+            }
             if (value == null)
             {
-                return value;
+                throw new ArgumentNullException("value");
             }
 
             unsafe
@@ -28,7 +32,7 @@ namespace System.Text.Encodings.Web
                         return value;
                     }
 
-                    int bufferSize = encoder.MaxOutputCharsPerInputChar * value.Length;
+                    int bufferSize = encoder.MaxOutputCharactersPerInputCharacter * value.Length;
                     char* wholebuffer = stackalloc char[bufferSize];
                     char* buffer = wholebuffer;
                     int totalWritten = 0;
@@ -114,8 +118,12 @@ namespace System.Text.Encodings.Web
             Encode(encoder, value, 0, value.Length, output);
         }
 
-        public static void Encode(this TextEncoder encoder, string value, int startIndex, int charCount, TextWriter output)
+        public static void Encode(this TextEncoder encoder, string value, int startIndex, int characterCount, TextWriter output)
         {
+            if (encoder == null)
+            {
+                throw new ArgumentNullException("encoder");
+            }
             if (value == null)
             {
                 throw new ArgumentNullException("value");
@@ -124,23 +132,23 @@ namespace System.Text.Encodings.Web
             {
                 throw new ArgumentNullException("output");
             }
-            ValidateRanges(startIndex, charCount, actualInputLength: value.Length);
+            ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             unsafe
             {
                 fixed (char* valuePointer = value)
                 {
                     char* substring = valuePointer + startIndex;
-                    int firstIndexToEncode = encoder.FindFirstCharacterToEncode(substring, charCount);
+                    int firstIndexToEncode = encoder.FindFirstCharacterToEncode(substring, characterCount);
 
                     if (firstIndexToEncode == -1) // nothing to encode; 
                     {
-                        if(startIndex == 0 && charCount == value.Length) // write whole string
+                        if(startIndex == 0 && characterCount == value.Length) // write whole string
                         {
                             output.Write(value);
                             return;
                         }
-                        for(int i=0; i<charCount; i++) // write substring
+                        for(int i=0; i<characterCount; i++) // write substring
                         {
                             output.Write(*substring);
                             substring++;
@@ -155,13 +163,17 @@ namespace System.Text.Encodings.Web
                         substring++;
                     }
 
-                    EncodeCore(encoder, substring, charCount - firstIndexToEncode, output);
+                    EncodeCore(encoder, substring, characterCount - firstIndexToEncode, output);
                 }
             }
         }
 
-        public static void Encode(this TextEncoder encoder, char[] value, int startIndex, int charCount, TextWriter output)
+        public static void Encode(this TextEncoder encoder, char[] value, int startIndex, int characterCount, TextWriter output)
         {
+            if(encoder == null)
+            {
+                throw new ArgumentNullException("encoder");
+            }
             if (value == null)
             {
                 throw new ArgumentNullException("value");
@@ -170,23 +182,23 @@ namespace System.Text.Encodings.Web
             {
                 throw new ArgumentNullException("output");
             }
-            ValidateRanges(startIndex, charCount, actualInputLength: value.Length);
+            ValidateRanges(startIndex, characterCount, actualInputLength: value.Length);
 
             unsafe
             {
                 fixed (char* valuePointer = value)
                 {
                     char* substring = valuePointer + startIndex;
-                    int firstIndexToEncode = encoder.FindFirstCharacterToEncode(substring, charCount);
+                    int firstIndexToEncode = encoder.FindFirstCharacterToEncode(substring, characterCount);
 
                     if (firstIndexToEncode == -1) // nothing to encode; 
                     {
-                        if (startIndex == 0 && charCount == value.Length) // write whole string
+                        if (startIndex == 0 && characterCount == value.Length) // write whole string
                         {
                             output.Write(value);
                             return;
                         }
-                        for (int i = 0; i < charCount; i++) // write substring
+                        for (int i = 0; i < characterCount; i++) // write substring
                         {
                             output.Write(*substring);
                             substring++;
@@ -201,14 +213,17 @@ namespace System.Text.Encodings.Web
                         substring++;
                     }
 
-                    EncodeCore(encoder, substring, charCount - firstIndexToEncode, output);
+                    EncodeCore(encoder, substring, characterCount - firstIndexToEncode, output);
                 }
             }
         }
 
-        private static unsafe void EncodeCore(this TextEncoder encoder, char* value, int charCount, TextWriter output)
+        private static unsafe void EncodeCore(this TextEncoder encoder, char* value, int valueLength, TextWriter output)
         {
-            int bufferLength = encoder.MaxOutputCharsPerInputChar;
+            Debug.Assert(encoder != null && value != null & output != null);
+            Debug.Assert(valueLength >= 0);
+
+            int bufferLength = encoder.MaxOutputCharactersPerInputCharacter;
             char* buffer = stackalloc char[bufferLength]; 
 
             char firstChar = *value;
@@ -218,7 +233,7 @@ namespace System.Text.Encodings.Web
 
             // this loop processes character pairs (in case they are surrogates).
             // there is an if block below to process single last character.
-            for (int secondCharIndex = 1; secondCharIndex < charCount; secondCharIndex++)
+            for (int secondCharIndex = 1; secondCharIndex < valueLength; secondCharIndex++)
             {
                 if (!wasSurrogatePair)
                 {
@@ -253,7 +268,7 @@ namespace System.Text.Encodings.Web
 
             if (!wasSurrogatePair)
             {
-                firstChar = value[charCount - 1];
+                firstChar = value[valueLength - 1];
                 int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair);
                 if (!encoder.TryEncodeUnicodeScalar(nextScalar, buffer, bufferLength, out charsWritten))
                 {
@@ -263,11 +278,13 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        internal unsafe static bool TryCopyCharacters(this char[] source, char* destination, int destinationLength, out int writtenChars)
+        internal unsafe static bool TryCopyCharacters(this char[] source, char* destination, int destinationLength, out int numberOfCharactersWritten)
         {
+            Debug.Assert(source != null && destination != null && destinationLength >= 0);
+
             if (destinationLength < source.Length)
             {
-                writtenChars = 0;
+                numberOfCharactersWritten = 0;
                 return false;
             }
 
@@ -276,38 +293,42 @@ namespace System.Text.Encodings.Web
                 destination[i] = source[i];
             }
 
-            writtenChars = source.Length;
+            numberOfCharactersWritten = source.Length;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static bool TryWriteScalarAsChar(this int unicodeScalar, char* destination, int destinationLength, out int writtenChars)
+        internal unsafe static bool TryWriteScalarAsChar(this int unicodeScalar, char* destination, int destinationLength, out int numberOfCharactersWritten)
         {
+            Debug.Assert(destination != null && destinationLength >= 0);
+
             Debug.Assert(unicodeScalar < ushort.MaxValue);
             if (destinationLength < 1)
             {
-                writtenChars = 0;
+                numberOfCharactersWritten = 0;
                 return false;
             }
             *destination = (char)unicodeScalar;
-            writtenChars = 1;
+            numberOfCharactersWritten = 1;
             return true;
         }
 
-        private static void ValidateRanges(int startIndex, int charCount, int actualInputLength)
+        private static void ValidateRanges(int startIndex, int characterCount, int actualInputLength)
         {
             if (startIndex < 0 || startIndex > actualInputLength)
             {
                 throw new ArgumentOutOfRangeException("startIndex");
             }
-            if (charCount < 0 || charCount > (actualInputLength - startIndex))
+            if (characterCount < 0 || characterCount > (actualInputLength - startIndex))
             {
-                throw new ArgumentOutOfRangeException("charCount");
+                throw new ArgumentOutOfRangeException("characterCount");
             }
         }
 
         private unsafe static void Write(this TextWriter output, char* input, int inputLength)
         {
+            Debug.Assert(output != null && input != null && inputLength >= 0);
+
             while (inputLength-- > 0)
             {
                 output.Write(*input);

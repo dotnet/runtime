@@ -26,28 +26,33 @@ namespace System.Text.Encodings.Web
 
     public sealed class DefaultHtmlEncoder : HtmlEncoder
     {
-        private AllowedCharsBitmap _allowedCharsBitmap;
+        private AllowedCharactersBitmap _allowedCharacters;
         internal readonly static DefaultHtmlEncoder Singleton = new DefaultHtmlEncoder(new CodePointFilter(UnicodeRanges.BasicLatin));
 
         public DefaultHtmlEncoder(CodePointFilter filter)
         {
-            _allowedCharsBitmap = filter.GetAllowedCharsBitmap();
+            if (filter == null)
+            {
+                throw new ArgumentNullException("filter");
+            }
+
+            _allowedCharacters = filter.GetAllowedCharacters();
 
             // Forbid codepoints which aren't mapped to characters or which are otherwise always disallowed
             // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
-            _allowedCharsBitmap.ForbidUndefinedCharacters();
+            _allowedCharacters.ForbidUndefinedCharacters();
 
-            ForbidHtmlCharacters(_allowedCharsBitmap);
+            ForbidHtmlCharacters(_allowedCharacters);
         }
 
-        internal static void ForbidHtmlCharacters(AllowedCharsBitmap allowedCharsBitmap)
+        internal static void ForbidHtmlCharacters(AllowedCharactersBitmap allowedCharacters)
         {
-            allowedCharsBitmap.ForbidCharacter('<');
-            allowedCharsBitmap.ForbidCharacter('>');
-            allowedCharsBitmap.ForbidCharacter('&');
-            allowedCharsBitmap.ForbidCharacter('\''); // can be used to escape attributes
-            allowedCharsBitmap.ForbidCharacter('\"'); // can be used to escape attributes
-            allowedCharsBitmap.ForbidCharacter('+'); // technically not HTML-specific, but can be used to perform UTF7-based attacks
+            allowedCharacters.ForbidCharacter('<');
+            allowedCharacters.ForbidCharacter('>');
+            allowedCharacters.ForbidCharacter('&');
+            allowedCharacters.ForbidCharacter('\''); // can be used to escape attributes
+            allowedCharacters.ForbidCharacter('\"'); // can be used to escape attributes
+            allowedCharacters.ForbidCharacter('+'); // technically not HTML-specific, but can be used to perform UTF7-based attacks
         }
 
         public DefaultHtmlEncoder(params UnicodeRange[] allowedRanges) : this(new CodePointFilter(allowedRanges))
@@ -57,16 +62,17 @@ namespace System.Text.Encodings.Web
         public override bool Encodes(int unicodeScalar)
         {
             if (UnicodeHelpers.IsSupplementaryCodePoint(unicodeScalar)) return true;
-            return !_allowedCharsBitmap.IsUnicodeScalarAllowed(unicodeScalar);
+            return !_allowedCharacters.IsUnicodeScalarAllowed(unicodeScalar);
         }
 
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe override int FindFirstCharacterToEncode(char* text, int charCount)
+        public unsafe override int FindFirstCharacterToEncode(char* text, int textLength)
         {
-            return AllowedCharsBitmap.FindFirstCharacterToEncode(_allowedCharsBitmap, text, charCount);
+            return _allowedCharacters.FindFirstCharacterToEncode(text, textLength);
         }
 
-        public override int MaxOutputCharsPerInputChar
+        public override int MaxOutputCharactersPerInputCharacter
         {
             get { return 8; } // "&#xFFFF;" is the longest encoded form 
         }
@@ -76,35 +82,43 @@ namespace System.Text.Encodings.Web
         static readonly char[] lessthan = "&lt;".ToCharArray();
         static readonly char[] greaterthan = "&gt;".ToCharArray();
 
-        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int length, out int writtenChars)
+        [CLSCompliant(false)]
+        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
-            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, length, out writtenChars); }
-            else if (unicodeScalar == '\"') { return quote.TryCopyCharacters(buffer, length, out writtenChars); }
-            else if (unicodeScalar == '&') { return ampersand.TryCopyCharacters(buffer, length, out writtenChars); }
-            else if (unicodeScalar == '<') { return lessthan.TryCopyCharacters(buffer, length, out writtenChars); }
-            else if (unicodeScalar == '>') { return greaterthan.TryCopyCharacters(buffer, length, out writtenChars); }
-            else { return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, length, out writtenChars); }
+            if (buffer == null)
+            {
+                throw new ArgumentNullException("buffer");
+            }
+
+            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\"') { return quote.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '&') { return ampersand.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '<') { return lessthan.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '>') { return greaterthan.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else { return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
         }
 
-        private unsafe static bool TryWriteEncodedScalarAsNumericEntity(int unicodeScalar, char* buffer, int length, out int writtenChars)
+        private unsafe static bool TryWriteEncodedScalarAsNumericEntity(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
+            Debug.Assert(buffer != null && bufferLength >= 0);
+
             // We're building the characters up in reverse
             char* chars = stackalloc char[8 /* "FFFFFFFF" */];
-            int numCharsWritten = 0;
+            int numberOfHexCharacters = 0;
             do
             {
-                Debug.Assert(numCharsWritten < 8, "Couldn't have written 8 characters out by this point.");
+                Debug.Assert(numberOfHexCharacters < 8, "Couldn't have written 8 characters out by this point.");
                 // Pop off the last nibble
-                chars[numCharsWritten++] = HexUtil.ToHexDigit(unicodeScalar & 0xF);
+                chars[numberOfHexCharacters++] = HexUtil.Int32LsbToHexDigit(unicodeScalar & 0xF);
                 unicodeScalar >>= 4;
             } while (unicodeScalar != 0);
 
-            writtenChars = numCharsWritten + 4; // four chars are &, #, x, and ;
-            Debug.Assert(numCharsWritten > 0, "At least one character should've been written.");
+            numberOfCharactersWritten = numberOfHexCharacters + 4; // four chars are &, #, x, and ;
+            Debug.Assert(numberOfHexCharacters > 0, "At least one character should've been written.");
 
-            if (numCharsWritten + 4 > length)
+            if (numberOfHexCharacters + 4 > bufferLength)
             {
-                writtenChars = 0;
+                numberOfCharactersWritten = 0;
                 return false;
             }
             // Finally, write out the HTML-encoded scalar value.
@@ -116,10 +130,10 @@ namespace System.Text.Encodings.Web
             buffer++;
             do
             {
-                *buffer = chars[--numCharsWritten];
+                *buffer = chars[--numberOfHexCharacters];
                 buffer++;
             }
-            while (numCharsWritten != 0);
+            while (numberOfHexCharacters != 0);
 
             *buffer = ';';
             return true;

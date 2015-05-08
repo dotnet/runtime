@@ -17,7 +17,7 @@ namespace Microsoft.Framework.WebEncoders
         /// <remarks>
         /// The encoded value is appropriately encoded for inclusion inside a quoted JSON string.
         /// </remarks>
-        void JavaScriptStringEncode(char[] value, int startIndex, int charCount, TextWriter output);
+        void JavaScriptStringEncode(char[] value, int startIndex, int characterCount, TextWriter output);
 
         /// <summary>
         /// JavaScript-escapes a given input string.
@@ -35,6 +35,6 @@ namespace Microsoft.Framework.WebEncoders
         /// <remarks>
         /// The encoded value is appropriately encoded for inclusion inside a quoted JSON string.
         /// </remarks>
-        void JavaScriptStringEncode(string value, int startIndex, int charCount, TextWriter output);
+        void JavaScriptStringEncode(string value, int startIndex, int characterCount, TextWriter output);
     }
 }

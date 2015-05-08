@@ -18,7 +18,7 @@ namespace Microsoft.Framework.WebEncoders
         /// The encoded value is appropriately encoded for inclusion in the segment, query, or
         /// fragment portion of a URI.
         /// </remarks>
-        void UrlEncode(char[] value, int startIndex, int charCount, TextWriter output);
+        void UrlEncode(char[] value, int startIndex, int characterCount, TextWriter output);
 
         /// <summary>
         /// URL-escapes a given input string.
@@ -39,6 +39,6 @@ namespace Microsoft.Framework.WebEncoders
         /// The encoded value is appropriately encoded for inclusion in the segment, query, or
         /// fragment portion of a URI.
         /// </remarks>
-        void UrlEncode(string value, int startIndex, int charCount, TextWriter output);
+        void UrlEncode(string value, int startIndex, int characterCount, TextWriter output);
     }
 }

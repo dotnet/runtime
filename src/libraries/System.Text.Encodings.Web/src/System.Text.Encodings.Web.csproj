@@ -18,7 +18,7 @@
   </PropertyGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
-    <Compile Include="System\Text\Encodings\Web\AllowedCharsBitmap.cs" />
+    <Compile Include="System\Text\Encodings\Web\AllowedCharactersBitmap.cs" />
     <Compile Include="System\Text\Encodings\Web\CodePointFilter.cs" />
     <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />

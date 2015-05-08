@@ -25,17 +25,17 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Writes "HtmlEncode[[value]]".
         /// </summary>
-        public void HtmlEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void HtmlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            EncodeCore(value, startIndex, charCount, output);
+            EncodeCore(value, startIndex, characterCount, output);
         }
 
         /// <summary>
         /// Writes "HtmlEncode[[value]]".
         /// </summary>
-        public void HtmlEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void HtmlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            EncodeCore(value, startIndex, charCount, output);
+            EncodeCore(value, startIndex, characterCount, output);
         }
 
         /// <summary>
@@ -49,17 +49,17 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Writes "JavaScriptStringEncode[[value]]".
         /// </summary>
-        public void JavaScriptStringEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void JavaScriptStringEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            EncodeCore(value, startIndex, charCount, output);
+            EncodeCore(value, startIndex, characterCount, output);
         }
 
         /// <summary>
         /// Writes "JavaScriptStringEncode[[value]]".
         /// </summary>
-        public void JavaScriptStringEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void JavaScriptStringEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            EncodeCore(value, startIndex, charCount, output);
+            EncodeCore(value, startIndex, characterCount, output);
         }
 
         /// <summary>
@@ -73,17 +73,17 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Writes "UrlEncode[[value]]".
         /// </summary>
-        public void UrlEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void UrlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            EncodeCore(value, startIndex, charCount, output);
+            EncodeCore(value, startIndex, characterCount, output);
         }
 
         /// <summary>
         /// Writes "UrlEncode[[value]]".
         /// </summary>
-        public void UrlEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void UrlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            EncodeCore(value, startIndex, charCount, output);
+            EncodeCore(value, startIndex, characterCount, output);
         }
 
         private static string EncodeCore(string value, [CallerMemberName] string encodeType = null)
@@ -91,14 +91,14 @@ namespace Microsoft.Framework.WebEncoders
             return String.Format(CultureInfo.InvariantCulture, "{0}[[{1}]]", encodeType, value);
         }
 
-        private static void EncodeCore(string value, int startIndex, int charCount, TextWriter output, [CallerMemberName] string encodeType = null)
+        private static void EncodeCore(string value, int startIndex, int characterCount, TextWriter output, [CallerMemberName] string encodeType = null)
         {
-            output.Write(EncodeCore(value.Substring(startIndex, charCount), encodeType));
+            output.Write(EncodeCore(value.Substring(startIndex, characterCount), encodeType));
         }
 
-        private static void EncodeCore(char[] value, int startIndex, int charCount, TextWriter output, [CallerMemberName] string encodeType = null)
+        private static void EncodeCore(char[] value, int startIndex, int characterCount, TextWriter output, [CallerMemberName] string encodeType = null)
         {
-            output.Write(EncodeCore(new string(value, startIndex, charCount), encodeType));
+            output.Write(EncodeCore(new string(value, startIndex, characterCount), encodeType));
         }
     }
 }
