@@ -7,7 +7,6 @@
  * Copyright 2002 Ximian, Inc. (www.ximian.com)
  */
 
-
 #ifndef __MONO_MUTEX_H__
 #define __MONO_MUTEX_H__
 
@@ -81,7 +80,7 @@ mono_mutex_init_recursive (mono_mutex_t *mutex)
 #else
 
 typedef CRITICAL_SECTION mono_mutex_t;
-typedef HANDLE mono_cond_t;
+typedef CONDITION_VARIABLE mono_cond_t;
 
 #define mono_mutex_init(mutex) (InitializeCriticalSection((mutex)), 0)
 #define mono_mutex_init_recursive(mutex) (InitializeCriticalSection((mutex)), 0)
@@ -90,22 +89,47 @@ typedef HANDLE mono_cond_t;
 #define mono_mutex_unlock(mutex)  LeaveCriticalSection((mutex))
 #define mono_mutex_destroy(mutex) DeleteCriticalSection((mutex))
 
-
-#define mono_cond_init(cond,attr) do{*(cond) = CreateEvent(NULL,FALSE,FALSE,NULL); } while (0)
-
-static inline int mono_cond_timedwait(mono_cond_t *cond, mono_mutex_t *mutex, DWORD timeout)
+static inline int
+mono_cond_init (mono_cond_t *cond, int attr)
 {
-	DWORD wait_result;
-	mono_mutex_unlock(mutex);
-	wait_result = WaitForSingleObject(*cond, timeout);
-	mono_mutex_lock(mutex);
-	return wait_result != WAIT_OBJECT_0;
+	InitializeConditionVariable (cond);
 }
 
-#define mono_cond_wait(cond,mutex) mono_cond_timedwait(cond, mutex, INFINITE)
-#define mono_cond_signal(cond) SetEvent(*(cond))
-#define mono_cond_broadcast(cond) (!SetEvent(*(cond)))
-#define mono_cond_destroy(cond) CloseHandle(*(cond))
+static inline int
+mono_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, DWORD timeout)
+{
+	BOOL res;
+
+	res = SleepConditionVariableCS (cond, mutex, timeout);
+	if (res)
+		/* Success */
+		return 0;
+	else
+		return 1;
+}
+
+static inline int
+mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
+{
+	return mono_cond_timedwait (cond, mutex, INFINITE);
+}
+
+static inline int
+mono_cond_signal (mono_cond_t *cond)
+{
+	WakeConditionVariable (cond);
+}
+
+static inline int
+mono_cond_broadcast (mono_cond_t *cond)
+{
+	WakeAllConditionVariable (cond);
+}
+
+static inline int
+mono_cond_destroy (mono_cond_t *cond)
+{
+}
 
 #endif
 
