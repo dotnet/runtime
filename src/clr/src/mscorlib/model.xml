@@ -3526,7 +3526,7 @@
       <Member Name="EndInvoke(System.IAsyncResult)" />
       <Member Name="Invoke(T)" />
     </Type>
-    <Type Name="System.Progress&lt;T&gt;" Condition="FEATURE_COMINTEROP">
+    <Type Name="System.Progress&lt;T&gt;">
       <Member Name="#ctor" />
       <Member Name="#ctor(System.Action&lt;T&gt;)" />
       <Member MemberType="Event" Name="ProgressChanged" />
