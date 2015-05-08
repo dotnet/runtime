@@ -64,7 +64,8 @@ using namespace CorUnix;
 /* ------------------- Definitions ------------------------------*/
 SET_DEFAULT_DEBUG_CHANNEL(THREAD);
 
-/* code used by ResumeThread to wake up a thread using its blocking pipe. */
+/* This code is written to the blocking pipe of a thread that was created
+   in suspended state in order to resume it. */
 CONST BYTE WAKEUPCODE=0x2A;
 
 // #define USE_GLOBAL_LOCK_FOR_SUSPENSION // Uncomment this define to use the global suspension lock. 
@@ -165,6 +166,68 @@ CorUnix::InternalSuspendThread(
     {
         pobjThread->ReleaseReference(pthrSuspender);
     }
+
+    return palError;
+}
+
+/*++
+Function:
+  InternalSuspendNewThreadFromData
+
+  On platforms where we use pipes for starting threads suspended, this
+  function sets the blocking pipe for the thread and blocks until the
+  wakeup code is written to the pipe by ResumeThread.
+
+  On platforms where we don't use pipes for starting threads suspended,
+  this function falls back on InternalSuspendThreadFromData to perform
+  the suspension.
+--*/
+PAL_ERROR
+CThreadSuspensionInfo::InternalSuspendNewThreadFromData(
+    CPalThread *pThread
+    )
+{
+    PAL_ERROR palError = NO_ERROR;
+
+    AcquireSuspensionLock(pThread);
+    pThread->suspensionInfo.SetSelfSusp(TRUE);
+    pThread->suspensionInfo.IncrSuspCount();
+    ReleaseSuspensionLock(pThread);
+
+    int pipe_descs[2];
+    if (pipe(pipe_descs) == -1)
+    {
+        ERROR("pipe() failed! error is %d (%s)\n", errno, strerror(errno));
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+
+    // [0] is the read end of the pipe, and [1] is the write end.
+    pThread->suspensionInfo.SetBlockingPipe(pipe_descs[1]);
+    pThread->SetStartStatus(TRUE);
+
+    BYTE resume_code = 0;
+    ssize_t read_ret;
+    
+    // Block until ResumeThread writes something to the pipe
+    while ((read_ret = read(pipe_descs[0], &resume_code, sizeof(resume_code))) != sizeof(resume_code))
+    {
+        if (read_ret != -1 || EINTR != errno)
+        {
+            // read might return 0 (with EAGAIN) if the other end of the pipe gets closed
+            palError = ERROR_INTERNAL_ERROR;
+            break;
+        }
+    }
+
+    if (palError == NO_ERROR && resume_code != WAKEUPCODE)
+    {
+        // If we did read successfully but the byte didn't match WAKEUPCODE, we treat it as a failure.
+        palError = ERROR_INTERNAL_ERROR;
+    }
+
+    // Close the pipes regardless of whether we were successful.
+    close(pipe_descs[0]);
+    close(pipe_descs[1]);
 
     return palError;
 }
@@ -563,55 +626,57 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
         goto InternalResumeThreadFromDataExit;
     }
 
-    // If this is a dummy thread, then it represents a process that was created with CREATE_SUSPENDED.
-    if (pthrTarget->IsDummy())
+    // If this is a dummy thread, then it represents a process that was created with CREATE_SUSPENDED
+    // and it should have a blocking pipe set. If GetBlockingPipe returns -1 for a dummy thread, then
+    // something is wrong - either CREATE_SUSPENDED wasn't used or the process was already resumed.
+    if (pthrTarget->IsDummy() && -1 == pthrTarget->suspensionInfo.GetBlockingPipe())
     {
-        // GetBlockingPipe may return -1 due to an application error; either CREATE_SUSPENDED wasn't used or the 
-        // process was already resumed.
-        if (-1 == pthrTarget->suspensionInfo.GetBlockingPipe())
-        {
-            palError = ERROR_INVALID_HANDLE;
-            ERROR("Tried to wake up dummy thread without a blocking pipe.\n");
-            ReleaseSuspensionLocks(pthrResumer, pthrTarget);
-            goto InternalResumeThreadFromDataExit;            
-        }
-        else
-        {
-            // If write() is interrupted by a signal before writing data, 
-            // it returns -1 and sets errno to EINTR. In this case, we
-            // attempt the write() again.
-            writeAgain:
-            nWrittenBytes = write(pthrTarget->suspensionInfo.GetBlockingPipe(), &WAKEUPCODE, sizeof(WAKEUPCODE));
+        palError = ERROR_INVALID_HANDLE;
+        ERROR("Tried to wake up dummy thread without a blocking pipe.\n");
+        ReleaseSuspensionLocks(pthrResumer, pthrTarget);
+        goto InternalResumeThreadFromDataExit;            
+    }
 
-            // The size of WAKEUPCODE is 1 byte. If write returns 0, we'll treat it as an error.
-            if (sizeof(WAKEUPCODE) != nWrittenBytes)
+    dwPrevSuspendCount = pthrTarget->suspensionInfo.GetSuspCount();
+
+    // If there is a blocking pipe on this thread, resume it by writing the wake up code to that pipe.
+    if (-1 != pthrTarget->suspensionInfo.GetBlockingPipe())
+    {
+        // If write() is interrupted by a signal before writing data, 
+        // it returns -1 and sets errno to EINTR. In this case, we
+        // attempt the write() again.
+        writeAgain:
+        nWrittenBytes = write(pthrTarget->suspensionInfo.GetBlockingPipe(), &WAKEUPCODE, sizeof(WAKEUPCODE));
+
+        // The size of WAKEUPCODE is 1 byte. If write returns 0, we'll treat it as an error.
+        if (sizeof(WAKEUPCODE) != nWrittenBytes)
+        {
+            // If we are here during process creation, this is most likely caused by the target 
+            // process dying before reaching this point and thus breaking the pipe.
+            if (nWrittenBytes == -1 && EPIPE == errno)
             {
-                // Most likely caused by the target process dying before reaching this point, thus breaking the pipe.
-                if (nWrittenBytes == -1 && EPIPE == errno)
-                {
-                    palError = ERROR_INVALID_HANDLE;
-                    ReleaseSuspensionLocks(pthrResumer, pthrTarget);
-                    ERROR("Write failed with EPIPE\n");                    
-                    goto InternalResumeThreadFromDataExit;                        
-                }
-                else if (nWrittenBytes == 0 || (nWrittenBytes == -1 && EINTR == errno))
-                {
-                    TRACE("write() failed with EINTR; re-attempting write\n");
-                    goto writeAgain;
-                }
-                else
-                {
-                    // Some other error occurred; need to release suspension mutexes before leaving ResumeThread.
-                    palError = ERROR_INTERNAL_ERROR;
-                    ReleaseSuspensionLocks(pthrResumer, pthrTarget);
-                    ASSERT("Write() failed; error is %d (%s)\n", errno, strerror(errno));
-                    goto InternalResumeThreadFromDataExit;
-                }
+                palError = ERROR_INVALID_HANDLE;
+                ReleaseSuspensionLocks(pthrResumer, pthrTarget);
+                ERROR("Write failed with EPIPE\n");
+                goto InternalResumeThreadFromDataExit;
             }
-            // Finished using pipe so close it.
-            close(pthrTarget->suspensionInfo.GetBlockingPipe());
-            pthrTarget->suspensionInfo.SetBlockingPipe(-1);
+            else if (nWrittenBytes == 0 || (nWrittenBytes == -1 && EINTR == errno))
+            {
+                TRACE("write() failed with EINTR; re-attempting write\n");
+                goto writeAgain;
+            }
+            else
+            {
+                // Some other error occurred; need to release suspension mutexes before leaving ResumeThread.
+                palError = ERROR_INTERNAL_ERROR;
+                ReleaseSuspensionLocks(pthrResumer, pthrTarget);
+                ASSERT("Write() failed; error is %d (%s)\n", errno, strerror(errno));
+                goto InternalResumeThreadFromDataExit;
+            }
         }
+
+        // Reset blocking pipe to -1 since we're done using it.
+        pthrTarget->suspensionInfo.SetBlockingPipe(-1);
         
         ReleaseSuspensionLocks(pthrResumer, pthrTarget);
         goto InternalResumeThreadFromDataExit;
@@ -627,8 +692,7 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
         goto InternalResumeThreadFromDataExit;
     }
 
-    // Notice that the suspension count is decremented after assigning it to dwSuspendCount.
-    dwPrevSuspendCount = pthrTarget->suspensionInfo.GetSuspCount();
+    // Notice that the suspension count is decremented after setting dwPrevSuspendCount above.
     pthrTarget->suspensionInfo.DecrSuspCount();
 
 #ifdef _DEBUG
