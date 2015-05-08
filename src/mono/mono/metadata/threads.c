@@ -4063,7 +4063,6 @@ static MonoClassField *local_slots = NULL;
 typedef struct {
 	/* local tls data to get locals_slot from a thread */
 	guint32 offset;
-	int idx;
 	/* index in the locals_slot array */
 	int slot;
 } LocalSlotID;
@@ -4080,9 +4079,13 @@ clear_local_slot (gpointer key, gpointer value, gpointer user_data)
 	 * for the current thread.
 	 */
 	/*g_print ("handling thread %p\n", thread);*/
-	if (!thread->static_data || !thread->static_data [sid->idx])
+
+	int idx = ACCESS_SPECIAL_STATIC_OFFSET (sid->offset, index);
+	int off = ACCESS_SPECIAL_STATIC_OFFSET (sid->offset, offset);
+
+	if (!thread->static_data || !thread->static_data [idx])
 		return;
-	slots_array = *(MonoArray **)(((char*) thread->static_data [sid->idx]) + (sid->offset & 0xffffff));
+	slots_array = *(MonoArray **)(((char*) thread->static_data [idx]) + off);
 	if (!slots_array || sid->slot >= mono_array_length (slots_array))
 		return;
 	mono_array_set (slots_array, MonoObject*, sid->slot, NULL);
@@ -4112,8 +4115,6 @@ mono_thread_free_local_slot_values (int slot, MonoBoolean thread_local)
 			return;
 		/*g_print ("freeing slot %d at %p\n", slot, addr);*/
 		sid.offset = GPOINTER_TO_UINT (addr);
-		sid.offset &= 0x7fffffff;
-		sid.idx = (sid.offset >> 24) - 1;
 		mono_threads_lock ();
 		mono_g_hash_table_foreach (threads, clear_local_slot, &sid);
 		mono_threads_unlock ();
