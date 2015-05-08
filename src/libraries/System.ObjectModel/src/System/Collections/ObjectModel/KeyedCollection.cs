@@ -124,12 +124,8 @@ namespace System.Collections.ObjectModel
 
             if (_dict != null)
             {
-                if (_dict.ContainsKey(key))
-                {
-                    return Remove(_dict[key]);
-                }
-
-                return false;
+                TItem item;
+                return _dict.TryGetValue(key, out item) && Remove(item);
             }
 
             if (key != null)

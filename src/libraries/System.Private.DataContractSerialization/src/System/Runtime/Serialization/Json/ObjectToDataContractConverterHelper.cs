@@ -47,9 +47,10 @@ namespace System.Runtime.Serialization.Json
                 return dto.ToOffset(new TimeSpan(0, (int)deserialzedValue["OffsetMinutes"], 0));
             }
 
-            if (deserialzedValue.ContainsKey(JsonGlobals.ServerTypeString))
+            object serverTypeStringValue;
+            if (deserialzedValue.TryGetValue(JsonGlobals.ServerTypeString, out serverTypeStringValue))
             {
-                dataContract = ResolveDataContractFromTypeInformation(deserialzedValue[JsonGlobals.ServerTypeString].ToString(), dataContract, context);
+                dataContract = ResolveDataContractFromTypeInformation(serverTypeStringValue.ToString(), dataContract, context);
             }
 
             object o = CreateInstance(dataContract);
@@ -270,10 +271,11 @@ namespace System.Runtime.Serialization.Json
         {
             System.Diagnostics.Debug.Assert(obj is IDictionary, "obj is IDictionary");
             Dictionary<string, object> dictOfStringObject = obj as Dictionary<string, object>;
-            if (dictOfStringObject.ContainsKey(JsonGlobals.ServerTypeString))
+            object serverTypeStringValue;
+            if (dictOfStringObject.TryGetValue(JsonGlobals.ServerTypeString, out serverTypeStringValue))
             {
                 return ConvertDictionaryToClassDataContract(serializer,
-                    ResolveDataContractFromTypeInformation(dictOfStringObject[JsonGlobals.ServerTypeString].ToString(), null, context),
+                    ResolveDataContractFromTypeInformation(serverTypeStringValue.ToString(), null, context),
                     dictOfStringObject, context);
             }
             else if (dictOfStringObject.ContainsKey("DateTime") && dictOfStringObject.ContainsKey("OffsetMinutes"))
