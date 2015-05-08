@@ -581,7 +581,9 @@ void ZapWriter::SaveSections()
         header.VirtualAddress = VAL32(pPhysicalSection->GetRVA());
 
         header.SizeOfRawData = VAL32(AlignUp(pPhysicalSection->m_dwSizeOfRawData, m_FileAlignment));
-        header.PointerToRawData = VAL32(pPhysicalSection->m_dwFilePos);
+
+        if (header.SizeOfRawData != 0)
+            header.PointerToRawData = VAL32(pPhysicalSection->m_dwFilePos);
 
         header.Characteristics = VAL32(pPhysicalSection->m_dwCharacteristics);
 
