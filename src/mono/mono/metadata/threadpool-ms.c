@@ -558,13 +558,15 @@ worker_park (void)
 
 	mono_mutex_lock (&threadpool->active_threads_lock);
 
-	g_ptr_array_add (threadpool->parked_threads, &cond);
-	g_ptr_array_remove_fast (threadpool->working_threads, thread);
+	if (!mono_runtime_is_shutting_down ()) {
+		g_ptr_array_add (threadpool->parked_threads, &cond);
+		g_ptr_array_remove_fast (threadpool->working_threads, thread);
 
-	mono_cond_wait (&cond, &threadpool->active_threads_lock);
+		mono_cond_wait (&cond, &threadpool->active_threads_lock);
 
-	g_ptr_array_add (threadpool->working_threads, thread);
-	g_ptr_array_remove (threadpool->parked_threads, &cond);
+		g_ptr_array_add (threadpool->working_threads, thread);
+		g_ptr_array_remove (threadpool->parked_threads, &cond);
+	}
 
 	mono_mutex_unlock (&threadpool->active_threads_lock);
 
@@ -605,11 +607,6 @@ worker_kill (ThreadPoolWorkingThread *thread)
 		return;
 
 	mono_thread_internal_stop ((MonoInternalThread*) thread);
-
-	COUNTER_ATOMIC (counter, {
-		counter._.active --;
-		counter._.working --;
-	});
 }
 
 static void
