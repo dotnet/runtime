@@ -194,15 +194,6 @@ namespace System.Linq.Tests
             Assert.Equal(-10, minusTen.Max());
             Assert.Equal(1000, thousand.Max());
         }
-
-        [Fact]
-        public void Range()
-        {
-            var array = Enumerable.Range(1, 100).ToArray();
-            Assert.Equal(array.Length, 100);
-            for (var i = 0; i < array.Length; i++)
-                Assert.Equal(array[i], i + 1);
-        }
     }
 }
 
