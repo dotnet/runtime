@@ -166,7 +166,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_SIGNAL_STACK_SIZE (12 * 1024)
 #endif /* HAVE_WORKING_SIGALTSTACK */
 
-#define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 #define MONO_ARCH_IMT_REG ppc_r11
 
 #define MONO_ARCH_VTABLE_REG	ppc_r11

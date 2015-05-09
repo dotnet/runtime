@@ -4005,12 +4005,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				 */
 				return mono_get_addr_from_ftnptr ((gpointer)mono_icall_get_wrapper_full (mi, TRUE));
 			} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 				return mono_create_delegate_trampoline (target_domain, method->klass);
-#else
-				nm = mono_marshal_get_delegate_invoke (method, NULL);
-				return mono_get_addr_from_ftnptr (mono_compile_method (nm));
-#endif
 			} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 				nm = mono_marshal_get_delegate_begin_invoke (method);
 				return mono_get_addr_from_ftnptr (mono_compile_method (nm));

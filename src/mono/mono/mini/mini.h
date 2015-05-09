@@ -2959,12 +2959,6 @@ void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler) ;
 gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 
-#ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
-#define ARCH_HAVE_DELEGATE_TRAMPOLINES 1
-#else
-#define ARCH_HAVE_DELEGATE_TRAMPOLINES 0
-#endif
-
 #ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
 #define ARCH_HAVE_OP_TAIL_CALL 1
 #else
