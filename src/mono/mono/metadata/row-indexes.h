@@ -308,6 +308,19 @@ enum {
 	MONO_GENPARCONSTRAINT_SIZE
 };
 
+enum {
+	MONO_DOCUMENT_NAME,
+	MONO_DOCUMENT_HASHALG,
+	MONO_DOCUMENT_HASH,
+	MONO_DOCUMENT_LANGUAGE,
+	MONO_DOCUMENT_SIZE
+};
+
+enum {
+	MONO_METHODBODY_SEQ_POINTS,
+	MONO_METHODBODY_SIZE
+};
+
 /*
  * Coded Tokens
  * The _BITS entry is for the bits used in the token.

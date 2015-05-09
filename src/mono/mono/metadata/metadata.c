@@ -368,7 +368,18 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_TDOR_IDX,   /* "Constraint" }, */
 	MONO_MT_END,
 
-#define NULL_SCHEMA_OFFSET GEN_CONSTRAINT_SCHEMA_OFFSET + 3
+#define DOCUMENT_SCHEMA_OFFSET GEN_CONSTRAINT_SCHEMA_OFFSET + 3
+	MONO_MT_BLOB_IDX,   /* Name */
+	MONO_MT_GUID_IDX,   /* HashAlgorithm */
+	MONO_MT_BLOB_IDX,   /* Hash */
+	MONO_MT_GUID_IDX,   /* Language */
+	MONO_MT_END,
+
+#define METHODBODY_SCHEMA_OFFSET DOCUMENT_SCHEMA_OFFSET + 5
+	MONO_MT_BLOB_IDX,   /* SequencePoints */
+	MONO_MT_END,
+
+#define NULL_SCHEMA_OFFSET METHODBODY_SCHEMA_OFFSET + 2
 	MONO_MT_END
 };
 
@@ -419,7 +430,12 @@ table_description [] = {
 	NESTED_CLASS_SCHEMA_OFFSET,
 	GENPARAM_SCHEMA_OFFSET, /* 0x2a */
 	METHOD_SPEC_SCHEMA_OFFSET,
-	GEN_CONSTRAINT_SCHEMA_OFFSET
+	GEN_CONSTRAINT_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	NULL_SCHEMA_OFFSET,
+	DOCUMENT_SCHEMA_OFFSET, /* 0x30 */
+	METHODBODY_SCHEMA_OFFSET
 };
 
 #ifdef HAVE_ARRAY_ELEM_INIT
@@ -482,8 +498,8 @@ finite maps tag{ t0, ..tn-1} is defined below. Note that to decode a physical ro
 inverse of this mapping.
 
  */
-#define rtsize(s,b) (((s) < (1 << (b)) ? 2 : 4))
-#define idx_size(tableidx) (meta->tables [(tableidx)].rows < 65536 ? 2 : 4)
+#define rtsize(meta,s,b) (((s) < (1 << (b)) ? 2 : 4))
+#define idx_size(meta,tableidx) ((meta)->tables [(tableidx)].rows < 65536 ? 2 : 4)
 
 /* Reference: Partition II - 23.2.6 */
 /*
@@ -536,80 +552,80 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			switch (tableindex) {
 			case MONO_TABLE_ASSEMBLYREFOS:
 				g_assert (i == 3);
-				field_size = idx_size (MONO_TABLE_ASSEMBLYREF); break;
+				field_size = idx_size (meta, MONO_TABLE_ASSEMBLYREF); break;
 			case MONO_TABLE_ASSEMBLYREFPROCESSOR:
 				g_assert (i == 1);
-				field_size = idx_size (MONO_TABLE_ASSEMBLYREF); break;
+				field_size = idx_size (meta, MONO_TABLE_ASSEMBLYREF); break;
 			case MONO_TABLE_CLASSLAYOUT:
 				g_assert (i == 2);
-				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+				field_size = idx_size (meta, MONO_TABLE_TYPEDEF); break;
 			case MONO_TABLE_EVENTMAP:
 				g_assert (i == 0 || i == 1);
-				field_size = i ? idx_size (MONO_TABLE_EVENT):
-					idx_size(MONO_TABLE_TYPEDEF); 
+				field_size = i ? idx_size (meta, MONO_TABLE_EVENT):
+					idx_size (meta, MONO_TABLE_TYPEDEF);
 				break;
 			case MONO_TABLE_EVENT_POINTER:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_EVENT); break;
+				field_size = idx_size (meta, MONO_TABLE_EVENT); break;
 			case MONO_TABLE_EXPORTEDTYPE:
 				g_assert (i == 1);
 				/* the index is in another metadata file, so it must be 4 */
 				field_size = 4; break;
 			case MONO_TABLE_FIELDLAYOUT:
 				g_assert (i == 1);
-				field_size = idx_size (MONO_TABLE_FIELD); break;
+				field_size = idx_size (meta, MONO_TABLE_FIELD); break;
 			case MONO_TABLE_FIELDRVA:
 				g_assert (i == 1);
-				field_size = idx_size (MONO_TABLE_FIELD); break;
+				field_size = idx_size (meta, MONO_TABLE_FIELD); break;
 			case MONO_TABLE_FIELD_POINTER:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_FIELD); break;
+				field_size = idx_size (meta, MONO_TABLE_FIELD); break;
 			case MONO_TABLE_IMPLMAP:
 				g_assert (i == 3);
-				field_size = idx_size (MONO_TABLE_MODULEREF); break;
+				field_size = idx_size (meta, MONO_TABLE_MODULEREF); break;
 			case MONO_TABLE_INTERFACEIMPL:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+				field_size = idx_size (meta, MONO_TABLE_TYPEDEF); break;
 			case MONO_TABLE_METHOD:
 				g_assert (i == 5);
-				field_size = idx_size (MONO_TABLE_PARAM); break;
+				field_size = idx_size (meta, MONO_TABLE_PARAM); break;
 			case MONO_TABLE_METHODIMPL:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+				field_size = idx_size (meta, MONO_TABLE_TYPEDEF); break;
 			case MONO_TABLE_METHODSEMANTICS:
 				g_assert (i == 1);
-				field_size = idx_size (MONO_TABLE_METHOD); break;
+				field_size = idx_size (meta, MONO_TABLE_METHOD); break;
 			case MONO_TABLE_METHOD_POINTER:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_METHOD); break;
+				field_size = idx_size (meta, MONO_TABLE_METHOD); break;
 			case MONO_TABLE_NESTEDCLASS:
 				g_assert (i == 0 || i == 1);
-				field_size = idx_size (MONO_TABLE_TYPEDEF); break;
+				field_size = idx_size (meta, MONO_TABLE_TYPEDEF); break;
 			case MONO_TABLE_PARAM_POINTER:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_PARAM); break;
+				field_size = idx_size (meta, MONO_TABLE_PARAM); break;
 			case MONO_TABLE_PROPERTYMAP:
 				g_assert (i == 0 || i == 1);
-				field_size = i ? idx_size (MONO_TABLE_PROPERTY):
-					idx_size(MONO_TABLE_TYPEDEF); 
+				field_size = i ? idx_size (meta, MONO_TABLE_PROPERTY):
+					idx_size (meta, MONO_TABLE_TYPEDEF);
 				break;
 			case MONO_TABLE_PROPERTY_POINTER:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_PROPERTY); break;
+				field_size = idx_size (meta, MONO_TABLE_PROPERTY); break;
 			case MONO_TABLE_TYPEDEF:
 				g_assert (i == 4 || i == 5);
-				field_size = i == 4 ? idx_size (MONO_TABLE_FIELD):
-					idx_size(MONO_TABLE_METHOD);
+				field_size = i == 4 ? idx_size (meta, MONO_TABLE_FIELD):
+					idx_size (meta, MONO_TABLE_METHOD);
 				break;
 			case MONO_TABLE_GENERICPARAM:
 				g_assert (i == 2);
 				n = MAX (meta->tables [MONO_TABLE_METHOD].rows, meta->tables [MONO_TABLE_TYPEDEF].rows);
 				/*This is a coded token for 2 tables, so takes 1 bit */
-				field_size = rtsize (n, 16 - MONO_TYPEORMETHOD_BITS);
+				field_size = rtsize (meta, n, 16 - MONO_TYPEORMETHOD_BITS);
 				break;
 			case MONO_TABLE_GENERICPARAMCONSTRAINT:
 				g_assert (i == 0);
-				field_size = idx_size (MONO_TABLE_GENERICPARAM);
+				field_size = idx_size (meta, MONO_TABLE_GENERICPARAM);
 				break;
 				
 			default:
@@ -626,7 +642,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_PROPERTY].rows);
 
 			/* 2 bits to encode tag */
-			field_size = rtsize (n, 16-2);
+			field_size = rtsize (meta, n, 16-2);
 			break;
 
 			/*
@@ -666,7 +682,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_MANIFESTRESOURCE].rows);
 
 			/* 5 bits to encode */
-			field_size = rtsize (n, 16-5);
+			field_size = rtsize (meta, n, 16-5);
 			break;
 
 			/*
@@ -687,7 +703,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_MEMBERREF].rows);
 
 			/* 3 bits to encode */
-			field_size = rtsize (n, 16-3);
+			field_size = rtsize (meta, n, 16-3);
 			break;
 
 			/*
@@ -699,7 +715,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_ASSEMBLY].rows);
 
 			/* 2 bits to encode */
-			field_size = rtsize (n, 16-2);
+			field_size = rtsize (meta, n, 16-2);
 			break;
 
 			/*
@@ -711,7 +727,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_EXPORTEDTYPE].rows);
 
 			/* 2 bits to encode tag */
-			field_size = rtsize (n, 16-2);
+			field_size = rtsize (meta, n, 16-2);
 			break;
 
 			/*
@@ -722,7 +738,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				 meta->tables [MONO_TABLE_PARAM].rows);
 
 			/* 1 bit used to encode tag */
-			field_size = rtsize (n, 16-1);
+			field_size = rtsize (meta, n, 16-1);
 			break;
 
 			/*
@@ -733,7 +749,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				 meta->tables [MONO_TABLE_METHOD].rows);
 
 			/* 1 bit used to encode tag */
-			field_size = rtsize (n, 16-1);
+			field_size = rtsize (meta, n, 16-1);
 			break;
 
 			/*
@@ -747,7 +763,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
 
 			/* 2 bits to encode */
-			field_size = rtsize (n, 16-2);
+			field_size = rtsize (meta, n, 16-2);
 			break;
 
 			/*
@@ -761,7 +777,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_TYPESPEC].rows);
 
 			/* 3 bits to encode */
-			field_size = rtsize (n, 16 - 3);
+			field_size = rtsize (meta, n, 16 - 3);
 			break;
 			
 			/*
@@ -772,7 +788,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				 meta->tables [MONO_TABLE_MEMBERREF].rows);
 
 			/* 1 bit used to encode tag */
-			field_size = rtsize (n, 16-1);
+			field_size = rtsize (meta, n, 16-1);
 			break;
 			
 			/*
@@ -783,7 +799,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				 meta->tables [MONO_TABLE_EVENT].rows);
 
 			/* 1 bit used to encode tag */
-			field_size = rtsize (n, 16-1);
+			field_size = rtsize (meta, n, 16-1);
 			break;
 
 			/*
@@ -796,7 +812,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			n = MAX (n, meta->tables [MONO_TABLE_TYPEREF].rows);
 
 			/* 2 bits used to encode tag (ECMA spec claims 3) */
-			field_size = rtsize (n, 16 - 2);
+			field_size = rtsize (meta, n, 16 - 2);
 			break;
 		}
 
