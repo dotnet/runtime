@@ -642,7 +642,7 @@ namespace System {
             startPos += 4;
             currentPos = startPos;
 
-            if (!StringToLong(guidString, ref currentPos, startPos /*flags*/, out templ, ref result))
+            if (!StringToLong(guidString, ref currentPos, ParseNumbers.NoSpace, out templ, ref result))
                 return false;
 
             if (currentPos - startPos!=12) {
