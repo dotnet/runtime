@@ -78,7 +78,7 @@ namespace System.Collections.Immutable
         /// Adds the specified value to this list.
         /// </summary>
         /// <param name="value">The value to add.</param>
-        /// <returns>A new list with the element added, or this list if the element is already in this list.</returns>
+        /// <returns>A new list with the element added.</returns>
         [Pure]
         IImmutableList<T> Add(T value);
 
