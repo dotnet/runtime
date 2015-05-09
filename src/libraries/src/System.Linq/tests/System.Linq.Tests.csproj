@@ -29,6 +29,7 @@
     <Compile Include="Performance\SkipTakePerf.cs" />
     <Compile Include="Performance\WhereSelectPerf.cs" />
     <Compile Include="Performance\ToArrayToListToDictionaryPerf.cs" />
+    <Compile Include="RangeRepeatTests.cs" />
     <Compile Include="WhereTests.cs" />
   </ItemGroup>
   <ItemGroup>
