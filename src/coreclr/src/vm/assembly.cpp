@@ -300,10 +300,13 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 #endif // FEATURE_TRACELOGGING
 
 
-    // Check for the special System.Numerics.Vectors assembly.
-    // If we encounter a non-trusted assembly by this name, we will simply not recognize any of its
+    // Check for the assemblies that contain SIMD Vector types.
+    // If we encounter a non-trusted assembly with these names, we will simply not recognize any of its
     // methods as intrinsics.
-    if (!strcmp(GetSimpleName(), "System.Numerics.Vectors"))
+    LPCUTF8 assemblyName = GetSimpleName();
+    int length = sizeof("System.Numerics") - 1;
+    if ((strncmp(assemblyName, "System.Numerics", length) == 0) &&
+        ((assemblyName[length] == '\0') || (strcmp(assemblyName+length, ".Vectors") == 0)))
     {
         m_fIsSIMDVectorAssembly = true;
     }
