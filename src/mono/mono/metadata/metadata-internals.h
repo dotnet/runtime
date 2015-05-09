@@ -159,6 +159,9 @@ struct _MonoImage {
 	/* Whenever this image contains uncompressed metadata */
 	guint8 uncompressed_metadata : 1;
 
+	/* Whenever this image contains metadata only without PE data */
+	guint8 metadata_only : 1;
+
 	guint8 checked_module_cctor : 1;
 	guint8 has_module_cctor : 1;
 
@@ -796,6 +799,8 @@ gboolean mono_image_load_cli_data (MonoImage *image);
 void mono_image_load_names (MonoImage *image);
 
 MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status);
+
+MonoImage *mono_image_open_metadata_only (const char *fname, MonoImageOpenStatus *status);
 
 MonoException *mono_get_exception_field_access_msg (const char *msg);
 

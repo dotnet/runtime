@@ -118,7 +118,10 @@ mono_cli_rva_image_map (MonoImage *image, guint32 addr)
 	const int top = iinfo->cli_section_count;
 	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
-	
+
+	if (image->metadata_only)
+		return addr;
+
 	for (i = 0; i < top; i++){
 		if ((addr >= tables->st_virtual_address) &&
 		    (addr < tables->st_virtual_address + tables->st_raw_data_size)){
@@ -495,7 +498,7 @@ load_tables (MonoImage *image)
 			continue;
 		}
 		if (table > MONO_TABLE_LAST) {
-			g_warning("bits in valid must be zero above 0x2d (II - 23.1.6)");
+			g_warning("bits in valid must be zero above 0x37 (II - 23.1.6)");
 		} else {
 			image->tables [table].rows = read32 (rows);
 		}
@@ -949,12 +952,14 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (care_about_pecoff == FALSE)
 		goto done;
 
-	if (!mono_verifier_verify_pe_data (image, &errors))
-		goto invalid_image;
+	if (!image->metadata_only) {
+		if (!mono_verifier_verify_pe_data (image, &errors))
+			goto invalid_image;
 
-	if (!mono_image_load_pe_data (image))
-		goto invalid_image;
-	
+		if (!mono_image_load_pe_data (image))
+			goto invalid_image;
+	}
+
 	if (care_about_cli == FALSE) {
 		goto done;
 	}
@@ -992,7 +997,7 @@ invalid_image:
 
 static MonoImage *
 do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
-		    gboolean care_about_cli, gboolean care_about_pecoff, gboolean refonly)
+					gboolean care_about_cli, gboolean care_about_pecoff, gboolean refonly, gboolean metadata_only)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1035,6 +1040,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->image_info = iinfo;
 	image->name = mono_path_resolve_symlinks (fname);
 	image->ref_only = refonly;
+	image->metadata_only = metadata_only;
 	image->ref_count = 1;
 	/* if MONO_SECURITY_MODE_CORE_CLR is set then determine if this image is platform code */
 	image->core_clr_platform_code = mono_security_core_clr_determine_platform_image (image);
@@ -1306,7 +1312,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	}
 	mono_images_unlock ();
 
-	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly);
+	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly, FALSE);
 	if (image == NULL)
 		return NULL;
 
@@ -1345,7 +1351,7 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return(do_mono_image_open (fname, status, FALSE, TRUE, FALSE));
+	return do_mono_image_open (fname, status, FALSE, TRUE, FALSE, FALSE);
 }
 
 /**
@@ -1362,7 +1368,18 @@ mono_image_open_raw (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return(do_mono_image_open (fname, status, FALSE, FALSE, FALSE));
+	return do_mono_image_open (fname, status, FALSE, FALSE, FALSE, FALSE);
+}
+
+/*
+ * mono_image_open_metadata_only:
+ *
+ *   Open an image which contains metadata only without a PE header.
+ */
+MonoImage *
+mono_image_open_metadata_only (const char *fname, MonoImageOpenStatus *status)
+{
+	return do_mono_image_open (fname, status, TRUE, TRUE, FALSE, TRUE);
 }
 
 void
