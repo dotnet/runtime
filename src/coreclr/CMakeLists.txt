@@ -161,6 +161,11 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(src/coreclr/hosts/unixcoreconsole)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
+if(CLR_CMAKE_PLATFORM_DARWIN)
+    add_subdirectory(src/coreclr/hosts/osxbundlerun)
+endif(CLR_CMAKE_PLATFORM_DARWIN)
+
+
 # Add this subdir. We install the headers for the jit.
 
 add_subdirectory(src/pal/prebuilt/inc)
