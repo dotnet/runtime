@@ -74,6 +74,7 @@ struct _MonoDebugHandle {
 	MonoImage *image;
 	MonoDebugDataTable *type_table;
 	MonoSymbolFile *symfile;
+	MonoImage *ppdb;
 };
 
 struct _MonoDebugMethodJitInfo {

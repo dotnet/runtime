@@ -114,7 +114,7 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, mono_bool in_the
 	if (strcmp (handle->image->guid, guid)) {
 		if (!in_the_debugger)
 			g_warning ("Symbol file %s doesn't match image %s", symfile->filename,
-				   handle->image_file);
+				   handle->image->name);
 		if (guid)
 			g_free (guid);
 		return FALSE;
@@ -153,6 +153,7 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const uint8_t *raw_conten
 		symfile->was_loaded_from_memory = TRUE;
 	} else {
 		MonoFileMap *f;
+
 		symfile->filename = g_strdup_printf ("%s.mdb", mono_image_get_filename (handle->image));
 		symfile->was_loaded_from_memory = FALSE;
 		if ((f = mono_file_map_open (symfile->filename))) {

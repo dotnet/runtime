@@ -20,6 +20,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mempool.h>
+#include <mono/metadata/debug-mono-ppdb.h>
 #include <string.h>
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
@@ -111,6 +112,8 @@ lookup_data_table (MonoDomain *domain)
 static void
 free_debug_handle (MonoDebugHandle *handle)
 {
+	if (handle->ppdb)
+		mono_ppdb_close (handle);
 	if (handle->symfile)
 		mono_debug_close_mono_symbol_file (handle->symfile);
 	/* decrease the refcount added with mono_image_addref () */
@@ -259,8 +262,11 @@ mono_debug_open_image (MonoImage *image, const guint8 *raw_contents, int size)
 	handle->image = image;
 	mono_image_addref (image);
 
-	handle->symfile = mono_debug_open_mono_symbols (
-		handle, raw_contents, size, FALSE);
+	/* Try a ppdb file first */
+	handle->ppdb = mono_ppdb_load_file (handle->image);
+
+	if (!handle->ppdb)
+		handle->symfile = mono_debug_open_mono_symbols (handle, raw_contents, size, FALSE);
 
 	g_hash_table_insert (mono_debug_handles, image, handle);
 
@@ -298,7 +304,9 @@ lookup_method_func (gpointer key, gpointer value, gpointer user_data)
 	if (data->minfo)
 		return;
 
-	if (handle->symfile)
+	if (handle->ppdb)
+		data->minfo = mono_ppdb_lookup_method (handle, data->method);
+	else if (handle->symfile)
 		data->minfo = mono_debug_symfile_lookup_method (handle, data->method);
 }
 
@@ -744,7 +752,12 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
 
 	mono_debugger_lock ();
 	minfo = mono_debug_lookup_method_internal (method);
-	if (!minfo || !minfo->handle || !minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile)) {
+	if (!minfo || !minfo->handle) {
+		mono_debugger_unlock ();
+		return NULL;
+	}
+
+	if (!minfo->handle->ppdb && (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))) {
 		mono_debugger_unlock ();
 		return NULL;
 	}
@@ -755,7 +768,10 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
 		return NULL;
 	}
 
-	location = mono_debug_symfile_lookup_location (minfo, offset);
+	if (minfo->handle->ppdb)
+		location = mono_ppdb_lookup_location (minfo, offset);
+	else
+		location = mono_debug_symfile_lookup_location (minfo, offset);
 	mono_debugger_unlock ();
 	return location;
 }

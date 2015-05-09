@@ -117,6 +117,8 @@ common_sources = \
 	debug-helpers.c		\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
+	debug-mono-ppdb.h	\
+	debug-mono-ppdb.c	\
 	decimal-ms.c		\
 	decimal-ms.h		\
 	domain-internals.h	\
