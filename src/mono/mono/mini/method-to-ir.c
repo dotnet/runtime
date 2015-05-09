@@ -12498,6 +12498,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						MonoInst *target_ins, *handle_ins;
 						MonoMethod *invoke;
 						int invoke_context_used;
+						gboolean is_virtual = cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL;
 
 						invoke = mono_get_delegate_invoke (ctor_method->klass);
 						if (!invoke || !mono_method_signature (invoke))
@@ -12516,7 +12517,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							ip += 6;
 							if (cfg->verbose_level > 3)
 								g_print ("converting (in B%d: stack: %d) %s", bblock->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip, NULL));
-							if ((handle_ins = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used, TRUE))) {
+							if ((handle_ins = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used, is_virtual))) {
 								sp -= 2;
 								*sp = handle_ins;
 								CHECK_CFG_EXCEPTION;
