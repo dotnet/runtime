@@ -244,10 +244,10 @@ namespace System.IO
             return dateTime.ToUniversalTime();
         }
 
-        public static void SetCreationTime(String path, DateTime creationTime)
+        public static void SetCreationTime(String path, DateTime creationTimeUtc)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: false);
+            FileSystem.Current.SetCreationTime(fullPath, creationTimeUtc, asDirectory: false);
         }
 
         public static void SetCreationTimeUtc(String path, DateTime creationTime)
@@ -276,10 +276,10 @@ namespace System.IO
             FileSystem.Current.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: false);
         }
 
-        public static void SetLastAccessTimeUtc(String path, DateTime lastAccessTime)
+        public static void SetLastAccessTimeUtc(String path, DateTime lastAccessTimeUtc)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetLastAccessTime(fullPath, GetUtcDateTimeOffset(lastAccessTime), asDirectory: false);
+            FileSystem.Current.SetLastAccessTime(fullPath, GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
@@ -302,10 +302,10 @@ namespace System.IO
             FileSystem.Current.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: false);
         }
 
-        public static void SetLastWriteTimeUtc(String path, DateTime lastWriteTime)
+        public static void SetLastWriteTimeUtc(String path, DateTime lastWriteTimeUtc)
         {
             String fullPath = PathHelpers.GetFullPathInternal(path);
-            FileSystem.Current.SetLastWriteTime(fullPath, GetUtcDateTimeOffset(lastWriteTime), asDirectory: false);
+            FileSystem.Current.SetLastWriteTime(fullPath, GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: false);
         }
 
         [System.Security.SecuritySafeCritical]
