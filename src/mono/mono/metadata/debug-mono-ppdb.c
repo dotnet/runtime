@@ -14,15 +14,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-#include <sys/stat.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
-#include <mono/metadata/appdomain.h>
-#include <mono/metadata/exception.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-mono-symfile.h>
@@ -30,8 +24,6 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
-#include <mono/utils/mono-mmap.h>
-#include <mono/utils/bsearch.h>
 
 #include "debug-mono-ppdb.h"
 
@@ -108,8 +100,8 @@ mono_ppdb_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 	return minfo;
 }
 
-static char*
-get_docname (MonoImage *image, int docidx)
+static MonoDebugSourceInfo*
+get_docinfo (MonoImage *image, int docidx)
 {
 	MonoTableInfo *tables = image->tables;
 	guint32 cols [MONO_DOCUMENT_SIZE];
@@ -119,6 +111,9 @@ get_docname (MonoImage *image, int docidx)
 	int size, part_size, partidx, nparts;
 	char sep;
 	GString *s;
+	MonoDebugSourceInfo *res;
+
+	// FIXME: Cache
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_DOCUMENT], docidx-1, cols, MONO_DOCUMENT_SIZE);
 
@@ -147,9 +142,21 @@ get_docname (MonoImage *image, int docidx)
 		nparts ++;
 	}
 
-	// FIXME: Cache
+	res = g_new0 (MonoDebugSourceInfo, 1);
+	res->source_file = g_string_free (s, FALSE);
+	res->guid = NULL;
+	res->hash = NULL;
 
-	return g_string_free (s, FALSE);
+	return res;
+}
+
+static char*
+get_docname (MonoImage *image, int docidx)
+{
+	MonoDebugSourceInfo *info;
+
+	info = get_docinfo (image, docidx);
+	return g_strdup (info->source_file);
 }
 
 /**
@@ -245,13 +252,11 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	guint32 cols [MONO_METHODBODY_SIZE];
 	const char *ptr;
 	const char *end;
-	char *docname;
+	MonoDebugSourceInfo *docinfo;
 	int method_idx, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
 	GArray *sps;
 	MonoSymSeqPoint sp;
-
-	// FIXME: Unfinished
-	g_assert_not_reached ();
+	GPtrArray *sfiles = NULL;
 
 	if (source_file)
 		*source_file = NULL;
@@ -264,14 +269,18 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	if (n_seq_points)
 		*n_seq_points = 0;
 
-	g_assert (method->token);
+	if (source_file_list)
+		*source_file_list = sfiles = g_ptr_array_new ();
+
+	if (!method->token)
+		return;
 
 	method_idx = mono_metadata_token_index (method->token);
 
 	mono_metadata_decode_row (&tables [MONO_TABLE_METHODBODY], method_idx-1, cols, MONO_METHODBODY_SIZE);
 
-	// FIXME:
-	g_assert (cols [MONO_METHODBODY_SEQ_POINTS]);
+	if (!cols [MONO_METHODBODY_SEQ_POINTS])
+		return;
 
 	ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
 	size = mono_metadata_decode_blob_size (ptr, &ptr);
@@ -281,7 +290,7 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 	/* First record */
 	docidx = mono_metadata_decode_value (ptr, &ptr);
-	docname = get_docname (image, docidx);
+	docinfo = get_docinfo (image, docidx);
 	iloffset = mono_metadata_decode_value (ptr, &ptr);
 	delta_lines = mono_metadata_decode_value (ptr, &ptr);
 	if (delta_lines == 0)
@@ -290,6 +299,9 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 		delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
 	start_line = mono_metadata_decode_value (ptr, &ptr);
 	start_col = mono_metadata_decode_value (ptr, &ptr);
+
+	if (sfiles)
+		g_ptr_array_add (sfiles, docinfo);
 
 	memset (&sp, 0, sizeof (sp));
 	sp.il_offset = iloffset;
@@ -302,20 +314,25 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 	while (ptr < end) {
 		delta_il = mono_metadata_decode_value (ptr, &ptr);
-		if (delta_il == 0)
-			// FIXME:
-			g_assert_not_reached ();
-
+		if (delta_il == 0) {
+			/* subsequent-document-record */
+			docidx = mono_metadata_decode_value (ptr, &ptr);
+			docinfo = get_docinfo (image, docidx);
+			if (sfiles)
+				g_ptr_array_add (sfiles, docinfo);
+			continue;
+		}
 		delta_lines = mono_metadata_decode_value (ptr, &ptr);
 		if (delta_lines == 0)
 			delta_cols = mono_metadata_decode_value (ptr, &ptr);
 		else
 			delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
-		if (delta_lines == 0 && delta_cols == 0)
-			// FIXME:
-			g_assert_not_reached ();
 		adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
 		adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
+
+		if (delta_lines == 0 && delta_cols == 0)
+			/* Hidden sequence point */
+			continue;
 
 		iloffset += delta_il;
 		start_line += adv_line;
@@ -337,6 +354,11 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 		*seq_points = g_new (MonoSymSeqPoint, sps->len);
 		memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
 	}
+
+	if (source_file)
+		*source_file = g_strdup (((MonoDebugSourceInfo*)g_ptr_array_index (sfiles, 0))->source_file);
+
+	// FIXME: Source files
 
 	g_array_free (sps, TRUE);
 }
