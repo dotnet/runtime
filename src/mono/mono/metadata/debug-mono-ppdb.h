@@ -14,8 +14,9 @@
 
 #include <config.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/metadata/mono-debug.h>
 
-MonoImage*
+MonoPPDBFile*
 mono_ppdb_load_file (MonoImage *image);
 
 void

@@ -16,6 +16,7 @@ typedef struct _MonoSymbolTable			MonoSymbolTable;
 typedef struct _MonoDebugDataTable		MonoDebugDataTable;
 
 typedef struct _MonoSymbolFile			MonoSymbolFile;
+typedef struct _MonoPPDBFile			MonoPPDBFile;
 
 typedef struct _MonoDebugHandle			MonoDebugHandle;
 
@@ -74,7 +75,7 @@ struct _MonoDebugHandle {
 	MonoImage *image;
 	MonoDebugDataTable *type_table;
 	MonoSymbolFile *symfile;
-	MonoImage *ppdb;
+	MonoPPDBFile *ppdb;
 };
 
 struct _MonoDebugMethodJitInfo {
