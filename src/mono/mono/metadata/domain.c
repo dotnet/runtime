@@ -1876,27 +1876,6 @@ mono_get_runtime_info (void)
 	return current_runtime;
 }
 
-gchar *
-mono_debugger_check_runtime_version (const char *filename)
-{
-	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1];
-	const MonoRuntimeInfo *rinfo;
-	MonoImage *image;
-
-	get_runtimes_from_exe (filename, &image, runtimes);
-	rinfo = runtimes [0];
-
-	if (!rinfo)
-		return g_strdup_printf ("Cannot get runtime version from assembly `%s'", filename);
-
-	if (rinfo != current_runtime)
-		return g_strdup_printf ("The Mono Debugger is currently using the `%s' runtime, but "
-					"the assembly `%s' requires version `%s'", current_runtime->runtime_version,
-					filename, rinfo->runtime_version);
-
-	return NULL;
-}
-
 /**
  * mono_framework_version:
  *

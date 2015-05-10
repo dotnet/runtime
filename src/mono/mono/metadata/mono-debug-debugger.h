@@ -11,13 +11,7 @@
 #include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-compiler.h>
 
-
-void            mono_debugger_initialize                    (void);
-
 void            mono_debugger_lock                          (void);
 void            mono_debugger_unlock                        (void);
-
-gchar *
-mono_debugger_check_runtime_version (const char *filename);
 
 #endif /* __MONO_DEBUG_DEBUGGER_H__ */

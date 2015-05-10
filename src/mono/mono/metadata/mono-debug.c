@@ -60,7 +60,6 @@ static GHashTable *data_table_hash;
 
 static mono_mutex_t debugger_lock_mutex;
 
-static int initialized = 0;
 static gboolean is_attached = FALSE;
 
 static MonoDebugHandle     *mono_debug_open_image      (MonoImage *image, const guint8 *raw_contents, int size);
@@ -138,7 +137,7 @@ mono_debug_init (MonoDebugFormat format)
 	mono_debug_initialized = TRUE;
 	mono_debug_format = format;
 
-	mono_debugger_initialize ();
+	mono_mutex_init_recursive (&debugger_lock_mutex);
 
 	mono_debugger_lock ();
 
@@ -923,22 +922,15 @@ open_symfile_from_bundle (MonoImage *image)
 void
 mono_debugger_lock (void)
 {
-	g_assert (initialized);
+	g_assert (mono_debug_initialized);
 	mono_mutex_lock (&debugger_lock_mutex);
 }
 
 void
 mono_debugger_unlock (void)
 {
-	g_assert (initialized);
+	g_assert (mono_debug_initialized);
 	mono_mutex_unlock (&debugger_lock_mutex);
-}
-
-void
-mono_debugger_initialize ()
-{
-	mono_mutex_init_recursive (&debugger_lock_mutex);
-	initialized = 1;
 }
 
 /**
