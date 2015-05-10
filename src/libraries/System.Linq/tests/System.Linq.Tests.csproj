@@ -30,6 +30,7 @@
     <Compile Include="Performance\WhereSelectPerf.cs" />
     <Compile Include="Performance\ToArrayToListToDictionaryPerf.cs" />
     <Compile Include="WhereTests.cs" />
+    <Compile Include="ToArrayToListToDictionaryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.csproj">
