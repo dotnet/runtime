@@ -49,6 +49,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
@@ -7735,7 +7736,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MonoSymSeqPoint *sps;
 			int i, n_il_offsets;
 
-			mono_debug_symfile_get_seq_points (minfo, NULL, NULL, NULL, &sps, &n_il_offsets);
+			mono_debug_get_seq_points (minfo, NULL, NULL, NULL, &sps, &n_il_offsets);
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			seq_point_set_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;

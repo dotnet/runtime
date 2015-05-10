@@ -3453,7 +3453,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 						MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
 
 						if (minfo) {
-							mono_debug_symfile_get_seq_points (minfo, &source_file, &source_file_list, NULL, NULL, NULL);
+							mono_debug_get_seq_points (minfo, &source_file, &source_file_list, NULL, NULL, NULL);
 							for (i = 0; i < source_file_list->len; ++i) {
 								sinfo = g_ptr_array_index (source_file_list, i);
 								/*
@@ -6822,7 +6822,7 @@ get_source_files_for_type (MonoClass *klass)
 		GPtrArray *source_file_list;
 
 		if (minfo) {
-			mono_debug_symfile_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
+			mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
 			for (j = 0; j < source_file_list->len; ++j) {
 				sinfo = g_ptr_array_index (source_file_list, j);
 				for (i = 0; i < files->len; ++i)
@@ -8339,7 +8339,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			break;
 		}
 
-		mono_debug_symfile_get_seq_points (minfo, &source_file, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
+		mono_debug_get_seq_points (minfo, &source_file, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
 		buffer_add_int (buf, header->code_size);
 		if (CHECK_PROTOCOL_VERSION (2, 13)) {
 			buffer_add_int (buf, source_file_list->len);

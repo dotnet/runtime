@@ -21,6 +21,7 @@
 
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/debug-mono-symfile.h>
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/utils/mono-compiler.h>
 
 #ifndef HOST_WIN32
@@ -716,7 +717,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 		if (!minfo)
 			continue;
 
-		mono_debug_symfile_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
+		mono_debug_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
 		for (i = 0; i < source_file_list->len; ++i) {
 			MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, i);
 			add_line_number_file_name (w, sinfo->source_file, 0, 0);

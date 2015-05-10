@@ -943,3 +943,9 @@ mono_debug_enabled (void)
 {
 	return mono_debug_format != MONO_DEBUG_FORMAT_NONE;
 }
+
+void
+mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
+{
+	mono_debug_symfile_get_seq_points (minfo, source_file, source_file_list, source_files, seq_points, n_seq_points);
+}
