@@ -3453,7 +3453,7 @@ create_event_list (EventKind event, GPtrArray *reqs, MonoJitInfo *ji, EventInfo 
 						MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
 
 						if (minfo) {
-							mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+							mono_debug_symfile_get_seq_points (minfo, &source_file, &source_file_list, NULL, NULL, NULL);
 							for (i = 0; i < source_file_list->len; ++i) {
 								sinfo = g_ptr_array_index (source_file_list, i);
 								/*
@@ -6822,7 +6822,7 @@ get_source_files_for_type (MonoClass *klass)
 		GPtrArray *source_file_list;
 
 		if (minfo) {
-			mono_debug_symfile_get_line_numbers_full (minfo, NULL, &source_file_list, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			mono_debug_symfile_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
 			for (j = 0; j < source_file_list->len; ++j) {
 				sinfo = g_ptr_array_index (source_file_list, j);
 				for (i = 0; i < files->len; ++i)
@@ -8318,13 +8318,9 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		MonoDebugMethodInfo *minfo;
 		char *source_file;
 		int i, j, n_il_offsets;
-		int *il_offsets;
-		int *line_numbers;
-		int *column_numbers;
-		int *end_line_numbers;
-		int *end_column_numbers;
 		int *source_files;
 		GPtrArray *source_file_list;
+		MonoSymSeqPoint *sym_seq_points;
 
 		header = mono_method_get_header (method);
 		if (!header) {
@@ -8343,7 +8339,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			break;
 		}
 
-		mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, &n_il_offsets, &il_offsets, &line_numbers, &column_numbers, &source_files, &end_line_numbers, &end_column_numbers);
+		mono_debug_symfile_get_seq_points (minfo, &source_file, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
 		buffer_add_int (buf, header->code_size);
 		if (CHECK_PROTOCOL_VERSION (2, 13)) {
 			buffer_add_int (buf, source_file_list->len);
@@ -8361,31 +8357,28 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		buffer_add_int (buf, n_il_offsets);
 		DEBUG_PRINTF (10, "Line number table for method %s:\n", mono_method_full_name (method,  TRUE));
 		for (i = 0; i < n_il_offsets; ++i) {
+			MonoSymSeqPoint *sp = &sym_seq_points [i];
 			const char *srcfile = "";
 
 			if (source_files [i] != -1) {
 				MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, source_files [i]);
 				srcfile = sinfo->source_file;
 			}
-			DEBUG_PRINTF (10, "IL%x -> %s:%d %d %d %d\n", il_offsets [i], srcfile, line_numbers [i], column_numbers ? column_numbers [i] : -1, end_line_numbers ? end_line_numbers [i] : -1, end_column_numbers ? end_column_numbers [i] : -1);
-			buffer_add_int (buf, il_offsets [i]);
-			buffer_add_int (buf, line_numbers [i]);
+			DEBUG_PRINTF (10, "IL%x -> %s:%d %d %d %d\n", sp->il_offset, srcfile, sp->line, sp->column, sp->end_line, sp->end_column);
+			buffer_add_int (buf, sp->il_offset);
+			buffer_add_int (buf, sp->line);
 			if (CHECK_PROTOCOL_VERSION (2, 13))
 				buffer_add_int (buf, source_files [i]);
 			if (CHECK_PROTOCOL_VERSION (2, 19))
-				buffer_add_int (buf, column_numbers ? column_numbers [i] : -1);
+				buffer_add_int (buf, sp->column);
 			if (CHECK_PROTOCOL_VERSION (2, 32)) {
-				buffer_add_int (buf, end_line_numbers ? end_line_numbers [i] : -1);
-				buffer_add_int (buf, end_column_numbers ? end_column_numbers [i] : -1);
+				buffer_add_int (buf, sp->end_line);
+				buffer_add_int (buf, sp->end_column);
 			}
 		}
 		g_free (source_file);
-		g_free (il_offsets);
-		g_free (line_numbers);
-		g_free (column_numbers);
-		g_free (end_line_numbers);
-		g_free (end_column_numbers);
 		g_free (source_files);
+		g_free (sym_seq_points);
 		g_ptr_array_free (source_file_list, TRUE);
 		mono_metadata_free_mh (header);
 		break;

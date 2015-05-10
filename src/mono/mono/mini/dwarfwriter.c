@@ -709,7 +709,6 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 	for (l = info_list; l; l = l->next) {
 		MethodLineNumberInfo *info = l->data;
 		MonoDebugMethodInfo *minfo;
-		char *source_file;
 		GPtrArray *source_file_list;
 
 		// FIXME: Free stuff
@@ -717,7 +716,7 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 		if (!minfo)
 			continue;
 
-		mono_debug_symfile_get_line_numbers_full (minfo, &source_file, &source_file_list, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		mono_debug_symfile_get_seq_points (minfo, NULL, &source_file_list, NULL, NULL, NULL);
 		for (i = 0; i < source_file_list->len; ++i) {
 			MonoDebugSourceInfo *sinfo = g_ptr_array_index (source_file_list, i);
 			add_line_number_file_name (w, sinfo->source_file, 0, 0);

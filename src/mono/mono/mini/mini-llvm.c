@@ -6086,14 +6086,13 @@ emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, co
 	MonoDebugMethodInfo *minfo = ctx->minfo;
 	char *source_file, *dir, *filename;
 	LLVMValueRef md, args [16], ctx_args [16], md_args [64], type_args [16], ctx_md, type_md;
-	int n_il_offsets;
-	int *il_offsets;
-	int *line_numbers;
+	MonoSymSeqPoint *sym_seq_points;
+	int n_seq_points;
 
 	if (!minfo)
 		return NULL;
 
-	mono_debug_symfile_get_line_numbers_full (minfo, &source_file, NULL, &n_il_offsets, &il_offsets, &line_numbers, NULL, NULL, NULL, NULL);
+	mono_debug_symfile_get_seq_points (minfo, &source_file, NULL, NULL, &sym_seq_points, &n_seq_points);
 	if (!source_file)
 		source_file = g_strdup ("<unknown>");
 	dir = g_path_get_dirname (source_file);
@@ -6133,8 +6132,8 @@ emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, co
 	md_args [4] = md_string (name);
 	md_args [5] = md_string (name);
 	/* Line number */
-	if (n_il_offsets)
-		md_args [6] = LLVMConstInt (LLVMInt32Type (), line_numbers [0], FALSE);
+	if (n_seq_points)
+		md_args [6] = LLVMConstInt (LLVMInt32Type (), sym_seq_points [0].line, FALSE);
 	else
 		md_args [6] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
 	/* Type */
@@ -6171,8 +6170,7 @@ emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, co
 	g_free (dir);
 	g_free (filename);
 	g_free (source_file);
-	g_free (il_offsets);
-	g_free (line_numbers);
+	g_free (sym_seq_points);
 
 	return md;
 }

@@ -7732,20 +7732,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	if (cfg->gen_sdb_seq_points && cfg->method == method) {
 		minfo = mono_debug_lookup_method (method);
 		if (minfo) {
+			MonoSymSeqPoint *sps;
 			int i, n_il_offsets;
-			int *il_offsets;
-			int *line_numbers;
 
-			mono_debug_symfile_get_line_numbers_full (minfo, NULL, NULL, &n_il_offsets, &il_offsets, &line_numbers, NULL, NULL, NULL, NULL);
+			mono_debug_symfile_get_seq_points (minfo, NULL, NULL, NULL, &sps, &n_il_offsets);
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			seq_point_set_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
 			for (i = 0; i < n_il_offsets; ++i) {
-				if (il_offsets [i] < header->code_size)
-					mono_bitset_set_fast (seq_point_locs, il_offsets [i]);
+				if (sps [i].il_offset < header->code_size)
+					mono_bitset_set_fast (seq_point_locs, sps [i].il_offset);
 			}
-			g_free (il_offsets);
-			g_free (line_numbers);
+			g_free (sps);
 		} else if (!method->wrapper_type && !method->dynamic && mono_debug_image_has_debug_info (method->klass->image)) {
 			/* Methods without line number info like auto-generated property accessors */
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (cfg->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
