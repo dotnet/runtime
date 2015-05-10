@@ -1325,7 +1325,7 @@ processing_after_callback (int generation)
 	if (bridge_accounting_enabled) {
 		for (i = 0; i < num_sccs; ++i) {
 			for (j = 0; j < api_sccs [i]->num_objs; ++j) {
-				GCVTable *vtable = SGEN_LOAD_VTABLE (api_sccs [i]->objs [j]);
+				GCVTable vtable = SGEN_LOAD_VTABLE (api_sccs [i]->objs [j]);
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC,
 					"OBJECT %s (%p) SCC [%d] %s",
 						sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), api_sccs [i]->objs [j],

@@ -251,12 +251,12 @@ register_for_finalization (GCObject *obj, void *user_data, int generation)
 
 	if (user_data) {
 		if (sgen_hash_table_replace (hash_table, obj, NULL, NULL)) {
-			GCVTable *vt = SGEN_LOAD_VTABLE_UNCHECKED (obj);
+			GCVTable vt = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 			SGEN_LOG (5, "Added finalizer for object: %p (%s) (%d) to %s table", obj, sgen_client_vtable_get_name (vt), hash_table->num_entries, sgen_generation_name (generation));
 		}
 	} else {
 		if (sgen_hash_table_remove (hash_table, obj, NULL)) {
-			GCVTable *vt = SGEN_LOAD_VTABLE_UNCHECKED (obj);
+			GCVTable vt = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 			SGEN_LOG (5, "Removed finalizer for object: %p (%s) (%d)", obj, sgen_client_vtable_get_name (vt), hash_table->num_entries);
 		}
 	}

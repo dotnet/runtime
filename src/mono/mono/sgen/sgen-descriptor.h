@@ -252,7 +252,7 @@ sgen_gc_descr_has_references (mword desc)
 /* this one is untested */
 #define OBJ_COMPLEX_ARR_FOREACH_PTR(desc,obj)	do {	\
 		/* there are pointers */	\
-		GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj); \
+		GCVTable vt = (GCVTable)SGEN_LOAD_VTABLE (obj); \
 		gsize *mbitmap_data = sgen_get_complex_descriptor ((desc)); \
 		gsize mbwords = (*mbitmap_data++) - 1;	\
 		gsize el_size = sgen_client_array_element_size (vt);	\

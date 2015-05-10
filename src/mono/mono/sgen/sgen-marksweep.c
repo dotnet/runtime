@@ -643,7 +643,7 @@ unlink_slot_from_free_list_uncontested (MSBlockInfo * volatile *free_blocks, int
 }
 
 static void*
-alloc_obj (GCVTable *vtable, size_t size, gboolean pinned, gboolean has_references)
+alloc_obj (GCVTable vtable, size_t size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
 	MSBlockInfo * volatile * free_blocks = FREE_BLOCKS (pinned, has_references);
@@ -656,13 +656,14 @@ alloc_obj (GCVTable *vtable, size_t size, gboolean pinned, gboolean has_referenc
 
 	obj = unlink_slot_from_free_list_uncontested (free_blocks, size_index);
 
-	*(GCVTable**)obj = vtable;
+	/* FIXME: assumes object layout */
+	*(GCVTable*)obj = vtable;
 
 	return obj;
 }
 
 static void*
-major_alloc_object (GCVTable *vtable, size_t size, gboolean has_references)
+major_alloc_object (GCVTable vtable, size_t size, gboolean has_references)
 {
 	return alloc_obj (vtable, size, FALSE, has_references);
 }
@@ -711,7 +712,7 @@ major_free_non_pinned_object (char *obj, size_t size)
 
 /* size is a multiple of SGEN_ALLOC_ALIGN */
 static void*
-major_alloc_small_pinned_obj (GCVTable *vtable, size_t size, gboolean has_references)
+major_alloc_small_pinned_obj (GCVTable vtable, size_t size, gboolean has_references)
 {
 	void *res;
 
@@ -736,7 +737,7 @@ free_pinned_object (char *obj, size_t size)
  * size is already rounded up and we hold the GC lock.
  */
 static void*
-major_alloc_degraded (GCVTable *vtable, size_t size)
+major_alloc_degraded (GCVTable vtable, size_t size)
 {
 	void *obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	if (G_LIKELY (obj)) {
@@ -924,7 +925,7 @@ major_is_valid_object (char *object)
 }
 
 
-static GCVTable*
+static GCVTable
 major_describe_pointer (char *ptr)
 {
 	MSBlockInfo *block;
@@ -933,7 +934,7 @@ major_describe_pointer (char *ptr)
 		int idx;
 		char *obj;
 		gboolean live;
-		GCVTable *vtable;
+		GCVTable vtable;
 		int w, b;
 		gboolean marked;
 
@@ -946,7 +947,7 @@ major_describe_pointer (char *ptr)
 		idx = MS_BLOCK_OBJ_INDEX (ptr, block);
 		obj = (char*)MS_BLOCK_OBJ (block, idx);
 		live = MS_OBJ_ALLOCED (obj, block);
-		vtable = live ? (GCVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
+		vtable = live ? (GCVTable)SGEN_LOAD_VTABLE (obj) : NULL;
 
 		MS_CALC_MARK_BIT (w, b, obj);
 		marked = MS_MARK_BIT (block, w, b);
@@ -1690,7 +1691,7 @@ static int count_nonpinned_nonref;
 static void
 count_nonpinned_callback (char *obj, size_t size, void *data)
 {
-	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
+	GCVTable vtable = (GCVTable)LOAD_VTABLE (obj);
 
 	if (SGEN_VTABLE_HAS_REFERENCES (vtable))
 		++count_nonpinned_ref;
@@ -1701,7 +1702,7 @@ count_nonpinned_callback (char *obj, size_t size, void *data)
 static void
 count_pinned_callback (char *obj, size_t size, void *data)
 {
-	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
+	GCVTable vtable = (GCVTable)LOAD_VTABLE (obj);
 
 	if (SGEN_VTABLE_HAS_REFERENCES (vtable))
 		++count_pinned_ref;

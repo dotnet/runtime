@@ -29,7 +29,7 @@ void sgen_client_init (void);
  * The slow path for getting an object's size.  We're passing in the vtable because we've
  * already fetched it.
  */
-mword sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o);
+mword sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o);
 
 /*
  * Fill the given range with a dummy object.  If the range is too short to be filled with an
@@ -144,9 +144,9 @@ const char* sgen_client_description_for_internal_mem_type (int type);
 /*
  * Only used for debugging.  `sgen_client_vtable_get_namespace()` may return NULL.
  */
-gboolean sgen_client_vtable_is_inited (GCVTable *vtable);
-const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
-const char* sgen_client_vtable_get_name (GCVTable *vtable);
+gboolean sgen_client_vtable_is_inited (GCVTable vtable);
+const char* sgen_client_vtable_get_namespace (GCVTable vtable);
+const char* sgen_client_vtable_get_name (GCVTable vtable);
 
 /*
  * Called before starting collections.  The world is already stopped.  No action is

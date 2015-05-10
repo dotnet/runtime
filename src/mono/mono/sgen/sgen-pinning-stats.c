@@ -137,7 +137,7 @@ pin_stats_count_object_from_tree (char *obj, size_t size, PinStatAddress *node, 
 }
 
 static gpointer
-lookup_vtable_entry (SgenHashTable *hash_table, GCVTable *vtable, gpointer empty_entry)
+lookup_vtable_entry (SgenHashTable *hash_table, GCVTable vtable, gpointer empty_entry)
 {
 	char *name = g_strdup_printf ("%s.%s", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 	gpointer entry = sgen_hash_table_lookup (hash_table, name);
@@ -153,7 +153,7 @@ lookup_vtable_entry (SgenHashTable *hash_table, GCVTable *vtable, gpointer empty
 }
 
 static void
-register_vtable (GCVTable *vtable, int pin_types)
+register_vtable (GCVTable vtable, int pin_types)
 {
 	PinnedClassEntry empty_entry;
 	PinnedClassEntry *entry;
@@ -180,7 +180,7 @@ sgen_pin_stats_register_object (char *obj, size_t size)
 	sgen_pointer_queue_add (&pinned_objects, obj);
 
 	if (pin_types)
-		register_vtable ((GCVTable*)SGEN_LOAD_VTABLE (obj), pin_types);
+		register_vtable ((GCVTable)SGEN_LOAD_VTABLE (obj), pin_types);
 }
 
 void
@@ -193,7 +193,7 @@ sgen_pin_stats_register_global_remset (char *obj)
 		return;
 
 	memset (&empty_entry, 0, sizeof (GlobalRemsetClassEntry));
-	entry = lookup_vtable_entry (&global_remset_class_hash_table, (GCVTable*)SGEN_LOAD_VTABLE (obj), &empty_entry);
+	entry = lookup_vtable_entry (&global_remset_class_hash_table, (GCVTable)SGEN_LOAD_VTABLE (obj), &empty_entry);
 
 	++entry->num_remsets;
 }

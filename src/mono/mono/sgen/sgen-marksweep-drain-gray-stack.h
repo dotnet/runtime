@@ -149,7 +149,7 @@ COPY_OR_MARK_FUNCTION_NAME (void **ptr, void *obj, SgenGrayQueue *queue)
 
 		SGEN_ASSERT (9, !SGEN_VTABLE_IS_PINNED (vtable_word), "Pinned object in non-pinned block?");
 
-		desc = sgen_vtable_get_descriptor ((GCVTable*)vtable_word);
+		desc = sgen_vtable_get_descriptor ((GCVTable)vtable_word);
 		type = desc & DESC_TYPE_MASK;
 
 		if (sgen_safe_object_is_small ((GCObject*)obj, type)) {

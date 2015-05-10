@@ -533,7 +533,7 @@ sgen_nursery_is_object_alive (char *obj)
 typedef struct {
 	gboolean is_split;
 
-	char* (*alloc_for_promotion) (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references);
+	char* (*alloc_for_promotion) (GCVTable vtable, char *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
 
@@ -611,15 +611,15 @@ struct _SgenMajorCollector {
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (char *obj);
-	void* (*alloc_small_pinned_obj) (GCVTable *vtable, size_t size, gboolean has_references);
-	void* (*alloc_degraded) (GCVTable *vtable, size_t size);
+	void* (*alloc_small_pinned_obj) (GCVTable vtable, size_t size, gboolean has_references);
+	void* (*alloc_degraded) (GCVTable vtable, size_t size);
 
 	SgenObjectOperations major_ops_serial;
 	SgenObjectOperations major_ops_concurrent_start;
 	SgenObjectOperations major_ops_concurrent;
 	SgenObjectOperations major_ops_concurrent_finish;
 
-	void* (*alloc_object) (GCVTable *vtable, size_t size, gboolean has_references);
+	void* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (char *obj, size_t size);
 
 	/*
@@ -656,7 +656,7 @@ struct _SgenMajorCollector {
 	void (*print_gc_param_usage) (void);
 	void (*post_param_init) (SgenMajorCollector *collector);
 	gboolean (*is_valid_object) (char *object);
-	GCVTable* (*describe_pointer) (char *pointer);
+	GCVTable (*describe_pointer) (char *pointer);
 	guint8* (*get_cardtable_mod_union_for_object) (char *object);
 	long long (*get_and_reset_num_major_objects_marked) (void);
 	void (*count_cards) (long long *num_total_cards, long long *num_marked_cards);
@@ -705,7 +705,7 @@ void sgen_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, u
 static inline mword
 sgen_obj_get_descriptor (char *obj)
 {
-	GCVTable *vtable = SGEN_LOAD_VTABLE_UNCHECKED (obj);
+	GCVTable vtable = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 	SGEN_ASSERT (9, !SGEN_POINTER_IS_TAGGED_ANY (vtable), "Object can't be tagged");
 	return sgen_vtable_get_descriptor (vtable);
 }
@@ -713,7 +713,7 @@ sgen_obj_get_descriptor (char *obj)
 static inline mword
 sgen_obj_get_descriptor_safe (char *obj)
 {
-	GCVTable *vtable = (GCVTable*)SGEN_LOAD_VTABLE (obj);
+	GCVTable vtable = (GCVTable)SGEN_LOAD_VTABLE (obj);
 	return sgen_vtable_get_descriptor (vtable);
 }
 
@@ -725,7 +725,7 @@ sgen_safe_object_get_size (GCObject *obj)
        if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
                obj = (GCObject*)forwarded;
 
-       return sgen_client_par_object_get_size ((GCVTable*)SGEN_LOAD_VTABLE (obj), obj);
+       return sgen_client_par_object_get_size ((GCVTable)SGEN_LOAD_VTABLE (obj), obj);
 }
 
 static inline gboolean
@@ -749,7 +749,7 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
                obj = (GCObject*)forwarded;
        }
 
-       return sgen_client_slow_object_get_size ((GCVTable*)SGEN_LOAD_VTABLE (obj), obj);
+       return sgen_client_slow_object_get_size ((GCVTable)SGEN_LOAD_VTABLE (obj), obj);
 }
 
 #ifdef SGEN_CLIENT_HEADER
@@ -851,7 +851,7 @@ extern LOSObject *los_object_list;
 extern mword los_memory_usage;
 
 void sgen_los_free_object (LOSObject *obj);
-void* sgen_los_alloc_large_inner (GCVTable *vtable, size_t size);
+void* sgen_los_alloc_large_inner (GCVTable vtable, size_t size);
 void sgen_los_sweep (void);
 gboolean sgen_ptr_is_in_los (char *ptr, char **start);
 void sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data);
@@ -888,8 +888,8 @@ void sgen_nursery_alloc_prepare_for_major (void);
 
 char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references);
 
-void* sgen_alloc_obj_nolock (GCVTable *vtable, size_t size);
-void* sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size);
+void* sgen_alloc_obj_nolock (GCVTable vtable, size_t size);
+void* sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size);
 
 /* Threads */
 
@@ -975,9 +975,9 @@ typedef enum {
 void sgen_init_tlab_info (SgenThreadInfo* info);
 void sgen_clear_tlabs (void);
 
-void* sgen_alloc_obj (GCVTable *vtable, size_t size);
-void* sgen_alloc_obj_pinned (GCVTable *vtable, size_t size);
-void* sgen_alloc_obj_mature (GCVTable *vtable, size_t size);
+void* sgen_alloc_obj (GCVTable vtable, size_t size);
+void* sgen_alloc_obj_pinned (GCVTable vtable, size_t size);
+void* sgen_alloc_obj_mature (GCVTable vtable, size_t size);
 
 /* Debug support */
 

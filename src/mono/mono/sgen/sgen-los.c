@@ -331,7 +331,7 @@ sgen_los_free_object (LOSObject *obj)
  * and we avoid the memcpy overhead.
  */
 void*
-sgen_los_alloc_large_inner (GCVTable *vtable, size_t size)
+sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 {
 	LOSObject *obj = NULL;
 	void **vtslot;
@@ -571,7 +571,7 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	LOSObject *obj;
 	for (obj = los_object_list; obj; obj = obj->next) {
-		GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj->data);
+		GCVTable vt = (GCVTable)SGEN_LOAD_VTABLE (obj->data);
 		if (SGEN_VTABLE_HAS_REFERENCES (vt))
 			callback ((mword)obj->data, (mword)obj->size);
 	}

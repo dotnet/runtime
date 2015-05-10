@@ -259,7 +259,7 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 }
 
 static inline char*
-alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)
+alloc_for_promotion (GCVTable vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	char *p = NULL;
 	int age;
@@ -281,13 +281,13 @@ alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_r
 	}
 
 	/* FIXME: assumes object layout */
-	*(GCVTable**)p = vtable;
+	*(GCVTable*)p = vtable;
 
 	return p;
 }
 
 static char*
-minor_alloc_for_promotion (GCVTable *vtable, char *obj, size_t objsize, gboolean has_references)
+minor_alloc_for_promotion (GCVTable vtable, char *obj, size_t objsize, gboolean has_references)
 {
 	/*
 	We only need to check for a non-nursery object if we're doing a major collection.

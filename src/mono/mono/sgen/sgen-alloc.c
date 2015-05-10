@@ -94,7 +94,7 @@ static __thread char **tlab_next_addr MONO_ATTR_USED;
 #endif
 
 static void*
-alloc_degraded (GCVTable *vtable, size_t size, gboolean for_mature)
+alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)
 {
 	void *p;
 
@@ -146,7 +146,7 @@ zero_tlab_if_necessary (void *p, size_t size)
  * a search for the pinned object in SGEN_SCAN_START_SIZE chunks.
  */
 void*
-sgen_alloc_obj_nolock (GCVTable *vtable, size_t size)
+sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 {
 	/* FIXME: handle OOM */
 	void **p;
@@ -330,7 +330,7 @@ sgen_alloc_obj_nolock (GCVTable *vtable, size_t size)
 }
 
 void*
-sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size)
+sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 {
 	void **p;
 	char *new_next;
@@ -418,7 +418,7 @@ sgen_try_alloc_obj_nolock (GCVTable *vtable, size_t size)
 }
 
 void*
-sgen_alloc_obj (GCVTable *vtable, size_t size)
+sgen_alloc_obj (GCVTable vtable, size_t size)
 {
 	void *res;
 	TLAB_ACCESS_INIT;
@@ -446,7 +446,7 @@ sgen_alloc_obj (GCVTable *vtable, size_t size)
 	}
 
 	ENTER_CRITICAL_REGION;
-	res = sgen_try_alloc_obj_nolock ((GCVTable*)vtable, size);
+	res = sgen_try_alloc_obj_nolock (vtable, size);
 	if (res) {
 		EXIT_CRITICAL_REGION;
 		return res;
@@ -454,7 +454,7 @@ sgen_alloc_obj (GCVTable *vtable, size_t size)
 	EXIT_CRITICAL_REGION;
 #endif
 	LOCK_GC;
-	res = sgen_alloc_obj_nolock ((GCVTable*)vtable, size);
+	res = sgen_alloc_obj_nolock (vtable, size);
 	UNLOCK_GC;
 	if (G_UNLIKELY (!res))
 		sgen_client_out_of_memory (size);
@@ -466,7 +466,7 @@ sgen_alloc_obj (GCVTable *vtable, size_t size)
  * We may want to explicitly free these objects.
  */
 void*
-sgen_alloc_obj_pinned (GCVTable *vtable, size_t size)
+sgen_alloc_obj_pinned (GCVTable vtable, size_t size)
 {
 	void **p;
 
@@ -478,10 +478,10 @@ sgen_alloc_obj_pinned (GCVTable *vtable, size_t size)
 
 	if (size > SGEN_MAX_SMALL_OBJ_SIZE) {
 		/* large objects are always pinned anyway */
-		p = sgen_los_alloc_large_inner ((GCVTable*)vtable, size);
+		p = sgen_los_alloc_large_inner (vtable, size);
 	} else {
 		SGEN_ASSERT (9, sgen_client_vtable_is_inited (vtable), "class %s:%s is not initialized", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
-		p = major_collector.alloc_small_pinned_obj ((GCVTable*)vtable, size, SGEN_VTABLE_HAS_REFERENCES ((GCVTable*)vtable));
+		p = major_collector.alloc_small_pinned_obj (vtable, size, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	}
 	if (G_LIKELY (p)) {
 		SGEN_LOG (6, "Allocated pinned object %p, vtable: %p (%s), size: %zd", p, vtable, sgen_client_vtable_get_name (vtable), size);
@@ -492,7 +492,7 @@ sgen_alloc_obj_pinned (GCVTable *vtable, size_t size)
 }
 
 void*
-sgen_alloc_obj_mature (GCVTable *vtable, size_t size)
+sgen_alloc_obj_mature (GCVTable vtable, size_t size)
 {
 	void *res;
 
@@ -501,7 +501,7 @@ sgen_alloc_obj_mature (GCVTable *vtable, size_t size)
 	size = ALIGN_UP (size);
 
 	LOCK_GC;
-	res = alloc_degraded ((GCVTable*)vtable, size, TRUE);
+	res = alloc_degraded (vtable, size, TRUE);
 	UNLOCK_GC;
 
 	return res;

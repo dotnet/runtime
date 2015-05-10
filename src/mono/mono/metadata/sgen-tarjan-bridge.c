@@ -448,7 +448,7 @@ bridge_object_forward (GCObject *obj)
 static const char*
 safe_name_bridge (GCObject *obj)
 {
-	GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj);
+	GCVTable vt = (GCVTable)SGEN_LOAD_VTABLE (obj);
 	return vt->klass->name;
 }
 

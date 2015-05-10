@@ -67,7 +67,7 @@ static char* describe_nursery_ptr (char *ptr, gboolean need_setup);
 static void
 describe_pointer (char *ptr, gboolean need_setup)
 {
-	GCVTable *vtable;
+	GCVTable vtable;
 	mword desc;
 	int type;
 	char *start;
@@ -80,7 +80,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 		if (!start)
 			return;
 		ptr = start;
-		vtable = (GCVTable*)LOAD_VTABLE (ptr);
+		vtable = (GCVTable)LOAD_VTABLE (ptr);
 	} else {
 		if (sgen_ptr_is_in_los (ptr, &start)) {
 			if (ptr == start)
@@ -89,7 +89,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer is at offset 0x%x of object %p in LOS space.\n", (int)(ptr - start), start);
 			ptr = start;
 			mono_sgen_los_describe_pointer (ptr);
-			vtable = (GCVTable*)LOAD_VTABLE (ptr);
+			vtable = (GCVTable)LOAD_VTABLE (ptr);
 		} else if (major_collector.ptr_is_in_non_pinned_space (ptr, &start)) {
 			if (ptr == start)
 				printf ("Pointer is the start of object %p in oldspace.\n", start);
@@ -99,11 +99,11 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer inside oldspace.\n");
 			if (start)
 				ptr = start;
-			vtable = (GCVTable*)major_collector.describe_pointer (ptr);
+			vtable = (GCVTable)major_collector.describe_pointer (ptr);
 		} else if (major_collector.obj_is_from_pinned_alloc (ptr)) {
 			// FIXME: Handle pointers to the inside of objects
 			printf ("Pointer is inside a pinned chunk.\n");
-			vtable = (GCVTable*)LOAD_VTABLE (ptr);
+			vtable = (GCVTable)LOAD_VTABLE (ptr);
 		} else {
 			printf ("Pointer unknown.\n");
 			return;
@@ -130,7 +130,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 	}
 	printf ("Class: %s.%s\n", sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable));
 
-	desc = sgen_vtable_get_descriptor ((GCVTable*)vtable);
+	desc = sgen_vtable_get_descriptor (vtable);
 	printf ("Descriptor: %lx\n", (long)desc);
 
 	type = desc & DESC_TYPE_MASK;
@@ -162,7 +162,7 @@ static gboolean missing_remsets;
 #define HANDLE_PTR(ptr,obj)	do {	\
 	if (*(ptr) && sgen_ptr_in_nursery ((char*)*(ptr))) { \
 		if (!sgen_get_remset ()->find_address ((char*)(ptr)) && !sgen_cement_lookup (*(ptr))) { \
-			GCVTable *__vt = SGEN_LOAD_VTABLE ((obj));	\
+			GCVTable __vt = SGEN_LOAD_VTABLE ((obj));	\
 			SGEN_LOG (0, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
 			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			if (!object_is_pinned (*(ptr)))								\
@@ -178,8 +178,8 @@ static gboolean missing_remsets;
 static void
 check_consistency_callback (char *start, size_t size, void *dummy)
 {
-	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
-	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
+	GCVTable vt = (GCVTable)LOAD_VTABLE (start);
+	mword desc = sgen_vtable_get_descriptor (vt);
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
 
 #include "sgen-scan-object.h"
@@ -224,7 +224,7 @@ is_major_or_los_object_marked (char *obj)
 #define HANDLE_PTR(ptr,obj)	do {	\
 	if (*(ptr) && !sgen_ptr_in_nursery ((char*)*(ptr)) && !is_major_or_los_object_marked ((char*)*(ptr))) { \
 		if (!sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
-			GCVTable *__vt = SGEN_LOAD_VTABLE ((obj));	\
+			GCVTable __vt = SGEN_LOAD_VTABLE ((obj));	\
 			SGEN_LOG (0, "major->major reference %p at offset %zd in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
 			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			missing_remsets = TRUE;				\
@@ -236,8 +236,8 @@ static void
 check_mod_union_callback (char *start, size_t size, void *dummy)
 {
 	gboolean in_los = (gboolean) (size_t) dummy;
-	GCVTable *vt = (GCVTable*)LOAD_VTABLE (start);
-	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
+	GCVTable vt = (GCVTable)LOAD_VTABLE (start);
+	mword desc = sgen_vtable_get_descriptor (vt);
 	guint8 *cards;
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
 
@@ -407,7 +407,7 @@ static void
 bad_pointer_spew (char *obj, char **slot)
 {
 	char *ptr = *slot;
-	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
+	GCVTable vtable = (GCVTable)LOAD_VTABLE (obj);
 
 	SGEN_LOG (0, "Invalid object pointer %p at offset %zd in object %p (%s.%s):", ptr,
 			(char*)slot - obj,
@@ -420,7 +420,7 @@ static void
 missing_remset_spew (char *obj, char **slot)
 {
 	char *ptr = *slot;
-	GCVTable *vtable = (GCVTable*)LOAD_VTABLE (obj);
+	GCVTable vtable = (GCVTable)LOAD_VTABLE (obj);
 
 	SGEN_LOG (0, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets.",
 			ptr, (char*)slot - obj, obj, 
@@ -665,7 +665,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 		verify_scan_starts (cur, cur + size);
 		is_array_fill = sgen_client_object_is_array_fill ((GCObject*)cur);
 		if (do_dump_nursery_content) {
-			GCVTable *vtable = SGEN_LOAD_VTABLE (cur);
+			GCVTable vtable = SGEN_LOAD_VTABLE (cur);
 			if (cur > hole_start)
 				SGEN_LOG (0, "HOLE [%p %p %d]", hole_start, cur, (int)(cur - hole_start));
 			SGEN_LOG (0, "OBJ  [%p %p %d %d %s.%s %d]", cur, cur + size, (int)size, (int)ss,
@@ -718,7 +718,7 @@ static gboolean scan_object_for_specific_ref_precise = TRUE;
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj) do {					\
 		if ((GCObject*)*(ptr) == key) {				\
-			GCVTable *vtable = SGEN_LOAD_VTABLE (*(ptr));	\
+			GCVTable vtable = SGEN_LOAD_VTABLE (*(ptr));	\
 			g_print ("found ref to %p in object %p (%s.%s) at offset %zd\n", \
 					key, (obj), sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), ((char*)(ptr) - (char*)(obj))); \
 		}							\
@@ -741,7 +741,7 @@ scan_object_for_specific_ref (char *start, GCObject *key)
 		int i;
 		for (i = 0; i < size / sizeof (mword); ++i) {
 			if (words [i] == (mword)key) {
-				GCVTable *vtable = SGEN_LOAD_VTABLE (start);
+				GCVTable vtable = SGEN_LOAD_VTABLE (start);
 				g_print ("found possible ref to %p in object %p (%s.%s) at offset %zd\n",
 						key, start, sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable), i * sizeof (mword));
 			}
@@ -1023,7 +1023,7 @@ scan_object_for_xdomain_refs (char *start, mword size, void *data)
 {
 	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (start);
 	MonoDomain *domain = vt->domain;
-	mword desc = sgen_vtable_get_descriptor ((GCVTable*)vt);
+	mword desc = sgen_vtable_get_descriptor (vt);
 
 	#include "sgen-scan-object.h"
 }
@@ -1064,7 +1064,7 @@ sgen_dump_section (GCMemSection *section, const char *type)
 
 	while (start < end) {
 		guint size;
-		//GCVTable *vt;
+		//GCVTable vt;
 		//MonoClass *class;
 
 		if (!*(void**)start) {
@@ -1080,7 +1080,7 @@ sgen_dump_section (GCMemSection *section, const char *type)
 		if (!occ_start)
 			occ_start = start;
 
-		//vt = (GCVTable*)SGEN_LOAD_VTABLE (start);
+		//vt = (GCVTable)SGEN_LOAD_VTABLE (start);
 		//class = vt->klass;
 
 		size = SGEN_ALIGN_UP (safe_object_get_size ((GCObject*) start));

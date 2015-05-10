@@ -354,9 +354,9 @@ mono_gc_get_write_barrier (void)
  */
 
 /* Vtable of the objects used to fill out nursery fragments before a collection */
-static GCVTable *array_fill_vtable;
+static GCVTable array_fill_vtable;
 
-static GCVTable*
+static GCVTable
 get_array_fill_vtable (void)
 {
 	if (!array_fill_vtable) {
@@ -379,7 +379,7 @@ get_array_fill_vtable (void)
 		vtable->gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 1);
 		vtable->rank = 1;
 
-		array_fill_vtable = (GCVTable*)vtable;
+		array_fill_vtable = vtable;
 	}
 	return array_fill_vtable;
 }
@@ -463,7 +463,7 @@ sgen_client_object_queued_for_finalization (GCObject *obj)
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_FINALIZE_ENQUEUE_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
-		GCVTable *vt = (GCVTable*)SGEN_LOAD_VTABLE (obj);
+		GCVTable vt = (GCVTable)SGEN_LOAD_VTABLE (obj);
 		MONO_GC_FINALIZE_ENQUEUE ((mword)obj, sgen_safe_object_get_size (obj),
 				sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt), gen,
 				sgen_client_object_has_critical_finalizer (obj));
@@ -1595,7 +1595,7 @@ sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *card
 	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
 
-	SGEN_ASSERT (0, SGEN_VTABLE_HAS_REFERENCES ((GCVTable*)vt), "Why would we ever call this on reference-free objects?");
+	SGEN_ASSERT (0, SGEN_VTABLE_HAS_REFERENCES (vt), "Why would we ever call this on reference-free objects?");
 
 	if (vt->rank) {
 		guint8 *card_data, *card_base;
@@ -1716,7 +1716,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 
 #ifndef DISABLE_CRITICAL_REGION
 	ENTER_CRITICAL_REGION;
-	arr = sgen_try_alloc_obj_nolock ((GCVTable*)vtable, size);
+	arr = sgen_try_alloc_obj_nolock (vtable, size);
 	if (arr) {
 		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
 		arr->max_length = (mono_array_size_t)max_length;
@@ -1728,7 +1728,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 
 	LOCK_GC;
 
-	arr = sgen_alloc_obj_nolock ((GCVTable*)vtable, size);
+	arr = sgen_alloc_obj_nolock (vtable, size);
 	if (G_UNLIKELY (!arr)) {
 		UNLOCK_GC;
 		return mono_gc_out_of_memory (size);
@@ -1742,7 +1742,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	if (G_UNLIKELY (alloc_events))
 		mono_profiler_allocation (&arr->obj);
 
-	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size ((GCVTable*)vtable, (GCObject*)arr)), "Vector has incorrect size.");
+	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size (vtable, (GCObject*)arr)), "Vector has incorrect size.");
 	return arr;
 }
 
@@ -1758,7 +1758,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 
 #ifndef DISABLE_CRITICAL_REGION
 	ENTER_CRITICAL_REGION;
-	arr = sgen_try_alloc_obj_nolock ((GCVTable*)vtable, size);
+	arr = sgen_try_alloc_obj_nolock (vtable, size);
 	if (arr) {
 		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
 		arr->max_length = (mono_array_size_t)max_length;
@@ -1773,7 +1773,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 
 	LOCK_GC;
 
-	arr = sgen_alloc_obj_nolock ((GCVTable*)vtable, size);
+	arr = sgen_alloc_obj_nolock (vtable, size);
 	if (G_UNLIKELY (!arr)) {
 		UNLOCK_GC;
 		return mono_gc_out_of_memory (size);
@@ -1790,7 +1790,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	if (G_UNLIKELY (alloc_events))
 		mono_profiler_allocation (&arr->obj);
 
-	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size ((GCVTable*)vtable, (GCObject*)arr)), "Array has incorrect size.");
+	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size (vtable, (GCObject*)arr)), "Array has incorrect size.");
 	return arr;
 }
 
@@ -1805,7 +1805,7 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 
 #ifndef DISABLE_CRITICAL_REGION
 	ENTER_CRITICAL_REGION;
-	str = sgen_try_alloc_obj_nolock ((GCVTable*)vtable, size);
+	str = sgen_try_alloc_obj_nolock (vtable, size);
 	if (str) {
 		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
 		str->length = len;
@@ -1817,7 +1817,7 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 
 	LOCK_GC;
 
-	str = sgen_alloc_obj_nolock ((GCVTable*)vtable, size);
+	str = sgen_alloc_obj_nolock (vtable, size);
 	if (G_UNLIKELY (!str)) {
 		UNLOCK_GC;
 		return mono_gc_out_of_memory (size);
@@ -2707,23 +2707,20 @@ sgen_client_pre_collection_checks (void)
 }
 
 gboolean
-sgen_client_vtable_is_inited (GCVTable *gc_vtable)
+sgen_client_vtable_is_inited (MonoVTable *vt)
 {
-	MonoVTable *vt = (MonoVTable*)gc_vtable;
 	return vt->klass->inited;
 }
 
 const char*
-sgen_client_vtable_get_namespace (GCVTable *gc_vtable)
+sgen_client_vtable_get_namespace (MonoVTable *vt)
 {
-	MonoVTable *vt = (MonoVTable*)gc_vtable;
 	return vt->klass->name_space;
 }
 
 const char*
-sgen_client_vtable_get_name (GCVTable *gc_vtable)
+sgen_client_vtable_get_name (MonoVTable *vt)
 {
-	MonoVTable *vt = (MonoVTable*)gc_vtable;
 	return vt->klass->name;
 }
 

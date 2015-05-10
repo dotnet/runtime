@@ -25,19 +25,19 @@
 #include "metadata/object-internals.h"
 
 typedef MonoObject GCObject;
-typedef MonoVTable GCVTable;
+typedef MonoVTable* GCVTable;
 
-/* FIXME: This should return a GCVTable* and be a function. */
+/* FIXME: This should return a GCVTable and be a function. */
 #define SGEN_LOAD_VTABLE_UNCHECKED(obj)	((void*)(((GCObject*)(obj))->vtable))
 
 static inline mword
-sgen_vtable_get_descriptor (GCVTable *vtable)
+sgen_vtable_get_descriptor (GCVTable vtable)
 {
 	return (mword)vtable->gc_descr;
 }
 
 static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
-sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o)
+sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o)
 {
 	MonoClass *klass = ((MonoVTable*)vtable)->klass;
 
@@ -68,7 +68,7 @@ sgen_client_slow_object_get_size (GCVTable *vtable, GCObject* o)
  * collector.
  */
 static MONO_NEVER_INLINE mword
-sgen_client_par_object_get_size (GCVTable *vtable, GCObject* o)
+sgen_client_par_object_get_size (GCVTable vtable, GCObject* o)
 {
 	mword descr = sgen_vtable_get_descriptor (vtable);
 	mword type = descr & DESC_TYPE_MASK;
@@ -167,7 +167,7 @@ enum {
 #define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
 
 static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
-sgen_client_array_element_size (GCVTable *gc_vtable)
+sgen_client_array_element_size (GCVTable gc_vtable)
 {
 	MonoVTable *vt = (MonoVTable*)gc_vtable;
 	return mono_array_element_size (vt->klass);
@@ -192,14 +192,14 @@ sgen_client_object_is_array_fill (GCObject *o)
 }
 
 static MONO_ALWAYS_INLINE void G_GNUC_UNUSED
-sgen_client_pre_copy_checks (char *destination, GCVTable *gc_vtable, void *obj, mword objsize)
+sgen_client_pre_copy_checks (char *destination, GCVTable gc_vtable, void *obj, mword objsize)
 {
 	MonoVTable *vt = (MonoVTable*)gc_vtable;
 	SGEN_ASSERT (9, vt->klass->inited, "vtable %p for class %s:%s was not initialized", vt, vt->klass->name_space, vt->klass->name);
 }
 
 static MONO_ALWAYS_INLINE void G_GNUC_UNUSED
-sgen_client_update_copied_object (char *destination, GCVTable *gc_vtable, void *obj, mword objsize)
+sgen_client_update_copied_object (char *destination, GCVTable gc_vtable, void *obj, mword objsize)
 {
 	MonoVTable *vt = (MonoVTable*)gc_vtable;
 	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
@@ -247,8 +247,8 @@ sgen_client_object_has_critical_finalizer (GCObject *obj)
 	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
 }
 
-const char* sgen_client_vtable_get_namespace (GCVTable *vtable);
-const char* sgen_client_vtable_get_name (GCVTable *vtable);
+const char* sgen_client_vtable_get_namespace (GCVTable vtable);
+const char* sgen_client_vtable_get_name (GCVTable vtable);
 
 static gboolean G_GNUC_UNUSED
 sgen_client_bridge_need_processing (void)
@@ -568,7 +568,7 @@ sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolea
 {
 #ifdef ENABLE_DTRACE
 	if (MONO_GC_WEAK_UPDATE_ENABLED ()) {
-		GCVTable *vt = obj ? (GCVTable*)SGEN_LOAD_VTABLE (obj) : NULL;
+		GCVTable vt = obj ? (GCVTable)SGEN_LOAD_VTABLE (obj) : NULL;
 		MONO_GC_WEAK_UPDATE ((mword)link,
 				(mword)obj,
 				obj ? (mword)sgen_safe_object_get_size (obj) : (mword)0,
