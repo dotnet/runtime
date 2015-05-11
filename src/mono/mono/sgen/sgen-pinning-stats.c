@@ -116,8 +116,9 @@ sgen_pin_stats_register_address (char *addr, int pin_type)
 }
 
 static void
-pin_stats_count_object_from_tree (char *obj, size_t size, PinStatAddress *node, int *pin_types)
+pin_stats_count_object_from_tree (GCObject *object, size_t size, PinStatAddress *node, int *pin_types)
 {
+	char *obj = (char*)object;
 	if (!node)
 		return;
 	if (node->addr >= obj && node->addr < obj + size) {
@@ -131,9 +132,9 @@ pin_stats_count_object_from_tree (char *obj, size_t size, PinStatAddress *node, 
 		}
 	}
 	if (obj < node->addr)
-		pin_stats_count_object_from_tree (obj, size, node->left, pin_types);
+		pin_stats_count_object_from_tree (object, size, node->left, pin_types);
 	if (obj + size - 1 > node->addr)
-		pin_stats_count_object_from_tree (obj, size, node->right, pin_types);
+		pin_stats_count_object_from_tree (object, size, node->right, pin_types);
 }
 
 static gpointer
@@ -169,7 +170,7 @@ register_vtable (GCVTable vtable, int pin_types)
 }
 
 void
-sgen_pin_stats_register_object (char *obj, size_t size)
+sgen_pin_stats_register_object (GCObject *obj, size_t size)
 {
 	int pin_types = 0;
 
@@ -180,11 +181,11 @@ sgen_pin_stats_register_object (char *obj, size_t size)
 	sgen_pointer_queue_add (&pinned_objects, obj);
 
 	if (pin_types)
-		register_vtable ((GCVTable)SGEN_LOAD_VTABLE (obj), pin_types);
+		register_vtable (SGEN_LOAD_VTABLE (obj), pin_types);
 }
 
 void
-sgen_pin_stats_register_global_remset (char *obj)
+sgen_pin_stats_register_global_remset (GCObject *obj)
 {
 	GlobalRemsetClassEntry empty_entry;
 	GlobalRemsetClassEntry *entry;
@@ -193,7 +194,7 @@ sgen_pin_stats_register_global_remset (char *obj)
 		return;
 
 	memset (&empty_entry, 0, sizeof (GlobalRemsetClassEntry));
-	entry = lookup_vtable_entry (&global_remset_class_hash_table, (GCVTable)SGEN_LOAD_VTABLE (obj), &empty_entry);
+	entry = lookup_vtable_entry (&global_remset_class_hash_table, SGEN_LOAD_VTABLE (obj), &empty_entry);
 
 	++entry->num_remsets;
 }

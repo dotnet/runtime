@@ -402,7 +402,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	return obj->data;
 }
 
-static void sgen_los_unpin_object (char *data);
+static void sgen_los_unpin_object (GCObject *data);
 
 void
 sgen_los_sweep (void)
@@ -418,7 +418,7 @@ sgen_los_sweep (void)
 		SGEN_ASSERT (0, !SGEN_OBJECT_IS_PINNED (bigobj->data), "Who pinned a LOS object?");
 
 		if (bigobj->cardtable_mod_union) {
-			sgen_card_table_free_mod_union (bigobj->cardtable_mod_union, bigobj->data, bigobj->size);
+			sgen_card_table_free_mod_union (bigobj->cardtable_mod_union, (char*)bigobj->data, bigobj->size);
 			bigobj->cardtable_mod_union = NULL;
 		}
 
@@ -502,10 +502,10 @@ sgen_ptr_is_in_los (char *ptr, char **start)
 
 	*start = NULL;
 	for (obj = los_object_list; obj; obj = obj->next) {
-		char *end = obj->data + obj->size;
+		char *end = (char*)obj->data + obj->size;
 
-		if (ptr >= obj->data && ptr < end) {
-			*start = obj->data;
+		if (ptr >= (char*)obj->data && ptr < end) {
+			*start = (char*)obj->data;
 			return TRUE;
 		}
 	}
@@ -527,7 +527,7 @@ sgen_los_is_valid_object (char *object)
 	LOSObject *obj;
 
 	for (obj = los_object_list; obj; obj = obj->next) {
-		if (obj->data == object)
+		if ((char*)obj->data == object)
 			return TRUE;
 	}
 	return FALSE;
@@ -543,7 +543,7 @@ mono_sgen_los_describe_pointer (char *ptr)
 		mword size;
 		gboolean pinned;
 
-		if (obj->data > ptr || obj->data + obj->size <= ptr)
+		if ((char*)obj->data > ptr || (char*)obj->data + obj->size <= ptr)
 			continue;
 
 		size = sgen_los_object_size (obj);
@@ -554,11 +554,11 @@ mono_sgen_los_describe_pointer (char *ptr)
 		else
 			los_kind = "los-ptr";
 
-		if (obj->data == ptr) {
+		if ((char*)obj->data == ptr) {
 			SGEN_LOG (0, "%s (size %d pin %d)\n", los_kind, (int)size, pinned ? 1 : 0);
 		} else {
 			SGEN_LOG (0, "%s (interior-ptr offset %zd size %d pin %d)",
-					  los_kind, ptr - obj->data, (int)size, pinned ? 1 : 0);
+					los_kind, ptr - (char*)obj->data, (int)size, pinned ? 1 : 0);
 		}
 
 		return TRUE;
@@ -571,7 +571,7 @@ sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	LOSObject *obj;
 	for (obj = los_object_list; obj; obj = obj->next) {
-		GCVTable vt = (GCVTable)SGEN_LOAD_VTABLE (obj->data);
+		GCVTable vt = SGEN_LOAD_VTABLE (obj->data);
 		if (SGEN_VTABLE_HAS_REFERENCES (vt))
 			callback ((mword)obj->data, (mword)obj->size);
 	}
@@ -584,13 +584,13 @@ get_cardtable_mod_union_for_object (LOSObject *obj)
 	guint8 *other;
 	if (mod_union)
 		return mod_union;
-	mod_union = sgen_card_table_alloc_mod_union (obj->data, obj->size);
+	mod_union = sgen_card_table_alloc_mod_union ((char*)obj->data, obj->size);
 	other = SGEN_CAS_PTR ((gpointer*)&obj->cardtable_mod_union, mod_union, NULL);
 	if (!other) {
 		SGEN_ASSERT (0, obj->cardtable_mod_union == mod_union, "Why did CAS not replace?");
 		return mod_union;
 	}
-	sgen_card_table_free_mod_union (mod_union, obj->data, obj->size);
+	sgen_card_table_free_mod_union (mod_union, (char*)obj->data, obj->size);
 	return other;
 }
 
@@ -655,7 +655,7 @@ sgen_los_update_cardtable_mod_union (void)
 		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
 			continue;
 		sgen_card_table_update_mod_union (get_cardtable_mod_union_for_object (obj),
-				obj->data, obj->size, NULL);
+				(char*)obj->data, obj->size, NULL);
 	}
 }
 
@@ -666,32 +666,32 @@ sgen_los_object_size (LOSObject *obj)
 }
 
 LOSObject*
-sgen_los_header_for_object (char *data)
+sgen_los_header_for_object (GCObject *data)
 {
 #if _MSC_VER
-	return (LOSObject*)(data - (int)(&(((LOSObject*)0)->data)));
+	return (LOSObject*)((char*)data - (int)(&(((LOSObject*)0)->data)));
 #else
-	return (LOSObject*)(data - sizeof (LOSObject));
+	return (LOSObject*)((char*)data - sizeof (LOSObject));
 #endif
 }
 
 void
-sgen_los_pin_object (char *data)
+sgen_los_pin_object (GCObject *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
 	obj->size = obj->size | 1;
-	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size ((GCObject*)data));
+	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
 }
 
 static void
-sgen_los_unpin_object (char *data)
+sgen_los_unpin_object (GCObject *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
 	obj->size = sgen_los_object_size (obj);
 }
 
 gboolean
-sgen_los_object_is_pinned (char *data)
+sgen_los_object_is_pinned (GCObject *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
 	return obj->size & 1;
@@ -700,7 +700,7 @@ sgen_los_object_is_pinned (char *data)
 void
 sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr)
 {
-	LOSObject *obj = sgen_los_header_for_object ((char*)mono_obj);
+	LOSObject *obj = sgen_los_header_for_object (mono_obj);
 	guint8 *mod_union = get_cardtable_mod_union_for_object (obj);
 	size_t offset = sgen_card_table_get_card_offset ((char*)ptr, (char*)sgen_card_table_align_pointer ((char*)obj));
 	SGEN_ASSERT (0, mod_union, "FIXME: optionally allocate the mod union if it's not here and CAS it in.");

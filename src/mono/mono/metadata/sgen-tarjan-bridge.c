@@ -448,7 +448,7 @@ bridge_object_forward (GCObject *obj)
 static const char*
 safe_name_bridge (GCObject *obj)
 {
-	GCVTable vt = (GCVTable)SGEN_LOAD_VTABLE (obj);
+	GCVTable vt = SGEN_LOAD_VTABLE (obj);
 	return vt->klass->name;
 }
 
@@ -591,7 +591,7 @@ register_bridge_object (GCObject *obj)
 static gboolean
 is_opaque_object (GCObject *obj)
 {
-	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
 	if ((vt->gc_bits & SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) == SGEN_GC_BIT_BRIDGE_OPAQUE_OBJECT) {
 		SGEN_LOG (6, "ignoring %s\n", vt->klass->name);
 		++ignored_objects;
@@ -658,7 +658,7 @@ push_all (ScanData *data)
 {
 	GCObject *obj = data->obj;
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor_safe (start);
+	mword desc = sgen_obj_get_descriptor_safe (obj);
 
 #if DUMP_GRAPH
 	printf ("**scanning %p %s\n", obj, safe_name_bridge (obj));
@@ -710,7 +710,7 @@ compute_low (ScanData *data)
 {
 	GCObject *obj = data->obj;
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor_safe (start);
+	mword desc = sgen_obj_get_descriptor_safe (obj);
 
 	#include "sgen/sgen-scan-object.h"
 }

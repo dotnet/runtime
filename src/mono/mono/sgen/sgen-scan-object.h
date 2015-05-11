@@ -46,7 +46,7 @@
 {
 #ifndef SCAN_OBJECT_NOVTABLE
 #if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
-	binary_protocol_scan_begin (start, SGEN_LOAD_VTABLE (start), sgen_safe_object_get_size ((GCObject*)start));
+	binary_protocol_scan_begin ((GCObject*)start, SGEN_LOAD_VTABLE ((GCObject*)start), sgen_safe_object_get_size ((GCObject*)start));
 #endif
 #else
 #if defined(SGEN_HEAVY_BINARY_PROTOCOL) && defined(SCAN_OBJECT_PROTOCOL)
@@ -55,21 +55,21 @@
 #endif
 	switch (desc & DESC_TYPE_MASK) {
 	case DESC_TYPE_RUN_LENGTH:
-#define SCAN OBJ_RUN_LEN_FOREACH_PTR (desc, start)
+#define SCAN OBJ_RUN_LEN_FOREACH_PTR (desc, ((GCObject*)start))
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 #undef SCAN
 		break;
 	case DESC_TYPE_VECTOR:
-#define SCAN OBJ_VECTOR_FOREACH_PTR (desc, start)
+#define SCAN OBJ_VECTOR_FOREACH_PTR (desc, ((GCObject*)start))
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
 #undef SCAN
 		break;
 	case DESC_TYPE_BITMAP:
-#define SCAN OBJ_BITMAP_FOREACH_PTR (desc, start)
+#define SCAN OBJ_BITMAP_FOREACH_PTR (desc, ((GCObject*)start))
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
@@ -77,7 +77,7 @@
 		break;
 	case DESC_TYPE_COMPLEX:
 		/* this is a complex object */
-#define SCAN OBJ_COMPLEX_FOREACH_PTR (desc, start)
+#define SCAN OBJ_COMPLEX_FOREACH_PTR (desc, ((GCObject*)start))
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif
@@ -86,7 +86,7 @@
 #ifndef SCAN_OBJECT_NOVTABLE
 	case DESC_TYPE_COMPLEX_ARR:
 		/* this is an array of complex structs */
-#define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (desc, start)
+#define SCAN OBJ_COMPLEX_ARR_FOREACH_PTR (desc, ((GCObject*)start))
 #ifndef SCAN_OBJECT_NOSCAN
 		SCAN;
 #endif

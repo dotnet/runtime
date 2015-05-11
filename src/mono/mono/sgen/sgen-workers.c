@@ -227,7 +227,7 @@ workers_get_work (WorkerData *data)
 }
 
 static void
-concurrent_enqueue_check (char *obj)
+concurrent_enqueue_check (GCObject *obj)
 {
 	g_assert (sgen_concurrent_collection_in_progress ());
 	g_assert (!sgen_ptr_in_nursery (obj));

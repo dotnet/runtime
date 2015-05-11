@@ -41,8 +41,6 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include "mono/utils/atomic.h"
 #include "mono/utils/mono-mutex.h"
 #include "mono/sgen/sgen-conf.h"
-#include "mono/sgen/sgen-descriptor.h"
-#include "mono/sgen/sgen-gray.h"
 #include "mono/sgen/sgen-hash-table.h"
 #include "mono/sgen/sgen-protocol.h"
 
@@ -276,7 +274,7 @@ sgen_get_nursery_end (void)
  * Since we set bits in the vtable, use the macro to load it from the pointer to
  * an object that is potentially pinned.
  */
-#define SGEN_LOAD_VTABLE(obj)		SGEN_POINTER_UNTAG_ALL (SGEN_LOAD_VTABLE_UNCHECKED ((obj)))
+#define SGEN_LOAD_VTABLE(obj)		((GCVTable)(SGEN_POINTER_UNTAG_ALL (SGEN_LOAD_VTABLE_UNCHECKED ((obj)))))
 
 /*
 List of what each bit on of the vtable gc bits means. 
@@ -309,15 +307,12 @@ extern SgenHashTable roots_hash [ROOT_TYPE_NUM];
 int sgen_register_root (char *start, size_t size, void *descr, int root_type);
 void sgen_deregister_root (char* addr);
 
-typedef void (*IterateObjectCallbackFunc) (char*, size_t, void*);
-
 void sgen_gc_init (void);
 
 void sgen_os_init (void);
 
 void sgen_update_heap_boundaries (mword low, mword high);
 
-void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags);
 void sgen_check_section_scan_starts (GCMemSection *section);
 
 void sgen_conservatively_pin_objects_from (void **start, void **end, void *start_nursery, void *end_nursery, int pin_type);
@@ -384,6 +379,13 @@ void sgen_init_internal_allocator (void);
 #endif
 #undef SGEN_DEFINE_OBJECT_VTABLE
 
+#include "mono/sgen/sgen-descriptor.h"
+#include "mono/sgen/sgen-gray.h"
+
+typedef void (*IterateObjectCallbackFunc) (GCObject*, size_t, void*);
+
+void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags);
+
 /* eventually share with MonoThread? */
 /*
  * This structure extends the MonoThreadInfo structure.
@@ -406,9 +408,9 @@ struct _SgenThreadInfo {
 
 gboolean sgen_is_worker_thread (MonoNativeThreadId thread);
 
-typedef void (*CopyOrMarkObjectFunc) (void**, SgenGrayQueue*);
-typedef void (*ScanObjectFunc) (char *obj, mword desc, SgenGrayQueue*);
-typedef void (*ScanVTypeFunc) (char *full_object, char *start, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
+typedef void (*CopyOrMarkObjectFunc) (GCObject**, SgenGrayQueue*);
+typedef void (*ScanObjectFunc) (GCObject *obj, mword desc, SgenGrayQueue*);
+typedef void (*ScanVTypeFunc) (GCObject *full_object, char *start, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
 
 typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
@@ -439,8 +441,8 @@ void* sgen_alloc_internal_dynamic (size_t size, int type, gboolean assert_on_fai
 void sgen_free_internal_dynamic (void *addr, size_t size, int type);
 
 void sgen_pin_stats_enable (void);
-void sgen_pin_stats_register_object (char *obj, size_t size);
-void sgen_pin_stats_register_global_remset (char *obj);
+void sgen_pin_stats_register_object (GCObject *obj, size_t size);
+void sgen_pin_stats_register_global_remset (GCObject *obj);
 void sgen_pin_stats_print_class_stats (void);
 
 void sgen_sort_addresses (void **array, size_t size);
@@ -497,9 +499,9 @@ extern char *sgen_space_bitmap;
 extern size_t sgen_space_bitmap_size;
 
 static inline gboolean
-sgen_nursery_is_to_space (char *object)
+sgen_nursery_is_to_space (void *object)
 {
-	size_t idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	size_t idx = ((char*)object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
 	size_t byte = idx >> 3;
 	size_t bit = idx & 0x7;
 
@@ -510,13 +512,13 @@ sgen_nursery_is_to_space (char *object)
 }
 
 static inline gboolean
-sgen_nursery_is_from_space (char *object)
+sgen_nursery_is_from_space (void *object)
 {
 	return !sgen_nursery_is_to_space (object);
 }
 
 static inline gboolean
-sgen_nursery_is_object_alive (char *obj)
+sgen_nursery_is_object_alive (GCObject *obj)
 {
 	/* FIXME put this asserts under a non default level */
 	g_assert (sgen_ptr_in_nursery (obj));
@@ -533,7 +535,7 @@ sgen_nursery_is_object_alive (char *obj)
 typedef struct {
 	gboolean is_split;
 
-	char* (*alloc_for_promotion) (GCVTable vtable, char *obj, size_t objsize, gboolean has_references);
+	char* (*alloc_for_promotion) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
 
@@ -610,7 +612,7 @@ struct _SgenMajorCollector {
 	gboolean *want_synchronous_collection;
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
-	gboolean (*is_object_live) (char *obj);
+	gboolean (*is_object_live) (GCObject *obj);
 	void* (*alloc_small_pinned_obj) (GCVTable vtable, size_t size, gboolean has_references);
 	void* (*alloc_degraded) (GCVTable vtable, size_t size);
 
@@ -620,7 +622,7 @@ struct _SgenMajorCollector {
 	SgenObjectOperations major_ops_concurrent_finish;
 
 	void* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
-	void (*free_pinned_object) (char *obj, size_t size);
+	void (*free_pinned_object) (GCObject *obj, size_t size);
 
 	/*
 	 * This is used for domain unloading, heap walking from the logging profiler, and
@@ -628,9 +630,9 @@ struct _SgenMajorCollector {
 	 */
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 
-	void (*free_non_pinned_object) (char *obj, size_t size);
+	void (*free_non_pinned_object) (GCObject *obj, size_t size);
 	void (*pin_objects) (SgenGrayQueue *queue);
-	void (*pin_major_object) (char *obj, SgenGrayQueue *queue);
+	void (*pin_major_object) (GCObject *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (gboolean mod_union, ScanCopyContext ctx);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*update_cardtable_mod_union) (void);
@@ -648,16 +650,16 @@ struct _SgenMajorCollector {
 	void (*finish_major_collection) (ScannedObjectCounts *counts);
 	gboolean (*drain_gray_stack) (ScanCopyContext ctx);
 	gboolean (*ptr_is_in_non_pinned_space) (char *ptr, char **start);
-	gboolean (*obj_is_from_pinned_alloc) (char *obj);
+	gboolean (*ptr_is_from_pinned_alloc) (char *ptr);
 	void (*report_pinned_memory_usage) (void);
 	size_t (*get_num_major_sections) (void);
 	size_t (*get_bytes_survived_last_sweep) (void);
 	gboolean (*handle_gc_param) (const char *opt);
 	void (*print_gc_param_usage) (void);
 	void (*post_param_init) (SgenMajorCollector *collector);
-	gboolean (*is_valid_object) (char *object);
+	gboolean (*is_valid_object) (char *ptr);
 	GCVTable (*describe_pointer) (char *pointer);
-	guint8* (*get_cardtable_mod_union_for_object) (char *object);
+	guint8* (*get_cardtable_mod_union_for_reference) (char *object);
 	long long (*get_and_reset_num_major_objects_marked) (void);
 	void (*count_cards) (long long *num_total_cards, long long *num_marked_cards);
 };
@@ -703,7 +705,7 @@ void mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value);
 void sgen_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap);
 
 static inline mword
-sgen_obj_get_descriptor (char *obj)
+sgen_obj_get_descriptor (GCObject *obj)
 {
 	GCVTable vtable = SGEN_LOAD_VTABLE_UNCHECKED (obj);
 	SGEN_ASSERT (9, !SGEN_POINTER_IS_TAGGED_ANY (vtable), "Object can't be tagged");
@@ -711,21 +713,24 @@ sgen_obj_get_descriptor (char *obj)
 }
 
 static inline mword
-sgen_obj_get_descriptor_safe (char *obj)
+sgen_obj_get_descriptor_safe (GCObject *obj)
 {
-	GCVTable vtable = (GCVTable)SGEN_LOAD_VTABLE (obj);
+	GCVTable vtable = SGEN_LOAD_VTABLE (obj);
 	return sgen_vtable_get_descriptor (vtable);
 }
+
+static mword sgen_client_par_object_get_size (GCVTable vtable, GCObject* o);
+static mword sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o);
 
 static inline mword
 sgen_safe_object_get_size (GCObject *obj)
 {
-       char *forwarded;
+       GCObject *forwarded;
 
        if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
-               obj = (GCObject*)forwarded;
+               obj = forwarded;
 
-       return sgen_client_par_object_get_size ((GCVTable)SGEN_LOAD_VTABLE (obj), obj);
+       return sgen_client_par_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
 }
 
 static inline gboolean
@@ -743,13 +748,13 @@ sgen_safe_object_is_small (GCObject *obj, int type)
 static inline guint
 sgen_safe_object_get_size_unaligned (GCObject *obj)
 {
-       char *forwarded;
+	GCObject *forwarded;
 
-       if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
-               obj = (GCObject*)forwarded;
-       }
+	if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj))) {
+		obj = (GCObject*)forwarded;
+	}
 
-       return sgen_client_slow_object_get_size ((GCVTable)SGEN_LOAD_VTABLE (obj), obj);
+	return sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
 }
 
 #ifdef SGEN_CLIENT_HEADER
@@ -844,7 +849,7 @@ struct _LOSObject {
 #if SIZEOF_VOID_P < 8
 	mword dummy;		/* to align object to sizeof (double) */
 #endif
-	char data [MONO_ZERO_LEN_ARRAY];
+	GCObject data [MONO_ZERO_LEN_ARRAY];
 };
 
 extern LOSObject *los_object_list;
@@ -861,10 +866,10 @@ void sgen_los_update_cardtable_mod_union (void);
 void sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards);
 gboolean sgen_los_is_valid_object (char *object);
 gboolean mono_sgen_los_describe_pointer (char *ptr);
-LOSObject* sgen_los_header_for_object (char *data);
+LOSObject* sgen_los_header_for_object (GCObject *data);
 mword sgen_los_object_size (LOSObject *obj);
-void sgen_los_pin_object (char *obj);
-gboolean sgen_los_object_is_pinned (char *obj);
+void sgen_los_pin_object (GCObject *obj);
+gboolean sgen_los_object_is_pinned (GCObject *obj);
 void sgen_los_mark_mod_union_card (GCObject *mono_obj, void **ptr);
 
 
@@ -886,7 +891,7 @@ void sgen_nursery_retire_region (void *address, ptrdiff_t size);
 void sgen_nursery_alloc_prepare_for_minor (void);
 void sgen_nursery_alloc_prepare_for_major (void);
 
-char* sgen_alloc_for_promotion (char *obj, size_t objsize, gboolean has_references);
+char* sgen_alloc_for_promotion (GCObject *obj, size_t objsize, gboolean has_references);
 
 void* sgen_alloc_obj_nolock (GCVTable vtable, size_t size);
 void* sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size);
@@ -899,7 +904,7 @@ void sgen_thread_unregister (SgenThreadInfo *p);
 /* Finalization/ephemeron support */
 
 static inline gboolean
-sgen_major_is_object_alive (void *object)
+sgen_major_is_object_alive (GCObject *object)
 {
 	mword objsize;
 
@@ -911,7 +916,7 @@ sgen_major_is_object_alive (void *object)
 	 * FIXME: major_collector.is_object_live() also calculates the
 	 * size.  Avoid the double calculation.
 	 */
-	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size ((GCObject*)object));
+	objsize = SGEN_ALIGN_UP (sgen_safe_object_get_size (object));
 	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
 		return sgen_los_object_is_pinned (object);
 
@@ -923,7 +928,7 @@ sgen_major_is_object_alive (void *object)
  * and we're currently doing a minor collection.
  */
 static inline int
-sgen_is_object_alive_for_current_gen (char *object)
+sgen_is_object_alive_for_current_gen (GCObject *object)
 {
 	if (sgen_ptr_in_nursery (object))
 		return sgen_nursery_is_object_alive (object);
@@ -990,7 +995,7 @@ void sgen_check_objref (char *obj);
 void sgen_check_heap_marked (gboolean nursery_must_be_pinned);
 void sgen_check_nursery_objects_pinned (gboolean pinned);
 void sgen_check_for_xdomain_refs (void);
-char* sgen_find_object_for_ptr (char *ptr);
+GCObject* sgen_find_object_for_ptr (char *ptr);
 
 void mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise);
 

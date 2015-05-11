@@ -514,17 +514,16 @@ dfs1 (HashEntry *obj_entry)
 
 	do {
 		GCObject *obj;
-		char *start;
 		++dfs1_passes;
 
 		obj_entry = dyn_array_ptr_pop (&dfs_stack);
 		if (obj_entry) {
+			char *start;
 			mword desc;
 			src = dyn_array_ptr_pop (&dfs_stack);
 
 			obj = obj_entry->obj;
-			start = (char*)obj;
-			desc = sgen_obj_get_descriptor_safe (start);
+			desc = sgen_obj_get_descriptor_safe (obj);
 
 			if (src) {
 				//g_print ("link %s -> %s\n", sgen_safe_name (src->obj), sgen_safe_name (obj));
@@ -542,6 +541,7 @@ dfs1 (HashEntry *obj_entry)
 			/* NULL marks that the next entry is to be finished */
 			dyn_array_ptr_push (&dfs_stack, NULL);
 
+			start = (char*)obj;
 #include "sgen/sgen-scan-object.h"
 		} else {
 			obj_entry = dyn_array_ptr_pop (&dfs_stack);
@@ -765,7 +765,7 @@ processing_build_callback_data (int generation)
 		for (i = 0; i < hash_table.num_entries; ++i) {
 			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
 			if (entry->entry.is_bridge) {
-				MonoClass *klass = ((MonoVTable*)SGEN_LOAD_VTABLE (entry->entry.obj))->klass;
+				MonoClass *klass = SGEN_LOAD_VTABLE (entry->entry.obj)->klass;
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", klass->name_space, klass->name, entry->entry.obj, entry->weight);
 			}
 		}

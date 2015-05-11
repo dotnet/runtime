@@ -41,7 +41,7 @@ par_copy_object_no_checks (char *destination, GCVTable vt, void *obj, mword objs
 	binary_protocol_copy (obj, destination, vt, objsize);
 
 	/* FIXME: assumes object layout */
-	memcpy (destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
+	memcpy ((char*)destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));
 
 	/* adjust array->bounds */
 	SGEN_ASSERT (9, sgen_vtable_get_descriptor (vt), "vtable %p has no gc descriptor", vt);

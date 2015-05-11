@@ -450,7 +450,7 @@ mono_gc_get_vtable_bits (MonoClass *class)
 static gboolean
 is_finalization_aware (MonoObject *obj)
 {
-	MonoVTable *vt = ((MonoVTable*)SGEN_LOAD_VTABLE (obj));
+	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
 	return (vt->gc_bits & SGEN_GC_BIT_FINALIZER_AWARE) == SGEN_GC_BIT_FINALIZER_AWARE;
 }
 
@@ -463,7 +463,7 @@ sgen_client_object_queued_for_finalization (GCObject *obj)
 #ifdef ENABLE_DTRACE
 	if (G_UNLIKELY (MONO_GC_FINALIZE_ENQUEUE_ENABLED ())) {
 		int gen = sgen_ptr_in_nursery (obj) ? GENERATION_NURSERY : GENERATION_OLD;
-		GCVTable vt = (GCVTable)SGEN_LOAD_VTABLE (obj);
+		GCVTable vt = SGEN_LOAD_VTABLE (obj);
 		MONO_GC_FINALIZE_ENQUEUE ((mword)obj, sgen_safe_object_get_size (obj),
 				sgen_client_vtable_get_namespace (vt), sgen_client_vtable_get_name (vt), gen,
 				sgen_client_object_has_critical_finalizer (obj));
@@ -548,12 +548,12 @@ typedef struct _EphemeronLinkNode EphemeronLinkNode;
 
 struct _EphemeronLinkNode {
 	EphemeronLinkNode *next;
-	char *array;
+	MonoArray *array;
 };
 
 typedef struct {
-       void *key;
-       void *value;
+       GCObject *key;
+       GCObject *value;
 } Ephemeron;
 
 static EphemeronLinkNode *ephemeron_list;
@@ -594,17 +594,16 @@ sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
 	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
-	MonoArray *array;
 	Ephemeron *cur, *array_end;
-	char *tombstone;
+	GCObject *tombstone;
 
 	while (current) {
-		char *object = current->array;
+		MonoArray *array = current->array;
 
-		if (!sgen_is_object_alive_for_current_gen (object)) {
+		if (!sgen_is_object_alive_for_current_gen ((GCObject*)array)) {
 			EphemeronLinkNode *tmp = current;
 
-			SGEN_LOG (5, "Dead Ephemeron array at %p", object);
+			SGEN_LOG (5, "Dead Ephemeron array at %p", array);
 
 			if (prev)
 				prev->next = current->next;
@@ -617,18 +616,17 @@ sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
 			continue;
 		}
 
-		copy_func ((void**)&object, queue);
-		current->array = object;
+		copy_func ((GCObject**)&array, queue);
+		current->array = array;
 
-		SGEN_LOG (5, "Clearing unreachable entries for ephemeron array at %p", object);
+		SGEN_LOG (5, "Clearing unreachable entries for ephemeron array at %p", array);
 
-		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
 		array_end = cur + mono_array_length_fast (array);
-		tombstone = (char*)((MonoVTable*)SGEN_LOAD_VTABLE (object))->domain->ephemeron_tombstone;
+		tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
-			char *key = (char*)cur->key;
+			GCObject *key = cur->key;
 
 			if (!key || key == tombstone)
 				continue;
@@ -660,29 +658,27 @@ sgen_client_mark_ephemerons (ScanCopyContext ctx)
 	SgenGrayQueue *queue = ctx.queue;
 	gboolean nothing_marked = TRUE;
 	EphemeronLinkNode *current = ephemeron_list;
-	MonoArray *array;
 	Ephemeron *cur, *array_end;
-	char *tombstone;
+	GCObject *tombstone;
 
 	for (current = ephemeron_list; current; current = current->next) {
-		char *object = current->array;
-		SGEN_LOG (5, "Ephemeron array at %p", object);
+		MonoArray *array = current->array;
+		SGEN_LOG (5, "Ephemeron array at %p", array);
 
 		/*It has to be alive*/
-		if (!sgen_is_object_alive_for_current_gen (object)) {
+		if (!sgen_is_object_alive_for_current_gen ((GCObject*)array)) {
 			SGEN_LOG (5, "\tnot reachable");
 			continue;
 		}
 
-		copy_func ((void**)&object, queue);
+		copy_func ((GCObject**)&array, queue);
 
-		array = (MonoArray*)object;
 		cur = mono_array_addr (array, Ephemeron, 0);
 		array_end = cur + mono_array_length_fast (array);
-		tombstone = (char*)((MonoVTable*)SGEN_LOAD_VTABLE (object))->domain->ephemeron_tombstone;
+		tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
-			char *key = cur->key;
+			GCObject *key = cur->key;
 
 			if (!key || key == tombstone)
 				continue;
@@ -692,13 +688,13 @@ sgen_client_mark_ephemerons (ScanCopyContext ctx)
 				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
 
 			if (sgen_is_object_alive_for_current_gen (key)) {
-				char *value = cur->value;
+				GCObject *value = cur->value;
 
-				copy_func ((void**)&cur->key, queue);
+				copy_func (&cur->key, queue);
 				if (value) {
 					if (!sgen_is_object_alive_for_current_gen (value))
 						nothing_marked = FALSE;
-					copy_func ((void**)&cur->value, queue);
+					copy_func (&cur->value, queue);
 				}
 			}
 		}
@@ -720,7 +716,7 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 		UNLOCK_GC;
 		return FALSE;
 	}
-	node->array = (char*)obj;
+	node->array = (MonoArray*)obj;
 	node->next = ephemeron_list;
 	ephemeron_list = node;
 
@@ -747,7 +743,7 @@ mono_gc_set_current_thread_appdomain (MonoDomain *domain)
 }
 
 static gboolean
-need_remove_object_for_domain (char *start, MonoDomain *domain)
+need_remove_object_for_domain (GCObject *start, MonoDomain *domain)
 {
 	if (mono_object_domain (start) == domain) {
 		SGEN_LOG (4, "Need to cleanup object %p", start);
@@ -758,9 +754,9 @@ need_remove_object_for_domain (char *start, MonoDomain *domain)
 }
 
 static void
-process_object_for_domain_clearing (char *start, MonoDomain *domain)
+process_object_for_domain_clearing (GCObject *start, MonoDomain *domain)
 {
-	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (start);
+	MonoVTable *vt = SGEN_LOAD_VTABLE (start);
 	if (vt->klass == mono_defaults.internal_thread_class)
 		g_assert (mono_object_domain (start) == mono_get_root_domain ());
 	/* The object could be a proxy for an object in the domain
@@ -780,15 +776,15 @@ process_object_for_domain_clearing (char *start, MonoDomain *domain)
 }
 
 static gboolean
-clear_domain_process_object (char *obj, MonoDomain *domain)
+clear_domain_process_object (GCObject *obj, MonoDomain *domain)
 {
 	gboolean remove;
 
 	process_object_for_domain_clearing (obj, domain);
 	remove = need_remove_object_for_domain (obj, domain);
 
-	if (remove && ((MonoObject*)obj)->synchronisation) {
-		void **dislink = mono_monitor_get_object_monitor_weak_link ((MonoObject*)obj);
+	if (remove && obj->synchronisation) {
+		void **dislink = mono_monitor_get_object_monitor_weak_link (obj);
 		if (dislink)
 			sgen_register_disappearing_link (NULL, dislink, FALSE, TRUE);
 	}
@@ -797,7 +793,7 @@ clear_domain_process_object (char *obj, MonoDomain *domain)
 }
 
 static void
-clear_domain_process_minor_object_callback (char *obj, size_t size, MonoDomain *domain)
+clear_domain_process_minor_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
 {
 	if (clear_domain_process_object (obj, domain)) {
 		CANARIFY_SIZE (size);
@@ -806,20 +802,20 @@ clear_domain_process_minor_object_callback (char *obj, size_t size, MonoDomain *
 }
 
 static void
-clear_domain_process_major_object_callback (char *obj, size_t size, MonoDomain *domain)
+clear_domain_process_major_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
 {
 	clear_domain_process_object (obj, domain);
 }
 
 static void
-clear_domain_free_major_non_pinned_object_callback (char *obj, size_t size, MonoDomain *domain)
+clear_domain_free_major_non_pinned_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
 {
 	if (need_remove_object_for_domain (obj, domain))
 		major_collector.free_non_pinned_object (obj, size);
 }
 
 static void
-clear_domain_free_major_pinned_object_callback (char *obj, size_t size, MonoDomain *domain)
+clear_domain_free_major_pinned_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
 {
 	if (need_remove_object_for_domain (obj, domain))
 		major_collector.free_pinned_object (obj, size);
@@ -885,11 +881,11 @@ mono_gc_clear_domain (MonoDomain * domain)
 	   the first object is a proxy. */
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
-		clear_domain_process_object (bigobj->data, domain);
+		clear_domain_process_object ((GCObject*)bigobj->data, domain);
 
 	prev = NULL;
 	for (bigobj = los_object_list; bigobj;) {
-		if (need_remove_object_for_domain (bigobj->data, domain)) {
+		if (need_remove_object_for_domain ((GCObject*)bigobj->data, domain)) {
 			LOSObject *to_free = bigobj;
 			if (prev)
 				prev->next = bigobj->next;
@@ -1590,9 +1586,9 @@ find_next_card (guint8 *card_data, guint8 *end)
 #define ARRAY_OBJ_INDEX(ptr,array,elem_size) (((char*)(ptr) - ((char*)(array) + G_STRUCT_OFFSET (MonoArray, vector))) / (elem_size))
 
 gboolean
-sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
+sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
 {
-	MonoVTable *vt = (MonoVTable*)SGEN_LOAD_VTABLE (obj);
+	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
 	MonoClass *klass = vt->klass;
 
 	SGEN_ASSERT (0, SGEN_VTABLE_HAS_REFERENCES (vt), "Why would we ever call this on reference-free objects?");
@@ -1601,8 +1597,8 @@ sgen_client_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *card
 		guint8 *card_data, *card_base;
 		guint8 *card_data_end;
 		char *obj_start = sgen_card_table_align_pointer (obj);
-		mword obj_size = sgen_client_par_object_get_size (vt, (GCObject*)obj);
-		char *obj_end = obj + obj_size;
+		mword obj_size = sgen_client_par_object_get_size (vt, obj);
+		char *obj_end = (char*)obj + obj_size;
 		size_t card_count;
 		size_t extra_idx = 0;
 
@@ -1675,7 +1671,7 @@ LOOP_HEAD:
 					gpointer new, old = *(gpointer*)elem;
 					if ((mod_union && old) || G_UNLIKELY (sgen_ptr_in_nursery (old))) {
 						HEAVY_STAT (++los_array_remsets);
-						copy_func ((void**)elem, ctx.queue);
+						copy_func ((GCObject**)elem, ctx.queue);
 						new = *(gpointer*)elem;
 						if (G_UNLIKELY (sgen_ptr_in_nursery (new)))
 							sgen_add_to_global_remset (elem, new);
@@ -1847,7 +1843,7 @@ mono_gc_set_string_length (MonoString *str, gint32 new_length)
 	 * the space to be reclaimed by SGen. */
 
 	if (nursery_canaries_enabled () && sgen_ptr_in_nursery (str)) {
-		CHECK_CANARY_FOR_OBJECT (str);
+		CHECK_CANARY_FOR_OBJECT ((GCObject*)str);
 		memset (new_end, 0, (str->length - new_length + 1) * sizeof (mono_unichar2) + CANARY_SIZE);
 		memcpy (new_end + 1 , CANARY_STRING, CANARY_SIZE);
 	} else {
@@ -1885,7 +1881,7 @@ add_profile_gc_root (GCRootReport *report, void *object, int rtype, uintptr_t ex
 		notify_gc_roots (report);
 	report->objects [report->count] = object;
 	report->root_types [report->count] = rtype;
-	report->extra_info [report->count++] = (uintptr_t)((MonoVTable*)SGEN_LOAD_VTABLE (object))->klass;
+	report->extra_info [report->count++] = (uintptr_t)SGEN_LOAD_VTABLE (object)->klass;
 }
 
 void
@@ -1967,7 +1963,7 @@ precisely_report_roots_from (GCRootReport *report, void** start_root, void** end
 		break;
 	}
 	case ROOT_DESC_USER: {
-		MonoGCRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
+		MonoGCRootMarkFunc marker = (MonoGCRootMarkFunc)sgen_get_user_descriptor_func (desc);
 		root_report = report;
 		marker (start_root, single_arg_report_root, NULL);
 		break;
@@ -2020,10 +2016,10 @@ sgen_client_collecting_major_1 (void)
 }
 
 void
-sgen_client_pinned_los_object (char *obj)
+sgen_client_pinned_los_object (GCObject *obj)
 {
 	if (profile_roots)
-		add_profile_gc_root (&major_root_report, obj, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
+		add_profile_gc_root (&major_root_report, (char*)obj, MONO_PROFILE_GC_ROOT_PINNING | MONO_PROFILE_GC_ROOT_MISC, 0);
 }
 
 void
@@ -2098,22 +2094,23 @@ typedef struct {
 	} while (0)
 
 static void
-collect_references (HeapWalkInfo *hwi, char *start, size_t size)
+collect_references (HeapWalkInfo *hwi, GCObject *obj, size_t size)
 {
-	mword desc = sgen_obj_get_descriptor (start);
+	char *start = (char*)obj;
+	mword desc = sgen_obj_get_descriptor (obj);
 
 #include "sgen/sgen-scan-object.h"
 }
 
 static void
-walk_references (char *start, size_t size, void *data)
+walk_references (GCObject *start, size_t size, void *data)
 {
 	HeapWalkInfo *hwi = data;
 	hwi->called = 0;
 	hwi->count = 0;
 	collect_references (hwi, start, size);
 	if (hwi->count || !hwi->called)
-		hwi->callback ((MonoObject*)start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->offsets, hwi->data);
+		hwi->callback (start, mono_object_class (start), hwi->called? 0: size, hwi->count, hwi->refs, hwi->offsets, hwi->data);
 }
 
 /**
@@ -2323,7 +2320,7 @@ void*
 mono_gc_scan_object (void *obj, void *gc_data)
 {
 	ScanCopyContext *ctx = gc_data;
-	ctx->ops->copy_or_mark_object (&obj, ctx->queue);
+	ctx->ops->copy_or_mark_object ((GCObject**)&obj, ctx->queue);
 	return obj;
 }
 
@@ -2544,7 +2541,7 @@ mono_gc_get_heap_size (void)
 void*
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 {
-	return sgen_make_user_root_descriptor (marker);
+	return sgen_make_user_root_descriptor ((SgenUserRootMarkFunc)marker);
 }
 
 void*

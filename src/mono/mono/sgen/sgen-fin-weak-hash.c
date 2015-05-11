@@ -115,7 +115,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
 	GCObject *object;
 	gpointer dummy G_GNUC_UNUSED;
-	char *copy;
+	GCObject *copy;
 	SgenPointerQueue moved_fin_objects;
 
 	sgen_pointer_queue_init (&moved_fin_objects, INTERNAL_MEM_TEMPORARY);
@@ -132,7 +132,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 			continue;
 
 		/* Object is a bridge object and major heap says it's dead  */
-		if (major_collector.is_object_live ((char*)object))
+		if (major_collector.is_object_live (object))
 			continue;
 
 		/* Nursery says the object is dead. */
@@ -142,10 +142,10 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 		if (!sgen_client_bridge_is_bridge_object (object))
 			continue;
 
-		copy = (char*)object;
-		copy_func ((void**)&copy, queue);
+		copy = object;
+		copy_func (&copy, queue);
 
-		sgen_client_bridge_register_finalized_object ((GCObject*)copy);
+		sgen_client_bridge_register_finalized_object (copy);
 		
 		if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
 			/* remove from the list */
@@ -157,7 +157,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 			SGEN_LOG (5, "Promoting finalization of object %p (%s) (was at %p) to major table", copy, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (copy)), object);
 
 			continue;
-		} else if (copy != (char*)object) {
+		} else if (copy != object) {
 			/* update pointer */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 
@@ -196,10 +196,10 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 	SGEN_HASH_TABLE_FOREACH (hash_table, object, dummy) {
 		int tag = tagged_object_get_tag (object);
 		object = tagged_object_get_object (object);
-		if (!major_collector.is_object_live ((char*)object)) {
+		if (!major_collector.is_object_live (object)) {
 			gboolean is_fin_ready = sgen_gc_is_object_ready_for_finalization (object);
 			GCObject *copy = object;
-			copy_func ((void**)&copy, queue);
+			copy_func (&copy, queue);
 			if (is_fin_ready) {
 				/* remove and put in fin_ready_list */
 				SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
@@ -672,7 +672,7 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 	SgenHashTable *hash = get_dislink_hash_table (generation);
 
 	SGEN_HASH_TABLE_FOREACH (hash, link, dummy) {
-		char *object;
+		GCObject *object;
 		gboolean track;
 
 		/*
@@ -716,8 +716,8 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 					SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
 					continue;
 				} else {
-					char *copy = object;
-					copy_func ((void**)&copy, queue);
+					GCObject *copy = object;
+					copy_func (&copy, queue);
 
 					/* Update pointer if it's moved.  If the object
 					 * has been moved out of the nursery, we need to
@@ -732,7 +732,7 @@ sgen_null_link_in_range (int generation, gboolean before_finalization, ScanCopyC
 
 						g_assert (copy);
 						*link = HIDE_POINTER (copy, track);
-						add_or_remove_disappearing_link ((GCObject*)copy, link, GENERATION_OLD);
+						add_or_remove_disappearing_link (copy, link, GENERATION_OLD);
 						binary_protocol_dislink_update (link, copy, track, 0);
 
 						SGEN_LOG (5, "Upgraded dislink at %p to major because object %p moved to %p", link, object, copy);

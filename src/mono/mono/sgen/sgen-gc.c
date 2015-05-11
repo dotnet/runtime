@@ -484,9 +484,9 @@ sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc 
 		}
 
 		if (!sgen_client_object_is_array_fill ((GCObject*)obj)) {
-			CHECK_CANARY_FOR_OBJECT (obj);
+			CHECK_CANARY_FOR_OBJECT ((GCObject*)obj);
 			size = ALIGN_UP (safe_object_get_size ((GCObject*)obj));
-			callback (obj, size, data);
+			callback ((GCObject*)obj, size, data);
 			CANARIFY_SIZE (size);
 		} else {
 			size = ALIGN_UP (safe_object_get_size ((GCObject*)obj));
@@ -554,7 +554,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 	do {
 		int i;
 		for (i = 0; i != max_objs; ++i) {
-			char *obj;
+			GCObject *obj;
 			mword desc;
 			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 			if (!obj)
@@ -889,7 +889,7 @@ static void
 unpin_objects_from_queue (SgenGrayQueue *queue)
 {
 	for (;;) {
-		char *addr;
+		GCObject *addr;
 		mword desc;
 		GRAY_OBJECT_DEQUEUE (queue, &addr, &desc);
 		if (!addr)
@@ -900,7 +900,7 @@ unpin_objects_from_queue (SgenGrayQueue *queue)
 }
 
 static void
-single_arg_user_copy_or_mark (void **obj, void *gc_data)
+single_arg_user_copy_or_mark (GCObject **obj, void *gc_data)
 {
 	ScanCopyContext *ctx = gc_data;
 	ctx->ops->copy_or_mark_object (obj, ctx->queue);
@@ -925,7 +925,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 		desc >>= ROOT_DESC_TYPE_SHIFT;
 		while (desc) {
 			if ((desc & 1) && *start_root) {
-				copy_func (start_root, queue);
+				copy_func ((GCObject**)start_root, queue);
 				SGEN_LOG (9, "Overwrote root at %p with %p", start_root, *start_root);
 			}
 			desc >>= 1;
@@ -942,7 +942,7 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 			void **objptr = start_run;
 			while (bmap) {
 				if ((bmap & 1) && *objptr) {
-					copy_func (objptr, queue);
+					copy_func ((GCObject**)objptr, queue);
 					SGEN_LOG (9, "Overwrote root at %p with %p", objptr, *objptr);
 				}
 				bmap >>= 1;
@@ -1049,7 +1049,7 @@ scan_finalizer_entries (SgenPointerQueue *fin_queue, ScanCopyContext ctx)
 		if (!obj)
 			continue;
 		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
-		copy_func (&fin_queue->data [i], queue);
+		copy_func ((GCObject**)&fin_queue->data [i], queue);
 	}
 }
 
@@ -1672,7 +1672,7 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 }
 
 static void
-scan_nursery_objects_callback (char *obj, size_t size, ScanCopyContext *ctx)
+scan_nursery_objects_callback (GCObject *obj, size_t size, ScanCopyContext *ctx)
 {
 	/*
 	 * This is called on all objects in the nursery, including pinned ones, so we need
@@ -1796,8 +1796,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 	SGEN_LOG (6, "Pinning from large objects");
 	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next) {
 		size_t dummy;
-		if (sgen_find_optimized_pin_queue_area (bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy, &dummy)) {
-			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (((GCObject*)(bigobj->data))));
+		if (sgen_find_optimized_pin_queue_area ((char*)bigobj->data, (char*)bigobj->data + sgen_los_object_size (bigobj), &dummy, &dummy)) {
+			binary_protocol_pin (bigobj->data, (gpointer)LOAD_VTABLE (bigobj->data), safe_object_get_size (bigobj->data));
 
 			if (sgen_los_object_is_pinned (bigobj->data)) {
 				SGEN_ASSERT (0, mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT, "LOS objects can only be pinned here after concurrent marking.");
@@ -1805,8 +1805,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 			}
 			sgen_los_pin_object (bigobj->data);
 			if (SGEN_OBJECT_HAS_REFERENCES (bigobj->data))
-				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor (bigobj->data));
-			sgen_pin_stats_register_object ((char*) bigobj->data, safe_object_get_size ((GCObject*) bigobj->data));
+				GRAY_OBJECT_ENQUEUE (WORKERS_DISTRIBUTE_GRAY_QUEUE, bigobj->data, sgen_obj_get_descriptor ((GCObject*)bigobj->data));
+			sgen_pin_stats_register_object (bigobj->data, safe_object_get_size (bigobj->data));
 			SGEN_LOG (6, "Marked large object %p (%s) size: %lu from roots", bigobj->data,
 					sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (bigobj->data)),
 					(unsigned long)sgen_los_object_size (bigobj));
@@ -2482,7 +2482,7 @@ sgen_is_object_alive (void *object)
  * are never alive during a minor collection.
  */
 static inline int
-sgen_is_object_alive_and_on_current_collection (char *object)
+sgen_is_object_alive_and_on_current_collection (GCObject *object)
 {
 	if (ptr_in_nursery (object))
 		return sgen_nursery_is_object_alive (object);

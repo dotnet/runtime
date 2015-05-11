@@ -148,9 +148,9 @@ static AgeAllocationBuffer age_alloc_buffers [MAX_AGE];
 static SgenFragmentAllocator collector_allocator;
 
 static inline int
-get_object_age (char *object)
+get_object_age (GCObject *object)
 {
-	size_t idx = (object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
+	size_t idx = ((char*)object - sgen_nursery_start) >> SGEN_TO_SPACE_GRANULE_BITS;
 	return region_age [idx];
 }
 
@@ -259,7 +259,7 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 }
 
 static inline char*
-alloc_for_promotion (GCVTable vtable, char *obj, size_t objsize, gboolean has_references)
+alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
 	char *p = NULL;
 	int age;
@@ -287,7 +287,7 @@ alloc_for_promotion (GCVTable vtable, char *obj, size_t objsize, gboolean has_re
 }
 
 static char*
-minor_alloc_for_promotion (GCVTable vtable, char *obj, size_t objsize, gboolean has_references)
+minor_alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
 	/*
 	We only need to check for a non-nursery object if we're doing a major collection.

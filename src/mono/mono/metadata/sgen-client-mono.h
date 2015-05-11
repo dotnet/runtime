@@ -27,76 +27,16 @@
 typedef MonoObject GCObject;
 typedef MonoVTable* GCVTable;
 
-/* FIXME: This should return a GCVTable and be a function. */
-#define SGEN_LOAD_VTABLE_UNCHECKED(obj)	((void*)(((GCObject*)(obj))->vtable))
+static inline GCVTable
+SGEN_LOAD_VTABLE_UNCHECKED (GCObject *obj)
+{
+	return obj->vtable;
+}
 
 static inline mword
 sgen_vtable_get_descriptor (GCVTable vtable)
 {
 	return (mword)vtable->gc_descr;
-}
-
-static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
-sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o)
-{
-	MonoClass *klass = ((MonoVTable*)vtable)->klass;
-
-	/*
-	 * We depend on mono_string_length_fast and
-	 * mono_array_length_fast not using the object's vtable.
-	 */
-	if (klass == mono_defaults.string_class) {
-		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
-	} else if (klass->rank) {
-		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
-		if (G_UNLIKELY (array->bounds)) {
-			size += sizeof (mono_array_size_t) - 1;
-			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * klass->rank;
-		}
-		return size;
-	} else {
-		/* from a created object: the class must be inited already */
-		return klass->instance_size;
-	}
-}
-
-/*
- * This function can be called on an object whose first word, the
- * vtable field, is not intact.  This is necessary for the parallel
- * collector.
- */
-static MONO_NEVER_INLINE mword
-sgen_client_par_object_get_size (GCVTable vtable, GCObject* o)
-{
-	mword descr = sgen_vtable_get_descriptor (vtable);
-	mword type = descr & DESC_TYPE_MASK;
-
-	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_PTRFREE) {
-		mword size = descr & 0xfff8;
-		SGEN_ASSERT (9, size >= sizeof (MonoObject), "Run length object size to small");
-		return size;
-	} else if (descr == SGEN_DESC_STRING) {
-		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
-	} else if (type == DESC_TYPE_VECTOR) {
-		int element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;
-		MonoArray *array = (MonoArray*)o;
-		size_t size = sizeof (MonoArray) + element_size * mono_array_length_fast (array);
-
-		/*
-		 * Non-vector arrays with a single dimension whose lower bound is zero are
-		 * allocated without bounds.
-		 */
-		if ((descr & VECTOR_KIND_ARRAY) && array->bounds) {
-			size += sizeof (mono_array_size_t) - 1;
-			size &= ~(sizeof (mono_array_size_t) - 1);
-			size += sizeof (MonoArrayBounds) * ((MonoVTable*)vtable)->klass->rank;
-		}
-		return size;
-	}
-
-	return sgen_client_slow_object_get_size (vtable, o);
 }
 
 typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
@@ -165,6 +105,69 @@ enum {
 
 #define SGEN_CLIENT_OBJECT_HEADER_SIZE		(sizeof (GCObject))
 #define SGEN_CLIENT_MINIMUM_OBJECT_SIZE		SGEN_CLIENT_OBJECT_HEADER_SIZE
+
+static mword /*__attribute__((noinline)) not sure if this hint is a good idea*/
+sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o)
+{
+	MonoClass *klass = ((MonoVTable*)vtable)->klass;
+
+	/*
+	 * We depend on mono_string_length_fast and
+	 * mono_array_length_fast not using the object's vtable.
+	 */
+	if (klass == mono_defaults.string_class) {
+		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+	} else if (klass->rank) {
+		MonoArray *array = (MonoArray*)o;
+		size_t size = sizeof (MonoArray) + klass->sizes.element_size * mono_array_length_fast (array);
+		if (G_UNLIKELY (array->bounds)) {
+			size += sizeof (mono_array_size_t) - 1;
+			size &= ~(sizeof (mono_array_size_t) - 1);
+			size += sizeof (MonoArrayBounds) * klass->rank;
+		}
+		return size;
+	} else {
+		/* from a created object: the class must be inited already */
+		return klass->instance_size;
+	}
+}
+
+/*
+ * This function can be called on an object whose first word, the
+ * vtable field, is not intact.  This is necessary for the parallel
+ * collector.
+ */
+static MONO_NEVER_INLINE mword
+sgen_client_par_object_get_size (GCVTable vtable, GCObject* o)
+{
+	mword descr = sgen_vtable_get_descriptor (vtable);
+	mword type = descr & DESC_TYPE_MASK;
+
+	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_PTRFREE) {
+		mword size = descr & 0xfff8;
+		SGEN_ASSERT (9, size >= sizeof (MonoObject), "Run length object size to small");
+		return size;
+	} else if (descr == SGEN_DESC_STRING) {
+		return G_STRUCT_OFFSET (MonoString, chars) + 2 * mono_string_length_fast ((MonoString*) o) + 2;
+	} else if (type == DESC_TYPE_VECTOR) {
+		int element_size = ((descr) >> VECTOR_ELSIZE_SHIFT) & MAX_ELEMENT_SIZE;
+		MonoArray *array = (MonoArray*)o;
+		size_t size = sizeof (MonoArray) + element_size * mono_array_length_fast (array);
+
+		/*
+		 * Non-vector arrays with a single dimension whose lower bound is zero are
+		 * allocated without bounds.
+		 */
+		if ((descr & VECTOR_KIND_ARRAY) && array->bounds) {
+			size += sizeof (mono_array_size_t) - 1;
+			size &= ~(sizeof (mono_array_size_t) - 1);
+			size += sizeof (MonoArrayBounds) * ((MonoVTable*)vtable)->klass->rank;
+		}
+		return size;
+	}
+
+	return sgen_client_slow_object_get_size (vtable, o);
+}
 
 static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
 sgen_client_array_element_size (GCVTable gc_vtable)
@@ -242,7 +245,7 @@ sgen_client_object_has_critical_finalizer (GCObject *obj)
 	if (!mono_defaults.critical_finalizer_object)
 		return FALSE;
 
-	class = ((MonoVTable*)SGEN_LOAD_VTABLE (obj))->klass;
+	class = SGEN_LOAD_VTABLE (obj)->klass;
 
 	return mono_class_has_parent_fast (class, mono_defaults.critical_finalizer_object);
 }
@@ -568,7 +571,7 @@ sgen_client_binary_protocol_dislink_update (gpointer link, gpointer obj, gboolea
 {
 #ifdef ENABLE_DTRACE
 	if (MONO_GC_WEAK_UPDATE_ENABLED ()) {
-		GCVTable vt = obj ? (GCVTable)SGEN_LOAD_VTABLE (obj) : NULL;
+		GCVTable vt = obj ? SGEN_LOAD_VTABLE (obj) : NULL;
 		MONO_GC_WEAK_UPDATE ((mword)link,
 				(mword)obj,
 				obj ? (mword)sgen_safe_object_get_size (obj) : (mword)0,

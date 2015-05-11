@@ -96,7 +96,7 @@ sgen_gray_object_free_queue_section (GrayQueueSection *section)
  */
 
 void
-sgen_gray_object_enqueue (SgenGrayQueue *queue, char *obj, mword desc)
+sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, mword desc)
 {
 	GrayQueueEntry entry = SGEN_GRAY_QUEUE_ENTRY (obj, desc);
 

@@ -34,7 +34,7 @@ extern guint64 stat_scan_object_called_major;
 
 #undef HANDLE_PTR
 #define HANDLE_PTR(ptr,obj)	do {					\
-		void *__old = *(ptr);					\
+		GCObject *__old = *(ptr);					\
 		SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP ((obj), (ptr)); \
 		binary_protocol_scan_process_reference ((obj), (ptr), __old); \
 		if (__old && !sgen_ptr_in_nursery (__old)) {		\
@@ -42,19 +42,19 @@ extern guint64 stat_scan_object_called_major;
 			major_copy_or_mark_object_concurrent ((ptr), __old, queue); \
 		} else {						\
 			if (G_UNLIKELY (sgen_ptr_in_nursery (__old) && !sgen_ptr_in_nursery ((ptr)))) \
-				ADD_TO_GLOBAL_REMSET ((GCObject*)(full_object), (ptr), __old); \
+				ADD_TO_GLOBAL_REMSET ((full_object), (ptr), __old); \
 		}							\
 	} while (0)
 
 /* FIXME: Unify this with optimized code in sgen-marksweep.c. */
 
 #undef ADD_TO_GLOBAL_REMSET
-#define ADD_TO_GLOBAL_REMSET(object,ptr,target)	mark_mod_union_card ((object), (ptr))
+#define ADD_TO_GLOBAL_REMSET(object,ptr,target)	mark_mod_union_card ((object), (void**)(ptr))
 
 static void
-major_scan_object_no_mark_concurrent_anywhere (char *full_object, mword desc, SgenGrayQueue *queue)
+major_scan_object_no_mark_concurrent_anywhere (GCObject *full_object, mword desc, SgenGrayQueue *queue)
 {
-	char *start = full_object;
+	char *start = (char*)full_object;
 
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 
@@ -73,13 +73,13 @@ major_scan_object_no_mark_concurrent_anywhere (char *full_object, mword desc, Sg
 }
 
 static void
-major_scan_object_no_mark_concurrent_start (char *start, mword desc, SgenGrayQueue *queue)
+major_scan_object_no_mark_concurrent_start (GCObject *start, mword desc, SgenGrayQueue *queue)
 {
 	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
 }
 
 static void
-major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *queue)
+major_scan_object_no_mark_concurrent (GCObject *start, mword desc, SgenGrayQueue *queue)
 {
 	SGEN_ASSERT (0, !sgen_ptr_in_nursery (start), "Why are we scanning nursery objects in the concurrent collector?");
 	major_scan_object_no_mark_concurrent_anywhere (start, desc, queue);
@@ -89,7 +89,7 @@ major_scan_object_no_mark_concurrent (char *start, mword desc, SgenGrayQueue *qu
 #define ADD_TO_GLOBAL_REMSET(object,ptr,target)	sgen_add_to_global_remset ((ptr), (target))
 
 static void
-major_scan_vtype_concurrent_finish (char *full_object, char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
+major_scan_vtype_concurrent_finish (GCObject *full_object, char *start, mword desc, SgenGrayQueue *queue BINARY_PROTOCOL_ARG (size_t size))
 {
 	SGEN_OBJECT_LAYOUT_STATISTICS_DECLARE_BITMAP;
 

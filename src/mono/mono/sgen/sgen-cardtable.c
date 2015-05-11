@@ -467,7 +467,7 @@ sgen_get_card_table_configuration (int *shift_bits, gpointer *mask)
 
 #if 0
 void
-sgen_card_table_dump_obj_card (char *object, size_t size, void *dummy)
+sgen_card_table_dump_obj_card (GCObject *object, size_t size, void *dummy)
 {
 	guint8 *start = sgen_card_table_get_card_scan_address (object);
 	guint8 *end = start + sgen_card_table_number_of_cards_in_range (object, size);
@@ -486,7 +486,7 @@ sgen_card_table_dump_obj_card (char *object, size_t size, void *dummy)
 #endif
 
 void
-sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
+sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx)
 {
 	HEAVY_STAT (++large_objects);
 
@@ -501,7 +501,7 @@ sgen_cardtable_scan_object (char *obj, mword block_obj_size, guint8 *cards, gboo
 		ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
 	}
 
-	binary_protocol_card_scan (obj, sgen_safe_object_get_size ((GCObject*)obj));
+	binary_protocol_card_scan (obj, sgen_safe_object_get_size (obj));
 }
 
 #ifdef CARDTABLE_STATS
