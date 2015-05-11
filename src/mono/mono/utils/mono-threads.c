@@ -484,6 +484,8 @@ mono_threads_attach_tools_thread (void)
 	g_assert (!mono_native_tls_get_value (thread_info_key));
 
 	info = mono_thread_info_attach (&dummy);
+	g_assert (info);
+
 	info->tools_thread = TRUE;
 }
 
@@ -493,10 +495,14 @@ mono_thread_info_attach (void *baseptr)
 	MonoThreadInfo *info;
 	if (!mono_threads_inited)
 	{
+#ifdef HOST_WIN32
 		/* This can happen from DllMain(DLL_THREAD_ATTACH) on Windows, if a
 		 * thread is created before an embedding API user initialized Mono. */
 		THREADS_DEBUG ("mono_thread_info_attach called before mono_threads_init\n");
 		return NULL;
+#else
+		g_assert (mono_threads_inited);
+#endif
 	}
 	info = (MonoThreadInfo *) mono_native_tls_get_value (thread_info_key);
 	if (!info) {
