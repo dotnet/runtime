@@ -71,17 +71,6 @@ namespace Microsoft.Framework.WebEncoders
             }
         }
 
-        [Fact]
-        public void Default_ReturnsSingletonInstance()
-        {
-            // Act
-            HtmlEncoder encoder1 = HtmlEncoder.Default;
-            HtmlEncoder encoder2 = HtmlEncoder.Default;
-
-            // Assert
-            Assert.Same(encoder1, encoder2);
-        }
-
         [Theory]
         [InlineData("<", "&lt;")]
         [InlineData(">", "&gt;")]
