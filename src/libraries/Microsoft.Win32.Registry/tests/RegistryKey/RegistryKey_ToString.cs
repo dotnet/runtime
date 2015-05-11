@@ -6,12 +6,12 @@ using Xunit;
 
 namespace Microsoft.Win32.RegistryTests
 {
-    public class RegistryKey_Get_Name : TestSubKey
+    public class RegistryKey_ToString : TestSubKey
     {
-        private const string TestKey = "BCL_TEST_3";
+        private const string TestKey = "BCL_TEST_TO_STRING";
         private const string CurrentUserKeyName = "HKEY_CURRENT_USER";
 
-        public RegistryKey_Get_Name()
+        public RegistryKey_ToString()
             : base(TestKey)
         {
         }
@@ -22,21 +22,21 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 _testRegistryKey.Dispose();
-                return _testRegistryKey.Name;
+                return _testRegistryKey.ToString();
             });
         }
 
         [Fact]
-        public static void TestBaseKeyName()
+        public static void TestBaseKeyToString()
         {
-            Assert.Equal(CurrentUserKeyName, Registry.CurrentUser.Name);
+            Assert.Equal(CurrentUserKeyName, Registry.CurrentUser.ToString());
         }
 
         [Fact]
-        public void TestSubKeyName()
+        public void TestToString()
         {
             string expectedName = string.Format("HKEY_CURRENT_USER\\{0}", TestKey);
-            Assert.Equal(expectedName, _testRegistryKey.Name);
+            Assert.Equal(expectedName, _testRegistryKey.ToString());
         }
     }
 }
