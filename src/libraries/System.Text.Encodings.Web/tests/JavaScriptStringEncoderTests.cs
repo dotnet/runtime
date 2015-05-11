@@ -72,17 +72,6 @@ namespace Microsoft.Framework.WebEncoders
         }
 
         [Fact]
-        public void Default_ReturnsSingletonInstance()
-        {
-            // Act
-            JavaScriptStringEncoder encoder1 = JavaScriptStringEncoder.Default;
-            JavaScriptStringEncoder encoder2 = JavaScriptStringEncoder.Default;
-
-            // Assert
-            Assert.Same(encoder1, encoder2);
-        }
-
-        [Fact]
         public void JavaScriptStringEncode_AllRangesAllowed_StillEncodesForbiddenChars_Simple_Escaping() {
             // The following two calls could be simply InlineData to the Theory below
             // Unfortunatelly, the xUnit logger fails to escape the inputs when logging the test results,

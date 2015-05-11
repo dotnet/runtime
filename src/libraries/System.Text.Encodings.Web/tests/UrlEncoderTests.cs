@@ -76,17 +76,6 @@ namespace Microsoft.Framework.WebEncoders
         }
 
         [Fact]
-        public void Default_ReturnsSingletonInstance()
-        {
-            // Act
-            UrlEncoder encoder1 = UrlEncoder.Default;
-            UrlEncoder encoder2 = UrlEncoder.Default;
-
-            // Assert
-            Assert.Same(encoder1, encoder2);
-        }
-
-        [Fact]
         public void UrlEncode_AllRangesAllowed_StillEncodesForbiddenChars()
         {
             // Arrange
