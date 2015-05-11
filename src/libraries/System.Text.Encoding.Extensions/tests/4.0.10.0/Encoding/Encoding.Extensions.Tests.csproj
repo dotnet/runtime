@@ -1,20 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CLRTest.Common.props))\CLRTest.Common.props" />
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <CLRTestOwner>tasou</CLRTestOwner>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
-    <CLRTestSuite>Weekly</CLRTestSuite>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Text.Encoding.Extensions.Tests</AssemblyName>
+    <RootNamespace>System.Text.Encoding.Extensions.Tests</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <ItemGroup>
-    <CLRTestContractReference Include="System.Text.Encoding" >
-      <Version>4.0.10.0</Version>
-    </CLRTestContractReference>
-    <CLRTestContractReference Include="System.Text.Encoding.Extensions" >
-      <Version>4.0.10.0</Version>
-    </CLRTestContractReference>
-  </ItemGroup>
+   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="ASCII.cs" />
     <Compile Include="EncodingTestHelper.cs" />
@@ -26,6 +26,8 @@
     <Compile Include="UTF7.cs" />
     <Compile Include="UTF8.cs" />
   </ItemGroup>
-  <Import Project="$(CLRTestRoot)\CLRTest.targets" />
-  <Import Project="$(CLRTestStoreRoot)\FX\Conformance\Common\Xunit\Xunit.cslib" />
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
