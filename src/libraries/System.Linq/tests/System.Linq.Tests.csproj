@@ -21,6 +21,9 @@
     <Compile Include="CachedEnumerator.cs" />
     <Compile Include="EnumerableTests.cs" />
     <Compile Include="EmptyEnumerable.cs" />
+    <Compile Include="Helpers\TestCollection.cs" />
+    <Compile Include="Helpers\TestEnumerable.cs" />
+    <Compile Include="Helpers\TestReadOnlyCollection.cs" />
     <Compile Include="Performance\CastPerf.cs" />
     <Compile Include="Performance\LinqPerformanceCore.cs" />
     <Compile Include="Performance\OrderByThenByPerf.cs" />
@@ -32,6 +35,9 @@
     <Compile Include="RangeTests.cs" />
     <Compile Include="RepeatTests.cs" />
     <Compile Include="WhereTests.cs" />
+    <Compile Include="ToArrayTests.cs" />
+    <Compile Include="ToDictionaryTests.cs" />
+    <Compile Include="ToListTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.csproj">
