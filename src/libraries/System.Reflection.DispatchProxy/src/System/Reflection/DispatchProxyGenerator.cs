@@ -12,18 +12,17 @@ using System.Threading;
 namespace System.Reflection
 {
     // Helper class to handle the IL EMIT for the generation of proxies.
-    // Much of this code was taken directly from the Silverlight proxy generation in
-    // ndp\fx\src\wcf\System\ServiceModel\Channels\RealProxy.cs
+    // Much of this code was taken directly from the Silverlight proxy generation.
     // Differences beteen this and the Silverlight version are:
-    //  1. This version is based on DispatchProxy from NetNative and CoreCLR, not RealProxy in Silverlight ServiceModel.
+    //  1. This version is based on DispatchProxy from NET Native and CoreCLR, not RealProxy in Silverlight ServiceModel.
     //     There are several notable differences between them.
     //  2. Both DispatchProxy and RealProxy permit the caller to ask for a proxy specifying a pair of types:
     //     the interface type to implement, and a base type.  But they behave slightly differently:
     //       - RealProxy generates a proxy type that derives from Object and *implements" all the base type's
     //         interfaces plus all the interface type's interfaces.
     //       - DispatchProxy generates a proxy type that *derives* from the base type and implements all
-    //         the interface type's interfaces.  This is true for both the CLR version in Project N and this
-    //         version in ProjectK.
+    //         the interface type's interfaces.  This is true for both the CLR version in NET Native and this
+    //         version for CoreCLR.
     //  3. DispatchProxy and RealProxy use different type hierarchies for the generated proxies:
     //       - RealProxy type hierarchy is:
     //             proxyType : proxyBaseType : object
@@ -196,6 +195,8 @@ namespace System.Reflection
             // to pass methods by token
             private Dictionary<MethodBase, int> _methodToToken = new Dictionary<MethodBase, int>();
             private List<MethodBase> _methodsByToken = new List<MethodBase>();
+            private HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
+            private ConstructorInfo _ignoresAccessChecksToAttributeConstructor;
 
             public ProxyAssembly()
             {
@@ -203,11 +204,145 @@ namespace System.Reflection
                 _mb = _ab.DefineDynamicModule("testmod");
             }
 
+            // Gets or creates the ConstructorInfo for the IgnoresAccessChecksAttribute.
+            // This attribute is both defined and referenced in the dynamic assembly to
+            // allow access to internal types in other assemblies.
+            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor
+            {
+                get
+                {
+                    if (_ignoresAccessChecksToAttributeConstructor == null)
+                    {
+                        TypeInfo attributeTypeInfo = GenerateTypeInfoOfIgnoresAccessChecksToAttribute();
+                        _ignoresAccessChecksToAttributeConstructor = attributeTypeInfo.DeclaredConstructors.Single();
+                    }
+
+                    return _ignoresAccessChecksToAttributeConstructor;
+                }
+            }
             public ProxyBuilder CreateProxy(string name, Type proxyBaseType)
             {
                 int nextId = Interlocked.Increment(ref _typeId);
                 TypeBuilder tb = _mb.DefineType(name + "_" + nextId, TypeAttributes.Public, proxyBaseType);
                 return new ProxyBuilder(this, tb, proxyBaseType);
+            }
+
+            // Generate the declaration for the IgnoresAccessChecksToAttribute type.
+            // This attribute will be both defined and used in the dynamic assembly.
+            // Each usage identifies the name of the assembly containing non-public
+            // types the dynamic assembly needs to access.  Normally those types
+            // would be inaccessible, but this attribute allows them to be visible.
+            // It works like a reverse InternalsVisibleToAttribute.
+            // This method returns the TypeInfo of the generated attribute.
+            private TypeInfo GenerateTypeInfoOfIgnoresAccessChecksToAttribute()
+            {
+                TypeBuilder attributeTypeBuilder = 
+                    _mb.DefineType("System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute", 
+                                   TypeAttributes.Public | TypeAttributes.Class, 
+                                   typeof(Attribute));
+
+                // Create backing field as:
+                // private string assemblyName;
+                FieldBuilder assemblyNameField = 
+                    attributeTypeBuilder.DefineField("assemblyName", typeof(String), FieldAttributes.Private);
+
+                // Create ctor as:
+                // public IgnoresAccessChecksToAttribute(string)
+                ConstructorBuilder constructorBuilder = attributeTypeBuilder.DefineConstructor(MethodAttributes.Public, 
+                                                             CallingConventions.HasThis, 
+                                                             new Type[] { assemblyNameField.FieldType });
+
+                ILGenerator il = constructorBuilder.GetILGenerator();
+
+                // Create ctor body as:
+                // this.assemblyName = {ctor parameter 0}
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg, 1);
+                il.Emit(OpCodes.Stfld, assemblyNameField);
+
+                // return
+                il.Emit(OpCodes.Ret);
+
+                // Define property as:
+                // public string AssemblyName {get { return this.assemblyName; } }
+                PropertyBuilder getterPropertyBuilder = attributeTypeBuilder.DefineProperty(
+                                                       "AssemblyName",
+                                                       PropertyAttributes.None,
+                                                       CallingConventions.HasThis,
+                                                       returnType: typeof(String),
+                                                       parameterTypes: null);
+
+                MethodBuilder getterMethodBuilder = attributeTypeBuilder.DefineMethod(
+                                                       "get_AssemblyName",
+                                                       MethodAttributes.Public,
+                                                       CallingConventions.HasThis,
+                                                       returnType: typeof(String),
+                                                       parameterTypes: null);
+
+                // Generate body:
+                // return this.assemblyName;
+                il = getterMethodBuilder.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, assemblyNameField);
+                il.Emit(OpCodes.Ret);
+
+                // Generate the AttributeUsage attribute for this attribute type:
+                // [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+                TypeInfo attributeUsageTypeInfo = typeof(AttributeUsageAttribute).GetTypeInfo();
+
+                // Find the ctor that takes only AttributeTargets
+                ConstructorInfo attributeUsageConstructorInfo =
+                    attributeUsageTypeInfo.DeclaredConstructors
+                        .Single(c => c.GetParameters().Count() == 1 &&
+                                     c.GetParameters()[0].ParameterType == typeof(AttributeTargets));
+
+                // Find the property to set AllowMultiple
+                PropertyInfo allowMultipleProperty =
+                    attributeUsageTypeInfo.DeclaredProperties
+                        .Single(f => String.Equals(f.Name, "AllowMultiple"));
+
+                // Create a builder to construct the instance via the ctor and property
+                CustomAttributeBuilder customAttributeBuilder = 
+                    new CustomAttributeBuilder(attributeUsageConstructorInfo,
+                                                new object[] { AttributeTargets.Assembly },
+                                                new PropertyInfo[] { allowMultipleProperty },
+                                                new object[] { true });
+
+                // Attach this attribute instance to the newly defined attribute type
+                attributeTypeBuilder.SetCustomAttribute(customAttributeBuilder);
+
+                // Make the TypeInfo real so the constructor can be used.
+                return attributeTypeBuilder.CreateTypeInfo();
+            }
+
+            // Generates an instance of the IgnoresAccessChecksToAttribute to
+            // identify the given assembly as one which contains internal types
+            // the dynamic assembly will need to reference.
+            internal void GenerateInstanceOfIgnoresAccessChecksToAttribute(string assemblyName)
+            {
+                // Add this assembly level attribute:
+                // [assembly: System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute(assemblyName)]
+                ConstructorInfo attributeConstructor = IgnoresAccessChecksAttributeConstructor;
+                CustomAttributeBuilder customAttributeBuilder = 
+                    new CustomAttributeBuilder(attributeConstructor, new object[] { assemblyName });
+                _ab.SetCustomAttribute(customAttributeBuilder);
+            }
+
+            // Ensures the type we will reference from the dynamic assembly
+            // is visible.  Non-public types need to emit an attribute that
+            // allows access from the dynamic assembly.
+            internal void EnsureTypeIsVisible(Type type)
+            {
+                TypeInfo typeInfo = type.GetTypeInfo();
+                if (!typeInfo.IsVisible)
+                {
+                    string assemblyName = typeInfo.Assembly.GetName().Name;
+                    if (!_ignoresAccessAssemblyNames.Contains(assemblyName))
+                    {
+                        GenerateInstanceOfIgnoresAccessChecksToAttribute(assemblyName);
+                        _ignoresAccessAssemblyNames.Add(assemblyName);
+                    }
+                }
             }
 
             internal void GetTokenForMethod(MethodBase method, out Type type, out int token)
@@ -285,6 +420,10 @@ namespace System.Reflection
 
             internal void AddInterfaceImpl(Type iface)
             {
+                // If necessary, generate an attribute to permit visiblity
+                // to internal types.
+                _assembly.EnsureTypeIsVisible(iface);
+
                 _tb.AddInterfaceImplementation(iface);
                 foreach (MethodInfo mi in iface.GetRuntimeMethods())
                 {
