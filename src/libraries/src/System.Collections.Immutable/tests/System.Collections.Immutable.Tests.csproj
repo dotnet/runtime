@@ -74,6 +74,7 @@
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj">
       <Project>{1dd0ff15-6234-4bd6-850a-317f05479554}</Project>
       <Name>System.Collections.Immutable</Name>
+      <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
