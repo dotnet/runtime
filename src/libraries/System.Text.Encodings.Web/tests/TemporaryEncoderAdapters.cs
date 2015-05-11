@@ -58,7 +58,7 @@ namespace Microsoft.Framework.WebEncoders
 
         public void HtmlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, characterCount, output);
+            _encoder.Encode(output, value, startIndex, characterCount);
         }
 
         public string HtmlEncode(string value)
@@ -68,7 +68,7 @@ namespace Microsoft.Framework.WebEncoders
 
         public void HtmlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, characterCount, output);
+            _encoder.Encode(output, value, startIndex, characterCount);
         }
     }
 
@@ -121,7 +121,7 @@ namespace Microsoft.Framework.WebEncoders
 
         public void JavaScriptStringEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, characterCount, output);
+            _encoder.Encode(output, value, startIndex, characterCount);
         }
 
         public string JavaScriptStringEncode(string value)
@@ -131,7 +131,7 @@ namespace Microsoft.Framework.WebEncoders
 
         public void JavaScriptStringEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, characterCount, output);
+            _encoder.Encode(output, value, startIndex, characterCount);
         }
     }
 
@@ -184,7 +184,7 @@ namespace Microsoft.Framework.WebEncoders
 
         public void UrlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, characterCount, output);
+            _encoder.Encode(output, value, startIndex, characterCount);
         }
 
         public string UrlEncode(string value)
@@ -194,7 +194,7 @@ namespace Microsoft.Framework.WebEncoders
 
         public void UrlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, characterCount, output);
+            _encoder.Encode(output, value, startIndex, characterCount);
         }
     }
 }
