@@ -15,7 +15,7 @@ namespace Microsoft.Framework.WebEncoders
     internal unsafe abstract class UnicodeEncoderBase
     {
         // A bitmap of characters which are allowed to be returned unescaped.
-        private AllowedCharsBitmap _allowedCharsBitmap;
+        private AllowedCharactersBitmap _allowedCharacters;
 
         // The worst-case number of output chars generated for any input char.
         private readonly int _maxOutputCharsPerInputChar;
@@ -26,7 +26,7 @@ namespace Microsoft.Framework.WebEncoders
         protected UnicodeEncoderBase(CodePointFilter filter, int maxOutputCharsPerInputChar)
         {
             _maxOutputCharsPerInputChar = maxOutputCharsPerInputChar;
-            _allowedCharsBitmap = filter.GetAllowedCharsBitmap();
+            _allowedCharacters = filter.GetAllowedCharacters();
 
             // Forbid characters that are special in HTML.
             // Even though this is a common encoder used by everybody (including URL
@@ -42,19 +42,19 @@ namespace Microsoft.Framework.WebEncoders
 
             // Forbid codepoints which aren't mapped to characters or which are otherwise always disallowed
             // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
-            _allowedCharsBitmap.ForbidUndefinedCharacters();
+            _allowedCharacters.ForbidUndefinedCharacters();
         }
 
         // Marks a character as forbidden (must be returned encoded)
         protected void ForbidCharacter(char c)
         {
-            _allowedCharsBitmap.ForbidCharacter(c);
+            _allowedCharacters.ForbidCharacter(c);
         }
         
         /// <summary>
         /// Entry point to the encoder.
         /// </summary>
-        public void Encode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void Encode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
             // Input checking
             if (value == null)
@@ -65,17 +65,17 @@ namespace Microsoft.Framework.WebEncoders
             {
                 throw new ArgumentNullException("output");
             }
-            ValidateInputs(startIndex, charCount, actualInputLength: value.Length);
+            ValidateInputs(startIndex, characterCount, actualInputLength: value.Length);
 
-            if (charCount != 0)
+            if (characterCount != 0)
             {
                 fixed (char* pChars = value)
                 {
-                    int indexOfFirstCharWhichRequiresEncoding = GetIndexOfFirstCharWhichRequiresEncoding(&pChars[startIndex], charCount);
+                    int indexOfFirstCharWhichRequiresEncoding = GetIndexOfFirstCharWhichRequiresEncoding(&pChars[startIndex], characterCount);
                     if (indexOfFirstCharWhichRequiresEncoding < 0)
                     {
                         // All chars are valid - just copy the buffer as-is.
-                        output.Write(value, startIndex, charCount);
+                        output.Write(value, startIndex, characterCount);
                     }
                     else
                     {
@@ -84,7 +84,7 @@ namespace Microsoft.Framework.WebEncoders
                         {
                             output.Write(value, startIndex, indexOfFirstCharWhichRequiresEncoding);
                         }
-                        EncodeCore(&pChars[startIndex + indexOfFirstCharWhichRequiresEncoding], (uint)(charCount - indexOfFirstCharWhichRequiresEncoding), output);
+                        EncodeCore(&pChars[startIndex + indexOfFirstCharWhichRequiresEncoding], (uint)(characterCount - indexOfFirstCharWhichRequiresEncoding), output);
                     }
                 }
             }
@@ -115,7 +115,7 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Entry point to the encoder.
         /// </summary>
-        public void Encode(string value, int startIndex, int charCount, TextWriter output)
+        public void Encode(string value, int startIndex, int characterCount, TextWriter output)
         {
             // Input checking
             if (value == null)
@@ -126,17 +126,17 @@ namespace Microsoft.Framework.WebEncoders
             {
                 throw new ArgumentNullException("output");
             }
-            ValidateInputs(startIndex, charCount, actualInputLength: value.Length);
+            ValidateInputs(startIndex, characterCount, actualInputLength: value.Length);
 
-            if (charCount != 0)
+            if (characterCount != 0)
             {
                 fixed (char* pChars = value)
                 {
-                    if (charCount == value.Length)
+                    if (characterCount == value.Length)
                     {
                         // Optimize for the common case: we're being asked to encode the entire input string
                         // (not just a subset). If all characters are safe, we can just spit it out as-is.
-                        int indexOfFirstCharWhichRequiresEncoding = GetIndexOfFirstCharWhichRequiresEncoding(pChars, charCount);
+                        int indexOfFirstCharWhichRequiresEncoding = GetIndexOfFirstCharWhichRequiresEncoding(pChars, characterCount);
                         if (indexOfFirstCharWhichRequiresEncoding < 0)
                         {
                             output.Write(value);
@@ -148,14 +148,14 @@ namespace Microsoft.Framework.WebEncoders
                             {
                                 output.Write(pChars[i]);
                             }
-                            EncodeCore(&pChars[indexOfFirstCharWhichRequiresEncoding], (uint)(charCount - indexOfFirstCharWhichRequiresEncoding), output);
+                            EncodeCore(&pChars[indexOfFirstCharWhichRequiresEncoding], (uint)(characterCount - indexOfFirstCharWhichRequiresEncoding), output);
                         }
                     }
                     else
                     {
                         // We're being asked to encode a subset, so we need to go through the slow path of appending
                         // each character individually.
-                        EncodeCore(&pChars[startIndex], (uint)charCount, output);
+                        EncodeCore(&pChars[startIndex], (uint)characterCount, output);
                     }
                 }
             }
@@ -235,18 +235,18 @@ namespace Microsoft.Framework.WebEncoders
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsCharacterAllowed(char c)
         {
-            return _allowedCharsBitmap.IsCharacterAllowed(c);
+            return _allowedCharacters.IsCharacterAllowed(c);
         }
 
-        private static void ValidateInputs(int startIndex, int charCount, int actualInputLength)
+        private static void ValidateInputs(int startIndex, int characterCount, int actualInputLength)
         {
             if (startIndex < 0 || startIndex > actualInputLength)
             {
                 throw new ArgumentOutOfRangeException("startIndex");
             }
-            if (charCount < 0 || charCount > (actualInputLength - startIndex))
+            if (characterCount < 0 || characterCount > (actualInputLength - startIndex))
             {
-                throw new ArgumentOutOfRangeException("charCount");
+                throw new ArgumentOutOfRangeException("characterCount");
             }
         }
 

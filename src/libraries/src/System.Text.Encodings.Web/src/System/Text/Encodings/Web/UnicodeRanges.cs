@@ -43,7 +43,7 @@ namespace System.Text.Unicode
             // If the range hasn't been created, create it now.
             // It's ok if two threads race and one overwrites the other's 'range' value.
             Debug.Assert(last > first, "Code points were specified out of order.");
-            var newRange = UnicodeRange.FromSpan(first, last);
+            var newRange = UnicodeRange.Create(first, last);
             Volatile.Write(ref range, newRange);
             return newRange;
         }

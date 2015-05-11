@@ -17,8 +17,8 @@ namespace System.Text.Unicode
         /// Creates a new <see cref="UnicodeRange"/>.
         /// </summary>
         /// <param name="firstCodePoint">The first code point in the range.</param>
-        /// <param name="rangeSize">The number of code points in the range.</param>
-        public UnicodeRange(int firstCodePoint, int rangeSize)
+        /// <param name="length">The number of code points in the range.</param>
+        public UnicodeRange(int firstCodePoint, int length)
         {
             // Parameter checking: the first code point and last code point must
             // lie within the BMP. See http://unicode.org/faq/blocks_ranges.html for more info.
@@ -26,13 +26,13 @@ namespace System.Text.Unicode
             {
                 throw new ArgumentOutOfRangeException("firstCodePoint");
             }
-            if (rangeSize < 0 || ((long)firstCodePoint + (long)rangeSize > 0x10000))
+            if (length < 0 || ((long)firstCodePoint + (long)length > 0x10000))
             {
                 throw new ArgumentOutOfRangeException("rangeSize");
             }
 
             FirstCodePoint = firstCodePoint;
-            RangeSize = rangeSize;
+            Length = length;
         }
 
         /// <summary>
@@ -43,22 +43,22 @@ namespace System.Text.Unicode
         /// <summary>
         /// The number of code points in this range.
         /// </summary>
-        public int RangeSize { get; private set; }
+        public int Length { get; private set; }
 
         /// <summary>
         /// Creates a new <see cref="UnicodeRange"/> from a span of characters.
         /// </summary>
-        /// <param name="firstChar">The first character in the range.</param>
-        /// <param name="lastChar">The last character in the range.</param>
+        /// <param name="firstCharacter">The first character in the range.</param>
+        /// <param name="lastCharacter">The last character in the range.</param>
         /// <returns>The <see cref="UnicodeRange"/> representing this span.</returns>
-        public static UnicodeRange FromSpan(char firstChar, char lastChar)
+        public static UnicodeRange Create(char firstCharacter, char lastCharacter)
         {
-            if (lastChar < firstChar)
+            if (lastCharacter < firstCharacter)
             {
                 throw new ArgumentOutOfRangeException("lastChar");
             }
 
-            return new UnicodeRange(firstChar, 1 + (int)(lastChar - firstChar));
+            return new UnicodeRange(firstCharacter, 1 + (int)(lastCharacter - firstCharacter));
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Microsoft.Framework.WebEncoders
         public void Ctor_WithCodePointFilter()
         {
             // Arrange
-            var filter = new CodePointFilter().AllowChars("ab").AllowChars('\0', '&', '\uFFFF', 'd');
+            var filter = new CodePointFilter().AllowCharacters("ab").AllowCharacters('\0', '&', '\uFFFF', 'd');
             JavaScriptStringEncoder encoder = new JavaScriptStringEncoder(filter);
 
             // Act & assert
@@ -217,13 +217,12 @@ namespace Microsoft.Framework.WebEncoders
         }
 
         [Fact]
-        public void JavaScriptStringEncode_NullInput_ReturnsNull()
+        public void JavaScriptStringEncode_NullInput_Throws()
         {
             // Arrange
             JavaScriptStringEncoder encoder = new JavaScriptStringEncoder();
 
-            // Act & assert
-            Assert.Null(encoder.JavaScriptStringEncode(null));
+            Assert.Throws<ArgumentNullException>(() => { encoder.JavaScriptStringEncode(null); });
         }
 
         [Fact]

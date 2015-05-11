@@ -16,43 +16,30 @@ namespace System.Text.Encodings.Web
         /// Converts a number 0 - 15 to its associated hex character '0' - 'F'.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static char IntToChar(uint i)
+        internal static char UInt32LsbToHexDigit(uint value)
         {
-            Debug.Assert(i < 16);
-            return (i < 10) ? (char)('0' + i) : (char)('A' + (i - 10));
+            Debug.Assert(value < 16);
+            return (value < 10) ? (char)('0' + value) : (char)('A' + (value - 10));
         }
 
         /// <summary>
         /// Converts a number 0 - 15 to its associated hex character '0' - 'F'.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static char ToHexDigit(int value)
+        internal static char Int32LsbToHexDigit(int value)
         {
             Debug.Assert(value < 16);
             return (char)((value < 10) ? ('0' + value) : ('A' + (value - 10)));
         }
 
         /// <summary>
-        /// Returns the integral form of this hexadecimal character.
-        /// </summary>
-        /// <returns>0 - 15 if the character is valid, -1 if the character is invalid.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int ParseHexCharacter(char c)
-        {
-            if ('0' <= c && c <= '9') { return c - '0'; }
-            else if ('A' <= c && c <= 'F') { return c - 'A' + 10; }
-            else if ('a' <= c && c <= 'f') { return c - 'a' + 10; }
-            else { return -1; }
-        }
-
-        /// <summary>
         /// Gets the uppercase hex-encoded form of a byte.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WriteHexEncodedByte(byte b, out char firstHexChar, out char secondHexChar)
+        internal static void ByteToHexDigits(byte value, out char firstHexChar, out char secondHexChar)
         {
-            firstHexChar = IntToChar((uint)b >> 4);
-            secondHexChar = IntToChar((uint)b & 0xFU);
+            firstHexChar = UInt32LsbToHexDigit((uint)value >> 4);
+            secondHexChar = UInt32LsbToHexDigit((uint)value & 0xFU);
         }
     }
 }

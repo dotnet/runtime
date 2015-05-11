@@ -56,9 +56,9 @@ namespace Microsoft.Framework.WebEncoders
         public HtmlEncoder(params UnicodeRange[] allowedRanges) : this(new CodePointFilter(allowedRanges))
         { }
 
-        public void HtmlEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void HtmlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, charCount, output);
+            _encoder.Encode(value, startIndex, characterCount, output);
         }
 
         public string HtmlEncode(string value)
@@ -66,9 +66,9 @@ namespace Microsoft.Framework.WebEncoders
             return _encoder.Encode(value);
         }
 
-        public void HtmlEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void HtmlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, charCount, output);
+            _encoder.Encode(value, startIndex, characterCount, output);
         }
     }
 
@@ -119,9 +119,9 @@ namespace Microsoft.Framework.WebEncoders
         public JavaScriptStringEncoder(params UnicodeRange[] allowedRanges) : this(new CodePointFilter(allowedRanges))
         { }
 
-        public void JavaScriptStringEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void JavaScriptStringEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, charCount, output);
+            _encoder.Encode(value, startIndex, characterCount, output);
         }
 
         public string JavaScriptStringEncode(string value)
@@ -129,9 +129,9 @@ namespace Microsoft.Framework.WebEncoders
             return _encoder.Encode(value);
         }
 
-        public void JavaScriptStringEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void JavaScriptStringEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, charCount, output);
+            _encoder.Encode(value, startIndex, characterCount, output);
         }
     }
 
@@ -182,9 +182,9 @@ namespace Microsoft.Framework.WebEncoders
         public UrlEncoder(params UnicodeRange[] allowedRanges) : this(new CodePointFilter(allowedRanges))
         { }
 
-        public void UrlEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void UrlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, charCount, output);
+            _encoder.Encode(value, startIndex, characterCount, output);
         }
 
         public string UrlEncode(string value)
@@ -192,9 +192,9 @@ namespace Microsoft.Framework.WebEncoders
             return _encoder.Encode(value); ;
         }
 
-        public void UrlEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void UrlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _encoder.Encode(value, startIndex, charCount, output);
+            _encoder.Encode(value, startIndex, characterCount, output);
         }
     }
 }
