@@ -392,3 +392,88 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 	g_array_free (sps, TRUE);
 }
+
+MonoDebugLocalsInfo*
+mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
+{
+	MonoPPDBFile *ppdb = minfo->handle->ppdb;
+	MonoImage *image = ppdb->image;
+	MonoTableInfo *tables = image->tables;
+	MonoMethod *method = minfo->method;
+	guint32 cols [MONO_LOCALSCOPE_SIZE];
+	guint32 locals_cols [MONO_LOCALVARIABLE_SIZE];
+	int i, lindex, sindex, method_idx, start_scope_idx, scope_idx, locals_idx, locals_end_idx, nscopes;
+	MonoDebugLocalsInfo *res;
+	MonoMethodSignature *sig;
+
+	if (!method->token)
+		return NULL;
+
+	sig = mono_method_signature (method);
+	if (!sig)
+		return NULL;
+
+	method_idx = mono_metadata_token_index (method->token);
+
+	start_scope_idx = mono_metadata_localscope_from_methoddef (image, method_idx);
+
+	if (!start_scope_idx)
+		return NULL;
+
+	/* Compute number of locals and scopes */
+	scope_idx = start_scope_idx;
+	mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
+	locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
+	while (TRUE) {
+		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
+		if (cols [MONO_LOCALSCOPE_METHOD] != method_idx)
+			break;
+		scope_idx ++;
+	}
+	nscopes = scope_idx - start_scope_idx;
+	if (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
+		// FIXME:
+		g_assert_not_reached ();
+		locals_end_idx = -1;
+	} else {
+		locals_end_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
+	}
+
+	res = g_new0 (MonoDebugLocalsInfo, 1);
+	res->num_blocks = nscopes;
+	res->code_blocks = g_new0 (MonoDebugCodeBlock, res->num_blocks);
+	res->num_locals = locals_end_idx - locals_idx;
+	res->locals = g_new0 (MonoDebugLocalVar, res->num_locals);
+
+	lindex = 0;
+	for (sindex = 0; sindex < nscopes; ++sindex) {
+		scope_idx = start_scope_idx + sindex;
+		mono_metadata_decode_row (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1, cols, MONO_LOCALSCOPE_SIZE);
+
+		locals_idx = cols [MONO_LOCALSCOPE_VARIABLELIST];
+		if (scope_idx == tables [MONO_TABLE_LOCALSCOPE].rows) {
+			// FIXME:
+			g_assert_not_reached ();
+		} else {
+			locals_end_idx = mono_metadata_decode_row_col (&tables [MONO_TABLE_LOCALSCOPE], scope_idx-1 + 1, MONO_LOCALSCOPE_VARIABLELIST);
+		}
+
+		res->code_blocks [sindex].start_offset = cols [MONO_LOCALSCOPE_STARTOFFSET];
+		res->code_blocks [sindex].end_offset = cols [MONO_LOCALSCOPE_STARTOFFSET] + cols [MONO_LOCALSCOPE_LENGTH];
+
+		//printf ("Scope: %s %d %d %d-%d\n", mono_method_full_name (method, 1), cols [MONO_LOCALSCOPE_STARTOFFSET], cols [MONO_LOCALSCOPE_LENGTH], locals_idx, locals_end_idx);
+
+		for (i = locals_idx; i < locals_end_idx; ++i) {
+			mono_metadata_decode_row (&tables [MONO_TABLE_LOCALVARIABLE], i - 1, locals_cols, MONO_LOCALVARIABLE_SIZE);
+
+			res->locals [lindex].name = g_strdup (mono_metadata_string_heap (image, locals_cols [MONO_LOCALVARIABLE_NAME]));
+			res->locals [lindex].index = locals_cols [MONO_LOCALVARIABLE_INDEX];
+			res->locals [lindex].block = &res->code_blocks [sindex];
+			lindex ++;
+
+			//printf ("\t %s %d\n", mono_metadata_string_heap (image, locals_cols [MONO_LOCALVARIABLE_NAME]), locals_cols [MONO_LOCALVARIABLE_INDEX]);
+		}
+	}
+
+	return res;
+}

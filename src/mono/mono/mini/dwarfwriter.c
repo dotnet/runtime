@@ -2004,7 +2004,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	}
 
 	if (locals_info)
-		mono_debug_symfile_free_locals (locals_info);
+		mono_debug_free_locals (locals_info);
 
 	/* Subprogram end */
 	emit_uleb128 (w, 0x0);

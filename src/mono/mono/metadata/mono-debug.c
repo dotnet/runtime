@@ -779,7 +779,7 @@ mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDoma
  * mono_debug_lookup_locals:
  *
  *   Return information about the local variables of MINFO.
- * The result should be freed using mono_debug_symfile_free_locals ().
+ * The result should be freed using mono_debug_free_locals ().
  */
 MonoDebugLocalsInfo*
 mono_debug_lookup_locals (MonoMethod *method)
@@ -792,15 +792,39 @@ mono_debug_lookup_locals (MonoMethod *method)
 
 	mono_debugger_lock ();
 	minfo = mono_debug_lookup_method_internal (method);
-	if (!minfo || !minfo->handle || !minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile)) {
+	if (!minfo || !minfo->handle) {
 		mono_debugger_unlock ();
 		return NULL;
 	}
 
-	res = mono_debug_symfile_lookup_locals (minfo);
+	if (minfo->handle->ppdb) {
+		res = mono_ppdb_lookup_locals (minfo);
+	} else {
+		if (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))
+			res = NULL;
+		else
+			res = mono_debug_symfile_lookup_locals (minfo);
+	}
 	mono_debugger_unlock ();
 
 	return res;
+}
+
+/*
+ * mono_debug_free_locals:
+ *
+ *   Free all the data allocated by mono_debug_lookup_locals ().
+ */
+void
+mono_debug_free_locals (MonoDebugLocalsInfo *info)
+{
+	int i;
+
+	for (i = 0; i < info->num_locals; ++i)
+		g_free (info->locals [i].name);
+	g_free (info->locals);
+	g_free (info->code_blocks);
+	g_free (info);
 }
 
 /**

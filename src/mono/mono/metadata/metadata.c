@@ -379,7 +379,22 @@ const static unsigned char TableSchemas [] = {
 	MONO_MT_BLOB_IDX,   /* SequencePoints */
 	MONO_MT_END,
 
-#define NULL_SCHEMA_OFFSET METHODBODY_SCHEMA_OFFSET + 2
+#define LOCALSCOPE_SCHEMA_OFFSET METHODBODY_SCHEMA_OFFSET + 2
+	MONO_MT_TABLE_IDX,   /* Method */
+	MONO_MT_TABLE_IDX,   /* ImportScope */
+	MONO_MT_TABLE_IDX,   /* VariableList */
+	MONO_MT_TABLE_IDX,   /* ConstantList */
+	MONO_MT_UINT32,      /* StartOffset */
+	MONO_MT_UINT32,      /* Length */
+	MONO_MT_END,
+
+#define LOCALVARIABLE_SCHEMA_OFFSET LOCALSCOPE_SCHEMA_OFFSET + 7
+	MONO_MT_UINT16,      /* Attributes */
+	MONO_MT_UINT16,      /* Index */
+	MONO_MT_STRING_IDX,  /* Name */
+	MONO_MT_END,
+
+#define NULL_SCHEMA_OFFSET LOCALVARIABLE_SCHEMA_OFFSET + 4
 	MONO_MT_END
 };
 
@@ -435,7 +450,9 @@ table_description [] = {
 	NULL_SCHEMA_OFFSET,
 	NULL_SCHEMA_OFFSET,
 	DOCUMENT_SCHEMA_OFFSET, /* 0x30 */
-	METHODBODY_SCHEMA_OFFSET
+	METHODBODY_SCHEMA_OFFSET,
+	LOCALSCOPE_SCHEMA_OFFSET,
+	LOCALVARIABLE_SCHEMA_OFFSET
 };
 
 #ifdef HAVE_ARRAY_ELEM_INIT
@@ -627,7 +644,26 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 				g_assert (i == 0);
 				field_size = idx_size (meta, MONO_TABLE_GENERICPARAM);
 				break;
-				
+			case MONO_TABLE_LOCALSCOPE:
+				switch (i) {
+				case 0:
+					// FIXME: This table is in another file
+					field_size = idx_size (meta, MONO_TABLE_METHOD);
+					break;
+				case 1:
+					field_size = idx_size (meta, MONO_TABLE_IMPORTSCOPE);
+					break;
+				case 2:
+					field_size = idx_size (meta, MONO_TABLE_LOCALVARIABLE);
+					break;
+				case 3:
+					field_size = idx_size (meta, MONO_TABLE_LOCALCONSTANT);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
 			default:
 				g_error ("Can't handle MONO_MT_TABLE_IDX for table %d element %d", tableindex, i);
 			}
@@ -4307,6 +4343,38 @@ mono_metadata_declsec_from_index (MonoImage *meta, guint32 index)
 		loc.result --;
 
 	return loc.result;
+}
+
+/*
+ * mono_metadata_localscope_from_methoddef:
+ * @meta: metadata context
+ * @index: methoddef index
+ * 
+ * Returns: the 1-based index into the LocalScope table of the first
+ * scope which belongs to the method described by @index.
+ * Returns 0 if no such row is found.
+ */
+guint32
+mono_metadata_localscope_from_methoddef (MonoImage *meta, guint32 index)
+{
+	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_LOCALSCOPE];
+	locator_t loc;
+
+	if (!tdef->base)
+		return 0;
+
+	loc.idx = index;
+	loc.col_idx = MONO_LOCALSCOPE_METHOD;
+	loc.t = tdef;
+
+	if (!mono_binary_search (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
+		return 0;
+
+	/* Find the first entry by searching backwards */
+	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_LOCALSCOPE_METHOD) == index))
+		loc.result --;
+
+	return loc.result + 1;
 }
 
 #ifdef DEBUG

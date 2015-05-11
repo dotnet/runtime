@@ -834,20 +834,3 @@ mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo)
 
 	return res;
 }
-
-/*
- * mono_debug_symfile_free_locals:
- *
- *   Free all the data allocated by mono_debug_symfile_lookup_locals ().
- */
-void
-mono_debug_symfile_free_locals (MonoDebugLocalsInfo *info)
-{
-	int i;
-
-	for (i = 0; i < info->num_locals; ++i)
-		g_free (info->locals [i].name);
-	g_free (info->locals);
-	g_free (info->code_blocks);
-	g_free (info);
-}

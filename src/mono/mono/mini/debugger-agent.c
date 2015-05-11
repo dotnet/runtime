@@ -8412,50 +8412,73 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	case CMD_METHOD_GET_LOCALS_INFO: {
 		int i, j, num_locals;
 		MonoDebugLocalsInfo *locals;
+		int *locals_map = NULL;
 
 		header = mono_method_get_header (method);
 		if (!header)
 			return ERR_INVALID_ARGUMENT;
 
-		buffer_add_int (buf, header->num_locals);
-
-		/* Types */
-		for (i = 0; i < header->num_locals; ++i)
-			buffer_add_typeid (buf, domain, mono_class_from_mono_type (header->locals [i]));
-
-		/* Names */
 		locals = mono_debug_lookup_locals (method);
-		if (locals)
-			num_locals = locals->num_locals;
-		else
-			num_locals = 0;
-		for (i = 0; i < header->num_locals; ++i) {
-			for (j = 0; j < num_locals; ++j)
-				if (locals->locals [j].index == i)
-					break;
-			if (j < num_locals)
-				buffer_add_string (buf, locals->locals [j].name);
-			else
-				buffer_add_string (buf, "");
-		}
-
-		/* Scopes */
-		for (i = 0; i < header->num_locals; ++i) {
-			for (j = 0; j < num_locals; ++j)
-				if (locals->locals [j].index == i)
-					break;
-			if (j < num_locals && locals->locals [j].block) {
-				buffer_add_int (buf, locals->locals [j].block->start_offset);
-				buffer_add_int (buf, locals->locals [j].block->end_offset);
-			} else {
+		if (!locals) {
+			buffer_add_int (buf, header->num_locals);
+			/* Types */
+			for (i = 0; i < header->num_locals; ++i) {
+				buffer_add_typeid (buf, domain, mono_class_from_mono_type (header->locals [i]));
+			}
+			/* Names */
+			for (i = 0; i < header->num_locals; ++i) {
+				char lname [128];
+				sprintf (lname, "V_%d", i);
+				buffer_add_string (buf, lname);
+			}
+			/* Scopes */
+			for (i = 0; i < header->num_locals; ++i) {
 				buffer_add_int (buf, 0);
 				buffer_add_int (buf, header->code_size);
+			}
+		} else {
+			/* Maps between the IL locals index and the index in locals->locals */
+			locals_map = g_new0 (int, header->num_locals);
+			for (i = 0; i < header->num_locals; ++i)
+				locals_map [i] = -1;
+			num_locals = locals->num_locals;
+			for (i = 0; i < num_locals; ++i) {
+				g_assert (locals->locals [i].index < header->num_locals);
+				locals_map [locals->locals [i].index] = i;
+			}
+			buffer_add_int (buf, num_locals);
+
+			/* Types */
+			for (i = 0; i < header->num_locals; ++i) {
+				if (locals_map [i] != -1)
+					buffer_add_typeid (buf, domain, mono_class_from_mono_type (header->locals [i]));
+			}
+
+			/* Names */
+			for (i = 0; i < header->num_locals; ++i) {
+				if (locals_map [i] != -1)
+					buffer_add_string (buf, locals->locals [locals_map [i]].name);
+			}
+
+			/* Scopes */
+			for (i = 0; i < header->num_locals; ++i) {
+				if (locals_map [i] != -1) {
+					j = locals_map [i];
+					if (locals->locals [j].block) {
+						buffer_add_int (buf, locals->locals [j].block->start_offset);
+						buffer_add_int (buf, locals->locals [j].block->end_offset);
+					} else {
+						buffer_add_int (buf, 0);
+						buffer_add_int (buf, header->code_size);
+					}
+				}
 			}
 		}
 		mono_metadata_free_mh (header);
 
 		if (locals)
-			mono_debug_symfile_free_locals (locals);
+			mono_debug_free_locals (locals);
+		g_free (locals_map);
 
 		break;
 	}

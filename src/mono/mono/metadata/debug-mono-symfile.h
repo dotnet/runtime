@@ -154,9 +154,6 @@ mono_debug_symfile_lookup_method   (MonoDebugHandle          *handle,
 MONO_API MonoDebugLocalsInfo*
 mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo);
 
-MONO_API void
-mono_debug_symfile_free_locals (MonoDebugLocalsInfo *info);
-
 void
 mono_debug_symfile_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points);
 

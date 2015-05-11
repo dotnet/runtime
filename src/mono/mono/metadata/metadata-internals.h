@@ -823,5 +823,8 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 MonoMethod *
 mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error);
 
+guint32
+mono_metadata_localscope_from_methoddef (MonoImage *meta, guint32 index);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
