@@ -837,9 +837,10 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
 
                 if ( hr != E_OUTOFMEMORY)
                 {
-                    // Shouldn't be any reason for this condition but the case where we
-                    // used the wrong ID or didn't update the resource DLL.
-                    _ASSERTE(0);
+                    // Shouldn't be any reason for this condition but the case where
+                    // the resource dll is missing, code used the wrong ID or developer didn't 
+                    // update the resource DLL.
+                    _ASSERTE(!"Missing mscorrc.dll or mscorrc.debug.dll?");
                     hr = HRESULT_FROM_GetLastError();
                 }
                 break;
