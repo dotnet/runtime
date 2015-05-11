@@ -236,6 +236,9 @@ handle_data_grow (HandleData *handles, guint32 old_capacity)
 	 */
 	mono_memory_write_barrier ();
 	if (InterlockedCompareExchangePointer ((volatile gpointer *)&handles->entries [new_bucket], entries, NULL) == NULL) {
+		/* It must not be the case that we succeeded in setting the bucket
+		 * pointer, while someone else succeeded in changing the capacity.
+		 */
 		if (InterlockedCompareExchange ((volatile gint32 *)&handles->capacity, new_capacity, old_capacity) != old_capacity)
 			g_assert_not_reached ();
 		handles->slot_hint = old_capacity;
