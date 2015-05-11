@@ -141,6 +141,7 @@
     <Compile Include="Stack\Stack_Contains_obj.cs" />
     <Compile Include="Stack\Stack_get_SyncRoot.cs" />
     <Compile Include="Stack\Stack_ToArray.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>

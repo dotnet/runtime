@@ -96,7 +96,6 @@ public class Comparer_DefaultInvariant
 
 
     [Fact]
-    [ActiveIssue(1504)]
     [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void ExecuteComparer_DefaultInvariant()
     {
