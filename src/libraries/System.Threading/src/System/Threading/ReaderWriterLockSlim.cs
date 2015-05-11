@@ -1105,11 +1105,8 @@ namespace System.Threading
 
         private void Dispose(bool disposing)
         {
-            if (disposing)
+            if (disposing && !_fDisposed)
             {
-                if (_fDisposed)
-                    throw new ObjectDisposedException(null);
-
                 if (WaitingReadCount > 0 || WaitingUpgradeCount > 0 || WaitingWriteCount > 0)
                     throw new SynchronizationLockException(SR.SynchronizationLockException_IncorrectDispose);
 
