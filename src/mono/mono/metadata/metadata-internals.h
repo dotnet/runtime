@@ -378,11 +378,29 @@ typedef struct {
 	GHashTable *runtime_invoke_vtype_cache;
 
 	/*
+	 * indexed by SignaturePointerPair
+	 */
+	GHashTable *delegate_abstract_invoke_cache;
+
+	/*
 	 * indexed by MonoMethod pointers 
 	 * Protected by the marshal lock
 	 */
-	GHashTable *synchronized_cache;
+	GHashTable *runtime_invoke_direct_cache;
+	GHashTable *managed_wrapper_cache;
 
+	GHashTable *native_wrapper_cache;
+	GHashTable *native_wrapper_aot_cache;
+	GHashTable *native_wrapper_check_cache;
+	GHashTable *native_wrapper_aot_check_cache;
+
+	GHashTable *native_func_wrapper_aot_cache;
+	GHashTable *remoting_invoke_cache;
+	GHashTable *synchronized_cache;
+	GHashTable *unbox_wrapper_cache;
+	GHashTable *cominterop_invoke_cache;
+	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
+	GHashTable *thunk_invoke_cache;
 
 	mono_mutex_t    lock;
 

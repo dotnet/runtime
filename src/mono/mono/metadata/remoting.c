@@ -265,7 +265,10 @@ mono_marshal_remoting_find_in_cache (MonoMethod *method, int wrapper_type)
 	MonoRemotingMethods *wrps;
 
 	mono_marshal_lock_internal ();
-	if (method->klass->image->remoting_invoke_cache)
+	if (method->is_inflated && ((MonoMethodInflated *)method)->owner->remoting_invoke_cache) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
+		wrps = g_hash_table_lookup (imethod->owner->remoting_invoke_cache, method);
+	} else if (method->klass->image->remoting_invoke_cache)
 		wrps = g_hash_table_lookup (method->klass->image->remoting_invoke_cache, method);
 	else
 		wrps = NULL;
@@ -294,7 +297,13 @@ mono_remoting_mb_create_and_cache (MonoMethod *key, MonoMethodBuilder *mb,
 {
 	MonoMethod **res = NULL;
 	MonoRemotingMethods *wrps;
-	GHashTable *cache = get_cache_full (&key->klass->image->remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
+	GHashTable *cache;
+
+	if (key->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *)key;
+		cache = get_cache_full (&imethod->owner->remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
+	} else
+		cache = get_cache_full (&key->klass->image->remoting_invoke_cache, mono_aligned_addr_hash, NULL, NULL, g_free);
 
 	mono_marshal_lock_internal ();
 	wrps = g_hash_table_lookup (cache, key);
