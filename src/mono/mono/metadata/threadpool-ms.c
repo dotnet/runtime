@@ -359,41 +359,6 @@ ensure_cleanedup (void)
 
 	mono_mutex_unlock (&threadpool->active_threads_lock);
 
-	for (;;) {
-		ThreadPoolCounter counter = COUNTER_READ ();
-		if (counter._.active == 0)
-			break;
-		if (counter._.active == 1) {
-			MonoInternalThread *thread = mono_thread_internal_current ();
-			if (thread->threadpool_thread) {
-				/* if there is only one active thread
-				 * left and it's the current one */
-				break;
-			}
-		}
-
-		usleep (1000);
-	}
-
-	g_ptr_array_free (threadpool->domains, TRUE);
-	mono_mutex_destroy (&threadpool->domains_lock);
-
-	g_ptr_array_free (threadpool->parked_threads, TRUE);
-	g_ptr_array_free (threadpool->working_threads, TRUE);
-	mono_mutex_destroy (&threadpool->active_threads_lock);
-
-	mono_mutex_destroy (&threadpool->heuristic_lock);
-	g_free (threadpool->heuristic_hill_climbing.samples);
-	g_free (threadpool->heuristic_hill_climbing.thread_counts);
-	rand_free (threadpool->heuristic_hill_climbing.random_interval_generator);
-
-	g_free (threadpool->cpu_usage_state);
-
-	g_assert (threadpool);
-	g_free (threadpool);
-	threadpool = NULL;
-	g_assert (!threadpool);
-
 	status = STATUS_CLEANED_UP;
 }
 
