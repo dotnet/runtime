@@ -594,7 +594,6 @@ typedef struct {
 static gpointer
 null_link_if (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
 {
-	/* Strictly speaking, function pointers are not guaranteed to have the same size as data pointers. */
 	WeakLinkAlivePredicateClosure *closure = (WeakLinkAlivePredicateClosure *)user;
 	GCObject *obj;
 
