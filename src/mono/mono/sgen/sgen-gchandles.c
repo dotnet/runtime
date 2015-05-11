@@ -307,7 +307,7 @@ object_older_than (GCObject *object, int generation)
  * This assumes that the world is stopped!
  */
 void
-sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer callback(gpointer, GCHandleType, int, gpointer), gpointer user)
+sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, SgenGCHandleIterateCallback callback, gpointer user)
 {
 	HandleData *handle_data = gc_handles_for_type (handle_type);
 	size_t bucket, offset;
