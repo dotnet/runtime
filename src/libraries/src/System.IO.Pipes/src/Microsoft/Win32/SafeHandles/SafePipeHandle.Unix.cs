@@ -39,10 +39,12 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            // Close the handle. We do not want to throw here nor retry
-            // in the case of an EINTR error, so we simply check whether
-            // the call was successful or not.
-            return Interop.libc.close((int)handle) == 0;
+            // Close the handle. Although close is documented to potentially fail with EINTR, we never want
+            // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
+            // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
+            int fd = (int)handle;
+            Debug.Assert(fd >= 0);
+            return Interop.libc.close(fd) == 0;
         }
 
         public override bool IsInvalid
