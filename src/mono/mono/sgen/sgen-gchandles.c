@@ -231,11 +231,14 @@ handle_data_grow (HandleData *handles, guint32 old_capacity)
 	entries = g_malloc0 (new_bucket_size);
 	if (handles->type == HANDLE_PINNED)
 		sgen_register_root ((char *)entries, new_bucket_size, SGEN_DESCRIPTOR_NULL, ROOT_TYPE_PINNED, MONO_ROOT_SOURCE_GC_HANDLE, "pinned gc handles");
+	/* The zeroing of the newly allocated bucket must be complete before storing
+	 * the new bucket pointer.
+	 */
+	mono_memory_write_barrier ();
 	if (InterlockedCompareExchangePointer ((volatile gpointer *)&handles->entries [new_bucket], entries, NULL) == NULL) {
 		if (InterlockedCompareExchange ((volatile gint32 *)&handles->capacity, new_capacity, old_capacity) != old_capacity)
 			g_assert_not_reached ();
 		handles->slot_hint = old_capacity;
-		mono_memory_write_barrier ();
 		return;
 	}
 	/* Someone beat us to the allocation. */
