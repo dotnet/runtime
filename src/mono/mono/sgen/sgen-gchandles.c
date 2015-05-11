@@ -65,6 +65,7 @@ typedef struct {
 	volatile gpointer *volatile entries [BUCKETS];
 	volatile guint32 capacity;
 	volatile guint32 slot_hint;
+	volatile guint32 max_index;
 	guint8 type;
 } HandleData;
 
@@ -145,7 +146,14 @@ try_occupy_slot (HandleData *handles, guint bucket, guint offset, GCObject *obj,
 	return try_set_slot (link_addr, obj, NULL, handles->type) != NULL;
 }
 
-#define EMPTY_HANDLE_DATA(type) { { NULL }, 0, 0, (type) }
+#define EMPTY_HANDLE_DATA(t) \
+	(HandleData) { \
+		.entries = { NULL }, \
+		.capacity = 0, \
+		.slot_hint = 0, \
+		.max_index = 0, \
+		.type = (t) \
+	}
 
 /* weak and weak-track arrays will be allocated in malloc memory 
  */
@@ -170,12 +178,19 @@ sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_da
 	HandleData *handles = gc_handles_for_type (HANDLE_NORMAL);
 	size_t bucket, offset;
 	const guint max_bucket = index_bucket (handles->capacity);
+	guint32 index = 0;
+	const guint32 max_index = handles->max_index;
 	for (bucket = 0; bucket < max_bucket; ++bucket) {
 		volatile gpointer *entries = handles->entries [bucket];
-		for (offset = 0; offset < bucket_size (bucket); ++offset) {
-			volatile gpointer *entry = &entries [offset];
-			gpointer hidden = *entry;
-			gpointer revealed = MONO_GC_REVEAL_POINTER (hidden, FALSE);
+		for (offset = 0; offset < bucket_size (bucket); ++offset, ++index) {
+			volatile gpointer *entry;
+			gpointer hidden, revealed;
+			/* No need to iterate beyond the largest index ever allocated. */
+			if (index > max_index)
+				return;
+			entry = &entries [offset];
+			hidden = *entry;
+			revealed = MONO_GC_REVEAL_POINTER (hidden, FALSE);
 			if (!MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden))
 				continue;
 			mark_func ((MonoObject **)&revealed, gc_data);
@@ -237,6 +252,7 @@ alloc_handle (HandleData *handles, GCObject *obj, gboolean track)
 	guint bucket, offset;
 	guint32 capacity;
 	guint32 slot_hint;
+	guint32 max_index;
 	if (!handles->capacity)
 		handle_data_grow (handles, 0);
 retry:
@@ -253,6 +269,15 @@ retry:
 	bucketize (index, &bucket, &offset);
 	if (!try_occupy_slot (handles, bucket, offset, obj, track))
 		goto retry;
+	/* If a GC happens shortly after a new bucket is allocated, the entire
+	 * bucket could be scanned even though it's mostly empty. To avoid this, we
+	 * track the maximum index seen so far, so that we can skip the empty slots.
+	 */
+	do {
+		max_index = handles->max_index;
+		if (index <= max_index)
+			break;
+	} while (!InterlockedCompareExchange ((volatile gint32 *)&handles->max_index, index, max_index));
 #ifdef HEAVY_STATISTICS
 	InterlockedIncrement64 ((volatile gint64 *)&stat_gc_handles_allocated);
 	if (stat_gc_handles_allocated > stat_gc_handles_max_allocated)
@@ -281,17 +306,24 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, gpointer ca
 	HandleData *handle_data = gc_handles_for_type (handle_type);
 	size_t bucket, offset;
 	guint max_bucket = index_bucket (handle_data->capacity);
+	guint32 index = 0;
+	guint32 max_index = handle_data->max_index;
 	/* If a new bucket has been allocated, but the capacity has not yet been
 	 * increased, nothing can yet have been allocated in the bucket because the
 	 * world is stopped, so we shouldn't miss any handles during iteration.
 	 */
 	for (bucket = 0; bucket < max_bucket; ++bucket) {
 		volatile gpointer *entries = handle_data->entries [bucket];
-		for (offset = 0; offset < bucket_size (bucket); ++offset) {
-			gpointer hidden = entries [offset];
+		for (offset = 0; offset < bucket_size (bucket); ++offset, ++index) {
+			gpointer hidden;
 			gpointer result;
 			/* Table must contain no garbage pointers. */
-			gboolean occupied = MONO_GC_HANDLE_OCCUPIED (hidden);
+			gboolean occupied;
+			/* No need to iterate beyond the largest index ever allocated. */
+			if (index > max_index)
+					return;
+			hidden = entries [offset];
+			occupied = MONO_GC_HANDLE_OCCUPIED (hidden);
 			g_assert (hidden ? occupied : !occupied);
 			if (!occupied)
 				continue;
