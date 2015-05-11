@@ -37,6 +37,20 @@ namespace DispatchProxyTests
         }
 
         [Fact]
+        public static void Create_Proxy_Internal_Interface()
+        {
+            TestType_InternalInterfaceService proxy = DispatchProxy.Create<TestType_InternalInterfaceService, TestDispatchProxy>();
+            Assert.NotNull(proxy);
+        }
+
+        [Fact]
+        public static void Create_Proxy_Implements_Internal_Interfaces()
+        {
+            TestType_InternalInterfaceService proxy = DispatchProxy.Create<TestType_PublicInterfaceService_Implements_Internal, TestDispatchProxy>();
+            Assert.NotNull(proxy);
+        }
+
+        [Fact]
         public static void Create_Same_Proxy_Type_And_Base_Type_Reuses_Same_Generated_Type()
         {
             TestType_IHelloService proxy1 = DispatchProxy.Create<TestType_IHelloService, TestDispatchProxy>();
