@@ -556,6 +556,11 @@ This tells the resume initiator that we completed resume duties and will return 
 */
 void mono_threads_notify_initiator_of_resume (THREAD_INFO_TYPE* info);
 
+/*
+This tells the resume initiator that we completed abort duties and will return to previous state.
+*/
+void mono_threads_notify_initiator_of_abort (THREAD_INFO_TYPE* info);
+
 /* Thread state machine functions */
 
 typedef enum {
