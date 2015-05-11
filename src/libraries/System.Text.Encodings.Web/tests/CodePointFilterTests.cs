@@ -45,10 +45,10 @@ namespace Microsoft.Framework.WebEncoders
         public void Ctor_OtherCodePointFilterAsConcreteType_Clones()
         {
             // Arrange
-            var originalFilter = new CodePointFilter().AllowChar('x');
+            var originalFilter = new CodePointFilter().AllowCharacter('x');
 
             // Act
-            var newFilter = new CodePointFilter(originalFilter).AllowChar('y');
+            var newFilter = new CodePointFilter(originalFilter).AllowCharacter('y');
 
             // Assert
             Assert.True(originalFilter.IsCharacterAllowed('x'));
@@ -93,7 +93,7 @@ namespace Microsoft.Framework.WebEncoders
             var filter = new CodePointFilter();
 
             // Act
-            var retVal = filter.AllowChar('\u0100');
+            var retVal = filter.AllowCharacter('\u0100');
 
             // Assert
             Assert.Same(filter, retVal); // returns 'this' instance
@@ -108,7 +108,7 @@ namespace Microsoft.Framework.WebEncoders
             var filter = new CodePointFilter();
 
             // Act
-            var retVal = filter.AllowChars('\u0100', '\u0102');
+            var retVal = filter.AllowCharacters('\u0100', '\u0102');
 
             // Assert
             Assert.Same(filter, retVal); // returns 'this' instance
@@ -125,7 +125,7 @@ namespace Microsoft.Framework.WebEncoders
             var filter = new CodePointFilter();
 
             // Act
-            var retVal = filter.AllowChars("\u0100\u0102");
+            var retVal = filter.AllowCharacters("\u0100\u0102");
 
             // Assert
             Assert.Same(filter, retVal); // returns 'this' instance
@@ -221,7 +221,7 @@ namespace Microsoft.Framework.WebEncoders
             var filter = new CodePointFilter();
             for (int i = 1; i <= Char.MaxValue; i++)
             {
-                filter.AllowChar((char)i);
+                filter.AllowCharacter((char)i);
             }
 
             // Act
@@ -242,7 +242,7 @@ namespace Microsoft.Framework.WebEncoders
             var filter = new CodePointFilter(UnicodeRanges.BasicLatin);
 
             // Act
-            var retVal = filter.ForbidChar('x');
+            var retVal = filter.ForbidCharacter('x');
 
             // Assert
             Assert.Same(filter, retVal); // returns 'this' instance
@@ -259,7 +259,7 @@ namespace Microsoft.Framework.WebEncoders
             var filter = new CodePointFilter(UnicodeRanges.BasicLatin);
 
             // Act
-            var retVal = filter.ForbidChars('x', 'z');
+            var retVal = filter.ForbidCharacters('x', 'z');
 
             // Assert
             Assert.Same(filter, retVal); // returns 'this' instance
@@ -276,7 +276,7 @@ namespace Microsoft.Framework.WebEncoders
             var filter = new CodePointFilter(UnicodeRanges.BasicLatin);
 
             // Act
-            var retVal = filter.ForbidChars("xz");
+            var retVal = filter.ForbidCharacters("xz");
 
             // Assert
             Assert.Same(filter, retVal); // returns 'this' instance
@@ -336,14 +336,14 @@ namespace Microsoft.Framework.WebEncoders
         public void GetAllowedCodePoints()
         {
             // Arrange
-            var expected = Enumerable.Range(UnicodeRanges.BasicLatin.FirstCodePoint, UnicodeRanges.BasicLatin.RangeSize)
-                .Concat(Enumerable.Range(UnicodeRanges.Specials.FirstCodePoint, UnicodeRanges.Specials.RangeSize))
+            var expected = Enumerable.Range(UnicodeRanges.BasicLatin.FirstCodePoint, UnicodeRanges.BasicLatin.Length)
+                .Concat(Enumerable.Range(UnicodeRanges.Specials.FirstCodePoint, UnicodeRanges.Specials.Length))
                 .Except(new int[] { 'x' })
                 .OrderBy(i => i)
                 .ToArray();
 
             var filter = new CodePointFilter(UnicodeRanges.BasicLatin, UnicodeRanges.Specials);
-            filter.ForbidChar('x');
+            filter.ForbidCharacter('x');
 
             // Act
             var retVal = filter.GetAllowedCodePoints().OrderBy(i => i).ToArray();

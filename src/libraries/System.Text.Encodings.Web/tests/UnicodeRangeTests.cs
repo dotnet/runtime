@@ -36,13 +36,13 @@ namespace Microsoft.Framework.WebEncoders
 
             // Assert
             Assert.Equal(0x0100, range.FirstCodePoint);
-            Assert.Equal(128, range.RangeSize);
+            Assert.Equal(128, range.Length);
         }
 
         [Fact]
         public void FromSpan_FailureCase()
         {
-            var ex = Assert.Throws<ArgumentOutOfRangeException>(() => UnicodeRange.FromSpan('\u0020', '\u0010'));
+            var ex = Assert.Throws<ArgumentOutOfRangeException>(() => UnicodeRange.Create('\u0020', '\u0010'));
             Assert.Equal("lastChar", ex.ParamName);
         }
 
@@ -50,22 +50,22 @@ namespace Microsoft.Framework.WebEncoders
         public void FromSpan_SuccessCase()
         {
             // Act
-            var range = UnicodeRange.FromSpan('\u0180', '\u024F'); // Latin Extended-B
+            var range = UnicodeRange.Create('\u0180', '\u024F'); // Latin Extended-B
 
             // Assert
             Assert.Equal(0x0180, range.FirstCodePoint);
-            Assert.Equal(208, range.RangeSize);
+            Assert.Equal(208, range.Length);
         }
 
         [Fact]
         public void FromSpan_SuccessCase_All()
         {
             // Act
-            var range = UnicodeRange.FromSpan('\u0000', '\uFFFF');
+            var range = UnicodeRange.Create('\u0000', '\uFFFF');
 
             // Assert
             Assert.Equal(0, range.FirstCodePoint);
-            Assert.Equal(0x10000, range.RangeSize);
+            Assert.Equal(0x10000, range.Length);
         }
     }
 }

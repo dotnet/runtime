@@ -96,9 +96,9 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Everybody's favorite HtmlEncode routine.
         /// </summary>
-        public void HtmlEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void HtmlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _innerUnicodeEncoder.Encode(value, startIndex, charCount, output);
+            _innerUnicodeEncoder.Encode(value, startIndex, characterCount, output);
         }
 
         /// <summary>
@@ -112,9 +112,9 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Everybody's favorite HtmlEncode routine.
         /// </summary>
-        public void HtmlEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void HtmlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _innerUnicodeEncoder.Encode(value, startIndex, charCount, output);
+            _innerUnicodeEncoder.Encode(value, startIndex, characterCount, output);
         }
 
         private sealed class HtmlUnicodeEncoder : UnicodeEncoderBase
@@ -166,7 +166,7 @@ namespace Microsoft.Framework.WebEncoders
                 {
                     Debug.Assert(numCharsWritten < 8, "Couldn't have written 8 characters out by this point.");
                     // Pop off the last nibble
-                    chars[numCharsWritten++] = HexUtil.IntToChar(value & 0xFU);
+                    chars[numCharsWritten++] = HexUtil.UInt32LsbToHexDigit(value & 0xFU);
                     value >>= 4;
                 } while (value != 0);
 
@@ -269,9 +269,9 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Everybody's favorite JavaScriptStringEncode routine.
         /// </summary>
-        public void JavaScriptStringEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void JavaScriptStringEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _innerUnicodeEncoder.Encode(value, startIndex, charCount, output);
+            _innerUnicodeEncoder.Encode(value, startIndex, characterCount, output);
         }
 
         /// <summary>
@@ -285,9 +285,9 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Everybody's favorite JavaScriptStringEncode routine.
         /// </summary>
-        public void JavaScriptStringEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void JavaScriptStringEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _innerUnicodeEncoder.Encode(value, startIndex, charCount, output);
+            _innerUnicodeEncoder.Encode(value, startIndex, characterCount, output);
         }
 
         private sealed class JavaScriptStringUnicodeEncoder : UnicodeEncoderBase
@@ -372,10 +372,10 @@ namespace Microsoft.Framework.WebEncoders
                 // Encode this as 6 chars "\uFFFF".
                 writer.Write('\\');
                 writer.Write('u');
-                writer.Write(HexUtil.IntToChar(value >> 12));
-                writer.Write(HexUtil.IntToChar((value >> 8) & 0xFU));
-                writer.Write(HexUtil.IntToChar((value >> 4) & 0xFU));
-                writer.Write(HexUtil.IntToChar(value & 0xFU));
+                writer.Write(HexUtil.UInt32LsbToHexDigit(value >> 12));
+                writer.Write(HexUtil.UInt32LsbToHexDigit((value >> 8) & 0xFU));
+                writer.Write(HexUtil.UInt32LsbToHexDigit((value >> 4) & 0xFU));
+                writer.Write(HexUtil.UInt32LsbToHexDigit(value & 0xFU));
             }
         }
     }
@@ -466,9 +466,9 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Everybody's favorite UrlEncode routine.
         /// </summary>
-        public void UrlEncode(char[] value, int startIndex, int charCount, TextWriter output)
+        public void UrlEncode(char[] value, int startIndex, int characterCount, TextWriter output)
         {
-            _innerUnicodeEncoder.Encode(value, startIndex, charCount, output);
+            _innerUnicodeEncoder.Encode(value, startIndex, characterCount, output);
         }
 
         /// <summary>
@@ -482,9 +482,9 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Everybody's favorite UrlEncode routine.
         /// </summary>
-        public void UrlEncode(string value, int startIndex, int charCount, TextWriter output)
+        public void UrlEncode(string value, int startIndex, int characterCount, TextWriter output)
         {
-            _innerUnicodeEncoder.Encode(value, startIndex, charCount, output);
+            _innerUnicodeEncoder.Encode(value, startIndex, characterCount, output);
         }
 
         private sealed class UrlUnicodeEncoder : UnicodeEncoderBase
@@ -582,7 +582,7 @@ namespace Microsoft.Framework.WebEncoders
                 do
                 {
                     char highNibble, lowNibble;
-                    HexUtil.WriteHexEncodedByte((byte)asUtf8, out highNibble, out lowNibble);
+                    HexUtil.ByteToHexDigits((byte)asUtf8, out highNibble, out lowNibble);
                     writer.Write('%');
                     writer.Write(highNibble);
                     writer.Write(lowNibble);

@@ -19,7 +19,7 @@ namespace Microsoft.Framework.WebEncoders
         /// The encoded value is also appropriately encoded for inclusion inside an HTML attribute
         /// as long as the attribute value is surrounded by single or double quotes.
         /// </remarks>
-        void HtmlEncode(char[] value, int startIndex, int charCount, TextWriter output);
+        void HtmlEncode(char[] value, int startIndex, int characterCount, TextWriter output);
 
         /// <summary>
         /// HTML-encodes a given input string.
@@ -41,6 +41,6 @@ namespace Microsoft.Framework.WebEncoders
         /// The encoded value is also appropriately encoded for inclusion inside an HTML attribute
         /// as long as the attribute value is surrounded by single or double quotes.
         /// </remarks>
-        void HtmlEncode(string value, int startIndex, int charCount, TextWriter output);
+        void HtmlEncode(string value, int startIndex, int characterCount, TextWriter output);
     }
 }
