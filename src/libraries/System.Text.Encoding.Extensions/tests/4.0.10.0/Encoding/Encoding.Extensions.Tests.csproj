@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CLRTest.Common.props))\CLRTest.Common.props" />
+  <PropertyGroup>
+    <CLRTestOwner>tasou</CLRTestOwner>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestSuite>Weekly</CLRTestSuite>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <CLRTestContractReference Include="System.Text.Encoding" >
+      <Version>4.0.10.0</Version>
+    </CLRTestContractReference>
+    <CLRTestContractReference Include="System.Text.Encoding.Extensions" >
+      <Version>4.0.10.0</Version>
+    </CLRTestContractReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ASCII.cs" />
+    <Compile Include="EncodingTestHelper.cs" />
+    <Compile Include="ISO-8859-1.cs" />
+    <Compile Include="UTF16BE.cs" />
+    <Compile Include="UTF16LE.cs" />
+    <Compile Include="UTF32BE.cs" />
+    <Compile Include="UTF32LE.cs" />
+    <Compile Include="UTF7.cs" />
+    <Compile Include="UTF8.cs" />
+  </ItemGroup>
+  <Import Project="$(CLRTestRoot)\CLRTest.targets" />
+  <Import Project="$(CLRTestStoreRoot)\FX\Conformance\Common\Xunit\Xunit.cslib" />
+</Project>
