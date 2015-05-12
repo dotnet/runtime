@@ -22,6 +22,7 @@
     <Compile Include="ManualResetEventSlimTests.cs" />
     <Compile Include="SemaphoreSlimCancellationTests.cs" />
     <Compile Include="SemaphoreSlimTests.cs" />
+    <Compile Include="SemaphoreTests.cs" />
     <Compile Include="SpinLockTests.cs" />
     <Compile Include="ThreadLocalTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />

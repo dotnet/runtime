@@ -14,6 +14,34 @@ namespace Test
     /// </summary>
     public class SpinLockTests
     {
+        [Fact]
+        public static void EnterExit()
+        {
+            var sl = new SpinLock();
+            Assert.True(sl.IsThreadOwnerTrackingEnabled);
+
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.False(sl.IsHeld);
+                Assert.False(sl.IsHeldByCurrentThread);
+
+                bool lockTaken = false;
+                if (i % 2 == 0)
+                    sl.Enter(ref lockTaken);
+                else
+                    sl.TryEnter(ref lockTaken);
+                Assert.True(lockTaken);
+                Assert.True(sl.IsHeld);
+                Assert.True(sl.IsHeldByCurrentThread);
+                Task.Factory.StartNew(() =>
+                {
+                    Assert.True(sl.IsHeld);
+                    Assert.False(sl.IsHeldByCurrentThread);
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).GetAwaiter().GetResult();
+                sl.Exit();
+            }
+        }
+
         /// <summary>
         /// Run all SpinLock tests
         /// </summary>
