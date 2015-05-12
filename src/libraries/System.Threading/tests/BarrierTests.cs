@@ -161,6 +161,30 @@ namespace Test
             RunBarrierTest4_AddParticipants(100, int.MaxValue, typeof(ArgumentOutOfRangeException));
         }
 
+        [Fact]
+        public static void TooManyParticipants()
+        {
+            Barrier b = new Barrier(Int16.MaxValue);
+            Assert.Throws<InvalidOperationException>(() => b.AddParticipant());
+        }
+
+        [Fact]
+        public static void RemovingParticipants()
+        {
+            Barrier b;
+
+            b = new Barrier(1);
+            b.RemoveParticipant();
+            Assert.Throws<ArgumentOutOfRangeException>(() => b.RemoveParticipant());
+
+            b = new Barrier(1);
+            b.RemoveParticipants(1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => b.RemoveParticipants(1));
+
+            b = new Barrier(1);
+            Assert.Throws<ArgumentOutOfRangeException>(() => b.RemoveParticipants(2));
+        }
+
         /// <summary>
         /// Test AddParticipants
         /// </summary>
@@ -478,6 +502,20 @@ namespace Test
                     Assert.True(false, string.Format("RunBarrierTest10c:  Error: Only finished {0} iterations, before an exception was thrown.", j));
                 }
             }
+        }
+
+        [Fact]
+        public static void PostPhaseException()
+        {
+            Exception exc = new Exception("inner");
+
+            Assert.NotNull(new BarrierPostPhaseException().Message);
+            Assert.NotNull(new BarrierPostPhaseException((string)null).Message);
+            Assert.Equal("test", new BarrierPostPhaseException("test").Message);
+            Assert.NotNull(new BarrierPostPhaseException(exc).Message);
+            Assert.Same(exc, new BarrierPostPhaseException(exc).InnerException);
+            Assert.Equal("test", new BarrierPostPhaseException("test", exc).Message);
+            Assert.Same(exc, new BarrierPostPhaseException("test", exc).InnerException);
         }
 
         #region Helper Methods
