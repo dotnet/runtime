@@ -525,7 +525,7 @@ AC_CACHE_CHECK([for clang],
 	[])
 ])
 
-AC_ARG_ENABLE(visiblity-hidden,
+AC_ARG_ENABLE(visibility-hidden,
 [  --disable-visibility-hidden    disable usage of -fvisiblity=hidden],
    disable_visibility_hidden=yes, disable_visibility_hidden=no)
 
