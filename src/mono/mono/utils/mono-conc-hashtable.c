@@ -352,20 +352,18 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 	}
 }
 
+void
+mono_conc_hashtable_foreach (MonoConcurrentHashTable *hash_table, GHFunc func, gpointer userdata)
+{
+	int i;
+	conc_table *table = (conc_table*)hash_table->table;
+	key_value_pair *kvs = table->kvs;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  mono_mutex_lock (hash_table->mutex);
+	for (i = 0; i < table->table_size; ++i) {
+		if (kvs [i].key && kvs [i].key != TOMBSTONE) {
+			func (kvs [i].key, kvs [i].value, userdata);
+		}
+	}
+	mono_mutex_unlock (hash_table->mutex);
+}
