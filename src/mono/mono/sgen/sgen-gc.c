@@ -1585,6 +1585,8 @@ collect_nursery (SgenGrayQueue *unpin_queue, gboolean finish_up_concurrent_mark)
 	time_minor_scan_remsets += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Old generation scan: %ld usecs", TV_ELAPSED (atv, btv));
 
+	sgen_pin_stats_print_class_stats ();
+
 	sgen_drain_gray_stack (-1, ctx);
 
 	/* FIXME: Why do we do this at this specific, seemingly random, point? */
@@ -1906,6 +1908,8 @@ major_copy_or_mark_from_roots (size_t *old_next_pin_slot, CopyOrMarkFromRootsMod
 		TV_GETTIME (atv);
 		time_major_scan_mod_union += TV_ELAPSED (btv, atv);
 	}
+
+	sgen_pin_stats_print_class_stats ();
 }
 
 static void

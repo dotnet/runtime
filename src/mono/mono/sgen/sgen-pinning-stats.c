@@ -84,6 +84,8 @@ sgen_pin_stats_reset (void)
 	for (i = 0; i < PIN_TYPE_MAX; ++i)
 		pinned_byte_counts [i] = 0;
 	sgen_pointer_queue_clear (&pinned_objects);
+	sgen_hash_table_clean (&pinned_class_hash_table);
+	sgen_hash_table_clean (&global_remset_class_hash_table);
 }
 
 void
@@ -206,19 +208,24 @@ sgen_pin_stats_print_class_stats (void)
 	if (!do_pin_stats)
 		return;
 
-	g_print ("\n%-50s  %10s  %10s  %10s\n", "Class", "Stack", "Static", "Other");
+	mono_gc_printf (gc_debug_file, "\n%-50s  %10s  %10s  %10s\n", "Class", "Stack", "Static", "Other");
 	SGEN_HASH_TABLE_FOREACH (&pinned_class_hash_table, name, pinned_entry) {
 		int i;
-		g_print ("%-50s", name);
+		mono_gc_printf (gc_debug_file, "%-50s", name);
 		for (i = 0; i < PIN_TYPE_MAX; ++i)
-			g_print ("  %10ld", pinned_entry->num_pins [i]);
-		g_print ("\n");
+			mono_gc_printf (gc_debug_file, "  %10ld", pinned_entry->num_pins [i]);
+		mono_gc_printf (gc_debug_file, "\n");
 	} SGEN_HASH_TABLE_FOREACH_END;
 
-	g_print ("\n%-50s  %10s\n", "Class", "#Remsets");
+	mono_gc_printf (gc_debug_file, "\n%-50s  %10s\n", "Class", "#Remsets");
 	SGEN_HASH_TABLE_FOREACH (&global_remset_class_hash_table, name, remset_entry) {
-		g_print ("%-50s  %10ld\n", name, remset_entry->num_remsets);
+		mono_gc_printf (gc_debug_file, "%-50s  %10ld\n", name, remset_entry->num_remsets);
 	} SGEN_HASH_TABLE_FOREACH_END;
+
+	mono_gc_printf (gc_debug_file, "\nTotal bytes pinned from stack: %ld  static: %ld  other: %ld\n",
+			pinned_byte_counts [PIN_TYPE_STACK],
+			pinned_byte_counts [PIN_TYPE_STATIC_DATA],
+			pinned_byte_counts [PIN_TYPE_OTHER]);
 }
 
 size_t
