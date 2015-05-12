@@ -138,14 +138,14 @@ namespace System.Text.Encodings.Web
         }
 
         [CLSCompliant(false)]
-        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int length, out int numberOfCharactersWritten)
+        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
             if (buffer == null)
             {
                 throw new ArgumentNullException("buffer");
             }
 
-            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, length, out numberOfCharactersWritten); }
+            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, bufferLength, out numberOfCharactersWritten); }
 
             numberOfCharactersWritten = 0;
             uint asUtf8 = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)unicodeScalar);
@@ -153,7 +153,7 @@ namespace System.Text.Encodings.Web
             {
                 char highNibble, lowNibble;
                 HexUtil.ByteToHexDigits((byte)asUtf8, out highNibble, out lowNibble);
-                if (length < 3)
+                if (bufferLength < 3)
                 {
                     numberOfCharactersWritten = 0;
                     return false;
