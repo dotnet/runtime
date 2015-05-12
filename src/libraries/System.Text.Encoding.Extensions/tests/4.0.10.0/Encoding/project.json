@@ -12,5 +12,8 @@
     "xunit.assert": "2.0.0-beta5-build2785",
     "xunit.core.netcore": "1.0.1-prerelease",
     "xunit.runner.visualstudio": "0.99.9-build1021"
+  },
+  "frameworks": {
+    "dnxcore50": {}
   }
 }
