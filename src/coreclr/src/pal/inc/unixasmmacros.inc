@@ -88,7 +88,11 @@ C_FUNC(\Name\()_End):
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
-        .cfi_personality 0, \Handler // 4 == DW_EH_PE_udata8 0 == DW_EH_PE_absptr
+#if defined(__APPLE__)
+        .cfi_personality 0x9b, C_FUNC(\Handler) // 0x9b == DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4
+#else
+        .cfi_personality 0, C_FUNC(\Handler) // 0 == DW_EH_PE_absptr
+#endif
         .endif
 .endm
 
