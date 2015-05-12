@@ -6,6 +6,12 @@ include_directories("../inc")
 # Enable the following for UNIX altjit on Windows
 # add_definitions(-DALT_JIT)
 
+if (WIN32) 
+if (IS_64BIT_BUILD EQUAL 1)
+  add_definitions(-DFEATURE_SIMD -DFEATURE_AVX_SUPPORT) 
+endif (IS_64BIT_BUILD EQUAL 1)
+endif (WIN32)
+
 set( SOURCES
   alloc.cpp
   bitset.cpp
