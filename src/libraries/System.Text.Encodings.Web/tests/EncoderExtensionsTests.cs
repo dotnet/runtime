@@ -25,7 +25,7 @@ namespace System.Text.Encodings.Web
             StringWriter writer = new StringWriter();
 
             // Act
-            encoder.Encode("Hello+there!", writer);
+            encoder.Encode(writer, "Hello+there!");
 
             // Assert
             Assert.Equal("Hello&#x2B;there!", writer.ToString());
@@ -65,7 +65,7 @@ namespace System.Text.Encodings.Web
             StringWriter writer = new StringWriter();
 
             // Act
-            encoder.Encode("Hello+there!", writer);
+            encoder.Encode(writer, "Hello+there!");
 
             // Assert
             Assert.Equal("Hello%2Bthere!", writer.ToString());

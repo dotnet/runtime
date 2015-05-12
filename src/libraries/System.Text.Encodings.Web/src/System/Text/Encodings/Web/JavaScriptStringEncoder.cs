@@ -96,7 +96,7 @@ namespace System.Text.Encodings.Web
         // http://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
         // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
         [CLSCompliant(false)]
-        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int length, out int numberOfCharactersWritten)
+        public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
             if (buffer == null)
             {
@@ -109,15 +109,15 @@ namespace System.Text.Encodings.Web
             // be written out as numeric entities for defense-in-depth.
             // See UnicodeEncoderBase ctor comments for more info.
 
-            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, length, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\b') { return b.TryCopyCharacters(buffer, length, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\t') { return t.TryCopyCharacters(buffer, length, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\n') { return n.TryCopyCharacters(buffer, length, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\f') { return f.TryCopyCharacters(buffer, length, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\r') { return r.TryCopyCharacters(buffer, length, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '/') { return forward.TryCopyCharacters(buffer, length, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\\') { return back.TryCopyCharacters(buffer, length, out numberOfCharactersWritten); }
-            else { return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, length, out numberOfCharactersWritten); }
+            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\b') { return b.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\t') { return t.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\n') { return n.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\f') { return f.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\r') { return r.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '/') { return forward.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else if (unicodeScalar == '\\') { return back.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
+            else { return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
         }
 
         private unsafe static bool TryWriteEncodedScalarAsNumericEntity(int unicodeScalar, char* buffer, int length, out int numberOfCharactersWritten)

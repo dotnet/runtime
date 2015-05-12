@@ -113,12 +113,12 @@ namespace System.Text.Encodings.Web
             }
         }
 
-        public static void Encode(this TextEncoder encoder, string value, TextWriter output)
+        public static void Encode(this TextEncoder encoder, TextWriter output, string value)
         {
-            Encode(encoder, value, 0, value.Length, output);
+            Encode(encoder, output, value, 0, value.Length);
         }
 
-        public static void Encode(this TextEncoder encoder, string value, int startIndex, int characterCount, TextWriter output)
+        public static void Encode(this TextEncoder encoder, TextWriter output, string value, int startIndex, int characterCount)
         {
             if (encoder == null)
             {
@@ -163,12 +163,12 @@ namespace System.Text.Encodings.Web
                         substring++;
                     }
 
-                    EncodeCore(encoder, substring, characterCount - firstIndexToEncode, output);
+                    EncodeCore(encoder, output, substring, characterCount - firstIndexToEncode);
                 }
             }
         }
 
-        public static void Encode(this TextEncoder encoder, char[] value, int startIndex, int characterCount, TextWriter output)
+        public static void Encode(this TextEncoder encoder, TextWriter output, char[] value, int startIndex, int characterCount)
         {
             if(encoder == null)
             {
@@ -213,12 +213,12 @@ namespace System.Text.Encodings.Web
                         substring++;
                     }
 
-                    EncodeCore(encoder, substring, characterCount - firstIndexToEncode, output);
+                    EncodeCore(encoder, output, substring, characterCount - firstIndexToEncode);
                 }
             }
         }
 
-        private static unsafe void EncodeCore(this TextEncoder encoder, char* value, int valueLength, TextWriter output)
+        private static unsafe void EncodeCore(this TextEncoder encoder, TextWriter output, char* value, int valueLength)
         {
             Debug.Assert(encoder != null && value != null & output != null);
             Debug.Assert(valueLength >= 0);
