@@ -271,13 +271,10 @@ guint64 stat_nursery_copy_object_failed_pinned = 0;
 guint64 stat_nursery_copy_object_failed_to_space = 0;
 
 static guint64 stat_wbarrier_add_to_global_remset = 0;
-static guint64 stat_wbarrier_set_arrayref = 0;
 static guint64 stat_wbarrier_arrayref_copy = 0;
 static guint64 stat_wbarrier_generic_store = 0;
 static guint64 stat_wbarrier_generic_store_atomic = 0;
 static guint64 stat_wbarrier_set_root = 0;
-static guint64 stat_wbarrier_value_copy = 0;
-static guint64 stat_wbarrier_object_copy = 0;
 #endif
 
 static guint64 stat_pinned_objects = 0;
@@ -1294,13 +1291,10 @@ init_stats (void)
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("WBarrier remember pointer", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_add_to_global_remset);
-	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_arrayref);
 	mono_counters_register ("WBarrier arrayref copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_arrayref_copy);
 	mono_counters_register ("WBarrier generic store called", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_generic_store);
 	mono_counters_register ("WBarrier generic atomic store called", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_generic_store_atomic);
 	mono_counters_register ("WBarrier set root", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_root);
-	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_value_copy);
-	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_object_copy);
 
 	mono_counters_register ("# objects allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_objects_alloced_degraded);
 	mono_counters_register ("bytes allocated degraded", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_bytes_alloced_degraded);

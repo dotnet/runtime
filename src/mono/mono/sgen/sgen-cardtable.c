@@ -56,13 +56,8 @@ guint64 marked_cards;
 guint64 scanned_cards;
 guint64 scanned_objects;
 guint64 remarked_cards;
-
-static guint64 los_marked_cards;
 static guint64 large_objects;
 static guint64 bloby_objects;
-static guint64 los_array_cards;
-static guint64 los_array_remsets;
-
 #endif
 static guint64 major_card_scan_time;
 static guint64 los_card_scan_time;
@@ -586,9 +581,6 @@ sgen_card_table_init (SgenRememberedSet *remset)
 	mono_counters_register ("scanned cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &scanned_cards);
 	mono_counters_register ("remarked cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &remarked_cards);
 
-	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_marked_cards);
-	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_cards);
-	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_remsets);
 	mono_counters_register ("cardtable scanned objects", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &scanned_objects);
 	mono_counters_register ("cardtable large objects", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &large_objects);
 	mono_counters_register ("cardtable bloby objects", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &bloby_objects);
