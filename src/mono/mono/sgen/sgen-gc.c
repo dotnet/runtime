@@ -2859,6 +2859,7 @@ sgen_gc_init (void)
 	sgen_init_descriptors ();
 	sgen_init_gray_queues ();
 	sgen_init_allocator ();
+	sgen_init_gchandles ();
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_SECTION, SGEN_SIZEOF_GC_MEM_SECTION);
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_GRAY_QUEUE, sizeof (GrayQueueSection));

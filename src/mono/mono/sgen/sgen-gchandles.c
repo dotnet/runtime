@@ -25,8 +25,8 @@
 #include "mono/utils/mono-membar.h"
 
 #ifdef HEAVY_STATISTICS
-static volatile guint64 stat_gc_handles_allocated = 0;
-static volatile guint64 stat_gc_handles_max_allocated = 0;
+static volatile guint32 stat_gc_handles_allocated = 0;
+static volatile guint32 stat_gc_handles_max_allocated = 0;
 #endif
 
 #define BUCKETS (32 - MONO_GC_HANDLE_TYPE_SHIFT)
@@ -274,7 +274,7 @@ retry:
 			break;
 	} while (!InterlockedCompareExchange ((volatile gint32 *)&handles->max_index, index, max_index));
 #ifdef HEAVY_STATISTICS
-	InterlockedIncrement64 ((volatile gint64 *)&stat_gc_handles_allocated);
+	InterlockedIncrement ((volatile gint32 *)&stat_gc_handles_allocated);
 	if (stat_gc_handles_allocated > stat_gc_handles_max_allocated)
 		stat_gc_handles_max_allocated = stat_gc_handles_allocated;
 #endif
@@ -326,7 +326,7 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, SgenGCHandl
 			if (result)
 				SGEN_ASSERT (0, MONO_GC_HANDLE_OCCUPIED (result), "Why did the callback return an unoccupied entry?");
 			else
-				HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
+				HEAVY_STAT (InterlockedDecrement ((volatile gint32 *)&stat_gc_handles_allocated));
 			protocol_gchandle_update (handle_type, (gpointer)&entries [offset], hidden, result);
 			entries [offset] = result;
 		}
@@ -527,7 +527,7 @@ mono_gchandle_free (guint32 gchandle)
 	if (index < handles->capacity && MONO_GC_HANDLE_OCCUPIED (slot)) {
 		handles->entries [bucket] [offset] = NULL;
 		protocol_gchandle_update (handles->type, (gpointer)&handles->entries [bucket] [offset], slot, NULL);
-		HEAVY_STAT (InterlockedDecrement64 ((volatile gint64 *)&stat_gc_handles_allocated));
+		HEAVY_STAT (InterlockedDecrement ((volatile gint32 *)&stat_gc_handles_allocated));
 	} else {
 		/* print a warning? */
 	}
@@ -613,8 +613,8 @@ void
 sgen_init_gchandles (void)
 {
 #ifdef HEAVY_STATISTICS
-	mono_counters_register ("GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gc_handles_allocated);
-	mono_counters_register ("max GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_gc_handles_max_allocated);
+	mono_counters_register ("GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_UINT, (void *)&stat_gc_handles_allocated);
+	mono_counters_register ("max GC handles allocated", MONO_COUNTER_GC | MONO_COUNTER_UINT, (void *)&stat_gc_handles_max_allocated);
 #endif
 }
 
