@@ -527,9 +527,14 @@ namespace System.Diagnostics {
                     Type t = mb.DeclaringType;
                      // if there is a type (non global method) print it
                     if (t != null)
-                    {                                   
-                        sb.Append(t.FullName.Replace('+', '.'));
-                        sb.Append(".");
+                    {
+                        // Append t.FullName, replacing '+' with '.'
+                        for (int i = 0; i < t.FullName.Length; i++)
+                        {
+                            char ch = t.FullName[i];
+                            sb.Append(ch == '+' ? '.' : ch);
+                        }
+                        sb.Append('.');
                     }
                     sb.Append(mb.Name);
 
@@ -537,24 +542,24 @@ namespace System.Diagnostics {
                     if (mb is MethodInfo && ((MethodInfo)mb).IsGenericMethod)
                     {
                         Type[] typars = ((MethodInfo)mb).GetGenericArguments();
-                        sb.Append("[");
+                        sb.Append('[');
                         int k=0;
                         bool fFirstTyParam = true;
                         while (k < typars.Length)
                         {
                             if (fFirstTyParam == false)
-                                sb.Append(",");
+                                sb.Append(',');
                             else
                                 fFirstTyParam = false;
 
                             sb.Append(typars[k].Name);             
                             k++;
                         }   
-                        sb.Append("]");    
+                        sb.Append(']');    
                     }
 
                     // arguments printing
-                    sb.Append("(");
+                    sb.Append('(');
                     ParameterInfo[] pi = mb.GetParameters();
                     bool fFirstParam = true;
                     for (int j = 0; j < pi.Length; j++)
@@ -567,9 +572,11 @@ namespace System.Diagnostics {
                         String typeName = "<UnknownType>";
                         if (pi[j].ParameterType != null)
                             typeName = pi[j].ParameterType.Name;
-                        sb.Append(typeName + " " + pi[j].Name);             
+                        sb.Append(typeName);
+                        sb.Append(' ');
+                        sb.Append(pi[j].Name);
                     }   
-                    sb.Append(")");
+                    sb.Append(')');
 
                     // source location printing
                     if (displayFilenames && (sf.GetILOffset() != -1))
