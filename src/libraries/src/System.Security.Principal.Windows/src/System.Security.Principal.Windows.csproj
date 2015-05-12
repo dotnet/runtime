@@ -31,25 +31,25 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.Tokens.cs">
-      <Link>Common\Interop\Interop.Tokens.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.TOKENS.cs">
+      <Link>Common\Interop\Interop.TOKENS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.Errors.cs">
       <Link>Common\Interop\Interop.WinError.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.Winnt.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.Winnt.cs">
       <Link>Common\Interop\Interop.Winnt.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtStatus.cs">
       <Link>Common\Interop\Interop.NtStatus.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.LSAStructs.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.LSAStructs.cs">
       <Link>Common\Interop\Interop.LSAStructs.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.SECURITY_LOGON_SESSION_DATA.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.SECURITY_LOGON_SESSION_DATA.cs">
       <Link>Common\Interop\Interop.SECURITY_LOGON_SESSION_DATA.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Secur32\Interop.UNICODE_STRING.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.UNICODE_STRING.cs">
       <Link>Common\Interop\Interop.UNICODE_STRING.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.FormatMessage.cs">
