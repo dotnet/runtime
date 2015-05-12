@@ -13,13 +13,17 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
+    <Compile Include="AutoResetEventTests.cs" />
     <Compile Include="BarrierCancellationTests.cs" />
     <Compile Include="BarrierTests.cs" />
     <Compile Include="CountdownEventCancellationTests.cs" />
     <Compile Include="CountdownEventTests.cs" />
     <Compile Include="EtwTests.cs" />
+    <Compile Include="EventWaitHandleTests.cs" />
+    <Compile Include="ManualResetEventTests.cs" />
     <Compile Include="ManualResetEventSlimCancellationTests.cs" />
     <Compile Include="ManualResetEventSlimTests.cs" />
+    <Compile Include="MutexTests.cs" />
     <Compile Include="SemaphoreSlimCancellationTests.cs" />
     <Compile Include="SemaphoreSlimTests.cs" />
     <Compile Include="SemaphoreTests.cs" />
