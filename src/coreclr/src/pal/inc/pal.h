@@ -1547,6 +1547,14 @@ CreateSemaphoreExW(
         IN /*_Reserved_*/  DWORD dwFlags,
         IN DWORD dwDesiredAccess);
 
+PALIMPORT
+HANDLE
+PALAPI
+OpenSemaphoreW(
+    IN DWORD dwDesiredAccess,
+    IN BOOL bInheritHandle,
+    IN LPCWSTR lpName);
+
 #ifdef UNICODE
 #define CreateSemaphore CreateSemaphoreW
 #define CreateSemaphoreEx CreateSemaphoreExW
