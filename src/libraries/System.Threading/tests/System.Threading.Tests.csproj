@@ -28,6 +28,7 @@
     <Compile Include="SemaphoreSlimTests.cs" />
     <Compile Include="SemaphoreTests.cs" />
     <Compile Include="SpinLockTests.cs" />
+    <Compile Include="ReaderWriterLockSlimTests.cs" />
     <Compile Include="ThreadLocalTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
