@@ -146,22 +146,11 @@ try_occupy_slot (HandleData *handles, guint bucket, guint offset, GCObject *obj,
 	return try_set_slot (link_addr, obj, NULL, handles->type) != NULL;
 }
 
-#define EMPTY_HANDLE_DATA(t) \
-	(HandleData) { \
-		.entries = { NULL }, \
-		.capacity = 0, \
-		.slot_hint = 0, \
-		.max_index = 0, \
-		.type = (t) \
-	}
-
-/* weak and weak-track arrays will be allocated in malloc memory 
- */
 static HandleData gc_handles [] = {
-	EMPTY_HANDLE_DATA (HANDLE_WEAK),
-	EMPTY_HANDLE_DATA (HANDLE_WEAK_TRACK),
-	EMPTY_HANDLE_DATA (HANDLE_NORMAL),
-	EMPTY_HANDLE_DATA (HANDLE_PINNED)
+	{ { NULL }, 0, 0, 0, (HANDLE_WEAK) },
+	{ { NULL }, 0, 0, 0, (HANDLE_WEAK_TRACK) },
+	{ { NULL }, 0, 0, 0, (HANDLE_NORMAL) },
+	{ { NULL }, 0, 0, 0, (HANDLE_PINNED) }
 };
 
 static HandleData *
