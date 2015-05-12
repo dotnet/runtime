@@ -37,6 +37,16 @@
 #include "utils/mono-memory-model.h"
 #include "utils/mono-logger-internal.h"
 
+#ifdef HEAVY_STATISTICS
+static guint64 stat_wbarrier_set_arrayref = 0;
+static guint64 stat_wbarrier_value_copy = 0;
+static guint64 stat_wbarrier_object_copy = 0;
+
+static guint64 los_marked_cards;
+static guint64 los_array_cards;
+static guint64 los_array_remsets;
+#endif
+
 /* If set, mark stacks conservatively, even if precise marking is possible */
 static gboolean conservative_stack_mark = FALSE;
 /* If set, check that there are no references to the domain left at domain unload */
@@ -2822,6 +2832,14 @@ void
 mono_gc_base_init (void)
 {
 	mono_counters_init ();
+
+	mono_counters_register ("los marked cards", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_marked_cards);
+	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_cards);
+	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_remsets);
+
+	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_arrayref);
+	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_value_copy);
+	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_object_copy);
 
 	sgen_gc_init ();
 
