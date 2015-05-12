@@ -22,13 +22,10 @@
   <ItemGroup>
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\Helpers.CoreCLR.cs" />
-    <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
-    <Compile Include="System\Progress.cs" />
     <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
     <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
-    <Compile Include="System\Threading\TimeoutHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Threading\Semaphore.Windows.cs" />
