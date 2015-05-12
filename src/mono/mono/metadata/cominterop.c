@@ -874,9 +874,9 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = mono_marshal_get_cache (&imethod->owner->cominterop_wrapper_cache, mono_aligned_addr_hash, NULL);
+		cache = mono_marshal_get_cache (&imethod->owner->wrapper_caches.cominterop_wrapper_cache, mono_aligned_addr_hash, NULL);
 	} else
-		cache = mono_marshal_get_cache (&method->klass->image->cominterop_wrapper_cache, mono_aligned_addr_hash, NULL);
+		cache = mono_marshal_get_cache (&method->klass->image->wrapper_caches.cominterop_wrapper_cache, mono_aligned_addr_hash, NULL);
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
@@ -990,9 +990,9 @@ mono_cominterop_get_invoke (MonoMethod *method)
 	
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = mono_marshal_get_cache (&imethod->owner->cominterop_invoke_cache, mono_aligned_addr_hash, NULL);
+		cache = mono_marshal_get_cache (&imethod->owner->wrapper_caches.cominterop_invoke_cache, mono_aligned_addr_hash, NULL);
 	} else
-		cache = mono_marshal_get_cache (&method->klass->image->cominterop_invoke_cache, mono_aligned_addr_hash, NULL);
+		cache = mono_marshal_get_cache (&method->klass->image->wrapper_caches.cominterop_invoke_cache, mono_aligned_addr_hash, NULL);
 
 	g_assert (method);
 

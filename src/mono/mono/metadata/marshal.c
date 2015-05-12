@@ -2715,12 +2715,12 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->delegate_begin_invoke_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_begin_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
 	} else {
-		cache = get_cache (&method->klass->image->delegate_begin_invoke_cache,
+		cache = get_cache (&method->klass->image->wrapper_caches.delegate_begin_invoke_cache,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		if ((res = mono_marshal_find_in_cache (cache, sig)))
@@ -2925,12 +2925,12 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->delegate_end_invoke_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_end_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
 	} else {
-		cache = get_cache (&method->klass->image->delegate_end_invoke_cache,
+		cache = get_cache (&method->klass->image->wrapper_caches.delegate_end_invoke_cache,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		if ((res = mono_marshal_find_in_cache (cache, sig)))
@@ -3084,7 +3084,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->delegate_invoke_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
@@ -3105,9 +3105,9 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 
 		if (method->is_inflated) {
 			MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-			cache_ptr = &imethod->owner->delegate_abstract_invoke_cache;
+			cache_ptr = &imethod->owner->wrapper_caches.delegate_abstract_invoke_cache;
 		} else
-			cache_ptr = &method->klass->image->delegate_abstract_invoke_cache;
+			cache_ptr = &method->klass->image->wrapper_caches.delegate_abstract_invoke_cache;
 
 		/* We need to cache the signature+method pair */
 		mono_marshal_lock ();
@@ -3123,7 +3123,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	} else {
 		// Inflated methods should not be in this cache because it's not stored on the imageset.
 		g_assert (!method->is_inflated);
-		cache = get_cache (&method->klass->image->delegate_invoke_cache,
+		cache = get_cache (&method->klass->image->wrapper_caches.delegate_invoke_cache,
 						   (GHashFunc)mono_signature_hash, 
 						   (GCompareFunc)mono_metadata_signature_equal);
 		res = mono_marshal_find_in_cache (cache, sig);
@@ -3839,9 +3839,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		cache = get_cache (&method->klass->image->runtime_invoke_vcall_cache, mono_aligned_addr_hash, NULL);
 	else if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&imethod->owner->wrapper_caches.runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
 	} else
-		cache = get_cache (&method->klass->image->runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&method->klass->image->wrapper_caches.runtime_invoke_direct_cache, mono_aligned_addr_hash, NULL);
 	res = mono_marshal_find_in_cache (cache, method);
 	if (res)
 		return res;
@@ -3891,14 +3891,14 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		if (method->is_inflated) {
 			MonoMethodInflated *imethod = (MonoMethodInflated *)method;
 			if (method->klass->valuetype && mono_method_signature (method)->hasthis)
-				cache_table = &imethod->owner->runtime_invoke_vtype_cache;
+				cache_table = &imethod->owner->wrapper_caches.runtime_invoke_vtype_cache;
 			else
-				cache_table = &imethod->owner->runtime_invoke_cache;
+				cache_table = &imethod->owner->wrapper_caches.runtime_invoke_cache;
 		} else {
 			if (method->klass->valuetype && mono_method_signature (method)->hasthis)
-				cache_table = &target_klass->image->runtime_invoke_vtype_cache;
+				cache_table = &target_klass->image->wrapper_caches.runtime_invoke_vtype_cache;
 			else
-				cache_table = &target_klass->image->runtime_invoke_cache;
+				cache_table = &target_klass->image->wrapper_caches.runtime_invoke_cache;
 		}
 
 		cache = get_cache (cache_table, (GHashFunc)mono_signature_hash,
@@ -3982,9 +3982,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 				/* Can't insert it into wrapper_hash since the key is a signature */
 
 				if (method->is_inflated)
-					direct_cache = ((MonoMethodInflated*)method)->owner->runtime_invoke_direct_cache;
+					direct_cache = ((MonoMethodInflated*)method)->owner->wrapper_caches.runtime_invoke_direct_cache;
 				else
-					direct_cache = method->klass->image->runtime_invoke_direct_cache;
+					direct_cache = method->klass->image->wrapper_caches.runtime_invoke_direct_cache;
 
 				g_hash_table_insert (direct_cache, method, res);
 			} else {
@@ -7253,26 +7253,26 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
 		if (aot) {
 			if (check_exceptions)
-				cache_ptr = &imethod->owner->native_wrapper_aot_check_cache;
+				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_aot_check_cache;
 			else
-				cache_ptr = &imethod->owner->native_wrapper_aot_cache;
+				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_aot_cache;
 		} else {
 			if (check_exceptions)
-				cache_ptr = &imethod->owner->native_wrapper_check_cache;
+				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_check_cache;
 			else
-				cache_ptr = &imethod->owner->native_wrapper_cache;
+				cache_ptr = &imethod->owner->wrapper_caches.native_wrapper_cache;
 		}
 	} else {
 		if (aot) {
 			if (check_exceptions)
-				cache_ptr = &method->klass->image->native_wrapper_aot_check_cache;
+				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_aot_check_cache;
 			else
-				cache_ptr = &method->klass->image->native_wrapper_aot_cache;
+				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_aot_cache;
 		} else {
 			if (check_exceptions)
-				cache_ptr = &method->klass->image->native_wrapper_check_cache;
+				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_check_cache;
 			else
-				cache_ptr = &method->klass->image->native_wrapper_cache;
+				cache_ptr = &method->klass->image->wrapper_caches.native_wrapper_cache;
 		}
 	}
 
@@ -7551,9 +7551,9 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	 */
 	if (invoke->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *)invoke;
-		cache = get_cache (&imethod->owner->native_func_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&imethod->owner->wrapper_caches.native_func_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
 	} else
-		cache = get_cache (&image->native_func_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&image->wrapper_caches.native_func_wrapper_aot_cache, mono_aligned_addr_hash, NULL);
 
 	if ((res = mono_marshal_find_in_cache (cache, invoke)))
 		return res;
@@ -7909,9 +7909,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	 */
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->managed_wrapper_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&imethod->owner->wrapper_caches.managed_wrapper_cache, mono_aligned_addr_hash, NULL);
 	} else
-		cache = get_cache (&method->klass->image->managed_wrapper_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&method->klass->image->wrapper_caches.managed_wrapper_cache, mono_aligned_addr_hash, NULL);
 
 	if (!target_handle && (res = mono_marshal_find_in_cache (cache, method)))
 		return res;
@@ -8764,12 +8764,12 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->synchronized_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.synchronized_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_wrapper_cache (cache, orig_method, orig_method, method);
 		if (res)
 			return res;
 	} else {
-		cache = get_cache (&method->klass->image->synchronized_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&method->klass->image->wrapper_caches.synchronized_cache, mono_aligned_addr_hash, NULL);
 		if ((res = mono_marshal_find_in_cache (cache, method)))
 			return res;
 	}
@@ -8922,9 +8922,9 @@ mono_marshal_get_unbox_wrapper (MonoMethod *method)
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&imethod->owner->wrapper_caches.unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
 	} else
-		cache = get_cache (&method->klass->image->unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&method->klass->image->wrapper_caches.unbox_wrapper_cache, mono_aligned_addr_hash, NULL);
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
@@ -11160,9 +11160,9 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *)method;
-		cache = get_cache (&imethod->owner->thunk_invoke_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&imethod->owner->wrapper_caches.thunk_invoke_cache, mono_aligned_addr_hash, NULL);
 	} else
-		cache = get_cache (&image->thunk_invoke_cache, mono_aligned_addr_hash, NULL);
+		cache = get_cache (&image->wrapper_caches.thunk_invoke_cache, mono_aligned_addr_hash, NULL);
 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
@@ -11310,10 +11310,10 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	 * FIXME: We currently leak the wrappers. Freeing them would be tricky as
 	 * they could be shared with other methods ?
 	 */
-	if (image->runtime_invoke_direct_cache)
-		g_hash_table_remove (image->runtime_invoke_direct_cache, method);
-	if (image->delegate_abstract_invoke_cache)
-		g_hash_table_foreach_remove (image->delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
+	if (image->wrapper_caches.runtime_invoke_direct_cache)
+		g_hash_table_remove (image->wrapper_caches.runtime_invoke_direct_cache, method);
+	if (image->wrapper_caches.delegate_abstract_invoke_cache)
+		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
 	// FIXME: Need to clear the caches in other images as well
 	if (image->delegate_bound_static_invoke_cache)
 		g_hash_table_remove (image->delegate_bound_static_invoke_cache, mono_method_signature (method));
@@ -11360,49 +11360,50 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
          * indexed by MonoMethodSignature
          */
 	   /* FIXME: This could remove unrelated wrappers as well */
-       if (sig && imethod->owner->delegate_begin_invoke_cache)
-               g_hash_table_remove (imethod->owner->delegate_begin_invoke_cache, sig);
-       if (sig && imethod->owner->delegate_end_invoke_cache)
-               g_hash_table_remove (imethod->owner->delegate_end_invoke_cache, sig);
-       if (sig && imethod->owner->delegate_invoke_cache)
-               g_hash_table_remove (imethod->owner->delegate_invoke_cache, sig);
-       if (sig && imethod->owner->runtime_invoke_cache)
-               g_hash_table_remove (imethod->owner->runtime_invoke_cache, sig);
-       if (sig && imethod->owner->runtime_invoke_vtype_cache)
-               g_hash_table_remove (imethod->owner->runtime_invoke_vtype_cache, sig);
+       if (sig && imethod->owner->wrapper_caches.delegate_begin_invoke_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.delegate_begin_invoke_cache, sig);
+       if (sig && imethod->owner->wrapper_caches.delegate_end_invoke_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.delegate_end_invoke_cache, sig);
+       if (sig && imethod->owner->wrapper_caches.delegate_invoke_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.delegate_invoke_cache, sig);
+       if (sig && imethod->owner->wrapper_caches.runtime_invoke_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.runtime_invoke_cache, sig);
+       if (sig && imethod->owner->wrapper_caches.runtime_invoke_vtype_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.runtime_invoke_vtype_cache, sig);
 
         /*
          * indexed by SignaturePointerPair
          */
-       if (sig && imethod->owner->delegate_abstract_invoke_cache)
-               g_hash_table_foreach_remove (imethod->owner->delegate_abstract_invoke_cache,
+       if (sig && imethod->owner->wrapper_caches.delegate_abstract_invoke_cache)
+               g_hash_table_foreach_remove (imethod->owner->wrapper_caches.delegate_abstract_invoke_cache,
                                             signature_pointer_pair_matches_signature, (gpointer)sig);
 
         /*
          * indexed by MonoMethod pointers
          */
-       if (imethod->owner->managed_wrapper_cache)
-               g_hash_table_remove (imethod->owner->managed_wrapper_cache, method);
-       if (imethod->owner->runtime_invoke_direct_cache)
-               g_hash_table_remove (imethod->owner->runtime_invoke_direct_cache, method);
-       if (imethod->owner->native_wrapper_cache)
-               g_hash_table_remove (imethod->owner->native_wrapper_cache, method);
-       if (imethod->owner->native_wrapper_check_cache)
-               g_hash_table_remove (imethod->owner->native_wrapper_check_cache, method);
-       if (imethod->owner->remoting_invoke_cache)
-               g_hash_table_remove (imethod->owner->remoting_invoke_cache, method);
-       if (imethod->owner->synchronized_cache)
-               g_hash_table_remove (imethod->owner->synchronized_cache, method);
-       if (imethod->owner->unbox_wrapper_cache)
-               g_hash_table_remove (imethod->owner->unbox_wrapper_cache, method);
-       if (imethod->owner->cominterop_invoke_cache)
-               g_hash_table_remove (imethod->owner->cominterop_invoke_cache, method);
-       if (imethod->owner->cominterop_wrapper_cache)
-               g_hash_table_remove (imethod->owner->cominterop_wrapper_cache, method);
-       if (imethod->owner->thunk_invoke_cache)
-               g_hash_table_remove (imethod->owner->thunk_invoke_cache, method);
-       if (imethod->owner->native_func_wrapper_aot_cache)
-               g_hash_table_remove (imethod->owner->native_func_wrapper_aot_cache, method);
+       if (imethod->owner->wrapper_caches.managed_wrapper_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.managed_wrapper_cache, method);
+       if (imethod->owner->wrapper_caches.runtime_invoke_direct_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.runtime_invoke_direct_cache, method);
+
+       if (imethod->owner->wrapper_caches.native_wrapper_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.native_wrapper_cache, method);
+       if (imethod->owner->wrapper_caches.native_wrapper_check_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.native_wrapper_check_cache, method);
+       if (imethod->owner->wrapper_caches.remoting_invoke_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.remoting_invoke_cache, method);
+       if (imethod->owner->wrapper_caches.synchronized_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.synchronized_cache, method);
+       if (imethod->owner->wrapper_caches.unbox_wrapper_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.unbox_wrapper_cache, method);
+       if (imethod->owner->wrapper_caches.cominterop_invoke_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.cominterop_invoke_cache, method);
+       if (imethod->owner->wrapper_caches.cominterop_wrapper_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.cominterop_wrapper_cache, method);
+       if (imethod->owner->wrapper_caches.thunk_invoke_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.thunk_invoke_cache, method);
+       if (imethod->owner->wrapper_caches.native_func_wrapper_aot_cache)
+               g_hash_table_remove (imethod->owner->wrapper_caches.native_func_wrapper_aot_cache, method);
 
        mono_marshal_unlock ();
 }

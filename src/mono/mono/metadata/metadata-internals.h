@@ -101,6 +101,43 @@ struct _MonoAssembly {
 };
 
 typedef struct {
+	/*
+	 * indexed by MonoMethodSignature 
+	 * Protected by the marshal lock
+	 */
+	GHashTable *delegate_invoke_cache;
+	GHashTable *delegate_begin_invoke_cache;
+	GHashTable *delegate_end_invoke_cache;
+	GHashTable *runtime_invoke_cache;
+	GHashTable *runtime_invoke_vtype_cache;
+
+	/*
+	 * indexed by SignaturePointerPair
+	 */
+	GHashTable *delegate_abstract_invoke_cache;
+
+	/*
+	 * indexed by MonoMethod pointers
+	 * Protected by the marshal lock
+	 */
+	GHashTable *runtime_invoke_direct_cache;
+	GHashTable *managed_wrapper_cache;
+
+	GHashTable *native_wrapper_cache;
+	GHashTable *native_wrapper_aot_cache;
+	GHashTable *native_wrapper_check_cache;
+	GHashTable *native_wrapper_aot_check_cache;
+
+	GHashTable *native_func_wrapper_aot_cache;
+	GHashTable *remoting_invoke_cache;
+	GHashTable *synchronized_cache;
+	GHashTable *unbox_wrapper_cache;
+	GHashTable *cominterop_invoke_cache;
+	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
+	GHashTable *thunk_invoke_cache;
+} MonoWrapperCaches;
+
+typedef struct {
 	const char* data;
 	guint32  size;
 } MonoStreamHeader;
@@ -256,38 +293,15 @@ struct _MonoImage {
 	mono_mutex_t szarray_cache_lock;
 
 	/*
-	 * indexed by MonoMethodSignature 
-	 */
-	GHashTable *delegate_begin_invoke_cache;
-	GHashTable *delegate_end_invoke_cache;
-	GHashTable *delegate_invoke_cache;
-	GHashTable *runtime_invoke_cache;
-	GHashTable *runtime_invoke_vtype_cache;
-
-	/*
 	 * indexed by SignaturePointerPair
 	 */
-	GHashTable *delegate_abstract_invoke_cache;
 	GHashTable *delegate_bound_static_invoke_cache;
 	GHashTable *native_func_wrapper_cache;
 
 	/*
 	 * indexed by MonoMethod pointers 
 	 */
-	GHashTable *runtime_invoke_direct_cache;
 	GHashTable *runtime_invoke_vcall_cache;
-	GHashTable *managed_wrapper_cache;
-	GHashTable *native_wrapper_cache;
-	GHashTable *native_wrapper_aot_cache;
-	GHashTable *native_wrapper_check_cache;
-	GHashTable *native_wrapper_aot_check_cache;
-	GHashTable *native_func_wrapper_aot_cache;
-	GHashTable *remoting_invoke_cache;
-	GHashTable *synchronized_cache;
-	GHashTable *unbox_wrapper_cache;
-	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
-	GHashTable *thunk_invoke_cache;
 	GHashTable *wrapper_param_names;
 	GHashTable *array_accessor_cache;
 
@@ -324,9 +338,13 @@ struct _MonoImage {
 	   malloc'ed regions to be freed. */
 	GSList *reflection_info_unregister_classes;
 
-	/* List of image sets containing this image */
+	/* List of dependent image sets containing this image */
 	/* Protected by image_sets_lock */
 	GSList *image_sets;
+
+	/* Caches for wrappers that DO NOT reference generic */
+	/* arguments */
+	MonoWrapperCaches wrapper_caches;
 
 	/* Caches for MonoClass-es representing anon generic params */
 	MonoClass **var_cache_fast;
@@ -365,42 +383,10 @@ typedef struct {
 	int nimages;
 	MonoImage **images;
 
+	// Generic-specific caches
 	GHashTable *gclass_cache, *ginst_cache, *gmethod_cache, *gsignature_cache;
 
-	/*
-	 * indexed by MonoMethodSignature 
-	 * Protected by the marshal lock
-	 */
-	GHashTable *delegate_invoke_cache;
-	GHashTable *delegate_begin_invoke_cache;
-	GHashTable *delegate_end_invoke_cache;
-	GHashTable *runtime_invoke_cache;
-	GHashTable *runtime_invoke_vtype_cache;
-
-	/*
-	 * indexed by SignaturePointerPair
-	 */
-	GHashTable *delegate_abstract_invoke_cache;
-
-	/*
-	 * indexed by MonoMethod pointers 
-	 * Protected by the marshal lock
-	 */
-	GHashTable *runtime_invoke_direct_cache;
-	GHashTable *managed_wrapper_cache;
-
-	GHashTable *native_wrapper_cache;
-	GHashTable *native_wrapper_aot_cache;
-	GHashTable *native_wrapper_check_cache;
-	GHashTable *native_wrapper_aot_check_cache;
-
-	GHashTable *native_func_wrapper_aot_cache;
-	GHashTable *remoting_invoke_cache;
-	GHashTable *synchronized_cache;
-	GHashTable *unbox_wrapper_cache;
-	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
-	GHashTable *thunk_invoke_cache;
+	MonoWrapperCaches wrapper_caches;
 
 	mono_mutex_t    lock;
 
