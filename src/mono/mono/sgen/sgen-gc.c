@@ -827,44 +827,31 @@ sgen_conservatively_pin_objects_from (void **start, void **end, void *start_nurs
 #endif
 
 	while (start < end) {
-		if (*start >= start_nursery && *start < end_nursery) {
-			/*
-			 * *start can point to the middle of an object
-			 * note: should we handle pointing at the end of an object?
-			 * pinning in C# code disallows pointing at the end of an object
-			 * but there is some small chance that an optimizing C compiler
-			 * may keep the only reference to an object by pointing
-			 * at the end of it. We ignore this small chance for now.
-			 * Pointers to the end of an object are indistinguishable
-			 * from pointers to the start of the next object in memory
-			 * so if we allow that we'd need to pin two objects...
-			 * We queue the pointer in an array, the
-			 * array will then be sorted and uniqued. This way
-			 * we can coalesce several pinning pointers and it should
-			 * be faster since we'd do a memory scan with increasing
-			 * addresses. Note: we can align the address to the allocation
-			 * alignment, so the unique process is more effective.
-			 */
-			mword addr = (mword)*start;
-			addr &= ~(ALLOC_ALIGN - 1);
-			if (addr >= (mword)start_nursery && addr < (mword)end_nursery) {
-				SGEN_LOG (6, "Pinning address %p from %p", (void*)addr, start);
-				sgen_pin_stage_ptr ((void*)addr);
-				binary_protocol_pin_stage (start, (void*)addr);
-				count++;
-			}
-
-			/*
-			 * FIXME: It seems we're registering objects from all over the heap
-			 * (at least from the nursery and the LOS), but we're only
-			 * registering pinned addresses in the nursery.  What's up with
-			 * that?
-			 *
-			 * Also, why wouldn't we register addresses once the pinning queue
-			 * is sorted and uniqued?
-			 */
-			if (ptr_in_nursery ((void*)addr))
-				sgen_pin_stats_register_address ((char*)addr, pin_type);
+		/*
+		 * *start can point to the middle of an object
+		 * note: should we handle pointing at the end of an object?
+		 * pinning in C# code disallows pointing at the end of an object
+		 * but there is some small chance that an optimizing C compiler
+		 * may keep the only reference to an object by pointing
+		 * at the end of it. We ignore this small chance for now.
+		 * Pointers to the end of an object are indistinguishable
+		 * from pointers to the start of the next object in memory
+		 * so if we allow that we'd need to pin two objects...
+		 * We queue the pointer in an array, the
+		 * array will then be sorted and uniqued. This way
+		 * we can coalesce several pinning pointers and it should
+		 * be faster since we'd do a memory scan with increasing
+		 * addresses. Note: we can align the address to the allocation
+		 * alignment, so the unique process is more effective.
+		 */
+		mword addr = (mword)*start;
+		addr &= ~(ALLOC_ALIGN - 1);
+		if (addr >= (mword)start_nursery && addr < (mword)end_nursery) {
+			SGEN_LOG (6, "Pinning address %p from %p", (void*)addr, start);
+			sgen_pin_stage_ptr ((void*)addr);
+			binary_protocol_pin_stage (start, (void*)addr);
+			sgen_pin_stats_register_address ((char*)addr, pin_type);
+			count++;
 		}
 		start++;
 	}
