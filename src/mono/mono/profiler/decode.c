@@ -6,6 +6,51 @@
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
  */
+
+/*
+ * The Coverage XML output schema
+ * <coverage>
+ *   <assembly/>
+ *   <class/>
+ *   <method>
+ *     <statement/>
+ *   </method>
+ * </coverage>
+ *
+ * Elements:
+ *   <coverage> - The root element of the documentation. It can contain any number of
+ *                <assembly>, <class> or <method> elements.
+ *                Attributes:
+ *                   - version: The version number for the file format - (eg: "0.3")
+ *   <assembly> - Contains data about assemblies. Has no child elements
+ *                Attributes:
+ *                   - name: The name of the assembly - (eg: "System.Xml")
+ *                   - guid: The GUID of the assembly
+ *                   - filename: The filename of the assembly
+ *                   - method-count: The number of methods in the assembly
+ *                   - full: The number of fully covered methods
+ *                   - partial: The number of partially covered methods
+ *   <class> - Contains data about classes. Has no child elements
+ *             Attributes:
+ *                - name: The name of the class
+ *                - method-count: The number of methods in the class
+ *                - full: The number of fully covered methods
+ *                - partial: The number of partially covered methods
+ *   <method> - Contains data about methods. Can contain any number of <statement> elements
+ *              Attributes:
+ *                 - assembly: The name of the parent assembly
+ *                 - class: The name of the parent class
+ *                 - name: The name of the method, with all it's parameters
+ *                 - filename: The name of the source file containing this method
+ *                 - token
+ *   <statement> - Contains data about IL statements. Has no child elements
+ *                 Attributes:
+ *                    - offset: The offset of the statement in the IL code after the previous
+ *                              statement's offset
+ *                    - counter: 1 if the line was covered, 0 if it was not
+ *                    - line: The line number in the parent method's file
+ *                    - column: The column on the line
+ */
 #include <config.h>
 #include "utils.c"
 #include "proflog.h"
@@ -49,6 +94,7 @@ static uint64_t time_to = 0xffffffffffffffffULL;
 static int use_time_filter = 0;
 static uint64_t startup_time = 0;
 static FILE* outfile = NULL;
+static FILE* coverage_outfile = NULL;
 
 static int32_t
 read_int16 (unsigned char *p)
@@ -1204,7 +1250,7 @@ heap_shot_obj_add_refs (HeapShot *hs, uintptr_t objaddr, uintptr_t num, uintptr_
 	/* should not happen */
 	printf ("failed heap obj update\n");
 	return NULL;
-	
+
 }
 
 static uintptr_t
@@ -1489,7 +1535,7 @@ load_data (ProfContext *ctx, int size)
 		if (r == 0)
 			return size == 0? 1: 0;
 		return r == size;
-	} else 
+	} else
 #endif
 	{
 		int r = fread (ctx->buf, size, 1, ctx->file);
@@ -1883,7 +1929,7 @@ track_obj_reference (uintptr_t obj, uintptr_t parent, ClassDesc *cd)
 {
 	int i;
 	for (i = 0; i < num_tracked_objects; ++i) {
-		if (tracked_objects [i] == obj) 
+		if (tracked_objects [i] == obj)
 			fprintf (outfile, "Object %p referenced from %p (%s).\n", (void*)obj, (void*)parent, cd->name);
 	}
 }
@@ -1926,6 +1972,117 @@ code_buffer_desc (int type)
 	default:
 		return "unspecified";
 	}
+}
+
+typedef struct _CoverageAssembly CoverageAssembly;
+struct _CoverageAssembly {
+	char *name;
+	char *guid;
+	char *filename;
+	int number_of_methods;
+	int fully_covered;
+	int partially_covered;
+};
+
+typedef struct _CoverageClass CoverageClass;
+struct _CoverageClass {
+	char *assembly_name;
+	char *class_name;
+	int number_of_methods;
+	int fully_covered;
+	int partially_covered;
+};
+
+typedef struct _CoverageCoverage CoverageCoverage;
+struct _CoverageCoverage {
+	int method_id;
+	int offset;
+	int count;
+	int line;
+	int column;
+};
+
+typedef struct _CoverageMethod CoverageMethod;
+struct _CoverageMethod {
+	char *assembly_name;
+	char *class_name;
+	char *method_name;
+	char *method_signature;
+	char *filename;
+	int token;
+	int n_statements;
+	int method_id;
+	GPtrArray *coverage;
+};
+static GPtrArray *coverage_assemblies = NULL;
+static GPtrArray *coverage_methods = NULL;
+static GPtrArray *coverage_statements = NULL;
+static GHashTable *coverage_methods_hash = NULL;
+static GPtrArray *coverage_classes = NULL;
+static GHashTable *coverage_assembly_classes = NULL;
+
+static void
+gather_coverage_statements (void)
+{
+	for (guint i = 0; i < coverage_statements->len; i++) {
+		CoverageCoverage *coverage = coverage_statements->pdata[i];
+		CoverageMethod *method = g_hash_table_lookup (coverage_methods_hash, GINT_TO_POINTER (coverage->method_id));
+		if (method == NULL) {
+			fprintf (outfile, "Cannot find method with ID: %d\n", coverage->method_id);
+			continue;
+		}
+
+		g_ptr_array_add (method->coverage, coverage);
+	}
+}
+
+static void
+coverage_add_assembly (CoverageAssembly *assembly)
+{
+	if (coverage_assemblies == NULL)
+		coverage_assemblies = g_ptr_array_new ();
+
+	g_ptr_array_add (coverage_assemblies, assembly);
+}
+
+static void
+coverage_add_method (CoverageMethod *method)
+{
+	if (coverage_methods == NULL) {
+		coverage_methods = g_ptr_array_new ();
+		coverage_methods_hash = g_hash_table_new (NULL, NULL);
+	}
+
+	g_ptr_array_add (coverage_methods, method);
+	g_hash_table_insert (coverage_methods_hash, GINT_TO_POINTER (method->method_id), method);
+}
+
+static void
+coverage_add_class (CoverageClass *klass)
+{
+	GPtrArray *classes = NULL;
+
+	if (coverage_classes == NULL) {
+		coverage_classes = g_ptr_array_new ();
+		coverage_assembly_classes = g_hash_table_new (g_str_hash, g_str_equal);
+	}
+
+	g_ptr_array_add (coverage_classes, klass);
+	classes = g_hash_table_lookup (coverage_assembly_classes, klass->assembly_name);
+	if (classes == NULL) {
+		classes = g_ptr_array_new ();
+		g_hash_table_insert (coverage_assembly_classes, klass->assembly_name, classes);
+	}
+	g_ptr_array_add (classes, klass);
+}
+
+static void
+coverage_add_coverage (CoverageCoverage *coverage)
+{
+	if (coverage_statements == NULL)
+		coverage_statements = g_ptr_array_new ();
+
+	g_ptr_array_add (coverage_statements, coverage);
 }
 
 #define OBJ_ADDR(diff) ((obj_base + diff) << 3)
@@ -2556,6 +2713,109 @@ decode_buffer (ProfContext *ctx)
 			}
 			break;
 		}
+		case TYPE_COVERAGE:{
+			int subtype = *p & 0xf0;
+			switch (subtype) {
+			case TYPE_COVERAGE_METHOD: {
+				CoverageMethod *method = g_new0 (CoverageMethod, 1);
+				const char *assembly, *klass, *name, *sig, *filename;
+				int token, n_offsets, method_id;
+
+				p++;
+				assembly = (void *)p; while (*p) p++; p++;
+				klass = (void *)p; while (*p) p++; p++;
+				name = (void *)p; while (*p) p++; p++;
+				sig = (void *)p; while (*p) p++; p++;
+				filename = (void *)p; while (*p) p++; p++;
+
+				token = decode_uleb128 (p, &p);
+				method_id = decode_uleb128 (p, &p);
+				n_offsets = decode_uleb128 (p, &p);
+
+				method->assembly_name = g_strdup (assembly);
+				method->class_name = g_strdup (klass);
+				method->method_name = g_strdup (name);
+				method->method_signature = g_strdup (sig);
+				method->filename = g_strdup (filename);
+				method->token = token;
+				method->n_statements = n_offsets;
+				method->coverage = g_ptr_array_new ();
+				method->method_id = method_id;
+
+				coverage_add_method (method);
+
+				break;
+			}
+			case TYPE_COVERAGE_STATEMENT: {
+				CoverageCoverage *coverage = g_new0 (CoverageCoverage, 1);
+				int offset, count, line, column, method_id;
+
+				p++;
+				method_id = decode_uleb128 (p, &p);
+				offset = decode_uleb128 (p, &p);
+				count = decode_uleb128 (p, &p);
+				line = decode_uleb128 (p, &p);
+				column = decode_uleb128 (p, &p);
+
+				coverage->method_id = method_id;
+				coverage->offset = offset;
+				coverage->count = count;
+				coverage->line = line;
+				coverage->column = column;
+
+				coverage_add_coverage (coverage);
+				break;
+			}
+			case TYPE_COVERAGE_ASSEMBLY: {
+				CoverageAssembly *assembly = g_new0 (CoverageAssembly, 1);
+				char *name, *guid, *filename;
+				int number_of_methods, fully_covered, partially_covered;
+				p++;
+
+				name = (void *)p; while (*p) p++; p++;
+				guid = (void *)p; while (*p) p++; p++;
+				filename = (void *)p; while (*p) p++; p++;
+				number_of_methods = decode_uleb128 (p, &p);
+				fully_covered = decode_uleb128 (p, &p);
+				partially_covered = decode_uleb128 (p, &p);
+
+				assembly->name = g_strdup (name);
+				assembly->guid = g_strdup (guid);
+				assembly->filename = g_strdup (filename);
+				assembly->number_of_methods = number_of_methods;
+				assembly->fully_covered = fully_covered;
+				assembly->partially_covered = partially_covered;
+
+				coverage_add_assembly (assembly);
+				break;
+			}
+			case TYPE_COVERAGE_CLASS: {
+				CoverageClass *klass = g_new0 (CoverageClass, 1);
+				char *assembly_name, *class_name;
+				int number_of_methods, fully_covered, partially_covered;
+				p++;
+
+				assembly_name = (void *)p; while (*p) p++; p++;
+				class_name = (void *)p; while (*p) p++; p++;
+				number_of_methods = decode_uleb128 (p, &p);
+				fully_covered = decode_uleb128 (p, &p);
+				partially_covered = decode_uleb128 (p, &p);
+
+				klass->assembly_name = g_strdup (assembly_name);
+				klass->class_name = g_strdup (class_name);
+				klass->number_of_methods = number_of_methods;
+				klass->fully_covered = fully_covered;
+				klass->partially_covered = partially_covered;
+
+				coverage_add_class (klass);
+				break;
+			}
+
+			default:
+				break;
+			}
+			break;
+		}
 		default:
 			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %lld (len: %d\n)\n", *p, (unsigned long long) file_offset, (long long) (p - ctx->buf), len);
 			exit (1);
@@ -3065,6 +3325,160 @@ dump_heap_shots (void)
 	}
 }
 
+/* This is a very basic escape function that escapes < > and &
+   Ideally we'd use g_markup_escape_string but that function isn't
+	 available in Mono's eglib. This was written without looking at the
+	 source of that function in glib. */
+static char *
+escape_string_for_xml (const char *string)
+{
+	GString *string_builder = g_string_new (NULL);
+	const char *start, *p;
+
+	start = p = string;
+	while (*p) {
+		while (*p && *p != '&' && *p != '<' && *p != '>')
+			p++;
+
+		g_string_append_len (string_builder, start, p - start);
+
+		if (*p == '\0')
+			break;
+
+		switch (*p) {
+		case '<':
+			g_string_append (string_builder, "&lt;");
+			break;
+
+		case '>':
+			g_string_append (string_builder, "&gt;");
+			break;
+
+		case '&':
+			g_string_append (string_builder, "&amp;");
+			break;
+
+		default:
+			break;
+		}
+
+		p++;
+		start = p;
+	}
+
+	return g_string_free (string_builder, FALSE);
+}
+
+static int
+sort_assemblies (gconstpointer a, gconstpointer b)
+{
+	CoverageAssembly *assembly_a = *(CoverageAssembly **)a;
+	CoverageAssembly *assembly_b = *(CoverageAssembly **)b;
+
+	if (assembly_a->name == NULL && assembly_b->name == NULL)
+		return 0;
+	else if (assembly_a->name == NULL)
+		return -1;
+	else if (assembly_b->name == NULL)
+		return 1;
+
+	return strcmp (assembly_a->name, assembly_b->name);
+}
+
+static void
+dump_coverage (void)
+{
+	if (!coverage_methods && !coverage_assemblies)
+		return;
+
+	gather_coverage_statements ();
+	fprintf (outfile, "\nCoverage Summary:\n");
+
+	if (coverage_outfile) {
+		fprintf (coverage_outfile, "<?xml version=\"1.0\"?>\n");
+		fprintf (coverage_outfile, "<coverage version=\"0.3\">\n");
+	}
+
+	g_ptr_array_sort (coverage_assemblies, sort_assemblies);
+
+	for (guint i = 0; i < coverage_assemblies->len; i++) {
+		CoverageAssembly *assembly = coverage_assemblies->pdata[i];
+		GPtrArray *classes;
+
+		if (assembly->number_of_methods != 0) {
+			int percentage = ((assembly->fully_covered + assembly->partially_covered) * 100) / assembly->number_of_methods;
+			fprintf (outfile, "\t%s (%s) %d%% covered (%d methods - %d covered)\n", assembly->name, assembly->filename, percentage, assembly->number_of_methods, assembly->fully_covered);
+		} else
+			fprintf (outfile, "\t%s (%s) ?%% covered (%d methods - %d covered)\n", assembly->name, assembly->filename, assembly->number_of_methods, assembly->fully_covered);
+
+		if (coverage_outfile) {
+			char *escaped_name, *escaped_filename;
+			escaped_name = escape_string_for_xml (assembly->name);
+			escaped_filename = escape_string_for_xml (assembly->filename);
+
+			fprintf (coverage_outfile, "\t<assembly name=\"%s\" guid=\"%s\" filename=\"%s\" method-count=\"%d\" full=\"%d\" partial=\"%d\"/>\n", escaped_name, assembly->guid, escaped_filename, assembly->number_of_methods, assembly->fully_covered, assembly->partially_covered);
+
+			g_free (escaped_name);
+			g_free (escaped_filename);
+		}
+
+		classes = g_hash_table_lookup (coverage_assembly_classes, assembly->name);
+		if (classes) {
+			for (guint j = 0; j < classes->len; j++) {
+				CoverageClass *klass = classes->pdata[j];
+
+				if (klass->number_of_methods > 0) {
+					int percentage = ((klass->fully_covered + klass->partially_covered) * 100) / klass->number_of_methods;
+					fprintf (outfile, "\t\t%s %d%% covered (%d methods - %d covered)\n", klass->class_name, percentage, klass->number_of_methods, klass->fully_covered);
+				} else
+					fprintf (outfile, "\t\t%s ?%% covered (%d methods - %d covered)\n", klass->class_name, klass->number_of_methods, klass->fully_covered);
+
+				if (coverage_outfile) {
+					char *escaped_name;
+					escaped_name = escape_string_for_xml (klass->class_name);
+
+					fprintf (coverage_outfile, "\t\t<class name=\"%s\" method-count=\"%d\" full=\"%d\" partial=\"%d\"/>\n", escaped_name, klass->number_of_methods, klass->fully_covered, klass->partially_covered);
+					g_free (escaped_name);
+				}
+			}
+		}
+	}
+
+	for (guint i = 0; i < coverage_methods->len; i++) {
+		CoverageMethod *method = coverage_methods->pdata[i];
+
+		if (coverage_outfile) {
+			char *escaped_assembly, *escaped_class, *escaped_method, *escaped_sig, *escaped_filename;
+
+			escaped_assembly = escape_string_for_xml (method->assembly_name);
+			escaped_class = escape_string_for_xml (method->class_name);
+			escaped_method = escape_string_for_xml (method->method_name);
+			escaped_sig = escape_string_for_xml (method->method_signature);
+			escaped_filename = escape_string_for_xml (method->filename);
+
+			fprintf (coverage_outfile, "\t<method assembly=\"%s\" class=\"%s\" name=\"%s (%s)\" filename=\"%s\" token=\"%d\">\n", escaped_assembly, escaped_class, escaped_method, escaped_sig, escaped_filename, method->token);
+
+			g_free (escaped_assembly);
+			g_free (escaped_class);
+			g_free (escaped_method);
+			g_free (escaped_sig);
+			g_free (escaped_filename);
+
+			for (guint j = 0; j < method->coverage->len; j++) {
+				CoverageCoverage *coverage = method->coverage->pdata[j];
+				fprintf (coverage_outfile, "\t\t<statement offset=\"%d\" counter=\"%d\" line=\"%d\" column=\"%d\"/>\n", coverage->offset, coverage->count, coverage->line, coverage->column);
+			}
+			fprintf (coverage_outfile, "\t</method>\n");
+		}
+	}
+
+	if (coverage_outfile) {
+		fprintf (coverage_outfile, "</coverage>\n");
+		fclose (coverage_outfile);
+		coverage_outfile = NULL;
+	}
+}
+
 static void
 flush_context (ProfContext *ctx)
 {
@@ -3079,7 +3493,7 @@ flush_context (ProfContext *ctx)
 	}
 }
 
-static const char *reports = "header,jit,gc,sample,alloc,call,metadata,exception,monitor,thread,heapshot,counters";
+static const char *reports = "header,jit,gc,sample,alloc,call,metadata,exception,monitor,thread,heapshot,counters,coverage";
 
 static const char*
 match_option (const char *p, const char *opt)
@@ -3159,6 +3573,11 @@ print_reports (ProfContext *ctx, const char *reps, int parse_only)
 				dump_counters ();
 			continue;
 		}
+		if ((opt = match_option (p, "coverage")) != p) {
+			if (!parse_only)
+				dump_coverage ();
+			continue;
+		}
 		return 0;
 	}
 	return 1;
@@ -3187,7 +3606,7 @@ usage (void)
 	printf ("Options:\n");
 	printf ("\t--help               display this help\n");
 	printf ("\t--out=FILE           write to FILE instead of stdout\n");
-	printf ("\t--traces             collect and show backtraces\n"); 
+	printf ("\t--traces             collect and show backtraces\n");
 	printf ("\t--maxframes=NUM      limit backtraces to NUM entries\n");
 	printf ("\t--reports=R1[,R2...] print the specified reports. Defaults are:\n");
 	printf ("\t                     %s\n", reports);
@@ -3202,6 +3621,7 @@ usage (void)
 	printf ("\t--time=FROM-TO       consider data FROM seconds from startup up to TO seconds\n");
 	printf ("\t--verbose            increase verbosity level\n");
 	printf ("\t--debug              display decoding debug info for mprof-report devs\n");
+	printf ("\t--coverage-out=FILE  write the coverage info to FILE as XML\n");
 }
 
 int
@@ -3313,6 +3733,13 @@ main (int argc, char *argv[])
 		} else if (strcmp ("--traces", argv [i]) == 0) {
 			show_traces = 1;
 			collect_traces = 1;
+		} else if (strncmp ("--coverage-out=", argv [i], 15) == 0) {
+			const char *val = argv [i] + 15;
+			coverage_outfile = fopen (val, "w");
+			if (!coverage_outfile) {
+				printf ("Cannot open output file: %s\n", val);
+				return 1;
+			}
 		} else {
 			break;
 		}
@@ -3333,4 +3760,3 @@ main (int argc, char *argv[])
 	print_reports (ctx, reports, 0);
 	return 0;
 }
-
