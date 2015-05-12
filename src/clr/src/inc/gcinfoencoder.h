@@ -866,7 +866,7 @@ private:
     IAllocator*                 m_pAllocator;
 
 #ifdef _DEBUG
-    char *m_MethodName, *m_ModuleName;
+    const char *m_MethodName, *m_ModuleName;
 #endif
 
     BitStreamWriter     m_Info1;    // Used for everything except for chunk encodings
