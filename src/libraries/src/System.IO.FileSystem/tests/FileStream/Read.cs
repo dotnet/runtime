@@ -20,6 +20,12 @@ namespace System.IO.FileSystem.Tests
         }
 
         [Fact]
+        public void NegativeReadRootThrows()
+        {
+            Assert.Throws<UnauthorizedAccessException>(() => { new FileStream("\\", FileMode.Open, FileAccess.Read); });
+        }
+
+        [Fact]
         public void NegativeOffsetThrows()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
