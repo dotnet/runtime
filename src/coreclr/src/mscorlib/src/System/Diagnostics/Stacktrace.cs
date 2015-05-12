@@ -529,9 +529,10 @@ namespace System.Diagnostics {
                     if (t != null)
                     {
                         // Append t.FullName, replacing '+' with '.'
-                        for (int i = 0; i < t.FullName.Length; i++)
+                        string fullName = t.FullName;
+                        for (int i = 0; i < fullName.Length; i++)
                         {
-                            char ch = t.FullName[i];
+                            char ch = fullName[i];
                             sb.Append(ch == '+' ? '.' : ch);
                         }
                         sb.Append('.');
