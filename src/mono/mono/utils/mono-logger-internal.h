@@ -93,7 +93,7 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 
 #if defined (PLATFORM_ANDROID) || (defined (TARGET_IOS) && defined (TARGET_IOS))
 
-#define mono_gc_printf(gc_log_file, format, ...) g_log ("mono-gc", G_LOG_LEVEL_MESSAGE, format "\n", ##__VA_ARGS__)
+#define mono_gc_printf(gc_log_file, format, ...) g_log ("mono-gc", G_LOG_LEVEL_MESSAGE, format, ##__VA_ARGS__)
 #define mono_runtime_printf(format, ...) g_log ("mono-rt", G_LOG_LEVEL_MESSAGE, format "\n", ##__VA_ARGS__)
 #define mono_runtime_printf_err(format, ...) g_log ("mono-rt", G_LOG_LEVEL_CRITICAL, format "\n", ##__VA_ARGS__)
 #define mono_runtime_stdout_fflush() do { } while (0)
@@ -101,7 +101,7 @@ mono_trace_message(MonoTraceMask mask, const char *format, ...)
 #else
 
 #define mono_gc_printf(gc_log_file, format, ...) do {	\
-	fprintf (gc_log_file, format "\n", ##__VA_ARGS__);	\
+	fprintf (gc_log_file, format, ##__VA_ARGS__);	\
 	fflush (gc_log_file);	\
 } while (0)
 
