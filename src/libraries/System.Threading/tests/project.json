@@ -3,6 +3,7 @@
     "System.Collections": "4.0.0-beta-22809",
     "System.Console": "4.0.0-beta-22809",
     "System.Diagnostics.Debug": "4.0.0-beta-22809",
+    "System.Diagnostics.Tracing": "4.0.20-beta-22809",
     "System.Globalization": "4.0.10-beta-22809",
     "System.Reflection": "4.0.10-beta-22809",
     "System.Runtime": "4.0.20-beta-22809",
