@@ -35,13 +35,12 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, FuncEvalHijackPersonalityRoutine
         TAILJMP_RAX
 NESTED_END FuncEvalHijack, _TEXT
 
-
 //extern ExceptionHijackWorker:proc
 //extern ExceptionHijackPersonalityRoutine:proc
 
 // This is the general purpose hijacking stub. The DacDbi Hijack primitive will 
 // set up the stack and then set the IP here, and so this just makes the call.
-NESTED_ENTRY ExceptionHijack, _TEXT, ExceptionHijackPersonalityRoutine
+NESTED_ENTRY ExceptionHijack, _TEXT, NoHandler
         // the stack should be aligned at this point, since we do not call this
         // function explicitly
         // 
