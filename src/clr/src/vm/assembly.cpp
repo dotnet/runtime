@@ -304,7 +304,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     // If we encounter a non-trusted assembly with these names, we will simply not recognize any of its
     // methods as intrinsics.
     LPCUTF8 assemblyName = GetSimpleName();
-    int length = sizeof("System.Numerics") - 1;
+    const int length = sizeof("System.Numerics") - 1;
     if ((strncmp(assemblyName, "System.Numerics", length) == 0) &&
         ((assemblyName[length] == '\0') || (strcmp(assemblyName+length, ".Vectors") == 0)))
     {
