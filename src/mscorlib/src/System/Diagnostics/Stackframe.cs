@@ -255,13 +255,13 @@ namespace System.Diagnostics {
                 {
                     Type[] typars = ((MethodInfo)method).GetGenericArguments();
 
-                    sb.Append("<");
+                    sb.Append('<');
                     int k = 0;
                     bool fFirstTyParam = true;
                     while (k < typars.Length)
                     {
                         if (fFirstTyParam == false)
-                            sb.Append(",");
+                            sb.Append(',');
                         else
                             fFirstTyParam = false;
 
@@ -269,7 +269,7 @@ namespace System.Diagnostics {
                         k++;
                     }
 
-                    sb.Append(">");
+                    sb.Append('>');
                 }
 
                 sb.Append(" at offset ");
@@ -304,9 +304,9 @@ namespace System.Diagnostics {
                     sb.Append("<filename unknown>");
                 else
                     sb.Append(strFileName);
-                sb.Append(":");
+                sb.Append(':');
                 sb.Append(iLineNumber);
-                sb.Append(":");
+                sb.Append(':');
                 sb.Append(iColumnNumber);
             }
             else
