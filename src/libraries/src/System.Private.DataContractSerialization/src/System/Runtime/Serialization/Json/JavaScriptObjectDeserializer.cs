@@ -182,7 +182,7 @@ namespace System.Runtime.Serialization.Json
 
                 object propVal = DeserializeInternal(depth);
                 //Ignore the __type attribute when its not the first element in the dictionary
-                if (!encounteredFirstMember || !memberName.Equals(JsonGlobals.ServerTypeString))
+                if (!encounteredFirstMember || (memberName != null && !memberName.Equals(JsonGlobals.ServerTypeString)))
                 {
                     if (dictionary.ContainsKey(memberName))
                     {
