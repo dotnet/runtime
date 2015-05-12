@@ -6846,6 +6846,14 @@ int gc_heap::grow_brick_card_tables (BYTE* start,
             MEMORYSTATUSEX st;
             GetProcessMemoryLoad (&st);
             BYTE* top = (BYTE*)0 + Align ((size_t)(st.ullTotalVirtual));
+            // On non-Windows systems, we get only an approximate ullTotalVirtual
+            // value that can possibly be slightly lower than the saved_g_highest_address.
+            // In such case, we set the top to the saved_g_highest_address so that the
+            // card and brick tables always cover the whole new range.
+            if (top < saved_g_highest_address)
+            {
+                top = saved_g_highest_address;
+            }
             size_t ps = ha-la;
 #ifdef _WIN64
             if (ps > (ULONGLONG)200*1024*1024*1024)
