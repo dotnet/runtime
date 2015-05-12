@@ -7806,7 +7806,7 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 #define MAX_ARCH_DELEGATE_PARAMS 10
 
 static gpointer
-get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *code_len)
+get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 param_count)
 {
 	guint8 *code, *start;
 	int i;
@@ -7847,8 +7847,13 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 	nacl_global_codeman_validate (&start, 64, &code);
 	mono_arch_flush_icache (start, code - start);
 
-	if (code_len)
-		*code_len = code - start;
+	if (has_target) {
+		*info = mono_tramp_info_create ("delegate_invoke_impl_has_target", start, code - start, NULL, NULL);
+	} else {
+		char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", param_count);
+		*info = mono_tramp_info_create (name, start, code - start, NULL, NULL);
+		g_free (name);
+	}
 
 	if (mono_jit_map_is_enabled ()) {
 		char *buff;
@@ -7868,10 +7873,11 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 #define MAX_VIRTUAL_DELEGATE_OFFSET 32
 
 static gpointer
-get_delegate_virtual_invoke_impl (gboolean load_imt_reg, int offset, guint32 *code_len)
+get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, int offset)
 {
 	guint8 *code, *start;
 	int size = 20;
+	char *tramp_name;
 
 	if (offset / (int)sizeof (gpointer) > MAX_VIRTUAL_DELEGATE_OFFSET)
 		return NULL;
@@ -7892,8 +7898,12 @@ get_delegate_virtual_invoke_impl (gboolean load_imt_reg, int offset, guint32 *co
 	amd64_jump_membase (code, AMD64_RAX, offset);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
 
-	if (code_len)
-		*code_len = code - start;
+	if (load_imt_reg)
+		tramp_name = g_strdup_printf ("delegate_virtual_invoke_imt_%d", - offset / sizeof (gpointer));
+	else
+		tramp_name = g_strdup_printf ("delegate_virtual_invoke_%d", offset / sizeof (gpointer));
+	*info = mono_tramp_info_create (tramp_name, start, code - start, NULL, NULL);
+	g_free (tramp_name);
 
 	return start;
 }
@@ -7908,31 +7918,23 @@ GSList*
 mono_arch_get_delegate_invoke_impls (void)
 {
 	GSList *res = NULL;
-	guint8 *code;
-	guint32 code_len;
+	MonoTrampInfo *info;
 	int i;
-	char *tramp_name;
 
-	code = get_delegate_invoke_impl (TRUE, 0, &code_len);
-	res = g_slist_prepend (res, mono_tramp_info_create ("delegate_invoke_impl_has_target", code, code_len, NULL, NULL));
+	get_delegate_invoke_impl (&info, TRUE, 0);
+	res = g_slist_prepend (res, info);
 
 	for (i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
-		code = get_delegate_invoke_impl (FALSE, i, &code_len);
-		tramp_name = g_strdup_printf ("delegate_invoke_impl_target_%d", i);
-		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
-		g_free (tramp_name);
+		get_delegate_invoke_impl (&info, FALSE, i);
+		res = g_slist_prepend (res, info);
 	}
 
 	for (i = 0; i <= MAX_VIRTUAL_DELEGATE_OFFSET; ++i) {
-		code = get_delegate_virtual_invoke_impl (TRUE,  - i * SIZEOF_VOID_P, &code_len);
-		tramp_name = g_strdup_printf ("delegate_virtual_invoke_imt_%d", i);
-		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
-		g_free (tramp_name);
+		get_delegate_virtual_invoke_impl (&info, TRUE, - i * SIZEOF_VOID_P);
+		res = g_slist_prepend (res, info);
 
-		code = get_delegate_virtual_invoke_impl (FALSE, i * SIZEOF_VOID_P, &code_len);
-		tramp_name = g_strdup_printf ("delegate_virtual_invoke_%d", i);
-		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
-		g_free (tramp_name);
+		get_delegate_virtual_invoke_impl (&info, FALSE, i * SIZEOF_VOID_P);
+		res = g_slist_prepend (res, info);
 	}
 
 	return res;
@@ -7957,10 +7959,13 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		if (cached)
 			return cached;
 
-		if (mono_aot_only)
+		if (mono_aot_only) {
 			start = mono_aot_get_trampoline ("delegate_invoke_impl_has_target");
-		else
-			start = get_delegate_invoke_impl (TRUE, 0, NULL);
+		} else {
+			MonoTrampInfo *info;
+			start = get_delegate_invoke_impl (&info, TRUE, 0);
+			mono_tramp_info_register (info);
+		}
 
 		mono_memory_barrier ();
 
@@ -7982,7 +7987,9 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			start = mono_aot_get_trampoline (name);
 			g_free (name);
 		} else {
-			start = get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
+			MonoTrampInfo *info;
+			start = get_delegate_invoke_impl (&info, FALSE, sig->param_count);
+			mono_tramp_info_register (info);
 		}
 
 		mono_memory_barrier ();
@@ -7996,7 +8003,13 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 gpointer
 mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
 {
-	return get_delegate_virtual_invoke_impl (load_imt_reg, offset, NULL);
+	MonoTrampInfo *info;
+	gpointer code;
+
+	code = get_delegate_virtual_invoke_impl (&info, load_imt_reg, offset);
+	if (code)
+		mono_tramp_info_register (info);
+	return code;
 }
 
 void
