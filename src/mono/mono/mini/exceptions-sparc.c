@@ -180,8 +180,10 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		if (!rethrow)
+		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		}
 	}
 	mono_handle_exception (&ctx, exc);
 	restore_context (&ctx);
