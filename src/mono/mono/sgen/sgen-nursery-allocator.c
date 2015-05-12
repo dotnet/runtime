@@ -375,7 +375,7 @@ par_alloc_from_fragment (SgenFragmentAllocator *allocator, SgenFragment *frag, s
 		 */
 		if ((sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION || sgen_get_nursery_clear_policy () == CLEAR_AT_TLAB_CREATION_DEBUG) && claim_remaining_size (frag, end)) {
 			sgen_clear_range (end, frag->fragment_end);
-			HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_trailer, frag->fragment_end - end));
+			HEAVY_STAT (stat_wasted_bytes_trailer += frag->fragment_end - end);
 #ifdef NALLOC_DEBUG
 			add_alloc_record (end, frag->fragment_end - end, BLOCK_ZEROING);
 #endif
@@ -449,12 +449,12 @@ sgen_fragment_allocator_par_alloc (SgenFragmentAllocator *allocator, size_t size
 
 restart:
 	for (frag = unmask (allocator->alloc_head); unmask (frag); frag = unmask (frag->next)) {
-		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
+		HEAVY_STAT (++stat_alloc_iterations);
 
 		if (size <= (size_t)(frag->fragment_end - frag->fragment_next)) {
 			void *p = par_alloc_from_fragment (allocator, frag, size);
 			if (!p) {
-				HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
+				HEAVY_STAT (++stat_alloc_retries);
 				goto restart;
 			}
 #ifdef NALLOC_DEBUG
@@ -480,7 +480,7 @@ sgen_fragment_allocator_serial_alloc (SgenFragmentAllocator *allocator, size_t s
 	for (frag = *previous; frag; frag = *previous) {
 		char *p = serial_alloc_from_fragment (previous, frag, size);
 
-		HEAVY_STAT (InterlockedIncrement (&stat_alloc_iterations));
+		HEAVY_STAT (++stat_alloc_iterations);
 
 		if (p) {
 #ifdef NALLOC_DEBUG
@@ -508,7 +508,7 @@ sgen_fragment_allocator_serial_range_alloc (SgenFragmentAllocator *allocator, si
 	for (frag = *previous; frag; frag = *previous) {
 		size_t frag_size = frag->fragment_end - frag->fragment_next;
 
-		HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_iterations));
+		HEAVY_STAT (++stat_alloc_range_iterations);
 
 		if (desired_size <= frag_size) {
 			void *p;
@@ -561,7 +561,7 @@ restart:
 	for (frag = unmask (allocator->alloc_head); frag; frag = unmask (frag->next)) {
 		size_t frag_size = frag->fragment_end - frag->fragment_next;
 
-		HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_iterations));
+		HEAVY_STAT (++stat_alloc_range_iterations);
 
 		if (desired_size <= frag_size) {
 			void *p;
@@ -569,7 +569,7 @@ restart:
 
 			p = par_alloc_from_fragment (allocator, frag, desired_size);
 			if (!p) {
-				HEAVY_STAT (InterlockedIncrement (&stat_alloc_range_retries));
+				HEAVY_STAT (++stat_alloc_range_retries);
 				goto restart;
 			}
 #ifdef NALLOC_DEBUG
@@ -601,7 +601,7 @@ restart:
 
 		/*XXX restarting here is quite dubious given this is already second chance allocation. */
 		if (!p) {
-			HEAVY_STAT (InterlockedIncrement (&stat_alloc_retries));
+			HEAVY_STAT (++stat_alloc_retries);
 			goto restart;
 		}
 #ifdef NALLOC_DEBUG
@@ -696,7 +696,7 @@ add_nursery_frag (SgenFragmentAllocator *allocator, size_t frag_size, char* frag
 	} else {
 		/* Clear unused fragments, pinning depends on this */
 		sgen_clear_range (frag_start, frag_end);
-		HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_small_areas, frag_size));
+		HEAVY_STAT (stat_wasted_bytes_small_areas += frag_size);
 	}
 }
 
@@ -820,7 +820,7 @@ sgen_nursery_alloc_get_upper_alloc_bound (void)
 void
 sgen_nursery_retire_region (void *address, ptrdiff_t size)
 {
-	HEAVY_STAT (InterlockedExchangeAdd (&stat_wasted_bytes_discarded_fragments, size));
+	HEAVY_STAT (stat_wasted_bytes_discarded_fragments += size);
 }
 
 gboolean
@@ -848,7 +848,7 @@ sgen_nursery_alloc (size_t size)
 	SGEN_LOG (4, "Searching nursery for size: %zd", size);
 	size = SGEN_ALIGN_UP (size);
 
-	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_requests));
+	HEAVY_STAT (++stat_nursery_alloc_requests);
 
 	return sgen_fragment_allocator_par_alloc (&mutator_allocator, size);
 }
@@ -858,7 +858,7 @@ sgen_nursery_alloc_range (size_t desired_size, size_t minimum_size, size_t *out_
 {
 	SGEN_LOG (4, "Searching for byte range desired size: %zd minimum size %zd", desired_size, minimum_size);
 
-	HEAVY_STAT (InterlockedIncrement (&stat_nursery_alloc_range_requests));
+	HEAVY_STAT (++stat_nursery_alloc_range_requests);
 
 	return sgen_fragment_allocator_par_range_alloc (&mutator_allocator, desired_size, minimum_size, out_alloc_size);
 }
