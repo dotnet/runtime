@@ -25,9 +25,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Microsoft\VisualBasic\CallType.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ConversionResolution.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Conversions.vb" />
@@ -53,6 +50,9 @@
     <Compile Include="Microsoft\VisualBasic\HideModuleNameAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\Interaction.vb" />
     <Compile Include="Microsoft\VisualBasic\Strings.vb" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
