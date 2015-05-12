@@ -129,7 +129,7 @@ GcInfoEncoder::GcInfoEncoder(
 
     // Get the name of the current method along with the enclosing class
     // or module name.
-    m_MethodName = (char *)
+    m_MethodName =
         pCorJitInfo->getMethodName(methodHandle, (const char **)&m_ModuleName);
 #endif
 
@@ -495,10 +495,10 @@ public:
 };
 
 
-int __cdecl CompareLifetimeTransitionsByOffsetThenSlot( const void* p1, const void* p2 )
+int __cdecl CompareLifetimeTransitionsByOffsetThenSlot(const void* p1, const void* p2)
 {
-    GcInfoEncoder::LifetimeTransition* pFirst = (GcInfoEncoder::LifetimeTransition*) p1;
-    GcInfoEncoder::LifetimeTransition* pSecond = (GcInfoEncoder::LifetimeTransition*) p2;
+    const GcInfoEncoder::LifetimeTransition* pFirst = (const GcInfoEncoder::LifetimeTransition*) p1;
+    const GcInfoEncoder::LifetimeTransition* pSecond = (const GcInfoEncoder::LifetimeTransition*) p2;
         
     UINT32 firstOffset  = pFirst->CodeOffset;
     UINT32 secondOffset = pSecond->CodeOffset;
@@ -514,10 +514,10 @@ int __cdecl CompareLifetimeTransitionsByOffsetThenSlot( const void* p1, const vo
 }
 
 
-int __cdecl CompareLifetimeTransitionsBySlot( const void* p1, const void* p2 )
+int __cdecl CompareLifetimeTransitionsBySlot(const void* p1, const void* p2)
 {
-    GcInfoEncoder::LifetimeTransition* pFirst = (GcInfoEncoder::LifetimeTransition*) p1;
-    GcInfoEncoder::LifetimeTransition* pSecond = (GcInfoEncoder::LifetimeTransition*) p2;
+    const GcInfoEncoder::LifetimeTransition* pFirst = (const GcInfoEncoder::LifetimeTransition*) p1;
+    const GcInfoEncoder::LifetimeTransition* pSecond = (const GcInfoEncoder::LifetimeTransition*) p2;
         
     UINT32 firstOffset  = pFirst->CodeOffset;
     UINT32 secondOffset = pSecond->CodeOffset;
