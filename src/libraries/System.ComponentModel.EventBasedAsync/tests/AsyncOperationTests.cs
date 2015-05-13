@@ -1,12 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.ComponentModel.EventBasedAsync
+namespace System.ComponentModel.EventBasedAsync.Tests
 {
     public class AsyncOperationTests
     {
@@ -67,8 +66,7 @@ namespace System.ComponentModel.EventBasedAsync
                  var cancelEvent = new ManualResetEventSlim();
                  var operation = new TestAsyncOperation(op =>
                  {
-                     var ret = cancelEvent.Wait(SpinTimeoutSeconds*1000);
-                     Assert.True(ret);
+                     Assert.True(cancelEvent.Wait(TimeSpan.FromSeconds(SpinTimeoutSeconds)));
                  }, cancelEvent: cancelEvent);
 
                  operation.Cancel();
@@ -120,9 +118,10 @@ namespace System.ComponentModel.EventBasedAsync
         // A simple wrapper for AsyncOperation which executes the specified delegate and a completion handler asynchronously.
         public class TestAsyncOperation
         {
-            private object _operationId;
-            private Action<TestAsyncOperation> _executeDelegate;
-            private ManualResetEventSlim _cancelEvent, _completeEvent;
+            private readonly object _operationId;
+            private readonly Action<TestAsyncOperation> _executeDelegate;
+            private readonly ManualResetEventSlim _cancelEvent;
+            private readonly ManualResetEventSlim _completeEvent;
 
             public AsyncOperation AsyncOperation { get; private set; }
 
@@ -138,7 +137,8 @@ namespace System.ComponentModel.EventBasedAsync
                 // verify that state is passed properly.
                 _operationId = new object();
                 AsyncOperation = AsyncOperationManager.CreateOperation(_operationId);
-                Assert.Equal(AsyncOperation.SynchronizationContext, AsyncOperationManager.SynchronizationContext);
+                Assert.Same(_operationId, AsyncOperation.UserSuppliedState);
+                Assert.Same(AsyncOperationManager.SynchronizationContext, AsyncOperation.SynchronizationContext);
 
                 _completeEvent = new ManualResetEventSlim(false);
                 _cancelEvent = cancelEvent ?? new ManualResetEventSlim(false);
@@ -150,12 +150,11 @@ namespace System.ComponentModel.EventBasedAsync
 
             public void Wait()
             {
-                var ret = _completeEvent.Wait(SpinTimeoutSeconds*1000);
-                Assert.True(ret);
+                Assert.True(_completeEvent.Wait(TimeSpan.FromSeconds(SpinTimeoutSeconds)));
 
-                if (this.Exception != null)
+                if (Exception != null)
                 {
-                    throw this.Exception;
+                    throw Exception;
                 }
             }
 
@@ -166,7 +165,7 @@ namespace System.ComponentModel.EventBasedAsync
 
             private void ExecuteWorker(object operationId)
             {
-                Assert.True(_operationId == operationId, "AsyncOperationManager did not pass UserSuppliedState through to the operation.");
+                Assert.Same(_operationId, operationId);
 
                 Exception exception = null;
 
@@ -199,9 +198,7 @@ namespace System.ComponentModel.EventBasedAsync
 
             private void OnOperationCompleted(object state)
             {
-                var e = state as AsyncCompletedEventArgs;
-
-                Assert.True(e != null, "The state passed to this operation must be of type AsyncCompletedEventArgs");
+                AsyncCompletedEventArgs e = Assert.IsType<AsyncCompletedEventArgs>(state);
                 Assert.Equal(_operationId, e.UserState);
 
                 Exception = e.Error;
@@ -213,18 +210,6 @@ namespace System.ComponentModel.EventBasedAsync
 
                 _completeEvent.Set();
             }
-        }
-
-        public class TestException : Exception
-        {
-            public TestException(string message) :
-                base(message)
-            {
-            }
-        }
-
-        public class TestTimeoutException : Exception
-        {
         }
     }
 }
