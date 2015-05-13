@@ -177,6 +177,53 @@ mono_gc_free_fixed (void* addr)
 	g_free (addr);
 }
 
+void *
+mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
+{
+	MonoObject *obj = calloc (1, size);
+
+	obj->vtable = vtable;
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	MonoArray *obj = calloc (1, size);
+
+	obj->obj.vtable = vtable;
+	obj->max_length = max_length;
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uintptr_t bounds_size)
+{
+	MonoArray *obj = calloc (1, size);
+
+	obj->obj.vtable = vtable;
+	obj->max_length = max_length;
+
+	if (bounds_size)
+		obj->bounds = (MonoArrayBounds *) ((char *) obj + size - bounds_size);
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
+{
+	MonoString *obj = calloc (1, size);
+
+	obj->object.vtable = vtable;
+	obj->length = len;
+	obj->chars [len] = 0;
+
+	return obj;
+}
+
 void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {

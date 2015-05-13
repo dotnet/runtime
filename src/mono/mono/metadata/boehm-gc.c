@@ -575,6 +575,95 @@ mono_gc_free_fixed (void* addr)
 {
 }
 
+void *
+mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
+{
+	MonoObject *obj;
+
+	if (!vtable->klass->has_references) {
+		obj = GC_MALLOC_ATOMIC (size);
+
+		obj->vtable = vtable;
+		obj->synchronisation = NULL;
+
+		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
+	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+		obj = GC_GCJ_MALLOC (size, vtable);
+	} else {
+		obj = GC_MALLOC (size);
+
+		obj->vtable = vtable;
+	}
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	MonoArray *obj;
+
+	if (!vtable->klass->has_references) {
+		obj = GC_MALLOC_ATOMIC (size);
+
+		obj->obj.vtable = vtable;
+		obj->obj.synchronisation = NULL;
+
+		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
+	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+		obj = GC_GCJ_MALLOC (size, vtable);
+	} else {
+		obj = GC_MALLOC (size);
+
+		obj->obj.vtable = vtable;
+	}
+
+	obj->max_length = max_length;
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uintptr_t bounds_size)
+{
+	MonoArray *obj;
+
+	if (!vtable->klass->has_references) {
+		obj = GC_MALLOC_ATOMIC (size);
+
+		obj->obj.vtable = vtable;
+		obj->obj.synchronisation = NULL;
+
+		memset ((char *) obj + sizeof (MonoObject), 0, size - sizeof (MonoObject));
+	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+		obj = GC_GCJ_MALLOC (size, vtable);
+	} else {
+		obj = GC_MALLOC (size);
+
+		obj->obj.vtable = vtable;
+	}
+
+	obj->max_length = max_length;
+
+	if (bounds_size)
+		obj->bounds = (MonoArrayBounds *) ((char *) obj + size - bounds_size);
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
+{
+	MonoString *obj = GC_MALLOC_ATOMIC (size);
+
+	obj->object.vtable = vtable;
+	obj->object.synchronisation = NULL;
+	obj->length = len;
+	obj->chars [len] = 0;
+
+	return obj;
+}
+
 int
 mono_gc_invoke_finalizers (void)
 {
