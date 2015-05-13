@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{59e9b218-81d0-4a80-a4b7-66c716136d82}</ProjectGuid>
+    <ProjectGuid>{59E9B218-81D0-4A80-A4B7-66C716136D82}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.ComponentModel.EventBasedAsync.Tests</AssemblyName>
     <RootNamespace>System.ComponentModel.EventBasedAsync.Tests</RootNamespace>
@@ -15,8 +15,14 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AsyncOperationManagerTests.cs" />
+    <Compile Include="RunWorkerCompletedEventArgsTests.cs" />
+    <Compile Include="AsyncCompletedEventArgsTests.cs" />
+    <Compile Include="DoWorkEventArgsTests.cs" />
+    <Compile Include="ProgressChangedEventArgsTests.cs" />
     <Compile Include="AsyncOperationTests.cs" />
     <Compile Include="BackgroundWorkerTests.cs" />
+    <Compile Include="TestException.cs" />
   </ItemGroup>
   <!-- References are resolved from packages.config -->
   <ItemGroup>
