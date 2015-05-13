@@ -13,6 +13,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,139 +22,118 @@ namespace System.Diagnostics
 {
     internal sealed class AsyncStreamReader
     {
-        internal const int DefaultBufferSize = 1024;  // Byte buffer size
-        private const int MinBufferSize = 128;
+        private const int DefaultBufferSize = 1024;  // Byte buffer size
 
-        private Stream _stream;
-        private Decoder _decoder;
-        private byte[] _byteBuffer;
-        private char[] _charBuffer;
-        // Record the number of valid bytes in the byteBuffer, for a few checks.
-
-        // This is the maximum number of chars we can get from one call to
-        // ReadBuffer.  Used so ReadBuffer can tell when to copy data into
-        // a user's char[] directly, instead of our internal char[].
-        private int _maxCharsPerBuffer;
+        private readonly Stream _stream;
+        private readonly Decoder _decoder;
+        private readonly byte[] _byteBuffer;
+        private readonly char[] _charBuffer;
 
         // Delegate to call user function.
-        private Action<string> _userCallBack;
+        private readonly Action<string> _userCallBack;
 
-        // Internal Cancel operation
-        private bool _cancelOperation;
-        private ManualResetEvent _eofEvent;
-        private Queue<string> _messageQueue;
+        private readonly CancellationTokenSource _cts;
+        private Task _readToBufferTask;
+        private readonly Queue<string> _messageQueue;
         private StringBuilder _sb;
         private bool _bLastCarriageReturn;
 
         // Cache the last position scanned in sb when searching for lines.
         private int _currentLinePos;
 
-        internal AsyncStreamReader(Stream stream, Action<string> callback, Encoding encoding)
-            : this(stream, callback, encoding, DefaultBufferSize)
-        {
-        }
-
         // Creates a new AsyncStreamReader for the given stream. The
         // character encoding is set by encoding and the buffer size,
         // in number of 16-bit characters, is set by bufferSize.
-        internal AsyncStreamReader(Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
+        internal AsyncStreamReader(Stream stream, Action<string> callback, Encoding encoding)
         {
             Debug.Assert(stream != null && encoding != null && callback != null, "Invalid arguments!");
             Debug.Assert(stream.CanRead, "Stream must be readable!");
-            Debug.Assert(bufferSize > 0, "Invalid buffer size!");
 
             _stream = stream;
             _userCallBack = callback;
             _decoder = encoding.GetDecoder();
+            _byteBuffer = new byte[DefaultBufferSize];
 
-            if (bufferSize < MinBufferSize) bufferSize = MinBufferSize;
-            _byteBuffer = new byte[bufferSize];
-            _maxCharsPerBuffer = encoding.GetMaxCharCount(bufferSize);
-            _charBuffer = new char[_maxCharsPerBuffer];
+            // This is the maximum number of chars we can get from one iteration in loop inside ReadBuffer.
+            // Used so ReadBuffer can tell when to copy data into a user's char[] directly, instead of our internal char[].
+            int maxCharsPerBuffer = encoding.GetMaxCharCount(DefaultBufferSize);
+            _charBuffer = new char[maxCharsPerBuffer];
 
-            _eofEvent = new ManualResetEvent(false);
+            _cts = new CancellationTokenSource();
             _messageQueue = new Queue<string>();
         }
 
         // User calls BeginRead to start the asynchronous read
         internal void BeginReadLine()
         {
-            if (_cancelOperation)
-            {
-                _cancelOperation = false;
-            }
-
             if (_sb == null)
             {
                 _sb = new StringBuilder(DefaultBufferSize);
-                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                _readToBufferTask = Task.Factory.StartNew(s => ((AsyncStreamReader)s).ReadBuffer(),
+                    this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
             else
             {
-                FlushMessageQueue();
+                FlushMessageQueue(rethrowInNewThread: false);
             }
         }
 
         internal void CancelOperation()
         {
-            _cancelOperation = true;
+            _cts.Cancel();
         }
 
         // This is the async callback function. Only one thread could/should call this.
-        private void ReadBuffer(Task<int> t)
+        private async Task ReadBuffer()
         {
-            int byteLen;
-
-            try
+            while (true)
             {
-                byteLen = t.GetAwaiter().GetResult();
-            }
-            catch (IOException)
-            {
-                // We should ideally consume errors from operations getting cancelled
-                // so that we don't crash the unsuspecting parent with an unhandled exc.
-                // This seems to come in 2 forms of exceptions (depending on platform and scenario),
-                // namely OperationCanceledException and IOException (for errorcode that we don't
-                // map explicitly).
-                byteLen = 0; // Treat this as EOF
-            }
-            catch (OperationCanceledException)
-            {
-                // We should consume any OperationCanceledException from child read here
-                // so that we don't crash the parent with an unhandled exc
-                byteLen = 0; // Treat this as EOF
-            }
-
-            if (byteLen == 0)
-            {
-                // We're at EOF, we won't call this function again from here on.
-                lock (_messageQueue)
-                {
-                    if (_sb.Length != 0)
-                    {
-                        _messageQueue.Enqueue(_sb.ToString());
-                        _sb.Length = 0;
-                    }
-                    _messageQueue.Enqueue(null);
-                }
-
                 try
                 {
-                    // UserCallback could throw, we should still set the eofEvent
-                    FlushMessageQueue();
+                    int bytesRead = await _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length, _cts.Token).ConfigureAwait(false);
+                    if (bytesRead == 0)
+                        break;
+
+                    int charLen = _decoder.GetChars(_byteBuffer, 0, bytesRead, _charBuffer, 0);
+                    _sb.Append(_charBuffer, 0, charLen);
+                    MoveLinesFromStringBuilderToMessageQueue();
                 }
-                finally
+                catch (IOException)
                 {
-                    _eofEvent.Set();
+                    // We should ideally consume errors from operations getting cancelled
+                    // so that we don't crash the unsuspecting parent with an unhandled exc.
+                    // This seems to come in 2 forms of exceptions (depending on platform and scenario),
+                    // namely OperationCanceledException and IOException (for errorcode that we don't
+                    // map explicitly).
+                    break; // Treat this as EOF
+                }
+                catch (OperationCanceledException)
+                {
+                    // We should consume any OperationCanceledException from child read here
+                    // so that we don't crash the parent with an unhandled exc
+                    break; // Treat this as EOF
+                }
+
+                // If user's delegate throws exception we treat this as EOF and
+                // completing without processing current buffer content
+                if (FlushMessageQueue(rethrowInNewThread: true))
+                {
+                    return;
                 }
             }
-            else
+
+            // We're at EOF, process current buffer content and flush message queue.
+            lock (_messageQueue)
             {
-                int charLen = _decoder.GetChars(_byteBuffer, 0, byteLen, _charBuffer, 0);
-                _sb.Append(_charBuffer, 0, charLen);
-                GetLinesFromStringBuilder();
-                _stream.ReadAsync(_byteBuffer, 0, _byteBuffer.Length).ContinueWith(ReadBuffer, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                if (_sb.Length != 0)
+                {
+                    _messageQueue.Enqueue(_sb.ToString());
+                    _sb.Length = 0;
+                }
+                _messageQueue.Enqueue(null);
             }
+
+            FlushMessageQueue(rethrowInNewThread: true);
         }
 
         // Read lines stored in StringBuilder and the buffer we just read into.
@@ -162,7 +142,7 @@ namespace System.Diagnostics
         // immediately followed by a line feed. The resulting string does not
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
-        private void GetLinesFromStringBuilder()
+        private void MoveLinesFromStringBuilderToMessageQueue()
         {
             int currentIndex = _currentLinePos;
             int lineStart = 0;
@@ -184,7 +164,7 @@ namespace System.Diagnostics
                 // \n - UNIX   \r\n - DOS   \r - Mac
                 if (ch == '\r' || ch == '\n')
                 {
-                    string s = _sb.ToString(lineStart, currentIndex - lineStart);
+                    string line = _sb.ToString(lineStart, currentIndex - lineStart);
                     lineStart = currentIndex + 1;
                     // skip the "\n" character following "\r" character
                     if ((ch == '\r') && (lineStart < len) && (_sb[lineStart] == '\n'))
@@ -195,7 +175,7 @@ namespace System.Diagnostics
 
                     lock (_messageQueue)
                     {
-                        _messageQueue.Enqueue(s);
+                        _messageQueue.Enqueue(line);
                     }
                 }
                 currentIndex++;
@@ -224,11 +204,9 @@ namespace System.Diagnostics
                 _sb.Length = 0;
                 _currentLinePos = 0;
             }
-
-            FlushMessageQueue();
         }
 
-        private void FlushMessageQueue()
+        private bool FlushMessageQueue(bool rethrowInNewThread)
         {
             while (true)
             {
@@ -237,19 +215,25 @@ namespace System.Diagnostics
                 // We need to take lock before DeQueue.
                 if (_messageQueue.Count > 0)
                 {
+                    string line = null;
+                    // We need this flag to ensure that line was taken from the queue.
+                    // We couldn't just check line on null because ReadBuffer enqueue null in case of EOF.
+                    bool isDequeue = false;
                     lock (_messageQueue)
                     {
                         if (_messageQueue.Count > 0)
                         {
-                            string s = (string)_messageQueue.Dequeue();
-                            // skip if the read is the read is cancelled
-                            // this might happen inside UserCallBack
-                            // However, continue to drain the queue
-                            if (!_cancelOperation)
-                            {
-                                _userCallBack(s);
-                            }
+                            line = _messageQueue.Dequeue();
+                            isDequeue = true;
                         }
+                    }
+
+                    // skip if the read is cancelled
+                    // this might happen inside UserCallBack
+                    // However, continue to drain the queue
+                    if (!_cts.Token.IsCancellationRequested && isDequeue)
+                    {
+                        return CallUserCallback(line, rethrowInNewThread);
                     }
                 }
                 else
@@ -257,17 +241,41 @@ namespace System.Diagnostics
                     break;
                 }
             }
+
+            return false;
+        }
+
+        // If user's callback throw we re-throw.
+        private bool CallUserCallback(string argument, bool rethrowInNewThread)
+        {
+            try
+            {
+                _userCallBack(argument);
+            }
+            catch (Exception e)
+            {
+                if (rethrowInNewThread)
+                {
+                    ThreadPool.QueueUserWorkItem(edi => ((ExceptionDispatchInfo)edi).Throw(), ExceptionDispatchInfo.Capture(e));
+                    return true;
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return false;
         }
 
         // Wait until we hit EOF. This is called from Process.WaitForExit
         // We will lose some information if we don't do this.
         internal void WaitUtilEOF()
         {
-            if (_eofEvent != null)
+            if (_readToBufferTask != null)
             {
-                _eofEvent.WaitOne();
-                _eofEvent.Dispose();
-                _eofEvent = null;
+                _readToBufferTask.GetAwaiter().GetResult();
+                _readToBufferTask = null;
             }
         }
     }
