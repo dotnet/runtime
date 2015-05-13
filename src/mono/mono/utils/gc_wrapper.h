@@ -60,18 +60,4 @@
 #else /* not Boehm and not sgen GC */
 #endif
 
-#if !defined(HOST_WIN32)
-
-/*
- * Both Boehm and SGEN needs to intercept some thread operations. So instead of the
- * pthread_... calls, runtime code should call these wrappers.
- */
-
-/* pthread function wrappers */
-#include <pthread.h>
-
-void mono_gc_pthread_exit (void *retval) G_GNUC_NORETURN;
-
-#endif
-
 #endif

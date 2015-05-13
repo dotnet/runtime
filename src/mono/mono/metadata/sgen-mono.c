@@ -2362,22 +2362,6 @@ mono_gc_deregister_root (char* addr)
 }
 
 /*
- * Pthread intercept
- */
-
-#ifndef HOST_WIN32
-
-void
-mono_gc_pthread_exit (void *retval) 
-{
-	mono_thread_info_detach ();
-	pthread_exit (retval);
-	g_assert_not_reached ();
-}
-
-#endif /* HOST_WIN32 */
-
-/*
  * Miscellaneous
  */
 
@@ -2686,9 +2670,6 @@ sgen_client_init (void)
 	cb.thread_attach = sgen_thread_attach;
 	cb.mono_method_is_critical = (gpointer)is_critical_method;
 	cb.mono_thread_in_critical_region = thread_in_critical_region;
-#ifndef HOST_WIN32
-	cb.thread_exit = mono_gc_pthread_exit;
-#endif
 
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));
 

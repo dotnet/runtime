@@ -215,10 +215,7 @@ mono_gc_base_init (void)
 	cb.thread_register = boehm_thread_register;
 	cb.thread_unregister = boehm_thread_unregister;
 	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
-#ifndef HOST_WIN32
-	cb.thread_exit = mono_gc_pthread_exit;
-#endif
-	
+
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
 	mono_mutex_init (&mono_gc_lock);
 
@@ -1241,21 +1238,6 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, user_data, GUINT_TO_POINTER (offset), NULL, NULL);
 }
-
-/*
- * These will call the redefined versions in libgc.
- */
-
-#ifndef HOST_WIN32
-
-void
-mono_gc_pthread_exit (void *retval)
-{
-	pthread_exit (retval);
-	g_assert_not_reached ();
-}
-
-#endif
 
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)

@@ -30,7 +30,6 @@ mono_gc_base_init (void)
 	         manner that boehm-gc does it. This is probably worth investigating
 	         more carefully. */
 	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
-	cb.thread_exit = mono_gc_pthread_exit;
 
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
 
@@ -443,12 +442,6 @@ mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 }
 
 #ifndef HOST_WIN32
-
-void
-mono_gc_pthread_exit (void *retval)
-{
-	pthread_exit (retval);
-}
 
 void mono_gc_set_skip_thread (gboolean value)
 {

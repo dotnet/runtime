@@ -95,22 +95,8 @@ inner_start_thread (void *arg)
 	/* Run the actual main function of the thread */
 	result = start_func (t_arg);
 
-	/*
-	mono_thread_info_detach ();
-	*/
-
-#if defined(__native_client__)
-	nacl_shutdown_gc_thread();
-#endif
-
-	wapi_thread_handle_set_exited (handle, GPOINTER_TO_UINT (result));
-	/* This is needed by mono_threads_core_unregister () which is called later */
-	info->handle = NULL;
-
-	g_assert (mono_threads_get_callbacks ()->thread_exit);
-	mono_threads_get_callbacks ()->thread_exit (NULL);
+	mono_threads_core_exit (GPOINTER_TO_UINT (result));
 	g_assert_not_reached ();
-	return result;
 }
 
 HANDLE
@@ -198,8 +184,9 @@ mono_threads_core_exit (int exit_code)
 
 	wapi_thread_handle_set_exited (current->handle, exit_code);
 
-	g_assert (mono_threads_get_callbacks ()->thread_exit);
-	mono_threads_get_callbacks ()->thread_exit (NULL);
+	mono_thread_info_detach ();
+
+	pthread_exit (NULL);
 }
 
 void
