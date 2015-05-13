@@ -28,8 +28,21 @@ namespace System.Diagnostics
 
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
-                // TODO: Implement this
-                throw new NotImplementedException();
+                // TODO: Determine whether there's anything better we can do here once
+                //       Debugger.* is available on Unix.
+
+                // When an assert fails, it calls WriteCore with the assert message, followed
+                // by calling ShowAssertDialog.  If s_shouldWriteToStdError is true,
+                // then the assert will have already been written to the console.  But if it's
+                // false (the default), then it's easy for the important failure information
+                // to be missed.  As such, if if it's false, we still output the error information to
+                // stderr for lack of any better place to display it to the user; this will also
+                // help ensure it shows up in continuous integration logs.
+                string assertMessage = FormatAssert(stackTrace, message, detailMessage) + Environment.NewLine;
+                if (!s_shouldWriteToStdErr)
+                {
+                    WriteToFile(Interop.Devices.stderr, assertMessage);
+                }
             }
 
             public void WriteCore(string message)

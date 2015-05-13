@@ -41,7 +41,7 @@ namespace System.Diagnostics
                     stackTrace = "";
                 }
 
-                WriteAssert(stackTrace, message, detailMessage);
+                WriteLine(FormatAssert(stackTrace, message, detailMessage));
                 s_logger.ShowAssertDialog(stackTrace, message, detailMessage);
             }
         }
@@ -58,16 +58,14 @@ namespace System.Diagnostics
             Assert(false, message, detailMessage);
         }
 
-        private static void WriteAssert(string stackTrace, string message, string detailMessage)
+        private static string FormatAssert(string stackTrace, string message, string detailMessage)
         {
-            string assertMessage = SR.DebugAssertBanner + Environment.NewLine
-                                   + SR.DebugAssertShortMessage + Environment.NewLine
-                                   + message + Environment.NewLine
-                                   + SR.DebugAssertLongMessage + Environment.NewLine
-                                   + detailMessage + Environment.NewLine
-                                   + stackTrace;
-
-            WriteLine(assertMessage);
+            return SR.DebugAssertBanner + Environment.NewLine
+                   + SR.DebugAssertShortMessage + Environment.NewLine
+                   + message + Environment.NewLine
+                   + SR.DebugAssertLongMessage + Environment.NewLine
+                   + detailMessage + Environment.NewLine
+                   + stackTrace;
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
