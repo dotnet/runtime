@@ -807,7 +807,7 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 	}
 	procs = mono_array_new (mono_domain_get (), mono_get_int32_class (), count);
 	if (sizeof (guint32) == sizeof (gpointer)) {
-		memcpy (mono_array_addr (procs, guint32, 0), pidarray, count);
+		memcpy (mono_array_addr (procs, guint32, 0), pidarray, count * sizeof (gint32));
 	} else {
 		for (i = 0; i < count; ++i)
 			*(mono_array_addr (procs, guint32, i)) = GPOINTER_TO_UINT (pidarray [i]);
