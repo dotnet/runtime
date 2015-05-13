@@ -1,26 +1,17 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.ComponentModel;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace System.ComponentModel.EventBasedAsync
+namespace System.ComponentModel.EventBasedAsync.Tests
 {
     public class BackgroundWorkerTests
     {
-        private static void Wait(int milliseconds)
-        {
-            Task.Delay(milliseconds).Wait();
-        }
-
-        private const int timeoutShort = 300;
-        private const int timeoutLong = 30000;
-
-        private ManualResetEventSlim manualResetEvent1;
-        private ManualResetEventSlim manualResetEvent2;
+        private const int TimeoutShort = 300;
+        private const int TimeoutLong = 30000;
 
         [Fact]
         public void TestBackgroundWorkerBasic()
@@ -30,27 +21,46 @@ namespace System.ComponentModel.EventBasedAsync
             {
                 SynchronizationContext.SetSynchronizationContext(null);
 
-                BackgroundWorker worker = new BackgroundWorker();
+                const int expectedResult = 42;
+                const int expectedReportCallsCount = 5;
+                int actualReportCallsCount = 0;
+                var worker = new BackgroundWorker() { WorkerReportsProgress = true };
+                var progressBarrier = new Barrier(2, barrier => ++actualReportCallsCount);
+                var workerCompletedEvent = new ManualResetEventSlim(false);
 
-                worker.DoWork += DoWork;
-                worker.RunWorkerCompleted += WhenRunWorkerCompleted;
-                worker.ProgressChanged += WhenProgressChanged;
-                worker.WorkerReportsProgress = true;
+                worker.DoWork += (sender, e) =>
+                {
+                    for (int i = 0; i < expectedReportCallsCount; i++)
+                    {
+                        worker.ReportProgress(i);
+                        progressBarrier.SignalAndWait();
+                    }
 
-                manualResetEvent1 = new ManualResetEventSlim(false);
-                manualResetEvent2 = new ManualResetEventSlim(false);
+                    e.Result = expectedResult;
+                };
+                worker.RunWorkerCompleted += (sender, e) =>
+                {
+                    try
+                    {
+                        Assert.Equal(expectedResult, (int)e.Result);
+                        Assert.False(worker.IsBusy);
+                    }
+                    finally
+                    {
+                        workerCompletedEvent.Set();
+                    }
+                };
+                worker.ProgressChanged += (sender, e) =>
+                {
+                    progressBarrier.SignalAndWait();
+                };
 
                 worker.RunWorkerAsync();
 
-                // Wait for signal from WhenProgressChanged (which is called by DoWork)
-                bool ret1 = manualResetEvent1.Wait(timeoutLong);
-                Assert.True(ret1);
-
                 // wait for singal from WhenRunWorkerCompleted
-                bool ret2 = manualResetEvent2.Wait(timeoutLong);
-                Assert.True(ret2);
-
+                Assert.True(workerCompletedEvent.Wait(TimeoutLong));
                 Assert.False(worker.IsBusy);
+                Assert.Equal(expectedReportCallsCount, actualReportCallsCount);
             }
             finally
             {
@@ -58,31 +68,7 @@ namespace System.ComponentModel.EventBasedAsync
             }
         }
 
-        private void DoWork(object sender, DoWorkEventArgs e)
-        {
-            var worker = sender as BackgroundWorker;
-            Assert.True(worker.IsBusy);
-            int i;
-            for (i = 1; i < 5; i++)
-            {
-                worker.ReportProgress((int)((100.0 * i) / 10));
-            }
-            e.Result = i;
-        }
-
-        private void WhenProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            // signal for the first one
-            manualResetEvent1.Set();
-        }
-
-        private void WhenRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            Assert.Equal(5, e.Result);
-            Assert.False((sender as BackgroundWorker).IsBusy);
-            // signal
-            manualResetEvent2.Set();
-        }
+        #region TestCancelAsync
 
         private ManualResetEventSlim manualResetEvent3;
 
@@ -99,7 +85,7 @@ namespace System.ComponentModel.EventBasedAsync
             bw.RunWorkerAsync("Message");
             bw.CancelAsync();
 
-            bool ret = manualResetEvent3.Wait(timeoutLong);
+            bool ret = manualResetEvent3.Wait(TimeoutLong);
             Assert.True(ret);
             // there could be race condition between worker thread cancellation and completion which will set the CancellationPending to false 
             // if it is completed already, we don't check cancellation
@@ -109,7 +95,7 @@ namespace System.ComponentModel.EventBasedAsync
                 {
                     for (int i = 0; i < 1000; i++)
                     {
-                        Wait(timeoutShort);
+                        Wait(TimeoutShort);
                         if (bw.CancellationPending)
                         {
                             break;
@@ -133,10 +119,10 @@ namespace System.ComponentModel.EventBasedAsync
                 return;
             }
 
-            // we want to wait for cancellation - wiat max 100 * timeoutShort millisec
+            // we want to wait for cancellation - wait max (1000 * TimeoutShort) milliseconds
             for (int i = 0; i < 1000; i++)
             {
-                Wait(timeoutShort);
+                Wait(TimeoutShort);
                 if (bw.CancellationPending)
                 {
                     break;
@@ -148,45 +134,130 @@ namespace System.ComponentModel.EventBasedAsync
             manualResetEvent3.Set();
         }
 
+        #endregion
+
         [Fact]
         public void TestThrowExceptionInDoWork()
         {
-            var bw = new TestWorker();
-            bw.DoWork += DoWorkWithException;
-            bw.RunWorkerAsync("Exception");
-        }
-
-        private void DoWorkWithException(object sender, DoWorkEventArgs e)
-        {
-            Assert.Equal("Exception", e.Argument);
-            throw new TestException("Exception from DoWork");
-        }
-
-        internal class TestWorker : BackgroundWorker
-        {
-            protected override void OnRunWorkerCompleted(RunWorkerCompletedEventArgs e)
+            var orignal = SynchronizationContext.Current;
+            try
             {
-                // Do not use Assert.Throws<TestException>(() => e.Result);
-                // because we want to check the call stack contains the event handler method
-                try
+                SynchronizationContext.SetSynchronizationContext(null);
+
+                const string expectedArgument = "Exception";
+                const string expectedExceptionMsg = "Exception from DoWork";
+                var bw = new BackgroundWorker();
+                var workerCompletedEvent = new ManualResetEventSlim(false);
+
+                bw.DoWork += (sender, e) =>
                 {
-                    var r = e.Result;
-                    Assert.True(false, "Expect TestException");
-                }
-                catch (Exception ex)
+                    Assert.Same(bw, sender);
+                    Assert.Same(expectedArgument, e.Argument);
+                    throw new TestException(expectedExceptionMsg);
+                };
+
+                bw.RunWorkerCompleted += (sender, e) =>
                 {
-                    var message = ex.ToString();
-                    Assert.True(message.Contains("DoWorkWithException"));
-                }
+                    try
+                    {
+                        TestException ex = Assert.Throws<TestException>(() => e.Result);
+                        Assert.Equal(expectedExceptionMsg, ex.Message);
+                    }
+                    finally
+                    {
+                        workerCompletedEvent.Set();
+                    }
+                };
+
+                bw.RunWorkerAsync(expectedArgument);
+                Assert.True(workerCompletedEvent.Wait(TimeoutShort), "Background work timeout");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(orignal);
             }
         }
-    }
 
-    internal class TestException : Exception
-    {
-        public TestException(string message) :
-            base(message)
+        [Fact]
+        public void CtorTest()
         {
+            var bw = new BackgroundWorker();
+            Assert.False(bw.IsBusy);
+            Assert.False(bw.WorkerReportsProgress);
+            Assert.False(bw.WorkerSupportsCancellation);
+            Assert.False(bw.CancellationPending);
+        }
+
+        [Fact]
+        public void RunWorkerAsyncTwice()
+        {
+            var bw = new BackgroundWorker();
+            var barrier = new Barrier(2);
+
+            bw.DoWork += (sender, e) =>
+            {
+                barrier.SignalAndWait();
+                barrier.SignalAndWait();
+            };
+
+            bw.RunWorkerAsync();
+            barrier.SignalAndWait();
+            try
+            {
+                Assert.True(bw.IsBusy);
+                Assert.Throws<InvalidOperationException>(() => bw.RunWorkerAsync());
+            }
+            finally
+            {
+                barrier.SignalAndWait();
+            }
+        }
+
+        [Fact]
+        public void TestCancelAsyncWithoutCancellationSupport()
+        {
+            var bw = new BackgroundWorker() { WorkerSupportsCancellation = false };
+            Assert.Throws<InvalidOperationException>(() => bw.CancelAsync());
+        }
+
+        [Fact]
+        public void TestReportProgressSync()
+        {
+            var bw = new BackgroundWorker() { WorkerReportsProgress = true };
+            var expectedProgress = new int[] { 1, 2, 3, 4, 5 };
+            var actualProgress = new List<int>();
+
+            bw.ProgressChanged += (sender, e) =>
+            {
+                actualProgress.Add(e.ProgressPercentage);
+            };
+
+            foreach (int i in expectedProgress)
+            {
+                bw.ReportProgress(i);
+            }
+
+            Assert.Equal(expectedProgress, actualProgress);
+        }
+
+        [Fact]
+        public void TestReportProgressWithWorkerReportsProgressFalse()
+        {
+            var bw = new BackgroundWorker() { WorkerReportsProgress = false };
+            Assert.Throws<InvalidOperationException>(() => bw.ReportProgress(42));
+        }
+
+        [Fact]
+        public void DisposeTwiceShouldNotThrow()
+        {
+            var bw = new BackgroundWorker();
+            bw.Dispose();
+            bw.Dispose();
+        }
+
+        private static void Wait(int milliseconds)
+        {
+            Task.Delay(milliseconds).Wait();
         }
     }
 }
