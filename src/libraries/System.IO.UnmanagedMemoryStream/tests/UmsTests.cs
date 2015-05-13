@@ -4,7 +4,7 @@
 using Xunit;
 using System.Threading;
 
-// TODO: add WriteAsync, Timeout, Flush, CopyTo tests
+// TODO: add CopyTo tests
 
 namespace System.IO.Tests
 {
