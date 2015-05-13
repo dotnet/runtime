@@ -609,12 +609,6 @@ mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks)
 	runtime_callbacks = *callbacks;
 }
 
-MonoThreadInfoCallbacks *
-mono_threads_get_callbacks (void)
-{
-	return &threads_callbacks;
-}
-
 MonoThreadInfoRuntimeCallbacks *
 mono_threads_get_runtime_callbacks (void)
 {

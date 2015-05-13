@@ -311,9 +311,6 @@ mono_threads_init (MonoThreadInfoCallbacks *callbacks, size_t thread_info_size);
 void
 mono_threads_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks);
 
-MonoThreadInfoCallbacks *
-mono_threads_get_callbacks (void);
-
 MonoThreadInfoRuntimeCallbacks *
 mono_threads_get_runtime_callbacks (void);
 
