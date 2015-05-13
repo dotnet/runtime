@@ -1094,7 +1094,13 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	if (!iresult->declaring->klass->generic_container && !iresult->declaring->klass->generic_class)
 		iresult->context.class_inst = NULL;
 
-	cached = mono_method_inflated_lookup (iresult, FALSE);
+	MonoImageSet *set = mono_metadata_get_image_set_for_method (iresult);
+
+	// check cache
+	mono_image_set_lock (set);
+	cached = g_hash_table_lookup (set->gmethod_cache, iresult);
+	mono_image_set_unlock (set);
+
 	if (cached) {
 		g_free (iresult);
 		return (MonoMethod*)cached;
@@ -1166,7 +1172,17 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 	 * is_generic_method_definition().
 	 */
 
-	return (MonoMethod*)mono_method_inflated_lookup (iresult, TRUE);
+	// check cache
+	mono_image_set_lock (set);
+	cached = g_hash_table_lookup (set->gmethod_cache, iresult);
+	if (!cached) {
+		g_hash_table_insert (set->gmethod_cache, iresult, iresult);
+		iresult->owner = set;
+		cached = iresult;
+	}
+	mono_image_set_unlock (set);
+
+	return (MonoMethod*)cached;
 
 fail:
 	g_free (iresult);

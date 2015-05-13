@@ -19,8 +19,8 @@
 #include "mono-endian.h"
 #include "cil-coff.h"
 #include "tokentype.h"
-#include "metadata-internals.h"
 #include "class-internals.h"
+#include "metadata-internals.h"
 #include "verify-internals.h"
 #include "class.h"
 #include "marshal.h"
@@ -2424,13 +2424,13 @@ delete_image_set (MonoImageSet *set)
 	g_free (set);
 }
 
-static void
+void
 mono_image_set_lock (MonoImageSet *set)
 {
 	mono_mutex_lock (&set->lock);
 }
 
-static void
+void
 mono_image_set_unlock (MonoImageSet *set)
 {
 	mono_mutex_unlock (&set->lock);
@@ -2854,33 +2854,6 @@ free_inflated_signature (MonoInflatedMethodSignature *sig)
 	g_free (sig);
 }
 
-MonoMethodInflated*
-mono_method_inflated_lookup (MonoMethodInflated* method, gboolean cache)
-{
-	CollectData data;
-	MonoImageSet *set;
-	gpointer res;
-
-	collect_data_init (&data);
-
-	collect_method_images (method, &data);
-
-	set = get_image_set (data.images, data.nimages);
-
-	collect_data_free (&data);
-
-	mono_image_set_lock (set);
-	res = g_hash_table_lookup (set->gmethod_cache, method);
-	if (!res && cache) {
-		g_hash_table_insert (set->gmethod_cache, method, method);
-		method->owner = set;
-		res = method;
-	}
-
-	mono_image_set_unlock (set);
-	return res;
-}
-
 /*
  * mono_metadata_get_inflated_signature:
  *
@@ -2921,6 +2894,20 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 	mono_image_set_unlock (set);
 
 	return res->sig;
+}
+
+MonoImageSet *
+mono_metadata_get_image_set_for_method (MonoMethodInflated *method)
+{
+	MonoImageSet *set;
+	CollectData image_set_data;
+
+	collect_data_init (&image_set_data);
+	collect_method_images (method, &image_set_data);
+	set = get_image_set (image_set_data.images, image_set_data.nimages);
+	collect_data_free (&image_set_data);
+
+	return set;
 }
 
 /*
