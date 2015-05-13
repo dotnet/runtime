@@ -397,9 +397,6 @@ void
 mono_marshal_free_dynamic_wrappers (MonoMethod *method);
 
 void
-mono_marshal_free_inflated_wrappers (MonoMethod *method);
-
-void
 mono_marshal_lock_internal (void);
 
 void

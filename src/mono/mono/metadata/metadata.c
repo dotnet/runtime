@@ -2833,8 +2833,6 @@ free_inflated_method (MonoMethodInflated *imethod)
 	int i;
 	MonoMethod *method = (MonoMethod*)imethod;
 
-	mono_marshal_free_inflated_wrappers (method);
-
 	if (method->signature)
 		mono_metadata_free_inflated_signature (method->signature);
 
