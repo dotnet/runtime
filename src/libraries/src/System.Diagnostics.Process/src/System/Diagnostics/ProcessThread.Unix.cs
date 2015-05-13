@@ -30,7 +30,7 @@ namespace System.Diagnostics
         private bool PriorityBoostEnabledCore
         {
             get { return false; }
-            set { throw new PlatformNotSupportedException(); }
+            set { } // Nop
         }
 
         /// <summary>
