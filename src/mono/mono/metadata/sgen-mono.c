@@ -2367,18 +2367,6 @@ mono_gc_deregister_root (char* addr)
 
 #ifndef HOST_WIN32
 
-int
-mono_gc_pthread_join (pthread_t thread, void **retval)
-{
-	return pthread_join (thread, retval);
-}
-
-int
-mono_gc_pthread_detach (pthread_t thread)
-{
-	return pthread_detach (thread);
-}
-
 void
 mono_gc_pthread_exit (void *retval) 
 {
