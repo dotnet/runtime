@@ -1,6 +1,7 @@
 #ifndef __MONO_DECIMAL_MS_H__
 #define __MONO_DECIMAL_MS_H__
-typedef struct tagDECIMAL {
+
+typedef struct {
     // Decimal.cs treats the first two shorts as one long
     // And they seriable the data so we need to little endian
     // seriliazation

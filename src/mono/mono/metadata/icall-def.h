@@ -214,9 +214,6 @@ ICALL(SFRAME_1, "GetILOffsetFromFile", ves_icall_System_StackFrame_GetILOffsetFr
 ICALL_TYPE(STOPWATCH, "System.Diagnostics.Stopwatch", STOPWATCH_1)
 ICALL(STOPWATCH_1, "GetTimestamp", mono_100ns_ticks)
 
-ICALL_TYPE(DOUBLE, "System.Double", DOUBLE_1)
-ICALL(DOUBLE_1, "ParseImpl",    mono_double_ParseImpl)
-
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 ICALL(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames)
 ICALL(ENUM_2, "InternalBoxEnum", ves_icall_System_Enum_ToObject)
@@ -445,6 +442,8 @@ ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketE
 
 ICALL_TYPE(NUMBER, "System.Number", NUMBER_1)
 ICALL(NUMBER_1, "NumberBufferToDecimal", mono_decimal_from_number)
+ICALL(NUMBER_2, "NumberBufferToDouble", mono_double_from_number)
+
 ICALL_TYPE(NUMBER_FORMATTER, "System.NumberFormatter", NUMBER_FORMATTER_1)
 ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_NumberFormatter_GetFormatterTables)
 

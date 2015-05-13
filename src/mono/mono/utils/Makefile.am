@@ -46,8 +46,6 @@ monoutils_sources = \
 	mono-string.h		\
 	mono-time.c  		\
 	mono-time.h  		\
-	strtod.h		\
-	strtod.c		\
 	strenc.h		\
 	strenc.c		\
 	mono-uri.c		\

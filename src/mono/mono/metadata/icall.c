@@ -81,7 +81,6 @@
 #include <mono/metadata/file-mmap.h>
 #include <mono/metadata/seq-points-data.h>
 #include <mono/io-layer/io-layer.h>
-#include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-proclib.h>
@@ -99,6 +98,7 @@
 #include <shlobj.h>
 #endif
 #include "decimal-ms.h"
+#include "number-ms.h"
 
 extern MonoString* ves_icall_System_Environment_GetOSVersionString (void);
 
@@ -118,28 +118,6 @@ mono_class_init_or_throw (MonoClass *klass)
 {
 	if (!mono_class_init (klass))
 		mono_raise_exception (mono_class_get_exception_for_failure (klass));
-}
-
-/*
- * We expect a pointer to a char, not a string
- */
-ICALL_EXPORT gboolean
-mono_double_ParseImpl (char *ptr, double *result)
-{
-	gchar *endptr = NULL;
-	*result = 0.0;
-
-	if (*ptr){
-		/* mono_strtod () is not thread-safe */
-		mono_mutex_lock (&mono_strtod_mutex);
-		*result = mono_strtod (ptr, &endptr);
-		mono_mutex_unlock (&mono_strtod_mutex);
-	}
-
-	if (!*ptr || (endptr && *endptr))
-		return FALSE;
-	
-	return TRUE;
 }
 
 ICALL_EXPORT MonoObject *

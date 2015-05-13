@@ -18,7 +18,6 @@
 
 
 extern mono_mutex_t mono_delegate_section;
-extern mono_mutex_t mono_strtod_mutex;
 
 /*
  * If this is set, the memory belonging to appdomains is not freed when a domain is

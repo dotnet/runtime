@@ -175,6 +175,8 @@ common_sources = \
 	nacl-stub.c		\
 	normalization-tables.h	\
 	number-formatter.h	\
+	number-ms.c		\
+	number-ms.h		\
 	object-internals.h	\
 	opcodes.c		\
 	socket-io.c		\
