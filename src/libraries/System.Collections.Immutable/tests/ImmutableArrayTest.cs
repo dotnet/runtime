@@ -251,7 +251,8 @@ namespace System.Collections.Immutable.Test
             ImmutableArray<string> derivedImmutable = ImmutableArray.Create("a", "b", "c");
             ImmutableArray<object> baseImmutable = derivedImmutable.As<object>();
             Assert.False(baseImmutable.IsDefault);
-            Assert.Equal(derivedImmutable, baseImmutable);
+            // Must cast to object or the IEnumerable<object> overload of Equals would be used
+            Assert.Equal((object)derivedImmutable, baseImmutable, EqualityComparer<object>.Default);
 
             // Make sure we can reverse that, as a means to verify the underlying array is the same instance.
             ImmutableArray<string> derivedImmutable2 = baseImmutable.As<string>();
@@ -285,7 +286,8 @@ namespace System.Collections.Immutable.Test
         {
             ImmutableArray<string> derivedImmutable = ImmutableArray.Create("a", "b", "c");
             ImmutableArray<object> baseImmutable = ImmutableArray.CreateRange<object>(derivedImmutable);
-            Assert.Equal(derivedImmutable, baseImmutable);
+            // Must cast to object or the IEnumerable<object> overload of Equals would be used
+            Assert.Equal((object)derivedImmutable, baseImmutable, EqualityComparer<object>.Default);
 
             // Make sure we can reverse that, as a means to verify the underlying array is the same instance.
             ImmutableArray<string> derivedImmutable2 = baseImmutable.As<string>();
@@ -297,7 +299,8 @@ namespace System.Collections.Immutable.Test
         {
             ImmutableArray<string> derivedImmutable = ImmutableArray.Create("a", "b", "c");
             ImmutableArray<object> baseImmutable = ImmutableArray<object>.CastUp(derivedImmutable);
-            Assert.Equal(derivedImmutable, baseImmutable);
+            // Must cast to object or the IEnumerable<object> overload of Equals would be used
+            Assert.Equal((object)derivedImmutable, baseImmutable, EqualityComparer<object>.Default);
 
             // Make sure we can reverse that, as a means to verify the underlying array is the same instance.
             Assert.Equal(derivedImmutable, baseImmutable.As<string>());
