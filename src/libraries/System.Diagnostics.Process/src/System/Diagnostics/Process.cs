@@ -1283,7 +1283,7 @@ namespace System.Diagnostics
                 }
 
                 Stream s = _standardOutput.BaseStream;
-                _output = new AsyncStreamReader(this, s, OutputReadNotifyUser, _standardOutput.CurrentEncoding);
+                _output = new AsyncStreamReader(s, OutputReadNotifyUser, _standardOutput.CurrentEncoding);
             }
             _output.BeginReadLine();
         }
@@ -1323,7 +1323,7 @@ namespace System.Diagnostics
                 }
 
                 Stream s = _standardError.BaseStream;
-                _error = new AsyncStreamReader(this, s, ErrorReadNotifyUser, _standardError.CurrentEncoding);
+                _error = new AsyncStreamReader(s, ErrorReadNotifyUser, _standardError.CurrentEncoding);
             }
             _error.BeginReadLine();
         }
