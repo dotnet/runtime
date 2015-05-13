@@ -119,12 +119,6 @@ extern LOCK_DECLARE (sgen_interruption_mutex);
 		} while (InterlockedCompareExchangePointer ((void**)&(x), (void*)(__old_x + (i)), (void*)__old_x) != (void*)__old_x); \
 	} while (0)
 
-
-#ifndef HOST_WIN32
-/* we intercept pthread_create calls to know which threads exist */
-#define USE_PTHREAD_INTERCEPT 1
-#endif
-
 #ifdef HEAVY_STATISTICS
 extern guint64 stat_objects_alloced_degraded;
 extern guint64 stat_bytes_alloced_degraded;

@@ -2365,7 +2365,7 @@ mono_gc_deregister_root (char* addr)
  * Pthread intercept
  */
 
-#if USE_PTHREAD_INTERCEPT
+#ifndef HOST_WIN32
 
 int
 mono_gc_pthread_join (pthread_t thread, void **retval)
@@ -2387,7 +2387,7 @@ mono_gc_pthread_exit (void *retval)
 	g_assert_not_reached ();
 }
 
-#endif /* USE_PTHREAD_INTERCEPT */
+#endif /* HOST_WIN32 */
 
 /*
  * Miscellaneous
