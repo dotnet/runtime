@@ -2368,12 +2368,6 @@ mono_gc_deregister_root (char* addr)
 #if USE_PTHREAD_INTERCEPT
 
 int
-mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
-{
-	return pthread_create (new_thread, attr, start_routine, arg);
-}
-
-int
 mono_gc_pthread_join (pthread_t thread, void **retval)
 {
 	return pthread_join (thread, retval);
@@ -2706,7 +2700,6 @@ sgen_client_init (void)
 	cb.mono_thread_in_critical_region = thread_in_critical_region;
 #ifndef HOST_WIN32
 	cb.thread_exit = mono_gc_pthread_exit;
-	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
 #endif
 
 	mono_threads_init (&cb, sizeof (SgenThreadInfo));

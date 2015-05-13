@@ -217,7 +217,6 @@ mono_gc_base_init (void)
 	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
 #ifndef HOST_WIN32
 	cb.thread_exit = mono_gc_pthread_exit;
-	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
 #endif
 	
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
@@ -1248,12 +1247,6 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
  */
 
 #ifndef HOST_WIN32
-
-int
-mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
-{
-	return pthread_create (new_thread, attr, start_routine, arg);
-}
 
 int
 mono_gc_pthread_join (pthread_t thread, void **retval)

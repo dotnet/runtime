@@ -152,7 +152,7 @@ mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start_routine, gpointer 
 	MONO_SEM_INIT (&(start_info.registered), 0);
 
 	/* Actually start the thread */
-	res = mono_threads_get_callbacks ()->mono_gc_pthread_create (&thread, &attr, inner_start_thread, &start_info);
+	res = pthread_create (&thread, &attr, inner_start_thread, &start_info);
 	if (res) {
 		MONO_SEM_DESTROY (&(start_info.registered));
 		return NULL;
