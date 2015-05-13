@@ -106,6 +106,11 @@ mono_gc_enable_events (void)
 {
 }
 
+void
+mono_gc_enable_alloc_events (void)
+{
+}
+
 int
 mono_gc_register_root (char *start, size_t size, void *descr)
 {

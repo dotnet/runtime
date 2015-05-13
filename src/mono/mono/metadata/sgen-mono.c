@@ -923,24 +923,47 @@ mono_gc_clear_domain (MonoDomain * domain)
  * Allocation
  */
 
+static gboolean alloc_events = FALSE;
+
+void
+mono_gc_enable_alloc_events (void)
+{
+	alloc_events = TRUE;
+}
+
 void*
 mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
-	return sgen_alloc_obj (vtable, size);
+	MonoObject *obj = sgen_alloc_obj (vtable, size);
+
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (obj);
+
+	return obj;
 }
 
 void*
 mono_gc_alloc_pinned_obj (MonoVTable *vtable, size_t size)
 {
-	return sgen_alloc_obj_pinned (vtable, size);
+	MonoObject *obj = sgen_alloc_obj_pinned (vtable, size);
+
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (obj);
+
+	return obj;
 }
 
 void*
 mono_gc_alloc_mature (MonoVTable *vtable)
 {
 	MonoObject *obj = sgen_alloc_obj_mature (vtable, vtable->klass->instance_size);
+
 	if (obj && G_UNLIKELY (obj->vtable->klass->has_finalize))
 		mono_object_register_finalizer (obj);
+
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (obj);
+
 	return obj;
 }
 
@@ -1688,6 +1711,9 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	UNLOCK_GC;
 
  done:
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (&arr->obj);
+
 	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size ((GCVTable*)vtable, (GCObject*)arr)), "Vector has incorrect size.");
 	return arr;
 }
@@ -1733,6 +1759,9 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	UNLOCK_GC;
 
  done:
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (&arr->obj);
+
 	SGEN_ASSERT (6, SGEN_ALIGN_UP (size) == SGEN_ALIGN_UP (sgen_client_par_object_get_size ((GCVTable*)vtable, (GCObject*)arr)), "Array has incorrect size.");
 	return arr;
 }
@@ -1753,7 +1782,7 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 		/*This doesn't require fencing since EXIT_CRITICAL_REGION already does it for us*/
 		str->length = len;
 		EXIT_CRITICAL_REGION;
-		return str;
+		goto done;
 	}
 	EXIT_CRITICAL_REGION;
 #endif
@@ -1769,6 +1798,10 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 	str->length = len;
 
 	UNLOCK_GC;
+
+ done:
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (&str->object);
 
 	return str;
 }

@@ -70,8 +70,6 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 #define ldstr_unlock() mono_mutex_unlock (&ldstr_section)
 static mono_mutex_t ldstr_section;
 
-static gboolean profile_allocs = TRUE;
-
 void
 mono_runtime_object_init (MonoObject *this)
 {
@@ -4420,9 +4418,6 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 {
 	*pass_size_in_words = FALSE;
 
-	if (!(mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
-		profile_allocs = FALSE;
-
 	if (mono_class_has_finalizer (vtable->klass) || mono_class_is_marshalbyref (vtable->klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return mono_object_new_specific;
 
@@ -4487,9 +4482,6 @@ mono_object_clone (MonoObject *obj)
 
 	/* If the object doesn't contain references this will do a simple memmove. */
 	mono_gc_wbarrier_object_copy (o, obj);
-
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (o, obj->vtable->klass);
 
 	if (obj->vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
@@ -4713,9 +4705,6 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 		}
 	}
 
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (o, array_class);
-
 	return array;
 }
 
@@ -4764,9 +4753,6 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 	}
 	o = mono_gc_alloc_vector (vtable, byte_len, n);
 	ao = (MonoArray*)o;
-
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (o, vtable->klass);
 
 	return ao;
 }
@@ -4849,8 +4835,6 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	g_assert (vtable);
 
 	s = mono_gc_alloc_string (vtable, size, len);
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
 
 	return s;
 }
@@ -4969,8 +4953,6 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 		return NULL;
 	size = mono_class_instance_size (class);
 	res = mono_object_new_alloc_specific (vtable);
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (res, class);
 
 	size = size - sizeof (MonoObject);
 

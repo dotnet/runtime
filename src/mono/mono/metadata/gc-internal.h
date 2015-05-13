@@ -102,6 +102,7 @@ gboolean mono_object_is_alive (MonoObject* obj);
 gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 gpointer mono_gc_out_of_memory (size_t size);
 void     mono_gc_enable_events (void);
+void     mono_gc_enable_alloc_events (void);
 
 /* disappearing link functionality */
 void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj, gboolean track);

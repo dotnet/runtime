@@ -460,6 +460,14 @@ mono_gc_enable_events (void)
 	GC_on_heap_resize = on_gc_heap_resize;
 }
 
+static gboolean alloc_events = FALSE;
+
+void
+mono_gc_enable_alloc_events (void)
+{
+	alloc_events = TRUE;
+}
+
 int
 mono_gc_register_root (char *start, size_t size, void *descr)
 {
@@ -595,6 +603,9 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		obj->vtable = vtable;
 	}
 
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (obj);
+
 	return obj;
 }
 
@@ -619,6 +630,9 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 	}
 
 	obj->max_length = max_length;
+
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (&obj->obj);
 
 	return obj;
 }
@@ -648,6 +662,9 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	if (bounds_size)
 		obj->bounds = (MonoArrayBounds *) ((char *) obj + size - bounds_size);
 
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (&obj->obj);
+
 	return obj;
 }
 
@@ -660,6 +677,9 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 	obj->object.synchronisation = NULL;
 	obj->length = len;
 	obj->chars [len] = 0;
+
+	if (G_UNLIKELY (alloc_events))
+		mono_profiler_allocation (&obj->object);
 
 	return obj;
 }
