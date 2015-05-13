@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "System.Collections": "4.0.10-beta-*",
+    "System.Diagnostics.Debug": "4.0.10-beta-*",
     "System.IO": "4.0.10-beta-*",
     "System.IO.FileSystem.Primitives": "4.0.0-beta-*",
     "System.Reflection": "4.0.10-beta-*",
