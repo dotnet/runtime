@@ -150,9 +150,6 @@
   <data name="ArgumentOutOfRange_LengthGreaterThanCapacity" xml:space="preserve">
     <value>The length cannot be greater than the capacity.</value>
   </data>
-  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
-    <value>Specified file length was too large for the file system.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non negative number is required.</value>
   </data>
@@ -161,9 +158,6 @@
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
-  </data>
-  <data name="ArgumentOutOfRange_UnmanagedMemStreamLength" xml:space="preserve">
-    <value>UnmanagedMemoryStream length must be non-negative and less than 2^63 - 1 - baseAddress.</value>
   </data>
   <data name="ArgumentOutOfRange_UnmanagedMemStreamWrapAround" xml:space="preserve">
     <value>The UnmanagedMemoryStream capacity would wrap around the high end of the address space.</value>
@@ -203,8 +197,5 @@
   </data>
   <data name="IO_StreamTooLong" xml:space="preserve">
     <value>Stream was too long.</value>
-  </data>
-  <data name="PlatformNotSupported_NamedMaps" xml:space="preserve">
-    <value>Named maps are not supported.</value>
   </data>
 </root>
