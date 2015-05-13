@@ -1336,10 +1336,8 @@ MissingManifestResource_LooselyLinked = Could not find a manifest resource entry
 MissingManifestResource_NoNeutralAsm = Could not find any resources appropriate for the specified culture or the neutral culture.  Make sure "{0}" was correctly embedded or linked into assembly "{1}" at compile time, or that all the satellite assemblies required are loadable and fully signed.
 MissingManifestResource_NoNeutralDisk = Could not find any resources appropriate for the specified culture (or the neutral culture) on disk.
 MissingManifestResource_MultipleBlobs = A case-insensitive lookup for resource file "{0}" in assembly "{1}" found multiple entries. Remove the duplicates or specify the exact case.
-#if !FEATURE_CORECLR
 MissingManifestResource_ResWFileNotLoaded = Unable to load resources for resource file "{0}" in package "{1}".
 MissingManifestResource_NoPRIresources = Unable to open Package Resource Index.
-#endif
 
 ; MissingMember
 MissingMemberTypeRef = FieldInfo does not match the target Type.
