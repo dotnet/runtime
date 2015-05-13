@@ -62,11 +62,11 @@ public class MutexTests
             using (Mutex m2 = Mutex.OpenExisting(Name))
             {
                 Assert.True(m1.WaitOne());
-                Assert.False(Task.Run(() => m2.WaitOne(0)).Result);
+                Assert.False(Task.Factory.StartNew(() => m2.WaitOne(0), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Result);
                 m1.ReleaseMutex();
 
                 Assert.True(m2.WaitOne());
-                Assert.False(Task.Run(() => m1.WaitOne(0)).Result);
+                Assert.False(Task.Factory.StartNew(() => m1.WaitOne(0), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default).Result);
                 m2.ReleaseMutex();
             }
 
