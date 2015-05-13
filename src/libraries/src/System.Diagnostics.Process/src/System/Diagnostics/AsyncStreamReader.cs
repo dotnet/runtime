@@ -19,25 +19,21 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics
 {
-    internal sealed class AsyncStreamReader : IDisposable
+    internal sealed class AsyncStreamReader
     {
         internal const int DefaultBufferSize = 1024;  // Byte buffer size
         private const int MinBufferSize = 128;
 
         private Stream _stream;
-        private Encoding _encoding;
         private Decoder _decoder;
         private byte[] _byteBuffer;
         private char[] _charBuffer;
         // Record the number of valid bytes in the byteBuffer, for a few checks.
 
-        // This is the maximum number of chars we can get from one call to 
+        // This is the maximum number of chars we can get from one call to
         // ReadBuffer.  Used so ReadBuffer can tell when to copy data into
         // a user's char[] directly, instead of our internal char[].
         private int _maxCharsPerBuffer;
-
-        // Store a backpointer to the process class, to check for user callbacks
-        private readonly Process _process;
 
         // Delegate to call user function.
         private Action<string> _userCallBack;
@@ -52,26 +48,22 @@ namespace System.Diagnostics
         // Cache the last position scanned in sb when searching for lines.
         private int _currentLinePos;
 
-        internal AsyncStreamReader(Process process, Stream stream, Action<string> callback, Encoding encoding)
-            : this(process, stream, callback, encoding, DefaultBufferSize)
+        internal AsyncStreamReader(Stream stream, Action<string> callback, Encoding encoding)
+            : this(stream, callback, encoding, DefaultBufferSize)
         {
         }
 
-
-        // Creates a new AsyncStreamReader for the given stream.  The 
-        // character encoding is set by encoding and the buffer size, 
-        // in number of 16-bit characters, is set by bufferSize.  
-        // 
-        internal AsyncStreamReader(Process process, Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
+        // Creates a new AsyncStreamReader for the given stream. The
+        // character encoding is set by encoding and the buffer size,
+        // in number of 16-bit characters, is set by bufferSize.
+        internal AsyncStreamReader(Stream stream, Action<string> callback, Encoding encoding, int bufferSize)
         {
-            Debug.Assert(process != null && stream != null && encoding != null && callback != null, "Invalid arguments!");
+            Debug.Assert(stream != null && encoding != null && callback != null, "Invalid arguments!");
             Debug.Assert(stream.CanRead, "Stream must be readable!");
             Debug.Assert(bufferSize > 0, "Invalid buffer size!");
 
-            _process = process;
             _stream = stream;
             _userCallBack = callback;
-            _encoding = encoding;
             _decoder = encoding.GetDecoder();
 
             if (bufferSize < MinBufferSize) bufferSize = MinBufferSize;
@@ -81,50 +73,6 @@ namespace System.Diagnostics
 
             _eofEvent = new ManualResetEvent(false);
             _messageQueue = new Queue<string>();
-        }
-
-        public void Close()
-        {
-            Dispose(true);
-        }
-
-        void IDisposable.Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (_stream != null)
-                    _stream.Dispose();
-            }
-            if (_stream != null)
-            {
-                _stream = null;
-                _encoding = null;
-                _decoder = null;
-                _byteBuffer = null;
-                _charBuffer = null;
-            }
-
-            if (_eofEvent != null)
-            {
-                _eofEvent.Dispose();
-                _eofEvent = null;
-            }
-        }
-
-        public Encoding CurrentEncoding
-        {
-            get { return _encoding; }
-        }
-
-        public Stream BaseStream
-        {
-            get { return _stream; }
         }
 
         // User calls BeginRead to start the asynchronous read
@@ -163,15 +111,15 @@ namespace System.Diagnostics
             catch (IOException)
             {
                 // We should ideally consume errors from operations getting cancelled
-                // so that we don't crash the unsuspecting parent with an unhandled exc. 
-                // This seems to come in 2 forms of exceptions (depending on platform and scenario), 
-                // namely OperationCanceledException and IOException (for errorcode that we don't 
-                // map explicitly).   
+                // so that we don't crash the unsuspecting parent with an unhandled exc.
+                // This seems to come in 2 forms of exceptions (depending on platform and scenario),
+                // namely OperationCanceledException and IOException (for errorcode that we don't
+                // map explicitly).
                 byteLen = 0; // Treat this as EOF
             }
             catch (OperationCanceledException)
             {
-                // We should consume any OperationCanceledException from child read here  
+                // We should consume any OperationCanceledException from child read here
                 // so that we don't crash the parent with an unhandled exc
                 byteLen = 0; // Treat this as EOF
             }
@@ -191,7 +139,7 @@ namespace System.Diagnostics
 
                 try
                 {
-                    // UserCallback could throw, we should still set the eofEvent 
+                    // UserCallback could throw, we should still set the eofEvent
                     FlushMessageQueue();
                 }
                 finally
@@ -208,15 +156,12 @@ namespace System.Diagnostics
             }
         }
 
-
-        // Read lines stored in StringBuilder and the buffer we just read into. 
+        // Read lines stored in StringBuilder and the buffer we just read into.
         // A line is defined as a sequence of characters followed by
         // a carriage return ('\r'), a line feed ('\n'), or a carriage return
         // immediately followed by a line feed. The resulting string does not
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
-        //
-
         private void GetLinesFromStringBuilder()
         {
             int currentIndex = _currentLinePos;
