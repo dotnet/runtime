@@ -32,3 +32,4 @@
 /mono-boehm
 /buildver-sgen.h
 /buildver-boehm.h
+/regressionexitcode.out
