@@ -167,18 +167,6 @@
 /* Define to 1 if you have the `fstatvfs' function. */
 /* #undef HAVE_FSTATVFS */
 
-/* Have GC_enable */
-/* #define HAVE_GC_ENABLE 1 */
-
-/* Have GC_gcj_malloc */
-/* #define HAVE_GC_GCJ_MALLOC 1 */
-
-/* Define to 1 if you have the <gc/gc.h> header file. */
-/* #undef HAVE_GC_GC_H */
-
-/* Have gc.h */
-/* #define HAVE_GC_H 1 */
-
 /* Define to 1 if you have the `getaddrinfo' function. */
 #define HAVE_GETADDRINFO 1
 

@@ -45,19 +45,13 @@
 #include <mono/utils/mono-memory-model.h>
 #include "cominterop.h"
 
-#ifdef HAVE_BOEHM_GC
+#if defined(HAVE_BOEHM_GC)
 #define NEED_TO_ZERO_PTRFREE 1
+#define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 #define ALLOC_PTRFREE(obj,vt,size) do { (obj) = GC_MALLOC_ATOMIC ((size)); (obj)->vtable = (vt); (obj)->synchronisation = NULL;} while (0)
 #define ALLOC_OBJECT(obj,vt,size) do { (obj) = GC_MALLOC ((size)); (obj)->vtable = (vt);} while (0)
-#ifdef HAVE_GC_GCJ_MALLOC
-#define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
 #define ALLOC_TYPED(dest,size,type) do { (dest) = GC_GCJ_MALLOC ((size),(type)); } while (0)
-#else
-#define GC_NO_DESCRIPTOR (NULL)
-#define ALLOC_TYPED(dest,size,type) do { (dest) = GC_MALLOC ((size)); *(gpointer*)dest = (type);} while (0)
-#endif
-#else
-#ifdef HAVE_SGEN_GC
+#elif defined(HAVE_SGEN_GC)
 #define GC_NO_DESCRIPTOR (NULL)
 #define ALLOC_PTRFREE(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
 #define ALLOC_OBJECT(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
@@ -68,7 +62,6 @@
 #define ALLOC_PTRFREE(obj,vt,size) do { (obj) = malloc ((size)); (obj)->vtable = (vt); (obj)->synchronisation = NULL;} while (0)
 #define ALLOC_OBJECT(obj,vt,size) do { (obj) = calloc (1, (size)); (obj)->vtable = (vt);} while (0)
 #define ALLOC_TYPED(dest,size,type) do { (dest) = calloc (1, (size)); *(gpointer*)dest = (type);} while (0)
-#endif
 #endif
 
 static MonoObject* mono_object_new_ptrfree (MonoVTable *vtable);
@@ -964,21 +957,6 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
 		mono_register_jit_icall (mono_string_alloc, "mono_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 
-#ifdef HAVE_GC_GCJ_MALLOC
-		/* 
-		 * This is not needed unless the relevant code in mono_get_allocation_ftn () is 
-		 * turned on.
-		 */
-#if 0
-#ifdef GC_REDIRECT_TO_LOCAL
-		mono_register_jit_icall (GC_local_gcj_malloc, "GC_local_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-		mono_register_jit_icall (GC_local_gcj_fast_malloc, "GC_local_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-#endif
-		mono_register_jit_icall (GC_gcj_malloc, "GC_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-		mono_register_jit_icall (GC_gcj_fast_malloc, "GC_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-#endif
-
-#endif
 		gcj_inited = TRUE;
 		mono_loader_unlock ();
 	}

@@ -34,12 +34,10 @@
 
 #if HAVE_BOEHM_GC
 
-#ifdef USE_INCLUDED_LIBGC
 #undef TRUE
 #undef FALSE
 #define THREAD_LOCAL_ALLOC 1
 #include "private/pthread_support.h"
-#endif
 
 #if defined(PLATFORM_MACOSX) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 void *pthread_get_stackaddr_np(pthread_t);
@@ -169,13 +167,7 @@ mono_gc_base_init (void)
 	GC_finalize_on_demand = 1;
 	GC_finalizer_notifier = mono_gc_finalize_notify;
 
-#ifdef HAVE_GC_GCJ_MALLOC
 	GC_init_gcj_malloc (5, NULL);
-#endif
-
-#ifdef HAVE_GC_ALLOW_REGISTER_THREADS
-	GC_allow_register_threads();
-#endif
 
 	if ((env = g_getenv ("MONO_GC_PARAMS"))) {
 		char **ptr, **opts = g_strsplit (env, ",", -1);
@@ -336,13 +328,7 @@ mono_gc_get_heap_size (void)
 gboolean
 mono_gc_is_gc_thread (void)
 {
-#if GC_VERSION_MAJOR >= 7
-	return TRUE;
-#elif defined(USE_INCLUDED_LIBGC)
 	return GC_thread_is_registered ();
-#else
-	return TRUE;
-#endif
 }
 
 extern int GC_thread_register_foreign (void *base_addr);
@@ -356,32 +342,12 @@ mono_gc_register_thread (void *baseptr)
 static void*
 boehm_thread_register (MonoThreadInfo* info, void *baseptr)
 {
-#if GC_VERSION_MAJOR >= 7
-	struct GC_stack_base sb;
-	int res;
-
-	res = GC_get_stack_base (&sb);
-	if (res != GC_SUCCESS) {
-		sb.mem_base = baseptr;
-#ifdef __ia64__
-		/* Can't determine the register stack bounds */
-		g_error ("mono_gc_register_thread failed ().\n");
-#endif
-	}
-	res = GC_register_my_thread (&sb);
-	if ((res != GC_SUCCESS) && (res != GC_DUPLICATE)) {
-		g_warning ("GC_register_my_thread () failed.\n");
-		return NULL;
-	}
-	return info;
-#else
 	if (mono_gc_is_gc_thread())
 		return info;
-#if defined(USE_INCLUDED_LIBGC) && !defined(HOST_WIN32)
+#if !defined(HOST_WIN32)
 	return GC_thread_register_foreign (baseptr) ? info : NULL;
 #else
 	return NULL;
-#endif
 #endif
 }
 
@@ -399,11 +365,7 @@ boehm_thread_unregister (MonoThreadInfo *p)
 gboolean
 mono_object_is_alive (MonoObject* o)
 {
-#ifdef USE_INCLUDED_LIBGC
 	return GC_is_marked ((gpointer)o);
-#else
-	return TRUE;
-#endif
 }
 
 int
@@ -411,8 +373,6 @@ mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
 {
 	return 1;
 }
-
-#ifdef USE_INCLUDED_LIBGC
 
 static gint64 gc_start_time;
 
@@ -500,15 +460,6 @@ mono_gc_enable_events (void)
 	GC_on_heap_resize = on_gc_heap_resize;
 }
 
-#else
-
-void
-mono_gc_enable_events (void)
-{
-}
-
-#endif
-
 int
 mono_gc_register_root (char *start, size_t size, void *descr)
 {
@@ -587,15 +538,11 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 void*
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {
-#ifdef HAVE_GC_GCJ_MALLOC
 	/* It seems there are issues when the bitmap doesn't fit: play it safe */
 	if (numbits >= 30)
 		return GC_NO_DESCRIPTOR;
 	else
 		return (gpointer)GC_make_descriptor ((GC_bitmap)bitmap, numbits);
-#else
-	return NULL;
-#endif
 }
 
 void*
@@ -704,24 +651,16 @@ mono_gc_clear_domain (MonoDomain *domain)
 int
 mono_gc_get_suspend_signal (void)
 {
-#ifdef USE_INCLUDED_GC
 	return GC_get_suspend_signal ();
-#else
-	return -1;
-#endif
 }
 
 int
 mono_gc_get_restart_signal (void)
 {
-#ifdef USE_INCLUDED_GC
 	return GC_get_restart_signal ();
-#else
-	return -1;
-#endif
 }
 
-#if defined(USE_INCLUDED_LIBGC) && defined(USE_COMPILER_TLS) && defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
+#if defined(USE_COMPILER_TLS) && defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
 extern __thread MONO_TLS_FAST void* GC_thread_tls;
 #include "metadata-internals.h"
 
@@ -1252,11 +1191,7 @@ mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void 
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
-#ifdef USE_INCLUDED_LIBGC
 	return GC_DllMain (module_handle, reason, reserved);
-#else
-	return TRUE;
-#endif
 }
 #endif
 
@@ -1279,9 +1214,7 @@ mono_gc_get_vtable_bits (MonoClass *class)
 void
 mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack, gint32 altstack_size)
 {
-#ifdef USE_INCLUDED_LIBGC
 	GC_register_altstack (stack, stack_size, altstack, altstack_size);
-#endif
 }
 
 int
