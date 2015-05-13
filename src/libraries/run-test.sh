@@ -91,7 +91,7 @@ create_test_overlay()
   rm -rf $OverlayDir
   mkdir -p $OverlayDir
   
-  local LowerConfiguration="$(echo $Configuration | awk '{print tolower($Configuration)}')"
+  local LowerConfiguration="$(echo $Configuration | awk '{print tolower($0)}')"
 
   # First the temporary test host binaries
   local packageLibDir="$packageDir/lib"
@@ -160,7 +160,7 @@ runtest()
 
   # Grab the directory name that would correspond to this test
 
-  lowerOS="$(echo $OS | awk '{print tolower($OS)}')"
+  lowerOS="$(echo $OS | awk '{print tolower($0)}')"
   fileName="${file##*/}"
   fileNameWithoutExtension="${fileName%.*}"
   testDllName="$fileNameWithoutExtension.dll"
