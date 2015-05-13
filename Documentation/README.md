@@ -48,6 +48,10 @@ Book of the Runtime
 - [.NET Standards (Ecma)](dotnet-standards.md)
 - [Cross Platform Performance and Eventing Design](cross-platform-performance-and-eventing.md)
 
+RyuJIT Specs
+=============
+- [CLR JIT Coding Conventions](CLR_JIT_Coding_Conventions.md)
+
 Decoder Rings
 =============
 
