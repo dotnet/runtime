@@ -17,6 +17,18 @@ namespace System.IO.Tests
                 Assert.False(uma.CanWrite);
                 Assert.Equal(0, uma.Capacity);
             }
+
+            using (FakeSafeBuffer fakeBuffer = new FakeSafeBuffer(99))
+            using (var duma = new DerivedUnmanagedMemoryAccessor())
+            {
+                Assert.False(duma.CanRead);
+                Assert.False(duma.CanWrite);
+                Assert.Equal(0, duma.Capacity);
+                Assert.False(duma.IsOpen);
+                duma.Initialize(fakeBuffer, 0, (long)fakeBuffer.ByteLength, FileAccess.ReadWrite);
+                Assert.True(duma.IsOpen);
+                Assert.Throws<InvalidOperationException>(() => duma.Initialize(fakeBuffer, 0, (long)fakeBuffer.ByteLength, FileAccess.ReadWrite));
+            }
         }
 
         [Fact]
@@ -37,6 +49,19 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 1, 100));
 
             Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, Int32.MaxValue, 1));
+        }
+
+        // Derived class used to exercise protected members and to test behaviors before and after initialization
+        private sealed class DerivedUnmanagedMemoryAccessor : UnmanagedMemoryAccessor
+        {
+            internal DerivedUnmanagedMemoryAccessor() { }
+
+            internal void Initialize(FakeSafeBuffer buffer, long offset, long capacity, FileAccess access)
+            {
+                base.Initialize(buffer, offset, capacity, access);
+            }
+
+            internal new bool IsOpen { get { return base.IsOpen; } }
         }
     }
 }

@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -18,6 +20,14 @@ namespace System.IO.Tests
 
                 var position = stream.Position;
                 Assert.Equal(manager.Stream.ReadByte(), -1); // end of stream
+                Assert.Equal(stream.Position, position);
+            }
+
+            using (HGlobalSafeBuffer buffer = new HGlobalSafeBuffer(1))
+            using (var stream = new UnmanagedMemoryStream(buffer, 0, 0))
+            {
+                var position = stream.Position;
+                Assert.Equal(stream.ReadByte(), -1); // end of stream
                 Assert.Equal(stream.Position, position);
             }
         }
@@ -38,6 +48,19 @@ namespace System.IO.Tests
                 Assert.Equal(stream.ReadByte(), -1); // end of stream
                 Assert.Equal(stream.Position, position);
             }
+
+            using (HGlobalSafeBuffer buffer = new HGlobalSafeBuffer(1))
+            using (var stream = new UnmanagedMemoryStream(buffer, 0, 1, FileAccess.ReadWrite))
+            {
+                buffer.Write(0, (byte)100);
+
+                var position = stream.Position;
+                Assert.Equal(stream.ReadByte(), 100);
+                Assert.Equal(stream.Position, position + 1);
+
+                Assert.Equal(stream.ReadByte(), -1); // end of stream
+                Assert.Equal(stream.Position, position + 1);
+            }
         }
 
         [Fact]
@@ -46,6 +69,12 @@ namespace System.IO.Tests
             using (var manager = new UmsManager(FileAccess.Write, 100))
             {
                 Stream stream = manager.Stream;
+                Assert.Throws<NotSupportedException>(() => stream.ReadByte());
+            }
+
+            using (HGlobalSafeBuffer buffer = new HGlobalSafeBuffer(100))
+            using (var stream = new UnmanagedMemoryStream(buffer, 0, 100, FileAccess.Write))
+            {
                 Assert.Throws<NotSupportedException>(() => stream.ReadByte());
             }
         }
@@ -115,5 +144,53 @@ namespace System.IO.Tests
             }
             return read.ToArray();
         }
+
+        [Fact]
+        public static unsafe void ReadFromBufferBackedStream()
+        {
+            const int length = 8192;
+            byte[] data = new byte[length];
+
+            using (HGlobalSafeBuffer buffer = new HGlobalSafeBuffer(length))
+            {
+                for (ulong i = 0; i < length; i++)
+                    buffer.Write(i, (byte)i);
+
+                Action validateData = () => {
+                    for (int i = 0; i < length; i++)
+                        Assert.Equal((byte)i, data[i]);
+                };
+
+                using (var stream = new UnmanagedMemoryStream(buffer, 0, length, FileAccess.Read))
+                {
+                    stream.Position = 0;
+                    Assert.Equal(length, stream.Read(data, 0, length));
+                    validateData();
+                    Array.Clear(data, 0, data.Length);
+
+                    stream.Position = 0;
+                    Assert.Equal(length / 2, stream.Read(data, 0, length / 2));
+                    Assert.Equal(length / 2, stream.Read(data, length / 2, length / 2));
+                    validateData();
+                    Array.Clear(data, 0, data.Length);
+
+                    Assert.True(stream.ReadAsync(data, 0, data.Length, new CancellationToken(true)).IsCanceled);
+
+                    stream.Position = 0;
+                    Task<int> t = stream.ReadAsync(data, 0, length / 4);
+                    Assert.True(t.Status == TaskStatus.RanToCompletion);
+                    Assert.Equal(length / 4, t.Result);
+                    t = stream.ReadAsync(data, length / 4, length / 4);
+                    Assert.True(t.Status == TaskStatus.RanToCompletion);
+                    Assert.Equal(length / 4, t.Result);
+                    t = stream.ReadAsync(data, length / 2, length / 2);
+                    Assert.True(t.Status == TaskStatus.RanToCompletion);
+                    Assert.Equal(length / 2, t.Result);
+                    validateData();
+                    Array.Clear(data, 0, data.Length);
+                }
+            }
+        }
+
     }
 }

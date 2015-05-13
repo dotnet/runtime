@@ -25,9 +25,11 @@
     <Compile Include="ArrayHelpers.cs" />
     <Compile Include="UmaTests.cs" />
     <Compile Include="UmsCtorTests.cs" />
+    <Compile Include="HGlobalSafeBuffer.cs" />
     <Compile Include="UmsRead.cs" />
     <Compile Include="UmsSafeBuffer.cs" />
     <Compile Include="UmaCtorTests.cs" />
+    <Compile Include="UmsFlush.cs" />
     <Compile Include="UmsWrite.cs" />
     <Compile Include="UmsReadWrite.cs" />
     <Compile Include="UmsTests.cs" />
