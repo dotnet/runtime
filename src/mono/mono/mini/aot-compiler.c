@@ -3668,8 +3668,18 @@ add_wrappers (MonoAotCompile *acfg)
 				for (j = 0; j < cattr->num_attrs; ++j)
 					if (cattr->attrs [j].ctor && (!strcmp (cattr->attrs [j].ctor->klass->name, "MonoNativeFunctionWrapperAttribute") || !strcmp (cattr->attrs [j].ctor->klass->name, "UnmanagedFunctionPointerAttribute")))
 						break;
-				if (j < cattr->num_attrs)
-					add_method (acfg, mono_marshal_get_native_func_wrapper_aot (klass));
+				if (j < cattr->num_attrs) {
+					MonoMethod *invoke;
+					MonoMethod *wrapper;
+					MonoMethod *del_invoke;
+
+					/* Add wrappers needed by mono_ftnptr_to_delegate () */
+					invoke = mono_get_delegate_invoke (klass);
+					wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
+					del_invoke = mono_marshal_get_delegate_invoke_internal (invoke, FALSE, TRUE, wrapper);
+					add_method (acfg, wrapper);
+					add_method (acfg, del_invoke);
+				}
 			}
 		} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && klass->generic_container) {
 			MonoError error;
