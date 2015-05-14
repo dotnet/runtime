@@ -51,6 +51,12 @@ namespace System.Runtime.Serialization.Json
             incomingStream.Position = 0;
             //If the stream contains a BOM, StreamReader will detect it and override our encoding setting
             string input = new StreamReader(incomingStream, streamEncoding, true/*detectEncodingFromByteOrderMarks*/).ReadToEnd();
+
+            if (string.IsNullOrEmpty(input))
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExpectingElement, XmlDictionaryString.Empty, "root")));
+            }
+
             _deserializer = new JavaScriptObjectDeserializer(input);
         }
 
