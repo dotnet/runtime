@@ -103,9 +103,9 @@ namespace System.Security
             }
             finally
             {
-                ProtectMemory(decryptedBuffer);
                 if (bufferPtr != null)
                     decryptedBuffer.ReleasePointer();
+                ProtectMemory(decryptedBuffer);
             }
         }
 
@@ -128,9 +128,9 @@ namespace System.Security
             }
             finally
             {
-                ProtectMemory(decryptedBuffer);
                 if (bufferPtr != null)
                     decryptedBuffer.ReleasePointer();
+                ProtectMemory(decryptedBuffer);
             }
         }
 
@@ -263,6 +263,7 @@ namespace System.Security
             finally
             {
                 decryptedBuffer.ClearBuffer();
+                decryptedBuffer.Dispose();
             }
         }
 
