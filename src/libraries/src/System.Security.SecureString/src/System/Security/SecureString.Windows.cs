@@ -13,7 +13,7 @@ namespace System.Security
         internal SecureString(SecureString str)
         {
             AllocateBuffer(str.EncryptedBufferLength);
-            SafeBSTRHandle.Copy(str._encryptedBuffer, _encryptedBuffer);
+            SafeBSTRHandle.Copy(str._encryptedBuffer, _encryptedBuffer, str.EncryptedBufferLength * sizeof(char));
             _decryptedLength = str._decryptedLength;
         }
 
@@ -232,7 +232,7 @@ namespace System.Security
             }
 
             SafeBSTRHandle newBuffer = SafeBSTRHandle.Allocate(null, (uint)capacity);
-            SafeBSTRHandle.Copy(decryptedBuffer, newBuffer);
+            SafeBSTRHandle.Copy(decryptedBuffer, newBuffer, (uint)_decryptedLength * sizeof(char));
             decryptedBuffer.Dispose();
             decryptedBuffer = newBuffer;
         }

@@ -254,6 +254,21 @@ public static class SecureStringTest
 
             testString.RemoveAt(0);
             VerifyString(testString, "bc");
+
+            testString.RemoveAt(1);
+            VerifyString(testString, "b");
+
+            testString.RemoveAt(0);
+            VerifyString(testString, "");
+
+            testString.AppendChar('f');
+            VerifyString(testString, "f");
+
+            testString.AppendChar('g');
+            VerifyString(testString, "fg");
+
+            testString.RemoveAt(0);
+            VerifyString(testString, "g");
         }
 
         if (s_isWindowsOrPrivilegedUnix)
