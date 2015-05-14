@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <Assembly Name="System.ComponentModel.TypeConverter">
+      <Namespace Name="System.ComponentModel">
+        <Type Name="TypeConverter">
+          <Subtypes Activate="Required Public" />
+        </Type>
+        <Type Name="TypeDescriptor">
+          <Method Name="GetConverter">
+            <TypeParameter Name="type" Activate="Required Public" />
+          </Method>
+        </Type>
+        <Type Name="TypeConverterAttribute">
+          <AttributeImplies Activate="Required Public" />
+        </Type>
+      </Namespace>
+    </Assembly>
+  </Library> 
+</Directives>

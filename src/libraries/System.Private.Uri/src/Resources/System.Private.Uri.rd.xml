@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="*System.Private.Uri*">
+    <Assembly Name="System.Private.Uri">
+      <Namespace Name="System">
+        <!-- System.Uri is handled internally in the DCS and DCJS serializer, and it cannot be specified as a serialization root -->
+        <Type Name="Uri" DataContractJsonSerializer="Excluded" DataContractSerializer="Excluded"/>
+      </Namespace>
+    </Assembly>
+  </Library>
+</Directives>
+

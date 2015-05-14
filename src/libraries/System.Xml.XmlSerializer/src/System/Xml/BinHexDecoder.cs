@@ -132,7 +132,7 @@ namespace System.Xml
             int len = chars.Length;
             if (len == 0)
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             byte[] bytes = new byte[(len + 1) / 2];

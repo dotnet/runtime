@@ -117,12 +117,10 @@ namespace System.Xml.Serialization
         protected abstract void InitIDs();
 
         // this method must be called before any generated deserialization methods are called
-        internal void Init(XmlReader r, XmlDeserializationEvents events, string encodingStyle, TempAssembly tempAssembly)
+        internal void Init(XmlReader r, string encodingStyle)
         {
-            _events = events;
             _r = r;
             _soap12 = (encodingStyle == Soap12.Encoding);
-            Init(tempAssembly);
 
             _schemaNsID = r.NameTable.Add(XmlSchema.Namespace);
             _schemaNs2000ID = r.NameTable.Add("http://www.w3.org/2000/10/XMLSchema");
@@ -145,6 +143,14 @@ namespace System.Xml.Serialization
             _arrayID = r.NameTable.Add("Array");
             _urTypeID = r.NameTable.Add(Soap.UrType);
             InitIDs();
+        }
+
+        // this method must be called before any generated deserialization methods are called
+        internal void Init(XmlReader r, XmlDeserializationEvents events, string encodingStyle, TempAssembly tempAssembly)
+        {
+            _events = events;
+            Init(tempAssembly);
+            Init(r, encodingStyle);
         }
 
         /// <include file='doc\XmlSerializationWriter.uex' path='docs/doc[@for="XmlSerializationWriter.DecodeName"]/*' />
@@ -293,7 +299,7 @@ namespace System.Xml.Serialization
             return retVal;
         }
 
-        private XmlQualifiedName ReadXmlQualifiedName()
+        private XmlQualifiedName ReadXmlQualifiedName(bool collapseWhitespace = false)
         {
             string s;
             bool isEmpty = false;
@@ -307,6 +313,12 @@ namespace System.Xml.Serialization
                 _r.ReadStartElement();
                 s = _r.ReadString();
             }
+
+            if (collapseWhitespace)
+            {
+                s = CollapseWhitespace(s);
+            }
+
             XmlQualifiedName retVal = ToXmlQualifiedName(s);
             if (isEmpty)
                 _r.Skip();
@@ -724,8 +736,7 @@ namespace System.Xml.Serialization
                 _r.Skip();
                 return empty;
             }
-            XmlQualifiedName qname = ToXmlQualifiedName(CollapseWhitespace(_r.ReadString()));
-            _r.ReadEndElement();
+            XmlQualifiedName qname = ReadXmlQualifiedName(collapseWhitespace: true);
             return qname;
         }
 
@@ -1058,6 +1069,49 @@ namespace System.Xml.Serialization
             Array b = Array.CreateInstance(elementType, length);
             Array.Copy(a, b, length);
             return b;
+        }
+
+        // This is copied from Core's XmlReader.ReadString, as it is not exposed in the Contract.
+        protected virtual string ReadString()
+        {
+            if (Reader.ReadState != ReadState.Interactive)
+            {
+                return string.Empty;
+            }
+            Reader.MoveToElement();
+            if (Reader.NodeType == XmlNodeType.Element)
+            {
+                if (Reader.IsEmptyElement)
+                {
+                    return string.Empty;
+                }
+                else if (!Reader.Read())
+                {
+                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
+                }
+                if (Reader.NodeType == XmlNodeType.EndElement)
+                {
+                    return string.Empty;
+                }
+            }
+            string result = string.Empty;
+            while (IsTextualNode(Reader.NodeType))
+            {
+                result += Reader.Value;
+                if (!Reader.Read())
+                {
+                    break;
+                }
+            }
+            return result;
+        }
+
+        // 0x6018
+        private static uint IsTextualNodeBitmap = (1 << (int)XmlNodeType.Text) | (1 << (int)XmlNodeType.CDATA) | (1 << (int)XmlNodeType.Whitespace) | (1 << (int)XmlNodeType.SignificantWhitespace);
+
+        private static bool IsTextualNode(XmlNodeType nodeType)
+        {
+            return 0 != (IsTextualNodeBitmap & (1 << (int)nodeType));
         }
 
         /// <include file='doc\XmlSerializationReader.uex' path='docs/doc[@for="XmlSerializationReader.ReadString"]/*' />

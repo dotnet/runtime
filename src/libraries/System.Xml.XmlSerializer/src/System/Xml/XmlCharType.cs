@@ -299,26 +299,27 @@ namespace System.Xml
 
                 byte[] chProps = new byte[CharPropertiesSize];
                 Interlocked.MemoryBarrier();  // For weak memory models (IA64)
-                s_CharProperties = chProps;
 
-                SetProperties(s_Whitespace, fWhitespace);
-                SetProperties(s_Letter, fLetter);
-                SetProperties(s_NCStartName, fNCStartName);
-                SetProperties(s_NCName, fNCName);
-                SetProperties(s_CharData, fCharData);
-                SetProperties(s_PublicID, fPublicId);
-                SetProperties(s_Text, fText);
-                SetProperties(s_AttrValue, fAttrValue);
+                SetProperties(chProps, s_Whitespace, fWhitespace);
+                SetProperties(chProps, s_Letter, fLetter);
+                SetProperties(chProps, s_NCStartName, fNCStartName);
+                SetProperties(chProps, s_NCName, fNCName);
+                SetProperties(chProps, s_CharData, fCharData);
+                SetProperties(chProps, s_PublicID, fPublicId);
+                SetProperties(chProps, s_Text, fText);
+                SetProperties(chProps, s_AttrValue, fAttrValue);
+
+                s_CharProperties = chProps;
             }
         }
 
-        private static void SetProperties(string ranges, byte value)
+        private static void SetProperties(byte[] chProps, string ranges, byte value)
         {
             for (int p = 0; p < ranges.Length; p += 2)
             {
                 for (int i = ranges[p], last = ranges[p + 1]; i <= last; i++)
                 {
-                    s_CharProperties[i] |= value;
+                    chProps[i] |= value;
                 }
             }
         }
