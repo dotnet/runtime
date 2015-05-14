@@ -64,7 +64,7 @@ case $OSName in
         ;;
 esac
 # Misc defaults
-TestHostVersion="0.0.1-prerelease"
+TestHostVersion="0.0.2-prerelease"
 TestSelection=".*"
 TestsFailed=0
 OverlayDir="$ProjectRoot/bin/tests/$OS.AnyCPU.$Configuration/TestOverlay/"
