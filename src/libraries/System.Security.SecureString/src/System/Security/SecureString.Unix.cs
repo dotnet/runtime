@@ -165,8 +165,7 @@ namespace System.Security
             try
             {
                 // Allocate space for the string to be returned, including space for a null terminator
-                if ((stringPtr = Marshal.AllocCoTaskMem((length + 1) * sizeof(char))) == IntPtr.Zero)
-                    throw new OutOfMemoryException();
+                stringPtr = Marshal.AllocCoTaskMem((length + 1) * sizeof(char));
 
                 _buffer.AcquirePointer(ref bufferPtr);
 
