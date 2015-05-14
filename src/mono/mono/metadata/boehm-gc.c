@@ -792,7 +792,7 @@ enum {
 };
 
 static MonoMethod*
-create_allocator (int atype, int tls_key)
+create_allocator (int atype, int tls_key, gboolean slowpath)
 {
 	int index_var, bytes_var, my_fl_var, my_entry_var;
 	guint32 no_freelist_branch, not_small_enough_branch = 0;
@@ -800,21 +800,40 @@ create_allocator (int atype, int tls_key)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoMethodSignature *csig;
+	const char *name = NULL;
 	AllocatorWrapperInfo *info;
 
+	if (atype == ATYPE_FREEPTR) {
+		name = slowpath ? "SlowAllocPtrfree" : "AllocPtrfree";
+	} else if (atype == ATYPE_FREEPTR_FOR_BOX) {
+		name = slowpath ? "SlowAllocPtrfreeBox" : "AllocPtrfreeBox";
+	} else if (atype == ATYPE_NORMAL) {
+		name = slowpath ? "SlowAlloc" : "Alloc";
+	} else if (atype == ATYPE_GCJ) {
+		name = slowpath ? "SlowAllocGcj" : "AllocGcj";
+	} else if (atype == ATYPE_STRING) {
+		name = slowpath ? "SlowAllocString" : "AllocString";
+	} else {
+		g_assert_not_reached ();
+	}
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+
 	if (atype == ATYPE_STRING) {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 		csig->ret = &mono_defaults.string_class->byval_arg;
 		csig->params [0] = &mono_defaults.int_class->byval_arg;
 		csig->params [1] = &mono_defaults.int32_class->byval_arg;
 	} else {
-		csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 		csig->ret = &mono_defaults.object_class->byval_arg;
 		csig->params [0] = &mono_defaults.int_class->byval_arg;
 		csig->params [1] = &mono_defaults.int32_class->byval_arg;
 	}
 
-	mb = mono_mb_new (mono_defaults.object_class, "Alloc", MONO_WRAPPER_ALLOC);
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
+
+	if (slowpath)
+		goto always_slowpath;
+
 	bytes_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
 	if (atype == ATYPE_STRING) {
 		/* a string alloator method takes the args: (vtable, len) */
@@ -967,7 +986,9 @@ create_allocator (int atype, int tls_key)
 		mono_mb_patch_short_branch (mb, not_small_enough_branch);
 	if (size_overflow_branch > 0)
 		mono_mb_patch_short_branch (mb, size_overflow_branch);
+
 	/* the slow path: we just call back into the runtime */
+ always_slowpath:
 	if (atype == ATYPE_STRING) {
 		mono_mb_emit_ldarg (mb, 1);
 		mono_mb_emit_icall (mb, mono_string_alloc);
@@ -991,6 +1012,7 @@ create_allocator (int atype, int tls_key)
 }
 
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
+static MonoMethod* slowpath_alloc_method_cache [ATYPE_NUM];
 
 static G_GNUC_UNUSED gboolean
 mono_gc_is_critical_method (MonoMethod *method)
@@ -998,7 +1020,7 @@ mono_gc_is_critical_method (MonoMethod *method)
 	int i;
 
 	for (i = 0; i < ATYPE_NUM; ++i)
-		if (method == alloc_method_cache [i])
+		if (method == alloc_method_cache [i] || method == slowpath_alloc_method_cache [i])
 			return TRUE;
 
 	return FALSE;
@@ -1050,7 +1072,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 			atype = ATYPE_NORMAL;
 		*/
 	}
-	return mono_gc_get_managed_allocator_by_type (atype);
+	return mono_gc_get_managed_allocator_by_type (atype, FALSE);
 }
 
 MonoMethod*
@@ -1065,26 +1087,27 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
  *   Return a managed allocator method corresponding to allocator type ATYPE.
  */
 MonoMethod*
-mono_gc_get_managed_allocator_by_type (int atype)
+mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 {
 	int offset = -1;
 	MonoMethod *res;
+	MonoMethod **cache = slowpath ? slowpath_alloc_method_cache : alloc_method_cache;
 	MONO_THREAD_VAR_OFFSET (GC_thread_tls, offset);
 
 	mono_tls_key_set_offset (TLS_KEY_BOEHM_GC_THREAD, offset);
 
-	res = alloc_method_cache [atype];
+	res = cache [atype];
 	if (res)
 		return res;
 
-	res = create_allocator (atype, TLS_KEY_BOEHM_GC_THREAD);
+	res = create_allocator (atype, TLS_KEY_BOEHM_GC_THREAD, slowpath);
 	mono_mutex_lock (&mono_gc_lock);
-	if (alloc_method_cache [atype]) {
+	if (cache [atype]) {
 		mono_free_method (res);
-		res = alloc_method_cache [atype];
+		res = cache [atype];
 	} else {
 		mono_memory_barrier ();
-		alloc_method_cache [atype] = res;
+		cache [atype] = res;
 	}
 	mono_mutex_unlock (&mono_gc_lock);
 	return res;
@@ -1124,7 +1147,7 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 }
 
 MonoMethod*
-mono_gc_get_managed_allocator_by_type (int atype)
+mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 {
 	return NULL;
 }

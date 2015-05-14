@@ -303,7 +303,7 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 }
 
 MonoMethod*
-mono_gc_get_managed_allocator_by_type (int atype)
+mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 {
 	return NULL;
 }

@@ -201,7 +201,7 @@ typedef struct {
 int mono_gc_get_aligned_size_for_allocator (int size);
 MonoMethod* mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean known_instance_size);
 MonoMethod* mono_gc_get_managed_array_allocator (MonoClass *klass);
-MonoMethod *mono_gc_get_managed_allocator_by_type (int atype);
+MonoMethod *mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath);
 
 guint32 mono_gc_get_managed_allocator_types (void);
 

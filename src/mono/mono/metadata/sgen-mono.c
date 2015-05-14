@@ -993,6 +993,7 @@ mono_gc_free_fixed (void* addr)
  */
 
 static MonoMethod* alloc_method_cache [ATYPE_NUM];
+static MonoMethod* slowpath_alloc_method_cache [ATYPE_NUM];
 static gboolean use_managed_allocator = TRUE;
 
 #ifdef MANAGED_ALLOCATION
@@ -1048,7 +1049,7 @@ static gboolean use_managed_allocator = TRUE;
  * that they are executed atomically via the restart mechanism.
  */
 static MonoMethod*
-create_allocator (int atype)
+create_allocator (int atype, gboolean slowpath)
 {
 	int p_var, size_var;
 	guint32 slowpath_branch, max_size_branch;
@@ -1057,7 +1058,6 @@ create_allocator (int atype)
 	MonoMethodSignature *csig;
 	static gboolean registered = FALSE;
 	int tlab_next_addr_var, new_next_var;
-	int num_params, i;
 	const char *name = NULL;
 	AllocatorWrapperInfo *info;
 
@@ -1069,35 +1069,54 @@ create_allocator (int atype)
 	}
 
 	if (atype == ATYPE_SMALL) {
-		num_params = 2;
-		name = "AllocSmall";
+		name = slowpath ? "SlowAllocSmall" : "AllocSmall";
 	} else if (atype == ATYPE_NORMAL) {
-		num_params = 1;
-		name = "Alloc";
+		name = slowpath ? "SlowAlloc" : "Alloc";
 	} else if (atype == ATYPE_VECTOR) {
-		num_params = 2;
-		name = "AllocVector";
+		name = slowpath ? "SlowAllocVector" : "AllocVector";
 	} else if (atype == ATYPE_STRING) {
-		num_params = 2;
-		name = "AllocString";
+		name = slowpath ? "SlowAllocString" : "AllocString";
 	} else {
 		g_assert_not_reached ();
 	}
 
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, num_params);
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 	if (atype == ATYPE_STRING) {
 		csig->ret = &mono_defaults.string_class->byval_arg;
 		csig->params [0] = &mono_defaults.int_class->byval_arg;
 		csig->params [1] = &mono_defaults.int32_class->byval_arg;
 	} else {
 		csig->ret = &mono_defaults.object_class->byval_arg;
-		for (i = 0; i < num_params; ++i)
-			csig->params [i] = &mono_defaults.int_class->byval_arg;
+		csig->params [0] = &mono_defaults.int_class->byval_arg;
+		csig->params [1] = &mono_defaults.int_class->byval_arg;
 	}
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
 
 #ifndef DISABLE_JIT
+	if (slowpath) {
+		switch (atype) {
+		case ATYPE_NORMAL:
+		case ATYPE_SMALL:
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_icall (mb, mono_object_new_specific);
+			break;
+		case ATYPE_VECTOR:
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_ldarg (mb, 1);
+			mono_mb_emit_icall (mb, mono_array_new_specific);
+			break;
+		case ATYPE_STRING:
+			mono_mb_emit_ldarg (mb, 1);
+			mono_mb_emit_icall (mb, mono_string_alloc);
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+
+		goto done;
+	}
+
 	size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 	if (atype == ATYPE_SMALL) {
 		/* size_var = size_arg */
@@ -1353,6 +1372,8 @@ create_allocator (int atype)
 
 	/* return p */
 	mono_mb_emit_ldloc (mb, p_var);
+
+ done:
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
@@ -1400,12 +1421,12 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 	if (klass->rank)
 		return NULL;
 	if (klass->byval_arg.type == MONO_TYPE_STRING)
-		return mono_gc_get_managed_allocator_by_type (ATYPE_STRING);
+		return mono_gc_get_managed_allocator_by_type (ATYPE_STRING, FALSE);
 	/* Generic classes have dynamic field and can go above MAX_SMALL_OBJ_SIZE. */
 	if (known_instance_size)
-		return mono_gc_get_managed_allocator_by_type (ATYPE_SMALL);
+		return mono_gc_get_managed_allocator_by_type (ATYPE_SMALL, FALSE);
 	else
-		return mono_gc_get_managed_allocator_by_type (ATYPE_NORMAL);
+		return mono_gc_get_managed_allocator_by_type (ATYPE_NORMAL, FALSE);
 #else
 	return NULL;
 #endif
@@ -1425,7 +1446,7 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 		return NULL;
 	g_assert (!mono_class_has_finalizer (klass) && !mono_class_is_marshalbyref (klass));
 
-	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR);
+	return mono_gc_get_managed_allocator_by_type (ATYPE_VECTOR, FALSE);
 #else
 	return NULL;
 #endif
@@ -1438,10 +1459,11 @@ sgen_set_use_managed_allocator (gboolean flag)
 }
 
 MonoMethod*
-mono_gc_get_managed_allocator_by_type (int atype)
+mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 {
 #ifdef MANAGED_ALLOCATION
 	MonoMethod *res;
+	MonoMethod **cache = slowpath ? slowpath_alloc_method_cache : alloc_method_cache;
 
 	if (!use_managed_allocator)
 		return NULL;
@@ -1449,18 +1471,18 @@ mono_gc_get_managed_allocator_by_type (int atype)
 	if (!mono_runtime_has_tls_get ())
 		return NULL;
 
-	res = alloc_method_cache [atype];
+	res = cache [atype];
 	if (res)
 		return res;
 
-	res = create_allocator (atype);
+	res = create_allocator (atype, slowpath);
 	LOCK_GC;
-	if (alloc_method_cache [atype]) {
+	if (cache [atype]) {
 		mono_free_method (res);
-		res = alloc_method_cache [atype];
+		res = cache [atype];
 	} else {
 		mono_memory_barrier ();
-		alloc_method_cache [atype] = res;
+		cache [atype] = res;
 	}
 	UNLOCK_GC;
 
@@ -1482,7 +1504,7 @@ sgen_is_managed_allocator (MonoMethod *method)
 	int i;
 
 	for (i = 0; i < ATYPE_NUM; ++i)
-		if (method == alloc_method_cache [i])
+		if (method == alloc_method_cache [i] || method == slowpath_alloc_method_cache [i])
 			return TRUE;
 	return FALSE;
 }
@@ -1493,7 +1515,7 @@ sgen_has_managed_allocator (void)
 	int i;
 
 	for (i = 0; i < ATYPE_NUM; ++i)
-		if (alloc_method_cache [i])
+		if (alloc_method_cache [i] || slowpath_alloc_method_cache [i])
 			return TRUE;
 	return FALSE;
 }

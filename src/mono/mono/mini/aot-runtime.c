@@ -877,7 +877,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_ALLOC: {
 			int atype = decode_value (p, &p);
 
-			ref->method = mono_gc_get_managed_allocator_by_type (atype);
+			ref->method = mono_gc_get_managed_allocator_by_type (atype, !!(mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS));
 			if (!ref->method) {
 				fprintf (stderr, "Error: No managed allocator, but we need one for AOT.\nAre you using non-standard GC options?\n");
 				exit (1);
