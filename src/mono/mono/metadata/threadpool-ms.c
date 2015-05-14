@@ -566,8 +566,6 @@ worker_unpark (ThreadPoolParkedThread *thread)
 static void
 worker_kill (ThreadPoolWorkingThread *thread)
 {
-	ThreadPoolCounter counter;
-
 	if (thread == mono_thread_internal_current ())
 		return;
 
