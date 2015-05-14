@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Reflection;
 
@@ -40,6 +41,13 @@ namespace System.Xml.Serialization
         {
             return o != null && ValueOfDBNull != null && ValueOfDBNull.Equals(o);
         }
+        internal static Exception NotSupported(string msg)
+        {
+            System.Diagnostics.Debug.Assert(false, msg);
+            return new NotSupportedException(msg);
+        }
+
+        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Method does validation only without any user input")]
+        internal static bool IsValidLanguageIndependentIdentifier(string ident) { return System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(ident); }
     }
 }
-

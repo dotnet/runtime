@@ -24,6 +24,7 @@
     "System.Xml.XmlDocument": "4.0.0-beta-22809"
   },
   "frameworks": {
-    "dnxcore50": {}
-  }
+    "dnxcore50": {},
+    "netcore50": {}
+ }
 }
