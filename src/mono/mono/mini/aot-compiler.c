@@ -8844,7 +8844,7 @@ compile_asm (MonoAotCompile *acfg)
 #define LD_NAME "gcc -shared --dll"
 #elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
 #define LD_NAME "clang -m32 -dynamiclib"
-#elif defined(TARGET_ARM)
+#elif defined(TARGET_ARM) && !defined(TARGET_ANDROID)
 #define LD_NAME "gcc --shared"
 #endif
 
