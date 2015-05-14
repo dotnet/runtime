@@ -162,6 +162,8 @@ ClientBin/
 node_modules/
 *.metaproj
 *.metaproj.tmp
+.atom-build.json
+tags
 
 # RIA/Silverlight projects
 Generated_Code/
