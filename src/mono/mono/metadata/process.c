@@ -364,6 +364,13 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	}
 }
 
+static void process_get_assembly_fileversion (MonoObject *filever, MonoAssembly *assembly)
+{
+	process_set_field_int (filever, "filemajorpart", assembly->aname.major);
+	process_set_field_int (filever, "fileminorpart", assembly->aname.minor);
+	process_set_field_int (filever, "filebuildpart", assembly->aname.build);
+}
+
 static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
 {
 	MonoClass *filever_class;
@@ -382,8 +389,7 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 					    "FileVersionInfo");
 	filever = mono_object_new (domain, filever_class);
 
-// TODO: Implement process_get_assembly_fileversion
-//	process_get_assembly_fileversion (filever, assembly);
+	process_get_assembly_fileversion (filever, assembly);
 	process_set_field_string_char (filever, "filename", filename);
 	process_set_field_object (item, "version_info", filever);
 
