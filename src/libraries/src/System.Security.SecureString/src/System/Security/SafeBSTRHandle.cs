@@ -11,16 +11,24 @@ namespace System.Security
     {
         internal SafeBSTRHandle() : base(true) { }
 
-        internal static SafeBSTRHandle Allocate(string src, uint len)
+        internal static SafeBSTRHandle Allocate(string src, uint lenInChars)
         {
-            SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, len);
-            bstr.Initialize(len * sizeof(char));
+            SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, lenInChars);
+            if (bstr.IsInvalid) // SysAllocStringLen returns a NULL ptr when there's insufficient memory
+            {
+                throw new OutOfMemoryException();
+            }
+            bstr.Initialize(lenInChars * sizeof(char));
             return bstr;
         }
 
         internal static SafeBSTRHandle Allocate(IntPtr src, uint lenInBytes)
         {
             SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, lenInBytes / sizeof(char));
+            if (bstr.IsInvalid) // SysAllocStringLen returns a NULL ptr when there's insufficient memory
+            {
+                throw new OutOfMemoryException();
+            }
             bstr.Initialize(lenInBytes);
             return bstr;
         }
