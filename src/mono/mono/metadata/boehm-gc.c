@@ -1239,6 +1239,16 @@ mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
 	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, user_data, GUINT_TO_POINTER (offset), NULL, NULL);
 }
 
+#ifndef HOST_WIN32
+int
+mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
+{
+	/* it is being replaced by GC_pthread_create on some
+	 * platforms, see libgc/include/gc_pthread_redirects.h */
+	return pthread_create (new_thread, attr, start_routine, arg);
+}
+#endif
+
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {

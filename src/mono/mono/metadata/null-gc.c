@@ -442,6 +442,11 @@ mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 }
 
 #ifndef HOST_WIN32
+int
+mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
+{
+	return pthread_create (new_thread, attr, start_routine, arg);
+}
 
 void mono_gc_set_skip_thread (gboolean value)
 {

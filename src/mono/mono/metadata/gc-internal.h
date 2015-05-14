@@ -305,6 +305,10 @@ void mono_gc_set_current_thread_appdomain (MonoDomain *domain);
 
 void mono_gc_set_skip_thread (gboolean skip);
 
+#ifndef HOST_WIN32
+int mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+#endif
+
 /*
  * Return whenever GC is disabled
  */
