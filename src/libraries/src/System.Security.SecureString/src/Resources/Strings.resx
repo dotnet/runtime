@@ -126,9 +126,6 @@
   <data name="ArgumentOutOfRange_IndexString" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the length of the string.</value>
   </data>
-  <data name="Arg_PlatformSecureString" xml:space="preserve">
-    <value>SecureString is only supported on Windows 2000 SP3 and higher platforms.</value>
-  </data>
   <data name="ArgumentOutOfRange_Capacity" xml:space="preserve">
     <value>Capacity exceeds maximum capacity.</value>
   </data>
