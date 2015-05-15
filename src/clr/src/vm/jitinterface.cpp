@@ -4904,7 +4904,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getParentType(
     // If we encounter __ComObject in the hierarchy, we need to skip it
     // since this hierarchy is introduced by the EE, but won't be present
     // in the metadata.
-    if (IsComObjectClass(thParent))
+    if (!thParent.IsNull() && IsComObjectClass(thParent))
     {
         result = (CORINFO_CLASS_HANDLE) g_pObjectClass;
     }
