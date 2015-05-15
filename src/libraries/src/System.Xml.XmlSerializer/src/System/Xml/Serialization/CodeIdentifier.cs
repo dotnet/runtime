@@ -143,7 +143,7 @@ namespace System.Xml.Serialization
 
         internal static void CheckValidIdentifier(string ident)
         {
-            if (!CodeGenerator.IsValidLanguageIndependentIdentifier(ident))
+            if (!Globals.IsValidLanguageIndependentIdentifier(ident))
                 throw new ArgumentException(SR.Format(SR.XmlInvalidIdentifier, ident), "ident");
         }
 

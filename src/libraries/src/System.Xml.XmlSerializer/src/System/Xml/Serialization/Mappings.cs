@@ -1059,7 +1059,7 @@ namespace System.Xml.Serialization
                     {
                         if (typeof(XmlSchemaType).IsAssignableFrom(_getSchemaMethod.ReturnType))
                         {
-                            throw CodeGenerator.NotSupported("No XmlSchemaType in SL");
+                            throw Globals.NotSupported("No XmlSchemaType in SL");
                         }
                         else if (typeof(XmlQualifiedName).IsAssignableFrom(_getSchemaMethod.ReturnType))
                         {

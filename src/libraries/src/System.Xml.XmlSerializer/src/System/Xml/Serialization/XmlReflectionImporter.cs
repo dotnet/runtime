@@ -486,7 +486,7 @@ namespace System.Xml.Serialization
             {
                 throw new ArgumentNullException("MethodName");
             }
-            if (!CodeGenerator.IsValidLanguageIndependentIdentifier(provider.MethodName))
+            if (!Globals.IsValidLanguageIndependentIdentifier(provider.MethodName))
                 throw new ArgumentException(SR.Format(SR.XmlGetSchemaMethodName, provider.MethodName), "MethodName");
 
             MethodInfo getMethod = getMethod = type.GetMethod(provider.MethodName, /* BindingFlags.DeclaredOnly | */ BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(XmlSchemaSet) });

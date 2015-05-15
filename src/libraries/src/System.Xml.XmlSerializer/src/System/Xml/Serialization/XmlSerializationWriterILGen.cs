@@ -16,6 +16,7 @@ using System.Xml.Schema;
 using System.Xml.Extensions;
 
 
+#if !NET_NATIVE
 namespace System.Xml.Serialization
 {
     internal class XmlSerializationWriterILGen : XmlSerializationILGen
@@ -98,7 +99,7 @@ namespace System.Xml.Serialization
             bool hasDefault = defaultValue != null && !Globals.IsDBNullValue(defaultValue);
             if (hasDefault)
             {
-                throw CodeGenerator.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
+                throw Globals.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
             }
             List<Type> argTypes = new List<Type>();
             ilg.Ldarg(0);
@@ -121,7 +122,7 @@ namespace System.Xml.Serialization
 
             if (hasDefault)
             {
-                throw CodeGenerator.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
+                throw Globals.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
             }
         }
 
@@ -1205,7 +1206,7 @@ namespace System.Xml.Serialization
 
                 if (memberTypeDesc.IsEnumerable)
                 {
-                    throw CodeGenerator.NotSupported("CDF15337, DDB176069: Also fail in whidbey IEnumerable member with XmlAttributeAttribute");
+                    throw Globals.NotSupported("CDF15337, DDB176069: Also fail in whidbey IEnumerable member with XmlAttributeAttribute");
                 }
                 else
                 {
@@ -1288,7 +1289,7 @@ namespace System.Xml.Serialization
                     WriteAttribute(new SourceInfo(aiVar, aiVar, null, null, ilg), attribute, parent);
                 }
                 if (memberTypeDesc.IsEnumerable)
-                    throw CodeGenerator.NotSupported("CDF15337, DDB176069: Also fail in whidbey IEnumerable member with XmlAttributeAttribute");
+                    throw Globals.NotSupported("CDF15337, DDB176069: Also fail in whidbey IEnumerable member with XmlAttributeAttribute");
                 else
                     ilg.EndFor();
                 if (attribute.IsList)
@@ -1926,7 +1927,7 @@ namespace System.Xml.Serialization
                 ArrayMapping mapping = (ArrayMapping)element.Mapping;
                 if (element.IsUnbounded)
                 {
-                    throw CodeGenerator.NotSupported("Unreachable: IsUnbounded is never set true!");
+                    throw Globals.NotSupported("Unreachable: IsUnbounded is never set true!");
                 }
                 else
                 {
@@ -2567,3 +2568,4 @@ namespace System.Xml.Serialization
         }
     }
 }
+#endif
