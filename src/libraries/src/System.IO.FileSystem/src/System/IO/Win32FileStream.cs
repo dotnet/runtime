@@ -1212,7 +1212,7 @@ namespace System.IO
 
             // Create and store async stream class library specific data in the async result
 
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _handle);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _handle, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -1296,7 +1296,7 @@ namespace System.IO
                 else
                 {
                     // Only once the IO is pending do we register for cancellation
-                    completionSource.RegisterForCancellation(cancellationToken);
+                    completionSource.RegisterForCancellation();
                 }
             }
             else
@@ -1408,7 +1408,7 @@ namespace System.IO
             Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _handle);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _handle, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (_parent.CanSeek)
@@ -1486,7 +1486,7 @@ namespace System.IO
                 else
                 {
                     // Only once the IO is pending do we register for cancellation
-                    completionSource.RegisterForCancellation(cancellationToken);
+                    completionSource.RegisterForCancellation();
                 }
             }
             else

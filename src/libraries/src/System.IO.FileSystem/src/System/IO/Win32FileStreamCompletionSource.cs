@@ -27,7 +27,7 @@ namespace System.IO
 
             private readonly SafeFileHandle _handle;      // For cancellation support.
             private readonly int _numBufferedBytes;
-
+            private readonly CancellationToken _cancellationToken;
             private CancellationTokenRegistration _cancellationRegistration;
 #if DEBUG
             private bool _cancellationHasBeenRegistered;
@@ -45,12 +45,13 @@ namespace System.IO
             private static Action<object> s_cancelCallback;
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            internal FileStreamCompletionSource(int numBufferedBytes, byte[] bytes, SafeFileHandle handle)
+            internal FileStreamCompletionSource(int numBufferedBytes, byte[] bytes, SafeFileHandle handle, CancellationToken cancellationToken)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
                 _handle = handle;
                 _result = NoResult;
+                _cancellationToken = cancellationToken;
 
                 // Create a managed overlapped class
                 // We will set the file offsets later
@@ -95,7 +96,7 @@ namespace System.IO
                 TrySetResult(numBytes + _numBufferedBytes);
             }
 
-            public void RegisterForCancellation(CancellationToken cancellationToken)
+            public void RegisterForCancellation()
             {
 #if DEBUG
                 Debug.Assert(!_cancellationHasBeenRegistered, "Cannot register for cancellation twice");
@@ -103,7 +104,7 @@ namespace System.IO
 #endif
 
                 // Quick check to make sure that the cancellation token supports cancellation, and that the IO hasn't completed
-                if ((cancellationToken.CanBeCanceled) && (_overlapped != null))
+                if ((_cancellationToken.CanBeCanceled) && (_overlapped != null))
                 {
                     var cancelCallback = s_cancelCallback;
                     if (cancelCallback == null) s_cancelCallback = cancelCallback = Cancel;
@@ -112,7 +113,7 @@ namespace System.IO
                     long packedResult = Interlocked.CompareExchange(ref _result, RegisteringCancellation, NoResult);
                     if (packedResult == NoResult)
                     {
-                        _cancellationRegistration = cancellationToken.Register(cancelCallback, this);
+                        _cancellationRegistration = _cancellationToken.Register(cancelCallback, this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
                         packedResult = Interlocked.Exchange(ref _result, NoResult);
@@ -199,7 +200,7 @@ namespace System.IO
                     int errorCode = unchecked((int)(packedResult & uint.MaxValue));
                     if (errorCode == Interop.mincore.Errors.ERROR_OPERATION_ABORTED)
                     {
-                        TrySetCanceled();
+                        TrySetCanceled(_cancellationToken.IsCancellationRequested ? _cancellationToken : new CancellationToken(true));
                     }
                     else
                     {
