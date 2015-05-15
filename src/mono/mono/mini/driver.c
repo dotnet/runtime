@@ -2182,6 +2182,12 @@ mono_jit_set_aot_only (gboolean val)
 	mono_aot_only = val;
 }
 
+void
+mono_jit_set_aot_mode (MonoAotMode mode)
+{
+	mono_aot_mode = mode;
+}
+
 /**
  * mono_jit_set_trace_options:
  * @options: string representing the trace options

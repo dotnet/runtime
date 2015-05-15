@@ -33,6 +33,9 @@ mono_set_signal_chaining   (mono_bool chain_signals);
 MONO_API void
 mono_set_crash_chaining   (mono_bool chain_signals);
 
+/**
+ * This function is deprecated, use mono_jit_set_aot_mode instead.
+ */
 MONO_API void
 mono_jit_set_aot_only      (mono_bool aot_only);
 
@@ -50,6 +53,9 @@ typedef enum {
 	 * equivalent to mono_jit_set_aot_only (true) */
 	MONO_AOT_MODE_FULL
 } MonoAotMode;
+
+MONO_API void
+mono_jit_set_aot_mode      (MonoAotMode mode);
 
 /* Allow embedders to decide wherther to actually obey breakpoint instructions
  * in specific methods (works for both break IL instructions and Debugger.Break ()
