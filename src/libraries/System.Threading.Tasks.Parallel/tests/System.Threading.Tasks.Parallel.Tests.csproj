@@ -45,7 +45,6 @@
       <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
