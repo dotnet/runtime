@@ -17,7 +17,6 @@
   <PropertyGroup>
     <CommonPathXPath>$(CommonPath)\System.Xml.XPath</CommonPathXPath>
   </PropertyGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <!-- XPath.XDocument navigator -->
     <Compile Include="XDocument\CreateNavigatorComparer.cs" />

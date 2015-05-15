@@ -17,7 +17,6 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
-  <!-- References are resolved from packages.config -->
   <!-- Compiled Source Files -->
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\IO\__Error.cs">

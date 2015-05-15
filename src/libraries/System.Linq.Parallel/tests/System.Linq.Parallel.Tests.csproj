@@ -61,7 +61,6 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Console.cs" />
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.Parallel.csproj">
       <Project>{be28323e-327a-4e0f-b7f9-16ab7eab59dd}</Project>

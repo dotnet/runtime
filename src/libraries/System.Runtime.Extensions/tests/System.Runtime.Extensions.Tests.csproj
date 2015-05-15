@@ -16,7 +16,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
