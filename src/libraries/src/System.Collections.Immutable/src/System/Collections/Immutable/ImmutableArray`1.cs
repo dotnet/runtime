@@ -1006,9 +1006,10 @@ namespace System.Collections.Immutable
         [Pure]
         public override bool Equals(object obj)
         {
-            if (obj is ImmutableArray<T>)
+            IImmutableArray other = obj as IImmutableArray;
+            if (other != null)
             {
-                return this.Equals((ImmutableArray<T>)obj);
+                return this.array == other.Array;
             }
 
             return false;

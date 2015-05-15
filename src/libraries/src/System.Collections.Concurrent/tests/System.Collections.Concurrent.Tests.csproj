@@ -34,7 +34,6 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\src\System.Collections.Concurrent.csproj">
       <Project>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</Project>

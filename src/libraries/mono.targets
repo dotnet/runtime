@@ -24,47 +24,4 @@
   <Target Name="RunTestsForProject">
     <Message Importance="high" Text="Skipping test run pending fix." />
   </Target>
-
-  <!--
-    Mono Microsoft.Portable.Core.targets do not have the condition that the Windows targets do.
-    Copied to override and added the condition.
-
-    Note that this issue is fixed in https://github.com/mono/mono/pull/1464.
-  -->
-  <Target
-    Name="ImplicitlyExpandTargetFramework"
-    Condition="'$(ImplicitlyExpandTargetFramework)' == 'true'"
-    DependsOnTargets="$(ImplicitlyExpandTargetFrameworkDependsOn)">
-
-    <ItemGroup>
-      <ReferenceAssemblyPaths Include="$(_TargetFrameworkDirectories)"/>
-      <ReferencePath Include="%(ReferenceAssemblyPaths.Identity)\*.dll">
-        <CopyLocal>false</CopyLocal>
-        <ResolvedFrom>ImplicitlyExpandTargetFramework</ResolvedFrom>
-        <IsSystemReference>True</IsSystemReference>
-      </ReferencePath>
-    </ItemGroup>
-  </Target>
-
-  <!--
-    Overriding from build targets as Mono doesn't implement StandardOutputImportance.
-    Currently custom tasks are using Mono as a base.
-
-    Note that this issue is fixed in https://github.com/mono/mono/pull/1469
-  -->
-  <Target Name="RestoreTestRuntimePackage"
-          BeforeTargets="ResolveNuGetPackages"
-          Inputs="$(TestRuntimePackageConfig);$(TestRuntimeProjectJson)"
-          Outputs="$(TestRuntimePackageSemaphore);$(TestRuntimeProjectLockJson)"
-          Condition="'$(IsTestProject)' == 'true'">
-
-    <Exec Command="$(NugetRestoreCommand) &quot;$(TestRuntimePackageConfig)&quot;" StandardOutputImportance="Low" />
-
-    <!-- This is the custom task where we cannot use StandardOutputImportance -->
-    <ExecWithMutex Command="$(DnuRestoreCommand) &quot;$(TestRuntimeProjectJson)&quot;" MutexName="$(TestRuntimeProjectJson)" CustomErrorRegularExpression="^Unable to locate .*" />
-
-    <!-- Always copy since we need to force a timestamp update for inputs/outputs-->
-    <Copy SourceFiles="$(TestRuntimePackageConfig)" DestinationFiles="$(TestRuntimePackageSemaphore)" ContinueOnError="true" SkipUnchangedFiles="false" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)test-runtime\project.lock.json" DestinationFiles="$(TestRuntimeProjectLockJson)" ContinueOnError="true" SkipUnchangedFiles="false" />
-  </Target>
 </Project>
