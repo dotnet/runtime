@@ -45,34 +45,13 @@
 #include <mono/utils/mono-memory-model.h>
 #include "cominterop.h"
 
-#ifdef HAVE_BOEHM_GC
-#define NEED_TO_ZERO_PTRFREE 1
-#define ALLOC_PTRFREE(obj,vt,size) do { (obj) = GC_MALLOC_ATOMIC ((size)); (obj)->vtable = (vt); (obj)->synchronisation = NULL;} while (0)
-#define ALLOC_OBJECT(obj,vt,size) do { (obj) = GC_MALLOC ((size)); (obj)->vtable = (vt);} while (0)
-#ifdef HAVE_GC_GCJ_MALLOC
+#if defined(HAVE_BOEHM_GC)
 #define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
-#define ALLOC_TYPED(dest,size,type) do { (dest) = GC_GCJ_MALLOC ((size),(type)); } while (0)
+#elif defined(HAVE_SGEN_GC)
+#define GC_NO_DESCRIPTOR (NULL)
 #else
 #define GC_NO_DESCRIPTOR (NULL)
-#define ALLOC_TYPED(dest,size,type) do { (dest) = GC_MALLOC ((size)); *(gpointer*)dest = (type);} while (0)
 #endif
-#else
-#ifdef HAVE_SGEN_GC
-#define GC_NO_DESCRIPTOR (NULL)
-#define ALLOC_PTRFREE(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
-#define ALLOC_OBJECT(obj,vt,size) do { (obj) = mono_gc_alloc_obj (vt, size);} while (0)
-#define ALLOC_TYPED(dest,size,type) do { (dest) = mono_gc_alloc_obj (type, size);} while (0)
-#else
-#define NEED_TO_ZERO_PTRFREE 1
-#define GC_NO_DESCRIPTOR (NULL)
-#define ALLOC_PTRFREE(obj,vt,size) do { (obj) = malloc ((size)); (obj)->vtable = (vt); (obj)->synchronisation = NULL;} while (0)
-#define ALLOC_OBJECT(obj,vt,size) do { (obj) = calloc (1, (size)); (obj)->vtable = (vt);} while (0)
-#define ALLOC_TYPED(dest,size,type) do { (dest) = calloc (1, (size)); *(gpointer*)dest = (type);} while (0)
-#endif
-#endif
-
-static MonoObject* mono_object_new_ptrfree (MonoVTable *vtable);
-static MonoObject* mono_object_new_ptrfree_box (MonoVTable *vtable);
 
 static void
 get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value);
@@ -90,8 +69,6 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 #define ldstr_lock() mono_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_mutex_unlock (&ldstr_section)
 static mono_mutex_t ldstr_section;
-
-static gboolean profile_allocs = TRUE;
 
 void
 mono_runtime_object_init (MonoObject *this)
@@ -959,26 +936,9 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 	if (!gcj_inited) {
 		mono_loader_lock ();
 
-		mono_register_jit_icall (mono_object_new_ptrfree, "mono_object_new_ptrfree", mono_create_icall_signature ("object ptr"), FALSE);
-		mono_register_jit_icall (mono_object_new_ptrfree_box, "mono_object_new_ptrfree_box", mono_create_icall_signature ("object ptr"), FALSE);
 		mono_register_jit_icall (mono_object_new_fast, "mono_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
 		mono_register_jit_icall (mono_string_alloc, "mono_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 
-#ifdef HAVE_GC_GCJ_MALLOC
-		/* 
-		 * This is not needed unless the relevant code in mono_get_allocation_ftn () is 
-		 * turned on.
-		 */
-#if 0
-#ifdef GC_REDIRECT_TO_LOCAL
-		mono_register_jit_icall (GC_local_gcj_malloc, "GC_local_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-		mono_register_jit_icall (GC_local_gcj_fast_malloc, "GC_local_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-#endif
-		mono_register_jit_icall (GC_gcj_malloc, "GC_gcj_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-		mono_register_jit_icall (GC_gcj_fast_malloc, "GC_gcj_fast_malloc", mono_create_icall_signature ("object int ptr"), FALSE);
-#endif
-
-#endif
 		gcj_inited = TRUE;
 		mono_loader_unlock ();
 	}
@@ -4346,50 +4306,6 @@ arith_overflow (void)
 }
 
 /**
- * mono_object_allocate:
- * @size: number of bytes to allocate
- *
- * This is a very simplistic routine until we have our GC-aware
- * memory allocator. 
- *
- * Returns: an allocated object of size @size, or NULL on failure.
- */
-static inline void *
-mono_object_allocate (size_t size, MonoVTable *vtable)
-{
-	MonoObject *o;
-	ALLOC_OBJECT (o, vtable, size);
-
-	return o;
-}
-
-#ifndef HAVE_SGEN_GC
-/**
- * mono_object_allocate_ptrfree:
- * @size: number of bytes to allocate
- *
- * Note that the memory allocated is not zeroed.
- * Returns: an allocated object of size @size, or NULL on failure.
- */
-static inline void *
-mono_object_allocate_ptrfree (size_t size, MonoVTable *vtable)
-{
-	MonoObject *o;
-	ALLOC_PTRFREE (o, vtable, size);
-	return o;
-}
-#endif
-
-static inline void *
-mono_object_allocate_spec (size_t size, MonoVTable *vtable)
-{
-	void *o;
-	ALLOC_TYPED (o, size, vtable);
-
-	return o;
-}
-
-/**
  * mono_object_new:
  * @klass: the class of the object that we want to create
  *
@@ -4474,63 +4390,18 @@ mono_object_new_specific (MonoVTable *vtable)
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable)
 {
-	MonoObject *o;
+	MonoObject *o = mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
-	if (!vtable->klass->has_references) {
-		o = mono_object_new_ptrfree (vtable);
-	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
-		o = mono_object_allocate_spec (vtable->klass->instance_size, vtable);
-	} else {
-/*		printf("OBJECT: %s.%s.\n", vtable->klass->name_space, vtable->klass->name); */
-		o = mono_object_allocate (vtable->klass->instance_size, vtable);
-	}
 	if (G_UNLIKELY (vtable->klass->has_finalize))
 		mono_object_register_finalizer (o);
-	
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (o, vtable->klass);
+
 	return o;
 }
 
 MonoObject*
 mono_object_new_fast (MonoVTable *vtable)
 {
-	MonoObject *o;
-	ALLOC_TYPED (o, vtable->klass->instance_size, vtable);
-	return o;
-}
-
-static MonoObject*
-mono_object_new_ptrfree (MonoVTable *vtable)
-{
-	MonoObject *obj;
-	ALLOC_PTRFREE (obj, vtable, vtable->klass->instance_size);
-#if NEED_TO_ZERO_PTRFREE
-	/* an inline memset is much faster for the common vcase of small objects
-	 * note we assume the allocated size is a multiple of sizeof (void*).
-	 */
-	if (vtable->klass->instance_size < 128) {
-		gpointer *p, *end;
-		end = (gpointer*)((char*)obj + vtable->klass->instance_size);
-		p = (gpointer*)((char*)obj + sizeof (MonoObject));
-		while (p < end) {
-			*p = NULL;
-			++p;
-		}
-	} else {
-		memset ((char*)obj + sizeof (MonoObject), 0, vtable->klass->instance_size - sizeof (MonoObject));
-	}
-#endif
-	return obj;
-}
-
-static MonoObject*
-mono_object_new_ptrfree_box (MonoVTable *vtable)
-{
-	MonoObject *obj;
-	ALLOC_PTRFREE (obj, vtable, vtable->klass->instance_size);
-	/* the object will be boxed right away, no need to memzero it */
-	return obj;
+	return mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 }
 
 /**
@@ -4547,18 +4418,8 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 {
 	*pass_size_in_words = FALSE;
 
-	if (!(mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
-		profile_allocs = FALSE;
-
 	if (mono_class_has_finalizer (vtable->klass) || mono_class_is_marshalbyref (vtable->klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return mono_object_new_specific;
-
-	if (!vtable->klass->has_references) {
-		//g_print ("ptrfree for %s.%s\n", vtable->klass->name_space, vtable->klass->name);
-		if (for_box)
-			return mono_object_new_ptrfree_box;
-		return mono_object_new_ptrfree;
-	}
 
 	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
 
@@ -4617,13 +4478,10 @@ mono_object_clone (MonoObject *obj)
 	if (obj->vtable->klass->rank)
 		return (MonoObject*)mono_array_clone ((MonoArray*)obj);
 
-	o = mono_object_allocate (size, obj->vtable);
+	o = mono_gc_alloc_obj (obj->vtable, size);
 
 	/* If the object doesn't contain references this will do a simple memmove. */
 	mono_gc_wbarrier_object_copy (o, obj);
-
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (o, obj->vtable->klass);
 
 	if (obj->vtable->klass->has_finalize)
 		mono_object_register_finalizer (o);
@@ -4831,26 +4689,6 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 	 * they need to be kept in sync.
 	 */
 	vtable = mono_class_vtable_full (domain, array_class, TRUE);
-#ifndef HAVE_SGEN_GC
-	if (!array_class->has_references) {
-		o = mono_object_allocate_ptrfree (byte_len, vtable);
-#if NEED_TO_ZERO_PTRFREE
-		memset ((char*)o + sizeof (MonoObject), 0, byte_len - sizeof (MonoObject));
-#endif
-	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
-		o = mono_object_allocate_spec (byte_len, vtable);
-	}else {
-		o = mono_object_allocate (byte_len, vtable);
-	}
-
-	array = (MonoArray*)o;
-	array->max_length = len;
-
-	if (bounds_size) {
-		bounds = (MonoArrayBounds*)((char*)array + byte_len - bounds_size);
-		array->bounds = bounds;
-	}
-#else
 	if (bounds_size)
 		o = mono_gc_alloc_array (vtable, byte_len, len, bounds_size);
 	else
@@ -4858,7 +4696,6 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 	array = (MonoArray*)o;
 
 	bounds = array->bounds;
-#endif
 
 	if (bounds_size) {
 		for (i = 0; i < array_class->rank; ++i) {
@@ -4867,9 +4704,6 @@ mono_array_new_full (MonoDomain *domain, MonoClass *array_class, uintptr_t *leng
 				bounds [i].lower_bound = lower_bounds [i];
 		}
 	}
-
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (o, array_class);
 
 	return array;
 }
@@ -4917,29 +4751,8 @@ mono_array_new_specific (MonoVTable *vtable, uintptr_t n)
 		mono_gc_out_of_memory (MONO_ARRAY_MAX_SIZE);
 		return NULL;
 	}
-#ifndef HAVE_SGEN_GC
-	if (!vtable->klass->has_references) {
-		o = mono_object_allocate_ptrfree (byte_len, vtable);
-#if NEED_TO_ZERO_PTRFREE
-		((MonoArray*)o)->bounds = NULL;
-		memset ((char*)o + sizeof (MonoObject), 0, byte_len - sizeof (MonoObject));
-#endif
-	} else if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
-		o = mono_object_allocate_spec (byte_len, vtable);
-	} else {
-/*		printf("ARRAY: %s.%s.\n", vtable->klass->name_space, vtable->klass->name); */
-		o = mono_object_allocate (byte_len, vtable);
-	}
-
-	ao = (MonoArray *)o;
-	ao->max_length = n;
-#else
 	o = mono_gc_alloc_vector (vtable, byte_len, n);
 	ao = (MonoArray*)o;
-#endif
-
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (o, vtable->klass);
 
 	return ao;
 }
@@ -5021,18 +4834,7 @@ mono_string_new_size (MonoDomain *domain, gint32 len)
 	vtable = mono_class_vtable (domain, mono_defaults.string_class);
 	g_assert (vtable);
 
-#ifndef HAVE_SGEN_GC
-	s = mono_object_allocate_ptrfree (size, vtable);
-
-	s->length = len;
-#else
 	s = mono_gc_alloc_string (vtable, size, len);
-#endif
-#if NEED_TO_ZERO_PTRFREE
-	s->chars [len] = 0;
-#endif
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation ((MonoObject*)s, mono_defaults.string_class);
 
 	return s;
 }
@@ -5151,8 +4953,6 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 		return NULL;
 	size = mono_class_instance_size (class);
 	res = mono_object_new_alloc_specific (vtable);
-	if (G_UNLIKELY (profile_allocs))
-		mono_profiler_allocation (res, class);
 
 	size = size - sizeof (MonoObject);
 

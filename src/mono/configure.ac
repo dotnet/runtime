@@ -41,12 +41,6 @@ esac
 #
 libgc_configure_args=
 
-if test -d $srcdir/libgc ; then
-  libgc_default=included
-else
-  libgc_default=boehm
-fi
-
 # These variables are the CPPFLAGS/CFLAGS passed to libgc's configure
 # libgc should inherit the original CFLAGS/CPPFLAGS passed to configure, i.e. -O0
 CPPFLAGS_FOR_LIBGC=$CPPFLAGS
@@ -117,7 +111,6 @@ case "$host" in
 		libmono_ldflags="-mms-bitfields -mwindows"
 		libdl=
 		libgc_threads=win32
-		libgc_default=included
 		with_sigaltstack=no
 		with_tls=pthread
 		LN_S=cp
@@ -183,7 +176,6 @@ case "$host" in
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		libdl=
-		libgc_default=boehm
 		libgc_threads=pthreads
 		with_sigaltstack=no
 		use_sigposix=yes
@@ -258,7 +250,6 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libdl=
 		libgc_threads=pthreads
-		libgc_default=boehm
 		use_sigposix=yes
 		ikvm_native=no
 		AC_DEFINE(DISABLE_SOCKETS,1,[Disable sockets support])
@@ -1010,7 +1001,7 @@ dnl
 dnl Boehm GC configuration
 dnl
 
-AC_ARG_WITH(libgc,   [  --with-gc=boehm,included,none  Controls the Boehm GC config, default=included],[libgc=$with_gc],[libgc=$libgc_default])
+AC_ARG_WITH(libgc,   [  --with-gc=included,none  Controls the Boehm GC config, default=included],[libgc=$with_gc],[libgc=included])
 
 AC_ARG_ENABLE(boehm, [  --disable-boehm            Disable the Boehm GC.], support_boehm=$enableval,support_boehm=${support_boehm:-yes})
 AM_CONDITIONAL(SUPPORT_BOEHM, test x$support_boehm = xyes)
@@ -1020,55 +1011,13 @@ if test x$enable_parallel_mark = xyes; then
 	libgc_configure_args="$libgc_configure_args --enable-parallel-mark"
 fi
 
-gc_headers=no
 gc_msg=""
-use_included_gc=no
 LIBGC_CPPFLAGS=
 LIBGC_LIBS=
 LIBGC_STATIC_LIBS=
 libgc_dir=
 case "x$libgc" in
-	xboehm|xbohem|xyes)
-		AC_CHECK_HEADERS(gc.h gc/gc.h, gc_headers=yes)
-		AC_CHECK_LIB(gc, GC_malloc, found_boehm="yes",,$libdl)
-
-		if test "x$found_boehm" != "xyes"; then
-			AC_MSG_ERROR("GC requested but libgc not found! Install libgc or run configure with --with-gc=none.")
-		fi
-		if test "x$gc_headers" != "xyes"; then
-			AC_MSG_ERROR("GC requested but header files not found! You may need to install them by hand.")
-		fi
-
-		LIBGC_LIBS="-lgc $libdl"
-		LIBGC_STATIC_LIBS="$LIBGC_LIBS"
-		libmono_ldflags="$libmono_ldflags -lgc"
-		BOEHM_DEFINES="-DHAVE_BOEHM_GC"
-
-		# AC_CHECK_FUNCS does not work for some reason...
-		AC_CHECK_LIB(gc, GC_gcj_malloc, found_gcj_malloc="yes",,$libdl)
-		if test "x$found_gcj_malloc" = "xyes"; then
-			BOEHM_DEFINES="-DHAVE_GC_GCJ_MALLOC $BOEHM_DEFINES"
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "System Boehm (with typed GC)", [GC description])
-			gc_msg="System Boehm with typed GC"
-		else
-			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "System Boehm (no typed GC)", [GC description])
-			gc_msg="System Boehm (without typed GC)"
-		fi
-		AC_CHECK_LIB(gc, GC_enable, found_gc_enable="yes",,$libdl)
-		if test "x$found_gc_enable" = "xyes"; then
-			BOEHM_DEFINES="-DHAVE_GC_ENABLE $BOEHM_DEFINES"
-		fi
-
-		# check whether we need to explicitly allow
-		# thread registering
-		AC_CHECK_LIB(gc, GC_allow_register_threads, found_allow_register_threads="yes",,$libdl)
-		if test "x$found_allow_register_threads" = "xyes"; then
-		   AC_DEFINE(HAVE_GC_ALLOW_REGISTER_THREADS, 1, [GC requires thread registration])
-		fi
-		;;
-
 	xincluded)
-		use_included_gc=yes
 		if test "x$support_boehm" = "xyes"; then
 			libgc_dir=libgc
 		fi
@@ -1077,7 +1026,7 @@ case "x$libgc" in
 		LIBGC_LIBS='$(top_builddir)/libgc/libmonogc.la'
 		LIBGC_STATIC_LIBS='$(top_builddir)/libgc/libmonogc-static.la'
 
-		BOEHM_DEFINES="-DHAVE_BOEHM_GC -DHAVE_GC_H -DUSE_INCLUDED_LIBGC -DHAVE_GC_GCJ_MALLOC -DHAVE_GC_ENABLE"
+		BOEHM_DEFINES="-DHAVE_BOEHM_GC"
 
 		if test x$target_win32 = xyes; then
 			BOEHM_DEFINES="$BOEHM_DEFINES -DGC_NOT_DLL"
@@ -1091,6 +1040,10 @@ case "x$libgc" in
 		else
 			AC_DEFINE_UNQUOTED(DEFAULT_GC_NAME, "Included Boehm (with typed GC)", [GC description])
 		fi
+		;;
+
+	xboehm|xbohem|xyes)
+		AC_MSG_WARN("External Boehm is no longer supported")
 		;;
 
 	xsgen)
@@ -1113,7 +1066,6 @@ if test "x$large_heap" = "xyes"; then
    CPPFLAGS="$CPPFLAGS -DLARGE_CONFIG"
 fi
 
-AM_CONDITIONAL(INCLUDED_LIBGC, test x$use_included_gc = xyes)
 AC_SUBST(LIBGC_CPPFLAGS)
 AC_SUBST(LIBGC_LIBS)
 AC_SUBST(LIBGC_STATIC_LIBS)
@@ -3664,8 +3616,6 @@ AM_CONDITIONAL(HOST_AMD64, test x$HOST = xAMD64)
 AM_CONDITIONAL(HOST_ARM, test x$HOST = xARM)
 AM_CONDITIONAL(HOST_ARM64, test x$HOST = xARM64)
 AM_CONDITIONAL(CROSS_COMPILE, test "x$host" != "x$target")
-
-AM_CONDITIONAL(INCLUDED_LIBGC, test x$libgc = xincluded)
 
 AC_SUBST(LIBC)
 AC_SUBST(INTL)

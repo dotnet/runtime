@@ -25,7 +25,7 @@
 	 * it if it is the included one.
 	 */
 	
-#	if defined(HAVE_KW_THREAD) && defined(USE_INCLUDED_LIBGC) && !defined(__powerpc__)
+#	if defined(HAVE_KW_THREAD) && !defined(__powerpc__)
         /* The local alloc stuff is in pthread_support.c, but solaris uses solaris_threads.c */
         /* It is also disabled on solaris/x86 by libgc/configure.ac */
         /* 
@@ -37,19 +37,10 @@
 #       endif
 #	endif
 
-#	ifdef HAVE_GC_GC_H
-#		include <gc/gc.h>
-#		include <gc/gc_typed.h>
-#		include <gc/gc_mark.h>
-#		include <gc/gc_gcj.h>
-#	elif defined(HAVE_GC_H) || defined(USE_INCLUDED_LIBGC)
-#		include <gc.h>
-#		include <gc_typed.h>
-#		include <gc_mark.h>
-#		include <gc_gcj.h>
-#	else
-#		error have boehm GC without headers, you probably need to install them by hand
-#	endif
+#	include <gc.h>
+#	include <gc_typed.h>
+#	include <gc_mark.h>
+#	include <gc_gcj.h>
 
 #if defined(HOST_WIN32)
 #define CreateThread GC_CreateThread

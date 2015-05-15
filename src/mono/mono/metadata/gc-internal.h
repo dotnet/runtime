@@ -102,6 +102,7 @@ gboolean mono_object_is_alive (MonoObject* obj);
 gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
 gpointer mono_gc_out_of_memory (size_t size);
 void     mono_gc_enable_events (void);
+void     mono_gc_enable_alloc_events (void);
 
 /* disappearing link functionality */
 void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj, gboolean track);
@@ -200,7 +201,7 @@ typedef struct {
 int mono_gc_get_aligned_size_for_allocator (int size);
 MonoMethod* mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean known_instance_size);
 MonoMethod* mono_gc_get_managed_array_allocator (MonoClass *klass);
-MonoMethod *mono_gc_get_managed_allocator_by_type (int atype);
+MonoMethod *mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath);
 
 guint32 mono_gc_get_managed_allocator_types (void);
 

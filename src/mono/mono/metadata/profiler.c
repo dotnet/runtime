@@ -261,6 +261,7 @@ mono_profiler_install_transition (MonoProfileMethodResult callback)
 void 
 mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 {
+	mono_gc_enable_alloc_events ();
 	if (!prof_list)
 		return;
 	prof_list->allocation_cb = callback;
@@ -500,12 +501,12 @@ mono_profiler_code_transition (MonoMethod *method, int result)
 }
 
 void 
-mono_profiler_allocation (MonoObject *obj, MonoClass *klass)
+mono_profiler_allocation (MonoObject *obj)
 {
 	ProfilerDesc *prof;
 	for (prof = prof_list; prof; prof = prof->next) {
 		if ((prof->events & MONO_PROFILE_ALLOCATIONS) && prof->allocation_cb)
-			prof->allocation_cb (prof->profiler, obj, klass);
+			prof->allocation_cb (prof->profiler, obj, obj->vtable->klass);
 	}
 }
 
