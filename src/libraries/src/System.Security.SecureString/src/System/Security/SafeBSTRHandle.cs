@@ -24,6 +24,7 @@ namespace System.Security
 
         internal static SafeBSTRHandle Allocate(IntPtr src, uint lenInBytes)
         {
+            Debug.Assert(lenInBytes % sizeof(char) == 0);
             SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, lenInBytes / sizeof(char));
             if (bstr.IsInvalid) // SysAllocStringLen returns a NULL ptr when there's insufficient memory
             {
