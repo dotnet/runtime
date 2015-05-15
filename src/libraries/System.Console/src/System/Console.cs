@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System
 {
@@ -89,22 +90,16 @@ namespace System
             ConsolePal.ResetColor();
         }
 
-        // This is the worker delegate that is called on the Threadpool thread to fire the actual events. It must guarantee that it
-        // signals the caller on the ControlC thread so that it does not block indefinitely.
+        // This is the worker delegate that is called on the Threadpool thread to fire the actual events. It sets the DelegateStarted flag so
+        // the thread that queued the work to the threadpool knows it has started (since it does not want to block indefinitely on the task
+        // to start).
         private static void ControlCDelegate(object data)
         {
             ControlCDelegateData controlCData = (ControlCDelegateData)data;
-            try
-            {
-                controlCData.DelegateStarted = true;
-                ConsoleCancelEventArgs args = new ConsoleCancelEventArgs(controlCData.ControlKey);
-                controlCData.CancelCallbacks(null, args);
-                controlCData.Cancel = args.Cancel;
-            }
-            finally
-            {
-                controlCData.CompletionEvent.Set();
-            }
+            controlCData.DelegateStarted = true;
+            ConsoleCancelEventArgs args = new ConsoleCancelEventArgs(controlCData.ControlKey);
+            controlCData.CancelCallbacks(null, args);
+            controlCData.Cancel = args.Cancel;
         }
 
         public static event ConsoleCancelEventHandler CancelKeyPress
@@ -421,7 +416,6 @@ namespace System
         private sealed class ControlCDelegateData
         {
             internal readonly ConsoleSpecialKey ControlKey;
-            internal readonly ManualResetEvent CompletionEvent;
             internal readonly ConsoleCancelEventHandler CancelCallbacks;
 
             internal bool Cancel;
@@ -431,15 +425,14 @@ namespace System
             {
                 this.ControlKey = controlKey;
                 this.CancelCallbacks = cancelCallbacks;
-                this.CompletionEvent = new ManualResetEvent(false);
             }
         }
 
         internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey)
         {
             // The thread that this gets called back on has a very small stack on some systems. There is
-            // not enough space to handle a managed exception being caught and thrown. So, queue up a work
-            // item on another thread for the actual event callback.
+            // not enough space to handle a managed exception being caught and thrown. So, run a task
+            // on the threadpool for the actual event callback.
 
             // To avoid the race condition between remove handler and raising the event
             ConsoleCancelEventHandler cancelCallbacks = Console._cancelCallbacks;
@@ -448,28 +441,27 @@ namespace System
                 return false;
             }
 
-            // Create the delegate
             ControlCDelegateData delegateData = new ControlCDelegateData(controlKey, cancelCallbacks);
-            WaitCallback controlCCallback = new WaitCallback(ControlCDelegate);
 
-            // Queue the delegate
-            ThreadPool.QueueUserWorkItem(controlCCallback, delegateData);
+            Task callBackTask = Task.Run(() =>
+            {
+                ControlCDelegate(delegateData);
+            });
 
-            // Block until the delegate is done. We need to be robust in the face of the work item not executing
+            // Block until the delegate is done. We need to be robust in the face of the task not executing
             // but we also want to get control back immediately after it is done and we don't want to give the
-            // handler a fixed time limit in case it needs to display UI. Wait on the event twice, once with a
+            // handler a fixed time limit in case it needs to display UI. Wait on the task twice, once with a
             // timout and a second time without if we are sure that the handler actually started.
             TimeSpan controlCWaitTime = new TimeSpan(0, 0, 30); // 30 seconds
-            delegateData.CompletionEvent.WaitOne(controlCWaitTime);
-
+            callBackTask.Wait(controlCWaitTime);
+            
             if (!delegateData.DelegateStarted)
             {
-                Debug.Assert(false, "ThreadPool.QueueUserWorkItem did not execute the handler within 30 seconds.");
+                Debug.Assert(false, "The task to execute the handler did not start within 30 seconds.");
                 return false;
             }
 
-            delegateData.CompletionEvent.WaitOne();
-            delegateData.CompletionEvent.Dispose();
+            callBackTask.Wait();
             return delegateData.Cancel;
         }
     }
