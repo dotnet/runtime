@@ -5017,7 +5017,9 @@ get_debug_sym (MonoMethod *method, const char *prefix, GHashTable *cache)
 	memcpy (name2, prefix, strlen (prefix));
 	j = strlen (prefix);
 	for (i = 0; i < len; ++i) {
-		if (isalnum (name1 [i])) {
+		if (i == 0 && name1 [0] >= '0' && name1 [0] <= '9') {
+			name2 [j ++] = '_';
+		} else if (isalnum (name1 [i])) {
 			name2 [j ++] = name1 [i];
 		} else if (name1 [i] == ' ' && name1 [i + 1] == '(' && name1 [i + 2] == ')') {
 			i += 2;
