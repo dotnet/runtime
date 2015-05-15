@@ -70,11 +70,12 @@ namespace System.Security.Cryptography
                 if (value == null)
                     throw new ArgumentNullException("value");
 
-                if (!ValidKeySize(value.Length * 8))
+                long bitLength = value.Length * 8L;
+                if (bitLength > int.MaxValue || !ValidKeySize((int)bitLength))
                     throw new CryptographicException(SR.Cryptography_InvalidKeySize);
 
                 // must convert bytes to bits
-                this.KeySize = value.Length * 8;
+                this.KeySize = (int)bitLength;
                 _key = value.CloneByteArray();
             }
         }
