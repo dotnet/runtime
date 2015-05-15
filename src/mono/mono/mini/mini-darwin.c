@@ -252,8 +252,9 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 	argv [0] = g_find_program_in_path ("gdb");
 	if (!argv [0]) {
-		argv [0] = g_find_program_in_path ("lldb");
-		using_lldb = TRUE;
+		// FIXME: LLDB doesn't quit when given the 'quit' command
+		//argv [0] = g_find_program_in_path ("lldb");
+		//using_lldb = TRUE;
 	}
 
 	if (argv [0] == NULL)
