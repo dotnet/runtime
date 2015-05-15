@@ -71,7 +71,7 @@ typedef enum {
 typedef struct _GrayQueueEntry GrayQueueEntry;
 struct _GrayQueueEntry {
 	GCObject *obj;
-	mword desc;
+	SgenDescriptor desc;
 };
 
 #define SGEN_GRAY_QUEUE_ENTRY(obj,desc)	{ (obj), (desc) }
@@ -136,7 +136,7 @@ extern guint64 stat_gray_queue_dequeue_slow_path;
 
 void sgen_init_gray_queues (void);
 
-void sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, mword desc);
+void sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc);
 GrayQueueEntry sgen_gray_object_dequeue (SgenGrayQueue *queue);
 GrayQueueSection* sgen_gray_object_dequeue_section (SgenGrayQueue *queue);
 void sgen_gray_object_enqueue_section (SgenGrayQueue *queue, GrayQueueSection *section);
@@ -166,7 +166,7 @@ sgen_gray_object_queue_is_empty (SgenGrayQueue *queue)
 }
 
 static inline MONO_ALWAYS_INLINE void
-GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, GCObject *obj, mword desc)
+GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc)
 {
 #if SGEN_MAX_DEBUG_LEVEL >= 9
 	sgen_gray_object_enqueue (queue, obj, desc);
@@ -187,7 +187,7 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, GCObject *obj, mword desc)
 }
 
 static inline MONO_ALWAYS_INLINE void
-GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, GCObject** obj, mword *desc)
+GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, GCObject** obj, SgenDescriptor *desc)
 {
 	GrayQueueEntry entry;
 #if SGEN_MAX_DEBUG_LEVEL >= 9

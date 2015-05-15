@@ -285,27 +285,7 @@ enum {
 	SGEN_GC_BIT_FINALIZER_AWARE = 4,
 };
 
-/* the runtime can register areas of memory as roots: we keep two lists of roots,
- * a pinned root set for conservatively scanned roots and a normal one for
- * precisely scanned roots (currently implemented as a single list).
- */
-typedef struct _RootRecord RootRecord;
-struct _RootRecord {
-	char *end_root;
-	mword root_desc;
-};
-
-enum {
-	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
-	ROOT_TYPE_PINNED = 1, /* roots without a GC descriptor */
-	ROOT_TYPE_WBARRIER = 2, /* roots with a write barrier */
-	ROOT_TYPE_NUM
-};
-
-extern SgenHashTable roots_hash [ROOT_TYPE_NUM];
-
-int sgen_register_root (char *start, size_t size, void *descr, int root_type);
-void sgen_deregister_root (char* addr);
+typedef mword SgenDescriptor;
 
 void sgen_gc_init (void);
 
@@ -382,6 +362,28 @@ void sgen_init_internal_allocator (void);
 #include "mono/sgen/sgen-descriptor.h"
 #include "mono/sgen/sgen-gray.h"
 
+/* the runtime can register areas of memory as roots: we keep two lists of roots,
+ * a pinned root set for conservatively scanned roots and a normal one for
+ * precisely scanned roots (currently implemented as a single list).
+ */
+typedef struct _RootRecord RootRecord;
+struct _RootRecord {
+	char *end_root;
+	SgenDescriptor root_desc;
+};
+
+enum {
+	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
+	ROOT_TYPE_PINNED = 1, /* roots without a GC descriptor */
+	ROOT_TYPE_WBARRIER = 2, /* roots with a write barrier */
+	ROOT_TYPE_NUM
+};
+
+extern SgenHashTable roots_hash [ROOT_TYPE_NUM];
+
+int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type);
+void sgen_deregister_root (char* addr);
+
 typedef void (*IterateObjectCallbackFunc) (GCObject*, size_t, void*);
 
 void sgen_scan_area_with_callback (char *start, char *end, IterateObjectCallbackFunc callback, void *data, gboolean allow_flags);
@@ -409,8 +411,8 @@ struct _SgenThreadInfo {
 gboolean sgen_is_worker_thread (MonoNativeThreadId thread);
 
 typedef void (*CopyOrMarkObjectFunc) (GCObject**, SgenGrayQueue*);
-typedef void (*ScanObjectFunc) (GCObject *obj, mword desc, SgenGrayQueue*);
-typedef void (*ScanVTypeFunc) (GCObject *full_object, char *start, mword desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
+typedef void (*ScanObjectFunc) (GCObject *obj, SgenDescriptor desc, SgenGrayQueue*);
+typedef void (*ScanVTypeFunc) (GCObject *full_object, char *start, SgenDescriptor desc, SgenGrayQueue* BINARY_PROTOCOL_ARG (size_t size));
 
 typedef struct {
 	CopyOrMarkObjectFunc copy_or_mark_object;
@@ -704,7 +706,7 @@ void mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value);
 
 void sgen_wbarrier_value_copy_bitmap (gpointer _dest, gpointer _src, int size, unsigned bitmap);
 
-static inline mword
+static inline SgenDescriptor
 sgen_obj_get_descriptor (GCObject *obj)
 {
 	GCVTable vtable = SGEN_LOAD_VTABLE_UNCHECKED (obj);
@@ -712,7 +714,7 @@ sgen_obj_get_descriptor (GCObject *obj)
 	return sgen_vtable_get_descriptor (vtable);
 }
 
-static inline mword
+static inline SgenDescriptor
 sgen_obj_get_descriptor_safe (GCObject *obj)
 {
 	GCVTable vtable = SGEN_LOAD_VTABLE (obj);

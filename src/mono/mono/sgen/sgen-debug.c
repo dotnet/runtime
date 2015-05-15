@@ -68,7 +68,7 @@ static void
 describe_pointer (char *ptr, gboolean need_setup)
 {
 	GCVTable vtable;
-	mword desc;
+	SgenDescriptor desc;
 	int type;
 	char *start;
 	char *forwarded;
@@ -180,7 +180,7 @@ check_consistency_callback (GCObject *obj, size_t size, void *dummy)
 {
 	char *start = (char*)obj;
 	GCVTable vt = LOAD_VTABLE (obj);
-	mword desc = sgen_vtable_get_descriptor (vt);
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", start, vt, sgen_client_vtable_get_name (vt));
 
 #include "sgen-scan-object.h"
@@ -239,7 +239,7 @@ check_mod_union_callback (GCObject *obj, size_t size, void *dummy)
 	char *start = (char*)obj;
 	gboolean in_los = (gboolean) (size_t) dummy;
 	GCVTable vt = LOAD_VTABLE (obj);
-	mword desc = sgen_vtable_get_descriptor (vt);
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
 	guint8 *cards;
 	SGEN_LOG (8, "Scanning object %p, vtable: %p (%s)", obj, vt, sgen_client_vtable_get_name (vt));
 
@@ -279,7 +279,7 @@ static void
 check_major_refs_callback (GCObject *obj, size_t size, void *dummy)
 {
 	char *start = (char*)obj;
-	mword desc = sgen_obj_get_descriptor (obj);
+	SgenDescriptor desc = sgen_obj_get_descriptor (obj);
 
 #include "sgen-scan-object.h"
 }
@@ -309,7 +309,7 @@ void
 check_object (GCObject *obj)
 {
 	char *start = (char*)obj;
-	mword desc;
+	SgenDescriptor desc;
 
 	if (!start)
 		return;
@@ -453,7 +453,7 @@ verify_object_pointers_callback (GCObject *obj, size_t size, void *data)
 {
 	char *start = (char*)obj;
 	gboolean allow_missing_pinned = (gboolean) (size_t) data;
-	mword desc = sgen_obj_get_descriptor (obj);
+	SgenDescriptor desc = sgen_obj_get_descriptor (obj);
 
 #include "sgen-scan-object.h"
 }
@@ -578,7 +578,7 @@ check_marked_callback (GCObject *obj, size_t size, void *dummy)
 {
 	char *start = (char*)obj;
 	gboolean flag = (gboolean) (size_t) dummy;
-	mword desc;
+	SgenDescriptor desc;
 
 	if (sgen_ptr_in_nursery (start)) {
 		if (flag)
@@ -740,7 +740,7 @@ scan_object_for_specific_ref (GCObject *obj, GCObject *key)
 
 	if (scan_object_for_specific_ref_precise) {
 		char *start = (char*)obj;
-		mword desc = sgen_obj_get_descriptor_safe (obj);
+		SgenDescriptor desc = sgen_obj_get_descriptor_safe (obj);
 		#include "sgen-scan-object.h"
 	} else {
 		mword *words = (mword*)obj;
@@ -787,7 +787,7 @@ scan_roots_for_specific_ref (GCObject *key, int root_type)
 	check_key = key;
 
 	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
-		mword desc = root->root_desc;
+		SgenDescriptor desc = root->root_desc;
 
 		check_root = root;
 
@@ -888,7 +888,7 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 	RootRecord *root;
 	check_domain = domain;
 	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
-		mword desc = root->root_desc;
+		SgenDescriptor desc = root->root_desc;
 
 		/* The MonoDomain struct is allowed to hold
 		   references to objects in its own domain. */
@@ -1030,7 +1030,7 @@ scan_object_for_xdomain_refs (GCObject *obj, mword size, void *data)
 	char *start = (char*)obj;
 	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
 	MonoDomain *domain = vt->domain;
-	mword desc = sgen_vtable_get_descriptor (vt);
+	SgenDescriptor desc = sgen_vtable_get_descriptor (vt);
 
 	#include "sgen-scan-object.h"
 }

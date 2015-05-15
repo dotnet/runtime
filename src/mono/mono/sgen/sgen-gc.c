@@ -555,7 +555,7 @@ sgen_drain_gray_stack (int max_objs, ScanCopyContext ctx)
 		int i;
 		for (i = 0; i != max_objs; ++i) {
 			GCObject *obj;
-			mword desc;
+			SgenDescriptor desc;
 			GRAY_OBJECT_DEQUEUE (queue, &obj, &desc);
 			if (!obj)
 				return TRUE;
@@ -596,7 +596,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 	while (start < end) {
 		void *obj_to_pin = NULL;
 		size_t obj_to_pin_size = 0;
-		mword desc;
+		SgenDescriptor desc;
 
 		addr = *start;
 
@@ -890,7 +890,7 @@ unpin_objects_from_queue (SgenGrayQueue *queue)
 {
 	for (;;) {
 		GCObject *addr;
-		mword desc;
+		SgenDescriptor desc;
 		GRAY_OBJECT_DEQUEUE (queue, &addr, &desc);
 		if (!addr)
 			break;
@@ -915,7 +915,7 @@ single_arg_user_copy_or_mark (GCObject **obj, void *gc_data)
  * This function is not thread-safe!
  */
 static void
-precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, char *n_end, mword desc, ScanCopyContext ctx)
+precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, char *n_end, SgenDescriptor desc, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
@@ -2596,7 +2596,7 @@ sgen_have_pending_finalizers (void)
  * We do not coalesce roots.
  */
 int
-sgen_register_root (char *start, size_t size, void *descr, int root_type)
+sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type)
 {
 	RootRecord new_root;
 	int i;
@@ -2607,9 +2607,8 @@ sgen_register_root (char *start, size_t size, void *descr, int root_type)
 		if (root) {
 			size_t old_size = root->end_root - start;
 			root->end_root = start + size;
-			g_assert (((root->root_desc != 0) && (descr != NULL)) ||
-					  ((root->root_desc == 0) && (descr == NULL)));
-			root->root_desc = (mword)descr;
+			SGEN_ASSERT (0, !!root->root_desc == !!descr, "Can't change whether a root is precise or conservative.");
+			root->root_desc = descr;
 			roots_size += size;
 			roots_size -= old_size;
 			UNLOCK_GC;
@@ -2618,12 +2617,12 @@ sgen_register_root (char *start, size_t size, void *descr, int root_type)
 	}
 
 	new_root.end_root = start + size;
-	new_root.root_desc = (mword)descr;
+	new_root.root_desc = descr;
 
 	sgen_hash_table_replace (&roots_hash [root_type], start, &new_root, NULL);
 	roots_size += size;
 
-	SGEN_LOG (3, "Added root for range: %p-%p, descr: %p  (%d/%d bytes)", start, new_root.end_root, descr, (int)size, (int)roots_size);
+	SGEN_LOG (3, "Added root for range: %p-%p, descr: %llx  (%d/%d bytes)", start, new_root.end_root, descr, (int)size, (int)roots_size);
 
 	UNLOCK_GC;
 	return TRUE;

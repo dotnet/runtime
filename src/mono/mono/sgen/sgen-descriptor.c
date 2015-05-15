@@ -110,7 +110,7 @@ alloc_complex_descriptor (gsize *bitmap, int numbits)
 }
 
 gsize*
-sgen_get_complex_descriptor (mword desc)
+sgen_get_complex_descriptor (SgenDescriptor desc)
 {
 	return complex_descriptors + (desc >> LOW_TYPE_BITS);
 }
@@ -122,7 +122,7 @@ void*
 mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 {
 	int first_set = -1, num_set = 0, last_set = -1, i;
-	mword desc = 0;
+	SgenDescriptor desc = 0;
 	size_t stored_size = obj_size;
 
 	stored_size += SGEN_ALLOC_ALIGN - 1;
@@ -177,7 +177,7 @@ void*
 mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_t elem_size)
 {
 	int first_set = -1, num_set = 0, last_set = -1, i;
-	mword desc = DESC_TYPE_VECTOR | (vector ? VECTOR_KIND_SZARRAY : VECTOR_KIND_ARRAY);
+	SgenDescriptor desc = DESC_TYPE_VECTOR | (vector ? VECTOR_KIND_SZARRAY : VECTOR_KIND_ARRAY);
 	for (i = 0; i < numbits; ++i) {
 		if (elem_bitmap [i / GC_BITS_PER_WORD] & ((gsize)1 << (i % GC_BITS_PER_WORD))) {
 			if (first_set < 0)
@@ -218,7 +218,7 @@ mono_gc_make_descr_for_array (int vector, gsize *elem_bitmap, int numbits, size_
 gsize*
 mono_gc_get_bitmap_for_descr (void *descr, int *numbits)
 {
-	mword d = (mword)descr;
+	SgenDescriptor d = (SgenDescriptor)descr;
 	gsize *bitmap;
 
 	switch (d & DESC_TYPE_MASK) {
@@ -278,7 +278,7 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 	} else if (numbits < ((sizeof (*bitmap) * 8) - ROOT_DESC_TYPE_SHIFT)) {
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_BITMAP, bitmap [0]);
 	} else {
-		mword complex = alloc_complex_descriptor (bitmap, numbits);
+		SgenDescriptor complex = alloc_complex_descriptor (bitmap, numbits);
 		return (void*)MAKE_ROOT_DESC (ROOT_DESC_COMPLEX, complex);
 	}
 }
@@ -310,33 +310,33 @@ mono_gc_make_root_descr_all_refs (int numbits)
 	return descr;
 }
 
-void*
+SgenDescriptor
 sgen_make_user_root_descriptor (SgenUserRootMarkFunc marker)
 {
-	void *descr;
+	SgenDescriptor descr;
 
 	g_assert (user_descriptors_next < MAX_USER_DESCRIPTORS);
-	descr = (void*)MAKE_ROOT_DESC (ROOT_DESC_USER, (mword)user_descriptors_next);
+	descr = MAKE_ROOT_DESC (ROOT_DESC_USER, (SgenDescriptor)user_descriptors_next);
 	user_descriptors [user_descriptors_next ++] = marker;
 
 	return descr;
 }
 
 void*
-sgen_get_complex_descriptor_bitmap (mword desc)
+sgen_get_complex_descriptor_bitmap (SgenDescriptor desc)
 {
 	return complex_descriptors + (desc >> ROOT_DESC_TYPE_SHIFT);
 }
 
 SgenUserRootMarkFunc
-sgen_get_user_descriptor_func (mword desc)
+sgen_get_user_descriptor_func (SgenDescriptor desc)
 {
 	return user_descriptors [desc >> ROOT_DESC_TYPE_SHIFT];
 }
 
 #ifdef HEAVY_STATISTICS
 void
-sgen_descriptor_count_scanned_object (mword desc)
+sgen_descriptor_count_scanned_object (SgenDescriptor desc)
 {
 	int type = desc & DESC_TYPE_MASK;
 	SGEN_ASSERT (0, type, "Descriptor type can't be zero");
@@ -344,7 +344,7 @@ sgen_descriptor_count_scanned_object (mword desc)
 }
 
 void
-sgen_descriptor_count_copied_object (mword desc)
+sgen_descriptor_count_copied_object (SgenDescriptor desc)
 {
 	int type = desc & DESC_TYPE_MASK;
 	SGEN_ASSERT (0, type, "Descriptor type can't be zero");

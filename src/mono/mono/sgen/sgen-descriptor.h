@@ -25,7 +25,6 @@
 
 #include <mono/sgen/sgen-conf.h>
 
-
 /*
  * ######################################################################
  * ########  GC descriptors
@@ -134,21 +133,21 @@ enum {
 typedef void (*SgenUserMarkFunc)     (GCObject **addr, void *gc_data);
 typedef void (*SgenUserRootMarkFunc) (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
 
-void* sgen_make_user_root_descriptor (SgenUserRootMarkFunc marker);
+SgenDescriptor sgen_make_user_root_descriptor (SgenUserRootMarkFunc marker);
 
-gsize* sgen_get_complex_descriptor (mword desc);
-void* sgen_get_complex_descriptor_bitmap (mword desc);
-SgenUserRootMarkFunc sgen_get_user_descriptor_func (mword desc);
+gsize* sgen_get_complex_descriptor (SgenDescriptor desc);
+void* sgen_get_complex_descriptor_bitmap (SgenDescriptor desc);
+SgenUserRootMarkFunc sgen_get_user_descriptor_func (SgenDescriptor desc);
 
 void sgen_init_descriptors (void);
 
 #ifdef HEAVY_STATISTICS
-void sgen_descriptor_count_scanned_object (mword desc);
-void sgen_descriptor_count_copied_object (mword desc);
+void sgen_descriptor_count_scanned_object (SgenDescriptor desc);
+void sgen_descriptor_count_copied_object (SgenDescriptor desc);
 #endif
 
 static inline gboolean
-sgen_gc_descr_has_references (mword desc)
+sgen_gc_descr_has_references (SgenDescriptor desc)
 {
 	/* This covers SMALL_PTRFREE and COMPLEX_PTRFREE */
 	if ((desc & DESC_TYPE_PTRFREE_MASK) == DESC_TYPE_PTRFREE_BITS)

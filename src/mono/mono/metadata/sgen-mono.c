@@ -2404,13 +2404,13 @@ mono_gc_set_stack_end (void *stack_end)
 int
 mono_gc_register_root (char *start, size_t size, void *descr)
 {
-	return sgen_register_root (start, size, descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED);
+	return sgen_register_root (start, size, (SgenDescriptor)descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED);
 }
 
 int
 mono_gc_register_root_wbarrier (char *start, size_t size, void *descr)
 {
-	return sgen_register_root (start, size, descr, ROOT_TYPE_WBARRIER);
+	return sgen_register_root (start, size, (SgenDescriptor)descr, ROOT_TYPE_WBARRIER);
 }
 
 void
@@ -2541,7 +2541,7 @@ mono_gc_get_heap_size (void)
 void*
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 {
-	return sgen_make_user_root_descriptor ((SgenUserRootMarkFunc)marker);
+	return (void*)sgen_make_user_root_descriptor ((SgenUserRootMarkFunc)marker);
 }
 
 void*

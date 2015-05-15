@@ -41,7 +41,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 	++stat_optimized_copy;
 	{
 		char *forwarded;
-		mword desc;
+		SgenDescriptor desc;
 		if ((forwarded = SGEN_OBJECT_IS_FORWARDED (obj)))
 			desc = sgen_obj_get_descriptor_safe (forwarded);
 		else
@@ -130,7 +130,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 		return FALSE;
 	} else {
 		mword vtable_word = *(mword*)obj;
-		mword desc;
+		SgenDescriptor desc;
 		int type;
 
 		HEAVY_STAT (++stat_optimized_copy_major);
@@ -194,7 +194,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 }
 
 static void
-SCAN_OBJECT_FUNCTION_NAME (GCObject *obj, mword desc, SgenGrayQueue *queue)
+SCAN_OBJECT_FUNCTION_NAME (GCObject *obj, SgenDescriptor desc, SgenGrayQueue *queue)
 {
 	char *start = (char*)obj;
 
@@ -236,7 +236,7 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (ScanCopyContext ctx)
 
 	for (;;) {
 		GCObject *obj;
-		mword desc;
+		SgenDescriptor desc;
 
 		HEAVY_STAT (++stat_drain_loops);
 

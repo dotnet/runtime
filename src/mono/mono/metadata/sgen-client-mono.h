@@ -33,10 +33,10 @@ SGEN_LOAD_VTABLE_UNCHECKED (GCObject *obj)
 	return obj->vtable;
 }
 
-static inline mword
+static inline SgenDescriptor
 sgen_vtable_get_descriptor (GCVTable vtable)
 {
-	return (mword)vtable->gc_descr;
+	return (SgenDescriptor)vtable->gc_descr;
 }
 
 typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
@@ -140,7 +140,7 @@ sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o)
 static MONO_NEVER_INLINE mword
 sgen_client_par_object_get_size (GCVTable vtable, GCObject* o)
 {
-	mword descr = sgen_vtable_get_descriptor (vtable);
+	SgenDescriptor descr = sgen_vtable_get_descriptor (vtable);
 	mword type = descr & DESC_TYPE_MASK;
 
 	if (type == DESC_TYPE_RUN_LENGTH || type == DESC_TYPE_SMALL_PTRFREE) {
