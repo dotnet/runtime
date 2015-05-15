@@ -564,8 +564,7 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	 * <return addr> <- esp (unaligned on apple)
 	 */
 
-	mono_add_unwind_op_def_cfa (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_ESP, 4);
-	mono_add_unwind_op_offset (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_NREG, -4);
+	unwind_ops = mono_arch_get_cie_program ();
 
 	/* Alloc frame */
 	x86_alu_reg_imm (code, X86_SUB, X86_ESP, stack_size);
@@ -941,11 +940,12 @@ mono_x86_get_signal_exception_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	start = code = mono_global_codeman_reserve (128);
 
+	/* FIXME no unwind before we push ip */
 	/* Caller ip */
 	x86_push_reg (code, X86_ECX);
 
-	mono_add_unwind_op_def_cfa (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_ESP, 4);
-	mono_add_unwind_op_offset (unwind_ops, (guint8*)NULL, (guint8*)NULL, X86_NREG, -4);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, X86_ESP, 4);
+	mono_add_unwind_op_offset (unwind_ops, code, start, X86_NREG, -4);
 
 	/* Fix the alignment to be what apple expects */
 	stack_size = 12;

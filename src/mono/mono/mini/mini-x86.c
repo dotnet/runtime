@@ -5762,6 +5762,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	int i;
 	int size = 0;
 	guint8 *code, *start;
+	GSList *unwind_ops;
 
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -5798,6 +5799,9 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 		code = mono_domain_code_reserve (domain, size);
 #endif
 	start = code;
+
+	unwind_ops = mono_arch_get_cie_program ();
+
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		item->code_target = code;
@@ -5884,7 +5888,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	nacl_domain_code_validate (domain, &start, size, &code);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, unwind_ops), domain);
 
 	return start;
 }
@@ -6081,6 +6085,9 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 {
 	guint8 *code, *start;
 	int code_reserve = 64;
+	GSList *unwind_ops;
+
+	unwind_ops = mono_arch_get_cie_program ();
 
 	/*
 	 * The stack contains:
@@ -6142,10 +6149,10 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 	nacl_global_codeman_validate (&start, code_reserve, &code);
 
 	if (has_target) {
-		*info = mono_tramp_info_create ("delegate_invoke_impl_has_target", start, code - start, NULL, NULL);
+		*info = mono_tramp_info_create ("delegate_invoke_impl_has_target", start, code - start, NULL, unwind_ops);
 	} else {
 		char *name = g_strdup_printf ("delegate_invoke_impl_target_%d", param_count);
-		*info = mono_tramp_info_create (name, start, code - start, NULL, NULL);
+		*info = mono_tramp_info_create (name, start, code - start, NULL, unwind_ops);
 		g_free (name);
 	}
 
@@ -6172,6 +6179,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 	guint8 *code, *start;
 	int size = 24;
 	char *tramp_name;
+	GSList *unwind_ops;
 
 	if (offset / (int)sizeof (gpointer) > MAX_VIRTUAL_DELEGATE_OFFSET)
 		return NULL;
@@ -6182,6 +6190,8 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 	 * <return addr>
 	 */
 	start = code = mono_global_codeman_reserve (size);
+
+	unwind_ops = mono_arch_get_cie_program ();
 
 	/* Replace the this argument with the target */
 	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
@@ -6202,7 +6212,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 		tramp_name = g_strdup_printf ("delegate_virtual_invoke_imt_%d", - offset / sizeof (gpointer));
 	else
 		tramp_name = g_strdup_printf ("delegate_virtual_invoke_%d", offset / sizeof (gpointer));
-	*info = mono_tramp_info_create (tramp_name, start, code - start, NULL, NULL);
+	*info = mono_tramp_info_create (tramp_name, start, code - start, NULL, unwind_ops);
 	g_free (tramp_name);
 
 
