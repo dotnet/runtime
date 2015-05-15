@@ -997,7 +997,9 @@ PAL_BindResources(IN LPCSTR lpDomain)
 /*++
 Function :
 
-PAL_GetResourceString - get string for a specified resource id
+PAL_GetResourceString - get localized string for a specified resource.
+The string that is passed in should be the English string, since it
+will be returned if an appropriately localized version is not found.
 
 Returns number of characters retrieved, 0 if it failed.
 --*/
@@ -1005,33 +1007,22 @@ int
 PALAPI
 PAL_GetResourceString(
         IN LPCSTR lpDomain,
-        IN DWORD dwResourceId,
+        IN LPCSTR lpResourceStr,
         OUT LPWSTR lpWideCharStr,
         IN int cchWideChar
       )
 {
 #ifndef __APPLE__
-    CHAR resourceIdStr[9];
-    sprintf(resourceIdStr, "%X", dwResourceId);
-
-    // NOTE: the dgettext returns the resourceIdStr if it fails to locate
-    // the resource.
-    LPCSTR resourceString = dgettext(lpDomain, resourceIdStr);
-    int length = strlen(resourceString);
-
-    return UTF8ToUnicode(resourceString, length + 1, lpWideCharStr, cchWideChar, 0);
+    // NOTE: dgettext returns the key if it fails to locate the appropriate
+    // resource. In our case, that will be the English string.
+    LPCSTR resourceString = dgettext(lpDomain, lpResourceStr);
 #else // __APPLE__
     // UNIXTODO: Implement for OSX using the native localization API 
 
-    // This is a temporary solution until we add the real native resource support 
-    int len = _snwprintf(lpWideCharStr, cchWideChar - 1, W("Resource string id=0x%X"), dwResourceId);
-    if ((len < 0) || (len == (cchWideChar - 1)))
-    {
-        // Add string terminator if the result of the _snwprintf didn't fit the buffer.
-        lpWideCharStr[cchWideChar - 1] = W('\0');
-        len = cchWideChar - 1;
-    }
-
-    return len;
+    // This is a temporary solution until we add the real native resource support.
+    LPCSTR resourceString = lpResourceStr;
 #endif // __APPLE__
+
+    int length = strlen(resourceString);
+    return UTF8ToUnicode(lpResourceStr, length + 1, lpWideCharStr, cchWideChar, 0);
 }

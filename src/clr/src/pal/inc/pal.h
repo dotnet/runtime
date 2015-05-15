@@ -4398,7 +4398,7 @@ int
 PALAPI
 PAL_GetResourceString(
         IN LPCSTR lpDomain,
-        IN DWORD dwResourceId,
+        IN LPCSTR lpResourceStr,
         OUT LPWSTR lpWideCharStr,
         IN int cchWideChar);
 
