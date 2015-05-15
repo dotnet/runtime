@@ -77,7 +77,7 @@
   <PropertyGroup>
 
     <BuildToolsCoreCLRPackageName>Microsoft.DotNet.BuildTools.CoreCLR</BuildToolsCoreCLRPackageName>
-    <BuildToolsCoreCLRVersion>1.0.1-prerelease</BuildToolsCoreCLRVersion>
+    <BuildToolsCoreCLRVersion>1.0.2-prerelease</BuildToolsCoreCLRVersion>
     <BuildToolsCoreCLRInstallSempahore>$(ToolsDir)BuildTools.$(BuildToolsCoreCLRVersion).installed.semaphore</BuildToolsCoreCLRInstallSempahore>
 
     <BuildToolsPackageName>Microsoft.DotNet.BuildTools</BuildToolsPackageName>
