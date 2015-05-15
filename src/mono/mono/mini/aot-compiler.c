@@ -6483,6 +6483,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->bind_to_runtime_version = TRUE;
 		} else if (str_begins_with (arg, "full")) {
 			opts->mode = MONO_AOT_MODE_FULL;
+		} else if (str_begins_with (arg, "hybrid")) {
+			opts->mode = MONO_AOT_MODE_HYBRID;			
 		} else if (str_begins_with (arg, "threads=")) {
 			opts->nthreads = atoi (arg + strlen ("threads="));
 		} else if (str_begins_with (arg, "static")) {
