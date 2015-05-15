@@ -68,7 +68,7 @@ guidelines for internal and private identifiers.
 
 &#10003; **DO** use PascalCasing (capitalize the first letter of each word) for
 all identifiers except parameter names. For example, use `TextColor` rather than
-`Textcolor` or `Text color`.
+`Textcolor` or `Text_Color`.
 
 &#10003; **DO** use camelCasing (capitalize first letters of each word except
 for the first word) for all member parameter names. prefix descriptive type
