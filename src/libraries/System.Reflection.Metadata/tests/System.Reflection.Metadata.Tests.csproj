@@ -31,7 +31,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
       <Project>{f3e433c8-352f-4944-bf7f-765ce435370d}</Project>

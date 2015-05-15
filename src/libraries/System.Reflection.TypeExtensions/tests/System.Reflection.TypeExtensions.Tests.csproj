@@ -70,7 +70,6 @@
     <Compile Include="Type\IsAssignableFrom.cs" />
     <Compile Include="Type\TypeInfoAPIs.cs" />
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

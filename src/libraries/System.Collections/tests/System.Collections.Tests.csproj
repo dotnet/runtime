@@ -130,7 +130,6 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

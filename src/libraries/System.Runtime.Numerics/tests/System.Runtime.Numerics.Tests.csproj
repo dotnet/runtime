@@ -16,7 +16,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\src\System.Runtime.Numerics.csproj">
       <Project>{d2c99d27-0bef-4319-adb3-05cbeba8f69b}</Project>

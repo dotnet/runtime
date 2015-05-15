@@ -17,7 +17,6 @@
   <ItemGroup>
     <Compile Include="ComponentModelBasicTests.cs" />
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\src\System.ComponentModel.csproj">
       <Project>{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}</Project>
