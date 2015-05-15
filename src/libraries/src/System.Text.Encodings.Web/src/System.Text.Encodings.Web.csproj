@@ -16,7 +16,6 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="System\Text\Encodings\Web\AllowedCharactersBitmap.cs" />
     <Compile Include="System\Text\Encodings\Web\CodePointFilter.cs" />

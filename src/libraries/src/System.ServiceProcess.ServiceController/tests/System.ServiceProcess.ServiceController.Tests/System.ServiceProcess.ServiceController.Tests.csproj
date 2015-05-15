@@ -35,6 +35,5 @@
       <Name>System.ServiceProcess.ServiceController.TestNativeService</Name>
     </ProjectReference>
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

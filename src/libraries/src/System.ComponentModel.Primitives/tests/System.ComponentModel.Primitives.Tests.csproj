@@ -17,7 +17,6 @@
   <ItemGroup>
     <Compile Include="ComponentModelPrimitivesBasicTests.cs" />
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\src\System.ComponentModel.Primitives.csproj">
       <Project>{F620F382-30D1-451E-B125-2A612F92068B}</Project>

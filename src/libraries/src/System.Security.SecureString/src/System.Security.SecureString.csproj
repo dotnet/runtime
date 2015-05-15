@@ -18,7 +18,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <Compile Include="System\Security\SecureString.cs" />
     <Compile Include="System\Security\SecureStringMarshal.cs" />
