@@ -36,6 +36,21 @@ mono_set_crash_chaining   (mono_bool chain_signals);
 MONO_API void
 mono_jit_set_aot_only      (mono_bool aot_only);
 
+/**
+ * Allows control over our AOT (Ahead-of-time) compilation mode.
+ */
+typedef enum {
+	/* Disables AOT mode */
+	MONO_AOT_MODE_NONE,
+	/* Enables normal AOT mode, equivalent to mono_jit_set_aot_only (false) */
+	MONO_AOT_MODE_NORMAL,
+	/* Enables hyrbid AOT mode, JIT can still be used for wrappers */
+	MONO_AOT_MODE_HYBRID,
+	/* Enables full AOT mode, JIT is disabled and not allowed,
+	 * equivalent to mono_jit_set_aot_only (true) */
+	MONO_AOT_MODE_FULL
+} MonoAotMode;
+
 /* Allow embedders to decide wherther to actually obey breakpoint instructions
  * in specific methods (works for both break IL instructions and Debugger.Break ()
  * method calls).
