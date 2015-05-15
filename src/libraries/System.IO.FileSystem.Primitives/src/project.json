@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20-beta-22809"
+    "System.Runtime": "4.0.20-beta-*"
   },
   "frameworks": {
     "dnxcore50": {}

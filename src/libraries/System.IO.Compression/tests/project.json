@@ -1,19 +1,20 @@
 {
   "dependencies": {
-    "System.Collections": "4.0.10-beta-22809",
-    "System.Console": "4.0.0-beta-22809",
-    "System.Diagnostics.Debug": "4.0.10-beta-22809",
-    "System.IO": "4.0.10-beta-22809",
-    "System.IO.FileSystem": "4.0.0-beta-22809",
-    "System.Linq": "4.0.0-beta-22809",
-    "System.Runtime": "4.0.20-beta-22809",
-    "System.Runtime.Extensions": "4.0.10-beta-22809",
-    "System.Runtime.Handles": "4.0.0-beta-22809",
-    "System.Runtime.InteropServices": "4.0.20-beta-22809",
-    "System.Text.Encoding": "4.0.10-beta-22809",
-    "System.Threading.Overlapped": "4.0.0-beta-22809",
-    "System.Threading.Tasks": "4.0.10-beta-22809",
-    "System.Threading.ThreadPool": "4.0.10-beta-22809",
+    "System.Collections": "4.0.10-beta-*",
+    "System.Console": "4.0.0-beta-*",
+    "System.Diagnostics.Debug": "4.0.10-beta-*",
+    "System.IO": "4.0.10-beta-*",
+    "System.IO.Compression": "4.0.0-beta-*",
+    "System.IO.FileSystem": "4.0.0-beta-*",
+    "System.Linq": "4.0.0-beta-*",
+    "System.Runtime": "4.0.20-beta-*",
+    "System.Runtime.Extensions": "4.0.10-beta-*",
+    "System.Runtime.Handles": "4.0.0-beta-*",
+    "System.Runtime.InteropServices": "4.0.20-beta-*",
+    "System.Text.Encoding": "4.0.10-beta-*",
+    "System.Threading.Overlapped": "4.0.0-beta-*",
+    "System.Threading.Tasks": "4.0.10-beta-*",
+    "System.Threading.ThreadPool": "4.0.10-beta-*",
     "System.IO.Compression.TestData": "1.0.0-prerelease",
     "xunit": "2.0.0-beta5-build2785",
     "xunit.abstractions.netcore": "1.0.0-prerelease",
@@ -23,5 +24,9 @@
   },
   "frameworks": {
     "dnxcore50": {}
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {}
   }
 }

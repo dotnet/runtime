@@ -66,11 +66,5 @@
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="$(PackagesDir)\System.IO.Compression.clrcompression-x86\4.0.0-beta-22819\native\win\x86\clrcompression.dll">
-      <Link>clrcompression.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
