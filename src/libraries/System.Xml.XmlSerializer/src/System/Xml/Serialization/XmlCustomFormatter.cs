@@ -242,7 +242,7 @@ namespace System.Xml.Serialization
             if (value == null) return null;
             value = value.Trim();
             if (value.Length == 0)
-                return new byte[0];
+                return Array.Empty<byte>();
             return Convert.FromBase64String(value);
         }
         internal static byte[] ToByteArrayHex(string value)

@@ -6,7 +6,7 @@
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
     <AssemblyVersion>4.0.10.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <NoWarn>649</NoWarn>
+    <NoWarn>649;414</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>

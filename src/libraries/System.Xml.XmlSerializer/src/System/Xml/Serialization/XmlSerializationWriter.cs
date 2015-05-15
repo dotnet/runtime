@@ -38,10 +38,16 @@ namespace System.Xml.Serialization
         private bool _escapeName = true;
 
         // this method must be called before any generated serialization methods are called
-        internal void Init(XmlWriter w, XmlSerializerNamespaces namespaces, string encodingStyle, string idBase, TempAssembly tempAssembly)
+        internal void Init(XmlWriter w, XmlSerializerNamespaces namespaces, string encodingStyle, string idBase)
         {
             _w = w;
             _namespaces = namespaces;
+        }
+
+        // this method must be called before any generated serialization methods are called
+        internal void Init(XmlWriter w, XmlSerializerNamespaces namespaces, string encodingStyle, string idBase, TempAssembly tempAssembly)
+        {
+            Init(w, namespaces, encodingStyle, idBase);
             Init(tempAssembly);
         }
 

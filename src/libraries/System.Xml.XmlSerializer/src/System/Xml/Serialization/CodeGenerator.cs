@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 
+
+#if !NET_NATIVE
 namespace System.Xml.Serialization
 {
     using System;
@@ -28,8 +30,6 @@ namespace System.Xml.Serialization
 
     internal class CodeGenerator
     {
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Method does validation only without any user input")]
-        internal static bool IsValidLanguageIndependentIdentifier(string ident) { return System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(ident); }
         internal static BindingFlags InstanceBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         internal static BindingFlags StaticBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
         internal static MethodAttributes PublicMethodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig;
@@ -130,12 +130,6 @@ namespace System.Xml.Serialization
         internal MethodBuilder MethodBuilder
         {
             get { return _methodBuilder; }
-        }
-
-        internal static Exception NotSupported(string msg)
-        {
-            System.Diagnostics.Debug.Assert(false, msg);
-            return new NotSupportedException(msg);
         }
 
         internal ArgBuilder GetArg(string name)
@@ -1774,3 +1768,4 @@ namespace System.Xml.Serialization
         }
     }
 }
+#endif

@@ -4,6 +4,8 @@
 // </copyright>
 //------------------------------------------------------------------------------
 
+
+#if !NET_NATIVE
 namespace System.Xml.Serialization
 {
     using System;
@@ -412,7 +414,7 @@ namespace System.Xml.Serialization
         private FieldBuilder GenerateTypedSerializers(Hashtable serializers, TypeBuilder serializerContractTypeBuilder)
         {
             string privateName = "typedSerializers";
-            FieldBuilder fieldBuilder = GenerateHashtableGetBegin(privateName, "XmlTypedSerializers", serializerContractTypeBuilder);
+            FieldBuilder fieldBuilder = GenerateHashtableGetBegin(privateName, "TypedSerializers", serializerContractTypeBuilder);
             MethodInfo Hashtable_Add = typeof(Hashtable).GetMethod(
                 "Add",
                 CodeGenerator.InstanceBindingFlags,
@@ -530,8 +532,8 @@ namespace System.Xml.Serialization
             ilg.New(ctor);
             ilg.EndMethod();
 
-            FieldBuilder readMethodsField = GeneratePublicMethods("readMethods", "XmlReadMethods", readMethods, xmlMappings, serializerContractTypeBuilder);
-            FieldBuilder writeMethodsField = GeneratePublicMethods("writeMethods", "XmlWriteMethods", writerMethods, xmlMappings, serializerContractTypeBuilder);
+            FieldBuilder readMethodsField = GeneratePublicMethods("readMethods", "ReadMethods", readMethods, xmlMappings, serializerContractTypeBuilder);
+            FieldBuilder writeMethodsField = GeneratePublicMethods("writeMethods", "WriteMethods", writerMethods, xmlMappings, serializerContractTypeBuilder);
             FieldBuilder typedSerializersField = GenerateTypedSerializers(serializers, serializerContractTypeBuilder);
             GenerateSupportedTypes(types, serializerContractTypeBuilder);
             GenerateGetSerializer(serializers, xmlMappings, serializerContractTypeBuilder);
@@ -597,3 +599,4 @@ namespace System.Xml.Serialization
         }
     }
 }
+#endif
