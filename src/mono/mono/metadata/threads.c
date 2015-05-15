@@ -499,9 +499,15 @@ static void thread_cleanup (MonoInternalThread *thread)
 
 typedef union {
 	struct {
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+		guint32 type : 1;
+		guint32 offset : 25;
+		guint32 index : 6;
+#else
 		guint32 index : 6;
 		guint32 offset : 25;
 		guint32 type : 1;
+#endif
 	} fields;
 	guint32 raw;
 } SpecialStaticOffset;
