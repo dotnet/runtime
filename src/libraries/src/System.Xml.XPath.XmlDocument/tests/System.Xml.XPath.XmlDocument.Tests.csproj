@@ -18,7 +18,6 @@
   <PropertyGroup>
     <CommonPathXPath>$(CommonPath)\System.Xml.XPath</CommonPathXPath>
   </PropertyGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <!-- XPath.XmlDocument navigator -->
     <Compile Include="$(CommonPathXPath)\XmlDocument\CreateNavigatorFromXmlDocument.cs" />

@@ -24,7 +24,6 @@
     <Compile Include="BackgroundWorkerTests.cs" />
     <Compile Include="TestException.cs" />
   </ItemGroup>
-  <!-- References are resolved from packages.config -->
   <ItemGroup>
     <ProjectReference Include="..\src\System.ComponentModel.EventBasedAsync.csproj">
       <Project>{551A6340-8EEF-445E-A2A2-639CC23DBD36}</Project>
