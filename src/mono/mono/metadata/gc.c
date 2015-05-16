@@ -71,8 +71,13 @@ static GSList *domains_to_finalize= NULL;
 static MonoMList *threads_to_finalize = NULL;
 
 static gboolean finalizer_thread_exited;
-/* Uses finalizer_mutex */
+static int num_to_finalize;
+
+/* These use finalizer_mutex */
+/* Used to wait for finalizer_thread_exited to become TRUE */
 static mono_cond_t exited_cond;
+/* Used to wait for num_to_finalize to become > 0 */
+static mono_cond_t finalizer_cond;
 
 static MonoInternalThread *gc_thread;
 
@@ -505,6 +510,8 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	*/
 	if (gc_thread == NULL)
 		return;
+
+	/* Can't use cond vars here, since they don't contain the wapi interrupt logic */
 
 	ResetEvent (pending_done_event);
 	mono_gc_finalize_notify ();
@@ -993,10 +1000,6 @@ mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle)
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }
 
-#ifdef MONO_HAS_SEMAPHORES
-static MonoSemType finalizer_sem;
-#endif
-static HANDLE finalizer_event;
 static volatile gboolean finished=FALSE;
 
 void
@@ -1009,11 +1012,10 @@ mono_gc_finalize_notify (void)
 	if (mono_gc_is_null ())
 		return;
 
-#ifdef MONO_HAS_SEMAPHORES
-	MONO_SEM_POST (&finalizer_sem);
-#else
-	SetEvent (finalizer_event);
-#endif
+	mono_mutex_lock (&finalizer_mutex);
+	num_to_finalize ++;
+	mono_cond_signal (&finalizer_cond);
+	mono_mutex_unlock (&finalizer_mutex);
 }
 
 #ifdef HAVE_BOEHM_GC
@@ -1089,28 +1091,29 @@ finalize_domain_objects (DomainFinalizationReq *req)
 static guint32
 finalizer_thread (gpointer unused)
 {
-	gboolean wait = TRUE;
-
 	while (!finished) {
-		/* Wait to be notified that there's at least one
+		/*
+		 * Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
-
 		g_assert (mono_domain_get () == mono_get_root_domain ());
-		mono_gc_set_skip_thread (TRUE);
-		MONO_PREPARE_BLOCKING
 
-		if (wait) {
-		/* An alertable wait is required so this thread can be suspended on windows */
-#ifdef MONO_HAS_SEMAPHORES
-			MONO_SEM_WAIT_ALERTABLE (&finalizer_sem, TRUE);
-#else
-			WaitForSingleObjectEx (finalizer_event, INFINITE, TRUE);
-#endif
+		gboolean has_work = FALSE;
+		while (TRUE) {
+			mono_gc_set_skip_thread (TRUE);
+			MONO_PREPARE_BLOCKING;
+			mono_mutex_lock (&finalizer_mutex);
+			if (!num_to_finalize)
+				mono_cond_wait (&finalizer_cond, &finalizer_mutex);
+			else
+				has_work = TRUE;
+			mono_mutex_unlock (&finalizer_mutex);
+			MONO_FINISH_BLOCKING;
+			mono_gc_set_skip_thread (FALSE);
+
+			if (has_work || finished)
+				break;
 		}
-		wait = TRUE;
-		MONO_FINISH_BLOCKING
-		mono_gc_set_skip_thread (FALSE);
 
 		mono_threads_perform_thread_dump ();
 
@@ -1142,16 +1145,12 @@ finalizer_thread (gpointer unused)
 
 		reference_queue_proccess_all ();
 
-#ifdef MONO_HAS_SEMAPHORES
 		/* Avoid posting the pending done event until there are pending finalizers */
-		if (MONO_SEM_TIMEDWAIT (&finalizer_sem, 0) == 0)
-			/* Don't wait again at the start of the loop */
-			wait = FALSE;
-		else
+		mono_mutex_lock (&finalizer_mutex);
+		num_to_finalize --;
+		if (num_to_finalize == 0)
 			SetEvent (pending_done_event);
-#else
-			SetEvent (pending_done_event);
-#endif
+		mono_mutex_unlock (&finalizer_mutex);
 	}
 
 	mono_finalizer_lock ();
@@ -1196,15 +1195,11 @@ mono_gc_init (void)
 		gc_disabled = TRUE;
 		return;
 	}
-	
-	finalizer_event = CreateEvent (NULL, FALSE, FALSE, NULL);
-	g_assert (finalizer_event);
+
+	mono_cond_init (&finalizer_cond, 0);
 	pending_done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
 	g_assert (pending_done_event);
 	mono_cond_init (&exited_cond, 0);
-#ifdef MONO_HAS_SEMAPHORES
-	MONO_SEM_INIT (&finalizer_sem, 0);
-#endif
 
 #ifndef LAZY_GC_THREAD_CREATION
 	mono_gc_init_finalizer_thread ();
