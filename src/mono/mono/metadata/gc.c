@@ -45,7 +45,9 @@
 
 typedef struct DomainFinalizationReq {
 	MonoDomain *domain;
-	HANDLE done_event;
+	mono_mutex_t *done_mutex;
+	mono_cond_t *done_cond;
+	gboolean done;
 } DomainFinalizationReq;
 
 #ifdef PLATFORM_WINCE /* FIXME: add accessors to gc.dll API */
@@ -94,6 +96,21 @@ guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
 
 	MONO_PREPARE_BLOCKING
 	result = WaitForSingleObjectEx (handle, timeout, alertable);
+	MONO_FINISH_BLOCKING
+
+	return result;
+}
+
+static guint32
+guarded_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout)
+{
+	guint32 result;
+
+	MONO_PREPARE_BLOCKING;
+	if (timeout == INFINITE)
+		result = mono_cond_wait (cond, mutex);
+	else
+		result = mono_cond_timedwait_ms (cond, mutex, timeout);
 	MONO_FINISH_BLOCKING
 
 	return result;
@@ -365,8 +382,8 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 {
 	DomainFinalizationReq *req;
 	guint32 res;
-	HANDLE done_event;
-	MonoInternalThread *thread = mono_thread_internal_current ();
+	mono_mutex_t done_mutex;
+	mono_cond_t done_cond;
 
 #if defined(__native_client__)
 	return FALSE;
@@ -387,14 +404,14 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	mono_gc_collect (mono_gc_max_generation ());
 
-	done_event = CreateEvent (NULL, TRUE, FALSE, NULL);
-	if (done_event == NULL) {
-		return FALSE;
-	}
+	mono_mutex_init (&done_mutex);
+	mono_cond_init (&done_cond, 0);
 
 	req = g_new0 (DomainFinalizationReq, 1);
 	req->domain = domain;
-	req->done_event = done_event;
+	req->done_mutex = &done_mutex;
+	req->done_cond = &done_cond;
+	req->done = FALSE;
 
 	if (domain == mono_get_root_domain ())
 		finalizing_root_domain = TRUE;
@@ -412,21 +429,23 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		timeout = INFINITE;
 
 	while (TRUE) {
-		res = guarded_wait (done_event, timeout, TRUE);
-		/* printf ("WAIT RES: %d.\n", res); */
-
-		if (res == WAIT_IO_COMPLETION) {
-			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
-				return FALSE;
-		} else if (res == WAIT_TIMEOUT) {
-			/* We leak the handle here */
-			return FALSE;
-		} else {
-			break;
+		res = 0;
+		mono_mutex_lock (&done_mutex);
+		if (!req->done) {
+			res = guarded_cond_wait (&done_cond, &done_mutex, timeout);
+			/* printf ("WAIT RES: %d.\n", res); */
 		}
+		mono_mutex_unlock (&done_mutex);
+		if (res)
+			/* We leak memory here, since the finalizer thread might still be using it */
+			return FALSE;
+		if (req->done)
+			break;
 	}
 
-	CloseHandle (done_event);
+	mono_mutex_destroy (&done_mutex);
+	mono_cond_destroy (&done_cond);
+	g_free (req);
 
 	if (domain == mono_get_root_domain ()) {
 		mono_thread_pool_cleanup ();
@@ -1079,12 +1098,13 @@ finalize_domain_objects (DomainFinalizationReq *req)
 
 	/* cleanup the reference queue */
 	reference_queue_clear_for_domain (domain);
-	
-	/* printf ("DONE.\n"); */
-	SetEvent (req->done_event);
 
-	/* The event is closed in mono_domain_finalize if we get here */
-	g_free (req);
+	/* printf ("DONE.\n"); */
+
+	mono_mutex_lock (req->done_mutex);
+	req->done = TRUE;
+	mono_cond_signal (req->done_cond);
+	mono_mutex_unlock (req->done_mutex);
 }
 
 static guint32
