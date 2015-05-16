@@ -18,6 +18,7 @@ the core tests for the project. Visual Studio Solution (.sln) files exist for
 related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.
 
+[[Building On Unix]]
 ## Tests
 
 We use the OSS testing framework [xunit|http://xunit.github.io/]
