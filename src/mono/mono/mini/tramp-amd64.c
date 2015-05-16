@@ -902,39 +902,17 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 gpointer
 mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
-	guint8 *tramp;
 	guint8 *code, *buf;
-	static int byte_offset = -1;
-	static guint8 bitmask;
-	guint8 *jump;
 	int tramp_size;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 
-	tramp_size = 64;
+	tramp_size = 16;
 
 	code = buf = mono_global_codeman_reserve (tramp_size);
 
-	if (byte_offset < 0)
-		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-	amd64_test_membase_imm_size (code, MONO_AMD64_ARG_REG1, byte_offset, bitmask, 1);
-	jump = code;
-	amd64_branch8 (code, X86_CC_Z, -1, 1);
-
-	amd64_ret (code);
-
-	x86_patch (jump, code);
-
-	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_generic_class_init");
-		amd64_jump_reg (code, AMD64_R11);
-	} else {
-		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT, mono_get_root_domain (), NULL);
-
-		/* jump to the actual trampoline */
-		amd64_jump_code (code, tramp);
-	}
+	/* Not used on amd64 */
+	amd64_breakpoint (code);
 
 	nacl_global_codeman_validate (&buf, tramp_size, &code);
 

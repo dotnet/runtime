@@ -3642,12 +3642,24 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 		EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
 	}
 
+#ifdef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
+	MonoInst *ins;
+
+	/*
+	 * For LLVM, this requires that the code in the generic trampoline obtain the vtable argument according to
+	 * the normal calling convention of the platform.
+	 */
+	MONO_INST_NEW (cfg, ins, OP_GENERIC_CLASS_INIT);
+	ins->sreg1 = vtable_arg->dreg;
+	MONO_ADD_INS (cfg->cbb, ins);
+#else
 	if (COMPILE_LLVM (cfg))
 		call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline_llvm, &vtable_arg);
 	else
 		call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline, &vtable_arg);
 	mono_call_inst_add_outarg_reg (cfg, call, vtable_arg->dreg, MONO_ARCH_VTABLE_REG, FALSE);
 	cfg->uses_vtable_reg = TRUE;
+#endif
 }
 
 static void

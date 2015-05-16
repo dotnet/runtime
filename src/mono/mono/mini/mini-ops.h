@@ -1067,6 +1067,14 @@ MINI_OP(OP_GC_SPILL_SLOT_LIVENESS_DEF, "gc_spill_slot_liveness_def", NONE, NONE,
  */
 MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE, NONE)
 
+/*
+ * Check if the class given by sreg1 was inited, if not, call
+ * mono_generic_class_init_trampoline () though a trampoline.
+ * Since the trampoline saves all registers, this doesn't clobber
+ * any registers.
+ */
+MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
+
 /* Arch specific opcodes */
 /* #if defined(__native_client_codegen__) || defined(__native_client__) */
 /* We have to define these in terms of the TARGET defines, not NaCl defines */
