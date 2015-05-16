@@ -4836,6 +4836,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			static guint8 bitmask;
 			guint8 *jump;
 
+			g_assert (ins->sreg1 == MONO_AMD64_ARG_REG1);
+
 			if (byte_offset < 0)
 				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
 
@@ -4843,8 +4845,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			jump = code;
 			amd64_branch8 (code, X86_CC_NZ, -1, 1);
 
-			if (ins->sreg1 != MONO_AMD64_ARG_REG1)
-				amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, ins->sreg1, 8);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_generic_class_init", FALSE);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;

@@ -3626,7 +3626,6 @@ static void
 emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 {
 	MonoInst *vtable_arg;
-	MonoCallInst *call;
 	int context_used;
 
 	context_used = mini_class_check_context_used (cfg, klass);
@@ -3646,6 +3645,10 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 	MonoInst *ins;
 
 	/*
+	 * Using an opcode instead of emitting IR here allows the hiding of the call inside the opcode,
+	 * so this doesn't have to clobber any regs.
+	 */
+	/*
 	 * For LLVM, this requires that the code in the generic trampoline obtain the vtable argument according to
 	 * the normal calling convention of the platform.
 	 */
@@ -3653,6 +3656,8 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass)
 	ins->sreg1 = vtable_arg->dreg;
 	MONO_ADD_INS (cfg->cbb, ins);
 #else
+	MonoCallInst *call;
+
 	if (COMPILE_LLVM (cfg))
 		call = (MonoCallInst*)mono_emit_abs_call (cfg, MONO_PATCH_INFO_GENERIC_CLASS_INIT, NULL, helper_sig_generic_class_init_trampoline_llvm, &vtable_arg);
 	else

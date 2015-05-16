@@ -16,10 +16,11 @@
 #	b  base register (used in address references)
 #	f  floating point register
 #	a  EAX register
-#   d  EDX register
+#  d  EDX register
 #	l  long reg (forced eax:edx)
-#   s  ECX register
-#   c  register which can be used as a byte register (RAX..RDX)
+#  s  ECX register
+#  c  register which can be used as a byte register (RAX..RDX)
+#  A - first arg reg (rdi/rcx)
 #
 # len:number         describe the maximun length in bytes of the instruction
 # 		     number is a positive integer.  If the length is not specified
@@ -796,4 +797,4 @@ gc_liveness_use: len:0
 gc_spill_slot_liveness_def: len:0
 gc_param_slot_liveness_def: len:0
 
-generic_class_init: src1:i len:32
+generic_class_init: src1:A len:32
