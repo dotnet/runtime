@@ -29,6 +29,23 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 Assert.Throws<NullReferenceException>(() => ignored = s.LegalKeySizes);
                 Assert.Throws<NullReferenceException>(() => ignored = s.KeySize = 5);
                 Assert.Throws<NullReferenceException>(() => s.Key = new byte[5]);
+
+                s.Mode = CipherMode.CBC;
+                Assert.Equal(CipherMode.CBC, s.Mode);
+                s.Mode = CipherMode.ECB;
+                Assert.Equal(CipherMode.ECB, s.Mode);
+                Assert.Throws<CryptographicException>(() => s.Mode = CipherMode.CTS);
+                Assert.Throws<CryptographicException>(() => s.Mode = (CipherMode)12345);
+                Assert.Equal(CipherMode.ECB, s.Mode);
+
+                s.Padding = PaddingMode.None;
+                Assert.Equal(PaddingMode.None, s.Padding);
+                s.Padding = PaddingMode.Zeros;
+                Assert.Equal(PaddingMode.Zeros, s.Padding);
+                s.Padding = PaddingMode.PKCS7;
+                Assert.Equal(PaddingMode.PKCS7, s.Padding);
+                Assert.Throws<CryptographicException>(() => s.Padding = (PaddingMode)12345);
+                Assert.Equal(PaddingMode.PKCS7, s.Padding);
             }
         }
 

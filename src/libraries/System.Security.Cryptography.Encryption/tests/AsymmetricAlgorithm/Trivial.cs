@@ -35,6 +35,13 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             return;
         }
 
+        [Fact]
+        public static void TestInvalidAlgorithm()
+        {
+            var invalid = new Invalid();
+            Assert.Throws<NullReferenceException>(() => invalid.LegalKeySizes);
+        }
+
         private static byte[] GenerateRandom(int size)
         {
             byte[] data = new byte[size];
@@ -46,6 +53,10 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             return data;
         }
 
+        private class Invalid : AsymmetricAlgorithm
+        {
+            // Valid algorithsm must override LegalKeySizes
+        }
 
         private class Trivial : AsymmetricAlgorithm
         {

@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 
             using (HashAlgorithm hash = Create())
             {
+                Assert.True(hash.HashSize > 0);
                 actual = hash.ComputeHash(input);
             }
 
@@ -35,6 +36,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 
             using (HashAlgorithm hash = Create())
             {
+                Assert.True(hash.HashSize > 0);
                 actual = hash.ComputeHash(input, 0, input.Length);
             }
 
