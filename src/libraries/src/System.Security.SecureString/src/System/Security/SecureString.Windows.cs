@@ -13,7 +13,7 @@ namespace System.Security
         internal SecureString(SecureString str)
         {
             AllocateBuffer(str.EncryptedBufferLength);
-            SafeBSTRHandle.Copy(str._encryptedBuffer, _encryptedBuffer);
+            SafeBSTRHandle.Copy(str._encryptedBuffer, _encryptedBuffer, str.EncryptedBufferLength * sizeof(char));
             _decryptedLength = str._decryptedLength;
         }
 
@@ -103,9 +103,9 @@ namespace System.Security
             }
             finally
             {
-                ProtectMemory(decryptedBuffer);
                 if (bufferPtr != null)
                     decryptedBuffer.ReleasePointer();
+                ProtectMemory(decryptedBuffer);
             }
         }
 
@@ -128,9 +128,9 @@ namespace System.Security
             }
             finally
             {
-                ProtectMemory(decryptedBuffer);
                 if (bufferPtr != null)
                     decryptedBuffer.ReleasePointer();
+                ProtectMemory(decryptedBuffer);
             }
         }
 
@@ -161,12 +161,6 @@ namespace System.Security
             try
             {
                 ptr = Marshal.AllocCoTaskMem((length + 1) * 2);
-
-                if (ptr == IntPtr.Zero)
-                {
-                    throw new OutOfMemoryException();
-                }
-
                 decryptedBuffer = UnProtectMemory();
                 decryptedBuffer.AcquirePointer(ref bufferPtr);
                 Buffer.MemoryCopy(bufferPtr, (byte*)ptr.ToPointer(), ((length + 1) * 2), length * 2);
@@ -222,10 +216,6 @@ namespace System.Security
         private void AllocateBuffer(uint size)
         {
             _encryptedBuffer = SafeBSTRHandle.Allocate(null, size);
-            if (_encryptedBuffer.IsInvalid)
-            {
-                throw new OutOfMemoryException();
-            }
         }
 
         [System.Security.SecurityCritical]  // auto-generated
@@ -242,13 +232,7 @@ namespace System.Security
             }
 
             SafeBSTRHandle newBuffer = SafeBSTRHandle.Allocate(null, (uint)capacity);
-
-            if (newBuffer.IsInvalid)
-            {
-                throw new OutOfMemoryException();
-            }
-
-            SafeBSTRHandle.Copy(decryptedBuffer, newBuffer);
+            SafeBSTRHandle.Copy(decryptedBuffer, newBuffer, (uint)_decryptedLength * sizeof(char));
             decryptedBuffer.Dispose();
             decryptedBuffer = newBuffer;
         }
@@ -279,6 +263,7 @@ namespace System.Security
             finally
             {
                 decryptedBuffer.ClearBuffer();
+                decryptedBuffer.Dispose();
             }
         }
 
