@@ -2878,6 +2878,11 @@ mono_gc_base_init (void)
 		sgen_set_use_managed_allocator (FALSE);
 }
 
+void
+mono_gc_base_cleanup (void)
+{
+}
+
 gboolean
 mono_gc_is_null (void)
 {

@@ -48,13 +48,6 @@ typedef struct DomainFinalizationReq {
 	HANDLE done_event;
 } DomainFinalizationReq;
 
-#ifdef PLATFORM_WINCE /* FIXME: add accessors to gc.dll API */
-extern void (*__imp_GC_finalizer_notifier)(void);
-#define GC_finalizer_notifier __imp_GC_finalizer_notifier
-extern int __imp_GC_finalize_on_demand;
-#define GC_finalize_on_demand __imp_GC_finalize_on_demand
-#endif
-
 static gboolean gc_disabled = FALSE;
 
 static gboolean finalizing_root_domain = FALSE;
@@ -1276,9 +1269,7 @@ mono_gc_cleanup (void)
 			}
 		}
 		gc_thread = NULL;
-#ifdef HAVE_BOEHM_GC
-		GC_finalizer_notifier = NULL;
-#endif
+		mono_gc_base_cleanup ();
 	}
 
 	mono_reference_queue_cleanup ();

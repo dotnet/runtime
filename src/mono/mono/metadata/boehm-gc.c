@@ -217,6 +217,12 @@ mono_gc_base_init (void)
 	gc_initialized = TRUE;
 }
 
+void
+mono_gc_base_cleanup (void)
+{
+	GC_finalizer_notifier = NULL;
+}
+
 /**
  * mono_gc_collect:
  * @generation: GC generation identifier
