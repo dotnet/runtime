@@ -204,7 +204,6 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	finalizer = mono_class_get_finalizer (o->vtable->klass);
 
-#ifndef DISABLE_COM
 	/* If object has a CCW but has no finalizer, it was only
 	 * registered for finalization in order to free the CCW.
 	 * Else it needs the regular finalizer run.
@@ -215,7 +214,6 @@ mono_gc_run_finalize (void *obj, void *data)
 		mono_domain_set_internal (caller_domain);
 		return;
 	}
-#endif
 
 	/* 
 	 * To avoid the locking plus the other overhead of mono_runtime_invoke (),
@@ -1112,9 +1110,7 @@ finalizer_thread (gpointer unused)
 
 		mono_console_handle_async_ops ();
 
-#ifndef DISABLE_ATTACH
 		mono_attach_maybe_start ();
-#endif
 
 		if (domains_to_finalize) {
 			mono_finalizer_lock ();

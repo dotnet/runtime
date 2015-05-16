@@ -3280,6 +3280,12 @@ mono_free_bstr (gpointer bstr)
 #endif
 }
 
+gboolean
+mono_marshal_free_ccw (MonoObject* object)
+{
+	return FALSE;
+}
+
 int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (gpointer pUnk)
 {
