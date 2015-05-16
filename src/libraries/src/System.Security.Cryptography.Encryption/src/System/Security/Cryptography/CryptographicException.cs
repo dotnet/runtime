@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Security.Cryptography
@@ -17,20 +15,21 @@ namespace System.Security.Cryptography
         public CryptographicException(int hr)
             : base(SR.Arg_CryptographyException)
         {
+            HResult = hr;
         }
 
-        public CryptographicException(String message)
+        public CryptographicException(string message)
             : base(message)
         {
         }
 
-        public CryptographicException(String message, Exception inner)
+        public CryptographicException(string message, Exception inner)
             : base(message, inner)
         {
         }
 
-        public CryptographicException(String format, String insert)
-            : base(String.Format(CultureInfo.CurrentCulture, format, insert))
+        public CryptographicException(string format, string insert)
+            : base(string.Format(CultureInfo.CurrentCulture, format, insert))
         {
         }
     }
