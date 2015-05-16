@@ -11,16 +11,25 @@ namespace System.Security
     {
         internal SafeBSTRHandle() : base(true) { }
 
-        internal static SafeBSTRHandle Allocate(string src, uint len)
+        internal static SafeBSTRHandle Allocate(string src, uint lenInChars)
         {
-            SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, len);
-            bstr.Initialize(len * sizeof(char));
+            SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, lenInChars);
+            if (bstr.IsInvalid) // SysAllocStringLen returns a NULL ptr when there's insufficient memory
+            {
+                throw new OutOfMemoryException();
+            }
+            bstr.Initialize(lenInChars * sizeof(char));
             return bstr;
         }
 
         internal static SafeBSTRHandle Allocate(IntPtr src, uint lenInBytes)
         {
+            Debug.Assert(lenInBytes % sizeof(char) == 0);
             SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(src, lenInBytes / sizeof(char));
+            if (bstr.IsInvalid) // SysAllocStringLen returns a NULL ptr when there's insufficient memory
+            {
+                throw new OutOfMemoryException();
+            }
             bstr.Initialize(lenInBytes);
             return bstr;
         }
@@ -56,16 +65,19 @@ namespace System.Security
             }
         }
 
-        internal unsafe static void Copy(SafeBSTRHandle source, SafeBSTRHandle target)
+        internal unsafe static void Copy(SafeBSTRHandle source, SafeBSTRHandle target, uint bytesToCopy)
         {
+            if (bytesToCopy == 0)
+                return;
+
             byte* sourcePtr = null, targetPtr = null;
             try
             {
                 source.AcquirePointer(ref sourcePtr);
                 target.AcquirePointer(ref targetPtr);
 
-                Debug.Assert(Interop.OleAut32.SysStringLen((IntPtr)targetPtr) >= Interop.OleAut32.SysStringLen((IntPtr)sourcePtr), "Target buffer is not large enough!");
-                Buffer.MemoryCopy(sourcePtr, targetPtr, (int)Interop.OleAut32.SysStringLen((IntPtr)targetPtr) * sizeof(char), (int)Interop.OleAut32.SysStringLen((IntPtr)sourcePtr) * sizeof(char));
+                Debug.Assert(Interop.OleAut32.SysStringLen((IntPtr)sourcePtr) * sizeof(char) >= bytesToCopy, "Source buffer is too small.");
+                Buffer.MemoryCopy(sourcePtr, targetPtr, Interop.OleAut32.SysStringLen((IntPtr)targetPtr) * sizeof(char), bytesToCopy);
             }
             finally
             {
