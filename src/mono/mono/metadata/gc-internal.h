@@ -315,6 +315,11 @@ int mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, v
  */
 gboolean mono_gc_is_disabled (void);
 
+/*
+ * Return whenever this is the null GC
+ */
+gboolean mono_gc_is_null (void);
+
 void mono_gc_set_string_length (MonoString *str, gint32 new_length);
 
 #if defined(__MACH__)

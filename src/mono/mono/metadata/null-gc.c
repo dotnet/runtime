@@ -529,4 +529,10 @@ mono_gc_set_allow_synchronous_major (gboolean flag)
 	return TRUE;
 }
 
+gboolean
+mono_gc_is_null (void)
+{
+	return TRUE;
+}
+
 #endif

@@ -85,9 +85,7 @@ static void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 static void reference_queue_proccess_all (void);
 static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
-#ifndef HAVE_NULL_GC
 static HANDLE pending_done_event;
-#endif
 
 static guint32
 guarded_wait (HANDLE handle, guint32 timeout, gboolean alertable)
@@ -398,9 +396,12 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	 * is still working and will take care of running the finalizers
 	 */ 
 	
-#ifndef HAVE_NULL_GC
 	if (gc_disabled)
 		return TRUE;
+
+	/* We don't support domain finalization without a GC */
+	if (mono_gc_is_null ())
+		return FALSE;
 
 	mono_gc_collect (mono_gc_max_generation ());
 
@@ -453,10 +454,6 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	}
 
 	return TRUE;
-#else
-	/* We don't support domain finalization without a GC */
-	return FALSE;
-#endif
 }
 
 void
@@ -511,7 +508,9 @@ ves_icall_System_GC_SuppressFinalize (MonoObject *obj)
 void
 ves_icall_System_GC_WaitForPendingFinalizers (void)
 {
-#ifndef HAVE_NULL_GC
+	if (mono_gc_is_null ())
+		return;
+
 	if (!mono_gc_pending_finalizers ())
 		return;
 
@@ -531,7 +530,6 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	/* g_print ("Waiting for pending finalizers....\n"); */
 	guarded_wait (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
-#endif
 }
 
 void
@@ -1014,8 +1012,6 @@ mono_gc_GCHandle_CheckCurrentDomain (guint32 gchandle)
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }
 
-#ifndef HAVE_NULL_GC
-
 #ifdef MONO_HAS_SEMAPHORES
 static MonoSemType finalizer_sem;
 #endif
@@ -1028,6 +1024,9 @@ mono_gc_finalize_notify (void)
 #ifdef DEBUG
 	g_message ( "%s: prodding finalizer", __func__);
 #endif
+
+	if (mono_gc_is_null ())
+		return;
 
 #ifdef MONO_HAS_SEMAPHORES
 	MONO_SEM_POST (&finalizer_sem);
@@ -1239,6 +1238,9 @@ mono_gc_cleanup (void)
 	g_message ("%s: cleaning up finalizer", __func__);
 #endif
 
+	if (mono_gc_is_null ())
+		return;
+
 	if (!gc_disabled) {
 		finished = TRUE;
 		if (mono_thread_internal_current () != gc_thread) {
@@ -1311,25 +1313,6 @@ mono_gc_cleanup (void)
 	mono_mutex_destroy (&finalizer_mutex);
 	mono_mutex_destroy (&reference_queue_mutex);
 }
-
-#else
-
-/* Null GC dummy functions */
-void
-mono_gc_finalize_notify (void)
-{
-}
-
-void mono_gc_init (void)
-{
-	mono_mutex_init_recursive (&handle_section);
-}
-
-void mono_gc_cleanup (void)
-{
-}
-
-#endif
 
 gboolean
 mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread)
