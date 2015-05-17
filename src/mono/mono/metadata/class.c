@@ -3621,8 +3621,9 @@ setup_interface_offsets (MonoClass *class, int cur_slot, gboolean overwrite)
 	 * mono_class_setup_interface_offsets () passes 0 as CUR_SLOT, so the computed interface offsets will be invalid. This
 	 * means we have to overwrite those when called from other places (#4440).
 	 */
-	if (class->interfaces_packed && !overwrite) {
-		g_assert (class->interface_offsets_count == interface_offsets_count);
+	if (class->interfaces_packed) {
+		if (!overwrite)
+			g_assert (class->interface_offsets_count == interface_offsets_count);
 	} else {
 		uint8_t *bitmap;
 		int bsize;
