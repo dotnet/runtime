@@ -219,13 +219,16 @@ DECL_OFFSET (MonoContext, pc)
 DECL_OFFSET (MonoContext, regs)
 DECL_OFFSET (MonoContext, fregs)
 
-DECL_OFFSET(MonoLMF, method)
 DECL_OFFSET(MonoLMF, lmf_addr)
 
 DECL_OFFSET(SeqPointInfo, ss_trigger_page)
 
 DECL_OFFSET(DynCallArgs, res)
 DECL_OFFSET(DynCallArgs, res2)
+#endif
+
+#if defined(TARGET_ARM)
+DECL_OFFSET(MonoLMF, method)
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
