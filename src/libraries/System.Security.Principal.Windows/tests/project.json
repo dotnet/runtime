@@ -1,9 +1,12 @@
 {
   "dependencies": {
+    "System.Reflection": "4.0.10-beta-*",
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Handles": "4.0.0-beta-*",
+    "System.Runtime.InteropServices": "4.0.20-beta-*",
     "System.Collections": "4.0.10-beta-*",
     "System.Security.Claims": "4.0.0-beta-*",
+    "System.Security.Principal.Windows": "4.0.0-beta-*",
     "xunit": "2.0.0-beta5-build2785",
     "xunit.abstractions.netcore": "1.0.0-prerelease",
     "xunit.assert": "2.0.0-beta5-build2785",
