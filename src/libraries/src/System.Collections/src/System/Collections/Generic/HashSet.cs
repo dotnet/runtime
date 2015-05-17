@@ -965,7 +965,7 @@ namespace System.Collections.Generic
 #if FEATURE_RANDOMIZED_STRING_HASHING
             int collisionCount = 0;
 #endif
-            for (int i = _buckets[hashCode % _buckets.Length] - 1; i >= 0; i = _slots[i].next)
+            for (int i = _buckets[bucket] - 1; i >= 0; i = _slots[i].next)
             {
                 if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value))
                 {
@@ -1258,7 +1258,7 @@ namespace System.Collections.Generic
 
             int hashCode = InternalGetHashCode(value);
             int bucket = hashCode % _buckets.Length;
-            for (int i = _buckets[hashCode % _buckets.Length] - 1; i >= 0; i = _slots[i].next)
+            for (int i = _buckets[bucket] - 1; i >= 0; i = _slots[i].next)
             {
                 if (_slots[i].hashCode == hashCode && _comparer.Equals(_slots[i].value, value))
                 {
