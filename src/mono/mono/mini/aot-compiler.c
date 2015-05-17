@@ -6192,8 +6192,10 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_trampoline (acfg, acfg->got_offset, info);
 #endif
 
+#ifndef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
 		mono_arch_create_generic_class_init_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
+#endif
 
 		/* Emit the exception related code pieces */
 		mono_arch_get_restore_context (&info, TRUE);

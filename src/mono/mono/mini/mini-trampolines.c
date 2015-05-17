@@ -1424,6 +1424,7 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 gpointer
 mono_create_generic_class_init_trampoline (void)
 {
+#ifndef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
 	static gpointer code;
 	MonoTrampInfo *info;
 
@@ -1442,6 +1443,11 @@ mono_create_generic_class_init_trampoline (void)
 	mono_trampolines_unlock ();
 
 	return code;
+#else
+	/* Not used */
+	g_assert_not_reached ();
+	return NULL;
+#endif
 }
 
 gpointer

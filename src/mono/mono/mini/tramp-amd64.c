@@ -902,28 +902,9 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 gpointer
 mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
-	guint8 *code, *buf;
-	int tramp_size;
-	GSList *unwind_ops = NULL;
-	MonoJumpInfo *ji = NULL;
-
-	tramp_size = 16;
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
 	/* Not used on amd64 */
-	amd64_breakpoint (code);
-
-	nacl_global_codeman_validate (&buf, tramp_size, &code);
-
-	mono_arch_flush_icache (buf, code - buf);
-	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
-
-	g_assert (code - buf <= tramp_size);
-
-	*info = mono_tramp_info_create ("generic_class_init_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return buf;
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
