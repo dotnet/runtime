@@ -3226,12 +3226,6 @@ cominterop_release_all_rcws (void)
 {
 }
 
-gboolean
-mono_marshal_free_ccw (MonoObject* object)
-{
-	return FALSE;
-}
-
 gpointer
 mono_string_to_bstr (MonoString *string_obj)
 {
