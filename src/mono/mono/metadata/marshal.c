@@ -8108,6 +8108,9 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 	return mono_compile_method (method);
 }
+
+#ifndef DISABLE_JIT
+
 /*
  * The code directly following this is the cache hit, value positive branch
  *
@@ -8168,6 +8171,8 @@ generate_check_cache (int obj_arg_position, int class_arg_position, int cache_ar
 	mono_mb_emit_ldarg (mb, cache_arg_position);
 	mono_mb_emit_icall (mb, mono_marshal_isinst_with_cache);
 }
+
+#endif /* DISABLE_JIT */
 
 /*
  * This does the equivalent of mono_object_castclass_with_cache.
@@ -8237,8 +8242,10 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 {
 	MonoObject *isinst = mono_object_isinst (obj, klass);
 
+#ifndef DISABLE_REMOTING
 	if (obj->vtable->klass == mono_defaults.transparent_proxy_class)
 		return isinst;
+#endif
 
 	uintptr_t cache_update = (uintptr_t)obj->vtable;
 	if (!isinst)
@@ -8282,7 +8289,6 @@ mono_marshal_get_isinst_with_cache (void)
 	sig->pinvoke = 0;
 
 #ifndef DISABLE_JIT
-
 	generate_check_cache (obj_arg_position, class_arg_position, cache_arg_position, 
 		&return_null_pos, &negative_cache_hit_pos, &positive_cache_hit_pos, mb);
 	// Return the object gotten via the slow path.
