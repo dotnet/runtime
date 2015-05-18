@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Reflection.Extensions.Tests</AssemblyName>
+    <RootNamespace>System.Reflection.Extensions.Tests</RootNamespace>
+    <ProjectGuid>{A5E6F8C2-8E71-4148-8806-12FFBDBE2974}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Definitions\ConstructorDefinitions.cs" />
+    <Compile Include="Definitions\EventDefinitions.cs" />
+    <Compile Include="Definitions\FieldDefinitions.cs" />
+    <Compile Include="Definitions\MethodDefinitions.cs" />
+    <Compile Include="Definitions\PropertyDefinitions.cs" />
+    <Compile Include="GetCustomAttributes_Assembly.cs" />
+    <Compile Include="GetCustomAttributes_Compat.cs" />
+    <Compile Include="GetCustomAttributes_MemberInfo.cs" />
+    <Compile Include="GetCustomAttributes_ParamterInfo.cs" />
+    <Compile Include="ReflectionTestExtensions.cs" />
+    <Compile Include="RuntimeReflectionExtensionTests.cs" />
+    <Compile Include="RuntimeReflectionExtensionTestsWithQuirks.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
