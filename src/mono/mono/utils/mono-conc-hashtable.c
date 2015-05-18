@@ -116,7 +116,7 @@ mono_conc_hashtable_new (mono_mutex_t *mutex, GHashFunc hash_func, GEqualFunc ke
 	MonoConcurrentHashTable *res = g_new0 (MonoConcurrentHashTable, 1);
 	res->mutex = mutex;
 	res->hash_func = hash_func ? hash_func : g_direct_hash;
-	res->equal_func = key_equal_func;
+	res->equal_func = key_equal_func ? key_equal_func : g_direct_equal;
 	// res->equal_func = g_direct_equal;
 	res->table = conc_table_new (INITIAL_SIZE);
 	res->element_count = 0;
@@ -352,20 +352,18 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 	}
 }
 
+void
+mono_conc_hashtable_foreach (MonoConcurrentHashTable *hash_table, GHFunc func, gpointer userdata)
+{
+	int i;
+	conc_table *table = (conc_table*)hash_table->table;
+	key_value_pair *kvs = table->kvs;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  mono_mutex_lock (hash_table->mutex);
+	for (i = 0; i < table->table_size; ++i) {
+		if (kvs [i].key && kvs [i].key != TOMBSTONE) {
+			func (kvs [i].key, kvs [i].value, userdata);
+		}
+	}
+	mono_mutex_unlock (hash_table->mutex);
+}

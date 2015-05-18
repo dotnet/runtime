@@ -6,6 +6,7 @@ endif
 
 AM_CPPFLAGS = \
 	-fexceptions -DMONO_USE_EXC_TABLES	\
+	-DSUPPRESSION_DIR=\""$(datadir)/mono-$(API_VER)/mono/profiler"\"        \
 	-I$(top_srcdir) 	\
 	$(GLIB_CFLAGS)
 
@@ -68,7 +69,7 @@ libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(LIBMONO) $(GLIB_LIBS) $(LIBIC
 endif
 
 mprof_report_SOURCES = decode.c
-mprof_report_LDADD = $(Z_LIBS)
+mprof_report_LDADD = $(Z_LIBS) $(GLIB_LIBS) $(LIBICONV)
 
 PLOG_TESTS_SRC=test-alloc.cs test-busy.cs test-monitor.cs test-excleave.cs \
 	test-heapshot.cs test-traces.cs
@@ -90,6 +91,9 @@ check-local:
 else
 check-local: testlog
 endif
+
+suppressiondir = $(datadir)/mono-$(API_VER)/mono/profiler
+suppression_DATA = mono-profiler-log.suppression
 
 EXTRA_DIST=utils.c utils.h proflog.h perf_event.h \
 	$(PLOG_TESTS_SRC) ptestrunner.pl
