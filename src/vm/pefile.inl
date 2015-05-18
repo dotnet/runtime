@@ -774,7 +774,14 @@ inline BOOL PEFile::IsIbcOptimized()
 
 inline BOOL PEFile::IsILImageReadyToRun()
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        MODE_ANY;
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
 #ifdef FEATURE_PREJIT
     if (IsNativeLoaded())

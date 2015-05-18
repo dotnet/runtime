@@ -1945,7 +1945,7 @@ HRESULT CorHost2::SetStartupFlags(STARTUP_FLAGS flag)
     }
     CONTRACTL_END;
 
-    if (m_fStarted)
+    if (g_fEEStarted)
     {
         return HOST_E_INVALIDOPERATION;
     }
