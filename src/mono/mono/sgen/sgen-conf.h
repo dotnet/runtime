@@ -32,6 +32,8 @@ typedef guint32 mword;
 typedef guint64 mword;
 #endif
 
+typedef mword SgenDescriptor;
+#define SGEN_DESCRIPTOR_NULL	0
 
 /*
  * Turning on heavy statistics will turn off the managed allocator and

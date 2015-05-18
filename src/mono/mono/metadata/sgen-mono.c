@@ -112,7 +112,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (klass->valuetype);
 
-	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, klass->gc_descr, klass->name, klass);
+	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, (gpointer)klass->gc_descr, klass->name, klass);
 
 	if (sgen_ptr_in_nursery (dest) || ptr_on_stack (dest) || !sgen_gc_descr_has_references ((mword)klass->gc_descr)) {
 		size_t element_size = mono_class_value_size (klass, NULL);
@@ -964,7 +964,7 @@ mono_gc_alloc_mature (MonoVTable *vtable)
 }
 
 void*
-mono_gc_alloc_fixed (size_t size, void *descr)
+mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr)
 {
 	/* FIXME: do a single allocation */
 	void *res = calloc (1, size);
@@ -1923,7 +1923,7 @@ report_finalizer_roots (SgenPointerQueue *fin_ready_queue, SgenPointerQueue *cri
 static GCRootReport *root_report;
 
 static void
-single_arg_report_root (void **obj, void *gc_data)
+single_arg_report_root (MonoObject **obj, void *gc_data)
 {
 	if (*obj)
 		add_profile_gc_root (root_report, *obj, MONO_PROFILE_GC_ROOT_OTHER, 0);
@@ -1965,7 +1965,7 @@ precisely_report_roots_from (GCRootReport *report, void** start_root, void** end
 	case ROOT_DESC_USER: {
 		MonoGCRootMarkFunc marker = (MonoGCRootMarkFunc)sgen_get_user_descriptor_func (desc);
 		root_report = report;
-		marker (start_root, single_arg_report_root, NULL);
+		marker ((MonoObject**)start_root, single_arg_report_root, NULL);
 		break;
 	}
 	case ROOT_DESC_RUN_LEN:
@@ -2402,15 +2402,15 @@ mono_gc_set_stack_end (void *stack_end)
  */
 
 int
-mono_gc_register_root (char *start, size_t size, void *descr)
+mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr)
 {
-	return sgen_register_root (start, size, (SgenDescriptor)descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED);
+	return sgen_register_root (start, size, descr, descr ? ROOT_TYPE_NORMAL : ROOT_TYPE_PINNED);
 }
 
 int
-mono_gc_register_root_wbarrier (char *start, size_t size, void *descr)
+mono_gc_register_root_wbarrier (char *start, size_t size, MonoGCDescriptor descr)
 {
-	return sgen_register_root (start, size, (SgenDescriptor)descr, ROOT_TYPE_WBARRIER);
+	return sgen_register_root (start, size, descr, ROOT_TYPE_WBARRIER);
 }
 
 void
@@ -2538,16 +2538,16 @@ mono_gc_get_heap_size (void)
 	return (int64_t)sgen_gc_get_total_heap_allocation ();
 }
 
-void*
+MonoGCDescriptor
 mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 {
-	return (void*)sgen_make_user_root_descriptor ((SgenUserRootMarkFunc)marker);
+	return sgen_make_user_root_descriptor (marker);
 }
 
-void*
+MonoGCDescriptor
 mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 {
-	return (void*)SGEN_DESC_STRING;
+	return SGEN_DESC_STRING;
 }
 
 void*

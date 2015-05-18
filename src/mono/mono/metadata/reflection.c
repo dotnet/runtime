@@ -8304,7 +8304,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		memset (params, 0, sizeof (void*) * sig->param_count);
 	} else {
 		/* Allocate using GC so it gets GC tracking */
-		params = mono_gc_alloc_fixed (sig->param_count * sizeof (void*), NULL);
+		params = mono_gc_alloc_fixed (sig->param_count * sizeof (void*), MONO_GC_DESCRIPTOR_NULL);
 	}
 
 	/* skip prolog */

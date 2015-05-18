@@ -11,6 +11,7 @@
 #include <mono/io-layer/io-layer.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
+#include "mono/sgen/gc-internal-agnostic.h"
 
 #define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
 
@@ -394,7 +395,7 @@ struct _MonoClass {
 	MonoGenericClass *generic_class;
 	MonoGenericContainer *generic_container;
 
-	void *gc_descr;
+	MonoGCDescriptor gc_descr;
 
 	MonoClassRuntimeInfo *runtime_info;
 
@@ -452,7 +453,7 @@ struct MonoVTable {
 	 * According to comments in gc_gcj.h, this should be the second word in
 	 * the vtable.
 	 */
-	void *gc_descr; 	
+	MonoGCDescriptor gc_descr;
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
         gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;

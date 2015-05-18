@@ -285,8 +285,6 @@ enum {
 	SGEN_GC_BIT_FINALIZER_AWARE = 4,
 };
 
-typedef mword SgenDescriptor;
-
 void sgen_gc_init (void);
 
 void sgen_os_init (void);

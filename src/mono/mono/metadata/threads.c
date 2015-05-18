@@ -3564,7 +3564,7 @@ mark_slots (void *addr, MonoBitSet **bitmaps, MonoGCMarkFunc mark_func, void *gc
 			void **p = ptr + idx;
 
 			if (*p)
-				mark_func (p, gc_data);
+				mark_func ((MonoObject**)p, gc_data);
 		});
 	}
 }
@@ -3594,14 +3594,14 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 
 	gpointer* static_data = *static_data_ptr;
 	if (!static_data) {
-		static void *tls_desc = NULL;
-		static void *ctx_desc = NULL;
+		static MonoGCDescriptor tls_desc = MONO_GC_DESCRIPTOR_NULL;
+		static MonoGCDescriptor ctx_desc = MONO_GC_DESCRIPTOR_NULL;
 
 		if (mono_gc_user_markers_supported ()) {
-			if (!tls_desc)
+			if (tls_desc == MONO_GC_DESCRIPTOR_NULL)
 				tls_desc = mono_gc_make_root_descr_user (mark_tls_slots);
 
-			if (!ctx_desc)
+			if (ctx_desc == MONO_GC_DESCRIPTOR_NULL)
 				ctx_desc = mono_gc_make_root_descr_user (mark_ctx_slots);
 		}
 
@@ -3617,7 +3617,7 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, gboolean thr
 		if (mono_gc_user_markers_supported ())
 			static_data [i] = g_malloc0 (static_data_size [i]);
 		else
-			static_data [i] = mono_gc_alloc_fixed (static_data_size [i], NULL);
+			static_data [i] = mono_gc_alloc_fixed (static_data_size [i], MONO_GC_DESCRIPTOR_NULL);
 	}
 }
 

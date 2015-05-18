@@ -45,14 +45,6 @@
 #include <mono/utils/mono-memory-model.h>
 #include "cominterop.h"
 
-#if defined(HAVE_BOEHM_GC)
-#define GC_NO_DESCRIPTOR ((gpointer)(0 | GC_DS_LENGTH))
-#elif defined(HAVE_SGEN_GC)
-#define GC_NO_DESCRIPTOR (NULL)
-#else
-#define GC_NO_DESCRIPTOR (NULL)
-#endif
-
 static void
 get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value);
 
@@ -950,11 +942,11 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		return;
 
 	class->gc_descr_inited = TRUE;
-	class->gc_descr = GC_NO_DESCRIPTOR;
+	class->gc_descr = MONO_GC_DESCRIPTOR_NULL;
 
 	bitmap = default_bitmap;
 	if (class == mono_defaults.string_class) {
-		class->gc_descr = (gpointer)mono_gc_make_descr_for_string (bitmap, 2);
+		class->gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
 	} else if (class->rank) {
 		mono_class_compute_gc_descriptor (class->element_class);
 		if (MONO_TYPE_IS_REFERENCE (&class->element_class->byval_arg)) {
@@ -976,9 +968,9 @@ mono_class_compute_gc_descriptor (MonoClass *class)
 		if (count++ > 58)
 			return;*/
 		bitmap = compute_class_bitmap (class, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
-		class->gc_descr = (gpointer)mono_gc_make_descr_for_object (bitmap, max_set + 1, class->instance_size);
+		class->gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, class->instance_size);
 		/*
-		if (class->gc_descr == GC_NO_DESCRIPTOR)
+		if (class->gc_descr == MONO_GC_DESCRIPTOR_NULL)
 			g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);
 		*/
 		/*printf ("new descriptor: %p 0x%x for %s.%s\n", class->gc_descr, bitmap [0], class->name_space, class->name);*/
@@ -1960,7 +1952,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 		 */
 #ifdef HAVE_BOEHM_GC
 	if (domain != mono_get_root_domain () && !mono_dont_free_domains)
-		vt->gc_descr = GC_NO_DESCRIPTOR;
+		vt->gc_descr = MONO_GC_DESCRIPTOR_NULL;
 	else
 #endif
 		vt->gc_descr = class->gc_descr;
@@ -1973,7 +1965,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 	if (class_size) {
 		/* we store the static field pointer at the end of the vtable: vt->vtable [class->vtable_size] */
 		if (class->has_static_refs) {
-			gpointer statics_gc_descr;
+			MonoGCDescriptor statics_gc_descr;
 			int max_set = 0;
 			gsize default_bitmap [4] = {0};
 			gsize *bitmap;
@@ -4421,7 +4413,7 @@ mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *p
 	if (mono_class_has_finalizer (vtable->klass) || mono_class_is_marshalbyref (vtable->klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return mono_object_new_specific;
 
-	if (vtable->gc_descr != GC_NO_DESCRIPTOR) {
+	if (vtable->gc_descr != MONO_GC_DESCRIPTOR_NULL) {
 
 		return mono_object_new_fast;
 

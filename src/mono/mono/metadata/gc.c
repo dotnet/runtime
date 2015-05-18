@@ -638,12 +638,12 @@ find_first_unset (guint32 bitmap)
 	return -1;
 }
 
-static void*
+static MonoGCDescriptor
 make_root_descr_all_refs (int numbits, gboolean pinned)
 {
 #ifdef HAVE_SGEN_GC
 	if (pinned)
-		return NULL;
+		return MONO_GC_DESCRIPTOR_NULL;
 #endif
 	return mono_gc_make_root_descr_all_refs (numbits);
 }

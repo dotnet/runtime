@@ -45,8 +45,8 @@
 typedef struct _Slot Slot;
 
 struct _Slot {
-	gpointer key;
-	gpointer value;
+	MonoObject *key;
+	MonoObject *value;
 	Slot    *next;
 };
 
@@ -66,7 +66,7 @@ struct _MonoGHashTable {
 };
 
 #ifdef HAVE_SGEN_GC
-static void *table_hash_descr = NULL;
+static MonoGCDescriptor table_hash_descr = MONO_GC_DESCRIPTOR_NULL;
 
 static void mono_g_hash_mark (void *addr, MonoGCMarkFunc mark_func, void *gc_data);
 
@@ -74,7 +74,7 @@ static Slot*
 new_slot (MonoGHashTable *hash)
 {
 	if (hash->gc_type == MONO_HASH_CONSERVATIVE_GC)
-		return mono_gc_alloc_fixed (sizeof (Slot), NULL);
+		return mono_gc_alloc_fixed (sizeof (Slot), MONO_GC_DESCRIPTOR_NULL);
 	else
 		return mg_new (Slot, 1);
 }
