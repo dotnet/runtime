@@ -98,19 +98,13 @@ static inline int
 mono_cond_init (mono_cond_t *cond, int attr)
 {
 	InitializeConditionVariable (cond);
+	return 0;
 }
 
 static inline int
 mono_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
-	int res;
-
-	res = SleepConditionVariableCS (cond, mutex, INFINITE);
-	if (res)
-		/* Success */
-		return 0;
-	else
-		return 1;
+	return SleepConditionVariableCS (cond, mutex, INFINITE) ? 0 : 1;
 }
 
 static inline int
@@ -125,30 +119,26 @@ static inline int
 mono_cond_signal (mono_cond_t *cond)
 {
 	WakeConditionVariable (cond);
+	return 0;
 }
 
 static inline int
 mono_cond_broadcast (mono_cond_t *cond)
 {
 	WakeAllConditionVariable (cond);
+	return 0;
 }
 
 static inline int
 mono_cond_destroy (mono_cond_t *cond)
 {
+	return 0;
 }
 
 static inline int
 mono_cond_timedwait_ms (mono_cond_t *cond, mono_mutex_t *mutex, int timeout_ms)
 {
-	int res;
-
-	res = SleepConditionVariableCS (cond, mutex, timeout_ms);
-	if (res)
-		/* Success */
-		return 0;
-	else
-		return 1;
+	return SleepConditionVariableCS (cond, mutex, timeout_ms) ? 0 : 1;
 }
 
 #endif
