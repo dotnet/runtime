@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Reflection.Tests</AssemblyName>
+    <RootNamespace>System.Reflection.Tests</RootNamespace>
+    <ProjectGuid>{B027C72E-F04E-42E0-A7F7-993AEF8400D2}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyName\AssemblyName_ConstructorTests.cs" />
+    <Compile Include="AssemblyName\AssemblyName_MethodTests.cs" />
+    <Compile Include="AssemblyName\AssemblyName_ProcessorArchitectureTests.cs" />
+    <Compile Include="AssemblyName\AssemblyName_PropertyTests.cs" />
+    <Compile Include="AssemblyName\CultureName.cs" />
+    <Compile Include="Assembly\Assembly_CustomAttributeTests.cs" />
+    <Compile Include="Assembly\Assembly_DefinedTypeTests.cs" />
+    <Compile Include="Assembly\Assembly_EmbeddedFiles.cs" />
+    <Compile Include="Assembly\Assembly_EqualsTests.cs" />
+    <Compile Include="Assembly\Assembly_ExportedTypesTests.cs" />
+    <Compile Include="Assembly\Assembly_GetHashcodeTests.cs" />
+    <Compile Include="Assembly\Assembly_GetTypeTests.cs" />
+    <Compile Include="Assembly\Assembly_IsDynamicTests.cs" />
+    <Compile Include="Assembly\Assembly_LoadTests.cs" />
+    <Compile Include="Assembly\Assembly_ModulesTests.cs" />
+    <Compile Include="Assembly\Assembly_ToStringTests.cs" />
+    <Compile Include="Common\ReflectionTestData.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfo_FieldTests.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfo_InvokeTests.cs" />
+    <Compile Include="ConstructorInfo\ConstructorInfo_MethodTests.cs" />
+    <Compile Include="EventInfo\EventInfo_MethodTests.cs" />
+    <Compile Include="EventInfo\EventInfo_PropertyTests.cs" />
+    <Compile Include="FieldInfo\FieldInfo_ConstantTests.cs" />
+    <Compile Include="FieldInfo\FieldInfo_CustomAttributeTests.cs" />
+    <Compile Include="FieldInfo\FieldInfo_MethodTests.cs" />
+    <Compile Include="FieldInfo\FieldInfo_PropertyTests.cs" />
+    <Compile Include="FieldInfo\FieldInfo_RTArrayTests.cs" />
+    <Compile Include="FieldInfo\FieldInfo_RTGenericTests.cs" />
+    <Compile Include="GetType\GetTypeTests.cs" />
+    <Compile Include="ManifestResourceInfo\ManifestResourceInfo.cs" />
+    <Compile Include="MethodInfo\MethodInfo_CreateDelegateTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_CustomAttributeTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_EqualsTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_GetParametersTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_InvokeTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_MethodTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_NameTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_PropertyTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_SpecialReturnTypeTests.cs" />
+    <Compile Include="MethodInfo\MethodInfo_ToStringTests.cs" />
+    <Compile Include="ParameterInfo\ParamInfo_NameTests.cs" />
+    <Compile Include="ParameterInfo\ParamInfo_PositionTests.cs" />
+    <Compile Include="ParameterInfo\ParamInfo_PropertyTests.cs" />
+    <Compile Include="ParameterInfo\ParamInfo_TypeTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_GetConstantValueTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_GetSetMethodTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_GetValueTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_MethodTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_propertyTests.cs" />
+    <Compile Include="PropertyInfo\PropertyInfo_SetValueTests.cs" />
+    <Compile Include="ReflectionContext\ReflectionContext.cs" />
+    <Compile Include="TypeInfo\TypeInfo_DeclaredCtorTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_DeclaredEventTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_DeclaredFieldTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_DeclaredMemberTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_DeclaredMethodTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_DeclaredNestedTypeTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_DeclaredPropertiesTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_GenericTypeArgumentsTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_GenericTypeParametersTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_ImplementedInterfacesTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_IsAssignableFromTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_MethodTests.cs" />
+    <Compile Include="TypeInfo\TypeInfo_PropertyTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assembly\EmbeddedImage.png">
+      <LogicalName>EmbeddedImage.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ManifestResourceInfo\ResourceTextFile.txt">
+      <LogicalName>ResourceTextFile.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
