@@ -1,4 +1,4 @@
-;==++==
+Ôªø;==++==
 ;
 ;   Copyright (c) Microsoft Corporation.  All rights reserved.
 ;
@@ -946,6 +946,7 @@ Cryptography_CSP_NoPrivateKey = Object contains only the public half of a key pa
 Cryptography_CSP_OFBNotSupported = Output feedback mode (OFB) is not supported by this implementation.
 Cryptography_CSP_WrongKeySpec = The specified cryptographic service provider (CSP) does not support this key algorithm.
 Cryptography_HashNameSet = Hash name cannot be changed after the first write to the stream.
+Cryptography_HashAlgorithmNameNullOrEmpty = The hash algorithm name cannot be null or empty.
 Cryptography_InvalidHashSize = {0} algorithm hash size is {1} bytes.
 Cryptography_InvalidKey_Weak = Specified key is a known weak key for '{0}' and cannot be used.
 Cryptography_InvalidKey_SemiWeak = Specified key is a known semi-weak key for '{0}' and cannot be used.
@@ -1311,7 +1312,7 @@ IsolatedStorage_StoreNotOpen = Store must be open for this operation.
 IsolatedStorage_OldQuotaLarger = The new quota must be larger than the old quota.
 IsolatedStorage_UsageWillExceedQuota = There is not enough free space to perform the operation.
 IsolatedStorage_NotValidOnDesktop = The Site scope is currently not supported.
-IsolatedStorage_OnlyIncreaseUserApplicationStore = Increasing the quota of this scope is not supported.  Only the user application scopeís quota can be increased.
+IsolatedStorage_OnlyIncreaseUserApplicationStore = Increasing the quota of this scope is not supported.  Only the user application scope‚Äôs quota can be increased.
 #endif  // FEATURE_ISOSTORE
 
 ; Verification Exception
@@ -2655,13 +2656,13 @@ Globalization.ci_fr-BE = French (Belgium)
 Globalization.ci_fr-BF = French (Burkina Faso)
 Globalization.ci_fr-BI = French (Burundi)
 Globalization.ci_fr-BJ = French (Benin)
-Globalization.ci_fr-BL = French (Saint BarthÇlemy)
+Globalization.ci_fr-BL = French (Saint Barth‚Äölemy)
 Globalization.ci_fr-CA = French (Canada)
 Globalization.ci_fr-CD = French (Congo DRC)
 Globalization.ci_fr-CF = French (Central African Republic)
 Globalization.ci_fr-CG = French (Congo)
 Globalization.ci_fr-CH = French (Switzerland)
-Globalization.ci_fr-CI = French (CÙte díIvoire)
+Globalization.ci_fr-CI = French (C√¥te d‚ÄôIvoire)
 Globalization.ci_fr-CM = French (Cameroon)
 Globalization.ci_fr-DJ = French (Djibouti)
 Globalization.ci_fr-DZ = French (Algeria)
@@ -2883,9 +2884,9 @@ Globalization.ci_my = Burmese
 Globalization.ci_my-MM = Burmese (Myanmar)
 Globalization.ci_naq = Nama
 Globalization.ci_naq-NA = Nama (Namibia)
-Globalization.ci_nb = Norwegian (BokmÂl)
-Globalization.ci_nb-NO = Norwegian, BokmÂl (Norway)
-Globalization.ci_nb-SJ = Norwegian, BokmÂl (Svalbard and Jan Mayen)
+Globalization.ci_nb = Norwegian (Bokm√•l)
+Globalization.ci_nb-NO = Norwegian, Bokm√•l (Norway)
+Globalization.ci_nb-SJ = Norwegian, Bokm√•l (Svalbard and Jan Mayen)
 Globalization.ci_nd = North Ndebele
 Globalization.ci_nd-ZW = North Ndebele (Zimbabwe)
 Globalization.ci_ne = Nepali
@@ -2895,7 +2896,7 @@ Globalization.ci_nl = Dutch
 Globalization.ci_nl-AW = Dutch (Aruba)
 Globalization.ci_nl-BE = Dutch (Belgium)
 Globalization.ci_nl-BQ = Dutch (Bonaire, Sint Eustatius and Saba)
-Globalization.ci_nl-CW = Dutch (CuraÁao)
+Globalization.ci_nl-CW = Dutch (Cura√ßao)
 Globalization.ci_nl-NL = Dutch (Netherlands)
 Globalization.ci_nl-SR = Dutch (Suriname)
 Globalization.ci_nl-SX = Dutch (Sint Maarten)
@@ -2944,7 +2945,7 @@ Globalization.ci_pt-GW = Portuguese (Guinea-Bissau)
 Globalization.ci_pt-MO = Portuguese (Macao SAR)
 Globalization.ci_pt-MZ = Portuguese (Mozambique)
 Globalization.ci_pt-PT = Portuguese (Portugal)
-Globalization.ci_pt-ST = Portuguese (S„o TomÈ and PrÌncipe)
+Globalization.ci_pt-ST = Portuguese (S√£o Tom√© and Pr√≠ncipe)
 Globalization.ci_pt-TL = Portuguese (Timor-Leste)
 Globalization.ci_qps-ploc = Pseudo Language (Pseudo)
 Globalization.ci_qps-ploca = Pseudo Language (Pseudo Asia)
@@ -3055,7 +3056,7 @@ Globalization.ci_st = Southern Sotho
 Globalization.ci_st-LS = Sesotho (Lesotho)
 Globalization.ci_st-ZA = Southern Sotho (South Africa)
 Globalization.ci_sv = Swedish
-Globalization.ci_sv-AX = Swedish (èland Islands)
+Globalization.ci_sv-AX = Swedish (√Öland Islands)
 Globalization.ci_sv-FI = Swedish (Finland)
 Globalization.ci_sv-SE = Swedish (Sweden)
 Globalization.ci_sw = Kiswahili
@@ -3131,8 +3132,8 @@ Globalization.ci_ve = Venda
 Globalization.ci_ve-ZA = Venda (South Africa)
 Globalization.ci_vi = Vietnamese
 Globalization.ci_vi-VN = Vietnamese (Vietnam)
-Globalization.ci_vo = VolapÅk
-Globalization.ci_vo-001 = VolapÅk (World)
+Globalization.ci_vo = Volap√ºk
+Globalization.ci_vo-001 = Volap√ºk (World)
 Globalization.ci_vun = Vunjo
 Globalization.ci_vun-TZ = Vunjo (Tanzania)
 Globalization.ci_wae = Walser

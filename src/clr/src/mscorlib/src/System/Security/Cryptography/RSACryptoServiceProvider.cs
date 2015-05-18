@@ -489,5 +489,147 @@ namespace System.Security.Cryptography {
         private static bool IsPublic(RSAParameters rsaParams) {
             return (rsaParams.P == null);
         }
+
+#if !FEATURE_CORECLR        
+        //
+        // Adapt new RSA abstraction to legacy RSACryptoServiceProvider surface area.
+        //
+
+        // NOTE: For the new API, we go straight to CAPI for fixed set of hash algorithms and don't use crypto config here.
+        //
+        // Reasons:
+        //       1. We're moving away from crypto config and we won't have it when porting to .NET Core
+        //
+        //       2. It's slow to lookup and slow to use as the base HashAlgorithm adds considerable overhead 
+        //          (redundant defensive copy + double-initialization for the single-use case).
+        //      
+
+        [SecuritySafeCritical]
+        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) {
+            // we're sealed and the base should have checked this already
+            Contract.Assert(data != null);
+            Contract.Assert(offset >= 0 && offset <= data.Length);
+            Contract.Assert(count >= 0 && count <= data.Length);
+            Contract.Assert(!String.IsNullOrEmpty(hashAlgorithm.Name));
+
+            using (SafeHashHandle hashHandle = Utils.CreateHash(Utils.StaticProvHandle, GetAlgorithmId(hashAlgorithm))) {
+                Utils.HashData(hashHandle, data, offset, count);
+                return Utils.EndHash(hashHandle);
+            }
+        }
+
+        [SecuritySafeCritical]
+        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) {
+            // we're sealed and the base should have checked this already
+            Contract.Assert(data != null);
+            Contract.Assert(!String.IsNullOrEmpty(hashAlgorithm.Name));
+
+            using (SafeHashHandle hashHandle = Utils.CreateHash(Utils.StaticProvHandle, GetAlgorithmId(hashAlgorithm))) {
+                // Read the data 4KB at a time, providing similar read characteristics to a standard HashAlgorithm
+                byte[] buffer = new byte[4096];
+                int bytesRead = 0;
+                do {
+                    bytesRead = data.Read(buffer, 0, buffer.Length);
+                    if (bytesRead > 0) {   
+                        Utils.HashData(hashHandle, buffer, 0, bytesRead);
+                    }
+                } while (bytesRead > 0);
+
+                return Utils.EndHash(hashHandle);
+            }
+        }
+        
+        private static int GetAlgorithmId(HashAlgorithmName hashAlgorithm) {
+            switch (hashAlgorithm.Name) {
+                case "MD5":
+                    return Constants.CALG_MD5;
+                case "SHA1":
+                    return Constants.CALG_SHA1;
+                case "SHA256":
+                    return Constants.CALG_SHA_256;
+                case "SHA384":
+                    return Constants.CALG_SHA_384;
+                case "SHA512":
+                    return Constants.CALG_SHA_512;
+                default:
+                    throw new CryptographicException(Environment.GetResourceString("Cryptography_UnknownHashAlgorithm", hashAlgorithm.Name));
+            }
+        }
+
+        public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+
+            if (padding == RSAEncryptionPadding.Pkcs1) {
+                return Encrypt(data, fOAEP: false);
+            } else if (padding == RSAEncryptionPadding.OaepSHA1) {
+                return Encrypt(data, fOAEP: true);
+            } else {
+                throw PaddingModeNotSupported();
+            }
+        }
+
+        public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+
+            if (padding == RSAEncryptionPadding.Pkcs1) {
+                return Decrypt(data, fOAEP: false);
+            } else if (padding == RSAEncryptionPadding.OaepSHA1) {
+                return Decrypt(data, fOAEP: true);
+            } else {
+                throw PaddingModeNotSupported();
+            }
+        }
+
+        public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (hash == null) {
+                throw new ArgumentNullException("hash");
+            }
+            if (String.IsNullOrEmpty(hashAlgorithm.Name)) {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+            if (padding != RSASignaturePadding.Pkcs1) {
+                throw PaddingModeNotSupported();
+            }
+
+            return SignHash(hash, GetAlgorithmId(hashAlgorithm));
+        }
+
+        public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (hash == null) {
+                throw new ArgumentNullException("hash");
+            }
+            if (signature == null) {
+                throw new ArgumentNullException("signature");
+            }
+            if (String.IsNullOrEmpty(hashAlgorithm.Name)) {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+            if (padding != RSASignaturePadding.Pkcs1) {
+                throw PaddingModeNotSupported();
+            }
+
+            return VerifyHash(hash, GetAlgorithmId(hashAlgorithm), signature);
+        }
+
+        private static Exception PaddingModeNotSupported() {
+            return new CryptographicException(Environment.GetResourceString("Cryptography_InvalidPaddingMode"));
+        }
+#endif
     }
 }
