@@ -325,6 +325,11 @@ public:
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
 
+        // This method can called with stubStartAddress==NULL, e.g. when handling null reference exceptions
+        // caused by IP=0. Early out for this case to avoid confusing handled access violations inside predictStubKind.
+        if (PCODEToPINSTR(stubStartAddress) == NULL)
+            return SK_UNKNOWN;
+
         // Rather than calling IsInRange(stubStartAddress) for each possible stub kind
         // we can peek at the assembly code and predict which kind of a stub we have
         StubKind predictedKind = predictStubKind(stubStartAddress);
