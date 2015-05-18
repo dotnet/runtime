@@ -339,6 +339,8 @@ typedef struct {
 	); \
 } while (0)
 
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
+
 #elif defined(__mono_ppc__) /* defined(__arm__) */
 
 /* we define our own structure and we'll copy the data
