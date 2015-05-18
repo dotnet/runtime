@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace System.Security.Cryptography {
+    using System.IO;
     using System.Text;
     using System.Runtime.Serialization;
     using System.Security.Util;
@@ -27,17 +28,7 @@ namespace System.Security.Cryptography {
 [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class RSA : AsymmetricAlgorithm
     {
-        //
-        //  Extending this class allows us to know that you are really implementing
-        //  an RSA key.  This is required for anybody providing a new RSA key value
-        //  implemention.
-        //
-        //  The class provides no methods, fields or anything else.  Its only purpose is
-        //  as a heirarchy member for identification of algorithm.
-        //
-    
         protected RSA() { }
-
         //
         // public methods
         //
@@ -50,13 +41,188 @@ namespace System.Security.Cryptography {
             return (RSA) CryptoConfig.CreateFromName(algName);
         }
 
-        // Apply the private key to the data.  This function represents a
-        // raw RSA operation -- no implicit depadding of the imput value
-        abstract public byte[] DecryptValue(byte[] rgb);
+#if !FEATURE_CORECLR
+        //
+        // New RSA encrypt/decrypt/sign/verify RSA abstractions in .NET 4.6+ and .NET Core
+        //
+        // Methods that throw DerivedClassMustOverride are effectively abstract but we
+        // cannot mark them as such as it would be a breaking change. We'll make them
+        // abstract in .NET Core.
 
-        // Apply the public key to the data.  Again, this is a raw operation, no
-        // automatic padding.
-        abstract public byte[] EncryptValue(byte[] rgb);
+        public virtual byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) {
+            throw DerivedClassMustOverride();
+        }
+
+        public virtual byte[] Decrypt(byte[] data, RSAEncryptionPadding padding) {
+            throw DerivedClassMustOverride();
+        }
+
+        public virtual byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            throw DerivedClassMustOverride();
+        }
+
+        public virtual bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            throw DerivedClassMustOverride();
+        }
+
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) {
+            throw DerivedClassMustOverride();
+        }
+
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) {
+            throw DerivedClassMustOverride();
+        }
+
+        public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            return SignData(data, 0, data.Length, hashAlgorithm, padding);
+        }
+
+        public virtual byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            if (offset < 0 || offset > data.Length) {
+                throw new ArgumentOutOfRangeException("offset");
+            }
+            if (count < 0 || count > data.Length - offset) {
+                throw new ArgumentOutOfRangeException("count");
+            }
+            if (String.IsNullOrEmpty(hashAlgorithm.Name)) {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+
+            byte[] hash = HashData(data, offset, count, hashAlgorithm);
+            return SignHash(hash, hashAlgorithm, padding);
+        }
+
+        public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            if (String.IsNullOrEmpty(hashAlgorithm.Name)) {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+    
+            byte[] hash = HashData(data, hashAlgorithm);
+            return SignHash(hash, hashAlgorithm, padding);
+        }
+
+        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            return VerifyData(data, 0, data.Length, signature, hashAlgorithm, padding);
+        }
+
+        public virtual bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            if (offset < 0 || offset > data.Length) {
+                throw new ArgumentOutOfRangeException("offset");
+            }
+            if (count < 0 || count > data.Length - offset) {
+                throw new ArgumentOutOfRangeException("count"); 
+            }
+            if (signature == null) {
+                throw new ArgumentNullException("signature");
+            }
+            if (String.IsNullOrEmpty(hashAlgorithm.Name)) {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+
+            byte[] hash = HashData(data, offset, count, hashAlgorithm);
+            return VerifyHash(hash, signature, hashAlgorithm, padding);
+        }
+
+        public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) {
+            if (data == null) {
+                throw new ArgumentNullException("data");
+            }
+            if (signature == null) {
+                throw new ArgumentNullException("signature");
+            }
+            if (String.IsNullOrEmpty(hashAlgorithm.Name)) {
+                throw HashAlgorithmNameNullOrEmpty();
+            }
+            if (padding == null) {
+                throw new ArgumentNullException("padding");
+            }
+ 
+            byte[] hash = HashData(data, hashAlgorithm);
+            return VerifyHash(hash, signature, hashAlgorithm, padding);
+        }
+
+        private static Exception DerivedClassMustOverride() {
+            return new NotImplementedException(Environment.GetResourceString("NotSupported_SubclassOverride"));
+        }
+
+        internal static Exception HashAlgorithmNameNullOrEmpty() {
+            return new ArgumentException(Environment.GetResourceString("Cryptography_HashAlgorithmNameNullOrEmpty"), "hashAlgorithm");
+        }
+#endif
+
+        //
+        // Legacy encrypt/decrypt RSA abstraction from .NET < 4.6
+        //
+        // These should be obsolete, but we can't mark them as such here due to rules around not introducing
+        // source breaks to scenarios that compile against the GAC.
+        //
+        // They used to be abstract, but the only concrete implementation in RSACryptoServiceProvider threw
+        // NotSupportedException! This has been moved up to the base so all subclasses can ignore them moving forward.
+        // They will also be removed from .NET Core altogether.
+        //
+        // The original intent was for these to perform the RSA algorithm without padding/depadding. This can
+        // be seen by how the RSAXxx(De)Formatter classes call them in the non-RSACryptoServiceProvider case -- 
+        // they do the padding/depadding in managed code.
+        //
+        // Unfortunately, these formatter classes are still incompatible with RSACng or any derived class that does not
+        // implement EncryptValue, DecryptValue as the formatters speculatively expected non-RSACryptoServiceProvider
+        // to do. That needs to be fixed in a subsequent release. We can still do it as it would move an exception to a
+        // correct result...
+        //
+
+        // [Obsolete]
+        public virtual byte[] DecryptValue(byte[] rgb) {
+           throw new NotSupportedException(Environment.GetResourceString("NotSupported_Method"));
+        }
+
+        // [Obsolete]
+        public virtual byte[] EncryptValue(byte[] rgb) {
+           throw new NotSupportedException(Environment.GetResourceString("NotSupported_Method"));
+       }
+
+        //
+        // These should also be obsolete (on the base). They aren't well defined nor are they used
+        // anywhere in the FX apart from checking that they're not null.
+        //
+        // For new derived RSA classes, we'll just return "RSA" which is analagous to what ECDsa
+        // and ECDiffieHellman do.
+        //
+        // Note that for compat, RSACryptoServiceProvider still overrides and returns RSA-PKCS1-KEYEX 
+        // and http://www.w3.org/2000/09/xmldsig#rsa-sha1
+        //
+
+        public override string KeyExchangeAlgorithm {
+            get { return "RSA"; }
+        }
+
+        public override string SignatureAlgorithm {
+            get { return "RSA"; }
+        }
+
 
         // Import/export functions
 
