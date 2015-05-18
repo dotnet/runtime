@@ -1217,6 +1217,18 @@ class Tests
 		return 0;
 	}
 
+	static object delegate_8_args_res;
+
+	public static int test_0_delegate_8_args () {
+		delegate_8_args_res = null;
+		Action<string, string, string, string, string, string, string,
+			string> test = (a, b, c, d, e, f, g, h) =>
+            {
+				delegate_8_args_res = h;
+            };
+		test("a", "b", "c", "d", "e", "f", "g", "h");
+		return delegate_8_args_res == "h" ? 0 : 1;
+	}
 }
 
 #if !MOBILE
