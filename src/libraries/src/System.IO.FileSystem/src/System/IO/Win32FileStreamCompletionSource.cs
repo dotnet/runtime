@@ -25,7 +25,7 @@ namespace System.IO
             private const long CompletedCallback = (long)8 << 32;
             private const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
 
-            private readonly ThreadPoolBoundHandle _handle;
+            private readonly SafeFileHandle _handle;      // For cancellation support.
             private readonly int _numBufferedBytes;
             private readonly CancellationToken _cancellationToken;
             private CancellationTokenRegistration _cancellationRegistration;
@@ -45,7 +45,7 @@ namespace System.IO
             private static Action<object> s_cancelCallback;
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            internal FileStreamCompletionSource(int numBufferedBytes, byte[] bytes, ThreadPoolBoundHandle handle, CancellationToken cancellationToken)
+            internal FileStreamCompletionSource(int numBufferedBytes, byte[] bytes, SafeFileHandle handle, CancellationToken cancellationToken)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
@@ -55,9 +55,13 @@ namespace System.IO
 
                 // Create a managed overlapped class
                 // We will set the file offsets later
+                Overlapped overlapped = new Overlapped();
+                overlapped.AsyncResult = this;
+
+                // Pack the Overlapped class, and store it in the async result
                 var ioCallback = s_IOCallback; // cached static delegate; delay initialized due to it being SecurityCritical
                 if (ioCallback == null) s_IOCallback = ioCallback = new IOCompletionCallback(AsyncFSCallback);
-                _overlapped = handle.AllocateNativeOverlapped(ioCallback, this, bytes);
+                _overlapped = overlapped.Pack(ioCallback, bytes);
                 Debug.Assert(_overlapped != null, "Did Overlapped.Pack or Overlapped.UnsafePack just return a null?");
             }
 
@@ -139,7 +143,7 @@ namespace System.IO
                     // (this is why we disposed the registration above)
                     if (_overlapped != null)
                     {
-                        _handle.FreeNativeOverlapped(_overlapped);
+                        Threading.Overlapped.Free(_overlapped);
                         _overlapped = null;
                     }
                 }
@@ -149,8 +153,11 @@ namespace System.IO
             // completes.  
             unsafe private static void AsyncFSCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
+                // Unpack overlapped
+                Overlapped overlapped = Threading.Overlapped.Unpack(pOverlapped);
+
                 // Extract async result from overlapped
-                FileStreamCompletionSource completionSource = (FileStreamCompletionSource)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                FileStreamCompletionSource completionSource = (FileStreamCompletionSource)overlapped.AsyncResult;
                 Debug.Assert(completionSource._overlapped == pOverlapped, "Overlaps don't match");
 
                 // Handle reading from & writing to closed pipes.  While I'm not sure
@@ -216,7 +223,7 @@ namespace System.IO
                 Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
 
                 // If the handle is still valid, attempt to cancel the IO
-                if ((!completionSource._handle.Handle.IsInvalid) && (!Interop.mincore.CancelIoEx(completionSource._handle.Handle, completionSource._overlapped)))
+                if ((!completionSource._handle.IsInvalid) && (!Interop.mincore.CancelIoEx(completionSource._handle, completionSource._overlapped)))
                 {
                     int errorCode = Marshal.GetLastWin32Error();
 
