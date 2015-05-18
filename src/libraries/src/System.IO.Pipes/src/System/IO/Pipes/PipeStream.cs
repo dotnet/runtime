@@ -229,6 +229,8 @@ namespace System.IO.Pipes
                 {
                     _handle.Dispose();
                 }
+
+                UninitializeAsyncHandle();
             }
             finally
             {
