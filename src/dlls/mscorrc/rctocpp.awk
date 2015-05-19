@@ -15,17 +15,11 @@ function numberToHexString(number)
     quotient = number;
 
     hexString = "";
-    while (quotient > 0)
+    for (digitCount = 0; digitCount < 8; digitCount++)
     {
         remainder = quotient % 16;
         quotient = int(quotient / 16);
         hexString = sprintf("%x"hexString, remainder);
-    }
-
-    lengthOfHexString = length(hexString);
-    if (lengthOfHexString < 8)
-    {
-        hexString = substr("00000000", 1, 8 - lengthOfHexString) hexString;
     }
 
     hexString = "0x" hexString;
@@ -56,8 +50,9 @@ function writestringentry(id, str)
     numEntries++;
 
     # Use the string representation of the ID as the array index
-    # because the precision of numeric indices can be lost when
-    # iterating over the array in our for-in loop.
+    # because the precision of numeric indices can be lost during
+    # the number -> string -> number conversions that would occur
+    # if numeric indices are used.
     resourceArray[numberToHexString(id)] = str;
 }
 
