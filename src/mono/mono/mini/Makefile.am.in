@@ -752,7 +752,7 @@ version.h: Makefile
 	if test -d $(top_srcdir)/.git; then \
 		(cd $(top_srcdir); \
 			LANG=C; export LANG; \
-			branch=`git branch | grep '^\*' | cut -d ' ' -f 2`; \
+			branch=`git branch | grep '^\*' | sed 's/(detached from .*/explicit/' | cut -d ' ' -f 2`; \
 			version=`git log --no-color --first-parent -n1 --pretty=format:%h`; \
 			echo "#define FULL_VERSION \"$$branch/$$version\""; \
 		); \
