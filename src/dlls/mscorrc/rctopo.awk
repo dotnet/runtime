@@ -4,7 +4,8 @@
 # Write entry for a string resource
 function writestringentry(id, str)
 {
-    print "msgid \""id"\"";
+    idAsStr = sprintf("%X", id);
+    print "msgid \""idAsStr"\"";
     print "msgstr" str;
     print "";
 }
