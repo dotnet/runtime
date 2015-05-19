@@ -338,6 +338,7 @@ include_directories("src/pal/prebuilt/inc")
 if (CLR_CMAKE_PLATFORM_UNIX)
   include_directories("src/pal/inc")
   include_directories("src/pal/inc/rt")
+  include_directories("src/pal/inc/rt/cpp")
   include_directories("src/pal/src/safecrt")
 endif (CLR_CMAKE_PLATFORM_UNIX)
 
