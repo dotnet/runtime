@@ -119,7 +119,8 @@ enum tagSTATFLAG
 // 0000000c-0000-0000-C000-000000000046
 EXTERN_C const IID IID_IStream;
 
-interface IStream : public ISequentialStream
+interface DECLSPEC_UUID("0000000c-0000-0000-C000-000000000046")
+IStream : public ISequentialStream
 {
 public:
     virtual /* [local] */ HRESULT STDMETHODCALLTYPE Seek( 
