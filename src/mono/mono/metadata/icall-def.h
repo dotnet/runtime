@@ -917,7 +917,6 @@ ICALL(THREAD_2, "ClrState(System.Threading.InternalThread,System.Threading.Threa
 ICALL(THREAD_2a, "ConstructInternalThread", ves_icall_System_Threading_Thread_ConstructInternalThread)
 ICALL(THREAD_3, "CurrentInternalThread_internal", mono_thread_internal_current)
 ICALL(THREAD_3a, "DestroyTlsData", mono_thread_destroy_tls)
-ICALL(THREAD_4, "FreeLocalSlotValues", mono_thread_free_local_slot_values)
 ICALL(THREAD_55, "GetAbortExceptionState", ves_icall_System_Threading_Thread_GetAbortExceptionState)
 ICALL(THREAD_7, "GetDomainID", ves_icall_System_Threading_Thread_GetDomainID)
 ICALL(THREAD_8, "GetName_internal(System.Threading.InternalThread)", ves_icall_System_Threading_Thread_GetName_internal)

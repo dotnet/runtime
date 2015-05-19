@@ -198,7 +198,6 @@ void mono_alloc_special_static_data_free (GHashTable *special_static_fields);
 uint32_t mono_thread_alloc_tls   (MonoReflectionType *type);
 void     mono_thread_destroy_tls (uint32_t tls_offset);
 void     mono_thread_destroy_domain_tls (MonoDomain *domain);
-void mono_thread_free_local_slot_values (int slot, MonoBoolean is_thread_local);
 void mono_thread_current_check_pending_interrupt (void);
 
 void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state);
