@@ -34,6 +34,14 @@ IUnknown
     virtual ULONG STDMETHODCALLTYPE AddRef( void) = 0;
         
     virtual ULONG STDMETHODCALLTYPE Release( void) = 0;
+
+    template<class Q>
+    HRESULT
+    STDMETHODCALLTYPE
+    QueryInterface(Q** pp)
+    {
+        return QueryInterface(__uuidof(Q), (void **)pp);
+    }
 };
 
 #endif // __IUnknown_INTERFACE_DEFINED__

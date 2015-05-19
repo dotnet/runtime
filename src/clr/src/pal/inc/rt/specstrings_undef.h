@@ -7,6 +7,11 @@
 
 */
 
+#ifndef PAL_STDCPP_COMPAT
+#undef __in
+#undef __out
+#endif // !PAL_STDCPP_COMPAT
+
 #undef _At_
 #undef _Deref_out_
 #undef _Deref_out_opt_
@@ -288,7 +293,6 @@
 #undef __format_string
 #undef __format_string
 #undef __gdi_entry
-#undef __in
 #undef __in_awcount
 #undef __in_bcount
 #undef __in_bcount_nz
@@ -391,7 +395,6 @@
 #undef __null
 #undef __nullnullterminated
 #undef __nullterminated
-#undef __out
 #undef __out_awcount
 #undef __out_bcount
 #undef __out_bcount_full

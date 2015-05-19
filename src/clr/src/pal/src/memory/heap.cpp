@@ -26,7 +26,7 @@ Revision History:
 #include "pal/handlemgr.hpp"
 #include "pal/corunix.hpp"
 #include <errno.h>
-
+#define HEAP_SIZEINFO_SIZE (2 * sizeof(DWORD))
 using namespace CorUnix;
 
 SET_DEFAULT_DEBUG_CHANNEL(MEM);
@@ -105,7 +105,6 @@ RtlZeroMemory(
     PERF_EXIT(RtlZeroMemory);
 }
 
-#ifdef __APPLE__
 /*++
 Function:
   HeapCreate
@@ -120,11 +119,10 @@ HeapCreate(
 	       IN SIZE_T dwMaximumSize)
 {
     HANDLE ret = INVALID_HANDLE_VALUE;
-
     PERF_ENTRY(HeapCreate);
     ENTRY("HeapCreate(flOptions=%#x, dwInitialSize=%u, dwMaximumSize=%u)\n",
         flOptions, dwInitialSize, dwMaximumSize);
-        
+#ifdef __APPLE__
     if ((flOptions & 0x40005) != 0)
     {
         ERROR("Invalid flOptions\n");
@@ -151,11 +149,14 @@ HeapCreate(
 #endif // CACHE_HEAP_ZONE
     }
     
+#else // __APPLE__
+    ret = (HANDLE)DUMMY_HEAP;
+#endif // __APPLE__
+
     LOGEXIT("HeapCreate returning HANDLE %p\n", ret);
     PERF_EXIT(HeapCreate);
     return ret;
 }
-#endif // __APPLE__
 
 
 /*++
@@ -191,6 +192,33 @@ GetProcessHeap(
 
 /*++
 Function:
+HeapSize
+
+See MSDN doc.
+--*/
+SIZE_T
+PALAPI
+HeapSize(
+    HANDLE hHeap,
+    DWORD dwFlags,
+    LPCVOID lpMem)
+{
+    SIZE_T ret = (SIZE_T)-1;
+    PERF_ENTRY(HeapSize);
+    ENTRY("HeapSize(hHeap=%p, dwFlags=%#x, lpMem=%p)\n",
+            hHeap, dwFlags, lpMem);
+
+    // First four bytes contain magic
+    // Second four bytes size.
+    ret = ((DWORD *)(static_cast<LPCBYTE>(lpMem) - HEAP_SIZEINFO_SIZE))[1];
+
+    LOGEXIT("HeapSize returning %d\n", ret);
+    PERF_EXIT(HeapSize);
+    return ret;
+}
+
+/*++
+Function:
   HeapAlloc
 
 Abstract
@@ -206,13 +234,10 @@ HeapAlloc(
 	  IN SIZE_T dwBytes)
 {
     BYTE *pMem;
-    int nSize = 0;
 
     PERF_ENTRY(HeapAlloc);
     ENTRY("HeapAlloc (hHeap=%p, dwFlags=%#x, dwBytes=%u)\n",
           hHeap, dwFlags, dwBytes);
-
-    nSize =  max(sizeof(void*),sizeof(double));
 
 #ifdef __APPLE__
     if (hHeap == NULL)
@@ -238,7 +263,7 @@ HeapAlloc(
 
     
     size_t fullsize;
-    if (!ClrSafeInt<size_t>::addition(dwBytes,nSize,fullsize))
+    if (!ClrSafeInt<size_t>::addition(dwBytes, HEAP_SIZEINFO_SIZE,fullsize))
     {
         ERROR("Integer Overflow\n");
         SetLastError(ERROR_ARITHMETIC_OVERFLOW);
@@ -269,16 +294,18 @@ HeapAlloc(
 
     /* use a magic number, to know it has been allocated with HeapAlloc
        when doing HeapFree */
-    *((DWORD *) pMem) = HEAP_MAGIC;
+    ((DWORD *) pMem)[0] = HEAP_MAGIC;
+    /* Store the size in the second word */
+    ((DWORD *)pMem)[1] = dwBytes;
 
     /*If the Heap Zero memory flag is set initialize to zero*/
     if (dwFlags == HEAP_ZERO_MEMORY)
     {
-        memset(pMem+nSize, 0, dwBytes);
+        memset(pMem+ HEAP_SIZEINFO_SIZE, 0, dwBytes);
     }
-    LOGEXIT("HeapAlloc returning LPVOID %p\n", pMem+nSize);
+    LOGEXIT("HeapAlloc returning LPVOID %p\n", pMem + HEAP_SIZEINFO_SIZE);
     PERF_EXIT(HeapAlloc);
-    return (pMem + nSize);
+    return (pMem + HEAP_SIZEINFO_SIZE);
 }
 
 
@@ -298,14 +325,11 @@ HeapFree(
 	 IN DWORD dwFlags,
 	 IN LPVOID lpMem)
 {
-    int nSize =0;
     BOOL bRetVal = FALSE;
 
     PERF_ENTRY(HeapFree);
     ENTRY("HeapFree (hHeap=%p, dwFlags = %#x, lpMem=%p)\n", 
           hHeap, dwFlags, lpMem);
-
-    nSize =  max(sizeof(void*),sizeof(double));
 
 #ifdef __APPLE__
     if (hHeap == NULL)
@@ -330,15 +354,15 @@ HeapFree(
         bRetVal = TRUE;
         goto done;
     }
-    /*nSize + nMemAlloc is the size of Magic Number plus
+    /*HEAP_SIZEINFO_SIZE + nMemAlloc is the size of Magic Number plus
      *size of the int to store value of Memory allocated */
-	lpMem = static_cast<LPVOID>(static_cast<LPBYTE>(lpMem) - nSize);
+	lpMem = static_cast<LPVOID>(static_cast<LPBYTE>(lpMem) - HEAP_SIZEINFO_SIZE);
     
     /* check if the memory has been allocated by HeapAlloc */
     if (*((DWORD *) lpMem) != HEAP_MAGIC)
     {
         ERROR("Pointer hasn't been allocated with HeapAlloc (%p)\n",
-            static_cast<LPBYTE>(lpMem) + nSize);
+            static_cast<LPBYTE>(lpMem) + HEAP_SIZEINFO_SIZE);
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
@@ -364,8 +388,6 @@ done:
 }
 
 
-
-
 /*++
 Function:
   HeapReAlloc
@@ -384,13 +406,10 @@ HeapReAlloc(
 	  IN SIZE_T dwBytes)
 {
     BYTE *pMem = NULL;
-    int nSize = 0;
 
     PERF_ENTRY(HeapReAlloc);
     ENTRY("HeapReAlloc (hHeap=%p, dwFlags=%#x, lpmem=%p, dwBytes=%u)\n",
           hHeap, dwFlags, lpmem, dwBytes);
-
-    nSize =  max(sizeof(void*),sizeof(double));
 
 #ifdef __APPLE__
     if (hHeap == NULL)
@@ -419,22 +438,22 @@ HeapReAlloc(
         goto done;
     }
 
-   /*nSize + nMemAlloc is the size of Magic Number plus
+   /*HEAP_SIZEINFO_SIZE + nMemAlloc is the size of Magic Number plus
      *size of the int to store value of Memory allocated */
-   lpmem = static_cast<LPVOID>(static_cast<LPBYTE>(lpmem) - nSize);
+   lpmem = static_cast<LPVOID>(static_cast<LPBYTE>(lpmem) - HEAP_SIZEINFO_SIZE);
 
     /* check if the memory has been allocated by HeapAlloc */
     if (*((DWORD *) lpmem) != HEAP_MAGIC)
     {
         ERROR("Pointer hasn't been allocated with HeapAlloc (%p)\n",
-            static_cast<LPBYTE>(lpmem) + nSize);
+            static_cast<LPBYTE>(lpmem) + HEAP_SIZEINFO_SIZE);
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
 
 
     size_t fullsize;
-    if (!ClrSafeInt<size_t>::addition(dwBytes,nSize,fullsize))
+    if (!ClrSafeInt<size_t>::addition(dwBytes, HEAP_SIZEINFO_SIZE, fullsize))
     {
         ERROR("Integer Overflow\n");
         SetLastError(ERROR_ARITHMETIC_OVERFLOW);
@@ -465,9 +484,9 @@ HeapReAlloc(
     *((DWORD *) pMem) = HEAP_MAGIC;
 
 done:
-    LOGEXIT("HeapReAlloc returns LPVOID %p\n", pMem ? (pMem+nSize) : pMem);
+    LOGEXIT("HeapReAlloc returns LPVOID %p\n", pMem ? (pMem + HEAP_SIZEINFO_SIZE) : pMem);
     PERF_EXIT(HeapReAlloc);
-    return pMem ? (pMem+nSize) : pMem;
+    return pMem ? (pMem + HEAP_SIZEINFO_SIZE) : pMem;
 }
 
 BOOL
