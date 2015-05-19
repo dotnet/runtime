@@ -388,8 +388,11 @@ void ZapWriter::WritePad(DWORD dwSize, BYTE fill)
 
     while (dwSize >= WRITE_BUFFER_SIZE)
     {
+        ULONG cbWritten;
         cbAvailable = min(WRITE_BUFFER_SIZE, dwSize);
-        IfFailThrow(m_pStream->Write(m_pBuffer, cbAvailable, NULL));
+        IfFailThrow(m_pStream->Write(m_pBuffer, cbAvailable, &cbWritten));
+        _ASSERTE(cbWritten == cbAvailable);
+
         dwSize -= cbAvailable;
     }
 
