@@ -33,27 +33,21 @@ BEGIN {
         # string starts with either a quote or L followed by a quote
         while (substr($i, 1, 1) != "\"" && substr($i, 1, 2) != "L\"")
         {
-            # some of the resource ids contain cast to HRESULT
+            # some of the resource IDs contain cast to HRESULT
             gsub(/\(HRESULT\)/, "", $i);
-            # some of the resource ids have trailing L
+            # some of the resource IDs have trailing L
             gsub(/L/, "", $i);
             expression = expression $i;
             $i="";
             i++;
         }
-        # evaluate the resource id expression and format it as hex number
+        # evaluate the resource ID expression
         cmd = "echo $(("expression"))";
         cmd | getline var;
         close(cmd);
         # in case shell returned the result as a string, ensure the var has numeric type
         var = var + 0;
-        # sprintf can only handle signed ints, so we need to convert
-        # values >= 0x80000000 to negative values
-        if (var >= 2147483648)
-        {
-            var = var - 4294967296;
-        }
-        var = sprintf("%X", var);
+
         # remove the L prefix from strings
         gsub(/L"/, "\"", $0);
         # join strings "..." "..." into one
