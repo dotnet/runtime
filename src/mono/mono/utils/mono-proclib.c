@@ -40,12 +40,16 @@
 #include <sys/user.h>
 #endif
 #ifdef HAVE_STRUCT_KINFO_PROC_KP_PROC
+#    define kinfo_starttime_member kp_proc.p_starttime
 #    define kinfo_pid_member kp_proc.p_pid
 #    define kinfo_name_member kp_proc.p_comm
 #elif defined(__OpenBSD__)
+// Can not figure out how to get the proc's start time on OpenBSD
+#    undef kinfo_starttime_member 
 #    define kinfo_pid_member p_pid
 #    define kinfo_name_member p_comm
 #else
+#define kinfo_starttime_member ki_start
 #define kinfo_pid_member ki_pid
 #define kinfo_name_member ki_comm
 #endif
@@ -304,12 +308,12 @@ mono_process_get_times (gpointer pid, gint64 *start_time, gint64 *user_time, gin
 	if (start_time) {
 		*start_time = 0;
 
-#if USE_SYSCTL
+#if USE_SYSCTL && defined(kinfo_starttime_member)
 		{
 			KINFO_PROC processi;
 
 			if (sysctl_kinfo_proc (pid, &processi))
-				*start_time = mono_100ns_datetime_from_timeval (processi.kp_proc.p_starttime);
+				*start_time = mono_100ns_datetime_from_timeval (processi.kinfo_starttime_member);
 		}
 #endif
 
