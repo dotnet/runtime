@@ -90,6 +90,7 @@ if(WIN32)
     )
 else(WIN32)
     list(APPEND COREDAC_LIBRARIES
+        mscorrc_debug
         coreclrpal
         palrt
     )
