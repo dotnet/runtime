@@ -914,6 +914,10 @@ public:
 
         m_hasher.HashMore(pv, cb);
 
+        // We are calling with lpOverlapped == NULL so pcbWritten has to be present
+        // to prevent crashes in Win7 and below.
+        _ASSERTE(pcbWritten);
+
         if (!::WriteFile(m_hFile, pv, cb, pcbWritten, NULL))
         {
             hr = HRESULT_FROM_GetLastError();
