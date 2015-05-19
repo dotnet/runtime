@@ -18,7 +18,7 @@ For trivial code changes, such as typo fixes, we want folks to directly submit a
 
 For work that involves adding new APIs we'd like the issue to contain what we call a *speclet*. The speclet should provide a rough sketch of how the APIs are intended to be used, with sample code that shows typical scenarios. The goal isn't to be complete but rather to illustrate the direction so that readers can judge whether the proposal is sound. Here is [a good example](https://github.com/dotnet/corefx/issues/271).
 
-[[img/API-Review-Process.png]]
+![API Review Process](img/API-Review-Process.png)
 
 ## Steps
 

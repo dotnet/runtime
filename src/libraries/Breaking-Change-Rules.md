@@ -1,17 +1,17 @@
 ## Table of Contents
 
-* [Behavioral Changes](Breaking-Change-Rules#behavioral-changes)
-   * [Property, Field, Parameter and Return Values](Breaking-Change-Rules#property-field-parameter-and-return-values)
-   * [Exceptions](Breaking-Change-Rules#exceptions)
-   * [Platform Support](Breaking-Change-Rules#platform-support)
-   * [Code](Breaking-Change-Rules#code)
+* [Behavioral Changes](#behavioral-changes)
+   * [Property, Field, Parameter and Return Values](#property-field-parameter-and-return-values)
+   * [Exceptions](#exceptions)
+   * [Platform Support](#platform-support)
+   * [Code](#code)
 
-* [Source and Binary Compatibility Changes](Breaking-Change-Rules#source-and-binary-compatibility-changes)
-   * [Assemblies](Breaking-Change-Rules#assemblies)
-   * [Types](Breaking-Change-Rules#types)
-   * [Members](Breaking-Change-Rules#members)
-   * [Signatures](Breaking-Change-Rules#signatures)
-   * [Attributes](Breaking-Change-Rules#attributes)
+* [Source and Binary Compatibility Changes](#source-and-binary-compatibility-changes)
+   * [Assemblies](#assemblies)
+   * [Types](#types)
+   * [Members](#members)
+   * [Signatures](#signatures)
+   * [Attributes](#attributes)
 
 ## Behavioral Changes
 
