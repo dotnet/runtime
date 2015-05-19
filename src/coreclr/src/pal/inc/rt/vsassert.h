@@ -19,7 +19,7 @@
 #define VSASSERT(e, szMsg)                                      \
 do {                                                            \
     if (!(e)) {                                                 \
-        fprintf (stderr,                                        \
+        PAL_fprintf (stderr,                                        \
                  "ASSERT FAILED:\n"                             \
                  "\tExpression: %s\n"                           \
                  "\tLocation:   line %d in %s\n"                \
