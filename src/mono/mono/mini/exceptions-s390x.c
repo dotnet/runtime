@@ -418,7 +418,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = NULL;
 
-	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, FALSE, aot));
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, TRUE, aot));
 }
 
 /*========================= End of Function ========================*/

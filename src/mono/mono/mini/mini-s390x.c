@@ -1943,7 +1943,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	cfg->arch.bkchain_reg = -1;
 
 	if (frame_reg != STK_BASE) 
-		cfg->used_int_regs |= 1 << frame_reg;		
+		cfg->used_int_regs |= (1 << frame_reg);		
+
+	if (cfg->uses_rgctx_reg)
+		cfg->used_int_regs |= (1 << MONO_ARCH_IMT_REG);
 
 	sig     = mono_method_signature (cfg->method);
 	
@@ -5762,32 +5765,35 @@ gpointer
 mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, 
 					    int offset, gboolean load_imt_reg)
 {
-       guint8 *code, *start;
-       int size = 20;
+	guint8 *code, *start;
+	int size = 40;
 
-       start = code = mono_global_codeman_reserve (size);
+	start = code = mono_global_codeman_reserve (size);
 
-       /*
-        * Replace the "this" argument with the target
-        */
-       s390_lgr  (code, s390_r1, s390_r2);
-       s390_lg   (code, s390_r2, s390_r1, 0, MONO_STRUCT_OFFSET(MonoDelegate, target));        
-       
-       /*
-        * Load the IMT register, if needed
-        */
-       if (load_imt_reg) {
-               s390_lg  (code, MONO_ARCH_IMT_REG, s390_r2, 0, MONO_STRUCT_OFFSET(MonoDelegate, method));
-       }
+	/*
+	* Replace the "this" argument with the target
+	*/
+	s390_lgr  (code, s390_r1, s390_r2);
+	s390_lg   (code, s390_r2, 0, s390_r1, MONO_STRUCT_OFFSET(MonoDelegate, target));        
 
-       /*
-        * Load the vTable
-        */
-       s390_lg  (code, s390_r1, s390_r2, 0, MONO_STRUCT_OFFSET(MonoObject, vtable));
-       s390_agfi(code, s390_r1, offset);
-       s390_br  (code, s390_r1);
+	/*
+	* Load the IMT register, if needed
+	*/
+	if (load_imt_reg) {
+		s390_lg  (code, MONO_ARCH_IMT_REG, 0, s390_r1, MONO_STRUCT_OFFSET(MonoDelegate, method));
+	}
 
-       return(start);
+	/*
+	* Load the vTable
+	*/
+	s390_lg  (code, s390_r1, 0, s390_r2, MONO_STRUCT_OFFSET(MonoObject, vtable));
+	if (offset != 0) {
+		s390_agfi(code, s390_r1, offset);
+	}
+	s390_lg  (code, s390_r1, 0, s390_r1, 0);
+	s390_br  (code, s390_r1);
+
+	return(start);
 }
 
 /*========================= End of Function ========================*/
