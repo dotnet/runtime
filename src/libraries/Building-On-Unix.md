@@ -1,49 +1,60 @@
-# Building CoreFx on Ubuntu
-## Build Instructions
-CoreFx can be built using the cross-platform branch of MSBuild on top of current CI builds of Mono. These instructions have been validated on 15.04 and 12.04.
-### Installing Mono
-_Mono installation instructions are taken from http://www.mono-project.com/docs/getting-started/install/linux/ and http://www.mono-project.com/docs/getting-started/install/linux/ci-packages/._
+# General Information
+CoreFx can be built on top of current [Mono CI builds](https://github.com/dotnet/corefx/wiki/Building-On-Unix#installing-mono-packages) or a direct [build/install of Mono](http://www.mono-project.com/docs/compiling-mono/). It builds using MSBuild and Roslyn and requires changes that have not yet made it to official released builds.
 
-Add Mono key and package sources.
+After preparing Mono, clone if you haven't already, and run the build script.
+
+```
+git clone https://github.com/dotnet/corefx.git
+cd corefx
+./build.sh
+```
+
+>These instructions have been validated on:
+* Ubuntu 15.04, 14.04, and 12.04
+* Fedora 22
+* MacOS 10.10 (Yosemite)
+
+
+# Installing Mono Packages
+_Mono installation instructions are taken from ["Install Mono"](http://www.mono-project.com/docs/getting-started/install/) and ["Continuous Integration Packages"](http://www.mono-project.com/docs/getting-started/install/linux/ci-packages/)._
+
+_**Note:** CI packages are not produced for Mac. As CoreFx needs current bits you must build Mono [yourself](http://www.mono-project.com/docs/compiling-mono/)._
+### Add Mono key and package sources
+##### Debian/Ubuntu (and other derivatives)
 ```
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
 echo "deb http://jenkins.mono-project.com/repo/debian sid main" | sudo tee /etc/apt/sources.list.d/mono-jenkins.list
 sudo apt-get update
 ```
-Install a recent Mono build and the PCL reference assemblies. (_This instruction installs latest. To see available Mono builds, use `apt-cache search mono-snapshot`_)
+##### Fedora/CentOS (and other derivatives)
+```
+sudo rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF"
+sudo yum-config-manager --add-repo http://download.mono-project.com/repo/centos/
+sudo yum-config-manager --add-repo http://jenkins.mono-project.com/repo/centos/
+sudo yum upgrade
+``` 
+### Install CI build and reference assemblies
+Install a recent (Continuous Integration) Mono build and the PCL reference assemblies. (_This instruction installs latest. To see available Mono builds, use `apt-cache search mono-snapshot` (Ubuntu) or `yum search mono-snapshot` (Fedora)_)
+##### Debian/Ubuntu (and other derivatives)
 ```
 sudo apt-get install mono-snapshot-latest referenceassemblies-pcl
 ```
-Switch to the mono snapshot build.
+##### Fedora/CentOS (and other derivatives)
+```
+sudo yum install mono-snapshot-latest referenceassemblies-pcl
+```
+### Switch to the mono snapshot build
 ```
 . mono-snapshot mono
 ```
-### Building xplat MSBuild
-Clone MSBuild, install dependencies, then build. (This step will be replaced by a package dependency soon)
+
+# Known Issues
+If you see errors along the lines of `SendFailure (Error writing headers)` you may need to import trusted root certificates:
 ```
-git clone https://github.com/microsoft/msbuild.git
-git checkout xplat
-sudo apt-get install curl perl
-perl build.pl
+mozroots --import --sync
 ```
-### Building CoreFx
-Clone CoreFx if you haven't already, and set the following workaround.
-```
-git clone https://github.com/dotnet/corefx.git
-```
-Build via script if MSBuild is relative to your corefx enlistment as so `../MSBuild`.
-```
-./build.sh
-```
-_OR_ build manually, changing the paths to match where you've cloned MSBuild/CoreFx.
-```
-export MONO29679=1
-export ReferenceAssemblyRoot=/usr/lib/mono/xbuild-frameworks
-mono ~/repos/msbuild/bin/Unix/Debug-MONO/MSBuild.exe -t:Build -fl "-flp:LogFile=msbuild-corefx.log;V=diag;" -p:Configuration=Linux_Debug -p:UseRoslynCompiler=true ~/repos/corefx/build.proj
-``` 
-## Known Issues
-PCL reference assemblies and targets are not installed by default. They also are not available for snapshot builds, and must be copied, linked in, or use the ReferenceAssemblyRoot override. The instructions above show the root override, the following is how to link the PCL folder in the right place.
+PCL reference assemblies and targets are not installed by default. They also are not available for snapshot builds, and must be copied, linked in, or use the ReferenceAssemblyRoot override. The build script will use an MSBuild override, the following is how to link the PCL folder in the right place:
 ```
 sudo ln -s /usr/lib/mono/xbuild-frameworks/.NETPortable/ $MONO_PREFIX/lib/mono/xbuild-frameworks/
 ```
