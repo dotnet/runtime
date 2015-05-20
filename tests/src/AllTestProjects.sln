@@ -169,6 +169,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NaN", "NaN", "{06633516-0C7
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NaN", "JIT\Methodical\NaN\NaN.csproj", "{5FEB6365-EB6C-4D4D-9DAA-E5E2EEA5A1FF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypedReference", "JIT\Directed\TypedReference\TypedReference.csproj", "{47849C79-F7B8-47C6-BBA7-8E6FCE66B9F1}"
+EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
