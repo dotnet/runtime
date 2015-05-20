@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.SecureStrin
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{FBCF7C99-4809-411D-BE8A-8E3E0DD17B7E}"
 	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.config = ..\.nuget\packages.config
+		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.SecureString.Tests", "tests\System.Security.SecureString.Tests.csproj", "{69609238-62C7-479D-A8CE-709F41101D3C}"

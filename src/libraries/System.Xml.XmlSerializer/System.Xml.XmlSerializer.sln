@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9618597D-FDAE-42CB-B368-80DB80EA1E37}"
 	ProjectSection(SolutionItems) = preProject
-		.nuget\packages.config = .nuget\packages.config
+		.nuget\packages.Windows_NT.config = .nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XmlSerializer.Tests", "tests\System.Xml.XmlSerializer.Tests.csproj", "{4050F1D1-1DD2-4B48-A17B-E3F90DD18C4B}"
