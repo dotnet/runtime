@@ -336,6 +336,14 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        add rsp, __PWTB_StackAlloc
+        POP_CALLEE_SAVED_REGISTERS
+        ret
+
+.endm
+
 .macro EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
         RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
