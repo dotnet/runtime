@@ -101,6 +101,15 @@
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetFilePointerEx.cs">
       <Link>Common\Interop\Windows\Interop.SetFilePointerEx.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CancelIoEx.cs">
+      <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.ReadFile_IntPtr.cs</Link>
     </Compile>
@@ -174,15 +183,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.SetErrorMode.cs">
       <Link>Common\Interop\Windows\Interop.SetErrorMode.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.CancelIoEx.cs">
-      <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
