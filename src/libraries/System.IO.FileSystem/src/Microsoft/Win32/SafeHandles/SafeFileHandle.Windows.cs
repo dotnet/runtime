@@ -4,6 +4,7 @@
 using System;
 using System.Security;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.Win32;
 
 namespace Microsoft.Win32.SafeHandles
@@ -37,6 +38,10 @@ namespace Microsoft.Win32.SafeHandles
                 _isAsync = value;
             }
         }
+
+#if USE_OVERLAPPED
+        internal ThreadPoolBoundHandle ThreadPoolBinding { get; set; }
+#endif
 
         [System.Security.SecurityCritical]
         override protected bool ReleaseHandle()
