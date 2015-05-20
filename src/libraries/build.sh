@@ -1,7 +1,8 @@
 #!/bin/bash
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
-__msbuildpath=$__scriptpath/../msbuild/bin/Unix/Debug-MONO/MSBuild.exe
+__packageroot=$__scriptpath/packages
+__msbuildpath=$__packageroot/Microsoft.Build.Mono.Debug.14.1.0.0-prerelease/lib/MSBuild.exe
 __referenceassemblyroot=/usr/lib/mono/xbuild-frameworks
 __monoversion=$(mono --version | grep "version 4.[1-9]")
 
@@ -15,6 +16,12 @@ if [ ! -e "$__referenceassemblyroot/.NETPortable" ]; then
     exit 1
 fi
 
+__buildproj=$__scriptpath/build.proj
+__buildlog=$__scriptpath/msbuild.log
+
+# Run the restore build tools under xbuild to get NuGet and MSBuild pulled down
+xbuild "$__buildproj" /t:_RestoreBuildTools /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=diag;LogFile=$__buildlog"
+
 if [ ! -e "$__msbuildpath" ]; then
     echo "MSBuild.exe required at $__msbuildpath. Please see https://github.com/dotnet/corefx/wiki/Building-On-Unix for more details."
     exit 1
@@ -25,9 +32,6 @@ if [ $(uname) == "Linux" ]; then
 else
     __osgroup=OSX
 fi
-
-__buildproj=$__scriptpath/build.proj
-__buildlog=$__scriptpath/msbuild.log
 
 MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=diag;LogFile=$__buildlog" /t:Build /p:OSGroup=$__osgroup /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) "$@"
 BUILDERRORLEVEL=$?

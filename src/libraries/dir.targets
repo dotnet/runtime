@@ -73,7 +73,10 @@
     <!-- Download latest nuget.exe -->
     <DownloadFile FileName="$(NuGetToolPath)"
                   Address="https://www.nuget.org/nuget.exe"
-                  Condition="!Exists('$(NuGetToolPath)')" />
+                  Condition="!Exists('$(NuGetToolPath)') and '$(OsEnvironment)'=='Windows_NT'" />
+
+    <Exec Command="curl -sSL --create-dirs -o $(NuGetToolPath) https://api.nuget.org/downloads/nuget.exe"
+          Condition="!Exists('$(NuGetToolPath)') and '$(OsEnvironment)'=='Unix'" />
 
     <PropertyGroup>
       <_RestoreBuildToolsCommand>$(NugetRestoreCommand) "$(SourceDir).nuget/packages.config"</_RestoreBuildToolsCommand>
