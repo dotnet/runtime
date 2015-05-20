@@ -195,9 +195,6 @@ gboolean mono_thread_internal_has_appdomain_ref (MonoInternalThread *thread, Mon
 void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 
 void mono_alloc_special_static_data_free (GHashTable *special_static_fields);
-uint32_t mono_thread_alloc_tls   (MonoReflectionType *type);
-void     mono_thread_destroy_tls (uint32_t tls_offset);
-void     mono_thread_destroy_domain_tls (MonoDomain *domain);
 void mono_thread_current_check_pending_interrupt (void);
 
 void mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state);

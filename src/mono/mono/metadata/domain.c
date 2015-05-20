@@ -1122,11 +1122,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	mono_g_hash_table_destroy (domain->env);
 	domain->env = NULL;
 
-	if (domain->tlsrec_list) {
-		mono_thread_destroy_domain_tls (domain);
-		domain->tlsrec_list = NULL;
-	}
-
 	mono_reflection_cleanup_domain (domain);
 
 	/* This must be done before type_hash is freed */
