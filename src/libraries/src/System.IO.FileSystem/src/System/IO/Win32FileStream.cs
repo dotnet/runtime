@@ -63,9 +63,6 @@ namespace System.IO
         private int _writePos;    // Write pointer within shared buffer.
         private int _bufferSize;  // Length of internal buffer, if it's allocated.
         private SafeFileHandle _handle;
-#if USE_OVERLAPPED
-        private ThreadPoolBoundHandle _threadPoolBinding;
-#endif
         private long _pos;        // Cache current location in the file.
         private long _appendStart;// When appending, prevent overwriting file.
         
@@ -166,7 +163,7 @@ namespace System.IO
             {
                 try
                 {
-                    _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
+                    _handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
                 }
                 catch (ArgumentException ex)
                 {
@@ -174,7 +171,7 @@ namespace System.IO
                 }
                 finally
                 {
-                    if (_threadPoolBinding == null)
+                    if (_handle.ThreadPoolBinding == null)
                     {
                         // We should close the handle so that the handle is not open until SafeFileHandle GC
                         Debug.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
@@ -273,7 +270,7 @@ namespace System.IO
             {
                 try
                 {
-                    _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
+                    _handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
                 }
                 catch (Exception ex)
                 {
@@ -498,8 +495,8 @@ namespace System.IO
                     _handle.Dispose();
 
 #if USE_OVERLAPPED
-                if (_threadPoolBinding != null)
-                    _threadPoolBinding.Dispose();
+                if (_handle.ThreadPoolBinding != null)
+                    _handle.ThreadPoolBinding.Dispose();
 #endif
 
                 _canRead = false;
@@ -1216,7 +1213,7 @@ namespace System.IO
 
             // Create and store async stream class library specific data in the async result
 
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _threadPoolBinding, cancellationToken);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _handle.ThreadPoolBinding, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -1412,7 +1409,7 @@ namespace System.IO
             Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _threadPoolBinding, cancellationToken);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _handle.ThreadPoolBinding, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (_parent.CanSeek)
