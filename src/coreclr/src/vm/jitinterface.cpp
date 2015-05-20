@@ -5446,7 +5446,8 @@ void CEEInfo::getCallInfo(
     // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
     if (flags & CORINFO_CALLINFO_LDFTN)
     {
-        TypeEquivalenceFixupSpecificationHelper(m_pOverride, pTargetMD);
+        if (m_pOverride != NULL)
+            TypeEquivalenceFixupSpecificationHelper(m_pOverride, pTargetMD);
         directCall = true;
     }
     else
@@ -6446,7 +6447,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
 
     bool fClassMustBeRestored;
     result = getCastingHelperStatic(TypeHandle(pResolvedToken->hClass), fThrowing, &fClassMustBeRestored);
-    if (fClassMustBeRestored)
+    if (fClassMustBeRestored && m_pOverride != NULL)
         m_pOverride->classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
 
     EE_TO_JIT_TRANSITION();
@@ -6581,7 +6582,7 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!isVerifyOnly())
+    if (m_pOverride != NULL)
         m_pOverride->classMustBeLoadedBeforeCodeIsRun(clsHnd);
 
     TypeHandle VMClsHnd(clsHnd);

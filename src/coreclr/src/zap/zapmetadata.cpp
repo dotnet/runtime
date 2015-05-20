@@ -665,6 +665,27 @@ ZapRVADataNode * ZapILMetaData::GetRVAField(void * pData)
     return pRVADataNode;
 }
 
+struct RVAField
+{
+    PVOID pData;
+    DWORD cbSize;
+    DWORD cbAlignment;
+};
+
+// Used by qsort
+int __cdecl RVAFieldCmp(const void * a_, const void * b_)
+{
+    RVAField * a = (RVAField *)a_;
+    RVAField * b = (RVAField *)b_;
+
+    if (a->pData != b->pData)
+    {
+        return (a->pData > b->pData) ? 1 : -1;
+    }
+
+    return 0;
+}
+
 void ZapILMetaData::CopyRVAFields()
 {
     IMDInternalImport * pMDImport = m_pImage->m_pMDImport;
@@ -672,26 +693,37 @@ void ZapILMetaData::CopyRVAFields()
     HENUMInternalHolder hEnum(pMDImport);
     hEnum.EnumAllInit(mdtFieldDef);
 
+    SArray<RVAField> fields;
+
     mdFieldDef fd;
     while (pMDImport->EnumNext(&hEnum, &fd))
     {
         DWORD dwRVA = 0;
         if (pMDImport->GetFieldRVA(fd, &dwRVA) == S_OK)
         {
-            PVOID pData = NULL;
-            DWORD cbSize = 0;
-            DWORD cbAlignment = 0;
-
-            m_pImage->m_pPreloader->GetRVAFieldData(fd, &pData, &cbSize, &cbAlignment);
-
-            ZapRVADataNode * pRVADataNode = GetRVAField(pData);
-
-            // Handle overlapping fields by reusing blobs based on the address, and just updating size and alignment.
-            pRVADataNode->UpdateSizeAndAlignment(cbSize, cbAlignment);
-
-            if (!pRVADataNode->IsPlaced())
-                m_pImage->m_pReadOnlyDataSection->Place(pRVADataNode);
+            RVAField field;
+            m_pImage->m_pPreloader->GetRVAFieldData(fd, &field.pData, &field.cbSize, &field.cbAlignment);
+            fields.Append(field);
         }
+    }
+
+    if (fields.GetCount() == 0)
+        return;
+
+    // Managed C++ binaries depend on the order of RVA fields
+    qsort(&fields[0], fields.GetCount(), sizeof(RVAField), RVAFieldCmp);
+
+    for (COUNT_T i = 0; i < fields.GetCount(); i++)
+    {
+        RVAField field = fields[i];
+
+        ZapRVADataNode * pRVADataNode = GetRVAField(field.pData);
+
+        // Handle overlapping fields by reusing blobs based on the address, and just updating size and alignment.
+        pRVADataNode->UpdateSizeAndAlignment(field.cbSize, field.cbAlignment);
+
+        if (!pRVADataNode->IsPlaced())
+             m_pImage->m_pReadOnlyDataSection->Place(pRVADataNode);
     }
 }
 
