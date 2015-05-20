@@ -87,6 +87,11 @@ namespace System.IO.Pipes
             // nop
         }
 
+        private void UninitializeAsyncHandle()
+        {
+            // nop
+        }
+
         [SecurityCritical]
         private unsafe int ReadCore(byte[] buffer, int offset, int count)
         {
