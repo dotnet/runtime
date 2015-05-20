@@ -3045,18 +3045,38 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 }
 
 #define LINE_BUFFER_SIZE 4096
+/* Max file limit of 128KB */
+#define MAX_FILE_SIZE 128 * 1024
 static char *
 get_file_content (FILE *stream)
 {
-	GString *builder = g_string_sized_new (LINE_BUFFER_SIZE);
-	char buffer[LINE_BUFFER_SIZE];
+	char *buffer;
 	ssize_t bytes_read;
+	long filesize;
+	int res, offset = 0;
 
-	while ((bytes_read = fread (buffer, 1, LINE_BUFFER_SIZE, stream)) > 0) {
-		g_string_append_len (builder, buffer, bytes_read);
-	}
+	res = fseek (stream, 0, SEEK_END);
+	if (res < 0)
+	  return NULL;
 
-	return g_string_free (builder, FALSE);
+	filesize = ftell (stream);
+	if (filesize < 0)
+	  return NULL;
+
+	res = fseek (stream, 0, SEEK_SET);
+	if (res < 0)
+	  return NULL;
+
+	if (filesize > MAX_FILE_SIZE)
+	  return NULL;
+
+	buffer = g_malloc ((filesize + 1) * sizeof (char));
+	while ((bytes_read = fread (buffer + offset, 1, LINE_BUFFER_SIZE, stream)) > 0)
+		offset += bytes_read;
+
+	/* NULL terminate our buffer */
+	buffer[filesize] = '\0';
+	return buffer;
 }
 
 static char *
@@ -3096,6 +3116,9 @@ init_suppressed_assemblies (void)
 
 	/* Don't need to free @content as it is referred to by the lines stored in @suppressed_assemblies */
 	content = get_file_content (sa_file);
+	if (content == NULL) {
+		g_error ("mono-profiler-log.suppression is greater than 128kb - aborting\n");
+	}
 
 	while ((line = get_next_line (content, &content))) {
 		line = g_strchomp (g_strchug (line));
@@ -3972,6 +3995,9 @@ mono_profiler_startup (const char *desc)
 
 			/* Don't need to free content as it is referred to by the lines stored in @filters */
 			content = get_file_content (filter_file);
+			if (content == NULL)
+				fprintf (stderr, "WARNING: %s is greater than 128kb - ignoring\n", val);
+
 			while ((line = get_next_line (content, &content)))
 				g_ptr_array_add (filters, g_strchug (g_strchomp (line)));
 
