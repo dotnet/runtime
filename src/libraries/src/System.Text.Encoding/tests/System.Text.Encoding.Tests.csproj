@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Text.Encoding.Tests</AssemblyName>
+    <RootNamespace>System.Text.Encoding.Tests</RootNamespace>
+  </PropertyGroup>
+   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetByteCount1.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetByteCount2.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetBytes1.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetBytes2.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetCharCount.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetChars.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetDecoder.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetEncoder.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxByteCount.cs" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxCharCount.cs" />
+    <Compile Include="Decoder\DecoderConvert2.cs" />
+    <Compile Include="Decoder\DecoderCtor.cs" />
+    <Compile Include="Decoder\DecoderGetCharCount2.cs" />
+    <Compile Include="Decoder\DecoderGetCharCount3.cs" />
+    <Compile Include="Decoder\DecoderGetChars2.cs" />
+    <Compile Include="Decoder\DecoderGetChars3.cs" />
+    <Compile Include="Decoder\DecoderReset.cs" />
+    <Compile Include="DecoderFallbackException\DecoderFallbackExceptionTests.cs" />
+    <Compile Include="EncoderFallbackException\EncoderFallbackExceptionTests.cs" />
+    <Compile Include="Encoder\EncoderConvert2.cs" />
+    <Compile Include="Encoder\EncoderCtor.cs" />
+    <Compile Include="Encoder\EncoderGetByteCount2.cs" />
+    <Compile Include="Encoder\EncoderGetBytes2.cs" />
+    <Compile Include="Encoding\ConvertUnicodeEncodings.cs" />
+    <Compile Include="Encoding\Encoding.cs" />
+    <Compile Include="Encoding\EncodingBigEndianUnicode.cs" />
+    <Compile Include="Encoding\EncodingConvert1.cs" />
+    <Compile Include="Encoding\EncodingConvert2.cs" />
+    <Compile Include="Encoding\EncodingCtor1.cs" />
+    <Compile Include="Encoding\EncodingEquals.cs" />
+    <Compile Include="Encoding\EncodingGetByteCount.cs" />
+    <Compile Include="Encoding\EncodingGetByteCount1.cs" />
+    <Compile Include="Encoding\EncodingGetByteCount2.cs" />
+    <Compile Include="Encoding\EncodingGetByteCount3.cs" />
+    <Compile Include="Encoding\EncodingGetBytes1.cs" />
+    <Compile Include="Encoding\EncodingGetBytes2.cs" />
+    <Compile Include="Encoding\EncodingGetBytes3.cs" />
+    <Compile Include="Encoding\EncodingGetBytes4.cs" />
+    <Compile Include="Encoding\EncodingGetBytes5.cs" />
+    <Compile Include="Encoding\EncodingGetCharCount.cs" />
+    <Compile Include="Encoding\EncodingGetCharCount1.cs" />
+    <Compile Include="Encoding\EncodingGetCharCount2.cs" />
+    <Compile Include="Encoding\EncodingGetChars1.cs" />
+    <Compile Include="Encoding\EncodingGetChars2.cs" />
+    <Compile Include="Encoding\EncodingGetChars3.cs" />
+    <Compile Include="Encoding\EncodingGetEncoding2.cs" />
+    <Compile Include="Encoding\EncodingGetMaxByteCount.cs" />
+    <Compile Include="Encoding\EncodingGetMaxCharCount.cs" />
+    <Compile Include="Encoding\EncodingGetPreamble.cs" />
+    <Compile Include="Encoding\EncodingGetString.cs" />
+    <Compile Include="Encoding\EncodingUnicode.cs" />
+    <Compile Include="Encoding\EncodingUTF8.cs" />
+    <Compile Include="Encoding\EncodingWebName.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingCtor1.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingEquals.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetByteCount1.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetByteCount2.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetBytes1.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetBytes2.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetCharCount.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetChars.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetDecoder.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetEncoder.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetHashCode.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxByteCount.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxCharCount.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetPreamble.cs" />
+    <Compile Include="UnicodeEncoding\UnicodeEncodingGetString.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingCtor1.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingCtor2.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingEquals.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetByteCount1.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetByteCount2.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetBytes1.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetBytes2.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetCharCount.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetChars.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetDecoder.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetEncoder.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetHashCode.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetMaxByteCount.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetMaxCharCount.cs" />
+    <Compile Include="UTF7Encoding\UTF7EncodingGetString.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingCtor.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingCtor2.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingCtor3.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingEquals.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetByteCount1.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetByteCount2.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetBytes1.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetBytes2.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetCharCount.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetChars.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetDecoder.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetEncoder.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetHashCode.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetMaxByteCount.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetMaxCharCount.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetPreamble.cs" />
+    <Compile Include="UTF8Encoding\UTF8EncodingGetString.cs" />
+    <Compile Include="Generator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
