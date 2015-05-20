@@ -82,13 +82,13 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "&
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
 echo Installation of VS 2013 is a pre-requisite to build this repository.
-goto :eof
+exit /b 1
 
 :CheckVSExistence
 :: Does VS 2013 or VS 2015 really exist?
 if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
 echo Installation of VS 2013 is a pre-requisite to build this repository.
-goto :eof
+exit /b 1
 
 :CheckMSBuild
 if /i "%__VSVersion%" =="vs2015" goto MSBuild14
@@ -113,7 +113,7 @@ echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
 This is due to bug in VS Intaller. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
 at VS install location of previous version. Workaround is to copy DIA SDK folder from VS install location ^
 of previous version to "%VSINSTALLDIR%" and then resume build.
-goto :eof
+exit /b 1
 
 :GenVSSolution
 :: Regenerate the VS solution
@@ -124,14 +124,14 @@ popd
 :BuildComponents
 if exist "%__NativeTestIntermediatesDir%\install.vcxproj" goto BuildTestNativeComponents
 echo Failed to generate test native component build project!
-goto :eof
+exit /b 1
 
 REM Build CoreCLR
 :BuildTestNativeComponents
 %_msbuildexe% "%__NativeTestIntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__TestNativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto PerformManagedTestBuild
 echo Native component build failed. Refer !__TestNativeBuildLog! for details.
-goto :eof
+exit /b 1
 
 :PerformManagedTestBuild
 REM endlocal to rid us of environment changes from vcvarsall.bat
@@ -161,19 +161,14 @@ set _buildprefix=
 set _buildpostfix=
 set _buildappend=
 call :build %1
-
-goto :eof
+exit /b %ERRORLEVEL%
 
 :build
 
 %_buildprefix% %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestManagedBuildLog%";Append %* %_buildpostfix%
 IF ERRORLEVEL 1 echo Test build failed. Refer !__TestManagedBuildLog! for details && exit /b 1
+exit /b 0
 
-endlocal
-
-
-
-goto :eof
 :Usage
 echo.
 echo Usage:
