@@ -18,6 +18,7 @@
     
     <!-- Copy to the final output location -->
     <Copy Retries="3" SourceFiles="@(RewrittenAssembly)" DestinationFiles="$(FinalOutputPath)\%(RewrittenAssembly.FileName)%(RewrittenAssembly.Extension)"/>
+    <Message Importance="High" Text="$(MSBuildProjectName) -&gt; $(FinalOutputPath)\%(RewrittenAssembly.FileName)%(RewrittenAssembly.Extension)" />
     <Copy Retries="3" SourceFiles="$(CurrentAssemblyPdb)" DestinationFiles="$(FinalOutputPath)\$(TargetName).pdb"/>
   </Target>
 
