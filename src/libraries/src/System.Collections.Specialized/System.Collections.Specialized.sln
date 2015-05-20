@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Speciali
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{9618597D-FDAE-42CB-B368-80DB80EA1E37}"
 	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.config = ..\.nuget\packages.config
+		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Specialized.Tests", "tests\System.Collections.Specialized.Tests.csproj", "{7F5F5134-00FE-4DE8-B20C-3DA8BA2EBA68}"

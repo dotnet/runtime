@@ -8,7 +8,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Xml.XPath.Tests", "t
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{CF6DABDD-5158-4CAF-88B0-B823EE173E53}"
 	ProjectSection(SolutionItems) = preProject
-		.nuget\packages.config = .nuget\packages.config
+		.nuget\packages.Windows_NT.config = .nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
 Global

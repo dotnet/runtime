@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Extensions.T
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{1CA59CB2-FE88-4510-92AC-3561026C3B13}"
 	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.config = ..\.nuget\packages.config
+		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Extensions.CoreCLR", "src\System.Runtime.Extensions.CoreCLR.csproj", "{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}"

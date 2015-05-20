@@ -64,7 +64,7 @@
   <Target Name="_RestoreBuildToolsWrapper" DependsOnTargets="_RestoreBuildTools" />
 
   <Target Name="_RestoreBuildTools"
-          Inputs="$(MSBuildThisFileDirectory)dir.props;$(SourceDir).nuget\packages.config"
+          Inputs="$(MSBuildThisFileDirectory)dir.props;$(SourceDir).nuget/packages.$(OsEnvironment).config"
           Outputs="$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll;$(NugetToolPath);$(DnuToolPath)">
     <Message Importance="High" Text="Restoring build tools..." />
 
@@ -79,7 +79,7 @@
           Condition="!Exists('$(NuGetToolPath)') and '$(OsEnvironment)'=='Unix'" />
 
     <PropertyGroup>
-      <_RestoreBuildToolsCommand>$(NugetRestoreCommand) "$(SourceDir).nuget/packages.config"</_RestoreBuildToolsCommand>
+      <_RestoreBuildToolsCommand>$(NugetRestoreCommand) "$(SourceDir).nuget/packages.$(OsEnvironment).config"</_RestoreBuildToolsCommand>
     </PropertyGroup>
 
     <!-- Restore build tools -->

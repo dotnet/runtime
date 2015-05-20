@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.DriveI
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{FBCF7C99-4809-411D-BE8A-8E3E0DD17B7E}"
 	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.config = ..\.nuget\packages.config
+		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.DriveInfo.Tests", "tests\System.IO.FileSystem.DriveInfo.Tests.csproj", "{7D9E5F2F-5677-40FC-AD04-FA7D603E4806}"
