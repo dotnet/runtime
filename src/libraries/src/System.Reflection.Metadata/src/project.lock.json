@@ -1,0 +1,36 @@
+{
+  "locked": true,
+  "version": -9997,
+  "targets": {
+    "DNXCore,Version=v5.0": {
+      "System.Collections.Immutable/1.1.34-rc": {
+        "compile": [
+          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll"
+        ]
+      }
+    }
+  },
+  "libraries": {
+    "System.Collections.Immutable/1.1.34-rc": {
+      "serviceable": true,
+      "sha512": "WzH7eUVtkUymLcc80OuO5cgxg13xMqRgdGxfeAdlmZIxMt+z1zB8g3GRc2IoCC2gzkb+4CPzTYTwy50hKA6E1g==",
+      "files": [
+        "License-Stable.rtf",
+        "System.Collections.Immutable.1.1.34-rc.nupkg",
+        "System.Collections.Immutable.1.1.34-rc.nupkg.sha512",
+        "System.Collections.Immutable.nuspec",
+        "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll",
+        "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.xml"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "": [
+      "System.Collections.Immutable >= 1.1.34-rc"
+    ],
+    "DNXCore,Version=v5.0": []
+  }
+}
