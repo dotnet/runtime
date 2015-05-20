@@ -97,6 +97,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     perfmap.cpp
     precode.cpp
     prestub.cpp
+    readytoruninfo.cpp
     rejit.cpp
     securitydescriptor.cpp
     securitydescriptorassembly.cpp
@@ -253,7 +254,6 @@ set(VM_SOURCES_DAC_AND_WKS_WIN32
     clrtocomcall.cpp
     comtoclrcall.cpp
     rcwwalker.cpp
-    readytoruninfo.cpp
     umthunkhash.cpp #" Condition="'$(FeatureMixedMode)' == 'true'
     winrttypenameconverter.cpp
 )
