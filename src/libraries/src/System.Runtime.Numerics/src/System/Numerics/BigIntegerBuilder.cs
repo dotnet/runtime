@@ -160,23 +160,11 @@ namespace System.Numerics
 
             int cuExtra = _rgu.Length - _iuLast - 1;
             Debug.Assert(cuExtra >= 0);
-            if (cuExtra <= 1)
+            if (cuExtra == 0)
             {
-                if (cuExtra == 0 || _rgu[_iuLast + 1] == 0)
-                {
-                    _fWritable = false;
-                    bits = _rgu;
-                    return;
-                }
-                if (_fWritable)
-                {
-                    _rgu[_iuLast + 1] = 0;
-                    _fWritable = false;
-                    bits = _rgu;
-                    return;
-                }
-                // The buffer isn't writable, but has an extra uint that is non-zero,
-                // so we have to allocate a new buffer.
+                _fWritable = false;
+                bits = _rgu;
+                return;
             }
 
             // Keep the bigger buffer (if it is writable), but create a smaller one for the BigInteger.

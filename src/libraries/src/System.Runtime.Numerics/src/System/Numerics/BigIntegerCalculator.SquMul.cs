@@ -112,42 +112,27 @@ namespace System.Numerics
                 Square(valueHigh, valueHighLength,
                        bitsHigh, bitsHighLength);
 
-                // ... compute z_a = a_1 + a_0 (call it fold...)
                 int foldLength = valueHighLength + 1;
-                uint* fold = stackalloc uint[foldLength];
-
-                Add(valueHigh, valueHighLength,
-                    valueLow, valueLowLength,
-                    fold, foldLength);
-
-                // ... compute z_1 = z_a * z_a - z_0 - z_2
                 int coreLength = foldLength + foldLength;
-                uint* core = stackalloc uint[coreLength];
+                fixed (uint* fold = new uint[foldLength],
+                             core = new uint[coreLength])
+                {
+                    // ... compute z_a = a_1 + a_0 (call it fold...)
+                    Add(valueHigh, valueHighLength,
+                        valueLow, valueLowLength,
+                        fold, foldLength);
 
-                Square(fold, foldLength,
-                       core, coreLength);
-                SubtractCore(bitsHigh, bitsHighLength,
-                             bitsLow, bitsLowLength,
-                             core, coreLength);
+                    // ... compute z_1 = z_a * z_a - z_0 - z_2
+                    Square(fold, foldLength,
+                           core, coreLength);
+                    SubtractCore(bitsHigh, bitsHighLength,
+                                 bitsLow, bitsLowLength,
+                                 core, coreLength);
 
-                // ... and finally merge the result! :-)
-                AddSelf(bits + n, bitsLength - n, core, coreLength);
+                    // ... and finally merge the result! :-)
+                    AddSelf(bits + n, bitsLength - n, core, coreLength);
+                }
             }
-        }
-
-        public static uint[] Multiply(uint left, uint right)
-        {
-            // Executes the trivial multiplication for two 32-bit integers.
-            // Since the caller is working with uint[] objects, we're
-            // doing him a favor with already providing it that way.
-
-            uint[] bits = new uint[2];
-
-            ulong digits = (ulong)left * right;
-            bits[0] = (uint)digits;
-            bits[1] = (uint)(digits >> 32);
-
-            return bits;
         }
 
         public static uint[] Multiply(uint[] left, uint right)
@@ -288,35 +273,34 @@ namespace System.Numerics
                          rightHigh, rightHighLength,
                          bitsHigh, bitsHighLength);
 
-                // ... compute z_a = a_1 + a_0 (call it fold...)
                 int leftFoldLength = leftHighLength + 1;
-                uint* leftFold = stackalloc uint[leftFoldLength];
-
-                Add(leftHigh, leftHighLength,
-                    leftLow, leftLowLength,
-                    leftFold, leftFoldLength);
-
-                // ... compute z_b = b_1 + b_0 (call it fold...)
                 int rightFoldLength = rightHighLength + 1;
-                uint* rightFold = stackalloc uint[rightFoldLength];
-
-                Add(rightHigh, rightHighLength,
-                    rightLow, rightLowLength,
-                    rightFold, rightFoldLength);
-
-                // ... compute z_1 = z_a * z_b - z_0 - z_2
                 int coreLength = leftFoldLength + rightFoldLength;
-                uint* core = stackalloc uint[coreLength];
+                fixed (uint* leftFold = new uint[leftFoldLength],
+                             rightFold = new uint[rightFoldLength],
+                             core = new uint[coreLength])
+                {
+                    // ... compute z_a = a_1 + a_0 (call it fold...)
+                    Add(leftHigh, leftHighLength,
+                        leftLow, leftLowLength,
+                        leftFold, leftFoldLength);
 
-                Multiply(leftFold, leftFoldLength,
-                         rightFold, rightFoldLength,
-                         core, coreLength);
-                SubtractCore(bitsHigh, bitsHighLength,
-                             bitsLow, bitsLowLength,
+                    // ... compute z_b = b_1 + b_0 (call it fold...)
+                    Add(rightHigh, rightHighLength,
+                        rightLow, rightLowLength,
+                        rightFold, rightFoldLength);
+
+                    // ... compute z_1 = z_a * z_b - z_0 - z_2
+                    Multiply(leftFold, leftFoldLength,
+                             rightFold, rightFoldLength,
                              core, coreLength);
+                    SubtractCore(bitsHigh, bitsHighLength,
+                                 bitsLow, bitsLowLength,
+                                 core, coreLength);
 
-                // ... and finally merge the result! :-)
-                AddSelf(bits + n, bitsLength - n, core, coreLength);
+                    // ... and finally merge the result! :-)
+                    AddSelf(bits + n, bitsLength - n, core, coreLength);
+                }
             }
         }
 
