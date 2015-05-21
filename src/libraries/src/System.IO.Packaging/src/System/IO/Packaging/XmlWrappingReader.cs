@@ -7,11 +7,6 @@
 *
 * Purpose:  
 *
-* History:
-*    5/11/05:    fmunoz        "Borrowed from Whidbey Beta2 Sources
-*
-* Copyright (C) 2005 by Microsoft Corporation.  All rights reserved.
-*
 \***************************************************************************/
 
 using System;
@@ -19,7 +14,6 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Security.Policy;
 
 namespace System.IO.Packaging
 {
@@ -56,10 +50,8 @@ namespace System.IO.Packaging
         public override string BaseURI { get { return _reader.BaseURI; } }
         public override bool IsEmptyElement { get { return _reader.IsEmptyElement; } }
         public override bool IsDefault { get { return _reader.IsDefault; } }
-        public override char QuoteChar { get { return _reader.QuoteChar; } }
         public override XmlSpace XmlSpace { get { return _reader.XmlSpace; } }
         public override string XmlLang { get { return _reader.XmlLang; } }
-        public override IXmlSchemaInfo SchemaInfo { get { return _reader.SchemaInfo; } }
         public override System.Type ValueType { get { return _reader.ValueType; } }
         public override int AttributeCount { get { return _reader.AttributeCount; } }
         public override string this[int i] { get { return _reader[i]; } }
@@ -119,11 +111,6 @@ namespace System.IO.Packaging
         public override bool Read()
         {
             return _reader.Read();
-        }
-
-        public override void Close()
-        {
-            _reader.Close();
         }
 
         public override void Skip()

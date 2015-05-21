@@ -16,9 +16,6 @@
 //  file containing a well-known stream in which a Metro Zip archive, encrypted
 //  in its entirety, is stored.
 //
-// History:
-//  06/22/2005: LGolding:   Initial implementation.
-//
 //-----------------------------------------------------------------------------
 
 using System;

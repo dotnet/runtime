@@ -7,9 +7,6 @@
 //  This is a helper class for pack:// Uris. This is a part of the 
 //  Metro Packaging Layer
 //
-// History:
-//  07/07/2004: SarjanaS: Initial creation. 
-//  11/15/2004: SarjanaS: Adding the Compare and Normalize methods
 //-----------------------------------------------------------------------------
 
 // Allow use of presharp warning numbers [6506] unknown to the compiler
@@ -17,10 +14,7 @@
 
 using System;
 using System.IO;                        // for Path class
-using System.Security;
-using System.Security.Permissions;      // for Infrastructure permission
 using System.Diagnostics;
-using System.Windows;                   // For Exception strings - SRID
 using System.Collections.Generic;       // For IEqualityComparer<>
 
 namespace System.IO.Packaging
@@ -134,7 +128,7 @@ namespace System.IO.Packaging
             absolutePackageUri = absolutePackageUri.Replace('/', ',');
 
             // Step 5 - Append pack:// at the begining and a '/' at the end of the pack uri obtained so far            
-            absolutePackageUri = String.Concat(PackUriHelper.UriSchemePack, Uri.SchemeDelimiter, absolutePackageUri);
+            absolutePackageUri = String.Concat(PackUriHelper.UriSchemePack, "://", absolutePackageUri);
 
             Uri packUri = new Uri(absolutePackageUri);
 
@@ -664,44 +658,6 @@ namespace System.IO.Packaging
         //
         //------------------------------------------------------
         // None
-        //------------------------------------------------------
-        //
-        //  Private Constructors
-        //
-        //------------------------------------------------------
-
-        #region Private Constructor
-
-        // <SecurityNote>
-        //   Critical    - as this code does an elevation
-        //   TreatAsSafe - the net effect of this is to enable registration of Pack: Uri scheme. 
-        //   This enables fetching of resources via this scheme. Considered safe - as currently 
-        //   the pack: scheme has no elevations in it ( and any necessary elevations for container 
-        //   access will be reviewed as needed). 
-        // </SecurityNote>         
-        // [SecurityTreatAsSafe, SecurityCritical] todo ew
-        [SecurityCritical]
-        static PackUriHelper()
-        {
-            // indicate that we want "basic" parsing
-            if (!UriParser.IsKnownScheme(UriSchemePack))
-            {
-                try
-                {
-                    SecurityPermission permobj = new SecurityPermission(SecurityPermissionFlag.Infrastructure);
-                    permobj.Assert(); //BlessedAssert:
-
-                    // Indicate that we want a default hierarchical parser with a registry based authority
-                    UriParser.Register(new GenericUriParser(GenericUriParserOptions.GenericAuthority), UriSchemePack, -1);
-                }
-                finally
-                {
-                    SecurityPermission.RevertAssert();
-                }
-            }
-        }
-
-        #endregion Private Constructor
 
         //------------------------------------------------------
         //
@@ -741,6 +697,27 @@ namespace System.IO.Packaging
 
             return packUri;
         }
+        
+        private static readonly char[] HexUpperChars = {
+                                   '0', '1', '2', '3', '4', '5', '6', '7',
+                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+        
+        private static string HexEscape(char character) {
+            if (character > '\xff') {
+                throw new ArgumentOutOfRangeException("character");
+            }
+            char[] chars = new char[3];
+            int pos = 0;
+            EscapeAsciiChar(character, chars, ref pos);
+            return new string(chars);
+        }
+        
+        private static void EscapeAsciiChar(char ch, char[] to, ref int pos)
+        {
+            to[pos++] = '%';
+            to[pos++] = HexUpperChars[(ch & 0xf0) >> 4];
+            to[pos++] = HexUpperChars[ch & 0xf];
+        }
 
         /// <summary>
         /// Escapes -  %', '@', ',', '?' in the package URI 
@@ -759,7 +736,7 @@ namespace System.IO.Packaging
             {
                 characterString = c.ToString();
                 if (path.Contains(characterString))
-                    path = path.Replace(characterString, Uri.HexEscape(c));
+                    path = path.Replace(characterString, HexEscape(c));
             }
 
             return path;

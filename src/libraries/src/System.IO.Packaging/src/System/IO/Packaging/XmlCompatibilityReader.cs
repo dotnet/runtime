@@ -7,13 +7,6 @@
 *
 * Purpose:
 *
-* History:
-*    5/11/05:    fmunoz        Created
-*    9/16/05:    oliverfo      Modified
-*    9/16/05:    tjhsiang      Modified
-*
-* Copyright (C) 2005 by Microsoft Corporation.  All rights reserved.
-*
 \***************************************************************************/
 
 using System;
@@ -23,7 +16,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Diagnostics;
 using System.Threading;
-using System.Windows;
 
 namespace System.IO.Packaging
 {
@@ -699,39 +691,42 @@ namespace System.IO.Packaging
         /// <summary>
         /// Sets a value indicating whether to normalize white space and attribute values.
         /// </summary>
-        public bool Normalization
-        {
-            set
-            {
-                XmlTextReader xmlTextReader = Reader as XmlTextReader;
+        /// todo ew don't need this
+        //public bool Normalization
+        //{
+        //    set
+        //    {
+        //        XmlReader xmlTextReader = Reader as XmlReader;
 
-                // review, what if not the XmlTextReader.
-                if (null != xmlTextReader)
-                {
-                    xmlTextReader.Normalization = value;
-                }
-            }
-        }
+        //        // review, what if not the XmlReader.
+        //        if (null != xmlTextReader)
+        //        {
+        //            xmlTextReader.Normalization = value;
+        //        }
+        //    }
+        //}
 
 #if !PBTCOMPILER
         /// <summary>
         /// Answer the encoding of the underlying xaml stream
         /// </summary>
-        internal System.Text.Encoding Encoding
-        {
-            get
-            {
-                XmlTextReader textReader = Reader as XmlTextReader;
-                if (textReader == null)
-                {
-                    return new System.Text.UTF8Encoding(true, true);
-                }
-                else
-                {
-                    return textReader.Encoding;
-                }
-            }
-        }
+        
+        // todo ew don't need this
+        //internal System.Text.Encoding Encoding
+        //{
+        //    get
+        //    {
+        //        XmlTextReader textReader = Reader as XmlTextReader;
+        //        if (textReader == null)
+        //        {
+        //            return new System.Text.UTF8Encoding(true, true);
+        //        }
+        //        else
+        //        {
+        //            return textReader.Encoding;
+        //        }
+        //    }
+        //}
 #endif
         #endregion Public Properties
 

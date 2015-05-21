@@ -13,10 +13,7 @@ namespace System.IO.Packaging
 {
     using System;
     using System.Security;
-    using System.Security.Permissions;
-    using Microsoft.Win32;
     using System.Diagnostics;
-    using System.Windows;
 
     /// <summary>
     /// Provides methods that assert an application is in a valid state. 
@@ -41,36 +38,10 @@ namespace System.IO.Packaging
         ///               The information stored indicates whether invariant behavior is "strict" or not. Considered safe. 
         ///</SecurityNote>
         // [SecurityCritical, SecurityTreatAsSafe] todo ew
-        [SecurityCritical]
+        // [SecurityCritical]
         static Invariant()
         {
             s_strict = _strictDefaultValue;
-
-#if PRERELEASE
-            //
-            // Let the user override the inital value of the Strict property from the registry.
-            //
-
-            new RegistryPermission(RegistryPermissionAccess.Read, "HKEY_LOCAL_MACHINE\\" + RegistryKeys.WPF).Assert(); 
-            try
-            {
-                RegistryKey key = Registry.LocalMachine.OpenSubKey(RegistryKeys.WPF);
-
-                if (key != null)
-                {
-                    object obj = key.GetValue("InvariantStrict");
-
-                    if (obj is int)
-                    {
-                        _strict = (int)obj != 0;
-                    }
-                }
-            }
-            finally
-            {
-                CodeAccessPermission.RevertAll(); 
-            }
-#endif // PRERELEASE
         }
 
         #endregion Constructors
@@ -193,26 +164,9 @@ namespace System.IO.Packaging
         /// Property specifying whether or not the user wants to enable expensive
         /// verification diagnostics.  The Strict property is rarely used -- only
         /// when performance profiling shows a real problem.
+        /// </summary>
         ///
-        /// Default value is false on FRE builds, true on 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // Default value is false on FRE builds, true on 
         internal static bool Strict
         {
             get { return s_strict; }
@@ -249,91 +203,16 @@ namespace System.IO.Packaging
         ///         we would have a potential denial-of-service vulnerability.
         /// </SecurityNote>
         // [SecurityCritical, SecurityTreatAsSafe] todo ew
-        [SecurityCritical]
+        // [SecurityCritical]
         private // DO NOT MAKE PUBLIC OR INTERNAL -- See security note
             static void FailFast(string message, string detailMessage)
         {
-            if (Invariant.IsDialogOverrideEnabled)
-            {
-                // This is the override for stress and other automation.
-                // Automated systems can't handle a popup-dialog, so let
-                // them jump straight into the debugger.
-                Debugger.Break();
-            }
-
-            Debug.Assert(false, "Invariant failure: " + message, detailMessage);
+            Debug.Assert(false, string.Format("Invariant failure: {0}\n{1}", message, detailMessage));
 
             Environment.FailFast(SR.Get(SRID.InvariantFailure));
         }
 
         #endregion Private Methods
-
-        //------------------------------------------------------
-        //
-        //  Private Properties
-        //
-        //------------------------------------------------------
-
-        #region Private Properties
-
-        // Returns true if the default assert failure dialog has been disabled
-        // on this machine.
-        //
-        // The dialog may be disabled by
-        //   Installing a JIT debugger to the [HKEY_LOCAL_MACHINE\Software\Microsoft\.NETFramework]
-        //     DbgJITDebugLaunchSetting and DbgManagedDebugger registry keys.
-        ///<SecurityNote>
-        /// Critical - this function elevates to read from the registry. 
-        /// TreatAsSafe - Not controllable from external input. 
-        ///               The information stored indicates whether dialog override is available or not. Safe to expose
-        ///</SecurityNote>
-        private static bool IsDialogOverrideEnabled
-        {
-            // [SecurityCritical, SecurityTreatAsSafe] todo ew
-            [SecurityCritical]
-            get
-            {
-                RegistryKey key;
-                bool enabled;
-
-                enabled = false;
-
-                //extracting all the data under an elevation.
-                object dbgJITDebugLaunchSettingValue;
-                string dbgManagedDebuggerValue;
-                PermissionSet ps = new PermissionSet(PermissionState.None);
-                RegistryPermission regPerm = new RegistryPermission(RegistryPermissionAccess.Read, "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\.NetFramework");
-                ps.AddPermission(regPerm);
-                ps.Assert();//BlessedAssert
-                try
-                {
-                    key = Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\.NETFramework");
-                    dbgJITDebugLaunchSettingValue = key.GetValue("DbgJITDebugLaunchSetting");
-                    dbgManagedDebuggerValue = key.GetValue("DbgManagedDebugger") as string;
-                }
-                finally
-                {
-                    PermissionSet.RevertAssert();
-                }
-                //
-                // Check for the enable.
-                //
-                if (key != null)
-                {
-                    //
-                    // Only count the enable if there's a JIT debugger to launch.
-                    //
-                    enabled = (dbgJITDebugLaunchSettingValue is int && ((int)dbgJITDebugLaunchSettingValue & 2) != 0);
-                    if (enabled)
-                    {
-                        enabled = dbgManagedDebuggerValue != null && dbgManagedDebuggerValue.Length > 0;
-                    }
-                }
-                return enabled;
-            }
-        }
-
-        #endregion Private Properties
 
         //------------------------------------------------------
         //
@@ -350,7 +229,7 @@ namespace System.IO.Packaging
         /// TreatAsSafe - this data indicates whether "strict" invariant mode is to be used. Considered safe
         ///</SecurityNote> 
         // [SecurityCritical, SecurityTreatAsSafe] ew todo
-        [SecurityCritical]
+        // [SecurityCritical]
         private static bool s_strict;
 
         // Used to initialize the default value of _strict in the static ctor.

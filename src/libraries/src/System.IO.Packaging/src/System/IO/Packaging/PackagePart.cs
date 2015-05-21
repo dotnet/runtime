@@ -7,17 +7,11 @@
 //  This is a base abstract class for PackagePart. This is a part of the 
 //  Packaging Layer
 //
-// History:
-//  01/03/2004: SarjanaS: Initial creation. [Stubs Only]
-//  03/01/2004: SarjanaS: Implemented the functionality for all the members.
-//  03/17/2004: BruceMac: Initial implementation or PackageRelationship methods
-//
 //-----------------------------------------------------------------------------
 
 using System;
 using System.IO;
 using System.Collections;
-using System.Windows;               // For Exception strings - SRID
 using System.Collections.Generic;   // For List <>
 using System.Diagnostics;           // For Debug.Assert
 
@@ -351,6 +345,11 @@ namespace System.IO.Packaging
             CheckInvalidState();
             ThrowIfOpenAccessModesAreIncompatible(mode, access);
 
+            if (mode == FileMode.CreateNew)
+                throw new ArgumentException(SR.Get(SRID.CreateNewNotSupported));
+            if (mode == FileMode.Truncate)
+                throw new ArgumentException(SR.Get(SRID.TruncateNotSupported));
+
             Stream s = GetStreamCore(mode, access);
 
             if (s == null)
@@ -457,7 +456,6 @@ namespace System.IO.Packaging
         {
             CheckInvalidState();
             _container.ThrowIfReadOnly();
-            _container.ThrowIfInStreamingCreation("DeleteRelationship");
 
             if (id == null)
                 throw new ArgumentNullException("id");
@@ -674,18 +672,10 @@ namespace System.IO.Packaging
                         {
                             foreach (Stream s in _requestedStreams)
                             {
-                                s.Close();
+                                s.Dispose();
                             }
                         }
                         _requestedStreams.Clear();
-                    }
-
-                    // In streaming creation, if the part has had no stream opened on it,
-                    // it has not been physically added to the archive yet.
-                    else if (_container.InStreamingCreation)
-                    {
-                        // Create an interleaving stream to make sure a physical item gets created.
-                        GetStream(FileMode.CreateNew, _container.FileOpenAccess).Close();
                     }
 
                     // Relationships for this part should have been flushed/closed earlier in the Package.Close method. 
@@ -708,16 +698,10 @@ namespace System.IO.Packaging
             }
         }
 
-        #region Write-Time Streaming API
-
         /// <summary>
-        /// According to the access mode (streaming or not),
-        /// write the whole relationships part or just a nonterminal
-        /// nonterminal piece for the relationships part.
+        /// write the relationships part
         /// </summary>
         /// <remarks>
-        /// The behavior of _relationships.Flush, which gets invoked here, will vary
-        /// according as the package was opened for streaming production or not.
         /// </remarks>
         internal void FlushRelationships()
         {
@@ -736,35 +720,9 @@ namespace System.IO.Packaging
             if (!_deleted)
             {
                 //Flush the relationships for this part.
-                if (_container.InStreamingCreation)
-                {
-                    // Flush unsaved relationships,
-                    // close XML markup and save as the last piece.
-                    CloseStreamingRelationships();
-                }
-                else
-                {
-                    FlushRelationships();
-                }
+                FlushRelationships();
             }
         }
-
-
-        /// <summary>
-        /// Write a terminal piece for folderPath/_rels/baseName.rels
-        /// </summary>
-        private void CloseStreamingRelationships()
-        {
-            if (!_container.InStreamingCreation)
-                throw new IOException(SR.Get(SRID.MethodAvailableOnlyInStreamingCreation, "CloseRelationships"));
-
-            if (_relationships == null)
-                return; // No relationship has been created.
-
-            _relationships.CloseInStreamingCreationMode();
-        }
-
-        #endregion Write-Time Streaming API
 
         #endregion Internal Methods
 

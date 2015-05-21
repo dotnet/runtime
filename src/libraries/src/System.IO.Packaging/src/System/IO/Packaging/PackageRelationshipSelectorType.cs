@@ -9,9 +9,6 @@
 //  1. Id
 //  2. Type
 //
-// History:
-//  07/27/2005: SarjanaS: Initial creation.
-//
 //-----------------------------------------------------------------------------
 
 namespace System.IO.Packaging

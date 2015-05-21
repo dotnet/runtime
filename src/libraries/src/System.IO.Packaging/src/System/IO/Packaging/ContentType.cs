@@ -41,15 +41,11 @@
 // Linear white space (LWS) MUST NOT be used between the type and subtype, nor 
 // between an attribute and its value. Leading and trailing LWS are prohibited.
 // 
-//
-// History:
-//  04/26/2004: SarjanaS: Initial Creation 
 //-----------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;   // For Dictionary<string, string>
 using System.Text;                  // For StringBuilder
-using System.Windows;               // For Exception strings - SRID
 using System.Diagnostics;           // For Debug.Assert
 
 namespace System.IO.Packaging
