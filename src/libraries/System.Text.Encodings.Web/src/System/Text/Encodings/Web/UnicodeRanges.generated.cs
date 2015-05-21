@@ -50,7 +50,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U0250.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange IPAExtensions { get { return _ipaExtensions ?? CreateRange(ref _ipaExtensions, first: '\u0250', last: '\u02AF'); } }
+        public static UnicodeRange IpaExtensions { get { return _ipaExtensions ?? CreateRange(ref _ipaExtensions, first: '\u0250', last: '\u02AF'); } }
         private static UnicodeRange _ipaExtensions;
 
         /// <summary>
@@ -914,7 +914,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U2E80.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKRadicalsSupplement { get { return _cjkRadicalsSupplement ?? CreateRange(ref _cjkRadicalsSupplement, first: '\u2E80', last: '\u2EFF'); } }
+        public static UnicodeRange CjkRadicalsSupplement { get { return _cjkRadicalsSupplement ?? CreateRange(ref _cjkRadicalsSupplement, first: '\u2E80', last: '\u2EFF'); } }
         private static UnicodeRange _cjkRadicalsSupplement;
 
         /// <summary>
@@ -941,7 +941,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U3000.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKSymbolsandPunctuation { get { return _cjkSymbolsandPunctuation ?? CreateRange(ref _cjkSymbolsandPunctuation, first: '\u3000', last: '\u303F'); } }
+        public static UnicodeRange CjkSymbolsandPunctuation { get { return _cjkSymbolsandPunctuation ?? CreateRange(ref _cjkSymbolsandPunctuation, first: '\u3000', last: '\u303F'); } }
         private static UnicodeRange _cjkSymbolsandPunctuation;
 
         /// <summary>
@@ -1004,7 +1004,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U31C0.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKStrokes { get { return _cjkStrokes ?? CreateRange(ref _cjkStrokes, first: '\u31C0', last: '\u31EF'); } }
+        public static UnicodeRange CjkStrokes { get { return _cjkStrokes ?? CreateRange(ref _cjkStrokes, first: '\u31C0', last: '\u31EF'); } }
         private static UnicodeRange _cjkStrokes;
 
         /// <summary>
@@ -1022,8 +1022,8 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U3200.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange EnclosedCJKLettersandMonths { get { return _enclosedCJKLettersandMonths ?? CreateRange(ref _enclosedCJKLettersandMonths, first: '\u3200', last: '\u32FF'); } }
-        private static UnicodeRange _enclosedCJKLettersandMonths;
+        public static UnicodeRange EnclosedCjkLettersandMonths { get { return _enclosedCjkLettersandMonths ?? CreateRange(ref _enclosedCjkLettersandMonths, first: '\u3200', last: '\u32FF'); } }
+        private static UnicodeRange _enclosedCjkLettersandMonths;
 
         /// <summary>
         /// A <see cref="UnicodeRange"/> corresponding to the 'CJK Compatibility' Unicode block (U+3300..U+33FF).
@@ -1031,7 +1031,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U3300.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKCompatibility { get { return _cjkCompatibility ?? CreateRange(ref _cjkCompatibility, first: '\u3300', last: '\u33FF'); } }
+        public static UnicodeRange CjkCompatibility { get { return _cjkCompatibility ?? CreateRange(ref _cjkCompatibility, first: '\u3300', last: '\u33FF'); } }
         private static UnicodeRange _cjkCompatibility;
 
         /// <summary>
@@ -1040,7 +1040,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U3400.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKUnifiedIdeographsExtensionA { get { return _cjkUnifiedIdeographsExtensionA ?? CreateRange(ref _cjkUnifiedIdeographsExtensionA, first: '\u3400', last: '\u4DBF'); } }
+        public static UnicodeRange CjkUnifiedIdeographsExtensionA { get { return _cjkUnifiedIdeographsExtensionA ?? CreateRange(ref _cjkUnifiedIdeographsExtensionA, first: '\u3400', last: '\u4DBF'); } }
         private static UnicodeRange _cjkUnifiedIdeographsExtensionA;
 
         /// <summary>
@@ -1058,7 +1058,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/U4E00.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKUnifiedIdeographs { get { return _cjkUnifiedIdeographs ?? CreateRange(ref _cjkUnifiedIdeographs, first: '\u4E00', last: '\u9FFF'); } }
+        public static UnicodeRange CjkUnifiedIdeographs { get { return _cjkUnifiedIdeographs ?? CreateRange(ref _cjkUnifiedIdeographs, first: '\u4E00', last: '\u9FFF'); } }
         private static UnicodeRange _cjkUnifiedIdeographs;
 
         /// <summary>
@@ -1310,7 +1310,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/UF900.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKCompatibilityIdeographs { get { return _cjkCompatibilityIdeographs ?? CreateRange(ref _cjkCompatibilityIdeographs, first: '\uF900', last: '\uFAFF'); } }
+        public static UnicodeRange CjkCompatibilityIdeographs { get { return _cjkCompatibilityIdeographs ?? CreateRange(ref _cjkCompatibilityIdeographs, first: '\uF900', last: '\uFAFF'); } }
         private static UnicodeRange _cjkCompatibilityIdeographs;
 
         /// <summary>
@@ -1364,7 +1364,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See http://www.unicode.org/charts/PDF/UFE30.pdf for the full set of characters in this block.
         /// </remarks>
-        public static UnicodeRange CJKCompatibilityForms { get { return _cjkCompatibilityForms ?? CreateRange(ref _cjkCompatibilityForms, first: '\uFE30', last: '\uFE4F'); } }
+        public static UnicodeRange CjkCompatibilityForms { get { return _cjkCompatibilityForms ?? CreateRange(ref _cjkCompatibilityForms, first: '\uFE30', last: '\uFE4F'); } }
         private static UnicodeRange _cjkCompatibilityForms;
 
         /// <summary>
