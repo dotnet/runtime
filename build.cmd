@@ -96,14 +96,14 @@ goto CheckVS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
 echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
-goto :eof
+exit /b 1
 
 :CheckVSExistence
 :: Does VS 2013 or VS 2015 really exist?
 if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
 echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
-goto :eof
+exit /b 1
 
 :CheckMSBuild
 :: Note: We've disabled node reuse because it causes file locking issues.
@@ -142,7 +142,7 @@ of previous version to "%VSINSTALLDIR%" and then resume build.
 echo Visual Studio 2013 Express does not include the DIA SDK. ^
 You need Visual Studio 2013 Community (free).
 echo See: https://github.com/dotnet/coreclr/wiki/Developer-Guide#prerequisites
-goto :eof
+exit /b 1
 
 :GenVSSolution
 :: Regenerate the VS solution
@@ -153,7 +153,7 @@ popd
 :BuildComponents
 if exist "%__IntermediatesDir%\install.vcxproj" goto BuildCoreCLR
 echo Failed to generate native component build project!
-goto :eof
+exit /b 1
 
 REM Build CoreCLR
 :BuildCoreCLR
@@ -161,7 +161,7 @@ set "__CoreCLRBuildLog=%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildT
 %_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=diag;LogFile="%__CoreCLRBuildLog%"
 IF NOT ERRORLEVEL 1 goto PerformMScorlibBuild
 echo Native component build failed. Refer !__CoreCLRBuildLog! for details.
-goto :eof
+exit /b 1
 
 :PerformMScorlibBuild
 REM endlocal to rid us of environment changes from vcvarsall.bat
@@ -183,12 +183,12 @@ echo.
 set "__MScorlibBuildLog=%__LogsDir%\MScorlib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
 %_msbuildexe% "%__ProjectFilesDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__MScorlibBuildLog%" /p:OS=%__BuildOS% %__AdditionalMSBuildArgs%
 IF NOT ERRORLEVEL 1 (
-  if defined __MscorlibOnly goto :eof
+  if defined __MscorlibOnly exit /b 0
   goto CrossGenMscorlib
 )
 
 echo MScorlib build failed. Refer !__MScorlibBuildLog! for details.
-goto :eof
+exit /b 1
 
 :CrossGenMscorlib
 echo Generating native image of mscorlib for %__BuildOS%.%__BuildArch%.%__BuildType%
@@ -200,7 +200,7 @@ IF NOT ERRORLEVEL 1 (
 )
 
 echo CrossGen mscorlib failed. Refer !__CrossGenMScorlibLog! for details.
-goto :eof
+exit /b 1
 
 :PerformTestBuild
 echo.
@@ -209,7 +209,7 @@ echo.
 call tests\buildtest.cmd
 IF NOT ERRORLEVEL 1 goto SuccessfulBuild
 echo Test binaries build failed. Refer !__MScorlibBuildLog! for details.
-goto :eof
+exit /b 1
 
 :SuccessfulBuild
 ::Build complete
@@ -217,7 +217,7 @@ echo Repo successfully built.
 echo.
 echo Product binaries are available at !__BinDir!
 echo Test binaries are available at !__TestBinDir!
-goto :eof
+exit /b 0
 
 :Usage
 echo.
