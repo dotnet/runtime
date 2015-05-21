@@ -12,9 +12,6 @@
 //   and offers methods to create, delete and enumerate relationships. This code was
 //   moved from the PackageRelationshipCollection class.
 //
-// History:
-//  04/26/2004: SarjanaS: This code was moved from the PackageRelationshipCollection class.
-//
 //-----------------------------------------------------------------------------
 
 using System;
@@ -23,7 +20,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Xml;                           // for XmlReader/Writer
 using System.IO.Packaging;
-using System.Windows;                       // For Exception strings - SRID
 using System.IO;
 using System.Diagnostics;
 
@@ -109,7 +105,6 @@ namespace System.IO.Packaging
         /// </summary>
         internal PackageRelationship GetRelationship(string id)
         {
-            Invariant.Assert(!_package.InStreamingCreation);
             int index = GetRelationshipIndex(id);
             if (index == -1)
                 return null;
@@ -122,7 +117,6 @@ namespace System.IO.Packaging
         /// <param name="id">ID of the relationship to remove</param>
         internal void Delete(String id)
         {
-            Invariant.Assert(!_package.InStreamingCreation);
             int index = GetRelationshipIndex(id);
             if (index == -1)
                 return;
@@ -137,7 +131,6 @@ namespace System.IO.Packaging
         /// </summary>
         internal void Clear()
         {
-            Invariant.Assert(!_package.InStreamingCreation);
             _relationships.Clear();
             _dirty = true;
         }
@@ -146,49 +139,30 @@ namespace System.IO.Packaging
         /// Flush to stream (destructive)
         /// </summary>
         /// <remarks>
-        /// Based on the streaming mode of the package, flush piece or flush part.
+        /// Flush part.
         /// </remarks>
         internal void Flush()
         {
             if (!_dirty)
                 return;
 
-            if (_package.InStreamingCreation)
+            if (_relationships.Count == 0)  // empty?
             {
-                FlushRelationshipsToPiece(false /* not a terminal piece */);
+                // delete the part
+                if (_package.PartExists(_uri))
+                {
+                    _package.DeletePart(_uri);
+                }
+                _relationshipPart = null;
             }
             else
             {
-                if (_relationships.Count == 0)  // empty?
-                {
-                    // delete the part
-                    if (_package.PartExists(_uri))
-                    {
-                        _package.DeletePart(_uri);
-                    }
-                    _relationshipPart = null;
-                }
-                else
-                {
-                    EnsureRelationshipPart();   // lazy init
+                EnsureRelationshipPart();   // lazy init
 
-                    // write xml
-                    WriteRelationshipPart(_relationshipPart);
-                }
+                // write xml
+                WriteRelationshipPart(_relationshipPart);
             }
             _dirty = false;
-        }
-
-        /// <summary>
-        /// Exclusively used for streaming production. Any relationships remaining to flush
-        /// are flushed to a terminal piece.
-        /// If relationships have been created and have all been flushed already, a terminal piece
-        /// is created to complete the Xml document.
-        /// </summary>
-        internal void CloseInStreamingCreationMode()
-        {
-            Debug.Assert(_package.InStreamingCreation, "This method should only be called in streaming creation mode");
-            FlushRelationshipsToPiece(true /* last piece */);
         }
 
         internal static void ThrowIfInvalidRelationshipType(string relationshipType)
@@ -284,13 +258,13 @@ namespace System.IO.Packaging
             using (Stream s = part.GetStream(FileMode.Open, FileAccess.Read))
             {
                 // load from the relationship part associated with the given part
-                using (XmlTextReader baseReader = new XmlTextReader(s))
+                using (XmlReader baseReader = XmlReader.Create(s))
                 {
-                    baseReader.WhitespaceHandling = WhitespaceHandling.None;
+                    //baseReader.WhitespaceHandling = WhitespaceHandling.None; todo ew
 
                     //Prohibit DTD from the markup as per the OPC spec
 #pragma warning disable 618
-                    baseReader.ProhibitDtd = true;
+                    // baseReader.ProhibitDtd = true; todo ew
 #pragma warning restore 618
 
                     using (XmlCompatibilityReader reader = new XmlCompatibilityReader(baseReader, s_relationshipKnownNamespaces))
@@ -513,11 +487,8 @@ namespace System.IO.Packaging
                 s.SetLength(0);    // truncate to resolve PS 954048
 
                 // use UTF-8 encoding by default
-                using (XmlTextWriter writer = new XmlTextWriter(s, System.Text.Encoding.UTF8))
+                using (XmlWriter writer = XmlWriter.Create(s, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 }))
                 {
-#if DEBUG
-                    writer.Formatting = Formatting.Indented;
-#endif
                     writer.WriteStartDocument();
 
                     // start outer Relationships tag
@@ -527,8 +498,7 @@ namespace System.IO.Packaging
                     WriteRelationshipsAsXml(
                         writer,
                         _relationships,
-                        false, /* do not systematically write target mode */
-                        false  /* not in streaming production */
+                        false /* do not systematically write target mode */
                         );
 
                     // end of Relationships tag
@@ -544,13 +514,10 @@ namespace System.IO.Packaging
         /// Write one Relationship element for each member of relationships.
         /// This method is used by XmlDigitalSignatureProcessor code as well
         /// </summary>
-        internal static void WriteRelationshipsAsXml(XmlWriter writer, IEnumerable<PackageRelationship> relationships, bool alwaysWriteTargetModeAttribute, bool inStreamingProduction)
+        internal static void WriteRelationshipsAsXml(XmlWriter writer, IEnumerable<PackageRelationship> relationships, bool alwaysWriteTargetModeAttribute)
         {
             foreach (PackageRelationship relationship in relationships)
             {
-                if (inStreamingProduction && relationship.Saved)
-                    continue;
-
                 writer.WriteStartElement(s_relationshipTagName);
 
                 // Write RelationshipType attribute.
@@ -574,11 +541,6 @@ namespace System.IO.Packaging
                 writer.WriteAttributeString(s_idAttributeName, relationship.Id);
 
                 writer.WriteEndElement();
-
-                // The following flag is useful only in a write-once context, namely
-                // in streaming production. In other contexts, it is simply ignored.
-                if (inStreamingProduction)
-                    relationship.Saved = true;
             }
         }
 
@@ -586,15 +548,12 @@ namespace System.IO.Packaging
         /// Ensures that the PackageRelationship PackagePart has been created - lazy init
         /// </summary>
         /// <remarks>
-        /// Streaming production is a special case because the storage layer
-        /// can't and needn't be accessed to retrieve the relationship part
-        /// once it has been created.
         /// </remarks>
         private void EnsureRelationshipPart()
         {
             if (_relationshipPart == null || _relationshipPart.IsDeleted)
             {
-                if (!_package.InStreamingCreation && _package.PartExists(_uri))
+                if (_package.PartExists(_uri))
                 {
                     _relationshipPart = _package.GetPart(_uri);
                     ThrowIfIncorrectContentType(_relationshipPart.ValidatedContentType);
@@ -664,15 +623,13 @@ namespace System.IO.Packaging
         }
 
         // Generate a unique relation ID.
-        // In streaming production, we rely on the fact that the time stamp is supposedly
-        // unique on a given machine. So no duplication test is carried out.
         private string GenerateUniqueRelationshipId()
         {
             string id;
             do
             {
                 id = GenerateRelationshipId();
-            } while (!_package.InStreamingCreation && GetRelationship(id) != null);
+            } while (GetRelationship(id) != null);
             return id;
         }
 
@@ -707,82 +664,9 @@ namespace System.IO.Packaging
             return -1;
         }
 
-
-        /// <summary>
-        /// If any relationships have to be flushed, will lazily create a StreamingZipPartStream
-        /// to flush them to a piece.
-        /// When isLastPiece is true and a StreamingZipPartStream has been created or there are
-        /// more relationships to be flushed, the Xml document is completed and the
-        /// StreamingZipPartStream is closed.
-        /// </summary>
-        private void FlushRelationshipsToPiece(bool isLastPiece)
-        {
-            Debug.Assert(_package.InStreamingCreation, "This method should only be called in streaming creation mode");
-
-            if (_dirty)
-            {
-                // No deletion in streaming production.
-                Invariant.Assert(_relationships.Count > 0);
-
-                // Dump the contents of _relationships to the stream and mark as saved.                               
-                WriteRelationshipsAsXml(
-                    StreamingXmlWriter,
-                    _relationships,
-                    false, /* do not systematically write target mode */
-                    true   /* in streaming production */
-                    );
-
-                if (!isLastPiece)
-                {
-                    // Create a piece with the Xml just written.
-                    StreamingXmlWriter.Flush();
-                }
-
-                _dirty = false;
-            }
-
-            if (isLastPiece && StreamingXmlWriter.WriteState != WriteState.Closed)
-            {
-                // Close Relationships tag.
-                StreamingXmlWriter.WriteEndElement();
-
-                // Close the document.
-                StreamingXmlWriter.WriteEndDocument();
-
-                // Create a terminal piece. This will set StreamingXmlWriter.WriteState to Closed.
-                StreamingXmlWriter.Close();
-            }
-        }
-
         #endregion
 
         #region Private Properties
-
-        /// <summary>
-        /// Invoked strictly in streaming production to return and, if needed,
-        /// lazily initialize _streamingXmlWriter.
-        /// </summary>
-        private XmlWriter StreamingXmlWriter
-        {
-            get
-            {
-                if (_streamingXmlWriter == null)
-                {
-                    // Implement the writer on top of a streaming stream, so each Flush
-                    // will create a piece.
-                    EnsureRelationshipPart();
-                    Stream s = _relationshipPart.GetStream(
-                        FileMode.CreateNew, FileAccess.Write);
-                    _streamingXmlWriter = new XmlTextWriter(s, System.Text.Encoding.UTF8);
-
-                    // Write the top of the Xml document.
-                    StreamingXmlWriter.WriteStartDocument();
-                    StreamingXmlWriter.WriteStartElement(
-                        s_relationshipsTagName, PackagingUtilities.RelationshipNamespaceUri);
-                }
-                return _streamingXmlWriter;
-            }
-        }
 
         #endregion Private Properties
 
@@ -798,7 +682,6 @@ namespace System.IO.Packaging
         private PackagePart _sourcePart;      // owning part - null if package is the owner
         private PackagePart _relationshipPart;  // where our relationships are persisted
         private Uri _uri;           // the URI of our relationship part
-        private XmlWriter _streamingXmlWriter;
 
         //------------------------------------------------------
         //

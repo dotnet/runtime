@@ -7,18 +7,12 @@
 //  This is a base abstract class for Package. This is a part of the
 //  Packaging Layer.
 //
-// History:
-//  01/03/2004: SarjanaS: Initial creation. [Stubs only]
-//  03/01/2004: SarjanaS: Implemented the functionality for all the members.
-//  03/17/2004: BruceMac: Initial implementation or PackageRelationship methods
-//
 //-----------------------------------------------------------------------------
 
 using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;   // For SortedList<>
-using System.Windows;               // For Exception strings - SRID
 using System.Diagnostics;
 using System.Security;           // For Debug.Assert
 
@@ -46,19 +40,6 @@ namespace System.IO.Packaging
         /// <param name="openFileAccess"></param>
         /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration does not have one of the valid values</exception>
         protected Package(FileAccess openFileAccess)
-            : this(openFileAccess, false /* not streaming by default */)
-        {
-        }
-
-        /// <summary>
-        /// Protected constructor for the abstract Base class.
-        /// This is the current contract between the subclass and the base class
-        /// If we decide some registration mechanism then this might change
-        /// </summary>
-        /// <param name="openFileAccess"></param>
-        /// <param name="streaming">Whether the package is being opened for streaming.</param>
-        /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration does not have one of the valid values</exception>
-        protected Package(FileAccess openFileAccess, bool streaming)
         {
             ThrowIfFileAccessInvalid(openFileAccess);
 
@@ -68,7 +49,6 @@ namespace System.IO.Packaging
             _partList = new SortedList<PackUriHelper.ValidatedPartUri, PackagePart>(); // initial default is zero
             _partCollection = null;
             _disposed = false;
-            _inStreamingCreation = (openFileAccess == FileAccess.Write && streaming);
         }
 
         #endregion Protected Constructor
@@ -174,32 +154,6 @@ namespace System.IO.Packaging
             return Open(path, packageMode, packageAccess, s_defaultFileShare);
         }
 
-        /// <summary>
-        /// Opens the package with the specified parameters.
-        ///
-        /// Note:-
-        /// Since currently there is no plan to implement a generic registration mechanism, this method
-        /// has some hard coded knowledge about the sub classes. This might change later if we come up
-        /// with a registration mechanism.
-        /// There is no caching mechanism in case the FileShare is specified to ReadWrite/Write.
-        /// We do not have any refresh mechanism, to make sure that the cached parts reflect the actual parts,
-        /// in the case where there might be more than one processes writing to the same underlying package.
-        /// </summary>
-        /// <param name="path">Path to the package</param>
-        /// <param name="packageMode">FileMode in which the package should be opened</param>
-        /// <param name="packageAccess">FileAccess with which the package should be opened</param>
-        /// <param name="packageShare">FileShare with which the package is opened.</param>
-        /// <returns>Package</returns>
-        /// <exception>InvalidArgumentException - If the combination of the FileMode,
-        /// FileAccess and FileShare parameters is not meaningful.</exception>
-        /// <exception cref="ArgumentNullException">If path parameter is null</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If FileMode enumeration [packageMode] does not have one of the valid values</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
-        public static Package Open(string path, FileMode packageMode, FileAccess packageAccess, FileShare packageShare)
-        {
-            return Open(path, packageMode, packageAccess, packageShare, false /* not in streaming mode */);
-        }
-
         #endregion OpenOnFileMethods
 
         #region OpenOnStreamMethods
@@ -217,7 +171,7 @@ namespace System.IO.Packaging
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
         public static Package Open(Stream stream)
         {
-            return Open(stream, s_defaultStreamMode, s_defaultStreamAccess);
+            return Open(stream, s_defaultStreamMode);
         }
 
         /// <summary>
@@ -239,23 +193,6 @@ namespace System.IO.Packaging
             return Open(stream, packageMode, s_defaultFileAccess);
         }
 
-        /// <summary>
-        /// Opens a package on this stream. The package is opened in the specified mode and with the access
-        /// specified.
-        /// </summary>
-        /// <param name="stream">Stream on which the package is created</param>
-        /// <param name="packageMode">FileMode in which the package is to be opened</param>
-        /// <param name="packageAccess">FileAccess on the package that is opened</param>
-        /// <returns>Package</returns>
-        /// <exception cref="ArgumentNullException">If stream parameter is null</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If FileMode enumeration [packageMode] does not have one of the valid values</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
-        /// <exception cref="IOException">If package to be created should have readwrite/read access and underlying stream is write only</exception>
-        /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
-        public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
-        {
-            return Open(stream, packageMode, packageAccess, false /* not in streaming mode */);
-        }
         #endregion OpenOnStreamMethods
 
         #region PackagePart Methods
@@ -391,7 +328,6 @@ namespace System.IO.Packaging
         {
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
-            ThrowIfInStreamingCreation("DeletePart");
 
             if (partUri == null)
                 throw new ArgumentNullException("partUri");
@@ -526,7 +462,6 @@ namespace System.IO.Packaging
         /// Note - subclasses should only override Dispose(bool) if they have resources to release.
         /// See the Design Guidelines for the Dispose() pattern.
         /// </summary>
-        [SecurityCritical]
         void IDisposable.Dispose()
         {
             if (!_disposed)
@@ -537,15 +472,12 @@ namespace System.IO.Packaging
 
                     // close core properties
                     // This method will write out the core properties to the stream
-                    // In non-streaming mode - These will get flushed to the disk as a part of the DoFlush operation
+                    // These will get flushed to the disk as a part of the DoFlush operation
                     if (_packageProperties != null)
                         _packageProperties.Close();
 
                     // flush relationships
-                    if (InStreamingCreation)
-                        ClosePackageRelationships();
-                    else
-                        FlushRelationships();
+                    FlushRelationships();
 
                     //Write out the Relationship XML for the parts
                     //These streams will get flushed in the DoClose operation.
@@ -591,19 +523,16 @@ namespace System.IO.Packaging
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
 
-            // Flush core properties (in streaming production, has to be done before parts get flushed).
-            // Write core properties (in streaming production, has to be done before parts get flushed).
+            // Flush core properties.
+            // Write core properties.
             // This call will write out the xml for the core properties to the stream
-            // In non-streaming mode - These properties will get flushed to disk as a part of the DoFlush operation
+            // These properties will get flushed to disk as a part of the DoFlush operation
             if (_packageProperties != null)
                 _packageProperties.Flush();
 
             // Write package relationships XML to the relationship part stream.
             // These will get flushed to disk as a part of the DoFlush operation
-            if (InStreamingCreation)
-                FlushPackageRelationships(); // Create a piece.
-            else
-                FlushRelationships(); // Flush into .rels part.
+            FlushRelationships(); // Flush into .rels part.
 
             //Write out the Relationship XML for the parts
             //These streams will get flushed in the DoFlush operation.
@@ -682,7 +611,6 @@ namespace System.IO.Packaging
         {
             ThrowIfObjectDisposed();
             ThrowIfReadOnly();
-            ThrowIfInStreamingCreation("DeleteRelationship");
 
             if (id == null)
                 throw new ArgumentNullException("id");
@@ -873,16 +801,6 @@ namespace System.IO.Packaging
 
         #region Internal Properties
 
-        /// <summary>
-        /// true iff the package was opened for streaming.
-        /// </summary>
-        internal bool InStreamingCreation
-        {
-            get
-            {
-                return _inStreamingCreation;
-            }
-        }
 
         #endregion Internal Properties
 
@@ -893,19 +811,6 @@ namespace System.IO.Packaging
         //------------------------------------------------------
 
         #region Internal Methods
-        // Some operations are not supported while producing a package in streaming mode.
-        internal void ThrowIfInStreamingCreation(string methodName)
-        {
-            if (_inStreamingCreation)
-                throw new IOException(SR.Get(SRID.OperationIsNotSupportedInStreamingProduction, methodName));
-        }
-
-        // Some operations are supported only while producing a package in streaming mode.
-        internal void ThrowIfNotInStreamingCreation(string methodName)
-        {
-            if (!InStreamingCreation)
-                throw new IOException(SR.Get(SRID.MethodAvailableOnlyInStreamingCreation, methodName));
-        }
 
         //If the container is readonly then we cannot add/delete to it
         internal void ThrowIfReadOnly()
@@ -945,29 +850,21 @@ namespace System.IO.Packaging
                 throw new ArgumentOutOfRangeException("compressionOption");
         }
 
-        #region Write-time streaming API
-
         /// <summary>
-        /// This method gives the possibility of opening a package in streaming mode.
-        /// When 'streaming' is true, the only allowed file modes are Create and CreateNew,
-        /// the only allowed file access is Write and the only allowed FileShare values are
-        /// Null and Read.
         /// </summary>
         /// <param name="path">Path to the package.</param>
         /// <param name="packageMode">FileMode in which the package should be opened.</param>
         /// <param name="packageAccess">FileAccess with which the package should be opened.</param>
         /// <param name="packageShare">FileShare with which the package is opened.</param>
-        /// <param name="streaming">Whether to allow the creation of part pieces while enforcing write-once access.</param>
         /// <returns>Package</returns>
         /// <exception cref="ArgumentNullException">If path parameter is null</exception>
         /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
         /// <exception cref="ArgumentOutOfRangeException">If FileMode enumeration [packageMode] does not have one of the valid values</exception>
-        internal static Package Open(
+        public static Package Open(
             string path,
             FileMode packageMode,
             FileAccess packageAccess,
-            FileShare packageShare,
-            bool streaming)
+            FileShare packageShare)
         {
             Package package = null;
             try
@@ -978,10 +875,19 @@ namespace System.IO.Packaging
                 ThrowIfFileModeInvalid(packageMode);
                 ThrowIfFileAccessInvalid(packageAccess);
 
-#if false
-                // todo ew no streaming
-                ValidateStreamingAccess(packageMode, packageAccess, packageShare, streaming);
-#endif
+                // todo ew move into function
+                if (packageMode == FileMode.OpenOrCreate && packageAccess != FileAccess.ReadWrite)
+                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                if (packageMode == FileMode.Create && packageAccess != FileAccess.ReadWrite)
+                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                if (packageMode == FileMode.CreateNew && packageAccess != FileAccess.ReadWrite)
+                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                if (packageMode == FileMode.Open && packageAccess == FileAccess.Write)
+                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                if (packageMode == FileMode.Truncate && packageAccess == FileAccess.Read)
+                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                if (packageMode == FileMode.Truncate)
+                    throw new NotSupportedException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
 
                 //Note: FileShare enum is not being verfied at this stage, as we do not interpret the flag in this
                 //code at all and just pass it on to the next layer, where the necessary validation can be
@@ -995,25 +901,17 @@ namespace System.IO.Packaging
 
                 try
                 {
-                    package = new ZipPackage(packageFileInfo.FullName, packageMode, packageAccess, packageShare, streaming);
+                    package = new ZipPackage(packageFileInfo.FullName, packageMode, packageAccess, packageShare);
+                    package._openFileMode = packageMode;
 
-#if false
-                    // todo ew no streaming
-                    if (!package._inStreamingCreation) // No read operation in streaming production.
-                    {
-#endif
-                        //We need to get all the parts if any exists from the underlying file
-                        //so that we have the names in the Normalized form in our in-memory
-                        //data structures.
-                        //Note: If ever this call is removed, each individual call to GetPartCore,
-                        //may result in undefined behavior as the underlying ZipArchive, maintains the
-                        //files list as being case-sensitive.
-                        if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
-                            package.GetParts();
-#if false
-                    // todo ew no streaming
-                    }
-#endif
+                    //We need to get all the parts if any exists from the underlying file
+                    //so that we have the names in the Normalized form in our in-memory
+                    //data structures.
+                    //Note: If ever this call is removed, each individual call to GetPartCore,
+                    //may result in undefined behavior as the underlying ZipArchive, maintains the
+                    //files list as being case-sensitive.
+                    if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
+                        package.GetParts();
                 }
                 catch
                 {
@@ -1032,21 +930,17 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// This method gives the possibility of opening a package in streaming mode.
-        /// When 'streaming' is true, the only allowed file modes are Create and CreateNew,
-        /// and the only allowed file access is Write.
         /// </summary>
         /// <param name="stream">Stream on which the package is created</param>
         /// <param name="packageMode">FileMode in which the package is to be opened</param>
         /// <param name="packageAccess">FileAccess on the package that is opened</param>
-        /// <param name="streaming">Whether to allow the creation of part pieces while enforcing write-once access.</param>
         /// <returns>Package</returns>
         /// <exception cref="ArgumentNullException">If stream parameter is null</exception>
         /// <exception cref="ArgumentOutOfRangeException">If FileMode enumeration [packageMode] does not have one of the valid values</exception>
         /// <exception cref="ArgumentOutOfRangeException">If FileAccess enumeration [packageAccess] does not have one of the valid values</exception>
         /// <exception cref="IOException">If package to be created should have readwrite/read access and underlying stream is write only</exception>
         /// <exception cref="IOException">If package to be created should have readwrite/write access and underlying stream is read only</exception>
-        internal static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess, bool streaming)
+        public static Package Open(Stream stream, FileMode packageMode, FileAccess packageAccess)
         {
             Package package = null;
             try
@@ -1054,32 +948,31 @@ namespace System.IO.Packaging
                 if (stream == null)
                     throw new ArgumentNullException("stream");
 
-#if false
-                // todo ew no streaming
-                ValidateStreamingAccess(packageMode, packageAccess, null /* no FileShare info */, streaming);
-#endif
-
                 //FileMode and FileAccess Enums are validated in the following call
-                Stream ensuredStream = ValidateModeAndAccess(stream, packageMode, packageAccess);
 
+                // todo ew I think there may be a security issue if 
+                // don't have ensuredStream.
+
+                // Stream ensuredStream = ValidateModeAndAccess(stream, packageMode, packageAccess); todo
 
                 try
                 {
                     // Today the Open(Stream) method is purely used for streams of Zip file format as
                     // that is the default underlying file format mapper implemented.
-                    package = new ZipPackage(ensuredStream, packageMode, packageAccess, streaming);
 
-                    if (!package._inStreamingCreation) // No read operation in streaming production.
-                    {
-                        //We need to get all the parts if any exists from the underlying file
-                        //so that we have the names in the Normalized form in our in-memory
-                        //data structures.
-                        //Note: If ever this call is removed, each individual call to GetPartCore,
-                        //may result in undefined behavior as the underlying ZipArchive, maintains the
-                        //files list as being case-sensitive.
-                        if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
-                            package.GetParts();
-                    }
+                    // todo ew what is the deal with ensuredStream?
+
+                    //package = new ZipPackage(ensuredStream, packageMode, packageAccess);
+                    package = new ZipPackage(stream, packageMode, packageAccess);
+
+                    //We need to get all the parts if any exists from the underlying file
+                    //so that we have the names in the Normalized form in our in-memory
+                    //data structures.
+                    //Note: If ever this call is removed, each individual call to GetPartCore,
+                    //may result in undefined behavior as the underlying ZipArchive, maintains the
+                    //files list as being case-sensitive.
+                    if (package.FileOpenAccess == FileAccess.ReadWrite || package.FileOpenAccess == FileAccess.Read)
+                        package.GetParts();
                 }
                 catch
                 {
@@ -1097,36 +990,6 @@ namespace System.IO.Packaging
 
             return package;
         }
-
-        /// <summary>
-        /// Write a nonterminal piece for /_rels/.rels.
-        /// </summary>
-        internal void FlushPackageRelationships()
-        {
-            ThrowIfNotInStreamingCreation("FlushPackageRelationships");
-
-            if (_relationships == null)
-                return; // nothing to flush
-
-            _relationships.Flush();
-        }
-
-        /// <summary>
-        /// Write a terminal piece for /_rels/.rels.
-        /// </summary>
-        internal void ClosePackageRelationships()
-        {
-            ThrowIfNotInStreamingCreation("ClosePackageRelationships");
-
-            if (_relationships == null)
-                return; // no relationship part
-
-            _relationships.CloseInStreamingCreationMode();
-        }
-
-        #endregion Write-time streaming API
-
-        #endregion Internal Methods
 
         //------------------------------------------------------
         //
@@ -1139,6 +1002,8 @@ namespace System.IO.Packaging
         //  Private Methods
         //
         //------------------------------------------------------
+
+        #endregion Internal Methods
 
         #region Private Methods
 
@@ -1192,35 +1057,6 @@ namespace System.IO.Packaging
             }
         }
 
-#if false
-        // Test consistency of file opening parameters with the value of 'streaming', and record
-        // whether the streaming mode is for consumption or production.
-        // 
-        private static void ValidateStreamingAccess(
-            FileMode packageMode,
-            FileAccess packageAccess,
-            Nullable<FileShare> packageShare,
-            bool streaming)
-        {
-            if (streaming)
-            {
-                if (packageMode == FileMode.Create || packageMode == FileMode.CreateNew)
-                {
-                    if (packageAccess != FileAccess.Write)
-                        throw new IOException(SR.Get(SRID.StreamingPackageProductionImpliesWriteOnlyAccess));
-                    if (packageShare != null
-                        && packageShare != FileShare.Read && packageShare != FileShare.None)
-                        throw new IOException(SR.Get(SRID.StreamingPackageProductionRequiresSingleWriter));
-                }
-                else
-                {
-                    // Blanket exception pending design of streaming consumption.
-                    throw new NotSupportedException(SR.Get(SRID.StreamingModeNotSupportedForConsumption));
-                }
-            }
-        }
-#endif
-
         //Checking if the mode and access parameters are compatible with the provided stream.
         private static Stream ValidateModeAndAccess(Stream s, FileMode mode, FileAccess access)
         {
@@ -1234,7 +1070,7 @@ namespace System.IO.Packaging
 
             //asking for more permissions than the underlying stream.
             // Stream cannot read, but the package to be created should have read access
-            if (!s.CanRead && (access == FileAccess.ReadWrite || access == FileAccess.Read))
+            if (!s.CanRead && (access == FileAccess.ReadWrite || access == FileAccess.Read || access == (FileAccess.Read | FileAccess.Write)))
                 throw new IOException(SR.Get(SRID.IncompatibleModeOrAccess));
 
             //asking for less restricted access to the underlying stream
@@ -1248,7 +1084,6 @@ namespace System.IO.Packaging
         }
 
         //Throw if the object is in a disposed state
-        [SecurityCritical]
         private void ThrowIfObjectDisposed()
         {
             if (_disposed == true)
@@ -1387,23 +1222,7 @@ namespace System.IO.Packaging
             if (_partList.ContainsKey(validatePartUri))
                 return _partList[validatePartUri];
             else
-            {
-                //Ideally we should decide whether we should query the underlying layer for the part based on the
-                //FileShare enum. But since we do not have that information, currently the design is to always
-                //ask the underlying layer, this allows for incremental access to the package.
-                //Note:
-                //Currently this incremental behavior for GetPart is not consistent with the GetParts method
-                //which just queries the underlying layer once.
-                PackagePart returnedPart = GetPartCore(validatePartUri);
-
-                if (returnedPart != null)
-                {
-                    // Add the part to the _partList if there is no prefix collision
-                    AddIfNoPrefixCollisionDetected(validatePartUri, returnedPart);
-                }
-
-                return returnedPart;
-            }
+                return null;
         }
 
         /// <summary>
@@ -1457,10 +1276,9 @@ namespace System.IO.Packaging
         private static readonly FileShare s_defaultFileShare = FileShare.None;
 
         private static readonly FileMode s_defaultStreamMode = FileMode.Open;
-        private static readonly FileAccess s_defaultStreamAccess = FileAccess.Read;
 
-        private bool _inStreamingCreation;       // false by default
         private FileAccess _openFileAccess;
+        private FileMode _openFileMode;
         private bool _disposed;
         private SortedList<PackUriHelper.ValidatedPartUri, PackagePart> _partList;
         private PackagePartCollection _partCollection;
@@ -1691,7 +1509,7 @@ namespace System.IO.Packaging
                     {
                         if (!_disposed)
                         {
-                            _stream.Close();
+                            _stream.Dispose();
                         }
                     }
                 }

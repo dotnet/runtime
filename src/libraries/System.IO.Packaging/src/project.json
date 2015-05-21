@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "System.Collections": "4.0.10-beta-*",
+    "System.Diagnostics.Debug": "4.0.10-beta-*",
+    "System.IO.Compression": "4.0.0-beta-*",
+    "System.IO.FileSystem": "4.0.0-beta-*",
+    "System.IO.FileSystem.Primitives": "4.0.0-beta-*",
+    "System.Runtime": "4.0.20-beta-*",
+    "System.Xml.ReaderWriter": "4.0.0-beta-*",
+  },
+  "frameworks": {
+    "dnxcore50": {}
+  }
+}

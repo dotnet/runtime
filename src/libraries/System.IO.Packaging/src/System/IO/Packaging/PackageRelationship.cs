@@ -7,16 +7,11 @@
 //  This is a class for representing a PackageRelationship. This is a part of the 
 //  MMCF Packaging Layer. 
 //
-// History:
-//  01/03/2004: SarjanaS: Initial creation.
-//  03/17/2004: BruceMac: Initial implementation or PackageRelationship methods
-//
 //-----------------------------------------------------------------------------
 
 using System;
 using System.Collections;
 using System.Xml;
-using System.Windows;           // For Exception strings - SRID
 using System.Text;              // for StringBuilder
 using System.Diagnostics;       // for Debug.Assert
 
@@ -218,21 +213,6 @@ namespace System.IO.Packaging
             }
         }
 
-        // Property used in streaming production to be able to keep the set
-        // of all properties that have been created in memory while knowing
-        // which remain to be written to XML.
-        internal bool Saved
-        {
-            get
-            {
-                return _saved;
-            }
-            set
-            {
-                _saved = value;
-            }
-        }
-
         #endregion Internal Properties
 
         //------------------------------------------------------
@@ -267,7 +247,6 @@ namespace System.IO.Packaging
         private string _relationshipType;
         private TargetMode _targetMode;
         private String _id;
-        private bool _saved = false;
 
         private static readonly Uri s_containerRelationshipPartName = PackUriHelper.CreatePartUri(new Uri("/_rels/.rels", UriKind.Relative));
 

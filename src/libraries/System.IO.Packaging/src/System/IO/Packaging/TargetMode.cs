@@ -12,8 +12,6 @@
 //              1: "External" - target points to an external resource. The
 //                              resource can be relative to the package entity
 //                              or an absolute URI
-// History:
-//  10/25/2004: SarjanaS: Initial creation. 
 //
 //-----------------------------------------------------------------------------
 

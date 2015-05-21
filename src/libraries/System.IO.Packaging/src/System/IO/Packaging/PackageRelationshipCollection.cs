@@ -11,17 +11,10 @@
 //   This class handles serialization to/from relationship parts, creation of those parts
 //   and offers methods to create, delete and enumerate relationships.
 //
-// History:
-//  01/03/2004: SarjanaS: Initial creation.
-//  03/17/2004: BruceMac: Initial implementation
-//  04/26/2004: Sarjanas: Refactored some of the code to InternalRelationshipCollection.cs
-//                        and added support for filtered relationships
-//
 //-----------------------------------------------------------------------------
 
 using System;
 using System.Collections;
-using System.Windows;                   // For Exception strings - SRID
 using System.Collections.Generic;
 using System.Diagnostics;               // For Debug.Assert
 

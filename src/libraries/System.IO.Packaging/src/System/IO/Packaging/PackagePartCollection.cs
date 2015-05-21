@@ -7,9 +7,6 @@
 //  This is a base abstract class for PackagePartCollection. This is a part of the 
 //  MMCF Packaging Layer
 //
-// History:
-//  01/03/2004: SarjanaS: Initial creation. [Stubs only]
-//  03/01/2004: SarjanaS: Implemented the functionality for all the members.
 //-----------------------------------------------------------------------------
 
 // Allow use of presharp warning numbers [6506] unknown to the compiler

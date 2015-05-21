@@ -2,10 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace System.IO.Packaging
 {
@@ -61,6 +57,7 @@ namespace System.IO.Packaging
         public static string CorruptStream = "CorruptStream";
         public static string CreateModeMustBeCreateOrOpen = "CreateModeMustBeCreateOrOpen";
         public static string CreateNewOnNonEmptyStream = "CreateNewOnNonEmptyStream";
+        public static string CreateNewNotSupported = "CreateNewNotSupported";
         public static string CryptoProviderCanNotDecrypt = "CryptoProviderCanNotDecrypt";
         public static string CryptoProviderCanNotMergeBlocks = "CryptoProviderCanNotMergeBlocks";
         public static string CryptoProviderIsNotReady = "CryptoProviderIsNotReady";
@@ -126,7 +123,6 @@ namespace System.IO.Packaging
         public static string InvariantFailure = "InvariantFailure";
         public static string LengthNotSupported = "LengthNotSupported";
         public static string MalformedCompoundFilePath = "MalformedCompoundFilePath";
-        public static string MethodAvailableOnlyInStreamingCreation = "MethodAvailableOnlyInStreamingCreation";
         public static string MoreThanOneMetadataRelationships = "MoreThanOneMetadataRelationships";
         public static string MoreThanOnePackageSpecificReference = "MoreThanOnePackageSpecificReference";
         public static string MultipleRelationshipTransformsFound = "MultipleRelationshipTransformsFound";
@@ -153,9 +149,6 @@ namespace System.IO.Packaging
         public static string OffsetNegative = "OffsetNegative";
         public static string OnlyFileShareReadAndFileShareNoneSupported = "OnlyFileShareReadAndFileShareNoneSupported";
         public static string OnlyPassportOrWindowsAuthenticatedUsersAreAllowed = "OnlyPassportOrWindowsAuthenticatedUsersAreAllowed";
-        public static string OnlyStreamingProductionIsSupported = "OnlyStreamingProductionIsSupported";
-        public static string OnlyWriteOperationsAreSupportedInStreamingCreation = "OnlyWriteOperationsAreSupportedInStreamingCreation";
-        public static string OperationIsNotSupportedInStreamingProduction = "OperationIsNotSupportedInStreamingProduction";
         public static string OperationViolatesWriteOnceSemantics = "OperationViolatesWriteOnceSemantics";
         public static string OverrideTagDoesNotMatchSchema = "OverrideTagDoesNotMatchSchema";
         public static string PackageNotFound = "PackageNotFound";
@@ -222,9 +215,6 @@ namespace System.IO.Packaging
         public static string StreamAlreadyExist = "StreamAlreadyExist";
         public static string StreamDoesNotSupportWrite = "StreamDoesNotSupportWrite";
         public static string StreamInfoDisposed = "StreamInfoDisposed";
-        public static string StreamingModeNotSupportedForConsumption = "StreamingModeNotSupportedForConsumption";
-        public static string StreamingPackageProductionImpliesWriteOnlyAccess = "StreamingPackageProductionImpliesWriteOnlyAccess";
-        public static string StreamingPackageProductionRequiresSingleWriter = "StreamingPackageProductionRequiresSingleWriter";
         public static string StreamLengthNegative = "StreamLengthNegative";
         public static string StreamNameNotValid = "StreamNameNotValid";
         public static string StreamNeedsReadWriteAccess = "StreamNeedsReadWriteAccess";
@@ -240,6 +230,7 @@ namespace System.IO.Packaging
         public static string TransformStackValid = "TransformStackValid";
         public static string TransformTypeUnsupported = "TransformTypeUnsupported";
         public static string TruncateAppendModesNotSupported = "TruncateAppendModesNotSupported";
+        public static string TruncateNotSupported = "TruncateNotSupported";
         public static string TypesElementExpected = "TypesElementExpected";
         public static string TypesTagHasExtraAttributes = "TypesTagHasExtraAttributes";
         public static string TypesXmlDoesNotMatchSchema = "TypesXmlDoesNotMatchSchema";
@@ -256,7 +247,6 @@ namespace System.IO.Packaging
         public static string UnknownTagEncountered = "UnknownTagEncountered";
         public static string UnsupportedCanonicalizationMethod = "UnsupportedCanonicalizationMethod";
         public static string UnsupportedCombinationOfModeAccess = "UnsupportedCombinationOfModeAccess";
-        public static string UnsupportedCombinationOfModeAccessShareStreaming = "UnsupportedCombinationOfModeAccessShareStreaming";
         public static string UnsupportedHashAlgorithm = "UnsupportedHashAlgorithm";
         public static string UnsupportedTransformAlgorithm = "UnsupportedTransformAlgorithm";
         public static string UnsupportedTypeEncounteredWhenBuildingStgEnum = "UnsupportedTypeEncounteredWhenBuildingStgEnum";

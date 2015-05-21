@@ -6,16 +6,10 @@
 // Description: The FileFormatException class is thrown when an input file or a data stream that is supposed to conform
 // to a certain file format specification is malformed.
 //
-// History:  
-//  10/21/2004 : mleonov - Created
-//
 //---------------------------------------------------------------------------
 
 using System;
-using System.Runtime.Serialization;
 using System.Security;
-using System.Security.Permissions;
-using System.Windows;
 using System.IO.Packaging;
 
 namespace System.IO
@@ -24,8 +18,7 @@ namespace System.IO
     /// The FileFormatException class is thrown when an input file or a data stream that is supposed to conform
     /// to a certain file format specification is malformed.
     /// </summary>
-    [Serializable()]
-    public class FileFormatException : FormatException, ISerializable
+    public class FileFormatException : FormatException
     {
         /// <summary>
         /// Creates a new instance of FileFormatException class.
@@ -127,47 +120,6 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Creates a new instance of FileFormatException class and initializes it with serialized data.
-        /// This constructor is called during deserialization to reconstitute the exception object transmitted over a stream.
-        /// </summary>
-        /// <param name="info">The object that holds the serialized object data.</param>
-        /// <param name="context">The contextual information about the source or destination.</param>
-        protected FileFormatException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            string sourceUriString = info.GetString("SourceUri");
-            if (sourceUriString != null)
-                _sourceUri = new Uri(sourceUriString, UriKind.RelativeOrAbsolute);
-        }
-
-        /// <summary>
-        /// Sets the SerializationInfo object with the file name and additional exception information. 
-        /// </summary>
-        /// <param name="info">The object that holds the serialized object data.</param>
-        /// <param name="context">The contextual information about the source or destination.</param>
-        ///<SecurityNote>
-        ///     Critical: calls Exception.GetObjectData which LinkDemands
-        ///     PublicOK: a demand exists here
-        ///</SecurityNote>
-        [SecurityCritical]
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.SerializationFormatter)]
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException("info");
-
-            base.GetObjectData(info, context);
-
-            Uri sourceUri = SourceUri;
-            info.AddValue(
-                "SourceUri",
-                sourceUri == null
-                    ? null
-                    : sourceUri.GetComponents(UriComponents.SerializationInfoString, UriFormat.SafeUnescaped),
-                typeof(String)
-                );
-        }
-
-        /// <summary>
         /// Returns the name of a file that caused this exception. This property may be equal to an empty string
         /// if obtaining the file path that caused the error was not possible.
         /// </summary>
@@ -178,7 +130,6 @@ namespace System.IO
         /// </SecurityNote>
         public Uri SourceUri
         {
-            [SecuritySafeCritical]
             get
             {
                 return _sourceUri;

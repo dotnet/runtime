@@ -8,10 +8,6 @@
 //  SummaryInformation and DocumentSummaryInformation, and include such properties
 //  as Title and Subject.
 //
-// History:
-//  06/23/2005: JohnLarc:   Initial implementation.
-//  09/23/2005: JohnLarc:   Removed from public surface.
-//
 //-----------------------------------------------------------------------------
 
 using System;
@@ -21,7 +17,6 @@ using System.IO.Packaging;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
-using System.Windows;                   // for ExceptionStringTable
 using System.Globalization;             // For CultureInfo
 
 namespace System.IO.Packaging
@@ -32,9 +27,6 @@ namespace System.IO.Packaging
     ///  as Title and Subject.
     /// </summary>
     /// <remarks>
-    /// <para>No specific API is provided to interleave the properties part in streaming creation.
-    /// However, Package.Flush is expected to persist package-wide data, in particular metadata.
-    /// Therefore, in streaming creation, a write-only write-once discipline has to be enforced.</para>
     /// <para>Setting a property to null deletes this property. 'null' is never strictly speaking
     /// a property value, but an absence indicator.</para>
     /// </remarks>
@@ -346,8 +338,6 @@ namespace System.IO.Packaging
 
         // Invoked from Package.Flush.
         // The expectation is that whatever is currently dirty will get flushed.
-        // In streaming production, this requires flushing to a piece.
-        // Outside of streaming creation, the whole thing gets rewritten at every flush.
         internal void Flush()
         {
             if (!_dirty)
@@ -358,32 +348,16 @@ namespace System.IO.Packaging
             EnsureXmlWriter();
 
             // Write the property elements and clear _dirty.
-            // The whole property table gets cleared in streaming production.
             SerializeDirtyProperties();
 
-            // In streaming mode, keep the writer around until we close.
-            // Do a simple flush on the writer to make sure the content is written to a piece.
-            if (_package.InStreamingCreation && _xmlWriter != null)
-            {
-                _xmlWriter.Flush();
-            }
-            // Else, add closing markup and close the writer.
-            else
-            {
-                CloseXmlWriter();
-            }
+            // add closing markup and close the writer.
+            CloseXmlWriter();
         }
 
         // Invoked from Package.Close.
-        // Carries out the same operations as Flush, except that, in streaming mode,
-        // the writer has to be closed.
         internal void Close()
         {
             Flush();
-
-            // The following has to be done even if all properties have been saved (_dirty == false).
-            if (_package.InStreamingCreation && _xmlWriter != null)
-                CloseXmlWriter();
         }
 
         #endregion Internal Methods
@@ -437,7 +411,7 @@ namespace System.IO.Packaging
         // Null value is passed for deleting a property.
         // While initializing, we are not assigning new values, and so the dirty flag should
         // stay untouched.
-        private void RecordNewBinding(PackageXmlEnum propertyenum, object value, bool initializing, XmlTextReader reader)
+        private void RecordNewBinding(PackageXmlEnum propertyenum, object value, bool initializing, XmlReader reader)
         {
             // If we are reading values from the package, reader cannot be null
             Debug.Assert(!initializing || reader != null);
@@ -452,12 +426,8 @@ namespace System.IO.Packaging
                 if (initializing)
                 {
                     throw new XmlException(SR.Get(SRID.DuplicateCorePropertyName, reader.Name),
-                        null, reader.LineNumber, reader.LinePosition);
+                        null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                 }
-
-                // No edit of existing properties in streaming production.
-                if (_package.InStreamingCreation)
-                    throw new InvalidOperationException(SR.Get(SRID.OperationViolatesWriteOnceSemantics));
 
                 // Nullable<DateTime> values can be checked against null
                 if (value == null) // a deletion
@@ -470,15 +440,6 @@ namespace System.IO.Packaging
                 }
                 // If the binding is an assignment rather than an initialization, set the dirty flag.
                 _dirty = !initializing;
-            }
-            // Case of a null value in the absence of an existing property.
-            else if (value == null)
-            {
-                // Even thinking about setting a property to null in streaming production is a no-no.
-                if (_package.InStreamingCreation)
-                    throw new InvalidOperationException(SR.Get(SRID.OperationViolatesWriteOnceSemantics));
-
-                // Outside of streaming production, deleting a non-existing property is a no-op.
             }
             // Case of an initial value being set for a property.
             else
@@ -554,117 +515,126 @@ namespace System.IO.Packaging
         // Deserialize properties part.
         private void ParseCorePropertyPart(PackagePart part)
         {
-            Stream stream = part.GetStream(FileMode.Open, FileAccess.Read);
+            XmlReaderSettings xrs = new XmlReaderSettings();
+            xrs.NameTable = _nameTable;
+            using (Stream stream = part.GetStream(FileMode.Open, FileAccess.Read))
 
             // Create a reader that uses _nameTable so as to use the set of tag literals
             // in effect as a set of atomic identifiers.
-            XmlTextReader reader = new XmlTextReader(stream, _nameTable);
-
-            //Prohibit DTD from the markup as per the OPC spec
+            using (XmlReader reader = XmlReader.Create(stream, xrs))
+            {
+                //Prohibit DTD from the markup as per the OPC spec
 #pragma warning disable 618
-            reader.ProhibitDtd = true;
+                // reader.ProhibitDtd = true; todo ew
 #pragma warning restore 618
 
-            //This method expects the reader to be in ReadState.Initial.
-            //It will make the first read call.
-            PackagingUtilities.PerformInitailReadAndVerifyEncoding(reader);
+                //This method expects the reader to be in ReadState.Initial.
+                //It will make the first read call.
+                PackagingUtilities.PerformInitailReadAndVerifyEncoding(reader);
 
-            //Note: After the previous method call the reader should be at the first tag in the markup.
-            //MoveToContent - Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
-            //If the reader is currently at a content node then this function call is a no-op
-            if (reader.MoveToContent() != XmlNodeType.Element
-                || (object)reader.NamespaceURI != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.PackageCorePropertiesNamespace)
-                || (object)reader.LocalName != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.CoreProperties))
-            {
-                throw new XmlException(SR.Get(SRID.CorePropertiesElementExpected),
-                    null, reader.LineNumber, reader.LinePosition);
-            }
-
-            // The schema is closed and defines no attributes on the root element.
-            if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 0)
-            {
-                throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
-                    null, reader.LineNumber, reader.LinePosition);
-            }
-
-            // Iterate through property elements until EOF. Note the proper closing of all
-            // open tags is checked by the reader itself.
-            // This loop deals only with depth-1 start tags. Handling of element content
-            // is delegated to dedicated functions.
-            int attributesCount;
-
-            while (reader.Read() && reader.MoveToContent() != XmlNodeType.None)
-            {
-                // Ignore end-tags. We check element errors on opening tags.
-                if (reader.NodeType == XmlNodeType.EndElement)
-                    continue;
-
-                // Any content markup that is not an element here is unexpected.
-                if (reader.NodeType != XmlNodeType.Element)
-                    throw new XmlException(SR.Get(SRID.PropertyStartTagExpected),
-                        null, reader.LineNumber, reader.LinePosition);
-
-                // Any element below the root should open at level 1 exclusively.
-                if (reader.Depth != 1)
-                    throw new XmlException(SR.Get(SRID.NoStructuredContentInsideProperties),
-                        null, reader.LineNumber, reader.LinePosition);
-
-                attributesCount = PackagingUtilities.GetNonXmlnsAttributeCount(reader);
-
-                // Property elements can occur in any order (xsd:all).
-                object localName = reader.LocalName;
-                PackageXmlEnum xmlStringIndex = PackageXmlStringTable.GetEnumOf(localName);
-                String valueType = PackageXmlStringTable.GetValueType(xmlStringIndex);
-
-                if (Array.IndexOf(s_validProperties, xmlStringIndex) == -1)  // An unexpected element is an error.
+                //Note: After the previous method call the reader should be at the first tag in the markup.
+                //MoveToContent - Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
+                //If the reader is currently at a content node then this function call is a no-op
+                if (reader.MoveToContent() != XmlNodeType.Element
+                    || (object)reader.NamespaceURI != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.PackageCorePropertiesNamespace)
+                    || (object)reader.LocalName != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.CoreProperties))
                 {
-                    throw new XmlException(
-                        SR.Get(SRID.InvalidPropertyNameInCorePropertiesPart, reader.LocalName),
-                        null, reader.LineNumber, reader.LinePosition);
+                    throw new XmlException(SR.Get(SRID.CorePropertiesElementExpected),
+                        null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                 }
 
-                // Any element not in the valid core properties namespace is unexpected.
-                // The following is an object comparison, not a string comparison.
-                if ((object)reader.NamespaceURI != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlStringTable.GetXmlNamespace(xmlStringIndex)))
-                    throw new XmlException(SR.Get(SRID.UnknownNamespaceInCorePropertiesPart),
-                        null, reader.LineNumber, reader.LinePosition);
-
-                if (String.CompareOrdinal(valueType, "String") == 0)
+                // The schema is closed and defines no attributes on the root element.
+                if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 0)
                 {
-                    // The schema is closed and defines no attributes on this type of element.
-                    if (attributesCount != 0)
-                    {
-                        throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
-                            null, reader.LineNumber, reader.LinePosition);
-                    }
-
-                    RecordNewBinding(xmlStringIndex, GetStringData(reader), true /*initializing*/, reader);
+                    throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
+                        null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                 }
-                else if (String.CompareOrdinal(valueType, "DateTime") == 0)
-                {
-                    int allowedAttributeCount = (object)reader.NamespaceURI ==
-                                                        PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.DublinCoreTermsNamespace)
-                                                    ? 1 : 0;
 
-                    // The schema is closed and defines no attributes on this type of element.
-                    if (attributesCount != allowedAttributeCount)
+                // Iterate through property elements until EOF. Note the proper closing of all
+                // open tags is checked by the reader itself.
+                // This loop deals only with depth-1 start tags. Handling of element content
+                // is delegated to dedicated functions.
+                int attributesCount;
+
+                while (reader.Read() && reader.MoveToContent() != XmlNodeType.None)
+                {
+                    // Ignore end-tags. We check element errors on opening tags.
+                    if (reader.NodeType == XmlNodeType.EndElement)
+                        continue;
+
+                    // Any content markup that is not an element here is unexpected.
+                    if (reader.NodeType != XmlNodeType.Element)
                     {
-                        throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
-                            null, reader.LineNumber, reader.LinePosition);
+                        throw new XmlException(SR.Get(SRID.PropertyStartTagExpected),
+                            null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                     }
 
-                    if (allowedAttributeCount != 0)
+                    // Any element below the root should open at level 1 exclusively.
+                    if (reader.Depth != 1)
                     {
-                        ValidateXsiType(reader,
-                            PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.DublinCoreTermsNamespace),
-                            _w3cdtf);
+                        throw new XmlException(SR.Get(SRID.NoStructuredContentInsideProperties),
+                            null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                     }
 
-                    RecordNewBinding(xmlStringIndex, GetDateData(reader), true /*initializing*/, reader);
-                }
-                else  // An unexpected element is an error.
-                {
-                    Invariant.Assert(false, "Unknown value type for properties");
+                    attributesCount = PackagingUtilities.GetNonXmlnsAttributeCount(reader);
+
+                    // Property elements can occur in any order (xsd:all).
+                    object localName = reader.LocalName;
+                    PackageXmlEnum xmlStringIndex = PackageXmlStringTable.GetEnumOf(localName);
+                    String valueType = PackageXmlStringTable.GetValueType(xmlStringIndex);
+
+                    if (Array.IndexOf(s_validProperties, xmlStringIndex) == -1)  // An unexpected element is an error.
+                    {
+                        throw new XmlException(
+                            SR.Get(SRID.InvalidPropertyNameInCorePropertiesPart, reader.LocalName),
+                            null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    }
+
+                    // Any element not in the valid core properties namespace is unexpected.
+                    // The following is an object comparison, not a string comparison.
+                    if ((object)reader.NamespaceURI != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlStringTable.GetXmlNamespace(xmlStringIndex)))
+                    {
+                        throw new XmlException(SR.Get(SRID.UnknownNamespaceInCorePropertiesPart),
+                            null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    }
+
+                    if (String.CompareOrdinal(valueType, "String") == 0)
+                    {
+                        // The schema is closed and defines no attributes on this type of element.
+                        if (attributesCount != 0)
+                        {
+                            throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
+                                null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                        }
+
+                        RecordNewBinding(xmlStringIndex, GetStringData(reader), true /*initializing*/, reader);
+                    }
+                    else if (String.CompareOrdinal(valueType, "DateTime") == 0)
+                    {
+                        int allowedAttributeCount = (object)reader.NamespaceURI ==
+                                                            PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.DublinCoreTermsNamespace)
+                                                        ? 1 : 0;
+
+                        // The schema is closed and defines no attributes on this type of element.
+                        if (attributesCount != allowedAttributeCount)
+                        {
+                            throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
+                                null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                        }
+
+                        if (allowedAttributeCount != 0)
+                        {
+                            ValidateXsiType(reader,
+                                PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.DublinCoreTermsNamespace),
+                                _w3cdtf);
+                        }
+
+                        RecordNewBinding(xmlStringIndex, GetDateData(reader), true /*initializing*/, reader);
+                    }
+                    else  // An unexpected element is an error.
+                    {
+                        Invariant.Assert(false, "Unknown value type for properties");
+                    }
                 }
             }
         }
@@ -673,7 +643,7 @@ namespace System.IO.Packaging
         // The valude of xsi:type is a qualified name. It should have a prefix that matches
         //  the xml namespace (ns) within the scope and the name that matches name
         // The comparisons should be case-sensitive comparisons
-        internal static void ValidateXsiType(XmlTextReader reader, Object ns, string name)
+        internal static void ValidateXsiType(XmlReader reader, Object ns, string name)
         {
             // Get the value of xsi;type
             String typeValue = reader.GetAttribute(PackageXmlStringTable.GetXmlString(PackageXmlEnum.Type),
@@ -683,7 +653,7 @@ namespace System.IO.Packaging
             if (typeValue == null)
             {
                 throw new XmlException(SR.Get(SRID.UnknownDCDateTimeXsiType, reader.Name),
-                    null, reader.LineNumber, reader.LinePosition);
+                    null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
             int index = typeValue.IndexOf(':');
@@ -692,7 +662,7 @@ namespace System.IO.Packaging
             if (index == -1)
             {
                 throw new XmlException(SR.Get(SRID.UnknownDCDateTimeXsiType, reader.Name),
-                    null, reader.LineNumber, reader.LinePosition);
+                    null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
             // Check the following conditions
@@ -702,12 +672,12 @@ namespace System.IO.Packaging
                     || String.CompareOrdinal(name, typeValue.Substring(index + 1, typeValue.Length - index - 1)) != 0)
             {
                 throw new XmlException(SR.Get(SRID.UnknownDCDateTimeXsiType, reader.Name),
-                    null, reader.LineNumber, reader.LinePosition);
+                    null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
         }
 
         // Expect to find text data and return its value.
-        private string GetStringData(XmlTextReader reader)
+        private string GetStringData(XmlReader reader)
         {
             if (reader.IsEmptyElement)
                 return string.Empty;
@@ -718,14 +688,16 @@ namespace System.IO.Packaging
 
             // If there is any content in the element, it should be text content and nothing else.
             if (reader.NodeType != XmlNodeType.Text)
+            {
                 throw new XmlException(SR.Get(SRID.NoStructuredContentInsideProperties),
-                    null, reader.LineNumber, reader.LinePosition);
+                    null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+            }
 
             return reader.Value;
         }
 
         // Expect to find text data and return its value as DateTime.
-        private Nullable<DateTime> GetDateData(XmlTextReader reader)
+        private Nullable<DateTime> GetDateData(XmlReader reader)
         {
             string data = GetStringData(reader);
             DateTime dateTime;
@@ -735,12 +707,12 @@ namespace System.IO.Packaging
                 // Note: No more than 7 second decimals are accepted by the
                 // list of formats given. There currently is no method that
                 // would perform XSD-compliant parsing.
-                dateTime = XmlConvert.ToDateTime(data, s_dateTimeFormats);
+                dateTime = DateTime.ParseExact(data, s_dateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.None);
             }
             catch (FormatException exc)
             {
                 throw new XmlException(SR.Get(SRID.XsdDateTimeExpected),
-                    exc, reader.LineNumber, reader.LinePosition);
+                    exc, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
             return dateTime;
         }
@@ -749,24 +721,13 @@ namespace System.IO.Packaging
         // the expected start markup.
         private void EnsureXmlWriter()
         {
-            // It does not make sense to reuse a writer outside of streaming creation.
-            if (!_package.InStreamingCreation)
-                Invariant.Assert(_xmlWriter == null);
-
             if (_xmlWriter != null)
                 return;
 
             EnsurePropertyPart(); // Should succeed or throw an exception.
 
-            Stream writerStream;
-
-            if (_package.InStreamingCreation)
-                writerStream = _propertyPart.GetStream(FileMode.Create, FileAccess.Write);
-            else
-                writerStream = new IgnoreFlushAndCloseStream(_propertyPart.GetStream(FileMode.Create, FileAccess.Write));
-
-            _xmlWriter = new XmlTextWriter(writerStream, System.Text.Encoding.UTF8);
-
+            Stream writerStream = new IgnoreFlushAndCloseStream(_propertyPart.GetStream(FileMode.Create, FileAccess.Write));
+            _xmlWriter = XmlWriter.Create(writerStream, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 });
             WriteXmlStartTagsForPackageProperties();
         }
 
@@ -808,7 +769,7 @@ namespace System.IO.Packaging
         private Uri GeneratePropertyPartUri()
         {
             string propertyPartName = _defaultPropertyPartNamePrefix
-                + Guid.NewGuid().ToString(_guidStorageFormatString, (IFormatProvider)null)
+                + Guid.NewGuid().ToString(_guidStorageFormatString)
                 + _defaultPropertyPartNameExtension;
 
             return PackUriHelper.CreatePartUri(new Uri(propertyPartName, UriKind.Relative));
@@ -843,26 +804,10 @@ namespace System.IO.Packaging
         // Write the property elements and clear _dirty.
         private void SerializeDirtyProperties()
         {
-            // In streaming mode, nullify dictionary values.
-            // As no property can be set to null through the API, this makes it possible to keep
-            // track of all properties that have been set since the CoreProperties object was created.
-            KeyValuePair<PackageXmlEnum, Object>[] entriesToNullify = null;
-            int numEntriesToNullify = 0;
-            if (_package.InStreamingCreation)
-                entriesToNullify = new KeyValuePair<PackageXmlEnum, Object>[_propertyDictionary.Count];
-
             // Create a property element for each non-null entry.
             foreach (KeyValuePair<PackageXmlEnum, Object> entry in _propertyDictionary)
             {
-                // If we are NOT in streaming mode, the property value should NOT be null
-                Debug.Assert(entry.Value != null || _package.InStreamingCreation);
-
-                if (_package.InStreamingCreation
-                    && entry.Value == null) // already saved
-                {
-                    continue;
-                }
-
+                Debug.Assert(entry.Value != null);
 
                 PackageXmlEnum propertyNamespace = PackageXmlStringTable.GetXmlNamespace(entry.Key);
 
@@ -895,22 +840,10 @@ namespace System.IO.Packaging
                 }
 
                 _xmlWriter.WriteEndElement();
-
-                if (_package.InStreamingCreation)
-                    entriesToNullify[numEntriesToNullify++] = entry;
             }
 
             // Mark properties as saved.
             _dirty = false;
-
-            // Detailed marking of saved properties for the streaming mode.
-            if (_package.InStreamingCreation)
-            {
-                for (int i = 0; i < numEntriesToNullify; ++i)
-                {
-                    _propertyDictionary[entriesToNullify[i].Key] = null;
-                }
-            }
         }
 
         // Add end markup and close the writer.
@@ -920,7 +853,7 @@ namespace System.IO.Packaging
             _xmlWriter.WriteEndElement();
 
             // Close the writer itself.
-            _xmlWriter.Close();
+            _xmlWriter.Dispose();
 
             // Make sure we know it's closed.
             _xmlWriter = null;
@@ -938,7 +871,7 @@ namespace System.IO.Packaging
 
         private Package _package;
         private PackagePart _propertyPart;
-        private XmlTextWriter _xmlWriter;
+        private XmlWriter _xmlWriter;
 
         // Table of objects from the closed set of literals defined below.
         // (Uses object comparison rather than string comparison.)

@@ -7,19 +7,12 @@
 //  This is a sub class of the abstract class for Package. 
 //  This implementation is specific to Zip file format.
 //
-// History:
-//  12/28/2004: SarjanaS: Initial creation. [BruceMac provided some of the
-//                                           initial code]
-//  03/15/2005: BruceMac: Replace DisposeCore with Dispose(bool) to follow
-//              new Design Guidelines for Dispose pattern.
-//
 //-----------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
 using System.Xml;                   //Required for Content Type File manipulation
 using System.Diagnostics;
-using System.Windows;               // For Exception strings - SRID
 using System.IO.Compression;
 
 namespace System.IO.Packaging
@@ -94,10 +87,9 @@ namespace System.IO.Packaging
             ZipArchiveEntry zipArchiveEntry = _zipArchive.CreateEntry(zipItemName, level);
 
             //Store the content type of this part in the content types stream.
-            _contentTypeHelper.AddContentType((PackUriHelper.ValidatedPartUri)partUri, new ContentType(contentType), level,
-                false /* not in streaming production */);
+            _contentTypeHelper.AddContentType((PackUriHelper.ValidatedPartUri)partUri, new ContentType(contentType), level);
 
-            return new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry, (PackUriHelper.ValidatedPartUri)partUri, contentType, compressionOption);
+            return new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry, _zipStreamManager, (PackUriHelper.ValidatedPartUri)partUri, contentType, compressionOption);
         }
 
         /// <summary>
@@ -169,8 +161,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Some or all of the parts may be interleaved, irrespective of whether the package
-        /// was opened in streaming mode. The Part object for an interleaved part encapsulates
+        /// Some or all of the parts may be interleaved. The Part object for an interleaved part encapsulates
         /// the Uri of the proper part name and the ZipFileInfo of the initial piece.
         /// This function does not go through the extra work of checking piece naming validity
         /// throughout the package. 
@@ -208,29 +199,6 @@ namespace System.IO.Packaging
                     // b. items that have either a leading or trailing slash.
                     if (IsZipItemValidOpcPartOrPiece(zipArchiveEntry.Name))
                     {
-#if false
-                        // ew todo think that this can be deleted.
-
-                        // In the case of a piece name, postpone processing until
-                        // all piece candidates have been collected.
-                        PieceInfo pieceInfo;
-                        if (PieceNameHelper.TryCreatePieceInfo(zipInfo, out pieceInfo))
-                        {
-                            if (pieceDictionary.ContainsKey(pieceInfo))
-                                throw new FormatException(SR.Get(SRID.DuplicatePiecesFound));
-
-                            if (pieceInfo.PartUri != null)
-                            {
-                                //If a part does not have valid partname, then we should just ignore it
-                                //It is not meaningful to even add it to the ignored items list as we will 
-                                //never generate a name that corresponds to this zip item and as such will
-                                //never have to delete it.
-                                pieceDictionary.Add(pieceInfo, null);
-                            }
-                            continue;
-                        }
-#endif
-
                         Uri partUri = new Uri(GetOpcNameFromZipItemName(zipArchiveEntry.FullName), UriKind.Relative);
                         PackUriHelper.ValidatedPartUri validatedPartUri;
                         if (PackUriHelper.TryValidatePartUri(partUri, out validatedPartUri))
@@ -242,7 +210,7 @@ namespace System.IO.Packaging
                                 // part, it will be detected at this point because the part's Uri (which
                                 // is independent of interleaving) will already be in the dictionary.
                                 parts.Add(new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry,
-                                    validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo(zipArchiveEntry)));
+                                    _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo(zipArchiveEntry)));
                             }
                             else
                                 //Since this part does not have a valid content type we add it to the ignored list,
@@ -268,13 +236,6 @@ namespace System.IO.Packaging
                 }
             }
 
-#if false
-            // todo ew this isn't necessary, I think
-            // Well-formed piece sequences get recorded in parts.
-            // Debris from invalid sequences gets swept into _ignoredItems.
-            ProcessPieces(pieceDictionary, parts);
-#endif
-
             return parts.ToArray();
         }
 
@@ -288,18 +249,7 @@ namespace System.IO.Packaging
         protected override void FlushCore()
         {
             //Save the content type file to the archive.
-#if false
-            // In streaming production, content type entries get flushed as soon as they are created.
-            if (!InStreamingCreation)
-                _contentTypeHelper.SaveToFile();
-#else
             _contentTypeHelper.SaveToFile();
-#endif
-
-#if false
-            // ew todo there is no option to flush in System.IO.Compression
-            _zipArchive.Flush();
-#endif
         }
 
         /// <summary>
@@ -314,20 +264,12 @@ namespace System.IO.Packaging
                 {
                     if (_contentTypeHelper != null)
                     {
-#if false
-                        // todo ew no streaming
-                        //Save the content type file to the archive
-                        if (InStreamingCreation)
-                        {
-                            _contentTypeHelper.CloseContentTypes();
-                        }
-                        else
-                        {
-                            _contentTypeHelper.SaveToFile();
-                        }
-#else
                         _contentTypeHelper.SaveToFile();
-#endif
+                    }
+
+                    if (_zipStreamManager != null)
+                    {
+                        _zipStreamManager.Dispose();
                     }
 
                     if (_zipArchive != null)
@@ -339,7 +281,10 @@ namespace System.IO.Packaging
                     // _containerStream may be passed into the constructor, in which case, it should not be closed here.
                     if (_shouldCloseContainerStream)
                     {
-                        _containerStream.Close();
+                        _containerStream.Dispose();
+                    }
+                    else
+                    {
                     }
                     _containerStream = null;
                 }
@@ -372,34 +317,35 @@ namespace System.IO.Packaging
         /// Internal constructor that is called by the OpenOnFile static method.
         /// </summary>
         /// <param name="path">File path to the container.</param>
-        /// <param name="mode">Container is opened in the specified mode if possible</param>
-        /// <param name="access">Container is opened with the speficied access if possible</param>
+        /// <param name="packageFileMode">Container is opened in the specified mode if possible</param>
+        /// <param name="packageFileAccess">Container is opened with the speficied access if possible</param>
         /// <param name="share">Container is opened with the specified share if possible</param>
-        /// <param name="streaming">Container is opened in streaming mode if possible</param>
 
-        internal ZipPackage(string path, FileMode mode, FileAccess access, FileShare share, bool streaming)
-            : base(access, streaming)
+        internal ZipPackage(string path, FileMode packageFileMode, FileAccess packageFileAccess, FileShare share)
+            : base(packageFileAccess)
         {
-            // todo ew if streaming set to true, throw exception
             ZipArchive zipArchive = null;
             IgnoredItemHelper ignoredItemHelper = null;
             ContentTypeHelper contentTypeHelper = null;
+            _packageFileMode = packageFileMode;
+            _packageFileAccess = packageFileAccess;
 
             try
             {
-                _containerStream = new FileStream(path, mode, access, share);
+                _containerStream = new FileStream(path, _packageFileMode, _packageFileAccess, share);
                 _shouldCloseContainerStream = true;
                 ZipArchiveMode zipArchiveMode = ZipArchiveMode.Update;
-                if (access == FileAccess.Read)
+                if (packageFileAccess == FileAccess.Read)
                     zipArchiveMode = ZipArchiveMode.Read;
-                else if (access == FileAccess.Write)
+                else if (packageFileAccess == FileAccess.Write)
                     zipArchiveMode = ZipArchiveMode.Create;
-                else if (access == FileAccess.ReadWrite)
+                else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, false);
+                zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true, Text.Encoding.UTF8);
+                _zipStreamManager = new ZipStreamManager(zipArchive, _packageFileMode, _packageFileAccess);
                 ignoredItemHelper = new IgnoredItemHelper(zipArchive);
-                contentTypeHelper = new ContentTypeHelper(zipArchive, ignoredItemHelper);
+                contentTypeHelper = new ContentTypeHelper(zipArchive, ignoredItemHelper, _packageFileMode, _packageFileAccess, _zipStreamManager);
             }
             catch
             {
@@ -420,30 +366,32 @@ namespace System.IO.Packaging
         /// Internal constructor that is called by the Open(Stream) static methods.
         /// </summary>
         /// <param name="s"></param>
-        /// <param name="mode"></param>
-        /// <param name="access"></param>
-        /// <param name="streaming">Container is opened in streaming mode if possible</param>
-        internal ZipPackage(Stream s, FileMode mode, FileAccess access, bool streaming)
-            : base(access, streaming)
+        /// <param name="packageFileMode"></param>
+        /// <param name="packageFileAccess"></param>
+        internal ZipPackage(Stream s, FileMode packageFileMode, FileAccess packageFileAccess)
+            : base(packageFileAccess)
         {
-            // todo ew if streaming set to true, throw exception
             ZipArchive zipArchive = null;
             IgnoredItemHelper ignoredItemHelper = null;
             ContentTypeHelper contentTypeHelper = null;
+            _packageFileMode = packageFileMode;
+            _packageFileAccess = packageFileAccess;
 
             try
             {
                 ZipArchiveMode zipArchiveMode = ZipArchiveMode.Update;
-                if (access == FileAccess.Read)
+                if (packageFileAccess == FileAccess.Read)
                     zipArchiveMode = ZipArchiveMode.Read;
-                else if (access == FileAccess.Write)
+                else if (packageFileAccess == FileAccess.Write)
                     zipArchiveMode = ZipArchiveMode.Create;
-                else if (access == FileAccess.ReadWrite)
+                else if (packageFileAccess == FileAccess.ReadWrite)
                     zipArchiveMode = ZipArchiveMode.Update;
 
-                zipArchive = new ZipArchive(s, zipArchiveMode);
+                zipArchive = new ZipArchive(s, zipArchiveMode, true, Text.Encoding.UTF8);
+                
+                _zipStreamManager = new ZipStreamManager(zipArchive, packageFileMode, packageFileAccess);
                 ignoredItemHelper = new IgnoredItemHelper(zipArchive);
-                contentTypeHelper = new ContentTypeHelper(zipArchive, ignoredItemHelper);
+                contentTypeHelper = new ContentTypeHelper(zipArchive, ignoredItemHelper, packageFileMode, packageFileAccess, _zipStreamManager);
             }
             catch
             {
@@ -529,7 +477,15 @@ namespace System.IO.Packaging
         //  Internal Properties
         //
         //------------------------------------------------------
-        // None
+        
+        internal FileMode PackageFileMode
+        {
+            get
+            {
+                return _packageFileMode;
+            }
+        }
+
         //------------------------------------------------------
         //
         //  Internal Events
@@ -586,7 +542,6 @@ namespace System.IO.Packaging
             }
         }
 
-        // todo fix following comment.
         // convert from Zip CompressionMethodEnum and DeflateOptionEnum to Metro CompressionOption 
         static private CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
         {
@@ -807,6 +762,9 @@ namespace System.IO.Packaging
         private bool _shouldCloseContainerStream;
         private ContentTypeHelper _contentTypeHelper;    // manages the content types for all the parts in the container
         private IgnoredItemHelper _ignoredItemHelper;    // manages the ignored items in a zip package
+        private ZipStreamManager _zipStreamManager;      // manages streams for all parts, avoiding opening streams multiple times
+        private FileAccess _packageFileAccess;
+        private FileMode _packageFileMode;
 
         private static readonly string s_forwardSlash = "/"; //Required for creating a part name from a zip item name
 
@@ -874,9 +832,12 @@ namespace System.IO.Packaging
             /// Complete initialization in read mode also involves calling ParseContentTypesFile
             /// to deserialize content type information.
             /// </summary>
-            internal ContentTypeHelper(ZipArchive zipArchive, IgnoredItemHelper ignoredItemHelper)
+            internal ContentTypeHelper(ZipArchive zipArchive, IgnoredItemHelper ignoredItemHelper, FileMode packageFileMode, FileAccess packageFileAccess, ZipStreamManager zipStreamManager)
             {
                 _zipArchive = zipArchive;               //initialized in the ZipPackage constructor
+                _packageFileMode = packageFileMode;
+                _packageFileAccess = packageFileAccess;
+                _zipStreamManager = zipStreamManager;   //initialized in the ZipPackage constructor
                 // The extensions are stored in the default Dictionary in their original form , but they are compared
                 // in a normalized manner using the ExtensionComparer.
                 _defaultDictionary = new Dictionary<string, ContentType>(s_defaultDictionaryInitialSize, s_extensionEqualityComparer);
@@ -924,41 +885,14 @@ namespace System.IO.Packaging
 
             // This method assumes the partUri is valid.
             internal void AddContentType(PackUriHelper.ValidatedPartUri partUri, ContentType contentType,
-                CompressionLevel compressionLevel, 
-                bool inStreamingCreation)
+                CompressionLevel compressionLevel)
             {
-#if false
-                // ew todo don't think I need this.
-
-                // Ensure IO object when in streaming creation.
-                if (inStreamingCreation)
-                {
-                    // Make sure there is a streaming Xml writer to commit content type entries.
-                    // Note: The footer of the content type file gets persisted from FlushCore and
-                    // Dispose.
-                    EnsureStreamingXmlWriter(compressionMethod, deflateOption);
-                    _contentTypeStreamExists = true;
-                }
-                // else if not in streaming creation we will intialize the
-                // content type stream while flushing
-                else
-                {
-                    //save the compressionOption and deflateOption that should be used
-                    //to create the content type item later
-                    if (!_contentTypeStreamExists)
-                    {
-                        _cachedCompressionMethod = compressionMethod;
-                        _cachedDeflateOption = deflateOption;
-                    }
-                }
-#else
                 //save the compressionOption and deflateOption that should be used
                 //to create the content type item later
                 if (!_contentTypeStreamExists)
                 {
                     _cachedCompressionLevel = compressionLevel;
                 }
-#endif
 
                 // Figure out whether the mapping matches a default entry, can be made into a new
                 // default entry, or has to be entered as an override entry.
@@ -966,21 +900,19 @@ namespace System.IO.Packaging
                 string extension = partUri.PartUriExtension;
 
                 // Need to create an override entry?
-                // If we are in streaming mode then we always create override entries.
-                if (inStreamingCreation
-                    || extension.Length == 0
+                if (extension.Length == 0
                     || (_defaultDictionary.ContainsKey(extension)
                         && !(foundMatchingDefault =
                                _defaultDictionary[extension].AreTypeAndSubTypeEqual(contentType))))
                 {
-                    AddOverrideElement(partUri, contentType, inStreamingCreation);
+                    AddOverrideElement(partUri, contentType);
                 }
 
                 // Else, either there is already a mapping from extension to contentType,
                 // or one needs to be created.
                 else if (!foundMatchingDefault)
                 {
-                    AddDefaultElement(extension, contentType, inStreamingCreation);
+                    AddDefaultElement(extension, contentType);
                     //Delete all items that might map to the same extension as these currently ignored
                     //items might show up as valid parts later.
                     _ignoredItemHelper.DeleteItemsWithSimilarExtension(extension);
@@ -1021,7 +953,6 @@ namespace System.IO.Packaging
                 }
             }
 
-            //this method should only be called in the non-streaming scenario
             internal void SaveToFile()
             {
                 if (_dirty)
@@ -1032,39 +963,21 @@ namespace System.IO.Packaging
                         _contentTypeZipArchiveEntry = _zipArchive.CreateEntry(s_contentTypesFile, _cachedCompressionLevel);
                         _contentTypeStreamExists = true;
                     }
-#if false
-                    // todo ew not supporting interleaved, System.IO.Compression does not support it.
-                    else
-                    {
-                        // If the content type stream is interleaved, delete it to substitute
-                        // an atomic stream.
-                        if (_contentTypeStreamPieces != null)
-                        {
-                            // Prepare to create an atomic part once the pieces are deleted.
-                            // Save the values as all the pieces will be deleted before
-                            // creating the atomic ContentType item
-                            CompressionMethodEnum compressionMethod =
-                                _contentTypeStreamPieces[0].ZipFileInfo.CompressionMethod;
-                            DeflateOptionEnum deflateOption =
-                                _contentTypeStreamPieces[0].ZipFileInfo.DeflateOption;
 
-                            ZipPackage.DeleteInterleavedPartOrStream(_contentTypeStreamPieces);
+                    // delete and re-create entry for content part.  When writing this, the stream will not truncate the content
+                    // if the XML is shorter than the existing content part.
+                    var contentTypefullName = _contentTypeZipArchiveEntry.FullName;
+                    var thisArchive = _contentTypeZipArchiveEntry.Archive;
+                    _zipStreamManager.Close(_contentTypeZipArchiveEntry);
+                    _contentTypeZipArchiveEntry.Delete();
+                    _contentTypeZipArchiveEntry = thisArchive.CreateEntry(contentTypefullName);
 
-                            _contentTypeStreamPieces = null;
-                            _contentTypeFileInfo = _zipArchive.AddFile(
-                                s_contentTypesFile, compressionMethod, deflateOption);
-                        }
-                    }
-#endif
 
-                    using (Stream s = _contentTypeZipArchiveEntry.Open())
+                    using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite))
                     {
                         // use UTF-8 encoding by default
-                        using (XmlTextWriter writer = new XmlTextWriter(s, System.Text.Encoding.UTF8))
+                        using (XmlWriter writer = XmlWriter.Create(s, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 }))
                         {
-#if DEBUG
-                            writer.Formatting = Formatting.Indented;
-#endif
                             writer.WriteStartDocument();
 
                             // write root element tag - Types
@@ -1097,20 +1010,6 @@ namespace System.IO.Packaging
                 }
             }
 
-            internal void CloseContentTypes()
-            {
-                // If nothing has been written, there's nothing to close.
-                if (_streamingXmlWriter == null)
-                    return;
-
-                // Complete the Xml Document.
-                _streamingXmlWriter.WriteEndElement(); // will add </Types>
-                _streamingXmlWriter.WriteEndDocument();
-
-                // Write the last piece.
-                _streamingXmlWriter.Close();
-            }
-
             #endregion Internal Methods
 
             #region Private Methods
@@ -1133,14 +1032,15 @@ namespace System.IO.Packaging
                 if (s == null)
                     return;
 
-                using (s)
-                using (XmlTextReader reader = new XmlTextReader(s))
-                {
-                    reader.WhitespaceHandling = WhitespaceHandling.None;
+                XmlReaderSettings xrs = new XmlReaderSettings();
+                xrs.IgnoreWhitespace = true;
 
+                using (s)
+                using (XmlReader reader = XmlReader.Create(s, xrs))
+                {
                     //Prohibit DTD from the markup as per the OPC spec
 #pragma warning disable 618
-                    reader.ProhibitDtd = true;
+                    // reader.ProhibitDtd = true; todo ew
 #pragma warning restore 618
 
                     //This method expects the reader to be in ReadState.Initial.
@@ -1162,7 +1062,9 @@ namespace System.IO.Packaging
                         //There should be a namespace Attribute present at this level.
                         //Also any other attribute on the <Types> tag is an error including xml: and xsi: attributes
                         if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) > 0)
-                            throw new XmlException(SR.Get(SRID.TypesTagHasExtraAttributes), null, reader.LineNumber, reader.LinePosition);
+                        {
+                            throw new XmlException(SR.Get(SRID.TypesTagHasExtraAttributes), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                        }
 
                         // start tag encountered
                         // now parse individual Default and Override tags
@@ -1190,18 +1092,22 @@ namespace System.IO.Packaging
                                     && reader.Depth == 1
                                     && (String.CompareOrdinal(reader.NamespaceURI, s_typesNamespaceUri) == 0)
                                     && (String.CompareOrdinal(reader.Name, s_overrideTagName) == 0))
-                            {
-                                ProcessOverrideTagAttributes(reader);
-                            }
-                            else
+                                {
+                                    ProcessOverrideTagAttributes(reader);
+                                }
+                                else
                                     if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && String.CompareOrdinal(reader.Name, s_typesTagName) == 0)
-                                continue;
-                            else
-                                throw new XmlException(SR.Get(SRID.TypesXmlDoesNotMatchSchema), null, reader.LineNumber, reader.LinePosition);
+                                        continue;
+                                    else
+                                    {
+                                        throw new XmlException(SR.Get(SRID.TypesXmlDoesNotMatchSchema), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                                    }
                         }
                     }
                     else
-                        throw new XmlException(SR.Get(SRID.TypesElementExpected), null, reader.LineNumber, reader.LinePosition);
+                    {
+                        throw new XmlException(SR.Get(SRID.TypesElementExpected), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    }
                 }
             }
 
@@ -1324,7 +1230,7 @@ namespace System.IO.Packaging
                 if (_contentTypeZipArchiveEntry != null)
                 {
                     _contentTypeStreamExists = true;
-                    return _contentTypeZipArchiveEntry.Open();
+                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite);
                 }
 
 #if false
@@ -1347,14 +1253,14 @@ namespace System.IO.Packaging
             }
 
             // Process the attributes for the Default tag
-            private void ProcessDefaultTagAttributes(XmlTextReader reader)
+            private void ProcessDefaultTagAttributes(XmlReader reader)
             {
                 #region Default Tag
 
                 //There could be a namespace Attribute present at this level. 
                 //Also any other attribute on the <Default> tag is an error including xml: and xsi: attributes
                 if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 2)
-                    throw new XmlException(SR.Get(SRID.DefaultTagDoesNotMatchSchema), null, reader.LineNumber, reader.LinePosition);
+                    throw new XmlException(SR.Get(SRID.DefaultTagDoesNotMatchSchema), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
 
                 // get the required Extension and ContentType attributes
 
@@ -1378,14 +1284,14 @@ namespace System.IO.Packaging
             }
 
             // Process the attributes for the Default tag
-            private void ProcessOverrideTagAttributes(XmlTextReader reader)
+            private void ProcessOverrideTagAttributes(XmlReader reader)
             {
                 #region Override Tag
 
                 //There could be a namespace Attribute present at this level. 
                 //Also any other attribute on the <Override> tag is an error including xml: and xsi: attributes
                 if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 2)
-                    throw new XmlException(SR.Get(SRID.OverrideTagDoesNotMatchSchema), null, reader.LineNumber, reader.LinePosition);
+                    throw new XmlException(SR.Get(SRID.OverrideTagDoesNotMatchSchema), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
 
                 // get the required Extension and ContentType attributes
 
@@ -1412,7 +1318,7 @@ namespace System.IO.Packaging
             }
 
             //If End element is present for Relationship then we process it
-            private void ProcessEndElement(XmlTextReader reader, string elementName)
+            private void ProcessEndElement(XmlReader reader, string elementName)
             {
                 Debug.Assert(!reader.IsEmptyElement, "This method should only be called it the Relationship Element is not empty");
 
@@ -1424,49 +1330,32 @@ namespace System.IO.Packaging
                 if (reader.NodeType == XmlNodeType.EndElement && String.CompareOrdinal(elementName, reader.LocalName) == 0)
                     return;
                 else
-                    throw new XmlException(SR.Get(SRID.ElementIsNotEmptyElement, elementName), null, reader.LineNumber, reader.LinePosition);
+                    throw new XmlException(SR.Get(SRID.ElementIsNotEmptyElement, elementName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
-            private void AddOverrideElement(PackUriHelper.ValidatedPartUri partUri, ContentType contentType, bool inStreamingCreation)
+            private void AddOverrideElement(PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
             {
-                if (inStreamingCreation)
-                {
-                    WriteOverrideElement(_streamingXmlWriter,
-                        partUri, contentType);
-                    _streamingXmlWriter.Flush();
-                }
-                else
-                {
-                    //Delete any entry corresponding in the Override dictionary 
-                    //corresponding to the PartUri for which the contentType is being added.
-                    //This is to compensate for dead override entries in the content types file.                
-                    DeleteContentType(partUri);
+                //Delete any entry corresponding in the Override dictionary 
+                //corresponding to the PartUri for which the contentType is being added.
+                //This is to compensate for dead override entries in the content types file.                
+                DeleteContentType(partUri);
 
-                    //Lazy initializing - ensure that the override dictionary has been initialized
-                    EnsureOverrideDictionary();
+                //Lazy initializing - ensure that the override dictionary has been initialized
+                EnsureOverrideDictionary();
 
-                    // The part Uris are stored in the Override Dictionary in their original form , but they are compared
-                    // in a normalized manner using PartUriComparer.
-                    _overrideDictionary.Add(partUri, contentType);
-                    _dirty = true;
-                }
+                // The part Uris are stored in the Override Dictionary in their original form , but they are compared
+                // in a normalized manner using PartUriComparer.
+                _overrideDictionary.Add(partUri, contentType);
+                _dirty = true;
             }
 
-            private void AddDefaultElement(string extension, ContentType contentType, bool inStreamingCreation)
+            private void AddDefaultElement(string extension, ContentType contentType)
             {
                 // The extensions are stored in the Default Dictionary in their original form , but they are compared
                 // in a normalized manner using the ExtensionComparer.
                 _defaultDictionary.Add(extension, contentType);
 
-                if (inStreamingCreation)
-                {
-                    WriteDefaultElement(_streamingXmlWriter, extension, contentType);
-                    _streamingXmlWriter.Flush();
-                }
-                else
-                {
-                    _dirty = true;
-                }
+                _dirty = true;
             }
 
             private void WriteOverrideElement(XmlWriter xmlWriter, PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
@@ -1487,53 +1376,23 @@ namespace System.IO.Packaging
             }
 
             //Validate if the required XML attribute is present and not an empty string
-            private void ValidateXmlAttribute(string attributeName, string attributeValue, string tagName, XmlTextReader reader)
+            private void ValidateXmlAttribute(string attributeName, string attributeValue, string tagName, XmlReader reader)
             {
                 ThrowIfXmlAttributeMissing(attributeName, attributeValue, tagName, reader);
 
                 //Checking for empty attribute
                 if (attributeValue == String.Empty)
-                    throw new XmlException(SR.Get(SRID.RequiredAttributeEmpty, tagName, attributeName), null, reader.LineNumber, reader.LinePosition);
+                    throw new XmlException(SR.Get(SRID.RequiredAttributeEmpty, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
 
             //Validate if the required Content type XML attribute is present
             //Content type of a part can be empty
-            private void ThrowIfXmlAttributeMissing(string attributeName, string attributeValue, string tagName, XmlTextReader reader)
+            private void ThrowIfXmlAttributeMissing(string attributeName, string attributeValue, string tagName, XmlReader reader)
             {
                 if (attributeValue == null)
-                    throw new XmlException(SR.Get(SRID.RequiredAttributeMissing, tagName, attributeName), null, reader.LineNumber, reader.LinePosition);
+                    throw new XmlException(SR.Get(SRID.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
-
-#if false
-            // ew todo not supporting streaming
-            /// <summary>
-            /// Lazily initialize _streamingXmlWriter.
-            /// Create the first piece of the content type file and point a StreamingZipPartStream
-            /// to it.
-            /// </summary>
-            private void EnsureStreamingXmlWriter(CompressionMethodEnum compressionMethod, DeflateOptionEnum deflateOption)
-            {
-                if (_streamingXmlWriter == null)
-                {
-                    // Create the writer on top of a streaming stream, so that each Flush
-                    // will create a piece.
-
-                    StreamingZipPartStream s = new StreamingZipPartStream(
-                        ZipPackage.GetOpcNameFromZipItemName(ContentTypeFileName),
-                        _zipArchive, compressionMethod, deflateOption,
-                        FileMode.Create, FileAccess.Write);
-
-                    // The Flush and Close calls to the Xml writer will be forwarded
-                    // to the StreamingZipPartStream.
-                    _streamingXmlWriter = new XmlTextWriter(s, System.Text.Encoding.UTF8);
-
-                    // Write the beginning of the XML file.
-                    _streamingXmlWriter.WriteStartDocument();
-                    _streamingXmlWriter.WriteStartElement(s_typesTagName, s_typesNamespaceUri);
-                }
-            }
-#endif
 
             #endregion Private Methods
 
@@ -1542,6 +1401,9 @@ namespace System.IO.Packaging
             private Dictionary<PackUriHelper.ValidatedPartUri, ContentType> _overrideDictionary;
             private Dictionary<string, ContentType> _defaultDictionary;
             private ZipArchive _zipArchive;
+            private FileMode _packageFileMode;
+            private FileAccess _packageFileAccess;
+            private ZipStreamManager _zipStreamManager;
             private IgnoredItemHelper _ignoredItemHelper;
             private ZipArchiveEntry _contentTypeZipArchiveEntry;
             private bool _contentTypeStreamExists;
@@ -1549,7 +1411,6 @@ namespace System.IO.Packaging
             private CompressionLevel _cachedCompressionLevel;
             private static readonly string s_contentTypesFile = "[Content_Types].xml";
             private static readonly string s_contentTypesFileUpperInvariant = "[CONTENT_TYPES].XML";
-            private XmlWriter _streamingXmlWriter = null;
             private static readonly int s_defaultDictionaryInitialSize = 16;
             private static readonly int s_overrideDictionaryInitialSize = 8;
 

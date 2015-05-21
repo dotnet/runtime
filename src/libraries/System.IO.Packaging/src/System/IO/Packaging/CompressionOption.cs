@@ -7,9 +7,6 @@
 //  CompressionOption enumeration is used as an aggregate mechanism to give users controls 
 //  over Compression features. 
 //
-// History:
-//  07/14/2004: IgorBel: Initial creation. [Stubs Only]
-//
 //-----------------------------------------------------------------------------
 
 namespace System.IO.Packaging

@@ -6,15 +6,11 @@
 // Description:
 //  This class represents a PackageRelationshipSelector. 
 //
-// History:
-//  07/27/2005: SarjanaS: Initial creation.
-//
 //-----------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;                  // for Debug.Assert
-using System.Windows;                      // For Exception strings - SRID
 
 namespace System.IO.Packaging
 {
