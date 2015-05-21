@@ -1597,7 +1597,7 @@ mono_class_setup_fields (MonoClass *class)
 		return;
 	}
 
-	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT)
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(class->image == mono_defaults.corlib && !strcmp (class->name_space, "System") && !strcmp (class->name, "ValueType")))
 		blittable = FALSE;
 
 	/* Prevent infinite loops if the class references itself */
