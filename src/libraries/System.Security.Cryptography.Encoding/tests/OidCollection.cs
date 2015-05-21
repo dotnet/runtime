@@ -27,8 +27,8 @@ namespace System.Security.Cryptography.Encoding.Tests
 
             Assert.Equal(2, c.Count);
 
-            Assert.True(Object.ReferenceEquals(o0, c[0]));
-            Assert.True(Object.ReferenceEquals(o1, c[1]));
+            Assert.Same(o0, c[0]);
+            Assert.Same(o1, c[1]);
             Assert.Throws<ArgumentOutOfRangeException>(() => GC.KeepAlive(c[-1]));
             Assert.Throws<ArgumentOutOfRangeException>(() => GC.KeepAlive(c[c.Count]));
 
@@ -37,11 +37,11 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(2, i);
 
             // If there multiple matches, the one with the lowest index wins.
-            Assert.True(Object.ReferenceEquals(o0, c[SHA1_Name]));
-            Assert.True(Object.ReferenceEquals(o0, c[SHA1_Oid]));
+            Assert.Same(o0, c[SHA1_Name]);
+            Assert.Same(o0, c[SHA1_Oid]);
 
-            Assert.True(Object.ReferenceEquals(o1, c[SHA256_Name]));
-            Assert.True(Object.ReferenceEquals(o1, c[SHA256_Oid]));
+            Assert.Same(o1, c[SHA256_Name]);
+            Assert.Same(o1, c[SHA256_Oid]);
 
             Oid o3 = new Oid(null, null);
             i = c.Add(o3);
