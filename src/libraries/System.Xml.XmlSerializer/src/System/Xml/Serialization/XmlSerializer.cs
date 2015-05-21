@@ -36,11 +36,11 @@ namespace System.Xml.Serialization
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.Writer"]/*' />
         public virtual XmlSerializationWriter Writer { get { throw new NotSupportedException(); } }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.ReadMethods"]/*' />
-        public virtual Dictionary<string, string> ReadMethods { get { throw new NotSupportedException(); } }
+        public virtual IDictionary ReadMethods { get { throw new NotSupportedException(); } }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.WriteMethods"]/*' />
-        public virtual Dictionary<string, string> WriteMethods { get { throw new NotSupportedException(); } }
+        public virtual IDictionary WriteMethods { get { throw new NotSupportedException(); } }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.TypedSerializers"]/*' />
-        public virtual Dictionary<string, XmlSerializer> TypedSerializers { get { throw new NotSupportedException(); } }
+        public virtual IDictionary TypedSerializers { get { throw new NotSupportedException(); } }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.CanSerialize"]/*' />
         public virtual bool CanSerialize(Type type) { throw new NotSupportedException(); }
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializerImplementation.GetSerializer"]/*' />
