@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{AA81E343-5E54-40B0-9381-C459419BE780}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Cryptography.Encoding</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  <ItemGroup>
+    <Compile Include="Internal\Cryptography\AsnFormatter.cs" />
+    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\OidLookup.cs" />
+    <Compile Include="System\Security\Cryptography\AsnEncodedData.cs" />
+    <Compile Include="System\Security\Cryptography\Oid.cs" />
+    <Compile Include="System\Security\Cryptography\OidCollection.cs" />
+    <Compile Include="System\Security\Cryptography\OidEnumerator.cs" />
+    <Compile Include="System\Security\Cryptography\OidGroup.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\ArrayT.cs">
+      <Link>Common\System\ArrayT.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
+      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="Internal\Cryptography\AsnFormatter.Windows.cs" />
+    <Compile Include="Internal\Cryptography\CngAsnFormatter.cs" />
+    <Compile Include="Internal\Cryptography\OidLookup.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Cng.cs">
+      <Link>Common\Interop\Windows\BCrypt\Cng.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
+      <Link>Common\Interop\Windows\Crypt32\OidInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="Internal\Cryptography\AsnFormatter.Unix.cs" />
+    <Compile Include="Internal\Cryptography\OidLookup.Unix.cs" />
+    <Compile Include="Internal\Cryptography\OpenSslAsnFormatter.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs">
+      <Link>Common\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.ASN1.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.BIO.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.BIO.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509Ext.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.X509Ext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
