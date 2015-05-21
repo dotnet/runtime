@@ -255,7 +255,7 @@ namespace System.Diagnostics
                 }
                 currentIndex++;
             }
-            if (_sb[len - 1] == '\r')
+            if ((len > 0) && _sb[len - 1] == '\r')
             {
                 _bLastCarriageReturn = true;
             }

@@ -24,6 +24,11 @@ namespace System.Diagnostics.ProcessTests
             return CreateProcess("stream");
         }
 
+        Process CreateProcessByteAtATime()
+        {
+            return CreateProcess("byteAtATime");
+        }
+
         [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_SyncErrorStream()
         {
@@ -106,6 +111,24 @@ namespace System.Diagnostics.ProcessTests
                 writer.WriteLine(str);
             }
             Assert.True(p.WaitForExit(WaitInMS));
+        }
+
+        [Fact]
+        public void Process_AsyncHalfCharacterAtATime()
+        {
+            var receivedOutput = false;
+            Process p = CreateProcessByteAtATime();
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.StandardOutputEncoding = Encoding.Unicode;
+            p.OutputDataReceived += (s, e) =>
+            {
+                Assert.Equal(e.Data, "a");
+                receivedOutput = true;
+            };
+            p.Start();
+            p.BeginOutputReadLine();
+            Assert.True(p.WaitForExit(WaitInMS));
+            Assert.True(receivedOutput);
         }
     }
 }
