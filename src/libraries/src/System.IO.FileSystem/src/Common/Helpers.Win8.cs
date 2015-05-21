@@ -45,6 +45,14 @@ internal static partial class Helpers
             return Interop.mincore.CreateFile2(lpFileName, dwDesiredAccess, dwShareMode, dwCreationDisposition, ref parameters);
         }
     }
+    
+    internal static int DeleteVolumeMountPoint(string mountPoint)
+    {
+        // DeleteVolumeMountPointW is not available to store apps.
+        // The expectation is that no store app would even have permission
+        // to call this from the app container
+        throw new UnauthorizedAccessException();
+    }
 }
 
 internal partial class Interop
