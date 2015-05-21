@@ -28,7 +28,7 @@ namespace System.Text.Unicode
             }
             if (length < 0 || ((long)firstCodePoint + (long)length > 0x10000))
             {
-                throw new ArgumentOutOfRangeException("rangeSize");
+                throw new ArgumentOutOfRangeException("length");
             }
 
             FirstCodePoint = firstCodePoint;
@@ -55,7 +55,7 @@ namespace System.Text.Unicode
         {
             if (lastCharacter < firstCharacter)
             {
-                throw new ArgumentOutOfRangeException("lastChar");
+                throw new ArgumentOutOfRangeException("lastCharacter");
             }
 
             return new UnicodeRange(firstCharacter, 1 + (int)(lastCharacter - firstCharacter));
