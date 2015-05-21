@@ -227,3 +227,18 @@ If all works, you should be greeted by a friendly daemon you know well.
 Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and FreeBSD versions of an assembly, so you can simply nuget restore the dependencies. 
 
 Pull Requests to enable building CoreFX and mscorlib on FreeBSD via Mono would be very welcome. A sample that builds Hello World on FreeBSD using the correct references but via XBuild or MonoDevelop would also be great! Some of our processes (e.g. the mscorlib build) rely on Windows specific tools, but we want to figure out how to solve these problems for FreeBSD as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
+
+
+Run the test suite
+==================
+
+If you've made changes to the CoreCLR PAL code, you might want to run the PAL tests directly to validate your changes.
+This can be done after a clean build, without any other dependencies.
+
+```bash
+janhenke@freebsd-frankfurt:~/coreclr % ./build.sh && src/pal/tests/palsuite/runpaltests.sh ~/coreclr/bin/obj/FreeBSD.x64.Debug ~/coreclr/bin/paltestout
+```
+
+This should run all the tests associated with the PAL.
+
+**Note:** For FreeBSD all PAL tests may not pass at this point.
