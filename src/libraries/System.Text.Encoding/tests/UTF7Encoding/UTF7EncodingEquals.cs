@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Text.EncodingTests
 {
-    public class EncodingEquals
+    public class UTF7EncodingEquals
     {
         // PosTest1: test whether two UTF7  objects constructed not using parameter are equal
         [Fact]
