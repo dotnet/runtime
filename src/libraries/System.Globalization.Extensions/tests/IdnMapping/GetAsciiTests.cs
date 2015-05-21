@@ -91,6 +91,8 @@ namespace System.Globalization.Extensions.Tests
             Assert.Throws<ArgumentException>(() => idn.GetAscii("\u0101\u0000\u0101\u0000"));
             Assert.Throws<ArgumentException>(() => idn.GetAscii("\u0101\u0000\u0101\u0000", 0));
             Assert.Throws<ArgumentException>(() => idn.GetAscii("\u0101\u0000\u0101\u0000", 0, 4));
+            Assert.Throws<ArgumentException>(() => idn.GetUnicode("abc\u0000", 0, 4));
+            Assert.Throws<ArgumentException>(() => idn.GetUnicode("ab\u0000c", 0, 4));
         }
 
         /// <summary>

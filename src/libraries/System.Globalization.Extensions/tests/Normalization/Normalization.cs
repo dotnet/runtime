@@ -17,6 +17,8 @@ namespace System.Globalization.Extensions.Tests
             string composed = "\u00C4\u00C7"; // "ÄÇ"
             string decomposed = "A\u0308C\u0327";
 
+            Assert.Throws<ArgumentNullException>("value", () => { string nullString = null; nullString.IsNormalized(); });
+
             Assert.True(composed.IsNormalized());
             Assert.True(composed.IsNormalized(NormalizationForm.FormC));
             Assert.False(composed.IsNormalized(NormalizationForm.FormD));
