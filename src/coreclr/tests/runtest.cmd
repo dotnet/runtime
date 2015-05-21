@@ -6,6 +6,9 @@ set __ProjectFilesDir=%~dp0
 set __VSVersion=VS2013
 set __VSProductVersion=120
 
+:: Default __Exclude to issues.targets
+set __Exclude=%~dp0\issues.targets
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&goto Arg_Loop)
@@ -29,7 +32,7 @@ shift
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckMSbuild
 echo Installation of VS 2013 is a pre-requisite to build this repository.
-goto :eof
+exit /b 1
 
 :CheckMSBuild
 if /i "%__VSVersion%" =="vs2015" goto MSBuild14
@@ -95,26 +98,16 @@ set _buildprefix=
 set _buildpostfix=
 set _buildappend=
 call :PerformXunitWrapperBuild 
+IF ERRORLEVEL 1 (
+    echo XunitWrapperBuild build failed. Refer %__XunitWrapperBuildLog% for details.
+    exit /b 1
+)
 
-IF %BUILDERRORLEVEL% NEQ 0 echo XunitWrapperBuild build failed. Refer %__XunitWrapperBuildLog% for details. && exit /b %BUILDERRORLEVEL%
-
-call :preptests
-goto :eof
-
-:PerformXunitWrapperBuild
-
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoRun=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__XunitWrapperBuildLog%";Append %1  %_buildappend%%_buildpostfix%
-
-set BUILDERRORLEVEL=%ERRORLEVEL%
-
-goto :eof
-
-:preptests
 :: Log build command line
 set _buildprefix=echo
 set _buildpostfix=^> "%__TestRunBuildLog%"
 set _buildappend=^>
-call :runtests 
+call :runtests
 
 :: Build
 set _buildprefix=
@@ -128,20 +121,21 @@ if exist %Core_Root% rd /s /q %Core_Root%
 md %Core_Root%
 xcopy /s %__BinDir% %Core_Root%
 call :runtests 
-
-IF %BUILDERRORLEVEL% NEQ 0 ( 
+if ERRORLEVEL 1 (
     echo Test Run failed. Refer to the following"
     echo Msbuild log: %__TestRunBuildLog%
     echo Html report: %__TestRunHtmlLog%
-    exit /b %BUILDERRORLEVEL%
+    exit /b 1
 )
-goto :eof
 
 :runtests
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix% /clp:showcommandline
+exit /b %ERRORLEVEL%
 
-set BUILDERRORLEVEL=%ERRORLEVEL%
-goto :eof
+:PerformXunitWrapperBuild
+
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoRun=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__XunitWrapperBuildLog%";Append %1  %_buildappend%%_buildpostfix%
+exit /b %ERRORLEVEL%
 
 :Usage
 echo.
