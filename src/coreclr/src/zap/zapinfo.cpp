@@ -2644,7 +2644,8 @@ void ZapInfo::getFunctionEntryPoint(
 {
     if (IsReadyToRunCompilation())
     {
-        _ASSERTE(!"getFunctionEntryPoint");
+        // READYTORUN: FUTURE: JIT still calls this for tail. and jmp instructions
+        m_zapper->Warning(W("ReadyToRun: Method entrypoint cannot be encoded\n"));
         ThrowHR(E_NOTIMPL);
     }
 
@@ -4052,7 +4053,17 @@ CorInfoIsAccessAllowedResult ZapInfo::canAccessClass( CORINFO_RESOLVED_TOKEN * p
                                                       CORINFO_METHOD_HANDLE   callerHandle,
                                                       CORINFO_HELPER_DESC    *throwHelper)
 {
-    return m_pEEJitInfo->canAccessClass(pResolvedToken, callerHandle, throwHelper);
+    CorInfoIsAccessAllowedResult ret = m_pEEJitInfo->canAccessClass(pResolvedToken, callerHandle, throwHelper);
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (ret != CORINFO_ACCESS_ALLOWED)
+    {
+        m_zapper->Warning(W("ReadyToRun: Runtime access checks not supported\n"));
+        ThrowHR(E_NOTIMPL);
+    }
+#endif
+
+    return ret;
 }
 
 

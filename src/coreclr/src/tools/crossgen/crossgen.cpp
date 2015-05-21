@@ -120,7 +120,9 @@ void PrintUsageHelper()
        W("    /nologo              - Prevents displaying the logo\n")
        W("    @response.rsp        - Process command line arguments from specified\n")
        W("                           response file\n")
+#ifdef FEATURE_CORECLR
        W("    /partialtrust        - Assembly will be run in a partial trust domain.\n")
+#endif
        W("    /in <file>           - Specifies input filename (optional)\n")
 #ifdef MDIL
        W("    /out <file>          - Specifies output filename (optional with native images,\n")
@@ -523,6 +525,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         {
             dwFlags |= NGENWORKER_FLAGS_MISSINGDEPENDENCIESOK;
         }
+#ifdef FEATURE_CORECLR
         else if (MatchParameter(*argv, W("PartialTrust")))
         {
             // Clear the /fulltrust flag
@@ -537,6 +540,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             // We dont explicitly set the flag here again so that if "/PartialTrust" is specified, then it will successfully override the default
             // fulltrust behaviour.
         }
+#endif
 #ifdef FEATURE_LEGACYNETCF
         else if (MatchParameter(*argv, W("PreWP8App")))
         {

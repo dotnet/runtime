@@ -970,7 +970,15 @@ MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
             MemberLoader::ThrowMissingMethodException(constrainedType.GetMethodTable(), NULL, NULL, NULL, 0, NULL);
         }
 
-        pMethod = directMethod;
+        // Strip the instantiating stub if the signature did not ask for one
+        if (directMethod->IsInstantiatingStub() && !isInstantiatingStub)
+        {
+            pMethod = directMethod->GetWrappedMethodDesc();
+        }
+        else
+        {
+            pMethod = directMethod;
+        }
     }
 
     return pMethod;
