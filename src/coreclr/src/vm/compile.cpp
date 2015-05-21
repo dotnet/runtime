@@ -534,7 +534,8 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
 #endif
 
 #if defined(CROSSGEN_COMPILE) && !defined(FEATURE_CORECLR)
-            pDomain->ToCompilationDomain()->ComputeAssemblyHardBindList(pAssemblyHolder->GetPersistentMDImport());
+            if (!IsReadyToRunCompilation())
+                pDomain->ToCompilationDomain()->ComputeAssemblyHardBindList(pAssemblyHolder->GetPersistentMDImport());
 #endif
 
 #ifdef MDIL
@@ -1041,6 +1042,14 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
             }
         }
     }
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (IsReadyToRunCompilation() && !pModule->IsILOnly())
+    {
+        GetSvcLogger()->Printf(LogLevel_Error, W("Error: /readytorun not supported for mixed mode assemblies\n"));
+        return E_FAIL;
+    }
+#endif
 
     return S_OK;
 }
