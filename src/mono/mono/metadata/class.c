@@ -4814,6 +4814,11 @@ mono_method_get_vtable_slot (MonoMethod *method)
 			MonoClass *gklass;
 			int i;
 
+			if (!method->klass->generic_class) {
+				g_assert (method->is_inflated);
+				return mono_method_get_vtable_slot (((MonoMethodInflated*)method)->declaring);
+			}
+
 			/* This can happen for abstract methods of generic instances due to the shortcut code in mono_class_setup_vtable_general (). */
 			g_assert (method->klass->generic_class);
 			gklass = method->klass->generic_class->container_class;
