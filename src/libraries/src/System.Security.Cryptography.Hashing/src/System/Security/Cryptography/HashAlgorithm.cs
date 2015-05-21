@@ -72,8 +72,8 @@ namespace System.Security.Cryptography
         private byte[] CaptureHashCodeAndReinitialize()
         {
             byte[] hashValue = HashFinal();
-            // For desktop compatibility, clone the hash value prior to invoking Initialize in case the user-defined Initialize
-            // clobbers the array contents.
+            // Clone the hash value prior to invoking Initialize in case the user-defined Initialize
+            // manipulates the array.
             hashValue = hashValue.CloneByteArray();
             Initialize();
             return hashValue;
@@ -89,7 +89,9 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                // Although we don't have any resources to finalize, desktop compat still requires we throw ObjectDisposedExceptions.
+                // Although we don't have any resources to dispose at this level,
+                // we need to continue to throw ObjectDisposedExceptions from CalculateHash
+                // for compatibility with the desktop framework.
                 _disposed = true;
             }
             return;
