@@ -6,6 +6,9 @@ set __ProjectFilesDir=%~dp0
 set __VSVersion=VS2013
 set __VSProductVersion=120
 
+:: Default __Exclude to issues.targets
+set __Exclude=%~dp0\issues.targets
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "x64"    (set __BuildArch=x64&set __MSBuildBuildArch=x64&shift&goto Arg_Loop)
@@ -126,7 +129,7 @@ if ERRORLEVEL 1 (
 )
 
 :runtests
-%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix%
+%_buildprefix% %_msbuildexe% "%__ProjectFilesDir%runtest.proj" /p:NoBuild=true /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=diag;LogFile="%__TestRunBuildLog%";Append %1 %_buildpostfix% /clp:showcommandline
 exit /b %ERRORLEVEL%
 
 :PerformXunitWrapperBuild
