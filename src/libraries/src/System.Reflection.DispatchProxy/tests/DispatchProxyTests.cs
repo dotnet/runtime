@@ -18,8 +18,7 @@ namespace DispatchProxyTests
             TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, TestDispatchProxy>();
 
             Assert.NotNull(proxy);
-            Assert.True(typeof(TestDispatchProxy).GetTypeInfo().IsAssignableFrom(proxy.GetType().GetTypeInfo()),
-                        String.Format("Proxy type {0} did not derive from {1}", proxy.GetType().Name, typeof(TestDispatchProxy).Name));
+            Assert.IsAssignableFrom<TestDispatchProxy>(proxy);
         }
 
         [Fact]
@@ -31,8 +30,7 @@ namespace DispatchProxyTests
             Type[] implementedInterfaces = typeof(TestType_IHelloAndGoodbyeService).GetTypeInfo().ImplementedInterfaces.ToArray();
             foreach (Type t in implementedInterfaces)
             {
-                Assert.True(t.GetTypeInfo().IsAssignableFrom(proxy.GetType().GetTypeInfo()),
-                            String.Format("Proxy type {0} did not derive from {1}", proxy.GetType().Name, t.Name));
+                Assert.IsAssignableFrom(t, proxy);
             }
         }
 
@@ -58,8 +56,7 @@ namespace DispatchProxyTests
 
             Assert.NotNull(proxy1);
             Assert.NotNull(proxy2);
-            Assert.True(proxy1.GetType() == proxy2.GetType(),
-                        String.Format("First instance of proxy type was {0} but second was {1}", proxy1.GetType().Name, proxy2.GetType().Name));
+            Assert.IsType(proxy1.GetType(), proxy2);
         }
 
         [Fact]
@@ -102,93 +99,25 @@ namespace DispatchProxyTests
         [Fact]
         public static void Create_Using_Concrete_Proxy_Type_Throws_ArgumentException()
         {
-            ArgumentException caughtException = null;
-
-            try
-            {
-                TestType_ConcreteClass proxy = DispatchProxy.Create<TestType_ConcreteClass, TestDispatchProxy>();
-            }
-            catch (ArgumentException ex)
-            {
-                caughtException = ex;
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, String.Format("Caught unexpected exception {0}", e.ToString()));
-            }
-
-            Assert.True(caughtException != null, "Expected ArgumentException to be thrown");
-            Assert.True(String.Equals(caughtException.ParamName, "T"),
-                        String.Format("Expected paramName 'T' but received '{0}'", caughtException.ParamName));
+            Assert.Throws<ArgumentException>("T", () => DispatchProxy.Create<TestType_ConcreteClass, TestDispatchProxy>());
         }
 
         [Fact]
         public static void Create_Using_Sealed_BaseType_Throws_ArgumentException()
         {
-            ArgumentException caughtException = null;
-
-            try
-            {
-                TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, Sealed_TestDispatchProxy>();
-            }
-            catch (ArgumentException ex)
-            {
-                caughtException = ex;
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, String.Format("Caught unexpected exception {0}", e.ToString()));
-            }
-
-            Assert.True(caughtException != null, "Expected ArgumentException to be thrown");
-            Assert.True(String.Equals(caughtException.ParamName, "TProxy"),
-                        String.Format("Expected paramName 'TProxy' but received '{0}'", caughtException.ParamName));
+            Assert.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Sealed_TestDispatchProxy>());
         }
 
         [Fact]
         public static void Create_Using_Abstract_BaseType_Throws_ArgumentException()
         {
-            ArgumentException caughtException = null;
-
-            try
-            {
-                TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, Abstract_TestDispatchProxy>();
-            }
-            catch (ArgumentException ex)
-            {
-                caughtException = ex;
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, String.Format("Caught unexpected exception {0}", e.ToString()));
-            }
-
-            Assert.True(caughtException != null, "Expected ArgumentException to be thrown");
-            Assert.True(String.Equals(caughtException.ParamName, "TProxy"),
-                        String.Format("Expected paramName 'TProxy' but received '{0}'", caughtException.ParamName));
+            Assert.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Abstract_TestDispatchProxy>());
         }
 
         [Fact]
         public static void Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException()
         {
-            ArgumentException caughtException = null;
-
-            try
-            {
-                TestType_IHelloService proxy = DispatchProxy.Create<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>();
-            }
-            catch (ArgumentException ex)
-            {
-                caughtException = ex;
-            }
-            catch (Exception e)
-            {
-                Assert.True(false, String.Format("Caught unexpected exception {0}", e.ToString()));
-            }
-
-            Assert.True(caughtException != null, "Expected ArgumentException to be thrown");
-            Assert.True(String.Equals(caughtException.ParamName, "TProxy"),
-                        String.Format("Expected paramName 'TProxy' but received '{0}'", caughtException.ParamName));
+            Assert.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>());
         }
 
         [Fact]
