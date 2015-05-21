@@ -3209,13 +3209,16 @@ log_shutdown (MonoProfiler *prof)
 		fclose (prof->file);
 
 	destroy_hashtable (prof->method_table, &prof->method_table_mutex);
-	destroy_hashtable (coverage_methods, &coverage_methods_mutex);
-	destroy_hashtable (coverage_assemblies, &coverage_assemblies_mutex);
-	destroy_hashtable (coverage_classes, &coverage_classes_mutex);
-	destroy_hashtable (filtered_classes, &filtered_classes_mutex);
-	destroy_hashtable (entered_methods, &entered_methods_mutex);
-	destroy_hashtable (image_to_methods, &image_to_methods_mutex);
-	destroy_hashtable (suppressed_assemblies, &suppressed_assemblies_mutex);
+
+	if (coverage_initialized) {
+		destroy_hashtable (coverage_methods, &coverage_methods_mutex);
+		destroy_hashtable (coverage_assemblies, &coverage_assemblies_mutex);
+		destroy_hashtable (coverage_classes, &coverage_classes_mutex);
+		destroy_hashtable (filtered_classes, &filtered_classes_mutex);
+		destroy_hashtable (entered_methods, &entered_methods_mutex);
+		destroy_hashtable (image_to_methods, &image_to_methods_mutex);
+		destroy_hashtable (suppressed_assemblies, &suppressed_assemblies_mutex);
+	}
 
 	free (prof);
 }
