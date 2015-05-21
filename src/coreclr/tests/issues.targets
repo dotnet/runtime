@@ -1,0 +1,11 @@
+<Project DefaultTargets = "GetListOfTestCmds"
+    xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+    <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\newarr\newarr.cmd" >
+             <Issue>1036</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\lifetime\lifetime2.cmd" >
+             <Issue>1037</Issue>
+        </ExcludeList>
+    </ItemGroup>
+</Project>
