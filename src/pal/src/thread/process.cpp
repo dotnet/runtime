@@ -31,6 +31,7 @@ Abstract:
 #include "pal/dbgmsg.h"
 #include "pal/utils.h"
 #include "pal/misc.h"
+#include "pal/virtual.h"
 
 #include <errno.h>
 #if HAVE_POLL
@@ -39,6 +40,7 @@ Abstract:
 #include "pal/fakepoll.h"
 #endif  // HAVE_POLL
 
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -84,6 +86,16 @@ CObjectType CorUnix::otProcess(
                 CObjectType::ThreadReleaseHasNoSideEffects,
                 CObjectType::NoOwner
                 );
+
+//
+// Helper memory page used by the FlushProcessWriteBuffers
+//
+static int s_helperPage[VIRTUAL_PAGE_SIZE / sizeof(int)] __attribute__((aligned(VIRTUAL_PAGE_SIZE)));
+
+//
+// Mutex to make the FlushProcessWriteBuffersMutex thread safe
+// 
+pthread_mutex_t flushProcessWriteBuffersMutex;
 
 CAllowedObjectTypes aotProcess(otiProcess);
 
@@ -1746,6 +1758,50 @@ OpenProcessExit:
 
 /*++
 Function:
+  InitializeFlushProcessWriteBuffers
+
+Abstract
+  This function initializes data structures needed for the FlushProcessWriteBuffers
+Return
+  TRUE if it succeeded, FALSE otherwise
+--*/
+BOOL InitializeFlushProcessWriteBuffers()
+{
+    // Verify that the s_helperPage is really aligned to the VIRTUAL_PAGE_SIZE
+    _ASSERTE((((SIZE_T)s_helperPage) & (VIRTUAL_PAGE_SIZE - 1)) == 0);
+
+    // Locking the page ensures that it stays in memory during the two mprotect
+    // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
+    // those calls, they would not have the expected effect of generating IPI.
+    int status = mlock(s_helperPage, VIRTUAL_PAGE_SIZE);
+
+    if (status != 0)
+    {
+        return FALSE;
+    }
+
+    status = pthread_mutex_init(&flushProcessWriteBuffersMutex, NULL);
+    if (status != 0)
+    {
+        munlock(s_helperPage, VIRTUAL_PAGE_SIZE);
+    }
+
+    return status == 0;
+}
+
+#define FATAL_ASSERT(e, msg) \
+    do \
+    { \
+        if (!(e)) \
+        { \
+            fprintf(stderr, "FATAL ERROR: " msg); \
+            abort(); \
+        } \
+    } \
+    while(0)
+
+/*++
+Function:
   FlushProcessWriteBuffers
 
 See MSDN doc.
@@ -1753,9 +1809,25 @@ See MSDN doc.
 VOID 
 PALAPI 
 FlushProcessWriteBuffers()
-{
-    // UNIXTODO: Implement this. There seems to be no equivalent on Linux
-    // that could be used in user mode code.   
+{   
+    int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
+    FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
+
+    // Changing a helper memory page protection from read / write to no access 
+    // causes the OS to issue IPI to flush TLBs on all processors. This also
+    // results in flushing the processor buffers.
+    status = mprotect(s_helperPage, VIRTUAL_PAGE_SIZE, PROT_READ | PROT_WRITE);
+    FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
+
+    // Ensure that the page is dirty before we change the protection so that
+    // we prevent the OS from skipping the global TLB flush.
+    InterlockedIncrement(s_helperPage);
+
+    status = mprotect(s_helperPage, VIRTUAL_PAGE_SIZE, PROT_NONE);
+    FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
+
+    status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
+    FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
 }
 
 /*++
