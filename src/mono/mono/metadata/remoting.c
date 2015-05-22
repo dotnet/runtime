@@ -69,8 +69,10 @@ static mono_mutex_t remoting_mutex;
 static gboolean remoting_mutex_inited;
 
 static MonoClass *byte_array_class;
+#ifndef DISABLE_JIT
 static MonoMethod *method_rs_serialize, *method_rs_deserialize, *method_exc_fixexc, *method_rs_appdomain_target;
 static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_rs_serialize_exc;
+#endif
 
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
@@ -147,24 +149,33 @@ mono_remoting_marshal_init (void)
 	if (module_initialized)
 		return;
 
+	byte_array_class = mono_array_class_get (mono_defaults.byte_class, 1);
+
+#ifndef DISABLE_JIT
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting", "RemotingServices");
 	method_rs_serialize = mono_class_get_method_from_name (klass, "SerializeCallData", -1);
+	g_assert (method_rs_serialize);
 	method_rs_deserialize = mono_class_get_method_from_name (klass, "DeserializeCallData", -1);
+	g_assert (method_rs_deserialize);
 	method_rs_serialize_exc = mono_class_get_method_from_name (klass, "SerializeExceptionData", -1);
+	g_assert (method_rs_serialize_exc);
 	
 	klass = mono_defaults.real_proxy_class;
 	method_rs_appdomain_target = mono_class_get_method_from_name (klass, "GetAppDomainTarget", -1);
+	g_assert (method_rs_appdomain_target);
 	
 	klass = mono_defaults.exception_class;
 	method_exc_fixexc = mono_class_get_method_from_name (klass, "FixRemotingException", -1);
-	
-	byte_array_class = mono_array_class_get (mono_defaults.byte_class, 1);
-	
+	g_assert (method_exc_fixexc);
+
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "CallContext");
 	method_set_call_context = mono_class_get_method_from_name (klass, "SetCurrentCallContext", -1);
-	
+	g_assert (method_set_call_context);
+
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Contexts", "Context");
 	method_needs_context_sink = mono_class_get_method_from_name (klass, "get_NeedsContextSink", -1);
+	g_assert (method_needs_context_sink);
+#endif	
 
 	mono_loader_lock ();
 
