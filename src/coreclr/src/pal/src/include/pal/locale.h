@@ -38,8 +38,6 @@ extern "C"
 #define ISO_NAME(region, encoding, part)  region ".ISO" encoding "-" part
 #endif
 
-void InitializeStringResources(void);
-
 #if HAVE_COREFOUNDATION
 #define CF_EXCLUDE_CSTD_HEADERS
 #include <CoreFoundation/CoreFoundation.h>
