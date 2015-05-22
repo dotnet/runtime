@@ -1093,6 +1093,7 @@ public:
     // Initialization/shutdown routines for every instance of an BaseDomain.
 
     BaseDomain();
+    virtual ~BaseDomain() {}
     void Init();
     void Stop();
     void Terminate();

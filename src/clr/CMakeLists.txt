@@ -296,7 +296,6 @@ add_compile_options(-Wno-unknown-warning-option)
 
 #These seem to indicate real issues
 add_compile_options(-Wno-invalid-offsetof)
-add_compile_options(-Wno-delete-non-virtual-dtor)
 # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied 
 # to a struct or a class that has virtual members or a base class. In that case, clang
 # may not generate the same object layout as MSVC.

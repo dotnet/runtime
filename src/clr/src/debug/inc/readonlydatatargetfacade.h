@@ -38,6 +38,7 @@ class ReadOnlyDataTargetFacade : public ICorDebugMutableDataTarget
 {
 public:
     ReadOnlyDataTargetFacade();
+    virtual ~ReadOnlyDataTargetFacade() {}
 
     //
     // IUnknown.

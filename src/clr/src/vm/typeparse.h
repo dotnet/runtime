@@ -79,6 +79,8 @@ public:
         WRAPPER_NO_CONTRACT;
         SString::Startup();
     }
+
+    virtual ~TypeNameFactory() {}
         
 private:
     DWORD m_count;
@@ -310,7 +312,7 @@ public:
         parser.MakeRotorHappy(); 
     }
 
-    ~TypeName();
+    virtual ~TypeName();
     
 public:
 #ifndef FEATURE_CORECLR

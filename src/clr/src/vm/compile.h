@@ -183,6 +183,8 @@ typedef  SHash<ZapperLoaderModuleTableTraits> ZapperLoaderModuleTable;
 class CEECompileInfo : public ICorCompileInfo
 {
   public:
+    virtual ~CEECompileInfo() {}
+    
     HRESULT Startup(     BOOL                     fForceDebug, 
                          BOOL                     fForceProfiling,
                          BOOL                     fForceInstrument);
@@ -571,7 +573,7 @@ class CEEPreloader : public ICorCompilePreloader
   public:
     CEEPreloader(Module *pModule,
                  ICorCompileDataStore *pData);
-    ~CEEPreloader();
+    virtual ~CEEPreloader();
 
     void Preload(CorProfileData * profileData);
     DataImage * GetDataImage() { LIMITED_METHOD_CONTRACT; return m_image; }
