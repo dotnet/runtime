@@ -24,6 +24,8 @@ typedef HRESULT (*FPContinueStatusChanged)(void * pUserData, DWORD dwThreadId, C
 class ShimDataTarget : public ICorDebugMutableDataTarget
 {
 public:
+    virtual ~ShimDataTarget() {}
+
     // Allow hooking an implementation for ContinueStatusChanged.
     void HookContinueStatusChanged(FPContinueStatusChanged fpContinueStatusChanged, void * pUserData);
 

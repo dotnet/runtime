@@ -24,7 +24,7 @@ class Disp :
 {
 public:
     Disp();
-    ~Disp();
+    virtual ~Disp();
 
     // *** IUnknown methods ***
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);

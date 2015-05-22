@@ -104,6 +104,7 @@ public:
     {
         m_cRef=0;
     }
+    virtual ~CLRTestHook() {}
     STDMETHOD(AppDomainStageChanged)(DWORD adid,DWORD oldstage,DWORD newstage){ return S_OK;};
     STDMETHOD(NextFileLoadLevel)(DWORD adid, LPVOID domainfile,DWORD newlevel){ return S_OK;};
     STDMETHOD(CompletingFileLoadLevel)(DWORD adid, LPVOID domainfile,DWORD newlevel){ return S_OK;};

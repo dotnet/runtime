@@ -1093,7 +1093,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    ~CEEInfo()
+    virtual ~CEEInfo()
     {
         LIMITED_METHOD_CONTRACT;
     }

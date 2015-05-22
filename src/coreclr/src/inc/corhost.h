@@ -753,6 +753,7 @@ class CorHost2 :
 
 public:
     CorHost2();
+    virtual ~CorHost2() {}
 
     // *** IUnknown methods ***
     STDMETHODIMP    QueryInterface(REFIID riid, void** ppv);

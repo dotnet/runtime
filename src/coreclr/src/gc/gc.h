@@ -362,6 +362,9 @@ class GCHeap {
 #endif
     
 public:
+
+    virtual ~GCHeap() {}
+
     static GCHeap *GetGCHeap()
     {
 #ifdef CLR_STANDALONE_BINDER

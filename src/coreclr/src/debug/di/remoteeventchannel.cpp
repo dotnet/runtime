@@ -26,6 +26,8 @@ public:
                        DbgTransportTarget *      pProxy, 
                        DbgTransportSession *     pTransport);
 
+    virtual ~RemoteEventChannel() {}
+
     // Inititalize the event channel.
     virtual HRESULT Init(HANDLE hTargetProc);
 
