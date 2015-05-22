@@ -36,6 +36,7 @@ public:
 		: m_cRef(1), m_pfnCreateObject(pfnCreateObject)
 	{ }
 
+	virtual ~CClassFactory() {}
 	
 	//
 	// IUnknown methods.

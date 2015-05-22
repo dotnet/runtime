@@ -26,7 +26,7 @@ public:
 
 
     MDInternalRW();
-    ~MDInternalRW();
+    virtual ~MDInternalRW();
     __checkReturn 
     HRESULT Init(LPVOID pData, ULONG cbData, int bReadOnly);
     __checkReturn 

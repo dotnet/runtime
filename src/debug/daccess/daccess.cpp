@@ -1334,7 +1334,7 @@ SplitName::CdNextField(ClrDataAccess* dac,
                                       fieldTypeHandle);
             if (!*fieldType && tokenScopeRet)
             {
-                delete *tokenScopeRet;
+                delete (ClrDataModule*)*tokenScopeRet;
             }
             return *fieldType ? S_OK : E_OUTOFMEMORY;
         }

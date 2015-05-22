@@ -68,7 +68,7 @@ class SymbolInfo:  IMetaDataEmit,  IMetaDataImport
     ClassProps* FindClass(mdToken cls);
     SignatureProps* FindSignature(SBuffer& sig);
 
-    ~SymbolInfo(); // protected, b/c the lifetime is controlled by refcount
+    virtual ~SymbolInfo(); // protected, b/c the lifetime is controlled by refcount
     
 public:
     SymbolInfo();

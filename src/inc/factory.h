@@ -12,6 +12,7 @@ class Factory
 {
 public:
     virtual PRODUCT* Create() = 0;
+    virtual ~Factory() {}
 };
 
 template<typename PRODUCT, DWORD MAX_FACTORY_PRODUCT = 64>

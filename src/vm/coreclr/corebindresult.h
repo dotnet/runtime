@@ -37,6 +37,7 @@ public:
 
     // CoreBindResult methods
     CoreBindResult() : m_cRef(1) {}
+    virtual ~CoreBindResult() {}
     
     void Init(ICLRPrivAssembly* pAssembly, BOOL bFromGAC, BOOL bIsOnTpaList);	
     void Reset();
