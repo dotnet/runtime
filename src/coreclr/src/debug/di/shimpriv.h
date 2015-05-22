@@ -69,6 +69,7 @@ class ShimProxyCallback :
 
 public:
     ShimProxyCallback(ShimProcess * pShim);
+    virtual ~ShimProxyCallback() {}
 
     // Implement IUnknown
     ULONG STDMETHODCALLTYPE AddRef();
@@ -857,7 +858,7 @@ public:
               CorDebugChainReason chainReason,
               BOOL                fIsManaged,
               RSLock *            pShimLock);
-    ~ShimChain();
+    virtual ~ShimChain();
 
     void Neuter();
     BOOL IsNeutered();
@@ -939,7 +940,7 @@ class ShimChainEnum : public ICorDebugChainEnum
 {
 public:
     ShimChainEnum(ShimStackWalk * pSW, RSLock * pShimLock);
-    ~ShimChainEnum();
+    virtual ~ShimChainEnum();
 
     void Neuter();
     BOOL IsNeutered();
@@ -999,7 +1000,7 @@ class ShimFrameEnum : public ICorDebugFrameEnum
 {
 public:
     ShimFrameEnum(ShimStackWalk * pSW, ShimChain * pChain, UINT32 frameStartIndex, UINT32 frameEndIndex, RSLock * pShimLock);
-    ~ShimFrameEnum();
+    virtual ~ShimFrameEnum();
 
     void Neuter();
     BOOL IsNeutered();

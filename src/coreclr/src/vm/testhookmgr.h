@@ -54,7 +54,7 @@ protected:
     Volatile<LONG> m_nHooks; 
     Volatile<LONG> m_cRef;
     CLRTestHookInfo m_pHooks[MAX_TEST_HOOKS];
-    ~CLRTestHookManager();
+    virtual ~CLRTestHookManager();
 public:
     CLRTestHookManager();
     STDMETHOD(AddTestHook)(ICLRTestHook* hook);

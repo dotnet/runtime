@@ -22,7 +22,7 @@ class MDInternalRO : public IMDInternalImport, IMDCommon
 public:
 
     MDInternalRO();
-    ~MDInternalRO();
+    virtual ~MDInternalRO();
     __checkReturn 
     HRESULT Init(LPVOID pData, ULONG cbData);
 

@@ -494,7 +494,7 @@ void Assembly::Terminate( BOOL signalProfiler )
     if (this->m_fTerminated)
         return;
     
-    delete m_pSharedSecurityDesc;
+    Security::DeleteSharedSecurityDescriptor(m_pSharedSecurityDesc);
     m_pSharedSecurityDesc = NULL;
 
     if (m_pClassLoader != NULL)

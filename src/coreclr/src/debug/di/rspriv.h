@@ -7791,6 +7791,8 @@ public:
     // constructor to initialize an instance of EnregisteredValueHome
     EnregisteredValueHome(const CordbNativeFrame * pFrame);
 
+    virtual ~EnregisteredValueHome() {}
+
     // virtual "copy constructor" to make a copy of "this" to be owned by a different instance of
     // Cordb*Value. If an instance of CordbVCObjectValue represents an enregistered value class, it means
     // there is a single field. This implies that the register for the CordbVCObject instance is the same as
@@ -7803,7 +7805,6 @@ public:
     // note:
     //    C++ allows derived implementations to differ on return type, thus allowing
     //    derived impls to return the cloned copy as its actual derived type, and not just as a base type.
-
 
 
     virtual
@@ -8221,6 +8222,9 @@ class ValueHome
 public:
     ValueHome(CordbProcess * pProcess):
       m_pProcess(pProcess) { _ASSERTE(pProcess != NULL); };
+
+    virtual
+    ~ValueHome() {}
  
     // releases resources as necessary
     virtual
@@ -10147,6 +10151,8 @@ class RCETWorkItem
 {
 public:
 
+    virtual ~RCETWorkItem() {}
+    
     // Item is executed and then removed from the list and deleted.
     virtual void Do() = 0;
 

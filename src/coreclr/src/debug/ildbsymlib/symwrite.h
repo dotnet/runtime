@@ -1167,7 +1167,7 @@ public:
     SymDocumentWriter(UINT32 DocumentEntry,
                       SymWriter  *pEmitter);
 
-    ~SymDocumentWriter();
+    virtual ~SymDocumentWriter();
 
     //-----------------------------------------------------------
     // IUnknown support

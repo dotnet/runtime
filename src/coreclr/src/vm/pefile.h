@@ -508,6 +508,8 @@ protected:
     virtual ~PEFile();
 
     virtual void ReleaseIL();
+#else    
+    virtual ~PEFile() {}
 #endif
 
     void OpenMDImport();

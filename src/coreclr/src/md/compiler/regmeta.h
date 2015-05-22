@@ -1560,7 +1560,7 @@ public:
 //*****************************************************************************
 
     RegMeta();
-    ~RegMeta();
+    virtual ~RegMeta();
 
     HRESULT SetOption(OptionValue *pOptionValue);
 
