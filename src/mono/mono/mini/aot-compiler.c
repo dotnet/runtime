@@ -6582,6 +6582,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("Supported options for --aot:\n");
 			printf ("    outfile=\n");
 			printf ("    llvm-outfile=\n");
+			printf ("    llvm-path=\n");
 			printf ("    save-temps\n");
 			printf ("    keep-temps\n");
 			printf ("    write-symbols\n");
