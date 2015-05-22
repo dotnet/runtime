@@ -130,6 +130,7 @@ typedef struct MonoAotOptions {
 	gboolean autoreg;
 	char *mtriple;
 	char *llvm_path;
+	char *temp_path;
 	char *instances_logfile_path;
 	char *logfile;
 	gboolean dump_json;
@@ -6493,6 +6494,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->outfile = g_strdup (arg + strlen ("outfile="));
 		} else if (str_begins_with (arg, "llvm-outfile=")) {
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
+		} else if (str_begins_with (arg, "temp-path=")) {
+			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
 			opts->save_temps = TRUE;
 		} else if (str_begins_with (arg, "keep-temps")) {
@@ -6583,6 +6586,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    outfile=\n");
 			printf ("    llvm-outfile=\n");
 			printf ("    llvm-path=\n");
+			printf ("    temp-path=\n");
 			printf ("    save-temps\n");
 			printf ("    keep-temps\n");
 			printf ("    write-symbols\n");
