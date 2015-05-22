@@ -139,9 +139,6 @@ publish/
 *.nupkg
 **/packages/*
 
-# NuGet restore cache
-project.lock.json
-
 # Windows Azure Build Output
 csx/
 *.build.csdef
