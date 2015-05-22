@@ -70,7 +70,7 @@ namespace System.Linq.Expressions.Compiler
 
         /// <summary>
         /// Emits an expression and discards the result.  For some nodes this emits
-        /// more optimial code then EmitExpression/Pop
+        /// more optimal code then EmitExpression/Pop
         /// </summary>
         private void EmitExpressionAsVoid(Expression node)
         {
@@ -1068,7 +1068,7 @@ namespace System.Linq.Expressions.Compiler
                     }
                     EmitMethodCall(initializers[i].AddMethod, initializers[i], objectType);
 
-                    // Aome add methods, ArrayList.Add for example, return non-void
+                    // Some add methods, ArrayList.Add for example, return non-void
                     if (initializers[i].AddMethod.ReturnType != typeof(void))
                     {
                         _ilg.Emit(OpCodes.Pop);

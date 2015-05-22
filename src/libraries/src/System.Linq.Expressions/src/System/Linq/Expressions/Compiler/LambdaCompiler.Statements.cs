@@ -229,7 +229,7 @@ namespace System.Linq.Expressions.Compiler
             internal readonly decimal Key;
             internal readonly Label Label;
 
-            // Boxed version of Key, preseving the original type.
+            // Boxed version of Key, preserving the original type.
             internal readonly object Constant;
 
             internal SwitchLabel(decimal key, object @constant, Label label)

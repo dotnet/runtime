@@ -8,7 +8,7 @@ namespace System.Runtime.CompilerServices
     internal sealed class TrueReadOnlyCollection<T> : ReadOnlyCollection<T>
     {
         /// <summary>
-        /// Creates instnace of TrueReadOnlyCollection, wrapping passed in array.
+        /// Creates instance of TrueReadOnlyCollection, wrapping passed in array.
         /// !!! DOES NOT COPY THE ARRAY !!!
         /// </summary>
         public TrueReadOnlyCollection(T[] list)

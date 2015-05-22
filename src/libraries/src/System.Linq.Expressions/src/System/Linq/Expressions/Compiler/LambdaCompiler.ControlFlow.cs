@@ -7,7 +7,7 @@ using System.Dynamic.Utils;
 namespace System.Linq.Expressions.Compiler
 {
     // The part of the LambdaCompiler dealing with low level control flow
-    // break, contiue, return, exceptions, etc
+    // break, continue, return, exceptions, etc
     internal partial class LambdaCompiler
     {
         private LabelInfo EnsureLabel(LabelTarget node)
