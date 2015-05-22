@@ -951,22 +951,6 @@ EXIT:
     return retval;
 }
 
-/*++
- Function :
- InitializeStringResources -
-
-     Initialize the the native resources string support
- --*/
-void InitializeStringResources(void)
-{
-#ifndef __APPLE__
-    // Set the locale for string resources to en_US
-    // UNIXTODO: After we add localized resources, change this to check the current
-    // locale and set it to en_US only if we don't have resources for the current locale.
-    setlocale(LC_MESSAGES, "en_US.UTF-8");
-#endif // __APPLE__
-}
-
 extern char g_szCoreCLRPath[MAX_PATH];
 
 /*++
