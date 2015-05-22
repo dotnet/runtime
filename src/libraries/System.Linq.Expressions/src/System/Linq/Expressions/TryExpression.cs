@@ -165,7 +165,7 @@ namespace System.Linq.Expressions
         /// <summary>
         /// Creates a <see cref="TryExpression"/> representing a try block with the specified elements.
         /// </summary>
-        /// <param name="type">The result type of the try expression. If null, bodh and all handlers must have identical type.</param>
+        /// <param name="type">The result type of the try expression. If null, body and all handlers must have identical type.</param>
         /// <param name="body">The body of the try block.</param>
         /// <param name="finally">The body of the finally block. Pass null if the try block has no finally block associated with it.</param>
         /// <param name="fault">The body of the t block. Pass null if the try block has no fault block associated with it.</param>

@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Compiler
 
         // We don't want "ref" parameters to modify values of expressions
         // except where it would in IL: locals, args, fields, and array elements
-        // (Unbox is an exception, it's intended to emit a ref to the orignal
+        // (Unbox is an exception, it's intended to emit a ref to the original
         // boxed value)
         private void EmitAddress(Expression node, Type type, CompilationFlags flags)
         {

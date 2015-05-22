@@ -121,8 +121,8 @@ namespace System.Linq.Expressions.Compiler
         /// by setting the stack manually between adds.
         /// 
         /// When all children have been added, the caller should rewrite the 
-        /// node if Rewrite is true. Then, it should call Finish with etiher
-        /// the orignal expression or the rewritten expression. Finish will call
+        /// node if Rewrite is true. Then, it should call Finish with either
+        /// the original expression or the rewritten expression. Finish will call
         /// Expression.Comma if necessary and return a new Result.
         /// </summary>
         private class ChildRewriter

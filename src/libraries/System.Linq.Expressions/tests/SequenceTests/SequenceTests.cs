@@ -2107,7 +2107,7 @@ namespace Tests
             UnaryExpression result = Expression.UnaryPlus(ce);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                //unaru Plus Operator
+                //unary Plus Operator
                 byte val = 10;
                 Expression<Func<byte>> e =
                 Expression.Lambda<Func<byte>>(

@@ -18,7 +18,7 @@ namespace System.Runtime.CompilerServices
         /// Creates an interface that can be used to modify closed over variables at runtime.
         /// </summary>
         /// <param name="data">The closure array.</param>
-        /// <param name="indexes">An array of indicies into the closure array where variables are found.</param>
+        /// <param name="indexes">An array of indexes into the closure array where variables are found.</param>
         /// <returns>An interface to access variables.</returns>
         [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static IRuntimeVariables CreateRuntimeVariables(object[] data, long[] indexes)
