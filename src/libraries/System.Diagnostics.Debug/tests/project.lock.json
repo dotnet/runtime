@@ -1,0 +1,261 @@
+{
+  "locked": true,
+  "version": -9997,
+  "targets": {
+    "DNXCore,Version=v5.0": {
+      "Microsoft.DotNet.CoreCLR/1.0.3-prerelease": {
+        "compile": [
+          "lib/aspnetcore50/clretwrc.dll",
+          "lib/aspnetcore50/coreclr.dll",
+          "lib/aspnetcore50/mscordaccore.dll",
+          "lib/aspnetcore50/mscordbi.dll",
+          "lib/aspnetcore50/mscorlib.dll",
+          "lib/aspnetcore50/mscorrc.debug.dll",
+          "lib/aspnetcore50/mscorrc.dll"
+        ],
+        "runtime": [
+          "lib/aspnetcore50/clretwrc.dll",
+          "lib/aspnetcore50/coreclr.dll",
+          "lib/aspnetcore50/mscordaccore.dll",
+          "lib/aspnetcore50/mscordbi.dll",
+          "lib/aspnetcore50/mscorlib.dll",
+          "lib/aspnetcore50/mscorrc.debug.dll",
+          "lib/aspnetcore50/mscorrc.dll"
+        ]
+      },
+      "System.Runtime/4.0.0-beta-22914": {
+        "compile": [
+          "ref/any/System.Runtime.dll"
+        ]
+      },
+      "System.Threading.Tasks/4.0.10-beta-22914": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22914"
+        },
+        "compile": [
+          "ref/any/System.Threading.Tasks.dll"
+        ],
+        "runtime": [
+          "lib/DNXCore50/System.Threading.Tasks.dll"
+        ]
+      },
+      "xunit/2.0.0-beta5-build2785": {
+        "dependencies": {
+          "xunit.core": "[2.0.0-beta5-build2785]",
+          "xunit.assert": "[2.0.0-beta5-build2785]"
+        }
+      },
+      "xunit.abstractions/2.0.0-beta5-build2785": {
+        "compile": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll"
+        ]
+      },
+      "xunit.abstractions.netcore/1.0.0-prerelease": {
+        "compile": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll"
+        ]
+      },
+      "xunit.assert/2.0.0-beta5-build2785": {
+        "compile": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll"
+        ]
+      },
+      "xunit.core/2.0.0-beta5-build2785": {
+        "dependencies": {
+          "xunit.abstractions": "[2.0.0-beta5-build2785]"
+        },
+        "compile": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll"
+        ]
+      },
+      "xunit.core.netcore/1.0.1-prerelease": {
+        "dependencies": {
+          "xunit.abstractions": "[2.0.0-beta5-build2785]"
+        },
+        "compile": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll"
+        ]
+      },
+      "xunit.runner.visualstudio/0.99.9-build1021": {}
+    }
+  },
+  "libraries": {
+    "Microsoft.DotNet.CoreCLR/1.0.3-prerelease": {
+      "sha512": "ZMXRdngD8Gw5cNjx7FrS7F3u08Uut2dkFACX7o60Cv1SJpbIS3PHEoEKM8Td08bHLZu/l+zOMHYQg8ByDS49HQ==",
+      "files": [
+        "Microsoft.DotNet.CoreCLR.1.0.3-prerelease.nupkg",
+        "Microsoft.DotNet.CoreCLR.1.0.3-prerelease.nupkg.sha512",
+        "Microsoft.DotNet.CoreCLR.nuspec",
+        "lib/aspnetcore50/clretwrc.dll",
+        "lib/aspnetcore50/coreclr.dll",
+        "lib/aspnetcore50/corerun.exe",
+        "lib/aspnetcore50/mscordaccore.dll",
+        "lib/aspnetcore50/mscordbi.dll",
+        "lib/aspnetcore50/mscorlib.dll",
+        "lib/aspnetcore50/mscorrc.debug.dll",
+        "lib/aspnetcore50/mscorrc.dll"
+      ]
+    },
+    "System.Runtime/4.0.0-beta-22914": {
+      "sha512": "15tdcVIMV+KYRgL4IEQo9Bf4ybTSoLh4XL1Ovnx0W0pj0SD2T3w1gk6eyDbdKcbSv5qO5XLns/JedmtkbowrVg==",
+      "files": [
+        "License.rtf",
+        "System.Runtime.4.0.0-beta-22914.nupkg",
+        "System.Runtime.4.0.0-beta-22914.nupkg.sha512",
+        "System.Runtime.nuspec",
+        "lib/net45/_._",
+        "lib/win8/_._",
+        "ref/any/System.Runtime.dll",
+        "ref/net45/_._",
+        "ref/win8/_._"
+      ]
+    },
+    "System.Threading.Tasks/4.0.10-beta-22914": {
+      "sha512": "nSj8xbysvaliZaFS6vtRwx4g4fwbeGWGABaYhgNU/4d0Z3UTK0OTLR8b0ChD5FKcbRhauo4NCAavmruvO00rzQ==",
+      "files": [
+        "System.Threading.Tasks.4.0.10-beta-22914.nupkg",
+        "System.Threading.Tasks.4.0.10-beta-22914.nupkg.sha512",
+        "System.Threading.Tasks.nuspec",
+        "lib/DNXCore50/System.Threading.Tasks.dll",
+        "lib/net46/System.Threading.Tasks.dll",
+        "lib/netcore50/System.Threading.Tasks.dll",
+        "ref/any/System.Threading.Tasks.dll",
+        "ref/net46/System.Threading.Tasks.dll",
+        "runtimes/win8-aot/lib/netcore50/System.Threading.Tasks.dll"
+      ]
+    },
+    "xunit/2.0.0-beta5-build2785": {
+      "sha512": "bNycxZe/83M7o7j0IbGp3/daiPLi17hZgYZB6xttgCVDnxgAuw/TP1zetiUTW1yVUPASnAjlkBeJayv/G2Crsw==",
+      "files": [
+        "xunit.2.0.0-beta5-build2785.nupkg",
+        "xunit.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.nuspec"
+      ]
+    },
+    "xunit.abstractions/2.0.0-beta5-build2785": {
+      "sha512": "b2RCnV2/wilCH1dsh7bAF82Ou+Vs+WfYLEItzRUUbD3YHNODx0ncpQwLz1JYjL/voBFc5mQh77hxIbgCGmyxKA==",
+      "files": [
+        "xunit.abstractions.2.0.0-beta5-build2785.nupkg",
+        "xunit.abstractions.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.abstractions.nuspec",
+        "lib/net35/xunit.abstractions.dll",
+        "lib/net35/xunit.abstractions.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.abstractions.xml"
+      ]
+    },
+    "xunit.abstractions.netcore/1.0.0-prerelease": {
+      "sha512": "fajSAvVztuUVSb/o1GxYM5I33Ikvx6CNNscpOnDAl6AnDAKqhOeu3iPTL0VzDhzXiXyOKbRi4iewv4hAWTgeuw==",
+      "files": [
+        "xunit.abstractions.netcore.1.0.0-prerelease.nupkg",
+        "xunit.abstractions.netcore.1.0.0-prerelease.nupkg.sha512",
+        "xunit.abstractions.netcore.nuspec",
+        "lib/net35/xunit.abstractions.dll",
+        "lib/net35/xunit.abstractions.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.abstractions.xml"
+      ]
+    },
+    "xunit.assert/2.0.0-beta5-build2785": {
+      "sha512": "1PTLrP+jLzSIhqO3JzzgPcMPmSyBlFadpFH6v3d2Vm08x/bIYHnF78h20qt6wk/t3wMu7smOsyoNcUFeP2ZnGg==",
+      "files": [
+        "xunit.assert.2.0.0-beta5-build2785.nupkg",
+        "xunit.assert.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.assert.nuspec",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monoandroid+monotouch10/xunit.assert.xml"
+      ]
+    },
+    "xunit.core/2.0.0-beta5-build2785": {
+      "sha512": "3rDhbyvCS1iA20A7uXxYvw3LLa4MtyXUX9Y6i3QjY/dRhIHEZcSxBjBfGP3MjPm900WnsBx2H0ryQo2RWABhhg==",
+      "files": [
+        "xunit.core.2.0.0-beta5-build2785.nupkg",
+        "xunit.core.2.0.0-beta5-build2785.nupkg.sha512",
+        "xunit.core.nuspec",
+        "build/monoandroid/xunit.core.props",
+        "build/monoandroid/xunit.execution.dll",
+        "build/monotouch/xunit.core.props",
+        "build/monotouch/xunit.execution.dll",
+        "build/portable-net45+win+wpa81+wp80+monotouch+monoandroid/xunit.core.props",
+        "build/portable-net45+win+wpa81+wp80+monotouch+monoandroid/xunit.execution.dll",
+        "build/win8/xunit.core.props",
+        "build/win8/xunit.core.targets",
+        "build/win8/xunit.execution.dll",
+        "build/win8/device/xunit.execution.dll",
+        "build/wp8/xunit.core.props",
+        "build/wp8/xunit.core.targets",
+        "build/wp8/xunit.execution.dll",
+        "build/wp8/device/xunit.execution.dll",
+        "build/wpa81/xunit.core.props",
+        "build/wpa81/xunit.core.targets",
+        "build/wpa81/xunit.execution.dll",
+        "build/wpa81/device/xunit.execution.dll",
+        "build/wpa81/device/xunit.execution.pri",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.dll.tdnet",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.core.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.runner.tdnet.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.runner.utility.dll"
+      ]
+    },
+    "xunit.core.netcore/1.0.1-prerelease": {
+      "sha512": "iy2u6WUx6CxSn7ahvJrBOrrpsLphtu1kjDGmyJKOiCmoCPczZEHjPOVL1OCt4V3EWCwS0zypWV8uVSqn1/UM8g==",
+      "files": [
+        "xunit.core.netcore.1.0.1-prerelease.nupkg",
+        "xunit.core.netcore.1.0.1-prerelease.nupkg.sha512",
+        "xunit.core.netcore.nuspec",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.xml",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.dll",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.pdb",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
+      ]
+    },
+    "xunit.runner.visualstudio/0.99.9-build1021": {
+      "sha512": "W6ek3CWXplJa0Bd21yk00D6+cgZxCgWR6vTyUpq8lGcUFRAUiXi0PLxQMq2k7hFBA7epJuxHOjXfVmC+J5p9Tg==",
+      "files": [
+        "xunit.runner.visualstudio.0.99.9-build1021.nupkg",
+        "xunit.runner.visualstudio.0.99.9-build1021.nupkg.sha512",
+        "xunit.runner.visualstudio.nuspec",
+        "build/net20/xunit.runner.visualstudio.props",
+        "build/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/xunit.runner.visualstudio.props",
+        "build/_common/xunit.abstractions.dll",
+        "build/_common/xunit.runner.utility.dll",
+        "build/_common/xunit.runner.visualstudio.testadapter.dll",
+        "build/_common/xunit.runner.visualstudio.testadapter.pdb",
+        "lib/net20/_._",
+        "lib/portable-net45+aspnetcore50+win+wpa81+wp80+monotouch+monoandroid/_._"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "": [
+      "Microsoft.DotNet.CoreCLR >= 1.0.0-prerelease",
+      "System.Threading.Tasks >= 4.0.10-beta-*",
+      "xunit >= 2.0.0-beta5-build2785",
+      "xunit.abstractions.netcore >= 1.0.0-prerelease",
+      "xunit.assert >= 2.0.0-beta5-build2785",
+      "xunit.core.netcore >= 1.0.1-prerelease",
+      "xunit.runner.visualstudio >= 0.99.9-build1021"
+    ],
+    "DNXCore,Version=v5.0": []
+  }
+}

@@ -43,7 +43,7 @@ namespace System.IO
 
             // Attach handle to thread pool
 
-            ThreadPool.BindHandle(_directoryHandle);
+            _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(_directoryHandle);
             _enabled = true;
 
             // Setup IO completion port
@@ -71,6 +71,7 @@ namespace System.IO
             // thus freeing the pinned buffer.
             _stopListening = true;
             _directoryHandle.Dispose();
+            _threadPoolBinding.Dispose();
 
             // Start ignoring all events occurring after this.
             Interlocked.Increment(ref _currentSession);
@@ -88,6 +89,7 @@ namespace System.IO
             if (!IsHandleInvalid)
             {
                 _directoryHandle.Dispose();
+                _threadPoolBinding.Dispose();
             }
         }
 
@@ -97,6 +99,8 @@ namespace System.IO
 
         // Unmanaged handle to monitored directory
         private SafeFileHandle _directoryHandle;
+
+        private ThreadPoolBoundHandle _threadPoolBinding;
 
         // Current "session" ID to ignore old events whenever we stop then restart.
         private int _currentSession;
@@ -123,7 +127,6 @@ namespace System.IO
                 return;
             }
 
-            Overlapped overlapped = new Overlapped();
             if (buffer == null)
             {
                 buffer = AllocateBuffer();
@@ -134,9 +137,7 @@ namespace System.IO
             asyncResult.session = _currentSession;
             asyncResult.buffer = buffer;
 
-            // Pack overlapped. The buffer will be pinned by Overlapped:
-            overlapped.AsyncResult = asyncResult;
-            NativeOverlapped* overlappedPointer = overlapped.Pack(new IOCompletionCallback(this.CompletionStatusChanged), buffer);
+            NativeOverlapped* overlappedPointer = _threadPoolBinding.AllocateNativeOverlapped(new IOCompletionCallback(this.CompletionStatusChanged), asyncResult, buffer);
 
             // Can now call OS:
             int size;
@@ -175,7 +176,7 @@ namespace System.IO
             {
                 if (!ok)
                 {
-                    Overlapped.Free(overlappedPointer);
+                    _threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
 
                     // If the handle was for some reason changed or closed during this call, then don't throw an
                     // exception.  Else, it's a valid error.
@@ -193,8 +194,7 @@ namespace System.IO
         /// <internalonly/>
         private unsafe void CompletionStatusChanged(uint errorCode, uint numBytes, NativeOverlapped* overlappedPointer)
         {
-            Overlapped overlapped = Overlapped.Unpack(overlappedPointer);
-            FSWAsyncResult asyncResult = (FSWAsyncResult)overlapped.AsyncResult;
+            FSWAsyncResult asyncResult = (FSWAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer);
 
             try
             {
@@ -354,7 +354,7 @@ namespace System.IO
             }
             finally
             {
-                Overlapped.Free(overlappedPointer);
+                _threadPoolBinding.FreeNativeOverlapped(overlappedPointer);
                 if (!_stopListening)
                 {
                     Monitor(asyncResult.buffer);

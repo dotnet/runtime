@@ -161,22 +161,23 @@ namespace System.IO
             // & GC handles there, one to an IAsyncResult, the other to a delegate.)
             if (_isAsync)
             {
-                bool b = false;
                 try
                 {
-                    b = ThreadPool.BindHandle(_handle);
+                    _handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new IOException(SR.IO_BindHandleFailed, ex);
                 }
                 finally
                 {
-                    if (!b)
+                    if (_handle.ThreadPoolBinding == null)
                     {
                         // We should close the handle so that the handle is not open until SafeFileHandle GC
                         Debug.Assert(!_exposedHandle, "Are we closing handle that we exposed/not own, how?");
                         _handle.Dispose();
                     }
                 }
-                if (!b)
-                    throw new IOException(SR.IO_BindHandleFailed);
             }
 #endif
 
@@ -267,20 +268,15 @@ namespace System.IO
             // bound to a single completion port at a time.
             if (_isAsync && !suppressBindHandle)
             {
-                bool b = false;
                 try
                 {
-                    b = ThreadPool.BindHandle(_handle);
+                    _handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_handle);
                 }
                 catch (Exception ex)
                 {
                     // If you passed in a synchronous handle and told us to use
                     // it asynchronously, throw here.
                     throw new ArgumentException(SR.Arg_HandleNotAsync, ex);
-                }
-                if (!b)
-                {
-                    throw new IOException(SR.IO_BindHandleFailed);
                 }
             }
             else if (!_isAsync)
@@ -497,6 +493,11 @@ namespace System.IO
             {
                 if (_handle != null && !_handle.IsClosed)
                     _handle.Dispose();
+
+#if USE_OVERLAPPED
+                if (_handle.ThreadPoolBinding != null)
+                    _handle.ThreadPoolBinding.Dispose();
+#endif
 
                 _canRead = false;
                 _canWrite = false;
@@ -1212,7 +1213,7 @@ namespace System.IO
 
             // Create and store async stream class library specific data in the async result
 
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _handle, cancellationToken);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(numBufferedBytesRead, bytes, _handle.ThreadPoolBinding, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -1408,7 +1409,7 @@ namespace System.IO
             Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _handle, cancellationToken);
+            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(0, bytes, _handle.ThreadPoolBinding, cancellationToken);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (_parent.CanSeek)

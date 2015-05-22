@@ -14,6 +14,8 @@ namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
+        private ThreadPoolBoundHandle _threadPoolBinding;
+
         internal static string GetPipePath(string serverName, string pipeName)
         {
             string normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);
@@ -41,10 +43,13 @@ namespace System.IO.Pipes
         {
             // If the handle is of async type, bind the handle to the ThreadPool so that we can use 
             // the async operations (it's needed so that our native callbacks get called).
-            if (!ThreadPool.BindHandle(handle))
-            {
-                throw new IOException(SR.IO_BindHandleFailed);
-            }
+            _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
+        }
+
+        private void UninitializeAsyncHandle()
+        {
+            if (_threadPoolBinding != null)
+                _threadPoolBinding.Dispose();
         }
 
         [SecurityCritical]
@@ -364,14 +369,7 @@ namespace System.IO.Pipes
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
                 asyncResult._waitHandle = waitHandle;
 
-                // Create a managed overlapped class; set the file offsets later
-                Overlapped overlapped = new Overlapped();
-                overlapped.OffsetLow = 0;
-                overlapped.OffsetHigh = 0;
-                overlapped.AsyncResult = asyncResult;
-
-                // Pack the Overlapped class, and store it in the async result
-                NativeOverlapped* intOverlapped = overlapped.Pack(s_IOCallback, buffer);
+                NativeOverlapped* intOverlapped = _threadPoolBinding.AllocateNativeOverlapped(s_IOCallback, asyncResult, buffer);
                 asyncResult._overlapped = intOverlapped;
 
                 int errorCode = 0;
@@ -392,7 +390,7 @@ namespace System.IO.Pipes
                 if (r == -1 && errorCode != Interop.mincore.Errors.ERROR_IO_PENDING)
                 {
                     // Clean up
-                    if (intOverlapped != null) Overlapped.Free(intOverlapped);
+                    if (intOverlapped != null) _threadPoolBinding.FreeNativeOverlapped(intOverlapped);
                     WinIOError(errorCode);
                 }
 
@@ -468,7 +466,7 @@ namespace System.IO.Pipes
             NativeOverlapped* overlappedPtr = afsar._overlapped;
             if (overlappedPtr != null)
             {
-                Overlapped.Free(overlappedPtr);
+                _threadPoolBinding.FreeNativeOverlapped(overlappedPtr);
             }
 
             // Now check for any error during the write.
@@ -746,17 +744,7 @@ namespace System.IO.Pipes
                 ManualResetEvent waitHandle = new ManualResetEvent(false);
                 asyncResult._waitHandle = waitHandle;
 
-                // Create a managed overlapped class; set the file offsets later
-                Overlapped overlapped = new Overlapped();
-                overlapped.OffsetLow = 0;
-                overlapped.OffsetHigh = 0;
-                overlapped.AsyncResult = asyncResult;
-
-                // Pack the Overlapped class, and store it in the async result
-                NativeOverlapped* intOverlapped;
-                intOverlapped = overlapped.Pack(s_IOCallback, buffer);
-
-
+                NativeOverlapped* intOverlapped = _threadPoolBinding.AllocateNativeOverlapped(s_IOCallback, asyncResult, buffer);
                 asyncResult._overlapped = intOverlapped;
 
                 // Queue an async ReadFile operation and pass in a packed overlapped
@@ -867,7 +855,7 @@ namespace System.IO.Pipes
             NativeOverlapped* overlappedPtr = afsar._overlapped;
             if (overlappedPtr != null)
             {
-                Overlapped.Free(overlappedPtr);
+                _threadPoolBinding.FreeNativeOverlapped(overlappedPtr);
             }
 
             // Now check for any error during the read.
@@ -910,12 +898,8 @@ namespace System.IO.Pipes
         [SecurityCritical]
         unsafe private static void AsyncPSCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
         {
-            // Unpack overlapped
-            Overlapped overlapped = Overlapped.Unpack(pOverlapped);
-            // Free the overlapped struct in EndRead/EndWrite.
-
             // Extract async result from overlapped 
-            PipeStreamAsyncResult asyncResult = (PipeStreamAsyncResult)overlapped.AsyncResult;
+            PipeStreamAsyncResult asyncResult = (PipeStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
             asyncResult._numBytes = (int)numBytes;
 
             // Allow async read to finish
