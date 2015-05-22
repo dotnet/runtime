@@ -271,7 +271,7 @@ namespace System.Text.Encodings.Web
         {
             if (ranges == null)
             {
-                throw new ArgumentNullException("range");
+                throw new ArgumentNullException("ranges");
             }
 
             for (int i = 0; i < ranges.Length; i++)
