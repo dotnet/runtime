@@ -6465,6 +6465,21 @@ add_readonly_value (MonoAotOptions *opts, const char *val)
 	readonly_values = rdv;
 }
 
+static gchar *
+clean_path (gchar * path)
+{
+	if (!path)
+		return NULL;
+
+	if (g_str_has_suffix (path, G_DIR_SEPARATOR_S))
+		return path;
+
+	gchar *clean = g_strconcat (path, G_DIR_SEPARATOR_S, NULL);
+	g_free (path);
+
+	return clean;
+}
+
 static void
 mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 {
@@ -6551,12 +6566,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "mtriple=")) {
 			opts->mtriple = g_strdup (arg + strlen ("mtriple="));
 		} else if (str_begins_with (arg, "llvm-path=")) {
-			opts->llvm_path = g_strdup (arg + strlen ("llvm-path="));
-			if (!g_str_has_suffix (opts->llvm_path, G_DIR_SEPARATOR_S)) {
-				gchar *old = opts->llvm_path;
-				opts->llvm_path = g_strconcat (opts->llvm_path, G_DIR_SEPARATOR_S, NULL);
-				g_free (old);
-			}
+			opts->llvm_path = clean_path (g_strdup (arg + strlen ("llvm-path=")));
 		} else if (!strcmp (arg, "llvm")) {
 			opts->llvm = TRUE;
 		} else if (str_begins_with (arg, "readonly-value=")) {
