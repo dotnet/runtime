@@ -642,7 +642,7 @@ unlink_slot_from_free_list_uncontested (MSBlockInfo * volatile *free_blocks, int
 	return obj;
 }
 
-static void*
+static GCObject*
 alloc_obj (GCVTable vtable, size_t size, gboolean pinned, gboolean has_references)
 {
 	int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
@@ -662,7 +662,7 @@ alloc_obj (GCVTable vtable, size_t size, gboolean pinned, gboolean has_reference
 	return obj;
 }
 
-static void*
+static GCObject*
 major_alloc_object (GCVTable vtable, size_t size, gboolean has_references)
 {
 	return alloc_obj (vtable, size, FALSE, has_references);
@@ -711,7 +711,7 @@ major_free_non_pinned_object (GCObject *obj, size_t size)
 }
 
 /* size is a multiple of SGEN_ALLOC_ALIGN */
-static void*
+static GCObject*
 major_alloc_small_pinned_obj (GCVTable vtable, size_t size, gboolean has_references)
 {
 	void *res;
@@ -736,10 +736,10 @@ free_pinned_object (GCObject *obj, size_t size)
 /*
  * size is already rounded up and we hold the GC lock.
  */
-static void*
+static GCObject*
 major_alloc_degraded (GCVTable vtable, size_t size)
 {
-	void *obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
+	GCObject *obj = alloc_obj (vtable, size, FALSE, SGEN_VTABLE_HAS_REFERENCES (vtable));
 	if (G_LIKELY (obj)) {
 		HEAVY_STAT (++stat_objects_alloced_degraded);
 		HEAVY_STAT (stat_bytes_alloced_degraded += size);

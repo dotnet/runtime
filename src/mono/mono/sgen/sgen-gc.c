@@ -594,7 +594,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 	sgen_nursery_allocator_prepare_for_pinning ();
 
 	while (start < end) {
-		void *obj_to_pin = NULL;
+		GCObject *obj_to_pin = NULL;
 		size_t obj_to_pin_size = 0;
 		SgenDescriptor desc;
 
@@ -669,7 +669,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 
 				if (addr >= search_start && (char*)addr < (char*)search_start + obj_size) {
 					/* This is the object we're looking for. */
-					obj_to_pin = search_start;
+					obj_to_pin = (GCObject*)search_start;
 					obj_to_pin_size = canarified_obj_size;
 					break;
 				}
@@ -695,7 +695,7 @@ pin_objects_from_nursery_pin_queue (gboolean do_scan_objects, ScanCopyContext ct
 		 * If this is a dummy array marking the beginning of a nursery
 		 * fragment, we don't pin it.
 		 */
-		if (sgen_client_object_is_array_fill ((GCObject*)obj_to_pin))
+		if (sgen_client_object_is_array_fill (obj_to_pin))
 			goto next_pin_queue_entry;
 
 		/*
@@ -744,7 +744,7 @@ pin_objects_in_nursery (gboolean do_scan_objects, ScanCopyContext ctx)
  * when we can't promote an object because we're out of memory.
  */
 void
-sgen_pin_object (void *object, GrayQueue *queue)
+sgen_pin_object (GCObject *object, GrayQueue *queue)
 {
 	/*
 	 * All pinned objects are assumed to have been staged, so we need to stage as well.
@@ -1045,7 +1045,7 @@ scan_finalizer_entries (SgenPointerQueue *fin_queue, ScanCopyContext ctx)
 	size_t i;
 
 	for (i = 0; i < fin_queue->next_slot; ++i) {
-		void *obj = fin_queue->data [i];
+		GCObject *obj = fin_queue->data [i];
 		if (!obj)
 			continue;
 		SGEN_LOG (5, "Scan of fin ready object: %p (%s)\n", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
@@ -2468,7 +2468,7 @@ report_internal_mem_usage (void)
  * Return TRUE if @obj is ready to be finalized.
  */
 static inline gboolean
-sgen_is_object_alive (void *object)
+sgen_is_object_alive (GCObject *object)
 {
 	if (ptr_in_nursery (object))
 		return sgen_nursery_is_object_alive (object);
@@ -2495,7 +2495,7 @@ sgen_is_object_alive_and_on_current_collection (GCObject *object)
 
 
 gboolean
-sgen_gc_is_object_ready_for_finalization (void *object)
+sgen_gc_is_object_ready_for_finalization (GCObject *object)
 {
 	return !sgen_is_object_alive (object);
 }
@@ -2511,7 +2511,7 @@ sgen_queue_finalization_entry (GCObject *obj)
 }
 
 gboolean
-sgen_object_is_live (void *obj)
+sgen_object_is_live (GCObject *obj)
 {
 	return sgen_is_object_alive_and_on_current_collection (obj);
 }
@@ -2538,7 +2538,7 @@ sgen_gc_invoke_finalizers (void)
 
 	/* FIXME: batch to reduce lock contention */
 	while (sgen_have_pending_finalizers ()) {
-		void *obj;
+		GCObject *obj;
 
 		LOCK_GC;
 

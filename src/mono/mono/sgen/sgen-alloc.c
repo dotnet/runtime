@@ -93,10 +93,10 @@ static __thread char **tlab_next_addr MONO_ATTR_USED;
 #define TLAB_REAL_END	(__thread_info__->tlab_real_end)
 #endif
 
-static void*
+static GCObject*
 alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)
 {
-	void *p;
+	GCObject *p;
 
 	if (!for_mature) {
 		sgen_client_degraded_allocation (size);
@@ -145,7 +145,7 @@ zero_tlab_if_necessary (void *p, size_t size)
  * so when we scan the thread stacks for pinned objects, we can start
  * a search for the pinned object in SGEN_SCAN_START_SIZE chunks.
  */
-void*
+GCObject*
 sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 {
 	/* FIXME: handle OOM */
@@ -219,7 +219,7 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 			g_assert (*p == NULL);
 			mono_atomic_store_seq (p, vtable);
 
-			return p;
+			return (GCObject*)p;
 		}
 
 		/* Slow path */
@@ -326,10 +326,10 @@ sgen_alloc_obj_nolock (GCVTable vtable, size_t size)
 		mono_atomic_store_seq (p, vtable);
 	}
 
-	return p;
+	return (GCObject*)p;
 }
 
-void*
+GCObject*
 sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 {
 	void **p;
@@ -414,13 +414,13 @@ sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size)
 
 	mono_atomic_store_seq (p, vtable);
 
-	return p;
+	return (GCObject*)p;
 }
 
-void*
+GCObject*
 sgen_alloc_obj (GCVTable vtable, size_t size)
 {
-	void *res;
+	GCObject *res;
 	TLAB_ACCESS_INIT;
 
 	if (!SGEN_CAN_ALIGN_UP (size))
@@ -465,10 +465,10 @@ sgen_alloc_obj (GCVTable vtable, size_t size)
  * To be used for interned strings and possibly MonoThread, reflection handles.
  * We may want to explicitly free these objects.
  */
-void*
+GCObject*
 sgen_alloc_obj_pinned (GCVTable vtable, size_t size)
 {
-	void **p;
+	GCObject *p;
 
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;
@@ -491,10 +491,10 @@ sgen_alloc_obj_pinned (GCVTable vtable, size_t size)
 	return p;
 }
 
-void*
+GCObject*
 sgen_alloc_obj_mature (GCVTable vtable, size_t size)
 {
-	void *res;
+	GCObject *res;
 
 	if (!SGEN_CAN_ALIGN_UP (size))
 		return NULL;

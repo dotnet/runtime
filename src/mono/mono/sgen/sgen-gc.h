@@ -535,7 +535,7 @@ sgen_nursery_is_object_alive (GCObject *obj)
 typedef struct {
 	gboolean is_split;
 
-	char* (*alloc_for_promotion) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
+	GCObject* (*alloc_for_promotion) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
 
 	SgenObjectOperations serial_ops;
 
@@ -560,7 +560,7 @@ void sgen_split_nursery_init (SgenMinorCollector *collector);
 #ifdef SGEN_CHECK_UPDATE_REFERENCE
 gboolean sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId some_thread) MONO_INTERNAL;
 static inline void
-sgen_update_reference (void **p, void *o, gboolean allow_null)
+sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 {
 	if (!allow_null)
 		SGEN_ASSERT (0, o, "Cannot update a reference with a NULL pointer");
@@ -568,10 +568,10 @@ sgen_update_reference (void **p, void *o, gboolean allow_null)
 	*p = o;
 }
 
-#define SGEN_UPDATE_REFERENCE_ALLOW_NULL(p,o)	sgen_update_reference ((void**)(p), (void*)(o), TRUE)
-#define SGEN_UPDATE_REFERENCE(p,o)		sgen_update_reference ((void**)(p), (void*)(o), FALSE)
+#define SGEN_UPDATE_REFERENCE_ALLOW_NULL(p,o)	sgen_update_reference ((GCObject**)(p), (GCObject*)(o), TRUE)
+#define SGEN_UPDATE_REFERENCE(p,o)		sgen_update_reference ((GCObject**)(p), (GCObject*)(o), FALSE)
 #else
-#define SGEN_UPDATE_REFERENCE_ALLOW_NULL(p,o)	(*(void**)(p) = (void*)(o))
+#define SGEN_UPDATE_REFERENCE_ALLOW_NULL(p,o)	(*(GCObject**)(p) = (GCObject*)(o))
 #define SGEN_UPDATE_REFERENCE(p,o)		SGEN_UPDATE_REFERENCE_ALLOW_NULL ((p), (o))
 #endif
 
@@ -613,15 +613,15 @@ struct _SgenMajorCollector {
 
 	void* (*alloc_heap) (mword nursery_size, mword nursery_align, int nursery_bits);
 	gboolean (*is_object_live) (GCObject *obj);
-	void* (*alloc_small_pinned_obj) (GCVTable vtable, size_t size, gboolean has_references);
-	void* (*alloc_degraded) (GCVTable vtable, size_t size);
+	GCObject* (*alloc_small_pinned_obj) (GCVTable vtable, size_t size, gboolean has_references);
+	GCObject* (*alloc_degraded) (GCVTable vtable, size_t size);
 
 	SgenObjectOperations major_ops_serial;
 	SgenObjectOperations major_ops_concurrent_start;
 	SgenObjectOperations major_ops_concurrent;
 	SgenObjectOperations major_ops_concurrent_finish;
 
-	void* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
+	GCObject* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
 	void (*free_pinned_object) (GCObject *obj, size_t size);
 
 	/*
@@ -763,7 +763,7 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
 #include "metadata/sgen-client-mono.h"
 #endif
 
-gboolean sgen_object_is_live (void *obj);
+gboolean sgen_object_is_live (GCObject *obj);
 
 void  sgen_init_fin_weak_hash (void);
 
@@ -781,7 +781,7 @@ typedef gboolean (*SgenObjectPredicateFunc) (GCObject *obj, void *user_data);
 
 void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int generation);
 
-gboolean sgen_gc_is_object_ready_for_finalization (void *object);
+gboolean sgen_gc_is_object_ready_for_finalization (GCObject *object);
 void sgen_gc_lock (void);
 void sgen_gc_unlock (void);
 
@@ -810,7 +810,7 @@ enum {
 	SPACE_LOS
 };
 
-void sgen_pin_object (void *object, SgenGrayQueue *queue);
+void sgen_pin_object (GCObject *object, SgenGrayQueue *queue);
 void sgen_set_pinned_from_failed_allocation (mword objsize);
 
 void sgen_ensure_free_space (size_t size);
@@ -891,10 +891,10 @@ void sgen_nursery_retire_region (void *address, ptrdiff_t size);
 void sgen_nursery_alloc_prepare_for_minor (void);
 void sgen_nursery_alloc_prepare_for_major (void);
 
-char* sgen_alloc_for_promotion (GCObject *obj, size_t objsize, gboolean has_references);
+GCObject* sgen_alloc_for_promotion (GCObject *obj, size_t objsize, gboolean has_references);
 
-void* sgen_alloc_obj_nolock (GCVTable vtable, size_t size);
-void* sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size);
+GCObject* sgen_alloc_obj_nolock (GCVTable vtable, size_t size);
+GCObject* sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size);
 
 /* Threads */
 
@@ -980,9 +980,9 @@ typedef enum {
 void sgen_init_tlab_info (SgenThreadInfo* info);
 void sgen_clear_tlabs (void);
 
-void* sgen_alloc_obj (GCVTable vtable, size_t size);
-void* sgen_alloc_obj_pinned (GCVTable vtable, size_t size);
-void* sgen_alloc_obj_mature (GCVTable vtable, size_t size);
+GCObject* sgen_alloc_obj (GCVTable vtable, size_t size);
+GCObject* sgen_alloc_obj_pinned (GCVTable vtable, size_t size);
+GCObject* sgen_alloc_obj_mature (GCVTable vtable, size_t size);
 
 /* Debug support */
 

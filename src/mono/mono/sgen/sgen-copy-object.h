@@ -64,7 +64,7 @@ copy_object_no_checks (void *obj, SgenGrayQueue *queue)
 	gboolean has_references = SGEN_VTABLE_HAS_REFERENCES (vt);
 	mword objsize = SGEN_ALIGN_UP (sgen_client_par_object_get_size (vt, obj));
 	/* FIXME: Does this not mark the newly allocated object? */
-	char *destination = COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION (vt, obj, objsize, has_references);
+	void *destination = COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION (vt, obj, objsize, has_references);
 
 	if (G_UNLIKELY (!destination)) {
 		/* FIXME: Is this path ever tested? */

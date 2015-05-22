@@ -258,7 +258,7 @@ alloc_for_promotion_slow_path (int age, size_t objsize)
 	return p;
 }
 
-static inline char*
+static inline GCObject*
 alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
 	char *p = NULL;
@@ -283,10 +283,10 @@ alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean ha
 	/* FIXME: assumes object layout */
 	*(GCVTable*)p = vtable;
 
-	return p;
+	return (GCObject*)p;
 }
 
-static char*
+static GCObject*
 minor_alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
 	/*
