@@ -670,6 +670,11 @@ PAL_InitializeCoreCLR(
         return ERROR_DLL_INIT_FAILED;
     }
 
+    if (!InitializeFlushProcessWriteBuffers())
+    {
+        return ERROR_GEN_FAILURE;
+    }
+
     if (!fStayInPAL)
     {
         PAL_Leave(PAL_BoundaryTop);
