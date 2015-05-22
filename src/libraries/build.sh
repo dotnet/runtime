@@ -8,7 +8,16 @@ __nugetconfig=$__sourceroot/NuGet.Config
 __msbuildpackageid="Microsoft.Build.Mono.Debug"
 __msbuildpackageversion="14.1.0.0-prerelease"
 __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MSBuild.exe
-__referenceassemblyroot=/usr/lib/mono/xbuild-frameworks
+
+if [ $(uname) == "Linux" ]; then
+    __monoroot=/usr
+else
+    __monoroot=/Library/Frameworks/Mono.framework/Versions/Current
+fi
+
+__referenceassemblyroot=$__monoroot/lib/mono/xbuild-frameworks
+
+
 __monoversion=$(mono --version | grep "version 4.[1-9]")
 
 if [ $? -ne 0 ]; then
