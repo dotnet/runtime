@@ -1033,7 +1033,7 @@ namespace System.Collections.Concurrent
                 //key exists, try to update
                 {
                     TValue newValue = updateValueFactory(key, oldValue);
-                    if (TryUpdate(key, newValue, oldValue))
+                    if (TryUpdateInternal(key, hashcode, newValue, oldValue))
                     {
                         return newValue;
                     }
@@ -1080,7 +1080,7 @@ namespace System.Collections.Concurrent
                 //key exists, try to update
                 {
                     TValue newValue = updateValueFactory(key, oldValue);
-                    if (TryUpdate(key, newValue, oldValue))
+                    if (TryUpdateInternal(key, hashcode, newValue, oldValue))
                     {
                         return newValue;
                     }
