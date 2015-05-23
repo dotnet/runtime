@@ -547,21 +547,19 @@ namespace System.IO
                                 {
                                     // Use full path plus a trailing '\'
                                     String mountPoint = Path.Combine(fullPath, data.cFileName + PathHelpers.DirectorySeparatorCharAsString);
-                                    r = Interop.mincore.DeleteVolumeMountPoint(mountPoint);
-                                    if (!r)
+                                    errorCode = Helpers.DeleteVolumeMountPoint(mountPoint);
+                                    
+                                    if (errorCode != Interop.mincore.Errors.ERROR_SUCCESS && 
+                                        errorCode != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
                                     {
-                                        errorCode = Marshal.GetLastWin32Error();
-                                        if (errorCode != Interop.mincore.Errors.ERROR_PATH_NOT_FOUND)
+                                        try
                                         {
-                                            try
-                                            {
-                                                throw Win32Marshal.GetExceptionForWin32Error(errorCode, data.cFileName);
-                                            }
-                                            catch (Exception e)
-                                            {
-                                                if (ex == null)
-                                                    ex = e;
-                                            }
+                                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, data.cFileName);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            if (ex == null)
+                                                ex = e;
                                         }
                                     }
                                 }
