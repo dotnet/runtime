@@ -30,4 +30,14 @@ internal static partial class Helpers
 
         return Interop.mincore.Errors.ERROR_SUCCESS;
     }
+
+    internal static int DeleteVolumeMountPoint(string mountPoint)
+    {
+        if (!Interop.mincore.DeleteVolumeMountPoint(mountPoint))
+        {
+            return Marshal.GetLastWin32Error();
+        }
+
+        return Interop.mincore.Errors.ERROR_SUCCESS;
+    }
 }
