@@ -141,7 +141,7 @@ namespace System.Linq.Expressions
         /// </summary>
         /// <param name="instance">The object to which the property belongs. Should be null if the property is static(shared).</param>
         /// <param name="indexer">An <see cref="Expression"/> representing the property to index.</param>
-        /// <param name="arguments">An IEnumerable{Expression} contaning the arguments to be used to index the property.</param>
+        /// <param name="arguments">An IEnumerable{Expression} containing the arguments to be used to index the property.</param>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
         public static IndexExpression MakeIndex(Expression instance, PropertyInfo indexer, IEnumerable<Expression> arguments)
         {

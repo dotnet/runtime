@@ -14,7 +14,7 @@ namespace System.Linq.Expressions.Compiler
 {
     /// <summary>
     /// LambdaCompiler is responsible for compiling individual lambda (LambdaExpression). The complete tree may
-    /// contain multiple lambdas, the Compiler class is reponsible for compiling the whole tree, individual
+    /// contain multiple lambdas, the Compiler class is responsible for compiling the whole tree, individual
     /// lambdas are then compiled by the LambdaCompiler.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
@@ -262,14 +262,14 @@ namespace System.Linq.Expressions.Compiler
         private FieldBuilder CreateStaticField(string name, Type type)
         {
             // We are emitting into someone else's type. We don't want name
-            // conflicts, so choose a long name that is unlikely to confict.
+            // conflicts, so choose a long name that is unlikely to conflict.
             // Naming scheme chosen here is similar to what the C# compiler
             // uses.
             return _typeBuilder.DefineField("<ExpressionCompilerImplementationDetails>{" + Interlocked.Increment(ref s_counter) + "}" + name, type, FieldAttributes.Static | FieldAttributes.Private);
         }
 
         /// <summary>
-        /// Creates an unitialized field suitible for private implementation details
+        /// Creates an unitialized field suitable for private implementation details
         /// Works with DynamicMethods or TypeBuilders.
         /// </summary>
         private MemberExpression CreateLazyInitializedField<T>(string name)
