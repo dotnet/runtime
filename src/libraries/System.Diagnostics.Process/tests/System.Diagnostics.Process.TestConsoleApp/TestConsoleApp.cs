@@ -31,6 +31,18 @@ namespace System.Diagnostics.ProcessTests
                     Console.WriteLine(Name + " closed");
                     Sleep();
                 }
+                else if (args[0].Equals("byteAtATime"))
+                {
+                    var stdout = Console.OpenStandardOutput();
+                    var bytes = new byte[] { 97, 0 }; //Encoding.Unicode.GetBytes("a");
+
+                    for (int i = 0; i != bytes.Length; ++i)
+                    {
+                        stdout.WriteByte(bytes[i]);
+                        stdout.Flush();
+                        Sleep(100);
+                    }
+                }
                 else
                 {
                     Console.WriteLine(string.Join(" ", args));
