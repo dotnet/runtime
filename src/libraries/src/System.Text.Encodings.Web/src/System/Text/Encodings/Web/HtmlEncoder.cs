@@ -102,16 +102,18 @@ namespace System.Text.Encodings.Web
         {
             Debug.Assert(buffer != null && bufferLength >= 0);
 
-            // We're building the characters up in reverse
-            char* chars = stackalloc char[8 /* "FFFFFFFF" */];
+            // We're writing the characters in reverse, first determine
+            // how many there are
+            const int nibbleSize = 4;
             int numberOfHexCharacters = 0;
+            int compareUnicodeScalar = unicodeScalar;
+
             do
             {
                 Debug.Assert(numberOfHexCharacters < 8, "Couldn't have written 8 characters out by this point.");
-                // Pop off the last nibble
-                chars[numberOfHexCharacters++] = HexUtil.Int32LsbToHexDigit(unicodeScalar & 0xF);
-                unicodeScalar >>= 4;
-            } while (unicodeScalar != 0);
+                numberOfHexCharacters++;
+                compareUnicodeScalar >>= nibbleSize;
+            } while (compareUnicodeScalar != 0);
 
             numberOfCharactersWritten = numberOfHexCharacters + 4; // four chars are &, #, x, and ;
             Debug.Assert(numberOfHexCharacters > 0, "At least one character should've been written.");
@@ -127,14 +129,18 @@ namespace System.Text.Encodings.Web
             *buffer = '#';
             buffer++;
             *buffer = 'x';
-            buffer++;
+
+            // Jump to the end of the hex position and write backwards
+            buffer += numberOfHexCharacters;
             do
             {
-                *buffer = chars[--numberOfHexCharacters];
-                buffer++;
+                *buffer = HexUtil.Int32LsbToHexDigit(unicodeScalar & 0xF);
+                unicodeScalar >>= nibbleSize;
+                buffer--;
             }
-            while (numberOfHexCharacters != 0);
+            while (unicodeScalar != 0);
 
+            buffer += numberOfHexCharacters + 1;
             *buffer = ';';
             return true;
         }
