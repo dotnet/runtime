@@ -19,7 +19,7 @@ namespace System.Linq.Expressions.Compiler
         /// <summary>
         /// Constants can emit themselves as different types
         /// For caching purposes, we need to treat each distinct Type as a
-        /// seperate thing to cache. (If we have to cast it on the way out, it
+        /// separate thing to cache. (If we have to cast it on the way out, it
         /// ends up using a JIT temp and defeats the purpose of caching the
         /// value in a local)
         /// </summary>

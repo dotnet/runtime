@@ -275,7 +275,7 @@ namespace System.Linq.Expressions.Compiler
                     _ilg.Emit(OpCodes.Ldc_R8, 1.0d);
                     break;
                 default:
-                    // we only have to worry about aritmetic types, see
+                    // we only have to worry about arithmetic types, see
                     // TypeUtils.IsArithmetic
                     throw ContractUtils.Unreachable;
             }

@@ -192,7 +192,7 @@ namespace System.Linq.Expressions.Compiler
                 }
             }
 
-            // Valdiate that we aren't jumping into a catch or an expression
+            // Validate that we aren't jumping into a catch or an expression
             for (LabelScopeInfo j = def; j != common; j = j.Parent)
             {
                 if (!j.CanJumpInto)
