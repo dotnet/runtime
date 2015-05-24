@@ -119,5 +119,32 @@ namespace System.Globalization.Extensions.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static void TestEquals(bool allowUnassigned, bool useStd3AsciiRules)
+        {
+            // first check for equals
+            IdnMapping original = new IdnMapping() { AllowUnassigned = allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };
+            IdnMapping identical = new IdnMapping() { AllowUnassigned = allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };
+            Assert.True(original.Equals(identical));
+            Assert.Equal(original.GetHashCode(), identical.GetHashCode());
+
+            //  now three sets of unequals
+            IdnMapping unequal1 = new IdnMapping() { AllowUnassigned = allowUnassigned, UseStd3AsciiRules = !useStd3AsciiRules };
+            Assert.False(original.Equals(unequal1));
+            Assert.NotEqual(original.GetHashCode(), unequal1.GetHashCode());
+
+            IdnMapping unequal2 = new IdnMapping() { AllowUnassigned = !allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };
+            Assert.False(original.Equals(unequal2));
+            Assert.NotEqual(original.GetHashCode(), unequal2.GetHashCode());
+
+            IdnMapping unequal3 = new IdnMapping() { AllowUnassigned = !allowUnassigned, UseStd3AsciiRules = useStd3AsciiRules };
+            Assert.False(original.Equals(unequal3));
+            Assert.NotEqual(original.GetHashCode(), unequal3.GetHashCode());
+        }
     }
 }
