@@ -642,6 +642,9 @@ public:
 // CordbAssembly, CordbModule
 // ============================================================================
  
+    using ClrDataAccess::GetModuleData;
+    using ClrDataAccess::GetAddressType;
+
 public:
     // Get the full path and file name to the assembly's manifest module.
     BOOL GetAssemblyPath(VMPTR_Assembly  vmAssembly, 
