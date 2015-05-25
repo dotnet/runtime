@@ -398,7 +398,7 @@ ensure_cleanedup (void)
 
 	selector_thread_wakeup ();
 	while (io_thread_status != STATUS_CLEANED_UP)
-		usleep (1000);
+		g_usleep (1000);
 
 	MONO_GC_UNREGISTER_ROOT (threadpool_io->states);
 	mono_g_hash_table_destroy (threadpool_io->states);

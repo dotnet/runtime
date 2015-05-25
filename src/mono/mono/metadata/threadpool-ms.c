@@ -347,7 +347,7 @@ ensure_cleanedup (void)
 	g_assert (mono_runtime_is_shutting_down ());
 
 	while (monitor_status != MONITOR_STATUS_NOT_RUNNING)
-		usleep (1000);
+		g_usleep (1000);
 
 	mono_mutex_lock (&threadpool->active_threads_lock);
 
