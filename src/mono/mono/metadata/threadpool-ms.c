@@ -183,14 +183,15 @@ static ThreadPool* threadpool;
 		g_assert (counter._.active >= 0); \
 	} while (0)
 
-#define COUNTER_READ() ((ThreadPoolCounter) InterlockedRead64 (&threadpool->counters.as_gint64))
+#define COUNTER_READ() (InterlockedRead64 (&threadpool->counters.as_gint64))
 
 #define COUNTER_ATOMIC(var,block) \
 	do { \
 		ThreadPoolCounter __old; \
 		do { \
 			g_assert (threadpool); \
-			(var) = __old = COUNTER_READ (); \
+			__old.as_gint64 = COUNTER_READ (); \
+			(var) = __old; \
 			{ block; } \
 			COUNTER_CHECK (var); \
 		} while (InterlockedCompareExchange64 (&threadpool->counters.as_gint64, (var).as_gint64, __old.as_gint64) != __old.as_gint64); \
@@ -201,7 +202,8 @@ static ThreadPool* threadpool;
 		ThreadPoolCounter __old; \
 		do { \
 			g_assert (threadpool); \
-			(var) = __old = COUNTER_READ (); \
+			__old.as_gint64 = COUNTER_READ (); \
+			(var) = __old; \
 			(res) = FALSE; \
 			{ block; } \
 			COUNTER_CHECK (var); \
@@ -783,7 +785,8 @@ monitor_sufficient_delay_since_last_dequeue (void)
 	if (threadpool->cpu_usage < CPU_USAGE_LOW) {
 		threshold = MONITOR_INTERVAL;
 	} else {
-		ThreadPoolCounter counter = COUNTER_READ ();
+		ThreadPoolCounter counter;
+		counter.as_gint64 = COUNTER_READ();
 		threshold = counter._.max_working * MONITOR_INTERVAL * 2;
 	}
 
@@ -1175,7 +1178,8 @@ heuristic_should_adjust (void)
 	g_assert (threadpool);
 
 	if (threadpool->heuristic_last_dequeue > threadpool->heuristic_last_adjustment + threadpool->heuristic_adjustment_interval) {
-		ThreadPoolCounter counter = COUNTER_READ ();
+		ThreadPoolCounter counter;
+		counter.as_gint64 = COUNTER_READ();
 		if (counter._.working <= counter._.max_working)
 			return TRUE;
 	}
@@ -1197,7 +1201,7 @@ heuristic_adjust (void)
 			ThreadPoolCounter counter;
 			gint16 new_thread_count;
 
-			counter = COUNTER_READ ();
+			counter.as_gint64 = COUNTER_READ ();
 			new_thread_count = hill_climbing_update (counter._.max_working, sample_duration, completions, &threadpool->heuristic_adjustment_interval);
 
 			COUNTER_ATOMIC (counter, { counter._.max_working = new_thread_count; });
@@ -1467,7 +1471,7 @@ ves_icall_System_Threading_Microsoft_ThreadPool_NotifyWorkItemComplete (void)
 	if (heuristic_should_adjust ())
 		heuristic_adjust ();
 
-	counter = COUNTER_READ ();
+	counter.as_gint64 = COUNTER_READ ();
 	return counter._.working <= counter._.max_working;
 }
 
