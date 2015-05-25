@@ -23,4 +23,8 @@
  * Due to a bug in the linker on Darwin we need to initialize this struct, or there will be
  * "undefined symbol" errors.
  */
+#if defined(__APPLE__)
 GCStats gc_stats = {};
+#else
+GCStats gc_stats;
+#endif
