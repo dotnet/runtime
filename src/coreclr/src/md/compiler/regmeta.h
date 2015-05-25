@@ -109,6 +109,13 @@ struct CCustAttrHashKey
 class CCustAttrHash : public CClosedHashEx<CCustAttrHashKey, CCustAttrHash>
 {
     typedef CCustAttrHashKey T;
+
+    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::Hash;
+    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::Compare;
+    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::Status;
+    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::SetStatus;
+    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::GetKey;
+    
 public:
     CCustAttrHash(int iBuckets=37) : CClosedHashEx<CCustAttrHashKey,CCustAttrHash>(iBuckets) {}
     unsigned int Hash(const T *pData);
