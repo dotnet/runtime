@@ -3694,7 +3694,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			flags_load = emit_load (ctx, bb, &builder, 1, convert (ctx, lhs, LLVMPointerType (LLVMInt8Type(), 0)), "", FALSE);
 			set_metadata_flag (flags_load, "mono.nofail.load");
-			cmp = LLVMBuildICmp (builder, LLVMIntEQ, LLVMBuildAnd (builder, flags_load, LLVMConstInt (LLVMInt8Type (), bitmask, 0), ""), LLVMConstInt (LLVMInt1Type (), 1, FALSE), "");
+			cmp = LLVMBuildICmp (builder, LLVMIntEQ, LLVMBuildAnd (builder, flags_load, LLVMConstInt (LLVMInt8Type (), bitmask, 0), ""), LLVMConstInt (LLVMInt8Type (), 1, FALSE), "");
 
 			callee = ctx->lmodule->generic_class_init_tramp;
 			if (!callee) {
@@ -3726,6 +3726,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			builder = create_builder (ctx);
 			ctx->builder = builder;
 			LLVMPositionBuilderAtEnd (builder, noinit_bb);
+
+			ctx->bblocks [bb->block_num].end_bblock = noinit_bb;
 			break;
 		}
 		case OP_AOTCONST: {
@@ -5285,6 +5287,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 		//LLVMVerifyFunction(method, 0);
 	} else {
+		//LLVMVerifyFunction(method, 0);
 		mono_llvm_optimize_method (ctx->lmodule->mono_ee, method);
 
 		if (cfg->verbose_level > 1)
