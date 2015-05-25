@@ -471,7 +471,7 @@ void * __cdecl operator new[](size_t n, const NoThrow&)
 __attribute__((visibility("hidden")))
 #endif
 void __cdecl
-operator delete(void *p)
+operator delete(void *p) NOEXCEPT
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -487,7 +487,7 @@ operator delete(void *p)
 __attribute__((visibility("hidden")))
 #endif
 void __cdecl
-operator delete[](void *p)
+operator delete[](void *p) NOEXCEPT
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
