@@ -314,7 +314,7 @@ void
 sgen_workers_init (int num_workers)
 {
 	int i;
-	void *workers_data_ptrs [num_workers];
+	void **workers_data_ptrs = alloca(num_workers * sizeof(void *));
 
 	if (!sgen_get_major_collector ()->is_concurrent) {
 		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL, NULL);
@@ -331,7 +331,7 @@ sgen_workers_init (int num_workers)
 	init_distribute_gray_queue ();
 
 	for (i = 0; i < workers_num; ++i)
-		workers_data_ptrs [i] = &workers_data [i];
+		workers_data_ptrs [i] = (void *) &workers_data [i];
 
 	sgen_thread_pool_init (num_workers, thread_pool_init_func, marker_idle_func, continue_idle_func, workers_data_ptrs);
 
