@@ -94,6 +94,9 @@
 /* Define to 1 if you have the <checklist.h> header file. */
 /* #undef HAVE_CHECKLIST_H */
 
+/* Define to 1 if you have the <complex.h> header file. */
+#define HAVE_COMPLEX_H 1
+
 /* Have /dev/random */
 #define HAVE_CRYPT_RNG 1
 
