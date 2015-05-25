@@ -1110,6 +1110,9 @@ EXTERN_GUID(IID_IMDInternalImportENC, 0xe03d7730, 0xd7e3, 0x11d2, 0x8c, 0xd, 0x0
 #define INTERFACE IMDInternalImportENC
 DECLARE_INTERFACE_(IMDInternalImportENC, IMDInternalImport)
 {
+private:
+    using IMDInternalImport::ApplyEditAndContinue;    
+public:
     // ENC only methods here.
     STDMETHOD(ApplyEditAndContinue)(        // S_OK or error.
         MDInternalRW *pDelta) PURE;         // Interface to MD with the ENC delta.

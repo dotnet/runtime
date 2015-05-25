@@ -279,9 +279,6 @@ add_compile_options(-Werror)
 
 # Disabled warnings
 add_compile_options(-Wno-unused-private-field)
-# A derived class defines a virtual method with the same name as its base
-# class, but different set of parameters.
-add_compile_options(-Wno-overloaded-virtual)
 add_compile_options(-Wno-unused-variable)
 # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
 add_compile_options(-Wno-microsoft)
