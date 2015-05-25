@@ -85,7 +85,7 @@ namespace System.Reflection.PortableExecutable
 
         internal SectionHeader(ref PEBinaryReader reader)
         {
-            _name = reader.ReadUTF8(PEFileConstants.SizeofSectionName);
+            _name = reader.ReadNullPaddedUTF8(PEFileConstants.SizeofSectionName);
             _virtualSize = reader.ReadInt32();
             _virtualAddress = reader.ReadInt32();
             _sizeOfRawData = reader.ReadInt32();
