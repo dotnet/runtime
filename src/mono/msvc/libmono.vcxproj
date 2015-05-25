@@ -56,6 +56,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\mono\mini\mini-runtime.c" />
     <ClCompile Include="..\mono\mini\mini-windows.c" />
     <ClCompile Include="..\mono\mini\mini-x86.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -94,15 +95,12 @@
     <ClInclude Include="..\mono\mini\mini-arch.h" />
     <ClCompile Include="..\mono\mini\dominators.c" />
     <ClCompile Include="..\mono\mini\cfold.c" />
-    <ClCompile Include="..\mono\mini\regalloc.c" />
     <ClInclude Include="..\mono\mini\regalloc.h" />
     <ClCompile Include="..\mono\mini\helpers.c" />
     <ClCompile Include="..\mono\mini\liveness.c" />
     <ClCompile Include="..\mono\mini\ssa.c" />
     <ClCompile Include="..\mono\mini\abcremoval.c" />
     <ClInclude Include="..\mono\mini\abcremoval.h" />
-    <ClCompile Include="..\mono\mini\ssapre.c" />
-    <ClInclude Include="..\mono\mini\ssapre.h" />
     <ClCompile Include="..\mono\mini\local-propagation.c" />
     <ClCompile Include="..\mono\mini\driver.c" />
     <ClCompile Include="..\mono\mini\debug-mini.c" />
@@ -113,8 +111,6 @@
     <ClCompile Include="..\mono\mini\mini-codegen.c" />
     <ClCompile Include="..\mono\mini\mini-exceptions.c" />
     <ClCompile Include="..\mono\mini\mini-trampolines.c  " />
-    <ClCompile Include="..\mono\mini\declsec.c" />
-    <ClInclude Include="..\mono\mini\declsec.h" />
     <ClCompile Include="..\mono\mini\tramp-amd64.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SGen|Win32'">true</ExcludedFromBuild>
@@ -127,10 +123,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SGen|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\mono\mini\wapihandles.c" />
     <ClCompile Include="..\mono\mini\branch-opts.c" />
     <ClCompile Include="..\mono\mini\mini-generic-sharing.c" />
-    <ClCompile Include="..\mono\mini\regalloc2.c" />
     <ClInclude Include="..\mono\mini\simd-methods.h" />
     <ClCompile Include="..\mono\mini\tasklets.c" />
     <ClInclude Include="..\mono\mini\tasklets.h" />

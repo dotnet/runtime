@@ -47,6 +47,8 @@
     <ClCompile Include="..\mono\utils\mono-mmap.c" />
     <ClCompile Include="..\mono\utils\mono-mutex.c" />
     <ClCompile Include="..\mono\utils\mono-networkinterfaces.c" />
+    <ClCompile Include="..\mono\utils\mono-rand.c" />
+    <ClCompile Include="..\mono\utils\mono-threads-state-machine.c" />
     <ClCompile Include="..\mono\utils\networking.c" />
     <ClCompile Include="..\mono\utils\networking-posix.c" />
     <ClCompile Include="..\mono\utils\networking-missing.c" />
@@ -69,7 +71,6 @@
     <ClCompile Include="..\mono\utils\mono-value-hash.c" />
     <ClCompile Include="..\mono\utils\monobitset.c" />
     <ClCompile Include="..\mono\utils\strenc.c" />
-    <ClCompile Include="..\mono\utils\strtod.c" />
     <ClCompile Include="..\mono\utils\atomic.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap.c" />
     <ClCompile Include="..\mono\utils\mono-hwcap-x86.c" />
@@ -95,6 +96,7 @@
     <ClInclude Include="..\mono\utils\memcheck.h" />
     <ClInclude Include="..\mono\utils\mono-codeman.h" />
     <ClInclude Include="..\mono\utils\mono-compiler.h" />
+    <ClInclude Include="..\mono\utils\mono-complex.h" />
     <ClInclude Include="..\mono\utils\mono-conc-hashtable.h" />
     <ClInclude Include="..\mono\utils\mono-context.h" />
     <ClInclude Include="..\mono\utils\mono-counters.h" />
@@ -120,6 +122,7 @@
     <ClInclude Include="..\mono\utils\mono-proclib.h" />
     <ClInclude Include="..\mono\utils\mono-property-hash.h" />
     <ClInclude Include="..\mono\utils\mono-publib.h" />
+    <ClInclude Include="..\mono\utils\mono-rand.h" />
     <ClInclude Include="..\mono\utils\mono-semaphore.h" />
     <ClInclude Include="..\mono\utils\mono-sigcontext.h" />
     <ClInclude Include="..\mono\utils\mono-stack-unwinding.h" />
@@ -132,7 +135,6 @@
     <ClInclude Include="..\mono\utils\mono-value-hash.h" />
     <ClInclude Include="..\mono\utils\monobitset.h" />
     <ClInclude Include="..\mono\utils\strenc.h" />
-    <ClInclude Include="..\mono\utils\strtod.h" />
     <ClInclude Include="..\mono\utils\valgrind.h" />
     <ClInclude Include="..\mono\utils\atomic.h" />
     <ClInclude Include="..\mono\utils\mono-hwcap.h" />

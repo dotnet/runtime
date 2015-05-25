@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_SGen|Win32">
@@ -45,6 +45,7 @@
     <ClCompile Include="..\mono\metadata\console-win32.c" />
     <ClCompile Include="..\mono\metadata\coree.c" />
     <ClCompile Include="..\mono\metadata\debug-helpers.c" />
+    <ClCompile Include="..\mono\metadata\debug-mono-ppdb.c" />
     <ClCompile Include="..\mono\metadata\debug-mono-symfile.c" />
     <ClCompile Include="..\mono\metadata\decimal-ms.c" />
     <ClCompile Include="..\mono\metadata\domain.c" />
@@ -53,6 +54,7 @@
     <ClCompile Include="..\mono\metadata\file-io.c" />
     <ClCompile Include="..\mono\metadata\file-mmap-windows.c" />
     <ClCompile Include="..\mono\metadata\filewatcher.c" />
+    <ClCompile Include="..\mono\metadata\gc-stats.c" />
     <ClCompile Include="..\mono\metadata\gc.c" />
     <ClCompile Include="..\mono\metadata\icall.c" />
     <ClCompile Include="..\mono\metadata\image.c" />
@@ -78,6 +80,7 @@
     <ClCompile Include="..\mono\metadata\mono-wsq.c" />
     <ClCompile Include="..\mono\metadata\nacl-stub.c" />
     <ClCompile Include="..\mono\metadata\null-gc.c" />
+    <ClCompile Include="..\mono\metadata\number-ms.c" />
     <ClCompile Include="..\mono\metadata\object.c" />
     <ClCompile Include="..\mono\metadata\opcodes.c" />
     <ClCompile Include="..\mono\metadata\process.c" />
@@ -88,6 +91,10 @@
     <ClCompile Include="..\mono\metadata\security-core-clr.c" />
     <ClCompile Include="..\mono\metadata\security-manager.c" />
     <ClCompile Include="..\mono\metadata\mono-security.c" />
+    <ClCompile Include="..\mono\metadata\seq-points-data.c" />
+    <ClCompile Include="..\mono\metadata\sgen-mono.c" />
+    <ClCompile Include="..\mono\metadata\threadpool-ms-io.c" />
+    <ClCompile Include="..\mono\metadata\threadpool-ms.c" />
     <ClCompile Include="..\mono\sgen\sgen-alloc.c" />
     <ClCompile Include="..\mono\metadata\sgen-bridge.c" />
     <ClCompile Include="..\mono\sgen\sgen-cardtable.c" />
@@ -115,6 +122,7 @@
     <ClCompile Include="..\mono\sgen\sgen-split-nursery.c" />
     <ClCompile Include="..\mono\metadata\sgen-tarjan-bridge.c" />
     <ClCompile Include="..\mono\metadata\sgen-toggleref.c" />
+    <ClCompile Include="..\mono\sgen\sgen-thread-pool.c" />
     <ClCompile Include="..\mono\sgen\sgen-workers.c" />
     <ClCompile Include="..\mono\sgen\sgen-fin-weak-hash.c" />
     <ClCompile Include="..\mono\metadata\sgen-stw.c" />
@@ -141,6 +149,7 @@
     <ClInclude Include="..\mono\metadata\culture-info-tables.h" />
     <ClInclude Include="..\mono\metadata\culture-info.h" />
     <ClInclude Include="..\mono\metadata\debug-helpers.h" />
+    <ClInclude Include="..\mono\metadata\debug-mono-ppdb.h" />
     <ClInclude Include="..\mono\metadata\debug-mono-symfile.h" />
     <ClInclude Include="..\mono\metadata\decimal.h" />
     <ClInclude Include="..\mono\metadata\domain-internals.h" />
@@ -149,6 +158,10 @@
     <ClInclude Include="..\mono\metadata\file-io.h" />
     <ClInclude Include="..\mono\metadata\filewatcher.h" />
     <ClInclude Include="..\mono\metadata\gc-internal.h" />
+    <ClInclude Include="..\mono\metadata\number-ms.h" />
+    <ClInclude Include="..\mono\metadata\seq-points-data.h" />
+    <ClInclude Include="..\mono\metadata\threadpool-ms-io.h" />
+    <ClInclude Include="..\mono\metadata\threadpool-ms.h" />
     <ClInclude Include="..\mono\sgen\gc-internal-agnostic.h" />
     <ClInclude Include="..\mono\metadata\icall-def.h" />
     <ClInclude Include="..\mono\metadata\image.h" />
@@ -207,6 +220,7 @@
     <ClInclude Include="..\mono\sgen\sgen-qsort.h" />
     <ClInclude Include="..\mono\sgen\sgen-scan-object.h" />
     <ClInclude Include="..\mono\metadata\sgen-toggleref.h" />
+    <ClInclude Include="..\mono\sgen\sgen-thread-pool.h" />
     <ClInclude Include="..\mono\sgen\sgen-workers.h" />
     <ClInclude Include="..\mono\metadata\socket-io.h" />
     <ClInclude Include="..\mono\metadata\string-icalls.h" />
