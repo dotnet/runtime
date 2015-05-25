@@ -403,7 +403,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 	if (ji != NULL) {
 		int i;
-		gssize regs [MONO_MAX_IREGS + 1 + 8];
+		mono_unwind_reg_t regs [MONO_MAX_IREGS + 1 + 8];
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -422,7 +422,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 #ifdef TARGET_IOS
 		/* On IOS, d8..d15 are callee saved. They are mapped to 8..15 in unwind.c */
 		for (i = 0; i < 8; ++i)
-			regs [MONO_MAX_IREGS + i] = new_ctx->fregs [8 + i];
+			regs [MONO_MAX_IREGS + i] = *(guint64*)&(new_ctx->fregs [8 + i]);
 #endif
 
 		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
@@ -436,7 +436,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		new_ctx->regs [ARMREG_SP] = (gsize)cfa;
 #ifdef TARGET_IOS
 		for (i = 0; i < 8; ++i)
-			new_ctx->fregs [8 + i] = regs [MONO_MAX_IREGS + i];
+			new_ctx->fregs [8 + i] = *(double*)&(regs [MONO_MAX_IREGS + i]);
 #endif
 
 		/* Clear thumb bit */

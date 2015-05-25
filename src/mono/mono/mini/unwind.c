@@ -51,11 +51,12 @@ static int map_hw_reg_to_dwarf_reg [] = { 0, 2, 1, 3, 7, 6, 4, 5, 8, 9, 10, 11, 
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (AMD64_RIP))
 #elif defined(TARGET_ARM)
 // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0040a/IHI0040A_aadwarf.pdf
-/* Assign d8..d15 to hregs 16..24 */
+/* Assign d8..d15 to hregs 16..24 (dwarf regs 264..271) */
 static int map_hw_reg_to_dwarf_reg [] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 264, 265, 266, 267, 268, 269, 270, 271 };
 #define NUM_REGS 272
 #define DWARF_DATA_ALIGN (-4)
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (ARMREG_LR))
+#define IS_DOUBLE_REG(dwarf_reg) (((dwarf_reg) >= 264) && ((dwarf_reg) <= 271))
 #elif defined(TARGET_ARM64)
 #define NUM_REGS 96
 #define DWARF_DATA_ALIGN (-8)
@@ -107,6 +108,10 @@ static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_REGS 16
 #define DWARF_DATA_ALIGN 0
 #define DWARF_PC_REG -1
+#endif
+
+#ifndef IS_DOUBLE_REG
+#define IS_DOUBLE_REG(dwarf_reg) 0
 #endif
 
 static gboolean dwarf_reg_to_hw_reg_inited;
@@ -480,7 +485,7 @@ typedef struct {
 void
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
-				   mgreg_t *regs, int nregs,
+				   mono_unwind_reg_t *regs, int nregs,
 				   mgreg_t **save_locations, int save_locations_len,
 				   guint8 **out_cfa)
 {
@@ -602,7 +607,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 		if (reg_saved [i] && locations [i].loc_type == LOC_OFFSET) {
 			int hreg = mono_dwarf_reg_to_hw_reg (i);
 			g_assert (hreg < nregs);
-			regs [hreg] = *(mgreg_t*)(cfa_val + locations [i].offset);
+			if (IS_DOUBLE_REG (i))
+				regs [hreg] = *(guint64*)(cfa_val + locations [i].offset);
+			else
+				regs [hreg] = *(mgreg_t*)(cfa_val + locations [i].offset);
 			if (save_locations && hreg < save_locations_len)
 				save_locations [hreg] = (mgreg_t*)(cfa_val + locations [i].offset);
 		}
