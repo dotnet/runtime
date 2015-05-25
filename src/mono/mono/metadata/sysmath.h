@@ -3,8 +3,10 @@
  *
  * Author:
  *   Dan Lewis (dihlewis@yahoo.co.uk)
+ *   Ludovic Henry (ludovic@xamarin.com)
  *
  * (C) Ximian, Inc. 2002
+ * Copyright 2015 Xamarin, Inc (https://www.xamarin.com)
  */
 
 #ifndef __METADATA_SYSMATH_H__
@@ -12,55 +14,68 @@
 
 #include <config.h>
 #include <glib.h>
-#include "mono/utils/mono-compiler.h"
 
-extern gdouble ves_icall_System_Math_Floor (gdouble x);
-extern gdouble ves_icall_System_Math_Round (gdouble x);
-extern gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits, gboolean away_from_zero);
+gdouble
+ves_icall_System_Math_Floor (gdouble x);
 
-extern gdouble 
+gdouble
+ves_icall_System_Math_Round (gdouble x);
+
+gdouble
 ves_icall_System_Math_Sin (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Cos (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Tan (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Sinh (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Cosh (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Tanh (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Acos (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Asin (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Atan (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Atan2 (gdouble y, gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Exp (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Log (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Log10 (gdouble x);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Pow (gdouble x, gdouble y);
 
-extern gdouble 
+gdouble
 ves_icall_System_Math_Sqrt (gdouble x);
+
+gdouble
+ves_icall_System_Math_Abs_double (gdouble v);
+
+gfloat
+ves_icall_System_Math_Abs_single (gfloat v);
+
+gdouble
+ves_icall_System_Math_SplitFractionDouble (gdouble *v);
+
+gdouble
+ves_icall_System_Math_Ceiling (gdouble v);
 
 #endif

@@ -3,91 +3,100 @@
  *
  * Author:
  *	Mono Project (http://www.mono-project.com)
+ *	Ludovic Henry (ludovic@xamarin.com)
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2015 Xamarin, Inc (https://www.xamarin.com)
  */
+
+//
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+// Files:
+//  - src/classlibnative/float/floatnative.cpp
+//  - src/pal/src/cruntime/floatnative.cpp
+//
+// Ported from C++ to C and adjusted to Mono runtime
+
 #define __USE_ISOC99
+
 #include <math.h>
 #include <mono/metadata/sysmath.h>
-#include <mono/metadata/exception.h>
 
-#ifndef NAN
-# if G_BYTE_ORDER == G_BIG_ENDIAN
-#  define __nan_bytes           { 0x7f, 0xc0, 0, 0 }
-# endif
-# if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#  define __nan_bytes           { 0, 0, 0xc0, 0x7f }
-# endif
+#include "number-ms.h"
+#include "utils/mono-compiler.h"
 
-static union { unsigned char __c[4]; float __d; } __nan_union = { __nan_bytes };
-# define NAN    (__nan_union.__d)
-#endif
+static const MonoDouble_double NaN = { .s = { .sign = 0x0, .exp = 0x7FF, .mantHi = 0x80000, .mantLo = 0x0 } };
 
-#ifndef HUGE_VAL
-#define __huge_val_t   union { unsigned char __c[8]; double __d; }
-# if G_BYTE_ORDER == G_BIG_ENDIAN
-#  define __HUGE_VAL_bytes       { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }
-# endif
-# if G_BYTE_ORDER == G_LITTLE_ENDIAN
-#  define __HUGE_VAL_bytes       { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }
-# endif
-static __huge_val_t __huge_val = { __HUGE_VAL_bytes };
-#  define HUGE_VAL      (__huge_val.__d)
-#endif
+/* +Infinity */
+static const MonoDouble_double PInfinity = { .s = { .sign = 0x0, .exp = 0x7FF, .mantHi = 0x0, .mantLo = 0x0 } };
 
+/* -Infinity */
+static const MonoDouble_double MInfinity = { .s = { .sign = 0x1, .exp = 0x7FF, .mantHi = 0x0, .mantLo = 0x0 } };
 
-gdouble ves_icall_System_Math_Floor (gdouble x) {
+/* +1 */
+static const MonoDouble_double POne = { .s = { .sign = 0x0, .exp = 0x3FF, .mantHi = 0x0, .mantLo = 0x0 } };
+
+/* -1 */
+static const MonoDouble_double MOne = { .s = { .sign = 0x1, .exp = 0x3FF, .mantHi = 0x0, .mantLo = 0x0 } };
+
+static MONO_ALWAYS_INLINE gboolean
+isplusinfinity (gdouble d)
+{
+	return d == PInfinity.d;
+}
+
+static MONO_ALWAYS_INLINE gboolean
+isminusinfinity (gdouble d)
+{
+	return d == MInfinity.d;
+}
+
+static MONO_ALWAYS_INLINE gboolean
+isinfinity (gdouble d)
+{
+	return isplusinfinity (d) || isminusinfinity (d);
+}
+
+static MONO_ALWAYS_INLINE gboolean
+isplusone (gdouble d)
+{
+	return d == POne.d;
+}
+
+static MONO_ALWAYS_INLINE gboolean
+isminusone (gdouble d)
+{
+	return d == MOne.d;
+}
+
+gdouble
+ves_icall_System_Math_Floor (gdouble x)
+{
 	return floor(x);
 }
 
-gdouble ves_icall_System_Math_Round (gdouble x) {
-	double int_part, dec_part;
+gdouble
+ves_icall_System_Math_Round (gdouble x)
+{
+	gdouble tmp, floor_tmp;
 
-	int_part = floor(x);
-	dec_part = x - int_part;
-	if (((dec_part == 0.5) &&
-		((2.0 * ((int_part / 2.0) - floor(int_part / 2.0))) != 0.0)) ||
-		(dec_part > 0.5)) {
-		int_part++;
+	/* If the number has no fractional part do nothing This shortcut is necessary
+	 * to workaround precision loss in borderline cases on some platforms */
+	if (x == (gdouble)(gint64) x)
+		return x;
+
+	tmp = x + 0.5;
+	floor_tmp = floor (tmp);
+
+	if (floor_tmp == tmp) {
+		if (fmod (tmp, 2.0) != 0)
+			floor_tmp -= 1.0;
 	}
-	return int_part;
-}
 
-gdouble ves_icall_System_Math_Round2 (gdouble value, gint32 digits, gboolean away_from_zero) {
-#if !defined (HAVE_ROUND) || !defined (HAVE_RINT)
-	double int_part, dec_part;
-#endif
-	double p;
-
-	if (value == HUGE_VAL)
-		return HUGE_VAL;
-	if (value == -HUGE_VAL)
-		return -HUGE_VAL;
-	p = pow(10, digits);
-#if defined (HAVE_ROUND) && defined (HAVE_RINT)
-	if (away_from_zero)
-		return round (value * p) / p;
-	else
-		return rint (value * p) / p;
-#else
-	dec_part = modf (value, &int_part);
-	dec_part *= 1000000000000000ULL;
-	if (away_from_zero && dec_part > 0)
-		dec_part = ceil (dec_part);
-	else
-		dec_part = floor (dec_part);
-	dec_part /= (1000000000000000ULL / p);
-	if (away_from_zero) {
-		if (dec_part > 0)
-			dec_part = floor (dec_part + 0.5);
-		else
-			dec_part = ceil (dec_part - 0.5);
-	} else
-		dec_part = ves_icall_System_Math_Round (dec_part);
-	dec_part /= p;
-	return ves_icall_System_Math_Round ((int_part + dec_part) * p) / p;
-#endif
+	return copysign (floor_tmp, x);
 }
 
 gdouble 
@@ -130,7 +139,7 @@ gdouble
 ves_icall_System_Math_Acos (gdouble x)
 {
 	if (x < -1 || x > 1)
-		return NAN;
+		return NaN.d;
 
 	return acos (x);
 }
@@ -139,7 +148,7 @@ gdouble
 ves_icall_System_Math_Asin (gdouble x)
 {
 	if (x < -1 || x > 1)
-		return NAN;
+		return NaN.d;
 
 	return asin (x);
 }
@@ -153,21 +162,21 @@ ves_icall_System_Math_Atan (gdouble x)
 gdouble 
 ves_icall_System_Math_Atan2 (gdouble y, gdouble x)
 {
-	double result;
+	gdouble result;
 
-	if ((y == HUGE_VAL && x == HUGE_VAL) ||
-		(y == HUGE_VAL && x == -HUGE_VAL) ||
-		(y == -HUGE_VAL && x == HUGE_VAL) ||
-		(y == -HUGE_VAL && x == -HUGE_VAL)) {
-		return NAN;
-	}
+	if (isinfinity (x) && isinfinity (y))
+		return NaN.d;
+
 	result = atan2 (y, x);
-	return (result == -0)? 0: result;
+	return result == -0.0 ? 0.0: result;
 }
 
 gdouble 
 ves_icall_System_Math_Exp (gdouble x)
 {
+	if (isinfinity (x))
+		return x < 0 ? 0.0 : x;
+
 	return exp (x);
 }
 
@@ -175,9 +184,9 @@ gdouble
 ves_icall_System_Math_Log (gdouble x)
 {
 	if (x == 0)
-		return -HUGE_VAL;
+		return MInfinity.d;
 	else if (x < 0)
-		return NAN;
+		return NaN.d;
 
 	return log (x);
 }
@@ -186,9 +195,9 @@ gdouble
 ves_icall_System_Math_Log10 (gdouble x)
 {
 	if (x == 0)
-		return -HUGE_VAL;
+		return MInfinity.d;
 	else if (x < 0)
-		return NAN;
+		return NaN.d;
 
 	return log10 (x);
 }
@@ -196,43 +205,96 @@ ves_icall_System_Math_Log10 (gdouble x)
 gdouble 
 ves_icall_System_Math_Pow (gdouble x, gdouble y)
 {
-	double result;
+	gdouble result;
 
-	if (isnan(x) || isnan(y)) {
-		return NAN;
+	if (isnan (y))
+		return y;
+	if (isnan (x))
+		return x;
+
+	if (isinfinity (y)) {
+		if (isplusone (x))
+			return x;
+		if (isminusone (x))
+			return NaN.d;
 	}
 
-	if ((x == 1 || x == -1) && (y == HUGE_VAL || y == -HUGE_VAL)) {
-		return NAN;
+	/* following are cases from PAL_pow which abstract the implementation of pow for posix and win32 platforms
+	 * (https://github.com/dotnet/coreclr/blob/master/src/pal/src/cruntime/finite.cpp#L331) */
+
+	if (isplusinfinity (y) && !isnan (x)) {
+		if (isplusone (x) || isminusone (x))
+			result = NaN.d;
+		else if (x > MOne.d && x < POne.d)
+			result = 0.0;
+		else
+			result = PInfinity.d;
+	} else if (isminusinfinity (y) && !isnan (x)) {
+		if (isplusone (x) || isminusone (x))
+			result = NaN.d;
+		if (x > MOne.d && x < POne.d)
+			result = PInfinity.d;
+		else
+			result = 0.0;
+	} else if (x == 0.0 && y < 0.0) {
+		result = PInfinity.d;
+	} else if (y == 0.0 && isnan (x)) {
+		/* Windows returns NaN for pow(NaN, 0), but POSIX specifies
+		 * a return value of 1 for that case.  We need to return
+		 * the same result as Windows. */
+		result = NaN.d;
+	} else {
+		result = pow (x, y);
 	}
 
-	/* This code is for return the same results as MS.NET for certain
-	 * limit values */
-	if (x < -9007199254740991.0) {
-		if (y > 9007199254740991.0)
-			return HUGE_VAL;
-		if (y < -9007199254740991.0)
-			return 0;
-	}
+	if (result == PInfinity.d && x < 0.0 && isfinite (x) && ceil (y / 2) != floor (y / 2))
+		result = MInfinity.d;
 
-	result = pow (x, y);
+	/*
+	 * The even/odd test in the if (this one and the one above) used to be ((long long) y % 2 == 0)
+	 * on SPARC (long long) y for large y (>2**63) is always 0x7fffffff7fffffff, which
+	 * is an odd number, so the test ((long long) y % 2 == 0) will always fail for
+	 * large y. Since large double numbers are always even (e.g., the representation of
+	 * 1E20+1 is the same as that of 1E20, the last .+1. is too insignificant to be part
+	 * of the representation), this test will always return the wrong result for large y.
+	 *
+	 * The (ceil(y/2) == floor(y/2)) test is slower, but more robust.
+	 */
+	if (result == MInfinity.d && x < 0.0 && isfinite (x) && ceil (y / 2) == floor (y / 2))
+		result = PInfinity.d;
 
-	/* This code is for return the same results as MS.NET for certain
-	 * limit values */
-	if (isnan(result) &&
-		(x == -1.0) &&
-		((y > 9007199254740991.0) || (y < -9007199254740991.0))) {
-		return 1;
-	}
-
-	return (result == -0)? 0: result;
+	return result == -0.0 ? 0 : result;
 }
 
 gdouble 
 ves_icall_System_Math_Sqrt (gdouble x)
 {
 	if (x < 0)
-		return NAN;
+		return NaN.d;
 
 	return sqrt (x);
+}
+
+gdouble
+ves_icall_System_Math_Abs_double (gdouble v)
+{
+	return fabs (v);
+}
+
+gfloat
+ves_icall_System_Math_Abs_single (gfloat v)
+{
+	return fabsf (v);
+}
+
+gdouble
+ves_icall_System_Math_Ceiling (gdouble v)
+{
+	return ceil (v);
+}
+
+gdouble
+ves_icall_System_Math_SplitFractionDouble (gdouble *v)
+{
+	return modf (*v, v);
 }

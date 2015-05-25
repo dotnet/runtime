@@ -2362,8 +2362,6 @@ if test "x$ac_cv_truncl" != "xyes"; then
    AC_CHECK_LIB(sunmath, aintl, [ AC_DEFINE(HAVE_AINTL, 1, [Has the 'aintl' function]) LIBS="$LIBS -lsunmath"])
 fi
 
-AC_CHECK_FUNCS(round)
-AC_CHECK_FUNCS(rint)
 AC_CHECK_FUNCS(execvp)
 
 dnl ****************************
