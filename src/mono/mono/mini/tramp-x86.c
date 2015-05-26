@@ -416,7 +416,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		x86_mov_membase_reg (code, X86_ESP, (1 * sizeof (mgreg_t)), X86_EAX, sizeof (mgreg_t));
 	}
 	/* Arg3 - trampoline argument */
-	x86_mov_reg_membase (code, X86_EAX, X86_EBP, arg_offset, sizeof (mgreg_t));
+	if (tramp_type == MONO_TRAMPOLINE_GENERIC_CLASS_INIT)
+		/* Passed in MONO_ARCH_VTABLE_REG by OP_GENERIC_CLASS_INIT */
+		x86_mov_reg_membase (code, X86_EAX, X86_EBP, regarray_offset + (MONO_ARCH_VTABLE_REG * sizeof (mgreg_t)), sizeof (mgreg_t));
+	else
+		x86_mov_reg_membase (code, X86_EAX, X86_EBP, arg_offset, sizeof (mgreg_t));
 	x86_mov_membase_reg (code, X86_ESP, (2 * sizeof (mgreg_t)), X86_EAX, sizeof (mgreg_t));
 	/* Arg4 - trampoline address */
 	// FIXME:
@@ -695,58 +699,9 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 gpointer
 mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
-	guint8 *tramp;
-	guint8 *code, *buf;
-	static int byte_offset = -1;
-	static guint8 bitmask;
-	guint8 *jump;
-	int tramp_size;
-	GSList *unwind_ops = NULL;
-	MonoJumpInfo *ji = NULL;
-
-	tramp_size = 64;
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
-	unwind_ops = mono_arch_get_cie_program ();
-
-	if (byte_offset < 0)
-		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-	x86_test_membase_imm (code, MONO_ARCH_VTABLE_REG, byte_offset, bitmask);
-	jump = code;
-	x86_branch8 (code, X86_CC_Z, -1, 1);
-
-	x86_ret (code);
-
-	x86_patch (jump, code);
-
-	/* Push the vtable so the stack is the same as in a specific trampoline */
-	x86_push_reg (code, MONO_ARCH_VTABLE_REG);
-
-	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "generic_trampoline_generic_class_init");
-		x86_jump_reg (code, X86_EAX);
-	} else {
-		tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
-
-		/* jump to the actual trampoline */
-		x86_jump_code (code, tramp);
-	}
-
-	mono_arch_flush_icache (code, code - buf);
-
-	g_assert (code - buf <= tramp_size);
-#ifdef __native_client_codegen__
-	g_assert (code - buf <= kNaClAlignment);
-#endif
-
-	nacl_global_codeman_validate (&buf, tramp_size, &code);
-	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
-
-	*info = mono_tramp_info_create ("generic_class_init_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return buf;
+	/* Not used */
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG

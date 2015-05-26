@@ -653,3 +653,5 @@ gc_spill_slot_liveness_def: len:0
 gc_param_slot_liveness_def: len:0
 get_sp: dest:i len:6
 set_sp: src1:i len:6
+
+generic_class_init: src1:d len:32 clob:c
