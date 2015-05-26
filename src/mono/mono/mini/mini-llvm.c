@@ -3688,6 +3688,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			const char *icall_name;
 			LLVMValueRef callee;
 			LLVMBasicBlockRef init_bb, noinit_bb;
+			LLVMValueRef args [16];
 
 			if (byte_offset < 0)
 				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
@@ -3701,7 +3702,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				icall_name = "specific_trampoline_generic_class_init";
 				sig = mono_metadata_signature_alloc (mono_get_corlib (), 1);
 				sig->ret = &mono_get_void_class ()->byval_arg;
-				sig->params [0] = &mono_get_int64_class ()->byval_arg;
+				sig->params [0] = &mono_get_intptr_class ()->byval_arg;
 				if (cfg->compile_aot) {
 					callee = get_plt_entry (ctx, sig_to_llvm_sig (ctx, sig), MONO_PATCH_INFO_INTERNAL_METHOD, icall_name);
 				} else {
@@ -3720,7 +3721,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			builder = create_builder (ctx);
 			ctx->builder = builder;
 			LLVMPositionBuilderAtEnd (builder, init_bb);
-			emit_call (ctx, bb, &builder, callee, &lhs, 1);
+			args [0] = convert (ctx, lhs, IntPtrType ());
+			emit_call (ctx, bb, &builder, callee, args, 1);
 			LLVMBuildBr (builder, noinit_bb);
 
 			builder = create_builder (ctx);
