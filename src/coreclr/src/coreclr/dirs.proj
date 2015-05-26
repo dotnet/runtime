@@ -14,6 +14,7 @@
     <ProjectFile Include="hosts\dirs.proj" />
     <ProjectFile Include="snskipverf\snskipverf.nativeproj" />
     <ProjectFile Include="sandboxhelper\dirs.proj" />
+    <ProjectFile Include="release\release.proj" />
     <ProjectFile Include="uwp\dirs.proj" />
   </ItemGroup>
 
