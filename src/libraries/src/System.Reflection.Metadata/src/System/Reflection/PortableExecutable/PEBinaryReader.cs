@@ -86,7 +86,7 @@ namespace System.Reflection.PortableExecutable
         }
 
         /// <summary>
-        /// Reads a fixed-length byte block at a null-padded UTF-8-encoded string.
+        /// Reads a fixed-length byte block as a null-padded UTF8-encoded string.
         /// The padding is not included in the returned string.
         /// </summary>
         public string ReadNullPaddedUTF8(int byteCount)
