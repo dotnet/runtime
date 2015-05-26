@@ -1323,13 +1323,13 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
 }
 
 int
-ves_icall_System_Threading_Thread_GetPriority (MonoInternalThread *thread)
+ves_icall_System_Threading_Thread_GetPriority (MonoThread *this)
 {
 	return ThreadPriority_Lowest;
 }
 
 void
-ves_icall_System_Threading_Thread_SetPriority (MonoInternalThread *thread, int priority)
+ves_icall_System_Threading_Thread_SetPriority (MonoThread *this, int priority)
 {
 }
 
@@ -1389,24 +1389,25 @@ mono_thread_internal_current (void)
 }
 
 gboolean
-ves_icall_System_Threading_Thread_Join_internal(MonoInternalThread *this,
-												int ms, HANDLE thread)
+ves_icall_System_Threading_Thread_Join_internal(MonoThread *this, int ms)
 {
+	MonoInternalThread *this_obj = this->internal_thread;
+	HANDLE thread = this_obj->handle;
 	MonoInternalThread *cur_thread = mono_thread_internal_current ();
 	gboolean ret;
 
 	mono_thread_current_check_pending_interrupt ();
 
-	LOCK_THREAD (this);
+	LOCK_THREAD (this_obj);
 	
-	if ((this->state & ThreadState_Unstarted) != 0) {
-		UNLOCK_THREAD (this);
+	if ((this_obj->state & ThreadState_Unstarted) != 0) {
+		UNLOCK_THREAD (this_obj);
 		
 		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started."));
 		return FALSE;
 	}
 
-	UNLOCK_THREAD (this);
+	UNLOCK_THREAD (this_obj);
 
 	if(ms== -1) {
 		ms=INFINITE;
@@ -2025,22 +2026,23 @@ ves_icall_System_Threading_Thread_GetState (MonoInternalThread* this)
 	return state;
 }
 
-void ves_icall_System_Threading_Thread_Interrupt_internal (MonoInternalThread *this)
+void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this)
 {
 	MonoInternalThread *current;
 	gboolean throw;
+	MonoInternalThread *this_obj = this->internal_thread;
 
-	LOCK_THREAD (this);
+	LOCK_THREAD (this_obj);
 
 	current = mono_thread_internal_current ();
 
-	this->thread_interrupt_requested = TRUE;	
-	throw = current != this && (this->state & ThreadState_WaitSleepJoin);	
+	this_obj->thread_interrupt_requested = TRUE;
+	throw = current != this_obj && (this_obj->state & ThreadState_WaitSleepJoin);
 
-	UNLOCK_THREAD (this);
+	UNLOCK_THREAD (this_obj);
 	
 	if (throw) {
-		abort_thread_internal (this, TRUE, FALSE);
+		abort_thread_internal (this_obj, TRUE, FALSE);
 	}
 }
 
@@ -2106,7 +2108,7 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 }
 
 void
-ves_icall_System_Threading_Thread_ResetAbort (void)
+ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean was_aborting;
@@ -2210,9 +2212,9 @@ mono_thread_suspend (MonoInternalThread *thread)
 }
 
 void
-ves_icall_System_Threading_Thread_Suspend (MonoInternalThread *thread)
+ves_icall_System_Threading_Thread_Suspend (MonoThread *this)
 {
-	if (!mono_thread_suspend (thread)) {
+	if (!mono_thread_suspend (this->internal_thread)) {
 		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has not been started, or is dead."));
 		return;
 	}
