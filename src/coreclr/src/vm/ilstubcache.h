@@ -67,7 +67,7 @@ public:
     //---------------------------------------------------------
     // Destructor
     //---------------------------------------------------------
-    ~ILStubCache();
+    virtual ~ILStubCache();
 
     void Init(LoaderHeap* pHeap);
 

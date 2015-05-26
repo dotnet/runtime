@@ -1509,7 +1509,7 @@ ClrDataValue::NewFromFieldDesc(ClrDataAccess* dac,
     {
         if (tokenScopeRet)
         {
-            delete *tokenScopeRet;
+            delete (ClrDataModule*)*tokenScopeRet;
         }
         return E_OUTOFMEMORY;
     }

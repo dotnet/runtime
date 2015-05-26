@@ -51,6 +51,7 @@ public:
     static int IndexForType(mdToken tk);
     
     CeeGenTokenMapper() : m_pIImport(0), m_cRefs(1), m_pIMapToken(NULL)  { LIMITED_METHOD_CONTRACT; }
+    virtual ~CeeGenTokenMapper() {}
 
 //*****************************************************************************
 // IUnknown implementation.  

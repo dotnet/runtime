@@ -11,6 +11,7 @@ private:
 
 public:
     DataTarget(void);
+    virtual ~DataTarget() {}
     
     // IUnknown.
     STDMETHOD(QueryInterface)(

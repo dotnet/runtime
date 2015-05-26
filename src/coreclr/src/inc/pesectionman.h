@@ -22,6 +22,9 @@ struct _IMAGE_SECTION_HEADER;
 class PESectionMan
 {
 public:
+
+    virtual ~PESectionMan() {}
+
     HRESULT Init();
     HRESULT Cleanup();
 
@@ -147,7 +150,7 @@ class PESection : public CeeSectionImpl {
     // Cause the section to allocate memory in smaller chunks
     void SetInitialGrowth(unsigned growth);
 
-    ~PESection();
+    virtual ~PESection();
 private:
 
     // purposely not defined, 

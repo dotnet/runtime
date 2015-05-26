@@ -43,7 +43,7 @@ public:
     DacDbiInterfaceImpl(ICorDebugDataTarget * pTarget, CORDB_ADDRESS baseAddress, IAllocator * pAllocator, IMetaDataLookup * pLookup);
 
     // Destructor.
-    ~DacDbiInterfaceImpl(void);
+    virtual ~DacDbiInterfaceImpl(void);
 
     // Overridden from ClrDataAccess. Gets an internal metadata importer for the file.
     virtual IMDInternalImport* GetMDImport(

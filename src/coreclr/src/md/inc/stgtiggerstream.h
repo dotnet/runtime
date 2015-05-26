@@ -36,6 +36,8 @@ public:
 		m_cRef(1)
 	{}
 
+    virtual ~TiggerStream() {}
+
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, PVOID *pp)
 	{ return (BadError(E_NOTIMPL)); }
 	virtual ULONG STDMETHODCALLTYPE AddRef()

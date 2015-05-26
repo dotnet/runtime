@@ -33,6 +33,8 @@ public:
     {
     }
 
+    virtual ~CLRDebuggingImpl() {}
+    
 public:
     // ICLRDebugging methods:
     STDMETHOD(OpenVirtualProcess(

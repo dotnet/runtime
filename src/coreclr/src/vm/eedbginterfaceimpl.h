@@ -40,6 +40,8 @@ class EEDbgInterfaceImpl : public EEDebugInterface
 
 public:
 
+    virtual ~EEDbgInterfaceImpl() {}
+
 #ifndef DACCESS_COMPILE
 
     //

@@ -1655,7 +1655,9 @@ public:
 
 #ifndef DACCESS_COMPILE
     Debugger();
-    ~Debugger();
+    virtual ~Debugger();
+#else    
+    virtual ~Debugger() {}
 #endif
 
     // If 0, then not yet initialized. If non-zero, then LS is initialized.
