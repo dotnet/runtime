@@ -478,3 +478,5 @@ atomic_store_i8: dest:b src1:i len:12
 atomic_store_u8: dest:b src1:i len:12
 atomic_store_r4: dest:b src1:f len:24
 atomic_store_r8: dest:b src1:f len:20
+
+generic_class_init: src1:a len:44 clob:c
