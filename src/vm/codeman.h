@@ -645,6 +645,7 @@ class CodeFragmentHeap : public ILoaderHeapBackout
 
 public:
     CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind);
+    virtual ~CodeFragmentHeap() {}
 
     TaggedMemAllocPtr RealAllocAlignedMem(size_t  dwRequestedSize
                                          ,unsigned  dwAlignment

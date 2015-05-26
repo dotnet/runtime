@@ -49,6 +49,7 @@ public:
 		: m_cRef(1), m_pCoClass(pCoClass)
 	{ }
 
+	virtual ~MDClassFactory() {}
 	
 	//
 	// IUnknown methods.

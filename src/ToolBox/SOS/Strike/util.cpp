@@ -4280,6 +4280,8 @@ public:
     {
     }
 
+    virtual ~SOSLibraryProvider() {}
+
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID InterfaceId,
         PVOID* pInterface)
@@ -4455,6 +4457,8 @@ public:
     SOSDataTarget() : m_ref(0)
     {
     }
+
+    virtual ~SOSDataTarget() {}
 
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID InterfaceId,

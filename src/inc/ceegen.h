@@ -215,6 +215,9 @@ class CCeeGen : public ICeeGen, ICeeGenInternal {
     CCeeGen();
 
   public:
+
+    virtual ~CCeeGen() {}
+
     static HRESULT CreateNewInstance(CCeeGen* & pCeeFileGen); // call this to instantiate
 
     virtual HRESULT Cleanup();

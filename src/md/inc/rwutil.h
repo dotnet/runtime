@@ -195,7 +195,7 @@ public:
     STDMETHODIMP_(ULONG) Release();
     STDMETHODIMP Map(mdToken tkImp, mdToken tkEmit);
     MergeTokenManager(MDTOKENMAP *pTkMapList, IUnknown *pHandler);
-	~MergeTokenManager();
+    virtual ~MergeTokenManager();
 private:
     LONG        m_cRef;
     MDTOKENMAP  *m_pTkMapList;
@@ -222,7 +222,7 @@ public:
     STDMETHODIMP Map(mdToken tkImp, mdToken tkEmit);
     bool Find(mdToken tkFrom, TOKENREC **pRecTo);
     CMapToken();
-	~CMapToken();
+    virtual ~CMapToken();
     MDTOKENMAP  *m_pTKMap;
 private:
     LONG        m_cRef;

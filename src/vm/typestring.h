@@ -174,7 +174,8 @@ public:
     virtual HRESULT __stdcall Clear();
 
     TypeNameBuilderWrapper() : m_ref(0) { WRAPPER_NO_CONTRACT; }
-
+    virtual ~TypeNameBuilderWrapper() {}
+    
 private:
     LONG            m_ref;
     TypeNameBuilder m_tnb;

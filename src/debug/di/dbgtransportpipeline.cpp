@@ -67,7 +67,7 @@ public:
         _ASSERTE(!IsTransportRunning());
     }
 
-    ~DbgTransportPipeline()
+    virtual ~DbgTransportPipeline()
     {
         Dispose();
     }

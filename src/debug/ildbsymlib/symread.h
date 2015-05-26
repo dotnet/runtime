@@ -34,7 +34,7 @@ public:
         memset(&m_DataPointers, 0, sizeof(PDBDataPointers));
         m_szPath[0] = '\0';
     }
-    ~SymReader();
+    virtual ~SymReader();
     static HRESULT NewSymReader( REFCLSID clsid, void** ppObj );
 
 public:
@@ -176,7 +176,7 @@ public:
         pReader->AddRef();
 
     }
-    ~SymDocument()
+    virtual ~SymDocument()
     {
         RELEASE(m_pReader);
     }
@@ -266,7 +266,7 @@ public:
         pSymReader->AddRef();
     }
 
-    ~SymMethod() 
+    virtual ~SymMethod() 
     { 
         RELEASE(m_pReader);
     };
@@ -363,7 +363,7 @@ public:
         m_ScopeEntry = ScopeEntry;
         m_refCount = 0;
     }
-    ~SymScope()
+    virtual ~SymScope()
     {
         RELEASE(m_pSymMethod);
     }
@@ -435,7 +435,7 @@ public:
         m_pScope = pScope;
         pScope->AddRef();
     }
-    ~SymReaderVar()
+    virtual ~SymReaderVar()
     {
         RELEASE(m_pScope);
     }

@@ -27,7 +27,7 @@ class ShimRemoteDataTarget : public ShimDataTarget
 public:
     ShimRemoteDataTarget(DWORD processId, DbgTransportTarget * pProxy, DbgTransportSession * pTransport);
 
-    ~ShimRemoteDataTarget();
+    virtual ~ShimRemoteDataTarget();
 
     virtual void Dispose();
 

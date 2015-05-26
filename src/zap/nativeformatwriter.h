@@ -47,6 +47,8 @@ namespace NativeFormat
         {
         }
 
+        virtual ~Vertex() {}
+
         virtual void Save(NativeWriter * pWriter) = 0;
 
         int GetOffset()
