@@ -14,8 +14,8 @@ namespace System.Reflection.Metadata.Tests.PortableExecutable
     public class SectionHeaderTests
     {
         [Theory]
-        [InlineData(".debug", 0, 0, 0x5C, 0x152, 0, 0, 0, 0, 0x42100048)] // no pad, initialized, discardable, 1-byte align, read-only
-        [InlineData(".drectve", 0, 0, 26, 0x12C, 0, 0, 0, 0, 0x00100A00)] // info, linker-remove, 1-byte align
+        [InlineData(".debug", 0, 0, 0x5C, 0x152, 0, 0, 0, 0, SectionCharacteristics.LinkerInfo)]
+        [InlineData(".drectve", 0, 0, 26, 0x12C, 0, 0, 0, 0, SectionCharacteristics.Align1Bytes)]
         public void Ctor(
             string name,
             int virtualSize,
