@@ -16,19 +16,6 @@ extern "C" {
 typedef unsigned int arminstr_t;
 typedef unsigned int armword_t;
 
-/* Helper functions */
-arminstr_t* arm_emit_std_prologue(arminstr_t* p, unsigned int local_size);
-arminstr_t* arm_emit_std_epilogue(arminstr_t* p, unsigned int local_size, int pop_regs);
-arminstr_t* arm_emit_lean_prologue(arminstr_t* p, unsigned int local_size, int push_regs);
-int arm_is_power_of_2(armword_t val);
-int calc_arm_mov_const_shift(armword_t val);
-int is_arm_const(armword_t val);
-int arm_bsf(armword_t val);
-arminstr_t* arm_mov_reg_imm32_cond(arminstr_t* p, int reg, armword_t imm32, int cond);
-arminstr_t* arm_mov_reg_imm32(arminstr_t* p, int reg, armword_t imm32);
-
-
-
 #if defined(_MSC_VER) || defined(__CC_NORCROFT)
 	void __inline _arm_emit(arminstr_t** p, arminstr_t i) {**p = i; (*p)++;}
 #	define ARM_EMIT(p, i) _arm_emit((arminstr_t**)&p, (arminstr_t)(i))
