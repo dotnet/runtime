@@ -5803,14 +5803,6 @@ mono_async_result_invoke (MonoAsyncResult *ares, MonoObject **exc)
 
 	thread = mono_thread_internal_current ();
 
-	if (!ares->execution_context) {
-		ares->original_context = NULL;
-	} else {
-		/* use captured ExecutionContext (if available) */
-		MONO_OBJECT_SETREF (ares, original_context, mono_thread_get_execution_context ());
-		mono_thread_set_execution_context (ares->execution_context);
-	}
-
 	ac = (MonoAsyncCall*) ares->object_data;
 	if (!ac) {
 		thread->async_invoke_method = ((MonoDelegate*) ares->async_delegate)->method;
@@ -5842,12 +5834,6 @@ mono_async_result_invoke (MonoAsyncResult *ares, MonoObject **exc)
 			mono_runtime_invoke (ac->cb_method, ac->cb_target, (gpointer*) &ares, exc);
 			thread->async_invoke_method = NULL;
 		}
-	}
-
-	/* restore original thread execution context if flow isn't suppressed, i.e. non null */
-	if (ares->original_context) {
-		mono_thread_set_execution_context (ares->original_context);
-		ares->original_context = NULL;
 	}
 
 	return res;

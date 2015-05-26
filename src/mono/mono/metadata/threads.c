@@ -702,9 +702,6 @@ static guint32 WINAPI start_wrapper_internal(void *data)
 	mono_g_hash_table_remove (thread_start_args, start_info->obj);
 	mono_threads_unlock ();
 
-	mono_thread_set_execution_context (start_info->obj->ec_to_set);
-	start_info->obj->ec_to_set = NULL;
-
 	g_free (start_info);
 	THREAD_DEBUG (g_message ("%s: start_wrapper for %"G_GSIZE_FORMAT, __func__,
 							 internal->tid));
@@ -4329,43 +4326,6 @@ mono_thread_test_state (MonoInternalThread *thread, MonoThreadState test)
 	UNLOCK_THREAD (thread);
 	
 	return ret;
-}
-
-//static MonoClassField *execution_context_field;
-
-static MonoObject**
-get_execution_context_addr (void)
-{
-	MonoDomain *domain = mono_domain_get ();
-	guint32 offset = domain->execution_context_field_offset;
-
-	if (!offset) {
-		MonoClassField *field = mono_class_get_field_from_name (mono_defaults.thread_class, "_ec");
-		g_assert (field);
-
-		g_assert (mono_class_try_get_vtable (domain, mono_defaults.appdomain_class));
-
-		mono_domain_lock (domain);
-		offset = GPOINTER_TO_UINT (g_hash_table_lookup (domain->special_static_fields, field));
-		mono_domain_unlock (domain);
-		g_assert (offset);
-
-		domain->execution_context_field_offset = offset;
-	}
-
-	return (MonoObject**) mono_get_special_static_data (offset);
-}
-
-MonoObject*
-mono_thread_get_execution_context (void)
-{
-	return *get_execution_context_addr ();
-}
-
-void
-mono_thread_set_execution_context (MonoObject *ec)
-{
-	*get_execution_context_addr () = ec;
 }
 
 static gboolean has_tls_get = FALSE;

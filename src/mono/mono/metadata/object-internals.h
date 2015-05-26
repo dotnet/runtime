@@ -431,7 +431,6 @@ struct _MonoThread {
 	MonoObject obj;
 	struct _MonoInternalThread *internal_thread;
 	MonoObject *start_obj;
-	MonoObject *ec_to_set;
 };
 
 typedef struct {
