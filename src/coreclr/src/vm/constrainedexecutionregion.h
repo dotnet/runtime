@@ -422,10 +422,10 @@ class MethodCallGraphPreparer
     DWORD               m_cEHClauses;           // Number of elements in above array
     CerPrepInfo        *m_pCerPrepInfo;         // Context recording how much preparation this region has had
     MethodContextStack  m_sPersist;             // MethodContexts we need to keep around past the 'prepare' phase of preparation
-#ifdef FEATURE_PREJIT
+#ifdef FEATURE_NATIVE_IMAGE_GENERATION
     bool                m_fNgen;                // True when being called as part of an ngen
     MethodContextStack  m_sRootMethods;         // Methods containing a sub-CER (excludes the real root)
-#endif
+#endif // FEATURE_NATIVE_IMAGE_GENERATION
     Thread             *m_pThread;              // Cached managed thread pointer (for allocations and the like)
     bool                m_fPartialPreparation;  // True if we have unbound type vars at the CER root and can only prep one instantiation at a time
 

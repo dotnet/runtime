@@ -91,9 +91,11 @@ protected:
     LoaderAllocator *m_pLoaderAllocator;
 
 private:
+#ifndef CROSSGEN_COMPILE
     LOADERHANDLE m_hGrantedPermissionSet;   // Granted Permission
     LOADERHANDLE m_hGrantDeniedPermissionSet;// Specifically Denied Permissions
-	
+#endif // CROSSGEN_COMPILE
+
 public:
     BOOL IsFullyTrusted();
     DWORD GetSpecialFlags() const;

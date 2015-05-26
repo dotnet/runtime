@@ -601,7 +601,6 @@ extern void DecCantAllocCount();
 
 class CantAllocHolder
 {
-    BOOL m_bUseTLSCount;
 public:
     CantAllocHolder ()
     {
