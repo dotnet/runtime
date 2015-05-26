@@ -50,9 +50,11 @@ inline SecurityDescriptor::SecurityDescriptor(AppDomain *pAppDomain,
     m_fEvidenceComputed(FALSE),
 #endif // FEATURE_CAS_POLICY
     m_dwSpecialFlags(0),
-    m_pLoaderAllocator(pLoaderAllocator),
-    m_hGrantedPermissionSet(NULL),
+    m_pLoaderAllocator(pLoaderAllocator)
+#ifndef CROSSGEN_COMPILE
+    , m_hGrantedPermissionSet(NULL),
     m_hGrantDeniedPermissionSet(NULL)
+#endif // CROSSGEN_COMPILE    
 {
     LIMITED_METHOD_CONTRACT;
 }
