@@ -680,7 +680,6 @@ private:
     // the following fields are used to cache information about a managed stack frame 
     // when we need to stop for skipped explicit frames
     EECodeInfo     m_cachedCodeInfo;
-    PTR_VOID       m_pCachedGCInfo;
 
     GSCookie *     m_pCachedGSCookie;
 
