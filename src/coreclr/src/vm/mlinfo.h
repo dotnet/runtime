@@ -799,7 +799,9 @@ private:
     BOOL            m_fAnsi;
     BOOL            m_fDispItf;
     BOOL            m_fInspItf;
+#ifdef FEATURE_COMINTEROP
     BOOL            m_fErrorNativeType;
+#endif // FEATURE_COMINTEROP
 
     // Information used by NT_CUSTOMMARSHALER.
     CustomMarshalerHelper* m_pCMHelper;
