@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata.Tests.PortableExecutable
             var text = reader.ReadNullPaddedUTF8(PEFileConstants.SizeofSectionName);
 
             AssertEx.AreEqual(3, text.Length, "PEBinaryReader.ReadNullPaddedUTF8 did not truncate null padding");
-            AssertEx.AreEqual("PPP", text, "PEBinaryReader.ReadNullPaddedUTF8 did not truncate null-byte padding");
+            AssertEx.AreEqual("PPP", text);
         }
 
         [Fact]
