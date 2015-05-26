@@ -15,7 +15,7 @@
 #
 # register may have the following values:
 #	i  integer register
-#	a  r3 register (output from calls)
+#	a  r0 register (first argument/result reg)
 #	b  base register (used in address references)
 #	f  floating point register
 #	g  floating point register returned in r0:r1 for soft-float mode
@@ -398,3 +398,5 @@ atomic_store_i4: dest:b src1:i len:28
 atomic_store_u4: dest:b src1:i len:28
 atomic_store_r4: dest:b src1:f len:80
 atomic_store_r8: dest:b src1:f len:32
+
+generic_class_init: src1:a len:44 clob:c

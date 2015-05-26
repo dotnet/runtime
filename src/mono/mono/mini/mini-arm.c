@@ -5002,6 +5002,35 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_move_return_value (cfg, ins, code);
 			break;
 		}
+		case OP_GENERIC_CLASS_INIT: {
+			static int byte_offset = -1;
+			static guint8 bitmask;
+			guint32 imm8;
+			guint8 *jump;
+
+			if (byte_offset < 0)
+				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+			g_assert (arm_is_imm8 (byte_offset));
+			ARM_LDRSB_IMM (code, ARMREG_IP, ins->sreg1, byte_offset);
+			imm8 = mono_arm_is_rotated_imm8 (bitmask, &rot_amount);
+			g_assert (imm8 >= 0);
+			ARM_AND_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
+			ARM_CMP_REG_IMM (code, ARMREG_IP, 0, 0);
+			jump = code;
+			ARM_B_COND (code, ARMCOND_NE, 0);
+
+			/* Uninitialized case */
+			g_assert (ins->sreg1 == ARMREG_R0);
+
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
+								 (gpointer)"specific_trampoline_generic_class_init");
+			code = emit_call_seq (cfg, code);
+
+			/* Initialized case */
+			arm_patch (jump, code);
+			break;
+		}
 		case OP_LOCALLOC: {
 			/* round the size to 8 bytes */
 			ARM_ADD_REG_IMM8 (code, ins->dreg, ins->sreg1, 7);

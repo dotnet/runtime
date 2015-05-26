@@ -294,6 +294,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_DUMMY_INIT 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
+#define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 
 #if defined(__native_client__)
 #undef MONO_ARCH_SOFT_DEBUG_SUPPORTED
