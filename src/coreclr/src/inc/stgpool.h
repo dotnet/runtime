@@ -1094,6 +1094,10 @@ private:
 class StgBlobPool : public StgPool
 {
     friend class VerifyLayoutsMD;
+
+    using StgPool::InitNew;
+    using StgPool::InitOnMem;
+    
 public:
     StgBlobPool(ULONG ulGrowInc=DFT_BLOB_HEAP_SIZE) :
         StgPool(ulGrowInc),
