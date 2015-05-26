@@ -35,6 +35,13 @@ ISharedSecurityDescriptor* Security::CreateSharedSecurityDescriptor(Assembly* pA
     return static_cast<ISharedSecurityDescriptor*>(new SharedSecurityDescriptor(pAssembly));
 }
 
+void Security::DeleteSharedSecurityDescriptor(ISharedSecurityDescriptor *descriptor)
+{
+    WRAPPER_NO_CONTRACT;
+
+    delete static_cast<SharedSecurityDescriptor *>(descriptor);
+}
+
 #ifndef FEATURE_CORECLR
 IPEFileSecurityDescriptor* Security::CreatePEFileSecurityDescriptor(AppDomain* pDomain, PEFile *pPEFile)
 {

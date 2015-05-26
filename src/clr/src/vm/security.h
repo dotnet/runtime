@@ -165,6 +165,7 @@ namespace Security
     IApplicationSecurityDescriptor* CreateApplicationSecurityDescriptor(AppDomain * pDomain);
     IAssemblySecurityDescriptor* CreateAssemblySecurityDescriptor(AppDomain *pDomain, DomainAssembly *pAssembly, LoaderAllocator *pLoaderAllocator);
     ISharedSecurityDescriptor* CreateSharedSecurityDescriptor(Assembly* pAssembly);
+    void DeleteSharedSecurityDescriptor(ISharedSecurityDescriptor *descriptor);
 #ifndef FEATURE_CORECLR
     IPEFileSecurityDescriptor* CreatePEFileSecurityDescriptor(AppDomain* pDomain, PEFile *pPEFile);
 #endif

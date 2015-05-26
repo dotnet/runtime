@@ -139,6 +139,8 @@ public:
         m_ptr = ptr;
     }
 
+    virtual ~Compare() {}
+
     virtual UPTR CompareHelper(UPTR val1, UPTR storedval)
     {
         WRAPPER_NO_CONTRACT;

@@ -486,16 +486,19 @@ public:
         m_fExplicitControl = FALSE;
     }
 
-    ~LoaderHeap()
+#endif // DACCESS_COMPILE
+
+    virtual ~LoaderHeap()
     {
         WRAPPER_NO_CONTRACT;
 
+#ifndef DACCESS_COMPILE
         if (m_CriticalSection != NULL)
         {
             ClrDeleteCriticalSection(m_CriticalSection);
         }
-    }
 #endif // DACCESS_COMPILE
+    }
 
 
 

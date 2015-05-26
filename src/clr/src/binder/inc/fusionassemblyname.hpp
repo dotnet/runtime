@@ -108,7 +108,7 @@ public:
                                 /* in */ DWORD  cbProperty);
 
     CAssemblyName();
-    ~CAssemblyName();
+    virtual ~CAssemblyName();
 
     HRESULT Init(LPCTSTR pszAssemblyName, ASSEMBLYMETADATA *pamd);
     HRESULT Parse(LPCWSTR szDisplayName);

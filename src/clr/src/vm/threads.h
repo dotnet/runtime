@@ -2079,7 +2079,9 @@ public:
     // Destructor
     //--------------------------------------------------------------
 #ifndef DACCESS_COMPILE
-    ~Thread();
+    virtual ~Thread();
+#else    
+    virtual ~Thread() {}
 #endif
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

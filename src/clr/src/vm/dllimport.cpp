@@ -185,6 +185,8 @@ public:
     virtual void EmitInvokeTarget(MethodDesc *pStubMD) = 0;
 
     virtual void FinishEmit(MethodDesc* pMD) = 0;
+
+    virtual ~StubState() {}
 };
 
 class ILStubState : public StubState
