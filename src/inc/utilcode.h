@@ -189,6 +189,12 @@ typedef LPSTR   LPUTF8;
 #define sizeofmember(c,m) (sizeof(((c*)0)->m))
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#define NOEXCEPT
+#else
+#define NOEXCEPT noexcept
+#endif
+
 //=--------------------------------------------------------------------------=
 // Prefast helpers.
 //
@@ -506,10 +512,10 @@ _Ret_bytecap_(_Size) void * __cdecl
 operator new[](size_t n);
 
 void __cdecl
-operator delete(void *p);
+operator delete(void *p) NOEXCEPT;
 
 void __cdecl
-operator delete[](void *p);
+operator delete[](void *p) NOEXCEPT;
 
 #ifdef _DEBUG_IMPL
 HRESULT _OutOfMemory(LPCSTR szFile, int iLine);
