@@ -183,6 +183,7 @@ private:
 
 public:
     SharedSecurityDescriptor(Assembly *pAssembly);
+    virtual ~SharedSecurityDescriptor() {}
 
     // All policy resolution is funnelled through the shared descriptor so we
     // can guarantee everyone's using the same grant/denied sets.

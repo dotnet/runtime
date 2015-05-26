@@ -23,6 +23,9 @@ public:
     {   
     m_refCount = 0;
     }
+
+    virtual ~SymBinder() {}
+
     static HRESULT NewSymBinder( REFCLSID clsid, void** ppObj );
 
 // IUnknown methods

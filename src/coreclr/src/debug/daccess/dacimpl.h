@@ -861,7 +861,7 @@ class ClrDataAccess
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
-    ~ClrDataAccess(void);
+    virtual ~ClrDataAccess(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -1518,6 +1518,8 @@ public:
         : mRef(0)
     {
     }
+
+    virtual ~DefaultCOMImpl() {}
     
     ULONG STDMETHODCALLTYPE AddRef()
     {
@@ -1887,7 +1889,7 @@ class DacStackReferenceWalker : public DefaultCOMImpl<ISOSStackRefEnum>
     } StackRefChunk;
 public:
     DacStackReferenceWalker(ClrDataAccess *dac, DWORD osThreadID);
-    ~DacStackReferenceWalker();
+    virtual ~DacStackReferenceWalker();
     
     HRESULT Init();
     
@@ -2119,7 +2121,7 @@ class DacHandleWalker : public DefaultCOMImpl<ISOSHandleEnum>
 
 public:
     DacHandleWalker();
-    ~DacHandleWalker();
+    virtual ~DacHandleWalker();
     
     HRESULT Init(ClrDataAccess *dac, UINT types[], UINT typeCount);
     HRESULT Init(ClrDataAccess *dac, UINT types[], UINT typeCount, int gen);
@@ -2252,7 +2254,7 @@ class ClrDataAppDomain : public IXCLRDataAppDomain
 public:
     ClrDataAppDomain(ClrDataAccess* dac,
                      AppDomain* appDomain);
-    ~ClrDataAppDomain(void);
+    virtual ~ClrDataAppDomain(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -2316,7 +2318,7 @@ class ClrDataAssembly : public IXCLRDataAssembly
 public:
     ClrDataAssembly(ClrDataAccess* dac,
                     Assembly* assembly);
-    ~ClrDataAssembly(void);
+    virtual ~ClrDataAssembly(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -2395,7 +2397,7 @@ class ClrDataModule : public IXCLRDataModule, IXCLRDataModule2
 public:
     ClrDataModule(ClrDataAccess* dac,
                   Module* module);
-    ~ClrDataModule(void);
+    virtual ~ClrDataModule(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -2600,7 +2602,7 @@ public:
                           Module* module,
                           mdTypeDef token,
                           TypeHandle typeHandle);
-    ~ClrDataTypeDefinition(void);
+    virtual ~ClrDataTypeDefinition(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -2792,7 +2794,7 @@ public:
     ClrDataTypeInstance(ClrDataAccess* dac,
                         AppDomain* appDomain,
                         TypeHandle typeHandle);
-    ~ClrDataTypeInstance(void);
+    virtual ~ClrDataTypeInstance(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -2982,7 +2984,7 @@ public:
                             Module* module,
                             mdMethodDef token,
                             MethodDesc* methodDesc);
-    ~ClrDataMethodDefinition(void);
+    virtual ~ClrDataMethodDefinition(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -3091,7 +3093,7 @@ public:
     ClrDataMethodInstance(ClrDataAccess* dac,
                           AppDomain* appDomain,
                           MethodDesc* methodDesc);
-    ~ClrDataMethodInstance(void);
+    virtual ~ClrDataMethodInstance(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -3200,7 +3202,7 @@ class ClrDataTask : public IXCLRDataTask
 public:
     ClrDataTask(ClrDataAccess* dac,
                 Thread* Thread);
-    ~ClrDataTask(void);
+    virtual ~ClrDataTask(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -3296,7 +3298,7 @@ public:
     ClrDataStackWalk(ClrDataAccess* dac,
                      Thread* Thread,
                      ULONG32 flags);
-    ~ClrDataStackWalk(void);
+    virtual ~ClrDataStackWalk(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -3384,7 +3386,7 @@ public:
                  CLRDataDetailedFrameType detailedType,
                  AppDomain* appDomain,
                  MethodDesc* methodDesc);
-    ~ClrDataFrame(void);
+    virtual ~ClrDataFrame(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -3507,7 +3509,7 @@ public:
                           ClrDataExStateType* exInfo,
                           OBJECTHANDLE throwable,
                           ClrDataExStateType* prevExInfo);
-    ~ClrDataExceptionState(void);
+    virtual ~ClrDataExceptionState(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_
@@ -3599,7 +3601,7 @@ public:
                  ULONG64 baseAddr,
                  ULONG32 numLocs,
                  NativeVarLocation* locs);
-    ~ClrDataValue(void);
+    virtual ~ClrDataValue(void);
 
     // IUnknown.
     STDMETHOD(QueryInterface)(THIS_

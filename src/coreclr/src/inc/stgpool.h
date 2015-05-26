@@ -1247,6 +1247,8 @@ public:
         m_dataCopy(NULL)
     { LIMITED_METHOD_CONTRACT; }
 
+    virtual ~CInMemoryStream() {}
+
     void InitNew(
         void        *pMem,
         ULONG       cbSize)
@@ -1405,7 +1407,7 @@ public:
     CGrowableStream(float multiplicativeGrowthRate = 2.0, DWORD additiveGrowthRate = 4096);
 
 #ifndef DACCESS_COMPILE  
-    ~CGrowableStream();
+    virtual ~CGrowableStream();
 #endif
 
     // Expose the total raw buffer.

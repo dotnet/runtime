@@ -4609,7 +4609,7 @@ ClrDataExceptionState::GetManagedObject(
         }
             
         NativeVarLocation varLoc;
-        IXCLRDataValue* RefVal;
+        ClrDataValue* RefVal;
 
         varLoc.addr = TO_CDADDR(m_throwable);
         varLoc.size = sizeof(TADDR);

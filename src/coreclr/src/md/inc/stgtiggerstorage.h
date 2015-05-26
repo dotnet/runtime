@@ -67,7 +67,7 @@ class TiggerStorage :
 friend class TiggerStream;
 public:
     TiggerStorage();
-	~TiggerStorage();
+    virtual ~TiggerStorage();
 
 // IUnknown so you can ref count this thing.
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, PVOID *pp)

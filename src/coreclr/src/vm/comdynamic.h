@@ -192,7 +192,7 @@ public:
     STDMETHODIMP_(ULONG) Release();
     STDMETHODIMP Map(mdToken tkImp, mdToken tkEmit);
     CSymMapToken(ISymUnmanagedWriter *pWriter, IMapToken *pMapToken);
-    ~CSymMapToken();
+    virtual ~CSymMapToken();
 private:
     LONG        m_cRef;
     ISymUnmanagedWriter *m_pWriter;
