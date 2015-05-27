@@ -50,16 +50,6 @@ int __cdecl PAL_rand(void);
 
 /*++
 Function :
-
-    FMTMSG_FormatMessageCleanUp
-    
-    Frees the satellite file from memory.
-    
---*/
-BOOL FMTMSG_FormatMessageCleanUp( void );
-
-/*++
-Function :
     MsgBoxInitialize
 
     Initialize the critical sections.
