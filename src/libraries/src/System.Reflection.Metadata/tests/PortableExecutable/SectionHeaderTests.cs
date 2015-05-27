@@ -19,6 +19,10 @@ namespace System.Reflection.Metadata.Tests.PortableExecutable
         [Theory]
         [InlineData(".debug", 0, 0, 0x5C, 0x152, 0, 0, 0, 0, SectionCharacteristics.LinkerInfo)]
         [InlineData(".drectve", 0, 0, 26, 0x12C, 0, 0, 0, 0, SectionCharacteristics.Align1Bytes)]
+        [InlineData("", 1, 1, 2, 3, 5, 8, 13, 21, SectionCharacteristics.Align16Bytes)]
+        [InlineData("x", 1, 1, 2, 3, 5, 8, 13, 21, SectionCharacteristics.MemSysheap)]
+        [InlineData(".बग", int.MaxValue, int.MinValue, int.MaxValue, int.MinValue, int.MaxValue, int.MaxValue, ushort.MaxValue, ushort.MaxValue, SectionCharacteristics.GPRel)]
+        [InlineData("nul\u0000nul", 1, 1, 1, 1, 1, 1, 1, 1, SectionCharacteristics.ContainsInitializedData)]
         public void Ctor(
             string name,
             int virtualSize,
