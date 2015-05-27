@@ -99,6 +99,7 @@ set(SOURCES
   misc/dbgmsg.cpp
   misc/environ.cpp
   misc/error.cpp
+  misc/errorstrings.cpp
   misc/fmtmessage.cpp
   misc/interlock.cpp
   misc/miscpalapi.cpp
