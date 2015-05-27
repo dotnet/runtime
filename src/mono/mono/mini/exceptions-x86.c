@@ -745,7 +745,7 @@ mono_arch_exceptions_init (void)
 	tramp = get_throw_trampoline ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, FALSE, FALSE, NULL, FALSE);
 	mono_register_jit_icall (tramp, "llvm_throw_exception_trampoline", NULL, TRUE);
 
-	tramp = get_throw_trampoline ("llvm_rethrow_exception_trampoline", FALSE, TRUE, FALSE, FALSE, FALSE, NULL, FALSE);
+	tramp = get_throw_trampoline ("llvm_rethrow_exception_trampoline", TRUE, TRUE, FALSE, FALSE, FALSE, NULL, FALSE);
 	mono_register_jit_icall (tramp, "llvm_rethrow_exception_trampoline", NULL, TRUE);
 
 	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, FALSE, FALSE, NULL, FALSE);
