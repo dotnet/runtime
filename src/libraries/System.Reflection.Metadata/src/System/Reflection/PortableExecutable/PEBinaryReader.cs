@@ -88,16 +88,24 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Reads a fixed-length byte block as a null-padded UTF8-encoded string.
         /// The padding is not included in the returned string.
+        /// 
+        /// Note that it is legal for UTF8 strings to contain NUL; if NUL occurs
+        /// between non-NUL codepoints, it is not considered to be padding and
+        /// is included in the result.
         /// </summary>
         public string ReadNullPaddedUTF8(int byteCount)
         {
             byte[] bytes = ReadBytes(byteCount);
-            int paddingStart = Array.IndexOf<byte>(bytes, 0);
-            if (paddingStart < 0)
+            int nonPaddedLength = 0;
+            for (int i = bytes.Length; i > 0; --i)
             {
-                paddingStart = bytes.Length;
+                if (bytes[i - 1] != 0)
+                {
+                    nonPaddedLength = i;
+                    break;
+                }
             }
-            return Encoding.UTF8.GetString(bytes, 0, paddingStart);
+            return Encoding.UTF8.GetString(bytes, 0, nonPaddedLength);
         }
 
         /// <summary>
