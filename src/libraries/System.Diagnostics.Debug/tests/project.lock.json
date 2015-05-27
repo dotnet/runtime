@@ -23,14 +23,14 @@
           "lib/aspnetcore50/mscorrc.dll"
         ]
       },
-      "System.Runtime/4.0.0-beta-22914": {
+      "System.Runtime/4.0.0-beta-22927": {
         "compile": [
           "ref/any/System.Runtime.dll"
         ]
       },
-      "System.Threading.Tasks/4.0.10-beta-22914": {
+      "System.Threading.Tasks/4.0.10-beta-22927": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-22914"
+          "System.Runtime": "4.0.0-beta-22927"
         },
         "compile": [
           "ref/any/System.Threading.Tasks.dll"
@@ -111,12 +111,12 @@
         "lib/aspnetcore50/mscorrc.dll"
       ]
     },
-    "System.Runtime/4.0.0-beta-22914": {
-      "sha512": "15tdcVIMV+KYRgL4IEQo9Bf4ybTSoLh4XL1Ovnx0W0pj0SD2T3w1gk6eyDbdKcbSv5qO5XLns/JedmtkbowrVg==",
+    "System.Runtime/4.0.0-beta-22927": {
+      "sha512": "L/qL5PaMAePAUAWel3GstHN1hIZNvAS36wrjaTkrs1EGNzNOa3BTxfdJrL2Brn95yUVivZHZoylmqLF6/VqneQ==",
       "files": [
         "License.rtf",
-        "System.Runtime.4.0.0-beta-22914.nupkg",
-        "System.Runtime.4.0.0-beta-22914.nupkg.sha512",
+        "System.Runtime.4.0.0-beta-22927.nupkg",
+        "System.Runtime.4.0.0-beta-22927.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/net45/_._",
         "lib/win8/_._",
@@ -125,11 +125,11 @@
         "ref/win8/_._"
       ]
     },
-    "System.Threading.Tasks/4.0.10-beta-22914": {
-      "sha512": "nSj8xbysvaliZaFS6vtRwx4g4fwbeGWGABaYhgNU/4d0Z3UTK0OTLR8b0ChD5FKcbRhauo4NCAavmruvO00rzQ==",
+    "System.Threading.Tasks/4.0.10-beta-22927": {
+      "sha512": "SeUpExzifr3zENWz5oMF1M0niHwo8c3xKx3k/p5yBZnvmw7Uxrfgj/Pf5kyD50JB48EdqVJ43IhSml6tOX2ZzA==",
       "files": [
-        "System.Threading.Tasks.4.0.10-beta-22914.nupkg",
-        "System.Threading.Tasks.4.0.10-beta-22914.nupkg.sha512",
+        "System.Threading.Tasks.4.0.10-beta-22927.nupkg",
+        "System.Threading.Tasks.4.0.10-beta-22927.nupkg.sha512",
         "System.Threading.Tasks.nuspec",
         "lib/DNXCore50/System.Threading.Tasks.dll",
         "lib/net46/System.Threading.Tasks.dll",
