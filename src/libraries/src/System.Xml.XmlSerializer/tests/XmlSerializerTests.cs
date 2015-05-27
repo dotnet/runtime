@@ -698,7 +698,6 @@ public class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(1831)]
     public static void Xml_DefaultNamespaceChangeTest()
     {
         Assert.StrictEqual(
@@ -708,7 +707,6 @@ public class XmlSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(1831)]
     public static void Xml_KnownTypesThroughConstructor()
     {
         KnownTypesThroughConstructor value = new KnownTypesThroughConstructor() { EnumValue = MyEnum.One, SimpleTypeValue = new SimpleKnownTypeValue() { StrProperty = "PropertyValue" } };
