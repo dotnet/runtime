@@ -1386,6 +1386,11 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
 	case MONO_TYPE_R8:
 		cinfo->ret.storage = RegTypeFP;
 
+		if (t->type == MONO_TYPE_R4)
+			cinfo->ret.size = 4;
+		else
+			cinfo->ret.size = 8;
+
 		if (IS_HARD_FLOAT) {
 			cinfo->ret.reg = ARM_VFP_F0;
 		} else {
