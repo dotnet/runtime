@@ -373,9 +373,13 @@ namespace System.Xml
 
                     while (true)
                     {
-                        while (chars < charsMax && *chars < 0x80)
+                        while (chars < charsMax)
                         {
-                            *bytes = (byte)*chars;
+                            char t = *chars;
+                            if (t >= 0x80)
+                                break;
+
+                            *bytes = (byte)t;
                             bytes++;
                             chars++;
                         }
