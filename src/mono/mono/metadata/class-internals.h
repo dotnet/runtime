@@ -1285,6 +1285,9 @@ mono_type_get_name_full (MonoType *type, MonoTypeNameFormat format);
 char*
 mono_type_get_full_name (MonoClass *klass);
 
+char *
+mono_method_get_name_full (MonoMethod *method, gboolean signature, MonoTypeNameFormat format);
+
 MonoArrayType *mono_dup_array_type (MonoImage *image, MonoArrayType *a);
 MonoMethodSignature *mono_metadata_signature_deep_dup (MonoImage *image, MonoMethodSignature *sig);
 
