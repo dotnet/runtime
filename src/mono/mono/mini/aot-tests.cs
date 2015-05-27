@@ -3,6 +3,7 @@ using System.Text;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 
 /*
  * Regression tests for the AOT/FULL-AOT code.
@@ -199,4 +200,10 @@ class Tests
 		return 0;
 	}
 
+	static int test_0_partial_sharing_regress_30204 () {
+		var t = typeof (System.Collections.Generic.Comparer<System.Collections.Generic.KeyValuePair<string, string>>);
+		var d = new SortedDictionary<string, string> ();
+		d.Add ("key1", "banana");
+		return d ["key1"] == "banana" ? 0 : 1;
+	}
 }

@@ -2247,6 +2247,11 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
 
+	/*
+	if (!mono_debug_count ())
+		allow_partial = FALSE;
+	*/
+
 	if (!partial_sharing_supported ())
 		allow_partial = FALSE;
 

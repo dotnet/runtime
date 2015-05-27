@@ -1597,7 +1597,7 @@ mono_class_setup_fields (MonoClass *class)
 		return;
 	}
 
-	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(class->image == mono_defaults.corlib && !strcmp (class->name_space, "System") && !strcmp (class->name, "ValueType")))
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(mono_is_corlib_image (class->image) && !strcmp (class->name_space, "System") && !strcmp (class->name, "ValueType")))
 		blittable = FALSE;
 
 	/* Prevent infinite loops if the class references itself */
@@ -1772,6 +1772,20 @@ mono_type_get_basic_type_from_generic (MonoType *type)
 	return type;
 }
 
+static gboolean
+type_has_references (MonoClass *klass, MonoType *ftype)
+{
+	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+		return TRUE;
+	if (!ftype->byref && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
+		MonoGenericParam *gparam = ftype->data.generic_param;
+
+		if (gparam->gshared_constraint)
+			return mono_class_has_references (mono_class_from_mono_type (gparam->gshared_constraint));
+	}
+	return FALSE;
+}
+
 /*
  * mono_class_layout_fields:
  * @class: a class
@@ -1832,7 +1846,7 @@ mono_class_layout_fields (MonoClass *class)
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+			if (type_has_references (class, ftype))
 				class->has_references = TRUE;
 		}
 	}
@@ -1845,7 +1859,7 @@ mono_class_layout_fields (MonoClass *class)
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+			if (type_has_references (class, ftype))
 				class->has_static_refs = TRUE;
 		}
 	}
@@ -1857,7 +1871,7 @@ mono_class_layout_fields (MonoClass *class)
 
 		ftype = mono_type_get_underlying_type (field->type);
 		ftype = mono_type_get_basic_type_from_generic (ftype);
-		if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
+		if (type_has_references (class, ftype)) {
 			if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				class->has_static_refs = TRUE;
 			else
@@ -1908,7 +1922,7 @@ mono_class_layout_fields (MonoClass *class)
 				ftype = mono_type_get_underlying_type (field->type);
 				ftype = mono_type_get_basic_type_from_generic (ftype);
 				if (gc_aware_layout) {
-					if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
+					if (type_has_references (class, ftype)) {
 						if (pass == 1)
 							continue;
 					} else {
@@ -1930,7 +1944,7 @@ mono_class_layout_fields (MonoClass *class)
 				/* if the field has managed references, we need to force-align it
 				 * see bug #77788
 				 */
-				if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype)))))
+				if (type_has_references (class, ftype))
 					align = MAX (align, sizeof (gpointer));
 
 				class->min_align = MAX (align, class->min_align);
@@ -1985,7 +1999,7 @@ mono_class_layout_fields (MonoClass *class)
 			field->offset += sizeof (MonoObject);
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (MONO_TYPE_IS_REFERENCE (ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && mono_class_has_references (mono_class_from_mono_type (ftype))))) {
+			if (type_has_references (class, ftype)) {
 				if (field->offset % sizeof (gpointer)) {
 					mono_class_set_failure (class, MONO_EXCEPTION_TYPE_LOAD, NULL);
 				}
