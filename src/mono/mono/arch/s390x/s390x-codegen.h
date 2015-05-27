@@ -1002,6 +1002,7 @@ typedef struct {
 #define s390_tmhl(c, r, m)		S390_RI(c, 0xa72, r, m)
 #define s390_tmlh(c, r, m)		S390_RI(c, 0xa70, r, m)
 #define s390_tmll(c, r, m)		S390_RI(c, 0xa71, r, m)
+#define s390_tm(c, b, d, v)		S390_SI(c, 0x91, b, d, v)
 #define s390_x(c, r, x, b, d)		S390_RX(c, 0x57, r, x, b, d)
 #define s390_xihf(c, r, v)		S390_RIL_1(c, 0xc06, r, v)
 #define s390_xilf(c, r, v)		S390_RIL_1(c, 0xc07, r, v)

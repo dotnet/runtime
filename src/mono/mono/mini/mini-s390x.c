@@ -267,6 +267,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap-s390x.h>
+#include <mono/utils/mono-threads.h>
 
 #include "mini-s390x.h"
 #include "cpu-s390x.h"
@@ -4119,7 +4120,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			break;
 		}
-	
+		case OP_GENERIC_CLASS_INIT: {
+			static int byte_offset = -1;
+			static guint8 bitmask;
+			guint16 *jump;
+
+			g_assert (ins->sreg1 == S390_FIRST_ARG_REG);
+
+			if (byte_offset < 0)
+				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+			s390_tm (code, ins->sreg1, byte_offset, bitmask);
+			s390_jo (code, 0); CODEPTR(code, jump);
+
+			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ADDR,
+						"specific_trampoline_generic_class_init");
+			S390_CALL_TEMPLATE(code, s390_r14);
+
+			PTRSLOT (code, jump);
+
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
+			break;
+		}
 		case OP_BR: 
 			EMIT_UNCOND_BRANCH(ins);
 			break;
@@ -4592,6 +4615,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MEMORY_BARRIER:
 			s390_mem (code);
 			break;
+#if USE_COOP_GC
+		case OP_GC_SAFE_POINT: {
+			guint8 *br;
+
+			s390_chi (code, ins->sreg1, 1);	
+			s390_je  (code, 0); CODEPTR(code, br);
+			mono_add_patch_info (cfg, code- cfg->native_code, MONO_PATCH_INFO_ABS,
+					     mono_threads_state_poll);
+			S390_CALL_TEMPLATE (code, s390_r14);
+			PTRSLOT (code, br);
+			break;
+		}
+#endif
 		case OP_GC_LIVENESS_DEF:
 		case OP_GC_LIVENESS_USE:
 		case OP_GC_PARAM_SLOT_LIVENESS_DEF:
@@ -5565,9 +5601,7 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
 gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {
-	MonoLMF *lmf = (MonoLMF *) ((gchar *) regs - sizeof(MonoLMF));
-
-	return (gpointer) lmf->gregs [s390_r2];
+	return (gpointer) regs [s390_r2];
 }
 
 /*========================= End of Function ========================*/
@@ -5951,9 +5985,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain,
 MonoMethod*
 mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
-	MonoLMF *lmf = (MonoLMF *) ((gchar *) regs - sizeof(MonoLMF));
-
-	return ((MonoMethod *) lmf->gregs [MONO_ARCH_IMT_REG]);
+	return ((MonoMethod *) regs [MONO_ARCH_IMT_REG]);
 }
 
 /*========================= End of Function ========================*/

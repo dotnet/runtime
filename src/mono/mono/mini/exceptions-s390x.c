@@ -66,8 +66,11 @@
 /*                   P r o t o t y p e s                            */
 /*------------------------------------------------------------------*/
 
-gboolean mono_arch_handle_exception (void     *ctx,
-				     gpointer obj);
+static void throw_exception (MonoObject *, unsigned long, unsigned long, 
+		 gulong *, gdouble *, gint32 *, guint, gboolean);
+static gpointer mono_arch_get_throw_exception_generic (int, MonoTrampInfo **, 
+				int, gboolean, gboolean);
+static void handle_signal_exception (gpointer);
 
 /*========================= End of Prototypes ======================*/
 
@@ -462,7 +465,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			 StackFrameInfo *frame)
 {
 	gpointer ip = (gpointer) MONO_CONTEXT_GET_IP (ctx);
-	MonoS390StackFrame *sframe;
 
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
@@ -521,6 +523,29 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 /*------------------------------------------------------------------*/
 /*                                                                  */
+/* Name		- handle_signal_exception                           */
+/*                                                                  */
+/* Function	- Handle an exception raised by the JIT code.	    */
+/*                                                                  */
+/* Parameters   - obj       - The exception object                  */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+static void
+handle_signal_exception (gpointer obj)
+{
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+	MonoContext ctx;
+
+	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
+	mono_handle_exception (&ctx, obj);
+	mono_restore_context (&ctx);
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
 /* Name		- mono_arch_handle_exception                        */
 /*                                                                  */
 /* Function	- Handle an exception raised by the JIT code.	    */
@@ -531,9 +556,52 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 /*------------------------------------------------------------------*/
 
 gboolean
-mono_arch_handle_exception (void *uc, gpointer obj)
+mono_arch_handle_exception (void *sigctx, gpointer obj)
 {
-	return mono_handle_exception (uc, obj);
+	MonoContext mctx;
+
+	/*
+	 * Handling the exception in the signal handler is problematic, since the original
+	 * signal is disabled, and we could run arbitrary code though the debugger. So
+	 * resume into the normal stack and do most work there if possible.
+	 */
+	MonoJitTlsData *jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
+
+	/* Pass the ctx parameter in TLS */
+	mono_sigctx_to_monoctx (sigctx, &jit_tls->ex_ctx);
+
+	mctx = jit_tls->ex_ctx;
+	mono_arch_setup_async_callback (&mctx, handle_signal_exception, obj);
+	mono_monoctx_to_sigctx (&mctx, sigctx);
+
+	return TRUE;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- mono_arch_setup_async_callback                    */
+/*                                                                  */
+/* Function	- Establish the async callback.              	    */
+/*                                                                  */
+/* Parameters   - ctx       - Context                               */
+/*                async_cb  - Callback routine address              */
+/*                user_data - Data to be passed to callback         */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+void
+mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
+{
+	uintptr_t sp = (uintptr_t) MONO_CONTEXT_GET_SP(ctx);
+
+	ctx->uc_mcontext.gregs[2] = (unsigned long) user_data;
+
+	sp -= S390_MINIMAL_STACK_SIZE;
+	*(unsigned long *)sp = MONO_CONTEXT_GET_SP(ctx);
+	MONO_CONTEXT_SET_BP(ctx, sp);
+	MONO_CONTEXT_SET_IP(ctx, (unsigned long) async_cb);
 }
 
 /*========================= End of Function ========================*/

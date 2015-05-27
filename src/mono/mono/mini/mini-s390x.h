@@ -50,7 +50,7 @@ typedef struct
 #define MONO_ARCH_HAVE_TLS_GET				1
 #define MONO_ARCH_ENABLE_MONO_LMF_VAR			1
 #define MONO_ARCH_IMT_REG				s390_r9
-#define MONO_ARCH_VTABLE_REG				MONO_ARCH_IMT_REG
+#define MONO_ARCH_VTABLE_REG				S390_FIRST_ARG_REG
 #define MONO_ARCH_RGCTX_REG				MONO_ARCH_IMT_REG
 #define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX		1
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED			1
@@ -61,6 +61,8 @@ typedef struct
 #define MONO_ARCH_MONITOR_ENTER_ADJUSTMENT		1
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD		1
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD		1
+#define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT		1
+#define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK		1
 #define MONO_ARCH_MONITOR_OBJECT_REG			s390_r2
 #define MONO_ARCH_LOCK_TAKEN_REG			s390_r1
 
@@ -97,7 +99,8 @@ typedef struct
 #define MONO_ARCH_FPSTACK_SIZE 0
 
 #define MONO_ARCH_INST_FIXED_REG(desc) ((desc == 'o') ? s390_r2 : 		\
-					((desc == 'g') ? s390_f0 : - 1))
+					((desc == 'g') ? s390_f0 : 		\
+					((desc == 'A') ? S390_FIRST_ARG_REG : -1)))
 
 #define MONO_ARCH_INST_IS_FLOAT(desc)  ((desc == 'f') || (desc == 'g'))
 
