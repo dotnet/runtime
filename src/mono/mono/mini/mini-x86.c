@@ -3301,29 +3301,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_move_return_value (cfg, ins, code);
 			break;
 		}
-
-		case OP_GENERIC_CLASS_INIT: {
-			static int byte_offset = -1;
-			static guint8 bitmask;
-			guint8 *jump;
-
-			if (byte_offset < 0)
-				mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-			x86_test_membase_imm (code, ins->sreg1, byte_offset, bitmask);
-			jump = code;
-			x86_branch8 (code, X86_CC_NZ, -1, 1);
-
-			g_assert (ins->sreg1 == MONO_ARCH_VTABLE_REG);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD,
-							  (gpointer)"specific_trampoline_generic_class_init");
-			ins->flags |= MONO_INST_GC_CALLSITE;
-			ins->backend.pc_offset = code - cfg->native_code;
-
-			x86_patch (jump, code);
-			break;
-		}
-
 		case OP_X86_LEA:
 			x86_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->backend.shift_amount);
 			break;
