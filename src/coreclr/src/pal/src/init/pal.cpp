@@ -436,7 +436,7 @@ Initialize(
         if (NO_ERROR != palError)
         {
             ERROR("Unable to create initial process and thread objects\n");
-            goto CLEANUP4;
+            goto CLEANUP2;
         }
         // CreateInitialProcessAndThreadObjects took ownership of this memory.
         command_line = NULL;
@@ -537,8 +537,6 @@ CLEANUP6:
     SEHCleanup();
 CLEANUP5:
     PROCCleanupInitialProcess();
-CLEANUP4:
-    FMTMSG_FormatMessageCleanUp();
 CLEANUP2:
     InternalFree(pThread, exe_path);
 CLEANUP1e:
@@ -839,9 +837,6 @@ PALCommonCleanup(PALCLEANUP_STEP step, BOOL full_cleanup)
             {
                 /* close primary handles of standard file objects */
                 FILECleanupStdHandles();
-                /* This unloads the palrt so, during its unloading, they
-                   can call any number of APIs, so we have to be active for it to work. */
-                FMTMSG_FormatMessageCleanUp();
                 VIRTUALCleanup();
                 /* SEH requires information from the process structure to work;
                    LOADFreeModules requires SEH to be functional when calling DllMain.
