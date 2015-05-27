@@ -5,8 +5,8 @@
   <ItemGroup>
     <Project Include="*\src\*.csproj" Exclude="@(ExcludeProjects)" />
     <Project Include="*\src\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
-    <Project Include="*\tests\**\*.csproj" Exclude="@(ExcludeProjects)" />
-    <Project Include="*\tests\**\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
+    <Project Include="*\test*\**\*.csproj" Exclude="@(ExcludeProjects)" />
+    <Project Include="*\test*\**\*.vbproj" Condition="'$(IncludeVbProjects)'!='false'" Exclude="@(ExcludeProjects)" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
