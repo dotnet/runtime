@@ -155,6 +155,7 @@ namespace System.Xml.Serialization
             if (type == null)
                 throw new ArgumentNullException("type");
 
+#if NET_NATIVE
             // The ctor is not supported, but we cannot throw PNSE unconditionally
             // because the ctor is used by ctor(Type) which passes in a null defaultNamespace.
             if (!string.IsNullOrEmpty(defaultNamespace))
@@ -162,7 +163,6 @@ namespace System.Xml.Serialization
                 throw new PlatformNotSupportedException();
             }
 
-#if NET_NATIVE
             rootType = type;
 #endif
             _mapping = GetKnownMapping(type, defaultNamespace);
@@ -210,7 +210,21 @@ namespace System.Xml.Serialization
         /// </devdoc>
         internal XmlSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace, object location, object evidence)
         {
+#if NET_NATIVE
             throw new PlatformNotSupportedException();
+#else
+            if (type == null)
+                throw new ArgumentNullException("type");
+
+            XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
+            if (extraTypes != null)
+            {
+                for (int i = 0; i < extraTypes.Length; i++)
+                    importer.IncludeType(extraTypes[i]);
+            }
+            _mapping = importer.ImportTypeMapping(type, root, defaultNamespace);
+            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace);
+#endif
         }
 
 
