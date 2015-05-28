@@ -24,7 +24,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                     Assert.False(operation.Cancelled);
                     Assert.Null(operation.Exception);
 
-                }).Wait();
+                }).GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -39,7 +39,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                     Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.Post(noopCallback, null));
                     Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.PostOperationCompleted(noopCallback, null));
                     Assert.Throws<InvalidOperationException>(() => operation.AsyncOperation.OperationCompleted());
-                }).Wait();
+                }).GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -54,7 +54,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                    Assert.Throws<InvalidOperationException>(() => operation.Post(noopCallback, null));
                    Assert.Throws<InvalidOperationException>(() => operation.PostOperationCompleted(noopCallback, null));
                    Assert.Throws<InvalidOperationException>(() => operation.OperationCompleted());
-               }).Wait();
+               }).GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                  Assert.True(operation.Completed);
                  Assert.True(operation.Cancelled);
                  Assert.Null(operation.Exception);
-             }).Wait();
+             }).GetAwaiter().GetResult();
         }
 
         [Fact]
@@ -89,7 +89,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 });
 
                 Assert.Throws<TestException>(() => operation.Wait());
-            }).Wait();
+            }).GetAwaiter().GetResult();
         }
 
         [Fact]

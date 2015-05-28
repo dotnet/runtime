@@ -139,7 +139,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [Fact]
         public void TestThrowExceptionInDoWork()
         {
-            var orignal = SynchronizationContext.Current;
+            var original = SynchronizationContext.Current;
             try
             {
                 SynchronizationContext.SetSynchronizationContext(null);
@@ -170,11 +170,11 @@ namespace System.ComponentModel.EventBasedAsync.Tests
                 };
 
                 bw.RunWorkerAsync(expectedArgument);
-                Assert.True(workerCompletedEvent.Wait(TimeoutShort), "Background work timeout");
+                Assert.True(workerCompletedEvent.Wait(TimeoutLong), "Background work timeout");
             }
             finally
             {
-                SynchronizationContext.SetSynchronizationContext(orignal);
+                SynchronizationContext.SetSynchronizationContext(original);
             }
         }
 
@@ -210,6 +210,46 @@ namespace System.ComponentModel.EventBasedAsync.Tests
             finally
             {
                 barrier.SignalAndWait();
+            }
+        }
+
+        [Fact]
+        public void TestCancelInsideDoWork()
+        {
+            var original = SynchronizationContext.Current;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+
+                var bw = new BackgroundWorker() { WorkerSupportsCancellation = true };
+                var barrier = new Barrier(2);
+
+                bw.DoWork += (sender, e) =>
+                {
+                    barrier.SignalAndWait();
+                    barrier.SignalAndWait();
+
+                    if (bw.CancellationPending)
+                    {
+                        e.Cancel = true;
+                    }
+                };
+
+                bw.RunWorkerCompleted += (sender, e) =>
+                {
+                    Assert.True(e.Cancelled);
+                    barrier.SignalAndWait();
+                };
+
+                bw.RunWorkerAsync();
+                barrier.SignalAndWait();
+                bw.CancelAsync();
+                barrier.SignalAndWait();
+                Assert.True(barrier.SignalAndWait(TimeoutLong), "Background work timeout");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(original);
             }
         }
 
