@@ -14,12 +14,16 @@ list(APPEND CLR_SOURCES
 set (DEF_SOURCES
   mscorwks_ntdef.src
 )
-convert_to_absolute_path(DEF_SOURCES ${DEF_SOURCES})
 else()
 list(APPEND CLR_SOURCES
     unixinterface.cpp
 )
+
+set (DEF_SOURCES
+  mscorwks_unixexports.src
+)
 endif(WIN32)
 
+convert_to_absolute_path(DEF_SOURCES ${DEF_SOURCES})
 convert_to_absolute_path(CLR_SOURCES ${CLR_SOURCES})
 add_subdirectory(coreclr)
