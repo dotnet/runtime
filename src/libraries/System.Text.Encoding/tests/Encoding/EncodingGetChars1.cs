@@ -215,30 +215,35 @@ namespace System.Text.EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest35()
         {
             PositiveTestString(Encoding.GetEncoding("UTF-16BE"), "TestTest\uFFFD", new byte[] { 0, 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 216, 3 }, "00I4");
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest36()
         {
             PositiveTestString(Encoding.GetEncoding("UTF-16BE"), "\uFFFD\uFFFD", new byte[] { 216, 3, 48 }, "00J4");
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest37()
         {
             PositiveTestString(Encoding.GetEncoding("UTF-16BE"), "\uD803\uDD75\uD803\uDD75\uD803\uDD75", new byte[] { 216, 3, 221, 117, 216, 3, 221, 117, 216, 3, 221, 117 }, "00K4");
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest38()
         {
             PositiveTestString(Encoding.GetEncoding("UTF-16BE"), "\u0130", new byte[] { 1, 48 }, "00L4");
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest39()
         {
             PositiveTestString(Encoding.GetEncoding("UTF-16BE"), "\uD803\uDD75\uD803\uDD75", new byte[] { 216, 3, 221, 117, 216, 3, 221, 117 }, "0A24");

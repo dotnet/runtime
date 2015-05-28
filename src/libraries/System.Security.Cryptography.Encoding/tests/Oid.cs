@@ -118,6 +118,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        [ActiveIssue(1863, PlatformID.AnyUnix)]
         public static void TestFromFriendlyName()
         {
             Oid oid;
@@ -138,6 +139,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        [ActiveIssue(1863, PlatformID.AnyUnix)]
         public static void TestFromOidValue()
         {
             Oid oid;
@@ -158,6 +160,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        [ActiveIssue(1863, PlatformID.AnyUnix)]
         public static void TestKnownValues()
         {
             Oid oid;
