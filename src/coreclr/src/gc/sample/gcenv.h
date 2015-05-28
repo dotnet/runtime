@@ -125,6 +125,8 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define C_ASSERT(cond) static_assert( cond, #cond )
 
+#define UNREFERENCED_PARAMETER(P)          (void)(P)
+
 #define INVALID_HANDLE_VALUE    ((HANDLE)-1)
 
 #pragma pack(push, 8)
@@ -379,6 +381,8 @@ typedef uintptr_t TADDR;
 
 typedef DPTR(size_t)    PTR_size_t;
 typedef DPTR(BYTE)      PTR_BYTE;
+
+struct _DacGlobals;
 
 // -----------------------------------------------------------------------------------------------------------
 
@@ -863,6 +867,25 @@ void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection);
 #include "etmdummy.h"
 
 #define ETW_EVENT_ENABLED(e,f) false
+
+namespace ETW
+{
+    class GCLog
+    {
+    public:
+        struct ETW_GC_INFO
+        {
+            typedef  enum _GC_ROOT_KIND {
+                GC_ROOT_STACK = 0,
+                GC_ROOT_FQ = 1,
+                GC_ROOT_HANDLES = 2,
+                GC_ROOT_OLDER = 3,
+                GC_ROOT_SIZEDREF = 4,
+                GC_ROOT_OVERFLOW = 5
+            } GC_ROOT_KIND;
+        };
+    };
+};
 
 //
 // Logging
