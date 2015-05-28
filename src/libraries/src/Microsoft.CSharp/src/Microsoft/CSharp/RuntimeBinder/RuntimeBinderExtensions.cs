@@ -278,52 +278,54 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
         }
 
+        // s_MemberEquivalence will replace itself with one version or another
+        // depending on what works at run time
+        private static Func<MemberInfo, MemberInfo, bool> s_MemberEquivalence = (m1, m2) =>
+            {
+                try
+                {
+                    // See if MetadataToken property is available.
+                    Type memberInfo = typeof(MemberInfo);
+                    PropertyInfo property = memberInfo.GetProperty("MetadataToken", typeof(int), Array.Empty<Type>());
 
-        private static readonly Func<MemberInfo, int> s_GetMetadataTokenSentinel = mi => { throw new InvalidOperationException(); };
-        private static Func<MemberInfo, int> s_GetMetadataToken = s_GetMetadataTokenSentinel;
+                    if ((object)property != null && property.CanRead)
+                    {
+                        // (parameter1, parameter2) => parameter1.MetadataToken == parameter2.MetadataToken
+                        var parameter1 = Expression.Parameter(memberInfo);
+                        var parameter2 = Expression.Parameter(memberInfo);
+                        var memberEquivalence = Expression.Lambda<Func<MemberInfo, MemberInfo, bool>>(
+                            Expression.Equal(
+                                Expression.Property(parameter1, property),
+                                Expression.Property(parameter2, property)),
+                                new[] { parameter1, parameter2 }).Compile();
+
+                        var result = memberEquivalence(m1, m2);
+                        // it worked, so publish it
+                        s_MemberEquivalence = memberEquivalence;
+
+                        return result;
+                    }
+                }
+                catch
+                {
+                    // Platform might not allow access to the property
+                }
+
+                // MetadataToken is not available in some contexts. Looks like this is one of those cases.
+                // fallback to "IsEquivalentTo"
+                Func<MemberInfo, MemberInfo, bool> fallbackMemberEquivalence = (m1param, m2param) => m1param.IsEquivalentTo(m2param);
+
+                // fallback must work 
+                s_MemberEquivalence = fallbackMemberEquivalence;
+                return fallbackMemberEquivalence(m1, m2);
+            };
 
         public static bool HasSameMetadataDefinitionAs(this MemberInfo mi1, MemberInfo mi2)
         {
 #if UNSUPPORTEDAPI
             return (mi1.MetadataToken == mi2.MetadataToken) && (mi1.Module == mi2.Module));
 #else
-            if (!mi1.Module.Equals(mi2.Module))
-            {
-                return false;
-            }
-
-            if ((object)s_GetMetadataToken == (object)s_GetMetadataTokenSentinel)
-            {
-                // See if MetadataToken property is available.
-                Type memberInfo = typeof(MemberInfo);
-                PropertyInfo property = memberInfo.GetProperty("MetadataToken", typeof(int), Array.Empty<Type>());
-
-                if ((object)property == null || !property.CanRead)
-                {
-                    s_GetMetadataToken = null;
-                }
-                else
-                {
-                    var parameter = Expression.Parameter(memberInfo);
-                    try
-                    {
-                        s_GetMetadataToken = Expression.Lambda<Func<MemberInfo, int>>(Expression.Property(parameter, property), new[] { parameter }).Compile();
-                    }
-                    catch
-                    {
-                        // Platform might not allow access to the property
-                        s_GetMetadataToken = null;
-                    }
-                }
-            }
-
-            var getMetadataToken = s_GetMetadataToken;
-            if ((object)getMetadataToken != null)
-            {
-                return getMetadataToken(mi1) == getMetadataToken(mi2);
-            }
-
-            return mi1.IsEquivalentTo(mi2);
+            return mi1.Module.Equals(mi2.Module) && s_MemberEquivalence(mi1, mi2);
 #endif
         }
     }
