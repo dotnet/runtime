@@ -189,7 +189,7 @@ namespace System.Net.Http
 
             _method = method;
             _requestUri = requestUri;
-            _version = HttpUtilities.DefaultVersion;
+            _version = HttpUtilities.DefaultRequestVersion;
         }
 
         internal bool MarkAsSent()
