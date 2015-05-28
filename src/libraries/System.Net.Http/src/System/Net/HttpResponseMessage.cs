@@ -139,7 +139,7 @@ namespace System.Net.Http
             }
 
             _statusCode = statusCode;
-            _version = HttpUtilities.DefaultVersion;
+            _version = HttpUtilities.DefaultResponseVersion;
 
             if (Logging.On) Logging.Exit(Logging.Http, this, ".ctor", null);
         }
