@@ -26,9 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Linq;
 using System.IO;
 using System.Reflection;
+using System.Xml;
 using System.Xml.XPath;
 
 using Mono.Cecil;
@@ -55,9 +57,19 @@ namespace Mono.Linker.Steps {
 								.SelectMany (asm => asm.Modules)
 								.SelectMany (mod => mod.Resources)
 								.Where (res => res.ResourceType == ResourceType.Embedded)
+								.Where (res => Path.GetExtension (res.Name) == ".xml")
 								.Where (res => IsReferenced (GetAssemblyName (res.Name)))
 								.Cast<EmbeddedResource> ()) {
-				Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetExternalResolveStep (rsc));
+				try {
+					if (Context.LogInternalExceptions)
+						Console.WriteLine ("Processing embedded resource linker descriptor: {0}", rsc.Name);
+
+					Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetExternalResolveStep (rsc));
+				} catch (XmlException ex) {
+					/* This could happen if some broken XML file is embedded. */
+					if (Context.LogInternalExceptions)
+						Console.WriteLine ("Error processing {0}: {1}", rsc.Name, ex);
+				}
 			}
 		}
 

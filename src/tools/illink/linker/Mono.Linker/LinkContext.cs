@@ -93,6 +93,8 @@ namespace Mono.Linker {
 			set { _symbolWriterProvider = value; }
 		}
 
+		public bool LogInternalExceptions { get; set; } = false;
+
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
 		{
