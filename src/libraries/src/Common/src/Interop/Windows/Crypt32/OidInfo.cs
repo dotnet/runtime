@@ -80,7 +80,7 @@ namespace Internal.NativeCrypto
                     IntPtr localOidInfo = CryptFindOIDInfo(keyType, rawKey, localGroup);
                     if (localOidInfo != IntPtr.Zero)
                     {
-                        return (CRYPT_OID_INFO)Marshal.PtrToStructure(localOidInfo, typeof(CRYPT_OID_INFO));
+                        return Marshal.PtrToStructure<CRYPT_OID_INFO>(localOidInfo);
                     }
                 }
 
@@ -88,7 +88,7 @@ namespace Internal.NativeCrypto
                 IntPtr fullOidInfo = CryptFindOIDInfo(keyType, rawKey, group);
                 if (fullOidInfo != IntPtr.Zero)
                 {
-                    return (CRYPT_OID_INFO)Marshal.PtrToStructure(fullOidInfo, typeof(CRYPT_OID_INFO));
+                    return Marshal.PtrToStructure<CRYPT_OID_INFO>(fullOidInfo);
                 }
 
                 if (fallBackToAllGroups && group != OidGroup.All)
@@ -98,7 +98,7 @@ namespace Internal.NativeCrypto
                     IntPtr allGroupOidInfo = CryptFindOIDInfo(keyType, rawKey, OidGroup.All);
                     if (allGroupOidInfo != IntPtr.Zero)
                     {
-                        return (CRYPT_OID_INFO)Marshal.PtrToStructure(fullOidInfo, typeof(CRYPT_OID_INFO));
+                        return Marshal.PtrToStructure<CRYPT_OID_INFO>(fullOidInfo);
                     }
                 }
 
