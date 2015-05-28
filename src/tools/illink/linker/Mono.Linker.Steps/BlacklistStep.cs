@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Linq;
 using System.IO;
 using System.Reflection;
 using System.Xml.XPath;
@@ -49,6 +50,15 @@ namespace Mono.Linker.Steps {
 
 				Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetResolveStep (name));
 			}
+
+			foreach (var rsc in Context.GetAssemblies ()
+								.SelectMany (asm => asm.Modules)
+								.SelectMany (mod => mod.Resources)
+								.Where (res => res.ResourceType == ResourceType.Embedded)
+								.Where (res => IsReferenced (GetAssemblyName (res.Name)))
+								.Cast<EmbeddedResource> ()) {
+				Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetExternalResolveStep (rsc));
+			}
 		}
 
 		static string GetAssemblyName (string descriptor)
@@ -69,9 +79,21 @@ namespace Mono.Linker.Steps {
 			return false;
 		}
 
+		static ResolveFromXmlStep GetExternalResolveStep (EmbeddedResource resource)
+		{
+			return new ResolveFromXmlStep (GetExternalDescriptor (resource));
+		}
+
 		static ResolveFromXmlStep GetResolveStep (string descriptor)
 		{
 			return new ResolveFromXmlStep (GetDescriptor (descriptor));
+		}
+
+		static XPathDocument GetExternalDescriptor (EmbeddedResource resource)
+		{
+			using (var sr = new StreamReader (resource.GetResourceStream ())) {
+				return new XPathDocument (new StringReader (sr.ReadToEnd ()));
+			}
 		}
 
 		static XPathDocument GetDescriptor (string descriptor)
