@@ -17,6 +17,7 @@ namespace System.Text.EncodingTests
         private static byte[] s_UTF8BEBom = new byte[] { 0xFE, 0xFF };
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestGetEncoding()
         {
             Encoding encoding = Encoding.GetEncoding("UTF-32LE");
@@ -129,6 +130,7 @@ namespace System.Text.EncodingTests
     };
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestEncodingNameAndCopdepageNumber()
         {
             foreach (var map in s_mapping)
@@ -177,6 +179,7 @@ namespace System.Text.EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestCodePageToWebNameMappings()
         {
             foreach (var mapping in s_codePageToWebNameMappings)
