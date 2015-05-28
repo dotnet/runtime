@@ -124,7 +124,11 @@ HRESULT ExecuteAssembly(
             LPCSTR entryPointMethodName,
             DWORD* exitCode)
 {
-    *exitCode = 0;
+    if (exitCode == NULL)
+    {
+        return HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER);
+    }
+    *exitCode = -1;
 
     DWORD error = PAL_InitializeCoreCLR(exePath, coreClrPath, true);
     HRESULT hr = HRESULT_FROM_WIN32(error);
