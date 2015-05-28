@@ -9,15 +9,15 @@ using System.Text.Encodings.Web;
 using Xunit;
 using Xunit.Abstractions;
 
-#if RELEASE 
+#if RELEASE
 namespace Microsoft.Framework.WebEncoders
 {
     public class PerformanceTests
     {
-        const int SmallItterations = 500000;
+        const int SmallIterations = 500000;
         const string SmallString = "<Hello World";
 
-        const int LargeItterations = 150000;
+        const int LargeIterations = 150000;
         const string LargeString = "<Hello World aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
         const string LargeStringThatIsNotEncoded = "Hello World aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -38,34 +38,34 @@ namespace Microsoft.Framework.WebEncoders
             Stopwatch timer = new Stopwatch();
 
             // warmup
-            EncodeJavaScript(oldEncoder, SmallString, timer, SmallItterations);
-            EncodeJavaScript(newEncoder, SmallString, timer, SmallItterations);
+            EncodeJavaScript(oldEncoder, SmallString, timer, SmallIterations);
+            EncodeJavaScript(newEncoder, SmallString, timer, SmallIterations);
 
-            var oldTime = EncodeJavaScript(oldEncoder, SmallString, timer, SmallItterations);
-            var newTime = EncodeJavaScript(newEncoder, SmallString, timer, SmallItterations);
+            var oldTime = EncodeJavaScript(oldEncoder, SmallString, timer, SmallIterations);
+            var newTime = EncodeJavaScript(newEncoder, SmallString, timer, SmallIterations);
             var message = String.Format("JavaScriptEncodeStringToStringSmall: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeJavaScript(oldEncoder, LargeString, timer, LargeItterations);
-            newTime = EncodeJavaScript(newEncoder, LargeString, timer, LargeItterations);
+            oldTime = EncodeJavaScript(oldEncoder, LargeString, timer, LargeIterations);
+            newTime = EncodeJavaScript(newEncoder, LargeString, timer, LargeIterations);
             message = String.Format("JavaScriptEncodeStringToStringLarge: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeJavaScript(oldEncoder, LargeStringThatIsNotEncoded, timer, LargeItterations);
-            newTime = EncodeJavaScript(newEncoder, LargeStringThatIsNotEncoded, timer, LargeItterations);
+            oldTime = EncodeJavaScript(oldEncoder, LargeStringThatIsNotEncoded, timer, LargeIterations);
+            newTime = EncodeJavaScript(newEncoder, LargeStringThatIsNotEncoded, timer, LargeIterations);
             message = String.Format("JavaScriptEncodeStringToStringLargeNoEncoding: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeJavaScript(oldEncoder, LargeStringWithOnlyEndEncoded, timer, LargeItterations);
-            newTime = EncodeJavaScript(newEncoder, LargeStringWithOnlyEndEncoded, timer, LargeItterations);
+            oldTime = EncodeJavaScript(oldEncoder, LargeStringWithOnlyEndEncoded, timer, LargeIterations);
+            newTime = EncodeJavaScript(newEncoder, LargeStringWithOnlyEndEncoded, timer, LargeIterations);
             message = String.Format("JavaScriptEncodeStringToStringLargeEndEncoding: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
         }
 
-        private TimeSpan EncodeJavaScript(IJavaScriptStringEncoder encoder, string text, Stopwatch timer, int itterations)
+        private TimeSpan EncodeJavaScript(IJavaScriptStringEncoder encoder, string text, Stopwatch timer, int iterations)
         {
             timer.Restart();
-            for (int itteration = 0; itteration < itterations; itteration++)
+            for (int iteration = 0; iteration < iterations; iteration++)
             {
                 Ignore(encoder.JavaScriptStringEncode(text));
             }
@@ -80,34 +80,34 @@ namespace Microsoft.Framework.WebEncoders
             Stopwatch timer = new Stopwatch();
 
             // warmup
-            EncodeHtml(oldEncoder, SmallString, timer, SmallItterations);
-            EncodeHtml(newEncoder, SmallString, timer, SmallItterations);
+            EncodeHtml(oldEncoder, SmallString, timer, SmallIterations);
+            EncodeHtml(newEncoder, SmallString, timer, SmallIterations);
 
-            var oldTime = EncodeHtml(oldEncoder, SmallString, timer, SmallItterations);
-            var newTime = EncodeHtml(newEncoder, SmallString, timer, SmallItterations);
+            var oldTime = EncodeHtml(oldEncoder, SmallString, timer, SmallIterations);
+            var newTime = EncodeHtml(newEncoder, SmallString, timer, SmallIterations);
             var message = String.Format("HtmlEncodeStringToStringSmall: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeHtml(oldEncoder, LargeString, timer, LargeItterations);
-            newTime = EncodeHtml(newEncoder, LargeString, timer, LargeItterations);
+            oldTime = EncodeHtml(oldEncoder, LargeString, timer, LargeIterations);
+            newTime = EncodeHtml(newEncoder, LargeString, timer, LargeIterations);
             message = String.Format("HtmlEncodeStringToStringLarge: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeHtml(oldEncoder, LargeStringThatIsNotEncoded, timer, LargeItterations);
-            newTime = EncodeHtml(newEncoder, LargeStringThatIsNotEncoded, timer, LargeItterations);
+            oldTime = EncodeHtml(oldEncoder, LargeStringThatIsNotEncoded, timer, LargeIterations);
+            newTime = EncodeHtml(newEncoder, LargeStringThatIsNotEncoded, timer, LargeIterations);
             message = String.Format("HtmlEncodeStringToStringLargeNoEncoding: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeHtml(oldEncoder, LargeStringWithOnlyEndEncoded, timer, LargeItterations);
-            newTime = EncodeHtml(newEncoder, LargeStringWithOnlyEndEncoded, timer, LargeItterations);
+            oldTime = EncodeHtml(oldEncoder, LargeStringWithOnlyEndEncoded, timer, LargeIterations);
+            newTime = EncodeHtml(newEncoder, LargeStringWithOnlyEndEncoded, timer, LargeIterations);
             message = String.Format("HtmlEncodeStringToStringLargeEndEncoding: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
         }
 
-        private TimeSpan EncodeHtml(IHtmlEncoder encoder, string text, Stopwatch timer, int itterations)
+        private TimeSpan EncodeHtml(IHtmlEncoder encoder, string text, Stopwatch timer, int iterations)
         {
             timer.Restart();
-            for(int itteration=0; itteration<itterations; itteration++)
+            for (int iteration = 0; iteration < iterations; iteration++)
             {
                 Ignore(encoder.HtmlEncode(text));
             }
@@ -122,38 +122,38 @@ namespace Microsoft.Framework.WebEncoders
             Stopwatch timer = new Stopwatch();
 
             // warmup
-            EncodeHtmlToTextWriter(oldEncoder, SmallString, timer, SmallItterations);
-            EncodeHtmlToTextWriter(newEncoder, SmallString, timer, SmallItterations);
+            EncodeHtmlToTextWriter(oldEncoder, SmallString, timer, SmallIterations);
+            EncodeHtmlToTextWriter(newEncoder, SmallString, timer, SmallIterations);
 
-            var oldTime = EncodeHtmlToTextWriter(oldEncoder, SmallString, timer, SmallItterations);
-            var newTime = EncodeHtmlToTextWriter(newEncoder, SmallString, timer, SmallItterations);
+            var oldTime = EncodeHtmlToTextWriter(oldEncoder, SmallString, timer, SmallIterations);
+            var newTime = EncodeHtmlToTextWriter(newEncoder, SmallString, timer, SmallIterations);
             var message = String.Format("HtmlEncodeToTextWriter: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeHtmlToTextWriter(oldEncoder, LargeString, timer, LargeItterations);
-            newTime = EncodeHtmlToTextWriter(newEncoder, LargeString, timer, LargeItterations);
+            oldTime = EncodeHtmlToTextWriter(oldEncoder, LargeString, timer, LargeIterations);
+            newTime = EncodeHtmlToTextWriter(newEncoder, LargeString, timer, LargeIterations);
             message = String.Format("HtmlEncodeToTextWriterLarge: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeHtmlToTextWriter(oldEncoder, LargeStringThatIsNotEncoded, timer, LargeItterations);
-            newTime = EncodeHtmlToTextWriter(newEncoder, LargeStringThatIsNotEncoded, timer, LargeItterations);
+            oldTime = EncodeHtmlToTextWriter(oldEncoder, LargeStringThatIsNotEncoded, timer, LargeIterations);
+            newTime = EncodeHtmlToTextWriter(newEncoder, LargeStringThatIsNotEncoded, timer, LargeIterations);
             message = String.Format("HtmlEncodeToTextWriterLargeNoEncoding: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
 
-            oldTime = EncodeHtmlToTextWriter(oldEncoder, LargeStringWithOnlyEndEncoded, timer, LargeItterations);
-            newTime = EncodeHtmlToTextWriter(newEncoder, LargeStringWithOnlyEndEncoded, timer, LargeItterations);
+            oldTime = EncodeHtmlToTextWriter(oldEncoder, LargeStringWithOnlyEndEncoded, timer, LargeIterations);
+            newTime = EncodeHtmlToTextWriter(newEncoder, LargeStringWithOnlyEndEncoded, timer, LargeIterations);
             message = String.Format("HtmlEncodeToTextWriterLargeEndEncoding: Old={0}ms, New={1}ms, Delta={2:G}%", (ulong)oldTime.TotalMilliseconds, (ulong)newTime.TotalMilliseconds, (int)((newTime.TotalMilliseconds - oldTime.TotalMilliseconds) / oldTime.TotalMilliseconds * 100));
             output.WriteLine(message);
         }
 
-        private static TimeSpan EncodeHtmlToTextWriter(IHtmlEncoder encoder, string text, Stopwatch timer, int itterations)
+        private static TimeSpan EncodeHtmlToTextWriter(IHtmlEncoder encoder, string text, Stopwatch timer, int iterations)
         {
             var defaultEncoder = System.Text.Encodings.Web.HtmlEncoder.Default;
 
-            var stream = new MemoryStream(text.Length * 2 * defaultEncoder.MaxOutputCharsPerInputChar);
+            var stream = new MemoryStream(text.Length * 2 * defaultEncoder.MaxOutputCharactersPerInputCharacter);
             var writer = new StreamWriter(stream);
             timer.Restart();
-            for (int itteration = 0; itteration < itterations; itteration++)
+            for (int iteration = 0; iteration < iterations; iteration++)
             {
                 encoder.HtmlEncode(text, writer);
             }
