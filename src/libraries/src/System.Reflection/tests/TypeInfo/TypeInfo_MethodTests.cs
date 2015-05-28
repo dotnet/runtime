@@ -694,7 +694,9 @@ namespace System.Reflection.Tests
 
         public int PublicProperty { get { return default(int); } set { } }
 
-        public event System.EventHandler EventPublic;
+        #pragma warning disable 0067 // unused event (only used via reflection)
+        public event EventHandler EventPublic;
+        #pragma warning restore 0067
     }
 
     public interface MethodITest { }
