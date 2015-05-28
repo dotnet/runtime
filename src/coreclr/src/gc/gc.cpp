@@ -5908,7 +5908,7 @@ BYTE* get_plug_start_in_saved (BYTE* old_loc, mark* pinned_plug_entry)
     BYTE* plug_start_in_saved = saved_pre_plug_info + (old_loc - (pinned_plug (pinned_plug_entry) - sizeof (plug_and_gap)));
     //dprintf (1, ("detected a very short plug: %Ix before PP %Ix, pad %Ix", 
     //    old_loc, pinned_plug (pinned_plug_entry), plug_start_in_saved));
-    dprintf (1, ("EP: %Ix(%Ix), %Ix", old_loc, (BYTE)pinned_plug_entry, plug_start_in_saved));
+    dprintf (1, ("EP: %Ix(%Ix), %Ix", old_loc, pinned_plug (pinned_plug_entry), plug_start_in_saved));
     return plug_start_in_saved;
 }
 
@@ -21401,7 +21401,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
                 if (convert_to_pinned_p)
                 {
-                    assert (last_npinned_plug_p == TRUE);
+                    assert (last_npinned_plug_p != FALSE);
                     assert (last_pinned_plug_p == FALSE);
                     convert_to_pinned_plug (last_npinned_plug_p, last_pinned_plug_p, pinned_plug_p,
                                             ps, artificial_pinned_size);
