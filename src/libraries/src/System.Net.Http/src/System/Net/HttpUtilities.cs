@@ -14,7 +14,12 @@ namespace System.Net.Http
 {
     internal static class HttpUtilities
     {
-        internal static readonly Version DefaultVersion = HttpVersion.Version11;
+#if NETNative
+        internal static readonly Version DefaultRequestVersion = HttpVersion.Version20;
+#else
+        internal static readonly Version DefaultRequestVersion = HttpVersion.Version11;
+#endif
+        internal static readonly Version DefaultResponseVersion = HttpVersion.Version11;
 
         internal static bool IsHttpUri(Uri uri)
         {
