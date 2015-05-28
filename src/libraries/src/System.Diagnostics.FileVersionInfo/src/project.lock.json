@@ -14,6 +14,14 @@
           "lib/DNXCore50/System.Collections.dll"
         ]
       },
+      "System.Collections.Immutable/1.1.36": {
+        "compile": [
+          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll"
+        ]
+      },
       "System.Diagnostics.Debug/4.0.10-beta-22927": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-22927"
@@ -110,6 +118,17 @@
         ],
         "runtime": [
           "lib/DNXCore50/System.Reflection.dll"
+        ]
+      },
+      "System.Reflection.Metadata/1.0.21": {
+        "dependencies": {
+          "System.Collections.Immutable": "1.1.36"
+        },
+        "compile": [
+          "lib/portable-net45+win8/System.Reflection.Metadata.dll"
+        ],
+        "runtime": [
+          "lib/portable-net45+win8/System.Reflection.Metadata.dll"
         ]
       },
       "System.Reflection.Primitives/4.0.0-beta-22927": {
@@ -258,6 +277,18 @@
         "runtimes/win8-aot/lib/netcore50/System.Collections.dll"
       ]
     },
+    "System.Collections.Immutable/1.1.36": {
+      "serviceable": true,
+      "sha512": "MOlivTIeAIQPPMUPWIIoMCvZczjFRLYUWSYwqi1szu8QPyeIbsaPeI+hpXe1DzTxNwnRnmfYaoToi6kXIfSPNg==",
+      "files": [
+        "License-Stable.rtf",
+        "System.Collections.Immutable.1.1.36.nupkg",
+        "System.Collections.Immutable.1.1.36.nupkg.sha512",
+        "System.Collections.Immutable.nuspec",
+        "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll",
+        "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.xml"
+      ]
+    },
     "System.Diagnostics.Debug/4.0.10-beta-22927": {
       "sha512": "uhcpTHJXFOXz1BHrZ2I37p28nW+HkWEYssFDQ3I6Jvt/OrMHOOZ7un1ANIICBnKjH3IM2LAznyvEZDJ9DourSw==",
       "files": [
@@ -364,6 +395,18 @@
         "ref/any/System.Reflection.dll",
         "ref/net46/System.Reflection.dll",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.dll"
+      ]
+    },
+    "System.Reflection.Metadata/1.0.21": {
+      "serviceable": true,
+      "sha512": "CAhcY0EJFLXfxo5YRV/ytkTOeTBho8zKjLu+9LvEI5NIVmanp1yMUzYQdjvXpHbyV0Qt1KuLXcTCc9t9FVH3Wg==",
+      "files": [
+        "License-Stable.rtf",
+        "System.Reflection.Metadata.1.0.21.nupkg",
+        "System.Reflection.Metadata.1.0.21.nupkg.sha512",
+        "System.Reflection.Metadata.nuspec",
+        "lib/portable-net45+win8/System.Reflection.Metadata.dll",
+        "lib/portable-net45+win8/System.Reflection.Metadata.xml"
       ]
     },
     "System.Reflection.Primitives/4.0.0-beta-22927": {
@@ -529,6 +572,7 @@
       "System.IO.FileSystem >= 4.0.0-beta-*",
       "System.IO.FileSystem.Primitives >= 4.0.0-beta-*",
       "System.Reflection >= 4.0.10-beta-*",
+      "System.Reflection.Metadata >= 1.0.21",
       "System.Reflection.Primitives >= 4.0.0-beta-*",
       "System.Runtime >= 4.0.20-beta-*",
       "System.Runtime.Extensions >= 4.0.10-beta-*",
