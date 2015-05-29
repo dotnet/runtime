@@ -2,15 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
-using System.Text;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text;
 using Xunit;
 
-//
-// System.Diagnostics.FileVersionInfo Test
-//
 public class FileVersionInfoTest
 {
     private const string NativeConsoleAppFileName = "NativeConsoleApp.exe";
@@ -20,56 +17,195 @@ public class FileVersionInfoTest
     private const string TestCsFileName = "Assembly1.cs";
     private const string TestNotFoundFileName = "notfound.dll";
 
-    private MyFVI _fviNativeConsoleApp;
-    private MyFVI _fviNativeLibrary;
-    private MyFVI _fviSecondNativeLibrary;
-    private MyFVI _fviAssembly1;
-    private MyFVI _fviAssembly1_cs;
-
     [Fact]
-    [ActiveIssue(811, PlatformID.AnyUnix)]
+    [PlatformSpecific(PlatformID.Windows)] // native PE files only supported on Windows
     public void FileVersionInfo_Normal()
     {
-        EnsureExpectedValuesInitialized();
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName), _fviNativeConsoleApp);
+        // NativeConsoleApp (English)
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName), new MyFVI()
+        {
+            Comments = "",
+            CompanyName = "This is not a real company name.",
+            FileBuildPart = 3,
+            FileDescription = "This is the description for the native console application.",
+            FileMajorPart = 5,
+            FileMinorPart = 4,
+            FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName),
+            FilePrivatePart = 2,
+            FileVersion = "5.4.3.2",
+            InternalName = NativeConsoleAppFileName,
+            IsDebug = false,
+            IsPatched = false,
+            IsPrivateBuild = false,
+            IsPreRelease = true,
+            IsSpecialBuild = true,
+            Language = GetFileVersionLanguage(0x0409), //English (United States)
+            LegalCopyright = "Copyright (C) 2050",
+            LegalTrademarks = "",
+            OriginalFilename = NativeConsoleAppFileName,
+            PrivateBuild = "",
+            ProductBuildPart = 3,
+            ProductMajorPart = 5,
+            ProductMinorPart = 4,
+            ProductName = Path.GetFileNameWithoutExtension(NativeConsoleAppFileName),
+            ProductPrivatePart = 2,
+            ProductVersion = "5.4.3.2",
+            SpecialBuild = ""
+        });
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.AnyUnix)]
+    [PlatformSpecific(PlatformID.Windows)] // native PE files only supported on Windows
     public void FileVersionInfo_Chinese()
     {
-        EnsureExpectedValuesInitialized();
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName), _fviNativeLibrary);
+        // NativeLibrary.dll (Chinese)
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName), new MyFVI()
+        {
+            Comments = "",
+            CompanyName = "A non-existent company",
+            FileBuildPart = 3,
+            FileDescription = "Here is the description of the native library.",
+            FileMajorPart = 9,
+            FileMinorPart = 9,
+            FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName),
+            FilePrivatePart = 3,
+            FileVersion = "9.9.3.3",
+            InternalName = "NativeLi.dll",
+            IsDebug = false,
+            IsPatched = true,
+            IsPrivateBuild = false,
+            IsPreRelease = true,
+            IsSpecialBuild = false,
+            Language = GetFileVersionLanguage(0x0004),//Chinese (Simplified)
+            Language2 = GetFileVersionLanguage(0x0804),//Chinese (Simplified, PRC) - changed, but not yet on all platforms
+            LegalCopyright = "None",
+            LegalTrademarks = "",
+            OriginalFilename = "NativeLi.dll",
+            PrivateBuild = "",
+            ProductBuildPart = 40,
+            ProductMajorPart = 20,
+            ProductMinorPart = 30,
+            ProductName = "I was never given a name.",
+            ProductPrivatePart = 50,
+            ProductVersion = "20.30.40.50",
+            SpecialBuild = "",
+        });
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.AnyUnix)]
+    [PlatformSpecific(PlatformID.Windows)] // native PE files only supported on Windows
     public void FileVersionInfo_DifferentFileVersionAndProductVersion()
     {
-        EnsureExpectedValuesInitialized();
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName), _fviSecondNativeLibrary);
+        // Mtxex.dll
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName), new MyFVI()
+        {
+            Comments = "",
+            CompanyName = "",
+            FileBuildPart = 0,
+            FileDescription = "",
+            FileMajorPart = 0,
+            FileMinorPart = 65535,
+            FileName = Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName),
+            FilePrivatePart = 2,
+            FileVersion = "0.65535.0.2",
+            InternalName = "SecondNa.dll",
+            IsDebug = false,
+            IsPatched = false,
+            IsPrivateBuild = false,
+            IsPreRelease = false,
+            IsSpecialBuild = false,
+            Language = GetFileVersionLanguage(0x0400),//Process Default Language
+            LegalCopyright = "Copyright (C) 1 - 2014",
+            LegalTrademarks = "",
+            OriginalFilename = "SecondNa.dll",
+            PrivateBuild = "",
+            ProductBuildPart = 0,
+            ProductMajorPart = 1,
+            ProductMinorPart = 0,
+            ProductName = "Unkown_Product_Name",
+            ProductPrivatePart = 1,
+            ProductVersion = "1.0.0.1",
+            SpecialBuild = "",
+        });
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.AnyUnix)]
     public void FileVersionInfo_CustomManagedAssembly()
     {
-        EnsureExpectedValuesInitialized();
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), _fviAssembly1);
+        // Assembly1.dll
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName), new MyFVI()
+        {
+            Comments = "Have you played a Contoso amusement device today?",
+            CompanyName = "The name of the company.",
+            FileBuildPart = 2,
+            FileDescription = "My File",
+            FileMajorPart = 4,
+            FileMinorPart = 3,
+            FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName),
+            FilePrivatePart = 1,
+            FileVersion = "4.3.2.1",
+            InternalName = TestAssemblyFileName,
+            IsDebug = false,
+            IsPatched = false,
+            IsPrivateBuild = false,
+            IsPreRelease = false,
+            IsSpecialBuild = false,
+            Language = Interop.IsWindows ? GetFileVersionLanguage(0x0000) : "Language Neutral", //Language Neutral
+            LegalCopyright = "Copyright, you betcha!",
+            LegalTrademarks = "TM",
+            OriginalFilename = TestAssemblyFileName,
+            PrivateBuild = "",
+            ProductBuildPart = 2,
+            ProductMajorPart = 4,
+            ProductMinorPart = 3,
+            ProductName = "The greatest product EVER",
+            ProductPrivatePart = 1,
+            ProductVersion = "4.3.2.1",
+            SpecialBuild = "",
+        });
     }
 
     [Fact]
-    [ActiveIssue(811, PlatformID.AnyUnix)]
     public void FileVersionInfo_EmptyFVI()
     {
-        EnsureExpectedValuesInitialized();
-        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), _fviAssembly1_cs);
+        // Assembly1.cs
+        VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName), new MyFVI()
+        {
+            Comments = null,
+            CompanyName = null,
+            FileBuildPart = 0,
+            FileDescription = null,
+            FileMajorPart = 0,
+            FileMinorPart = 0,
+            FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName),
+            FilePrivatePart = 0,
+            FileVersion = null,
+            InternalName = null,
+            IsDebug = false,
+            IsPatched = false,
+            IsPrivateBuild = false,
+            IsPreRelease = false,
+            IsSpecialBuild = false,
+            Language = null,
+            LegalCopyright = null,
+            LegalTrademarks = null,
+            OriginalFilename = null,
+            PrivateBuild = null,
+            ProductBuildPart = 0,
+            ProductMajorPart = 0,
+            ProductMinorPart = 0,
+            ProductName = null,
+            ProductPrivatePart = 0,
+            ProductVersion = null,
+            SpecialBuild = null,
+        });
     }
 
     [Fact]
     public void FileVersionInfo_FileNotFound()
     {
-        VerifyVersionInfoException<FileNotFoundException>(Path.Combine(Directory.GetCurrentDirectory(), TestNotFoundFileName));
+        Assert.Throws<FileNotFoundException>(() =>
+            FileVersionInfo.GetVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), TestNotFoundFileName)));
     }
 
     // Additional Tests Wanted:
@@ -127,11 +263,6 @@ public class FileVersionInfoTest
                                false);
     }
 
-    private void VerifyVersionInfoException<T>(String filePath) where T : Exception
-    {
-        Assert.Throws<T>(() => FileVersionInfo.GetVersionInfo(filePath));
-    }
-
     private void TestStringProperty(String propertyName, String actual, String expected)
     {
         TestStringProperty(propertyName, actual, expected, true);
@@ -158,165 +289,6 @@ public class FileVersionInfoTest
     private void TestProperty<T>(String propertyName, T actual, T expected)
     {
         Assert.Equal(expected, actual);
-    }
-
-    private void EnsureExpectedValuesInitialized()
-    {
-        if (_fviNativeConsoleApp != null)
-        {
-            return;
-        }
-
-        // NativeConsoleApp (English)
-        _fviNativeConsoleApp = new MyFVI();
-        _fviNativeConsoleApp.Comments = "";
-        _fviNativeConsoleApp.CompanyName = "This is not a real company name.";
-        _fviNativeConsoleApp.FileBuildPart = 3;
-        _fviNativeConsoleApp.FileDescription = "This is the description for the native console application.";
-        _fviNativeConsoleApp.FileMajorPart = 5;
-        _fviNativeConsoleApp.FileMinorPart = 4;
-        _fviNativeConsoleApp.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName);
-        _fviNativeConsoleApp.FilePrivatePart = 2;
-        _fviNativeConsoleApp.FileVersion = "5.4.3.2";
-        _fviNativeConsoleApp.InternalName = NativeConsoleAppFileName;
-        _fviNativeConsoleApp.IsDebug = false;
-        _fviNativeConsoleApp.IsPatched = false;
-        _fviNativeConsoleApp.IsPrivateBuild = false;
-        _fviNativeConsoleApp.IsPreRelease = true;
-        _fviNativeConsoleApp.IsSpecialBuild = true;
-        _fviNativeConsoleApp.Language = GetFileVersionLanguage(0x0409);//English (United States)
-        _fviNativeConsoleApp.LegalCopyright = "Copyright (C) 2050";
-        _fviNativeConsoleApp.LegalTrademarks = "";
-        _fviNativeConsoleApp.OriginalFilename = NativeConsoleAppFileName;
-        _fviNativeConsoleApp.PrivateBuild = "";
-        _fviNativeConsoleApp.ProductBuildPart = 3;
-        _fviNativeConsoleApp.ProductMajorPart = 5;
-        _fviNativeConsoleApp.ProductMinorPart = 4;
-        _fviNativeConsoleApp.ProductName = Path.GetFileNameWithoutExtension(NativeConsoleAppFileName);
-        _fviNativeConsoleApp.ProductPrivatePart = 2;
-        _fviNativeConsoleApp.ProductVersion = "5.4.3.2";
-        _fviNativeConsoleApp.SpecialBuild = "";
-
-        // NativeLibrary.dll (Chinese)
-        _fviNativeLibrary = new MyFVI();
-        _fviNativeLibrary.Comments = "";
-        _fviNativeLibrary.CompanyName = "A non-existent company";
-        _fviNativeLibrary.FileBuildPart = 3;
-        _fviNativeLibrary.FileDescription = "Here is the description of the native library.";
-        _fviNativeLibrary.FileMajorPart = 9;
-        _fviNativeLibrary.FileMinorPart = 9;
-        _fviNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), NativeLibraryFileName);
-        _fviNativeLibrary.FilePrivatePart = 3;
-        _fviNativeLibrary.FileVersion = "9.9.3.3";
-        _fviNativeLibrary.InternalName = "NativeLi.dll";
-        _fviNativeLibrary.IsDebug = false;
-        _fviNativeLibrary.IsPatched = true;
-        _fviNativeLibrary.IsPrivateBuild = false;
-        _fviNativeLibrary.IsPreRelease = true;
-        _fviNativeLibrary.IsSpecialBuild = false;
-        _fviNativeLibrary.Language = GetFileVersionLanguage(0x0004);//Chinese (Simplified)
-        _fviNativeLibrary.Language2 = GetFileVersionLanguage(0x0804);//Chinese (Simplified, PRC) - changed, but not yet on all platforms
-        _fviNativeLibrary.LegalCopyright = "None";
-        _fviNativeLibrary.LegalTrademarks = "";
-        _fviNativeLibrary.OriginalFilename = "NativeLi.dll";
-        _fviNativeLibrary.PrivateBuild = "";
-        _fviNativeLibrary.ProductBuildPart = 40;
-        _fviNativeLibrary.ProductMajorPart = 20;
-        _fviNativeLibrary.ProductMinorPart = 30;
-        _fviNativeLibrary.ProductName = "I was never given a name.";
-        _fviNativeLibrary.ProductPrivatePart = 50;
-        _fviNativeLibrary.ProductVersion = "20.30.40.50";
-        _fviNativeLibrary.SpecialBuild = "";
-
-        // Mtxex.dll
-        _fviSecondNativeLibrary = new MyFVI();
-        _fviSecondNativeLibrary.Comments = "";
-        _fviSecondNativeLibrary.CompanyName = "";
-        _fviSecondNativeLibrary.FileBuildPart = 0;
-        _fviSecondNativeLibrary.FileDescription = "";
-        _fviSecondNativeLibrary.FileMajorPart = 0;
-        _fviSecondNativeLibrary.FileMinorPart = 65535;
-        _fviSecondNativeLibrary.FileName = Path.Combine(Directory.GetCurrentDirectory(), SecondNativeLibraryFileName);
-        _fviSecondNativeLibrary.FilePrivatePart = 2;
-        _fviSecondNativeLibrary.FileVersion = "0.65535.0.2";
-        _fviSecondNativeLibrary.InternalName = "SecondNa.dll";
-        _fviSecondNativeLibrary.IsDebug = false;
-        _fviSecondNativeLibrary.IsPatched = false;
-        _fviSecondNativeLibrary.IsPrivateBuild = false;
-        _fviSecondNativeLibrary.IsPreRelease = false;
-        _fviSecondNativeLibrary.IsSpecialBuild = false;
-        _fviSecondNativeLibrary.Language = GetFileVersionLanguage(0x0400);//Process Default Language
-        _fviSecondNativeLibrary.LegalCopyright = "Copyright (C) 1 - 2014";
-        _fviSecondNativeLibrary.LegalTrademarks = "";
-        _fviSecondNativeLibrary.OriginalFilename = "SecondNa.dll";
-        _fviSecondNativeLibrary.PrivateBuild = "";
-        _fviSecondNativeLibrary.ProductBuildPart = 0;
-        _fviSecondNativeLibrary.ProductMajorPart = 1;
-        _fviSecondNativeLibrary.ProductMinorPart = 0;
-        _fviSecondNativeLibrary.ProductName = "Unkown_Product_Name";
-        _fviSecondNativeLibrary.ProductPrivatePart = 1;
-        _fviSecondNativeLibrary.ProductVersion = "1.0.0.1";
-        _fviSecondNativeLibrary.SpecialBuild = "";
-
-        // Assembly1.dll
-        _fviAssembly1 = new MyFVI();
-        _fviAssembly1.Comments = "Have you played a Contoso amusement device today?";
-        _fviAssembly1.CompanyName = "The name of the company.";
-        _fviAssembly1.FileBuildPart = 2;
-        _fviAssembly1.FileDescription = "My File";
-        _fviAssembly1.FileMajorPart = 4;
-        _fviAssembly1.FileMinorPart = 3;
-        _fviAssembly1.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
-        _fviAssembly1.FilePrivatePart = 1;
-        _fviAssembly1.FileVersion = "4.3.2.1";
-        _fviAssembly1.InternalName = TestAssemblyFileName;
-        _fviAssembly1.IsDebug = false;
-        _fviAssembly1.IsPatched = false;
-        _fviAssembly1.IsPrivateBuild = false;
-        _fviAssembly1.IsPreRelease = false;
-        _fviAssembly1.IsSpecialBuild = false;
-        _fviAssembly1.Language = GetFileVersionLanguage(0x0000);//Language Neutral
-        _fviAssembly1.LegalCopyright = "Copyright, you betcha!";
-        _fviAssembly1.LegalTrademarks = "TM";
-        _fviAssembly1.OriginalFilename = TestAssemblyFileName;
-        _fviAssembly1.PrivateBuild = "";
-        _fviAssembly1.ProductBuildPart = 2;
-        _fviAssembly1.ProductMajorPart = 4;
-        _fviAssembly1.ProductMinorPart = 3;
-        _fviAssembly1.ProductName = "The greatest product EVER";
-        _fviAssembly1.ProductPrivatePart = 1;
-        _fviAssembly1.ProductVersion = "4.3.2.1";
-        _fviAssembly1.SpecialBuild = "";
-
-        // Assembly1.cs
-        _fviAssembly1_cs = new MyFVI();
-        _fviAssembly1_cs.Comments = null;
-        _fviAssembly1_cs.CompanyName = null;
-        _fviAssembly1_cs.FileBuildPart = 0;
-        _fviAssembly1_cs.FileDescription = null;
-        _fviAssembly1_cs.FileMajorPart = 0;
-        _fviAssembly1_cs.FileMinorPart = 0;
-        _fviAssembly1_cs.FileName = Path.Combine(Directory.GetCurrentDirectory(), TestCsFileName);
-        _fviAssembly1_cs.FilePrivatePart = 0;
-        _fviAssembly1_cs.FileVersion = null;
-        _fviAssembly1_cs.InternalName = null;
-        _fviAssembly1_cs.IsDebug = false;
-        _fviAssembly1_cs.IsPatched = false;
-        _fviAssembly1_cs.IsPrivateBuild = false;
-        _fviAssembly1_cs.IsPreRelease = false;
-        _fviAssembly1_cs.IsSpecialBuild = false;
-        _fviAssembly1_cs.Language = null;
-        _fviAssembly1_cs.LegalCopyright = null;
-        _fviAssembly1_cs.LegalTrademarks = null;
-        _fviAssembly1_cs.OriginalFilename = null;
-        _fviAssembly1_cs.PrivateBuild = null;
-        _fviAssembly1_cs.ProductBuildPart = 0;
-        _fviAssembly1_cs.ProductMajorPart = 0;
-        _fviAssembly1_cs.ProductMinorPart = 0;
-        _fviAssembly1_cs.ProductName = null;
-        _fviAssembly1_cs.ProductPrivatePart = 0;
-        _fviAssembly1_cs.ProductVersion = null;
-        _fviAssembly1_cs.SpecialBuild = null;
     }
 
     internal class MyFVI
@@ -351,7 +323,7 @@ public class FileVersionInfoTest
         public string SpecialBuild;
     }
 
-    static String GetUnicodeString(String str)
+    static string GetUnicodeString(String str)
     {
         if (str == null)
             return "<null>";
