@@ -1,6 +1,6 @@
 # Making your libraries compatible with .NET Core and other .NET Platforms
 
-Want to make your libraries multi-platform? Want to see how much work is required to make your application compatible with other .NET platforms? The [**.NET Portability Analyzer**](https://visualstudiogallery.msdn.microsoft.com/1177943e-cfb7-4822-a8a6-e56c7905292b) is a tool that provides you with a detailed report on how flexible your program is across .NET platforms by analyzing assemblies. The Portability Analyzer is offered as a Visual Studio Extension and as a console app.
+Want to make your libraries multi-platform? Want to see how much work is required to make your application compatible with other .NET platforms? The [**.NET Portability Analyzer**](https://visualstudiogallery.msdn.microsoft.com/1177943e-cfb7-4822-a8a6-e56c7905292b) is a tool that provides you with a detailed report ([example report](http://dotnet.github.io/port-to-core/Moq4_ApiPortabilityAnalysis.htm)) on how portable your code is across .NET platforms by analyzing assemblies. The Portability Analyzer is offered as a Visual Studio Extension and as a console app.
 
 ## New Targets
 
