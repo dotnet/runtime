@@ -92,7 +92,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void AllowedSymbols()
         {
-            string dirName = Path.Combine(TestDirectory, "!@#$%^&");
+            string dirName = Path.Combine(TestDirectory, Path.GetRandomFileName() + "!@#$%^&");
             DirectoryInfo dir = new DirectoryInfo(dirName);
             dir.Create();
 
