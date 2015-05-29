@@ -12,6 +12,9 @@ if (WIN32)
 else()
     add_definitions(-DNO_CRT_INIT)
 
+    set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
+    generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
+
     if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
@@ -25,12 +28,16 @@ else()
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive) 
+
+        set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
     endif(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
     if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -force_load)
         set(END_WHOLE_ARCHIVE )
+
+        set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
     endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 endif (WIN32)
@@ -41,6 +48,12 @@ add_library(coreclr
     SHARED
     ${CLR_SOURCES}
 )
+
+add_custom_target(coreclr_exports DEPENDS ${EXPORTS_FILE})
+add_dependencies(coreclr coreclr_exports)
+
+set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
+set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
 if (CLR_CMAKE_PLATFORM_UNIX)
     set(LIB_UNWINDER unwinder_wks)
