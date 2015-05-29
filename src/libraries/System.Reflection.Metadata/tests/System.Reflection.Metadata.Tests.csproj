@@ -49,7 +49,9 @@
     <Compile Include="Metadata\TagToTokenTests.cs" />
     <Compile Include="PortableExecutable\AbstractMemoryBlockTests.cs" />
     <Compile Include="PortableExecutable\BadImageFormat.cs" />
+    <Compile Include="PortableExecutable\PEBinaryReaderTests.cs" />
     <Compile Include="PortableExecutable\PEReaderTests.cs" />
+    <Compile Include="PortableExecutable\SectionHeaderTests.cs" />
     <Compile Include="PortableExecutable\StreamExtensionsTests.cs" />
     <Compile Include="Resources\TestResources.cs" />
     <Compile Include="TestUtilities\AssertEx.cs" />
