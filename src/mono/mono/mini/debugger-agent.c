@@ -8958,11 +8958,23 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			if (pos < 0) {
 				pos = - pos - 1;
 
+				DEBUG_PRINTF (4, "[dbg]   send arg %d.\n", pos);
+
 				g_assert (pos >= 0 && pos < jit->num_params);
 
 				add_var (buf, jit, sig->params [pos], &jit->params [pos], &frame->ctx, frame->domain, FALSE);
 			} else {
+				MonoDebugLocalsInfo *locals;
+
+				locals = mono_debug_lookup_locals (frame->method);
+				if (locals) {
+					g_assert (pos < locals->num_locals);
+					pos = locals->locals [pos].index;
+					mono_debug_free_locals (locals);
+				}
 				g_assert (pos >= 0 && pos < jit->num_locals);
+
+				DEBUG_PRINTF (4, "[dbg]   send local %d.\n", pos);
 
 				add_var (buf, jit, header->locals [pos], &jit->locals [pos], &frame->ctx, frame->domain, FALSE);
 			}
@@ -9007,6 +9019,14 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				t = sig->params [pos];
 				var = &jit->params [pos];
 			} else {
+				MonoDebugLocalsInfo *locals;
+
+				locals = mono_debug_lookup_locals (frame->method);
+				if (locals) {
+					g_assert (pos < locals->num_locals);
+					pos = locals->locals [pos].index;
+					mono_debug_free_locals (locals);
+				}
 				g_assert (pos >= 0 && pos < jit->num_locals);
 
 				t = header->locals [pos];
