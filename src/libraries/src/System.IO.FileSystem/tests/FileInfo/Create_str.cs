@@ -154,7 +154,7 @@ public class FileInfo_Create_str
 
             strLoc = "Loc_87yg7";
 
-            fileName = Path.Combine(TestInfo.CurrentDirectory, "!@#$%^&");
+            fileName = Path.Combine(TestInfo.CurrentDirectory, Path.GetRandomFileName() + "!@#$%^&");
             iCountTestcases++;
             try
             {

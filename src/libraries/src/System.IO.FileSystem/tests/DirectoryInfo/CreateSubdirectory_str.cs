@@ -88,7 +88,7 @@ namespace System.IO.FileSystem.Tests
         [Fact]
         public void Symbols()
         {
-            string subdirName = "!@#$%^&";
+            string subdirName = "!@#$%^&" + Path.GetRandomFileName();
 
             DirectoryInfo dir = new DirectoryInfo(TestDirectory).CreateSubdirectory(subdirName);
 
