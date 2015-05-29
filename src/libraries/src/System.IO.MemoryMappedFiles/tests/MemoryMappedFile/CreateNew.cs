@@ -12,6 +12,27 @@ public class CreateNew : MMFTestBase
     private readonly static string s_uniquifier = Guid.NewGuid().ToString();
 
     [Fact]
+    public static void CreateNew_DelayAllocatePages_ReadWrite()
+    {
+        int capacity = 4096 * 10000;
+        using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(
+            null, capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.DelayAllocatePages, HandleInheritability.None))
+        {
+            foreach (int viewCapacity in new[] { 0, 1, 4096, capacity })
+            {
+                using (MemoryMappedViewAccessor accessor = mmf.CreateViewAccessor(0, viewCapacity, MemoryMappedFileAccess.ReadWrite))
+                {
+                    accessor.Write(0, (byte)42);
+                    Assert.Equal(42, accessor.ReadByte(0));
+
+                    accessor.Write(accessor.Capacity - 1, (byte)84);
+                    Assert.Equal(84, accessor.ReadByte(accessor.Capacity - 1));
+                }
+            }
+        }
+    }
+
+    [Fact]
     public static void CreateNewTestCases()
     {
         bool bResult = false;
