@@ -12,11 +12,6 @@ else()
     # given Windows .rc file. The target C++ file path is returned in the
     # variable specified by the TARGET_FILE parameter.
     function(build_resources SOURCE TARGET_NAME TARGET_FILE)
-        # Ensure that the necessary tools are present
-        find_program(AWK awk)
-        if (AWK STREQUAL "AWK-NOTFOUND")
-            message(FATAL_ERROR "AWK not found")
-        endif()
 
         get_compile_definitions(PREPROCESS_DEFINITIONS)
         get_include_directories(INCLUDE_DIRECTORIES)
