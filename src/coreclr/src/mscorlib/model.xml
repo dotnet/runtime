@@ -9748,6 +9748,7 @@
     <Type Name="System.Diagnostics.Tracing.EventAttribute">
       <Member Name="#ctor(System.Int32)" />
       <Member Name="get_EventId" />
+      <Member MemberType="Property" Name="ActivityOptions" />
       <Member MemberType="Property" Name="Channel" />
       <Member MemberType="Property" Name="Keywords" />  
       <Member MemberType="Property" Name="Level" />  
