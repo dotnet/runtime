@@ -1279,3 +1279,9 @@ mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass)
 	else
         mono_gc_wbarrier_generic_store (dest, *(MonoObject**)src);
 }
+
+void
+mono_generic_class_init (MonoVTable *vtable)
+{
+	mono_runtime_class_init (vtable);
+}
