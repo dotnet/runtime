@@ -828,16 +828,6 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	return buf;
 }
 
-#define arm_is_imm8(v) ((v) > -256 && (v) < 256)
-
-gpointer
-mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	/* Not used */
-	g_assert_not_reached ();
-	return NULL;
-}
-
 static gpointer
 handler_block_trampoline_helper (gpointer *ptr)
 {
@@ -1002,13 +992,6 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer
-mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;

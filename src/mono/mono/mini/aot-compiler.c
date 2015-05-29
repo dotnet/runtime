@@ -3067,7 +3067,6 @@ is_plt_patch (MonoJumpInfo *patch_info)
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_CLASS_INIT:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
@@ -5267,7 +5266,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_patch (acfg, entry->data, p, &p);
 		break;
 	}
-	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 	case MONO_PATCH_INFO_MONITOR_ENTER_V4:
 	case MONO_PATCH_INFO_MONITOR_EXIT:
@@ -5883,9 +5881,6 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_%s", prefix, ji->data.name);
 		break;
-	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
-		debug_sym = g_strdup_printf ("%s_generic_class_init", prefix);
-		break;
 	default:
 		break;
 	}
@@ -6190,11 +6185,6 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_trampoline (acfg, acfg->got_offset, info);
 #endif
 		mono_arch_create_monitor_exit_trampoline (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
-#endif
-
-#ifndef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
-		mono_arch_create_generic_class_init_trampoline (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 #endif
 

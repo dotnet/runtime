@@ -1414,35 +1414,6 @@ mono_create_class_init_trampoline (MonoVTable *vtable)
 }
 
 gpointer
-mono_create_generic_class_init_trampoline (void)
-{
-#ifndef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
-	static gpointer code;
-	MonoTrampInfo *info;
-
-	mono_trampolines_lock ();
-
-	if (!code) {
-		if (mono_aot_only)
-			/* get_named_code () might return an ftnptr, but our caller expects a direct pointer */
-			code = mono_get_addr_from_ftnptr (mono_aot_get_trampoline ("generic_class_init_trampoline"));
-		else {
-			code = mono_arch_create_generic_class_init_trampoline (&info, FALSE);
-			mono_tramp_info_register (info);
-		}
-	}
-
-	mono_trampolines_unlock ();
-
-	return code;
-#else
-	/* Not used */
-	g_assert_not_reached ();
-	return NULL;
-#endif
-}
-
-gpointer
 mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean add_sync_wrapper)
 {
 	MonoJitInfo *ji;

@@ -692,63 +692,6 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	return buf;
 }
 
-gpointer
-mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	guint8 *tramp;
-	guint8 *code, *buf;
-	static int byte_offset = -1;
-	static guint8 bitmask;
-	guint8 *jump;
-	int tramp_size;
-	GSList *unwind_ops = NULL;
-	MonoJumpInfo *ji = NULL;
-
-	tramp_size = 64;
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
-	unwind_ops = mono_arch_get_cie_program ();
-
-	if (byte_offset < 0)
-		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-	x86_test_membase_imm (code, MONO_ARCH_VTABLE_REG, byte_offset, bitmask);
-	jump = code;
-	x86_branch8 (code, X86_CC_Z, -1, 1);
-
-	x86_ret (code);
-
-	x86_patch (jump, code);
-
-	/* Push the vtable so the stack is the same as in a specific trampoline */
-	x86_push_reg (code, MONO_ARCH_VTABLE_REG);
-
-	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "generic_trampoline_generic_class_init");
-		x86_jump_reg (code, X86_EAX);
-	} else {
-		tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_GENERIC_CLASS_INIT);
-
-		/* jump to the actual trampoline */
-		x86_jump_code (code, tramp);
-	}
-
-	mono_arch_flush_icache (code, code - buf);
-
-	g_assert (code - buf <= tramp_size);
-#ifdef __native_client_codegen__
-	g_assert (code - buf <= kNaClAlignment);
-#endif
-
-	nacl_global_codeman_validate (&buf, tramp_size, &code);
-	mono_profiler_code_buffer_new (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL);
-
-	*info = mono_tramp_info_create ("generic_class_init_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return buf;
-}
-
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 /*
  * The code produced by this trampoline is equivalent to this:

@@ -149,8 +149,6 @@ static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 /* helper methods signatures */
 static MonoMethodSignature *helper_sig_class_init_trampoline;
 static MonoMethodSignature *helper_sig_domain_get;
-static MonoMethodSignature *helper_sig_generic_class_init_trampoline;
-static MonoMethodSignature *helper_sig_generic_class_init_trampoline_llvm;
 static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
 static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline;
 static MonoMethodSignature *helper_sig_monitor_enter_exit_trampoline_llvm;
@@ -359,8 +357,6 @@ mono_create_helper_signatures (void)
 {
 	helper_sig_domain_get = mono_create_icall_signature ("ptr");
 	helper_sig_class_init_trampoline = mono_create_icall_signature ("void");
-	helper_sig_generic_class_init_trampoline = mono_create_icall_signature ("void");
-	helper_sig_generic_class_init_trampoline_llvm = mono_create_icall_signature ("void ptr");
 	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
 	helper_sig_monitor_enter_exit_trampoline = mono_create_icall_signature ("void");
 	helper_sig_monitor_enter_exit_trampoline_llvm = mono_create_icall_signature ("void object");

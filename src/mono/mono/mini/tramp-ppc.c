@@ -613,61 +613,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 }
 
 gpointer
-mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	guint8 *tramp;
-	guint8 *code, *buf;
-	static int byte_offset = -1;
-	static guint8 bitmask;
-	guint8 *jump;
-	int tramp_size;
-	GSList *unwind_ops = NULL;
-	MonoJumpInfo *ji = NULL;
-
-	tramp_size = MONO_PPC_32_64_CASE (32, 44);
-	if (aot)
-		tramp_size += 32;
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
-	if (byte_offset < 0)
-		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-	ppc_lbz (code, ppc_r4, byte_offset, MONO_ARCH_VTABLE_REG);
-	ppc_andid (code, ppc_r4, ppc_r4, bitmask);
-	jump = code;
-	ppc_bc (code, PPC_BR_TRUE, PPC_BR_EQ, 0);
-
-	ppc_blr (code);
-
-	ppc_patch (jump, code);
-
-	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "specific_trampoline_generic_class_init");
-		/* Branch to the trampoline */
-#ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		ppc_ldptr (code, ppc_r12, 0, ppc_r12);
-#endif
-		ppc_mtctr (code, ppc_r12);
-		ppc_bcctr (code, PPC_BR_ALWAYS, 0);
-	} else {
-		tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT,
-			mono_get_root_domain (), NULL);
-
-		/* jump to the actual trampoline */
-		code = emit_trampoline_jump (code, tramp);
-	}
-
-	mono_arch_flush_icache (buf, code - buf);
-
-	g_assert (code - buf <= tramp_size);
-
-	*info = mono_tramp_info_create ("generic_class_init_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return buf;
-}
-
-gpointer
 mono_arch_get_nullified_class_init_trampoline (MonoTrampInfo **info)
 {
 	guint8 *code, *buf;

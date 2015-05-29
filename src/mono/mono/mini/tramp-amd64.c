@@ -899,14 +899,6 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	return buf;
 }
 
-gpointer
-mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	/* Not used on amd64 */
-	g_assert_not_reached ();
-	return NULL;
-}
-
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 
 gpointer

@@ -717,57 +717,6 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 
 /*========================= End of Function ========================*/
 
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_create_generic_class_init_trampoline    */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gpointer
-mono_arch_create_generic_class_init_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	guint8 *tramp;
-	guint8 *code, *buf;
-	static int byte_offset = -1;
-	static guint8 bitmask;
-	gint32 displace;
-	int tramp_size;
-	GSList *unwind_ops = NULL;
-	MonoJumpInfo *ji = NULL;
-
-	tramp_size = 48;
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
-	unwind_ops = mono_arch_get_cie_program ();
-
-	if (byte_offset < 0)
-		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-	s390_llgc(code, s390_r0, 0, MONO_ARCH_VTABLE_REG, byte_offset);
-	s390_nill(code, s390_r0, bitmask);
-	s390_bnzr(code, s390_r14);
-
-	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_GENERIC_CLASS_INIT,
-		mono_get_root_domain (), NULL);
-
-	/* jump to the actual trampoline */
-	displace = (tramp - code) / 2;
-	s390_jg (code, displace);
-
-	mono_arch_flush_icache (buf, code - buf);
-
-	g_assert (code - buf <= tramp_size);
-
-	*info = mono_tramp_info_create ("generic_class_init_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return(buf);
-}
-
-/*========================= End of Function ========================*/
-
 #ifdef MONO_ARCH_MONITOR_OBJECT_REG
 /*------------------------------------------------------------------*/
 /*                                                                  */

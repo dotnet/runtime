@@ -1174,7 +1174,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_ADJUSTED_IID:
 	case MONO_PATCH_INFO_CLASS_INIT:
-	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
@@ -1647,9 +1646,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_create_rgctx_lazy_fetch_trampoline (slot);
 		break;
 	}
-	case MONO_PATCH_INFO_GENERIC_CLASS_INIT:
-		target = mono_create_generic_class_init_trampoline ();
-		break;
 	case MONO_PATCH_INFO_MONITOR_ENTER:
 		target = mono_create_monitor_enter_trampoline ();
 		break;
