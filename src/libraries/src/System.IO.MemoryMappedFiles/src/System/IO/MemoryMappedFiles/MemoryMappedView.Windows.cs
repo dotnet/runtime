@@ -71,8 +71,9 @@ namespace System.IO.MemoryMappedFiles
             // VirtualQueryEx: http://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
             if (((viewInfo.State & Interop.mincore.MemOptions.MEM_RESERVE) != 0) || (viewSize < nativeSize))
             {
-                IntPtr tempHandle = Interop.mincore.VirtualAlloc(viewHandle, (UIntPtr)nativeSize, Interop.mincore.MemOptions.MEM_COMMIT,
-                                                        MemoryMappedFile.GetPageAccess(access));
+                IntPtr tempHandle = Interop.mincore.VirtualAlloc(
+                    viewHandle, (UIntPtr)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize), 
+                    Interop.mincore.MemOptions.MEM_COMMIT, MemoryMappedFile.GetPageAccess(access));
                 int lastError = Marshal.GetLastWin32Error();
                 if (viewHandle.IsInvalid)
                 {
