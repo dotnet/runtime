@@ -36,6 +36,7 @@
   <ItemGroup>
     <Compile Include="FileVersionInfoTest.cs" />
     <Compile Include="Interop\Interop.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <!-- References used -->
   <ItemGroup>
