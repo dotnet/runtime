@@ -7484,6 +7484,9 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	if (!image)
 		image = mono_defaults.corlib;
 
+	if (!rootimage)
+		rootimage = mono_defaults.corlib;
+
 	if (ignorecase) {
 		MonoError error;
 		klass = mono_class_from_name_case_checked (image, info->name_space, info->name, &error);

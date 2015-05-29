@@ -411,6 +411,7 @@ BASE_TEST_CS_SRC=		\
 	thread_static_gc_layout.cs \
 	sleep.cs \
 	bug-27147.cs	\
+	bug-30085.cs	\
 	bug-17537.cs
 
 TEST_CS_SRC_DIST=	\
