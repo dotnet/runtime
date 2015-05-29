@@ -98,6 +98,7 @@ namespace System.IO.Pipes
         public String GetClientHandleAsString()
         {
             _clientHandleExposed = true;
+            GC.SuppressFinalize(_clientHandle);
             return _clientHandle.DangerousGetHandle().ToString();
         }
 

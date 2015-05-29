@@ -225,7 +225,7 @@ namespace System.IO.Pipes.Tests
                     safeHandle.DangerousAddRef(ref gotRef);
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
-                    SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, true);
+                    SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, ownsHandle: false);
                     Assert.Throws<IOException>(() => new NamedPipeServerStream(PipeDirection.InOut, false, true, fakePipeHandle));
                 }
                 finally
@@ -326,7 +326,7 @@ namespace System.IO.Pipes.Tests
                     safeHandle.DangerousAddRef(ref gotRef);
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
-                    SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, true);
+                    SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, ownsHandle: false);
                     Assert.Throws<IOException>(() => new NamedPipeClientStream(PipeDirection.InOut, false, true, fakePipeHandle));
                 }
                 finally
