@@ -3623,6 +3623,7 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass, MonoBasicBlock **ou
 {
 	MonoInst *vtable_arg;
 	int context_used;
+	gboolean use_op_generic_class_init = FALSE;
 
 	*out_bblock = cfg->cbb;
 
@@ -3640,46 +3641,47 @@ emit_generic_class_init (MonoCompile *cfg, MonoClass *klass, MonoBasicBlock **ou
 	}
 
 #ifdef MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT
-	MonoInst *ins;
-
-	/*
-	 * Using an opcode instead of emitting IR here allows the hiding of the call inside the opcode,
-	 * so this doesn't have to clobber any regs and it doesn't break basic blocks.
-	 */
-	/*
-	 * For LLVM, this requires that the code in the generic trampoline obtain the vtable argument according to
-	 * the normal calling convention of the platform.
-	 */
-	MONO_INST_NEW (cfg, ins, OP_GENERIC_CLASS_INIT);
-	ins->sreg1 = vtable_arg->dreg;
-	MONO_ADD_INS (cfg->cbb, ins);
-#else
-	static int byte_offset = -1;
-	static guint8 bitmask;
-	int bits_reg, inited_reg;
-	MonoBasicBlock *inited_bb;
-	MonoInst *args [16];
-
-	if (byte_offset < 0)
-		mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
-
-	bits_reg = alloc_ireg (cfg);
-	inited_reg = alloc_ireg (cfg);
-
-	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, bits_reg, vtable_arg->dreg, byte_offset);
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, inited_reg, bits_reg, bitmask);
-
-	NEW_BBLOCK (cfg, inited_bb);
-
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, inited_reg, 0);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, inited_bb);
-
-	args [0] = vtable_arg;
-	mono_emit_jit_icall (cfg, mono_generic_class_init, args);
-
-	MONO_START_BB (cfg, inited_bb);
-	*out_bblock = inited_bb;
+	if (!COMPILE_LLVM (cfg))
+		use_op_generic_class_init = TRUE;
 #endif
+
+	if (use_op_generic_class_init) {
+		MonoInst *ins;
+
+		/*
+		 * Using an opcode instead of emitting IR here allows the hiding of the call inside the opcode,
+		 * so this doesn't have to clobber any regs and it doesn't break basic blocks.
+		 */
+		MONO_INST_NEW (cfg, ins, OP_GENERIC_CLASS_INIT);
+		ins->sreg1 = vtable_arg->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+	} else {
+		static int byte_offset = -1;
+		static guint8 bitmask;
+		int bits_reg, inited_reg;
+		MonoBasicBlock *inited_bb;
+		MonoInst *args [16];
+
+		if (byte_offset < 0)
+			mono_marshal_find_bitfield_offset (MonoVTable, initialized, &byte_offset, &bitmask);
+
+		bits_reg = alloc_ireg (cfg);
+		inited_reg = alloc_ireg (cfg);
+
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, bits_reg, vtable_arg->dreg, byte_offset);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, inited_reg, bits_reg, bitmask);
+
+		NEW_BBLOCK (cfg, inited_bb);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, inited_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, inited_bb);
+
+		args [0] = vtable_arg;
+		mono_emit_jit_icall (cfg, mono_generic_class_init, args);
+
+		MONO_START_BB (cfg, inited_bb);
+		*out_bblock = inited_bb;
+	}
 }
 
 
