@@ -49,6 +49,12 @@ if(WIN32)
     enable_language(ASM_MASM)
 else()
     enable_language(ASM)
+
+    # Ensure that awk is present
+    find_program(AWK awk)
+    if (AWK STREQUAL "AWK-NOTFOUND")
+        message(FATAL_ERROR "AWK not found")
+    endif()
 endif(WIN32)
 
 # Build a list of compiler definitions by putting -D in front of each define.
@@ -98,6 +104,24 @@ function(preprocess_def_file inputFilename outputFilename)
     COMMAND ${CMAKE_CXX_COMPILER} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename}
     DEPENDS ${inputFilename}
     COMMENT "Preprocessing ${inputFilename}"
+  )
+  set_source_files_properties(${outputFilename}
+                              PROPERTIES GENERATED TRUE)
+endfunction()
+
+function(generate_exports_file inputFilename outputFilename)
+
+  if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    set(AWK_SCRIPT generateexportedsymbols.awk)
+  else()
+    set(AWK_SCRIPT generateversionscript.awk)
+  endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
+  add_custom_command(
+    OUTPUT ${outputFilename}
+    COMMAND ${AWK} -f ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT} ${inputFilename} >${outputFilename}
+    DEPENDS ${inputFilename}
+    COMMENT "Generating exports file ${outputFilename}"
   )
   set_source_files_properties(${outputFilename}
                               PROPERTIES GENERATED TRUE)
