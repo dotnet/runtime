@@ -64,6 +64,7 @@
     <Compile Include="KoreanCalendar\KoreanCalendarToFourDigitYear.cs" />
     <Compile Include="KoreanCalendar\KoreanCalendarTwoDigitYearMax.cs" />    
     <Compile Include="Misc\MiscCalendars.cs" />
+    <Compile Include="Misc\Calendars.cs" />
     <Compile Include="PersianCalendar\PersianCalendarTest.cs" />    
     <Compile Include="TaiwanCalendar\TaiwanCalendarAddMonths.cs" />
     <Compile Include="TaiwanCalendar\TaiwanCalendarAddYears.cs" />
