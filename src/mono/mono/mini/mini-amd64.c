@@ -7682,7 +7682,7 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 
 	mono_sigctx_to_monoctx (sigctx, &ctx);
 
-	rip = (guint8*)ctx.rip;
+	rip = (guint8*)ctx.gregs [AMD64_RIP];
 
 	if (IS_REX (rip [0])) {
 		reg = amd64_rex_b (rip [0]);
@@ -7695,47 +7695,7 @@ mono_arch_is_int_overflow (void *sigctx, void *info)
 		/* idiv REG */
 		reg += x86_modrm_rm (rip [1]);
 
-		switch (reg) {
-		case AMD64_RAX:
-			value = ctx.rax;
-			break;
-		case AMD64_RBX:
-			value = ctx.rbx;
-			break;
-		case AMD64_RCX:
-			value = ctx.rcx;
-			break;
-		case AMD64_RDX:
-			value = ctx.rdx;
-			break;
-		case AMD64_RBP:
-			value = ctx.rbp;
-			break;
-		case AMD64_RSP:
-			value = ctx.rsp;
-			break;
-		case AMD64_RSI:
-			value = ctx.rsi;
-			break;
-		case AMD64_RDI:
-			value = ctx.rdi;
-			break;
-		case AMD64_R12:
-			value = ctx.r12;
-			break;
-		case AMD64_R13:
-			value = ctx.r13;
-			break;
-		case AMD64_R14:
-			value = ctx.r14;
-			break;
-		case AMD64_R15:
-			value = ctx.r15;
-			break;
-		default:
-			g_assert_not_reached ();
-			reg = -1;
-		}			
+		value = ctx.gregs [reg];
 
 		if (value == -1)
 			return TRUE;
@@ -8312,44 +8272,16 @@ mono_arch_print_tree (MonoInst *tree, int arity)
 	return 0;
 }
 
-#define _CTX_REG(ctx,fld,i) ((&ctx->fld)[i])
-
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	switch (reg) {
-	case AMD64_RCX: return ctx->rcx;
-	case AMD64_RDX: return ctx->rdx;
-	case AMD64_RBX: return ctx->rbx;
-	case AMD64_RBP: return ctx->rbp;
-	case AMD64_RSP: return ctx->rsp;
-	default:
-		return _CTX_REG (ctx, rax, reg);
-	}
+	return ctx->gregs [reg];
 }
 
 void
 mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
 {
-	switch (reg) {
-	case AMD64_RCX:
-		ctx->rcx = val;
-		break;
-	case AMD64_RDX: 
-		ctx->rdx = val;
-		break;
-	case AMD64_RBX:
-		ctx->rbx = val;
-		break;
-	case AMD64_RBP:
-		ctx->rbp = val;
-		break;
-	case AMD64_RSP:
-		ctx->rsp = val;
-		break;
-	default:
-		_CTX_REG (ctx, rax, reg) = val;
-	}
+	ctx->gregs [reg] = val;
 }
 
 gpointer

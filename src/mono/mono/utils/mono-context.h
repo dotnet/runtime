@@ -147,6 +147,7 @@ typedef struct {
 
 #elif (defined(__x86_64__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_AMD64)) /* defined(__i386__) */
 
+#include <mono/arch/amd64/amd64-codegen.h>
 
 #if !defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)
 
@@ -157,32 +158,16 @@ typedef struct {
 #endif
 
 typedef struct {
-	mgreg_t rax;
-	mgreg_t rbx;
-	mgreg_t rcx;
-	mgreg_t rdx;
-	mgreg_t rbp;
-	mgreg_t rsp;
-    mgreg_t rsi;
-	mgreg_t rdi;
-	mgreg_t r8;
-	mgreg_t r9;
-	mgreg_t r10;
-	mgreg_t r11;
-	mgreg_t r12;
-	mgreg_t r13;
-	mgreg_t r14;
-	mgreg_t r15;
-	mgreg_t rip;
+	mgreg_t gregs [AMD64_NREG];
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->rip = (mgreg_t)(ip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->rbp = (mgreg_t)(bp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->rsp = (mgreg_t)(esp); } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->gregs [AMD64_RIP] = (mgreg_t)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->gregs [AMD64_RBP] = (mgreg_t)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->gregs [AMD64_RSP] = (mgreg_t)(esp); } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->rip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->rbp))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->rsp))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->gregs [AMD64_RIP]))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->gregs [AMD64_RBP]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->gregs [AMD64_RSP]))
 
 #if defined (HOST_WIN32) && !defined(__GNUC__)
 /* msvc doesn't support inline assembly, so have to use a separate .asm file */
