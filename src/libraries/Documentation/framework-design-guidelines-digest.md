@@ -1,4 +1,5 @@
-# Introduction
+Framework Design Guidelines - Digest
+====================================
 
 This page is a distillation and a simplification of the most basic
 guidelines described in detail in a book titled

@@ -1,3 +1,6 @@
+Building CoreFX on Windows
+==========================
+
 You can build .NET Core either via the command line or by using Visual Studio.
 We currently only support building and running on Windows. Other platforms will
 come later.
@@ -18,7 +21,7 @@ the core tests for the project. Visual Studio Solution (.sln) files exist for
 related groups of libraries. These can be loaded to build, debug and test inside
 the Visual Studio IDE.
 
-[[Building On Unix]]
+[Building On Linux](linux-instructions.md)
 ## Tests
 
 We use the OSS testing framework [xunit](http://xunit.github.io/)
