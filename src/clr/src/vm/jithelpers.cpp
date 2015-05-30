@@ -2395,7 +2395,7 @@ TypeHandle::CastResult STDCALL ObjIsInstanceOfNoGC(Object *pObject, TypeHandle t
     return pMT->CanCastToClassOrInterfaceNoGC(toTypeHnd.AsMethodTable());
 }
 
-BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd)
+BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
 {
     CONTRACTL {
         THROWS;
@@ -2464,7 +2464,7 @@ BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd)
         CALL_MANAGED_METHOD(fCast, BOOL, args);
         INDEBUG(managedType = NULL); // managedType isn't protected during the call
 
-        if (exception != NULL)
+        if (!fCast && throwCastException && exception != NULL)
         {
             RealCOMPlusThrow(exception);
         }
@@ -2472,7 +2472,12 @@ BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd)
     }
 #endif // FEATURE_ICASTABLE
 
-    GCPROTECT_END();
+    if (!fCast && throwCastException) 
+    {
+        COMPlusThrowInvalidCastException(&obj, toTypeHnd);
+    }    
+
+    GCPROTECT_END(); // obj
 
     return(fCast);
 }
@@ -2805,8 +2810,10 @@ NOINLINE HCIMPL2(Object *, JITutil_ChkCastAny, CORINFO_CLASS_HANDLE type, Object
     TypeHandle clsHnd(type);
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-    if (!ObjIsInstanceOf(OBJECTREFToObject(oref), clsHnd))
-        COMPlusThrowInvalidCastException(&oref, clsHnd);
+    if (!ObjIsInstanceOf(OBJECTREFToObject(oref), clsHnd, TRUE))
+    {
+        UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
+    }
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
