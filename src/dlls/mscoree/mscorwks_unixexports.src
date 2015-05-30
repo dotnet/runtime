@@ -12,6 +12,7 @@ CreateSemaphoreW
 DeleteFileW
 DllMain
 DuplicateHandle
+EnsureOpenSslInitialized
 ExecuteAssembly
 FindClose
 FindFirstFileW
