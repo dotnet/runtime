@@ -1,3 +1,6 @@
+Breaking Changes
+================
+
 We take compatibility in the .NET Framework and .NET Core extremely seriously.
 
 Although .NET Core can be deployed app local, we are engineering it such that portable libraries can target it and still run on the full desktop framework as well. This means that the behavior of the full .NET Framework constrains the implementation of any overlapping API in .NET Core.

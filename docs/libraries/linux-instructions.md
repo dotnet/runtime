@@ -1,5 +1,7 @@
-# General Information
-CoreFx can be built on top of current [Mono CI builds](https://github.com/dotnet/corefx/wiki/Building-On-Unix#installing-mono-packages) or a direct [build/install of Mono](http://www.mono-project.com/docs/compiling-mono/). It builds using MSBuild and Roslyn and requires changes that have not yet made it to official released builds.
+Building CoreFX on Linux
+========================
+
+CoreFx can be built on top of current [Mono CI builds](#installing-mono-packages) or a direct [build/install of Mono](http://www.mono-project.com/docs/compiling-mono/). It builds using MSBuild and Roslyn and requires changes that have not yet made it to official released builds.
 
 After preparing Mono, clone if you haven't already, and run the build script.
 

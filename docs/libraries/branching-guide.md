@@ -1,3 +1,6 @@
+Branching Guide
+===============
+
 We will have the following branches in the corefx repository:
 
 * **master**
@@ -21,5 +24,3 @@ We will have the following branches in the corefx repository:
  * Submit PRs here only if you've made prior arrangements to work on something in one of these branches.
  * It is up to the developers creating these branches to decide what level of review is required
  * These features will only ship if they are successfully pulled to master or future via the standard PR and API review process.
-
-

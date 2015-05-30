@@ -1,4 +1,5 @@
-## Table of Contents
+Breaking Change Rules
+=====================
 
 * [Behavioral Changes](#behavioral-changes)
    * [Property, Field, Parameter and Return Values](#property-field-parameter-and-return-values)

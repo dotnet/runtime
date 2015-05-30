@@ -1,3 +1,6 @@
+Repo Organization
+=================
+
 Tests for a project are kept under the `tests` folder, which is a peer of the `src` folder.  If you need to have multiple test projects for a component, structure them in sub folders.
 
 For example, lay things out like this:

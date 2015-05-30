@@ -1,3 +1,6 @@
+Strong Name Signing
+===================
+
 All .NET Core assemblies are [strong-named](http://msdn.microsoft.com/en-us/library/wd40t7ad.aspx). We do this for two reasons:
 
 1. _Compatibility_. We want to maintain type identity with previous versions of our assemblies that have shipped across various versions of our platforms. Removing a strong-name from an assembly is a breaking change, and would break the ability to consume and run libraries built against the previous identities.
@@ -18,4 +21,4 @@ There are three major problems that developers run into after strong naming thei
 
 2. _Virality_. Once you've strong-named an assembly, you can only statically reference other strong-named assemblies. 
 
-3. _No drop-in replacement_. This is a problem for open source libraries where the strong-name private key is not checked into the repository. This means that developers are unable to build to their own version of the library and then use it as a drop-in replacement without recompiling _all_ consuming libraries up stack to pick up the new identity. This is extremely problematic for libraries, such as Json.NET, which have large incoming dependencies. Firstly, we would recommend that these open source projects check-in their private key (remember, [strong-names are used for identity, and not for security](http://msdn.microsoft.com/en-us/library/wd40t7ad.aspx)). Failing that, however, we've introduced a new concept called [[Open Source Signing]] that enables developers to build drop-in replacements without needing access to the strong-name private key. This is the mechanism that .NET Core libraries use by default.
+3. _No drop-in replacement_. This is a problem for open source libraries where the strong-name private key is not checked into the repository. This means that developers are unable to build to their own version of the library and then use it as a drop-in replacement without recompiling _all_ consuming libraries up stack to pick up the new identity. This is extremely problematic for libraries, such as Json.NET, which have large incoming dependencies. Firstly, we would recommend that these open source projects check-in their private key (remember, [strong-names are used for identity, and not for security](http://msdn.microsoft.com/en-us/library/wd40t7ad.aspx)). Failing that, however, we've introduced a new concept called [Open Source Signing](oss-signing.md) that enables developers to build drop-in replacements without needing access to the strong-name private key. This is the mechanism that .NET Core libraries use by default.
