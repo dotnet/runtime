@@ -183,6 +183,11 @@ public class Program
             } 
             catch (CastableException) {}
 
+            Assert(!(nullCastable is IRetThis), "null castable shouldn't be allowed to be casted to anything");
+
+            var shouldBeNull = nullCastable as IRetThis;
+            Assert(shouldBeNull == null, "shouldBeNull should be assigned null");
+
             object badCastable = new BadCastable();
             try
             {

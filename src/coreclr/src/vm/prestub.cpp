@@ -2617,21 +2617,17 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
         {
         case ENCODE_ISINSTANCEOF_HELPER:
         case ENCODE_CHKCAST_HELPER:
-            if (*(Object **)pArgument == NULL || ObjIsInstanceOf(*(Object **)pArgument, th))
             {
-                result = (SIZE_T)(*(Object **)pArgument);
-            }
-            else
-            {
-                if (kind == ENCODE_CHKCAST_HELPER)
+                BOOL throwInvalidCast = (kind == ENCODE_CHKCAST_HELPER);
+                if (*(Object **)pArgument == NULL || ObjIsInstanceOf(*(Object **)pArgument, th, throwInvalidCast))
                 {
-                    OBJECTREF obj = ObjectToOBJECTREF(*(Object **)pArgument);
-                    GCPROTECT_BEGIN(obj);
-                    COMPlusThrowInvalidCastException(&obj, th);
-                    GCPROTECT_END();
+                    result = (SIZE_T)(*(Object **)pArgument);
                 }
- 
-                result = NULL;
+                else
+                {
+                    _ASSERTE (!throwInvalidCast);
+                    result = NULL;
+                }
             }
             break;
         case ENCODE_STATIC_BASE_NONGC_HELPER:
