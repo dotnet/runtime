@@ -1616,7 +1616,7 @@ FCDECL0(VOID, JIT_PollGC);
 EXTERN_C FCDECL0(VOID, JIT_PollGC_Nop);
 #endif
 
-BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd);
+BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 EXTERN_C TypeHandle::CastResult STDCALL ObjIsInstanceOfNoGC(Object *pObject, TypeHandle toTypeHnd);
 
 #ifdef _WIN64
