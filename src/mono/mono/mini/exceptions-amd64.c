@@ -304,17 +304,12 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 void
 mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 							guint64 dummy5, guint64 dummy6,
-							mgreg_t *regs, mgreg_t rip,
-							MonoObject *exc, gboolean rethrow)
+							MonoContext *mctx, MonoObject *exc, gboolean rethrow)
 {
 	MonoContext ctx;
-	int i;
 
-	for (i = 0; i < AMD64_NREG; ++i) {
-		if (i != AMD64_RIP)
-			ctx.gregs [i] = regs [i];
-	}
-	ctx.gregs [AMD64_RIP] = rip;
+	/* mctx is on the caller's stack */
+	memcpy (&ctx, mctx, sizeof (MonoContext));
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
@@ -335,37 +330,31 @@ mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guin
 void
 mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 								   guint64 dummy5, guint64 dummy6,
-								   mgreg_t *regs, mgreg_t rip,
-								   guint32 ex_token_index, gint64 pc_offset)
+								   MonoContext *mctx, guint32 ex_token_index, gint64 pc_offset)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
 	MonoException *ex;
 
 	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
 
-	rip -= pc_offset;
+	mctx->gregs [AMD64_RIP] -= pc_offset;
 
 	/* Negate the ip adjustment done in mono_amd64_throw_exception () */
-	rip += 1;
+	mctx->gregs [AMD64_RIP] += 1;
 
-	mono_amd64_throw_exception (dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, regs, rip, (MonoObject*)ex, FALSE);
+	mono_amd64_throw_exception (dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, mctx, (MonoObject*)ex, FALSE);
 }
 
 static void
 mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 						  guint64 dummy5, guint64 dummy6,
-						  mgreg_t *regs, mgreg_t rip,
-						  guint32 dummy7, gint64 dummy8)
+						  MonoContext *mctx, guint32 dummy7, gint64 dummy8)
 {
 	/* Only the register parameters are valid */
 	MonoContext ctx;
-	int i;
 
-	for (i = 0; i < AMD64_NREG; ++i) {
-		if (i != AMD64_RIP)
-			ctx.gregs [i] = regs [i];
-	}
-	ctx.gregs [AMD64_RIP] = rip;
+	/* mctx is on the caller's stack */
+	memcpy (&ctx, mctx, sizeof (MonoContext));
 
 	mono_resume_unwind (&ctx);
 }
@@ -383,7 +372,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	guint8 *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int i, stack_size, arg_offsets [16], regs_offset, dummy_stack_space;
+	int i, stack_size, arg_offsets [16], ctx_offset, regs_offset, dummy_stack_space;
 	const guint kMaxCodeSize = NACL_SIZE (256, 512);
 
 #ifdef TARGET_WIN32
@@ -395,7 +384,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	start = code = mono_global_codeman_reserve (kMaxCodeSize);
 
 	/* The stack is unaligned on entry */
-	stack_size = 192 + 8 + dummy_stack_space;
+	stack_size = ALIGN_TO (sizeof (MonoContext) + 64 + dummy_stack_space, MONO_ARCH_FRAME_ALIGNMENT) + 8;
 
 	code = start;
 
@@ -415,8 +404,8 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	arg_offsets [0] = dummy_stack_space + 0;
 	arg_offsets [1] = dummy_stack_space + sizeof(mgreg_t);
 	arg_offsets [2] = dummy_stack_space + sizeof(mgreg_t) * 2;
-	arg_offsets [3] = dummy_stack_space + sizeof(mgreg_t) * 3;
-	regs_offset = dummy_stack_space + sizeof(mgreg_t) * 4;
+	ctx_offset = dummy_stack_space + sizeof(mgreg_t) * 4;
+	regs_offset = ctx_offset + MONO_STRUCT_OFFSET (MonoContext, gregs);
 
 	/* Save registers */
 	for (i = 0; i < AMD64_NREG; ++i)
@@ -425,34 +414,34 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	/* Save RSP */
 	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, stack_size + sizeof(mgreg_t));
 	amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (AMD64_RSP * sizeof(mgreg_t)), X86_EAX, sizeof(mgreg_t));
-	/* Set arg1 == regs */
-	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, regs_offset);
-	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [0], AMD64_RAX, sizeof(mgreg_t));
-	/* Set arg2 == eip */
+	/* Save IP */
 	if (llvm_abs)
 		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
 	else
 		amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, stack_size, sizeof(mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [1], AMD64_RAX, sizeof(mgreg_t));
-	/* Set arg3 == exc/ex_token_index */
+	amd64_mov_membase_reg (code, AMD64_RSP, regs_offset + (AMD64_RIP * sizeof(mgreg_t)), AMD64_RAX, sizeof(mgreg_t));
+	/* Set arg1 == ctx */
+	amd64_lea_membase (code, AMD64_RAX, AMD64_RSP, ctx_offset);
+	amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [0], AMD64_RAX, sizeof(mgreg_t));
+	/* Set arg2 == exc/ex_token_index */
 	if (resume_unwind)
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [2], 0, sizeof(mgreg_t));
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [1], 0, sizeof(mgreg_t));
 	else
-		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [2], AMD64_ARG_REG1, sizeof(mgreg_t));
-	/* Set arg4 == rethrow/pc offset */
+		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [1], AMD64_ARG_REG1, sizeof(mgreg_t));
+	/* Set arg3 == rethrow/pc offset */
 	if (resume_unwind) {
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], 0, sizeof(mgreg_t));
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [2], 0, sizeof(mgreg_t));
 	} else if (corlib) {
-		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [3], AMD64_ARG_REG2, sizeof(mgreg_t));
+		amd64_mov_membase_reg (code, AMD64_RSP, arg_offsets [2], AMD64_ARG_REG2, sizeof(mgreg_t));
 		if (llvm_abs)
 			/* 
 			 * The caller is LLVM code which passes the absolute address not a pc offset,
 			 * so compensate by passing 0 as 'rip' and passing the negated abs address as
 			 * the pc offset.
 			 */
-			amd64_neg_membase (code, AMD64_RSP, arg_offsets [3]);
+			amd64_neg_membase (code, AMD64_RSP, arg_offsets [2]);
 	} else {
-		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [3], rethrow, sizeof(mgreg_t));
+		amd64_mov_membase_imm (code, AMD64_RSP, arg_offsets [2], rethrow, sizeof(mgreg_t));
 	}
 
 	if (aot) {
