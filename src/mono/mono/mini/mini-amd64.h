@@ -379,12 +379,12 @@ mono_amd64_patch (unsigned char* code, gpointer target);
 void
 mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 							guint64 dummy5, guint64 dummy6,
-							MonoContext *mctx, MonoObject *exc, gboolean rethrow, guint64 dummy7);
+							MonoContext *mctx, MonoObject *exc, gboolean rethrow);
 
 void
 mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 								   guint64 dummy5, guint64 dummy6,
-								   MonoContext *mctx, guint32 ex_token_index, gint64 pc_offset, guint64 dummy7);
+								   MonoContext *mctx, guint32 ex_token_index, gint64 pc_offset);
 
 guint64
 mono_amd64_get_original_ip (void);
