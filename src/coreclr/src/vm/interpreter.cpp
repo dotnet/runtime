@@ -6172,10 +6172,9 @@ void Interpreter::CastClass()
     Object * pObj = OpStackGet<Object*>(idx);
     if (pObj != NULL)
     {
-        if (!ObjIsInstanceOf(pObj, TypeHandle(cls)))
+        if (!ObjIsInstanceOf(pObj, TypeHandle(cls), TRUE))
         {
-            OBJECTREF oref = ObjectToOBJECTREF(OpStackGet<Object*>(idx));
-            COMPlusThrowInvalidCastException(&oref, TypeHandle(cls));
+            UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
         }
     }
 
@@ -8822,8 +8821,10 @@ void Interpreter::UnboxAny()
     if ((boxTypeAttribs & CORINFO_FLG_VALUECLASS) == 0)
     {
         Object* obj = OpStackGet<Object*>(tos);
-        if (obj != NULL && !ObjIsInstanceOf(obj, TypeHandle(boxTypeClsHnd)))
-            COMPlusThrowInvalidCastException(&ObjectToOBJECTREF(obj), TypeHandle(boxTypeClsHnd));
+        if (obj != NULL && !ObjIsInstanceOf(obj, TypeHandle(boxTypeClsHnd), TRUE))
+        {
+            UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
+        }
     }
     else
     {
