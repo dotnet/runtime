@@ -419,8 +419,32 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	code = buf = mono_global_codeman_reserve (kMaxCodeSize);
 
-	framesize = kMaxCodeSize + sizeof (MonoLMFTramp);
-	framesize = (framesize + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~ (MONO_ARCH_FRAME_ALIGNMENT - 1);
+	/* Compute stack frame size and offsets */
+	offset = 0;
+	rbp_offset = -offset;
+
+	offset += sizeof(mgreg_t);
+	rax_offset = -offset;
+
+	offset += sizeof(mgreg_t);
+	tramp_offset = -offset;
+
+	offset += sizeof(gpointer);
+	arg_offset = -offset;
+
+	offset += sizeof(mgreg_t);
+	res_offset = -offset;
+
+	offset += AMD64_NREG * sizeof (mgreg_t);
+	saved_regs_offset = -offset;
+
+	offset += 8 * sizeof(mgreg_t);
+	saved_fpregs_offset = -offset;
+
+	offset += sizeof (MonoLMFTramp);
+	lmf_offset = -offset;
+
+	framesize = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 
 	orig_rsp_to_rbp_offset = 0;
 	r11_save_code = code;
@@ -454,18 +478,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, AMD64_RBP);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
-	offset = 0;
-	rbp_offset = - offset;
-
-	offset += sizeof(mgreg_t);
-	rax_offset = - offset;
-
-	offset += sizeof(mgreg_t);
-	tramp_offset = - offset;
-
-	offset += sizeof(gpointer);
-	arg_offset = - offset;
-
 	/* Compute the trampoline address from the return address */
 	if (aot) {
 #if defined(__default_codegen__)
@@ -480,13 +492,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	amd64_mov_membase_reg (code, AMD64_RBP, tramp_offset, AMD64_R11, sizeof(gpointer));
 
-	offset += sizeof(mgreg_t);
-	res_offset = - offset;
-
 	/* Save all registers */
-
-	offset += AMD64_NREG * sizeof(mgreg_t);
-	saved_regs_offset = - offset;
 	for (i = 0; i < AMD64_NREG; ++i) {
 		if (i == AMD64_RBP) {
 			/* RAX is already saved */
@@ -502,8 +508,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 			g_assert (r11_save_code == after_r11_save_code);
 		}
 	}
-	offset += 8 * sizeof(mgreg_t);
-	saved_fpregs_offset = - offset;
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_membase_reg (code, AMD64_RBP, saved_fpregs_offset + (i * sizeof(mgreg_t)), i);
 
@@ -580,9 +584,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 
 	/* Save LMF begin */
-
-	offset += sizeof (MonoLMFTramp);
-	lmf_offset = - offset;
 
 	/* Save ip */
 	if (has_caller)
