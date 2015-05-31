@@ -722,6 +722,11 @@ namespace System.Diagnostics.ProcessTests
             }
 
             {
+                Process process = new Process();
+                Assert.Throws<ArgumentNullException>(() => process.StartInfo = null);
+            }
+
+            {
                 Process process = Process.GetCurrentProcess();
                 Assert.Throws<System.InvalidOperationException>(() => process.StartInfo);
             }
