@@ -188,7 +188,7 @@ struct MonoLMF {
 /* LMF structure used by the JIT trampolines */
 typedef struct {
 	struct MonoLMF lmf;
-	guint64 *regs;
+	MonoContext *ctx;
 	gpointer lmf_addr;
 } MonoLMFTramp;
 

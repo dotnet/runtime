@@ -626,7 +626,7 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			/* Trampoline frame */
 			for (i = 0; i < AMD64_NREG; ++i) {
 				if (AMD64_IS_CALLEE_SAVED_REG (i) && i != AMD64_RBP)
-					new_ctx->gregs [i] = ext->regs [i];
+					new_ctx->gregs [i] = ext->ctx->gregs [i];
 			}
 		} else {
 			/*
