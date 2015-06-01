@@ -1202,26 +1202,26 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 }
 
 #ifndef DISABLE_HELPER_THREAD
-static void process_method_enter (MonoProfiler *prof, MonoMethod *method);
+static void process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method);
 #endif /* DISABLE_HELPER_THREAD */
 
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method)
 {
-	uint64_t now;
+	uint64_t now = current_time ();
+
+#ifndef DISABLE_HELPER_THREAD
+	process_method_enter_coverage (prof, method);
+#endif /* DISABLE_HELPER_THREAD */
+
 	LogBuffer *logbuffer = ensure_logbuf (16);
 	if (logbuffer->call_depth++ > max_call_depth)
 		return;
-	now = current_time ();
 	ENTER_LOG (logbuffer, "enter");
 	emit_byte (logbuffer, TYPE_ENTER | TYPE_METHOD);
 	emit_time (logbuffer, now);
 	emit_method (prof, logbuffer, mono_domain_get (), method);
 	EXIT_LOG (logbuffer);
-
-#ifndef DISABLE_HELPER_THREAD
-	process_method_enter (prof, method);
-#endif /* DISABLE_HELPER_THREAD */
 
 	process_requests (prof);
 }
@@ -2860,7 +2860,7 @@ dump_coverage (MonoProfiler *prof)
 }
 
 static void
-process_method_enter (MonoProfiler *prof, MonoMethod *method)
+process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method)
 {
 	MonoClass *klass;
 	MonoImage *image;
