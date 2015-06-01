@@ -168,6 +168,7 @@ DECL_OFFSET(MonoLMF, ebp)
 DECL_OFFSET(MonoLMF, eip)
 #elif defined(TARGET_AMD64)
 DECL_OFFSET(MonoContext, gregs)
+DECL_OFFSET(MonoContext, fregs)
 
 #ifdef TARGET_WIN32
 DECL_OFFSET(MonoLMF, lmf_addr)

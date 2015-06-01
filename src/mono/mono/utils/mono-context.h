@@ -159,6 +159,7 @@ typedef struct {
 
 typedef struct {
 	mgreg_t gregs [AMD64_NREG];
+	double fregs [AMD64_XMM_NREG];
 } MonoContext;
 
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->gregs [AMD64_RIP] = (mgreg_t)(ip); } while (0);

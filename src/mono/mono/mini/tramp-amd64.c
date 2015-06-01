@@ -438,9 +438,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	offset += sizeof (MonoContext);
 	ctx_offset = -offset;
 	saved_regs_offset = ctx_offset + MONO_STRUCT_OFFSET (MonoContext, gregs);
-
-	offset += 8 * sizeof(mgreg_t);
-	saved_fpregs_offset = -offset;
+	saved_fpregs_offset = ctx_offset + MONO_STRUCT_OFFSET (MonoContext, fregs);
 
 	offset += sizeof (MonoLMFTramp);
 	lmf_offset = -offset;
@@ -449,8 +447,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	orig_rsp_to_rbp_offset = 0;
 	r11_save_code = code;
-	/* Reserve 5 bytes for the mov_membase_reg to save R11 */
-	code += 5;
+	/* Reserve space for the mov_membase_reg to save R11 */
+	code += 8;
 	after_r11_save_code = code;
 
 	// CFA = sp + 16 (the trampoline address is on the stack)
@@ -680,7 +678,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	for (i = 0; i < AMD64_NREG; ++i)
 		if (AMD64_IS_ARGUMENT_REG (i) || i == AMD64_R10 || i == AMD64_RAX)
 			amd64_mov_reg_membase (code, i, AMD64_RBP, saved_regs_offset + (i * sizeof(mgreg_t)), sizeof(mgreg_t));
-
 	for (i = 0; i < 8; ++i)
 		amd64_movsd_reg_membase (code, i, AMD64_RBP, saved_fpregs_offset + (i * sizeof(mgreg_t)));
 
