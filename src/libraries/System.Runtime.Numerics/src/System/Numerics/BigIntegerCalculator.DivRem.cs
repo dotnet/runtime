@@ -164,7 +164,7 @@ namespace System.Numerics
             int divisorLength = rightLength;
             fixed (uint* dividend = new uint[dividendLength],
                          divisor = new uint[divisorLength],
-                         guess = new uint[divisorLength])
+                         guess = new uint[divisorLength + 1])
             {
                 // This will create private copies of left and right, so we can
                 // modify the actual values of the dividend during computation
