@@ -20,6 +20,7 @@
     <Compile Include="ReadAndWrite.cs" />
     <Compile Include="SetError.cs" />
     <Compile Include="SetIn.cs" />
+    <Compile Include="Color.cs" />
     <Compile Include="SetOut.cs" />
     <Compile Include="NegativeTesting.cs" />
     <Compile Include="SyncTextReader.cs" />

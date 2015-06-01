@@ -12,7 +12,7 @@ namespace System.IO
     internal sealed class SyncTextWriter : TextWriter, IDisposable
     {
         private readonly object _methodLock = new object();
-        private TextWriter _out;
+        internal readonly TextWriter _out;
 
         internal static TextWriter GetSynchronizedTextWriter(TextWriter writer)
         {
