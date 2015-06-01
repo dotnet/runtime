@@ -123,7 +123,6 @@ typedef struct MonoAotModule {
 	guint32 *unbox_trampolines_end;
 	guint32 *unbox_trampoline_addresses;
 	guint8 *unwind_info;
-	guint8 *thumb_end;
 
 	/* Points to the mono EH data created by LLVM */
 	guint8 *mono_eh_frame;
@@ -1960,7 +1959,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->trampolines [MONO_AOT_TRAMP_STATIC_RGCTX] = info->static_rgctx_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK] = info->imt_thunks;
 	amodule->trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = info->gsharedvt_arg_trampolines;
-	amodule->thumb_end = info->thumb_end;
 
 	/* Compute code_offsets from the method addresses */
 	amodule->code_offsets = g_malloc0 (amodule->info.nmethods * sizeof (gint32));
@@ -2407,6 +2405,15 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 	}
 }
 
+static gboolean
+is_thumb_code (MonoAotModule *amodule, guint8 *code)
+{
+	if ((amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_THUMB) && (guint8*)code >= amodule->llvm_code_start && (guint8*)code < amodule->llvm_code_end)
+		return TRUE;
+	else
+		return FALSE;
+}
+
 /*
  * decode_mono_eh_frame:
  *
@@ -2491,7 +2498,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 
 	g_assert (code >= code_start && code < code_end);
 
-	if (amodule->thumb_end && (guint8*)code_start < amodule->thumb_end)
+	if (is_thumb_code (amodule, code_start))
 		/* Clear thumb flag */
 		code_start = (guint8*)(((mgreg_t)code_start) & ~1);
 
@@ -2557,9 +2564,12 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain,
 		jei->handler_start = ei [i].handler_start;
 		jei->clause_index = clause_index;
 
-		/* Make sure we transition to thumb when a handler starts */
-		if (amodule->thumb_end && (guint8*)jei->handler_start < amodule->thumb_end)
+		if (is_thumb_code (amodule, jei->try_start)) {
+			jei->try_start = (void*)((mgreg_t)jei->try_start & ~1);
+			jei->try_end = (void*)((mgreg_t)jei->try_end & ~1);
+			/* Make sure we transition to thumb when a handler starts */
 			jei->handler_start = (void*)((mgreg_t)jei->handler_start + 1);
+		}
 	}
 
 	/* See exception_cb () in mini-llvm.c as to why this is needed */
@@ -4344,10 +4354,8 @@ mono_aot_get_plt_entry (guint8 *code)
 		return NULL;
 
 #ifdef TARGET_ARM
-	if (amodule->thumb_end) {
-		if (code >= amodule->llvm_code_start && code < amodule->llvm_code_end)
-			return mono_arm_get_thumb_plt_entry (code);
-	}
+	if (is_thumb_code (amodule, code))
+		return mono_arm_get_thumb_plt_entry (code);
 #endif
 
 #ifdef MONO_ARCH_AOT_SUPPORTED

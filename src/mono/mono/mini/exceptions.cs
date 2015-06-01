@@ -2795,6 +2795,27 @@ class Tests
 		}
 		return 1;
 	}
+
+	static bool finally_called = false;
+
+	static void regress_30472 (int a, int b) {
+			checked {
+				try {
+					int sum = a + b;
+				} finally {
+					finally_called = true;
+				}
+            }
+		}
+
+	public static int test_0_regress_30472 () {
+		finally_called = false;
+		try {
+		    regress_30472 (Int32.MaxValue - 1, 2);
+		} catch (Exception ex) {
+		}
+		return finally_called ? 0 : 1;
+	}
 }
 
 #if !MOBILE

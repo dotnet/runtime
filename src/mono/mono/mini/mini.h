@@ -113,7 +113,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 116
+#define MONO_AOT_FILE_VERSION 117
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -174,6 +174,7 @@ typedef enum {
 	MONO_AOT_FILE_FLAG_WITH_LLVM = 1,
 	MONO_AOT_FILE_FLAG_FULL_AOT = 2,
 	MONO_AOT_FILE_FLAG_DEBUG = 4,
+	MONO_AOT_FILE_FLAG_LLVM_THUMB = 8,
 } MonoAotFileFlags;
 
 /* This structure is stored in the AOT file */
@@ -226,10 +227,6 @@ typedef struct MonoAotFileInfo
 	gpointer static_rgctx_trampolines;
 	gpointer imt_thunks;
 	gpointer gsharedvt_arg_trampolines;
-	/*
-	 * The end of LLVM generated thumb code, or NULL.
-	 */
-	gpointer thumb_end;
 	/* In static mode, points to a table of global symbols for trampolines etc */
 	gpointer globals;
 	/* Points to a string containing the assembly name*/
