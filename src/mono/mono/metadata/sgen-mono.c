@@ -1060,6 +1060,7 @@ create_allocator (int atype, gboolean slowpath)
 	int tlab_next_addr_var, new_next_var;
 	const char *name = NULL;
 	AllocatorWrapperInfo *info;
+	int num_params, i;
 
 	if (!registered) {
 		mono_register_jit_icall (mono_gc_alloc_obj, "mono_gc_alloc_obj", mono_create_icall_signature ("object ptr int"), FALSE);
@@ -1080,15 +1081,20 @@ create_allocator (int atype, gboolean slowpath)
 		g_assert_not_reached ();
 	}
 
-	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+	if (atype == ATYPE_NORMAL)
+		num_params = 1;
+	else
+		num_params = 2;
+
+	csig = mono_metadata_signature_alloc (mono_defaults.corlib, num_params);
 	if (atype == ATYPE_STRING) {
 		csig->ret = &mono_defaults.string_class->byval_arg;
 		csig->params [0] = &mono_defaults.int_class->byval_arg;
 		csig->params [1] = &mono_defaults.int32_class->byval_arg;
 	} else {
 		csig->ret = &mono_defaults.object_class->byval_arg;
-		csig->params [0] = &mono_defaults.int_class->byval_arg;
-		csig->params [1] = &mono_defaults.int_class->byval_arg;
+		for (i = 0; i < num_params; i++)
+			csig->params [i] = &mono_defaults.int_class->byval_arg;
 	}
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
