@@ -171,7 +171,8 @@ struct MonoLMF {
 	 * the caller ip is saved.
 	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
-	 * If the third lowest bit is set, then this is a MonoLMFTramp structure.
+	 * If the third lowest bit is set, then this is a MonoLMFTramp structure, and
+	 * the 'rbp' field is not valid.
 	 */
 	gpointer    previous_lmf;
 #if defined(__default_codegen__) || defined(HOST_WIN32)

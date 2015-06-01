@@ -586,7 +586,11 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			return TRUE;
 		}
 
-		if (((guint64)(*lmf)->previous_lmf) & 1) {
+		if (((guint64)(*lmf)->previous_lmf) & 4) {
+			MonoLMFTramp *ext = (MonoLMFTramp*)(*lmf);
+
+			rip = (guint64)MONO_CONTEXT_GET_IP (ext->ctx);
+		} else if (((guint64)(*lmf)->previous_lmf) & 1) {
 			/* This LMF has the rip field set */
 			rip = (*lmf)->rip;
 		} else if ((*lmf)->rsp == 0) {
@@ -610,29 +614,27 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (!ji)
 			return FALSE;
 
-		/* Adjust IP */
-		rip --;
-
 		frame->ji = ji;
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
-
-		new_ctx->gregs [AMD64_RIP] = rip;
-		new_ctx->gregs [AMD64_RBP] = (*lmf)->rbp;
-		new_ctx->gregs [AMD64_RSP] = (*lmf)->rsp;
 
 		if (((guint64)(*lmf)->previous_lmf) & 4) {
 			MonoLMFTramp *ext = (MonoLMFTramp*)(*lmf);
 
 			/* Trampoline frame */
-			for (i = 0; i < AMD64_NREG; ++i) {
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && i != AMD64_RBP)
-					new_ctx->gregs [i] = ext->ctx->gregs [i];
-			}
+			for (i = 0; i < AMD64_NREG; ++i)
+				new_ctx->gregs [i] = ext->ctx->gregs [i];
+			/* Adjust IP */
+			new_ctx->gregs [AMD64_RIP] --;
 		} else {
 			/*
 			 * The registers saved in the LMF will be restored using the normal unwind info,
 			 * when the wrapper frame is processed.
 			 */
+			/* Adjust IP */
+			rip --;
+			new_ctx->gregs [AMD64_RIP] = rip;
+			new_ctx->gregs [AMD64_RSP] = (*lmf)->rsp;
+			new_ctx->gregs [AMD64_RBP] = (*lmf)->rbp;
 			for (i = 0; i < AMD64_NREG; ++i) {
 				if (AMD64_IS_CALLEE_SAVED_REG (i) && i != AMD64_RBP)
 					new_ctx->gregs [i] = 0;
@@ -976,7 +978,7 @@ mono_arch_notify_pending_exc (MonoThreadInfo *info)
 		/* Initial LMF */
 		return;
 
-	if ((guint64)lmf->previous_lmf & 1)
+	if ((guint64)lmf->previous_lmf & 5)
 		/* Already hijacked or trampoline LMF entry */
 		return;
 

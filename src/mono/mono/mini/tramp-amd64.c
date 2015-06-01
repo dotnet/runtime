@@ -497,6 +497,16 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 			/* RAX is already saved */
 			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RBP, rbp_offset, sizeof(mgreg_t));
 			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * sizeof(mgreg_t)), AMD64_RAX, sizeof(mgreg_t));
+		} else if (i == AMD64_RIP) {
+			if (has_caller)
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, 8, sizeof(gpointer));
+			else
+				amd64_mov_reg_imm (code, AMD64_R11, 0);
+			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * sizeof(mgreg_t)), AMD64_R11, sizeof(mgreg_t));
+		} else if (i == AMD64_RSP) {
+			amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, sizeof(mgreg_t));
+			amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, framesize + 16);
+			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * sizeof(mgreg_t)), AMD64_R11, sizeof(mgreg_t));
 		} else if (i != AMD64_R11) {
 			amd64_mov_membase_reg (code, AMD64_RBP, saved_regs_offset + (i * sizeof(mgreg_t)), i, sizeof(mgreg_t));
 		} else {
@@ -590,14 +600,11 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	else
 		amd64_mov_reg_imm (code, AMD64_R11, 0);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rip), AMD64_R11, sizeof(mgreg_t));
-	/* Save fp */
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RSP, framesize, sizeof(mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), AMD64_R11, sizeof(mgreg_t));
 	/* Save sp */
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, sizeof(mgreg_t));
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, framesize + 16);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rsp), AMD64_R11, sizeof(mgreg_t));
-	/* Save pointer to registers */
+	/* Save pointer to context */
 	amd64_lea_membase (code, AMD64_R11, AMD64_RBP, ctx_offset);
 	amd64_mov_membase_reg (code, AMD64_RBP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMFTramp, ctx), AMD64_R11, sizeof(mgreg_t));
 
