@@ -72,6 +72,53 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 }
 
 //------------------------------------------------------------------------
+// IsSafeToContainMem: Checks for conflicts between childNode and parentNode.
+//
+// Arguments:
+//    parentNode  - a non-leaf binary node
+//    childNode   - a memory op that is a child op of 'parentNode'
+//
+// Return value:
+//    returns true if it is safe to make childNode a contained memory op
+//
+// Notes:
+//    Checks for memory conflicts in the instructions between childNode and parentNode,
+//    and returns true iff childNode can be contained.
+
+bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
+{
+    assert(parentNode->OperIsBinary());
+    assert(childNode->isMemoryOp());
+
+    // Check conflicts against nodes between 'childNode' and 'parentNode'
+    GenTree* node;
+    unsigned int childFlags = (childNode->gtFlags & GTF_ALL_EFFECT);
+    for (node = childNode->gtNext;
+         (node != parentNode) && (node != nullptr);
+         node = node->gtNext)
+    {
+        if ((childFlags != 0) && node->IsCall())
+        {
+            bool isPureHelper = (node->gtCall.gtCallType == CT_HELPER) && comp->s_helperCallProperties.IsPure(comp->eeGetHelperNum(node->gtCall.gtCallMethHnd));
+            if (!isPureHelper && ((node->gtFlags & childFlags & GTF_ALL_EFFECT) != 0))
+            {
+                return false;
+            }
+        }
+        else if (node->OperIsStore() && comp->fgNodesMayInterfere(node, childNode))
+        {
+            return false;
+        }
+    }
+    if (node != parentNode)
+    {
+        assert(!"Ran off end of stmt\n");
+        return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
 
 Compiler::fgWalkResult Lowering::DecompNodeHelper(GenTreePtr* pTree, Compiler::fgWalkData* data)
 {
