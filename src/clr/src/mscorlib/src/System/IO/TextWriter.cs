@@ -41,51 +41,6 @@ namespace System.IO {
 #endif // FEATURE_REMOTING
         public static readonly TextWriter Null = new NullTextWriter();
 
-        [NonSerialized]
-        private static Action<object> _WriteCharDelegate = state =>
-        {
-            Tuple<TextWriter, char> tuple = (Tuple<TextWriter, char>)state;
-            tuple.Item1.Write(tuple.Item2);
-        };
-
-        [NonSerialized]
-        private static Action<object> _WriteStringDelegate = state =>
-        {
-            Tuple<TextWriter, string> tuple = (Tuple<TextWriter, string>)state;
-            tuple.Item1.Write(tuple.Item2);
-        };
-
-        [NonSerialized]
-        private static Action<object> _WriteCharArrayRangeDelegate = state =>
-        {
-            Tuple<TextWriter, char[], int, int> tuple = (Tuple<TextWriter, char[],int, int>)state;
-            tuple.Item1.Write(tuple.Item2, tuple.Item3, tuple.Item4);
-        };
-
-        [NonSerialized]
-        private static Action<object> _WriteLineCharDelegate = state =>
-        {
-            Tuple<TextWriter, char> tuple = (Tuple<TextWriter, char>)state;
-            tuple.Item1.WriteLine(tuple.Item2);
-        };
-
-        [NonSerialized]
-        private static Action<object> _WriteLineStringDelegate = state =>
-        {
-            Tuple<TextWriter, string> tuple = (Tuple<TextWriter, string>)state;
-            tuple.Item1.WriteLine(tuple.Item2);
-        };
-
-        [NonSerialized]
-        private static Action<object> _WriteLineCharArrayRangeDelegate = state =>
-        {
-            Tuple<TextWriter, char[], int, int> tuple = (Tuple<TextWriter, char[],int, int>)state;
-            tuple.Item1.WriteLine(tuple.Item2, tuple.Item3, tuple.Item4);
-        };
-
-        [NonSerialized]
-        private static Action<object> _FlushDelegate = state => ((TextWriter)state).Flush();
-
         // This should be initialized to Environment.NewLine, but
         // to avoid loading Environment unnecessarily so I've duplicated
         // the value here.
@@ -538,16 +493,26 @@ namespace System.IO {
         [ComVisible(false)]
         public virtual Task WriteAsync(char value)
         {
-            Tuple<TextWriter, char> tuple = new Tuple<TextWriter, char>(this, value);
-            return Task.Factory.StartNew(_WriteCharDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var tuple = new Tuple<TextWriter, char>(this, value);
+            return Task.Factory.StartNew(state =>
+            {
+                var t = (Tuple<TextWriter, char>)state;
+                t.Item1.Write(t.Item2);
+            },
+            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteAsync(String value)
         {
-            Tuple<TextWriter, string> tuple = new Tuple<TextWriter, string>(this, value);
-            return Task.Factory.StartNew(_WriteStringDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var tuple = new Tuple<TextWriter, string>(this, value);
+            return Task.Factory.StartNew(state =>
+            {
+                var t = (Tuple<TextWriter, string>)state;
+                t.Item1.Write(t.Item2);
+            },
+            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         [HostProtection(ExternalThreading = true)]
@@ -562,24 +527,39 @@ namespace System.IO {
         [ComVisible(false)]
         public virtual Task WriteAsync(char[] buffer, int index, int count)
         {
-            Tuple<TextWriter, char[], int, int> tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
-            return Task.Factory.StartNew(_WriteCharArrayRangeDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
+            return Task.Factory.StartNew(state =>
+            {
+                var t = (Tuple<TextWriter, char[], int, int>)state;
+                t.Item1.Write(t.Item2, t.Item3, t.Item4);
+            },
+            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteLineAsync(char value)
         {
-            Tuple<TextWriter, char> tuple = new Tuple<TextWriter, char>(this, value);
-            return Task.Factory.StartNew(_WriteLineCharDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var tuple = new Tuple<TextWriter, char>(this, value);
+            return Task.Factory.StartNew(state =>
+            {
+                var t = (Tuple<TextWriter, char>)state;
+                t.Item1.WriteLine(t.Item2);
+            },
+            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         [HostProtection(ExternalThreading = true)]
         [ComVisible(false)]
         public virtual Task WriteLineAsync(String value)
         {
-            Tuple<TextWriter, string> tuple = new Tuple<TextWriter, string>(this, value);
-            return Task.Factory.StartNew(_WriteLineStringDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var tuple = new Tuple<TextWriter, string>(this, value);
+            return Task.Factory.StartNew(state =>
+            {
+                var t = (Tuple<TextWriter, string>)state;
+                t.Item1.WriteLine(t.Item2);
+            },
+            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         [HostProtection(ExternalThreading = true)]
@@ -594,8 +574,13 @@ namespace System.IO {
         [ComVisible(false)]
         public virtual Task WriteLineAsync(char[] buffer, int index, int count)
         {
-            Tuple<TextWriter, char[], int, int> tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
-            return Task.Factory.StartNew(_WriteLineCharArrayRangeDelegate, tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
+            return Task.Factory.StartNew(state =>
+            {
+                var t = (Tuple<TextWriter, char[], int, int>)state;
+                t.Item1.WriteLine(t.Item2, t.Item3, t.Item4);
+            },
+            tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         [HostProtection(ExternalThreading = true)]
@@ -609,7 +594,11 @@ namespace System.IO {
         [ComVisible(false)]
         public virtual Task FlushAsync()
         {
-            return Task.Factory.StartNew(_FlushDelegate, this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            return Task.Factory.StartNew(state =>
+            {
+                ((TextWriter)state).Flush();
+            },
+            this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
         #endregion
 
