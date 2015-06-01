@@ -110,20 +110,6 @@ static int do_coverage = 0;
 static gboolean debug_coverage = FALSE;
 static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
 
-/* For linux compile with:
- * gcc -fPIC -shared -o libmono-profiler-log.so proflog.c utils.c -Wall -g -lz `pkg-config --cflags --libs mono-2`
- * gcc -o mprof-report decode.c utils.c -Wall -g -lz -lrt -lpthread `pkg-config --cflags mono-2`
- *
- * For osx compile with:
- * gcc -m32 -Dmono_free=free shared -o libmono-profiler-log.dylib proflog.c utils.c -Wall -g -lz `pkg-config --cflags mono-2` -undefined suppress -flat_namespace
- * gcc -m32 -o mprof-report decode.c utils.c -Wall -g -lz -lrt -lpthread `pkg-config --cflags mono-2`
- *
- * Install with:
- * sudo cp mprof-report /usr/local/bin
- * sudo cp libmono-profiler-log.so /usr/local/lib
- * sudo ldconfig
- */
-
 typedef struct _LogBuffer LogBuffer;
 
 /*
