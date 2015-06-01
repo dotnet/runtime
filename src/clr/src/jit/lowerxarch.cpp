@@ -2235,9 +2235,16 @@ void Lowering::LowerCmp(GenTreePtr tree)
         }
 
         assert(otherOp != nullptr);
-        if (otherOp->isMemoryOp() || otherOp->IsCnsNonZeroFltOrDbl())
+        if (otherOp->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(tree, otherOp);
+        }
+        else if (otherOp->isMemoryOp())
+        {
+            if ((otherOp == op2) || IsSafeToContainMem(tree, otherOp)) 
+            {
+                MakeSrcContained(tree, otherOp);
+            }
         }
 
         return;
@@ -2467,11 +2474,11 @@ void Lowering::LowerCmp(GenTreePtr tree)
             }
         }
     }
-    else if (op1->isMemoryOp()) 
+    else if (op2->isMemoryOp())
     {
-        if(op1Type == op2Type)
+        if (op1Type == op2Type)
         {
-            MakeSrcContained(tree, op1);
+            MakeSrcContained(tree, op2);
 
             // Mark the tree as doing unsigned comparison if
             // both the operands are small and unsigned types.
@@ -2484,11 +2491,11 @@ void Lowering::LowerCmp(GenTreePtr tree)
             }
         }
     }
-    else if (op2->isMemoryOp())
+    else if (op1->isMemoryOp()) 
     {
-        if(op1Type == op2Type)
+        if ((op1Type == op2Type) && IsSafeToContainMem(tree, op1))
         {
-            MakeSrcContained(tree, op2);
+            MakeSrcContained(tree, op1);
 
             // Mark the tree as doing unsigned comparison if
             // both the operands are small and unsigned types.
@@ -2699,7 +2706,8 @@ bool Lowering::LowerStoreInd(GenTreePtr tree)
         GenTreePtr indirOpSource = nullptr;
 
         if (rhsLeft->OperGet() == GT_IND &&
-            rhsLeft->gtGetOp1()->OperGet() == indirDst->OperGet())
+            rhsLeft->gtGetOp1()->OperGet() == indirDst->OperGet() &&
+            IsSafeToContainMem(indirSrc, rhsLeft))
         {
             indirCandidate = rhsLeft;
             indirOpSource = rhsRight;
@@ -2922,7 +2930,10 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
     // To generate an LEA we need to force memOp into a register
     // so don't allow memOp to be 'contained'
     //
-    if ((memOp != nullptr) && !useLeaEncoding && (memOp->TypeGet() == tree->TypeGet()))
+    if ((memOp != nullptr)                    &&
+        !useLeaEncoding                       &&
+        (memOp->TypeGet() == tree->TypeGet()) &&
+        IsSafeToContainMem(tree, memOp))
     {
         MakeSrcContained(tree, memOp);
     }
@@ -2935,7 +2946,10 @@ void Lowering::SetMulOpCounts(GenTreePtr tree)
 //    tree      - a binary tree node
 //
 // Return Value:
-//    returns true if we can use the read-modify-write memory instruction form
+//    Returns true if we can use the read-modify-write instruction form
+//
+// Notes:
+//    This is used to determine whether to preference the source to the destination register.
 //
 bool Lowering::isRMWRegOper(GenTreePtr tree)
 {
