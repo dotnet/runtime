@@ -1178,7 +1178,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_IMAGE:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_SFLDA:
@@ -1224,6 +1223,8 @@ mono_patch_info_hash (gconstpointer data)
 
 		return (ji->type << 8) | (gssize)info->klass | (gssize)info->method;
 	}
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+		return (ji->type << 8) | g_str_hash (ji->data.target);
 	default:
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
@@ -1283,6 +1284,10 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		return ji1->data.index == ji2->data.index;
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+		if (ji1->data.target == ji2->data.target)
+			return 1;
+		return strcmp (ji1->data.target, ji2->data.target) == 0 ? 1 : 0;
 	default:
 		if (ji1->data.target != ji2->data.target)
 			return 0;
