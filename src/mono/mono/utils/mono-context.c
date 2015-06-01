@@ -166,23 +166,23 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #elif defined(HOST_WIN32)
 	CONTEXT *context = (CONTEXT*)sigctx;
 
-	mctx->gregs [AMD64_RIP] = context->gregs [AMD64_RIP];
-	mctx->gregs [AMD64_RAX] = context->gregs [AMD64_RAX];
-	mctx->gregs [AMD64_RCX] = context->gregs [AMD64_RCX];
-	mctx->gregs [AMD64_RDX] = context->gregs [AMD64_RDX];
-	mctx->gregs [AMD64_RBX] = context->gregs [AMD64_RBX];
-	mctx->gregs [AMD64_RSP] = context->gregs [AMD64_RSP];
-	mctx->gregs [AMD64_RBP] = context->gregs [AMD64_RBP];
-	mctx->gregs [AMD64_RSI] = context->gregs [AMD64_RSI];
-	mctx->gregs [AMD64_RDI] = context->gregs [AMD64_RDI];
-	mctx->gregs [AMD64_R8] = context->gregs [AMD64_R8];
-	mctx->gregs [AMD64_R9] = context->gregs [AMD64_R9];
-	mctx->gregs [AMD64_R10] = context->gregs [AMD64_R10];
-	mctx->gregs [AMD64_R11] = context->gregs [AMD64_R11];
-	mctx->gregs [AMD64_R12] = context->gregs [AMD64_R12];
-	mctx->gregs [AMD64_R13] = context->gregs [AMD64_R13];
-	mctx->gregs [AMD64_R14] = context->gregs [AMD64_R14];
-	mctx->gregs [AMD64_R15] = context->gregs [AMD64_R15];
+	mctx->gregs [AMD64_RIP] = context->Rip;
+	mctx->gregs [AMD64_RAX] = context->Rax;
+	mctx->gregs [AMD64_RCX] = context->Rcx;
+	mctx->gregs [AMD64_RDX] = context->Rdx;
+	mctx->gregs [AMD64_RBX] = context->Rbx;
+	mctx->gregs [AMD64_RSP] = context->Rsp;
+	mctx->gregs [AMD64_RBP] = context->Rbp;
+	mctx->gregs [AMD64_RSI] = context->Rsi;
+	mctx->gregs [AMD64_RDI] = context->Rdi;
+	mctx->gregs [AMD64_R8] = context->R8;
+	mctx->gregs [AMD64_R9] = context->R9;
+	mctx->gregs [AMD64_R10] = context->R10;
+	mctx->gregs [AMD64_R11] = context->R11;
+	mctx->gregs [AMD64_R12] = context->R12;
+	mctx->gregs [AMD64_R13] = context->R13;
+	mctx->gregs [AMD64_R14] = context->R14;
+	mctx->gregs [AMD64_R15] = context->R15;
 #else
 	MonoContext *ctx = (MonoContext *)sigctx;
 
@@ -236,23 +236,23 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #elif defined(HOST_WIN32)
 	CONTEXT *context = (CONTEXT*)sigctx;
 
-	context->gregs [AMD64_RIP] = mctx->gregs [AMD64_RIP];
-	context->gregs [AMD64_RAX] = mctx->gregs [AMD64_RAX];
-	context->gregs [AMD64_RCX] = mctx->gregs [AMD64_RCX];
-	context->gregs [AMD64_RDX] = mctx->gregs [AMD64_RDX];
-	context->gregs [AMD64_RBX] = mctx->gregs [AMD64_RBX];
-	context->gregs [AMD64_RSP] = mctx->gregs [AMD64_RSP];
-	context->gregs [AMD64_RBP] = mctx->gregs [AMD64_RBP];
-	context->gregs [AMD64_RSI] = mctx->gregs [AMD64_RSI];
-	context->gregs [AMD64_RDI] = mctx->gregs [AMD64_RDI];
-	context->gregs [AMD64_R8] = mctx->gregs [AMD64_R8];
-	context->gregs [AMD64_R9] = mctx->gregs [AMD64_R9];
-	context->gregs [AMD64_R10] = mctx->gregs [AMD64_R10];
-	context->gregs [AMD64_R11] = mctx->gregs [AMD64_R11];
-	context->gregs [AMD64_R12] = mctx->gregs [AMD64_R12];
-	context->gregs [AMD64_R13] = mctx->gregs [AMD64_R13];
-	context->gregs [AMD64_R14] = mctx->gregs [AMD64_R14];
-	context->gregs [AMD64_R15] = mctx->gregs [AMD64_R15];
+	context->Rip = mctx->gregs [AMD64_RIP];
+	context->Rax = mctx->gregs [AMD64_RAX];
+	context->Rcx = mctx->gregs [AMD64_RCX];
+	context->Rdx = mctx->gregs [AMD64_RDX];
+	context->Rbx = mctx->gregs [AMD64_RBX];
+	context->Rsp = mctx->gregs [AMD64_RSP];
+	context->Rbp = mctx->gregs [AMD64_RBP];
+	context->Rsi = mctx->gregs [AMD64_RSI];
+	context->Rdi = mctx->gregs [AMD64_RDI];
+	context->R8 = mctx->gregs [AMD64_R8];
+	context->R9 = mctx->gregs [AMD64_R9];
+	context->R10 = mctx->gregs [AMD64_R10];
+	context->R11 = mctx->gregs [AMD64_R11];
+	context->R12 = mctx->gregs [AMD64_R12];
+	context->R13 = mctx->gregs [AMD64_R13];
+	context->R14 = mctx->gregs [AMD64_R14];
+	context->R15 = mctx->gregs [AMD64_R15];
 #else
 	MonoContext *ctx = (MonoContext *)sigctx;
 
