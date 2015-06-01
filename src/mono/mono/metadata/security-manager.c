@@ -119,20 +119,3 @@ void
 ves_icall_System_Security_SecurityManager_set_SecurityEnabled (MonoBoolean value)
 {
 }
-
-MonoBoolean
-ves_icall_System_Security_SecurityManager_get_CheckExecutionRights (void)
-{
-	return FALSE;
-}
-
-void
-ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoolean value)
-{
-}
-
-MonoBoolean
-ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions)
-{
-	return FALSE;
-}

@@ -61,9 +61,6 @@ MonoSecurityMode mono_security_get_mode (void);
 /* internal calls */
 MonoBoolean ves_icall_System_Security_SecurityManager_get_SecurityEnabled (void);
 void ves_icall_System_Security_SecurityManager_set_SecurityEnabled (MonoBoolean value);
-MonoBoolean ves_icall_System_Security_SecurityManager_get_CheckExecutionRights (void);
-void ves_icall_System_Security_SecurityManager_set_CheckExecutionRights (MonoBoolean value);
-MonoBoolean ves_icall_System_Security_SecurityManager_GetLinkDemandSecurity (MonoReflectionMethod *m, MonoDeclSecurityActions *kactions, MonoDeclSecurityActions *mactions);
 
 #ifndef DISABLE_SECURITY
 #define mono_security_core_clr_enabled() (mono_security_get_mode () == MONO_SECURITY_MODE_CORE_CLR)
