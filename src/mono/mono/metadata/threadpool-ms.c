@@ -20,15 +20,10 @@
 // Ported from C++ to C and adjusted to Mono runtime
 
 #include <stdlib.h>
+#define _USE_MATH_DEFINES // needed by MSVC to define math constants
 #include <math.h>
 #include <config.h>
 #include <glib.h>
-
-#if !defined (HAVE_COMPLEX_H)
-#include <../../support/libm/complex.h>
-#else
-#include <complex.h>
-#endif
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/exception.h>
@@ -40,6 +35,7 @@
 #include <mono/metadata/threadpool-internals.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-complex.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-time.h>
@@ -925,7 +921,7 @@ hill_climbing_force_change (gint16 new_thread_count, ThreadPoolHeuristicStateTra
 	}
 }
 
-static double complex
+static double_complex
 hill_climbing_get_wave_component (gdouble *samples, guint sample_count, gdouble period)
 {
 	ThreadPoolHillClimbing *hc;
@@ -950,7 +946,7 @@ hill_climbing_get_wave_component (gdouble *samples, guint sample_count, gdouble 
 		q1 = q0;
 	}
 
-	return ((q1 - q2 * cosine) + (q2 * sine) * I) / ((gdouble) sample_count);
+	return mono_double_complex_scalar_div (mono_double_complex_make (q1 - q2 * cosine, (q2 * sine)), ((gdouble)sample_count));
 }
 
 static gint16
@@ -967,9 +963,9 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 	gint sample_count;
 	gint new_thread_wave_magnitude;
 	gint new_thread_count;
-	double complex thread_wave_component;
-	double complex throughput_wave_component;
-	double complex ratio;
+	double_complex thread_wave_component;
+	double_complex throughput_wave_component;
+	double_complex ratio;
 
 	g_assert (threadpool);
 	g_assert (adjustment_interval);
@@ -1029,10 +1025,10 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 	hc->total_samples ++;
 
 	/* Set up defaults for our metrics. */
-	thread_wave_component = 0;
-	throughput_wave_component = 0;
+	thread_wave_component = mono_double_complex_make(0, 0);
+	throughput_wave_component = mono_double_complex_make(0, 0);
 	throughput_error_estimate = 0;
-	ratio = 0;
+	ratio = mono_double_complex_make(0, 0);
 	confidence = 0;
 
 	transition = TRANSITION_WARMUP;
@@ -1070,17 +1066,17 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 			/* Get the the three different frequency components of the throughput (scaled by average
 			 * throughput). Our "error" estimate (the amount of noise that might be present in the
 			 * frequency band we're really interested in) is the average of the adjacent bands. */
-			throughput_wave_component = hill_climbing_get_wave_component (hc->samples, sample_count, hc->wave_period) / average_throughput;
-			throughput_error_estimate = cabs (hill_climbing_get_wave_component (hc->samples, sample_count, adjacent_period_1) / average_throughput);
+			throughput_wave_component = mono_double_complex_scalar_div (hill_climbing_get_wave_component (hc->samples, sample_count, hc->wave_period), average_throughput);
+			throughput_error_estimate = cabs (mono_double_complex_scalar_div (hill_climbing_get_wave_component (hc->samples, sample_count, adjacent_period_1), average_throughput));
 
 			if (adjacent_period_2 <= sample_count) {
-				throughput_error_estimate = MAX (throughput_error_estimate, cabs (hill_climbing_get_wave_component (
-					hc->samples, sample_count, adjacent_period_2) / average_throughput));
+				throughput_error_estimate = MAX (throughput_error_estimate, cabs (mono_double_complex_scalar_div (hill_climbing_get_wave_component (
+					hc->samples, sample_count, adjacent_period_2), average_throughput)));
 			}
 
 			/* Do the same for the thread counts, so we have something to compare to. We don't
 			 * measure thread count noise, because there is none; these are exact measurements. */
-			thread_wave_component = hill_climbing_get_wave_component (hc->thread_counts, sample_count, hc->wave_period) / average_thread_count;
+			thread_wave_component = mono_double_complex_scalar_div (hill_climbing_get_wave_component (hc->thread_counts, sample_count, hc->wave_period), average_thread_count);
 
 			/* Update our moving average of the throughput noise. We'll use this
 			 * later as feedback to determine the new size of the thread wave. */
@@ -1094,10 +1090,10 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 			if (cabs (thread_wave_component) > 0) {
 				/* Adjust the throughput wave so it's centered around the target wave,
 				 * and then calculate the adjusted throughput/thread ratio. */
-				ratio = (throughput_wave_component - (hc->target_throughput_ratio * thread_wave_component)) / thread_wave_component;
+				ratio = mono_double_complex_div (mono_double_complex_sub (throughput_wave_component, mono_double_complex_scalar_mul(thread_wave_component, hc->target_throughput_ratio)), thread_wave_component);
 				transition = TRANSITION_CLIMBING_MOVE;
 			} else {
-				ratio = 0;
+				ratio = mono_double_complex_make (0, 0);
 				transition = TRANSITION_STABILIZING;
 			}
 
