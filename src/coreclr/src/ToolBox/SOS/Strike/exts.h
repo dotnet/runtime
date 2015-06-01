@@ -415,7 +415,11 @@ inline CLRDATA_ADDRESS GetBP(const CROSS_PLATFORM_CONTEXT& context)
 //
 //-----------------------------------------------------------------------------------------
 
-#ifndef FEATURE_PAL
+#ifdef FEATURE_PAL
+
+#define GetExpression(exp) g_ExtClient->GetExpression(exp)
+
+#else // FEATURE_PAL
 
 extern WINDBG_EXTENSION_APIS ExtensionApis;
 #define GetExpression (ExtensionApis.lpGetExpressionRoutine)

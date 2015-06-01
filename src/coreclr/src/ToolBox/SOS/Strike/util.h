@@ -156,17 +156,11 @@ class BaseObject
 };
 
 
-const DWORD gElementTypeInfo[] = {
+const BYTE gElementTypeInfo[] = {
 #define TYPEINFO(e,ns,c,s,g,ia,ip,if,im,gv)    s,
 #include "cortypeinfo.h"
 #undef TYPEINFO
 };
-
-// Under unix we need to implement ExtensionApis.
-#ifdef FEATURE_PAL
-#undef GetExpression
-DWORD_PTR GetExpression(const char *exp);
-#endif // FEATURE_PAL
 
 typedef struct tagLockEntry
 {
