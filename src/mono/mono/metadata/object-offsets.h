@@ -180,7 +180,7 @@ DECL_OFFSET(MonoLMF, rip)
 
 DECL_OFFSET(DynCallArgs, res)
 
-DECL_OFFSET(MonoLMFTramp, regs)
+DECL_OFFSET(MonoLMFTramp, ctx)
 DECL_OFFSET(MonoLMFTramp, lmf_addr)
 #elif defined(TARGET_ARM)
 DECL_OFFSET(MonoLMF, sp)
