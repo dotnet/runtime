@@ -18,7 +18,8 @@ namespace System.Diagnostics.ProcessTests
                 }
                 else if (args[0].Equals("error"))
                 {
-                    Console.Error.WriteLine(Name + " error stream");
+                    Console.Error.WriteLine(Name + " started error stream");
+                    Console.Error.WriteLine(Name + " closed error stream");
                     Sleep();
                 }
                 else if (args[0].Equals("input"))
