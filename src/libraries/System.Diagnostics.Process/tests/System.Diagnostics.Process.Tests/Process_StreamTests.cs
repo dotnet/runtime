@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.IO;
+using System.Threading;
 using Xunit;
 
 namespace System.Diagnostics.ProcessTests
@@ -35,24 +36,37 @@ namespace System.Diagnostics.ProcessTests
             Process p = CreateProcessError();
             p.StartInfo.RedirectStandardError = true;
             p.Start();
-            Assert.Equal(p.StandardError.ReadToEnd(), TestExeName + " error stream" + Environment.NewLine);
+            string expected = TestExeName + " started error stream" + Environment.NewLine +
+                              TestExeName + " closed error stream" + Environment.NewLine;
+            Assert.Equal(expected, p.StandardError.ReadToEnd());
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
         [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_AsyncErrorStream()
         {
-            StringBuilder sb = new StringBuilder();
-            Process p = CreateProcessError();
-            p.StartInfo.RedirectStandardError = true;
-            p.ErrorDataReceived += (s, e) => { sb.Append(e.Data); };
-            p.Start();
-            p.BeginErrorReadLine();
+            for (int i = 0; i < 2; ++i)
+            {
+                StringBuilder sb = new StringBuilder();
+                Process p = CreateProcessError();
+                p.StartInfo.RedirectStandardError = true;
+                p.ErrorDataReceived += (s, e) =>
+                {
+                    sb.Append(e.Data);
+                    if (i == 1)
+                    {
+                        ((Process)s).CancelErrorRead();
+                    }
+                };
+                p.Start();
+                p.BeginErrorReadLine();
 
-            if (p.WaitForExit(WaitInMS))
-                p.WaitForExit(); // This ensures async event handlers are finished processing.
+                if (p.WaitForExit(WaitInMS))
+                    p.WaitForExit(); // This ensures async event handlers are finished processing.
 
-            Assert.Equal(TestExeName + " error stream", sb.ToString());
+                string expected = TestExeName + " started error stream" + (i == 1 ? "" : TestExeName + " closed error stream");
+                Assert.Equal(expected, sb.ToString());
+            }
         }
 
         [Fact, ActiveIssue(1538, PlatformID.OSX)]
@@ -63,52 +77,47 @@ namespace System.Diagnostics.ProcessTests
             p.Start();
             string s = p.StandardOutput.ReadToEnd();
             Assert.True(p.WaitForExit(WaitInMS));
-            Assert.Equal(s, TestExeName + " started" + Environment.NewLine + TestExeName + " closed" + Environment.NewLine);
+            Assert.Equal(TestExeName + " started" + Environment.NewLine + TestExeName + " closed" + Environment.NewLine, s);
         }
 
         [Fact, ActiveIssue(1538, PlatformID.OSX)]
         public void Process_AsyncOutputStream()
         {
+            for (int i = 0; i < 2; ++i)
             {
                 StringBuilder sb = new StringBuilder();
                 Process p = CreateProcessStream();
                 p.StartInfo.RedirectStandardOutput = true;
-                p.OutputDataReceived += (s, e) => sb.Append(e.Data);
+                p.OutputDataReceived += (s, e) =>
+                {
+                    sb.Append(e.Data);
+                    if (i == 1)
+                    {
+                        ((Process)s).CancelOutputRead();
+                    }
+                };
                 p.Start();
                 p.BeginOutputReadLine();
                 if (p.WaitForExit(WaitInMS))
                     p.WaitForExit(); // This ensures async event handlers are finished processing.
 
-                Assert.Equal(sb.ToString(), TestExeName + " started" + TestExeName + " closed");
-            }
-
-            {
-                // Now add the CancelAsyncAPI as well.
-                StringBuilder sb = new StringBuilder();
-                Process p = CreateProcessStream();
-                p.StartInfo.RedirectStandardOutput = true;
-                p.OutputDataReceived += (s, e) => { sb.Append(e.Data); ((Process)s).CancelOutputRead(); };
-                p.Start();
-                p.BeginOutputReadLine();
-                if (p.WaitForExit(WaitInMS))
-                    p.WaitForExit(); // This ensures async event handlers are finished processing.
-
-                Assert.Equal(sb.ToString(), TestExeName + " started");
+                string expected = TestExeName + " started" + (i == 1 ? "" : TestExeName + " closed");
+                Assert.Equal(expected, sb.ToString());
             }
         }
 
         [Fact]
         public void Process_SyncStreams()
         {
+            const string expected = "This string should come as output";
             Process p = CreateProcessInput();
             p.StartInfo.RedirectStandardInput = true;
             p.StartInfo.RedirectStandardOutput = true;
-            p.OutputDataReceived += (s, e) => { Assert.Equal(e.Data, "This string should come as output"); };
+            p.OutputDataReceived += (s, e) => { Assert.Equal(expected, e.Data); };
             p.Start();
             using (StreamWriter writer = p.StandardInput)
             {
-                string str = "This string should come as output";
-                writer.WriteLine(str);
+                writer.WriteLine(expected);
             }
             Assert.True(p.WaitForExit(WaitInMS));
         }
@@ -127,8 +136,58 @@ namespace System.Diagnostics.ProcessTests
             };
             p.Start();
             p.BeginOutputReadLine();
-            Assert.True(p.WaitForExit(WaitInMS));
+
+            if (p.WaitForExit(WaitInMS))
+                p.WaitForExit(); // This ensures async event handlers are finished processing.
+
             Assert.True(receivedOutput);
+        }
+
+        [Fact]
+        public void Process_StreamNegativeTests()
+        {
+            {
+                Process p = new Process();
+                Assert.Throws<InvalidOperationException>(() => p.StandardOutput);
+                Assert.Throws<InvalidOperationException>(() => p.StandardError);
+                Assert.Throws<InvalidOperationException>(() => p.BeginOutputReadLine());
+                Assert.Throws<InvalidOperationException>(() => p.BeginErrorReadLine());
+                Assert.Throws<InvalidOperationException>(() => p.CancelOutputRead());
+                Assert.Throws<InvalidOperationException>(() => p.CancelErrorRead());
+            }
+
+            {
+                Process p = CreateProcessStream();
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.RedirectStandardError = true;
+                p.OutputDataReceived += (s, e) => {};
+                p.ErrorDataReceived += (s, e) => {};
+
+                p.Start();
+                p.BeginOutputReadLine();
+                p.BeginErrorReadLine();
+
+                Assert.Throws<InvalidOperationException>(() => p.StandardOutput);
+                Assert.Throws<InvalidOperationException>(() => p.StandardError);
+                Assert.True(p.WaitForExit(WaitInMS));
+            }
+
+            {
+                Process p = CreateProcessStream();
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.RedirectStandardError = true;
+                p.OutputDataReceived += (s, e) => {};
+                p.ErrorDataReceived += (s, e) => {};
+
+                p.Start();
+
+                StreamReader output = p.StandardOutput;
+                StreamReader error = p.StandardError;
+
+                Assert.Throws<InvalidOperationException>(() => p.BeginOutputReadLine());
+                Assert.Throws<InvalidOperationException>(() => p.BeginErrorReadLine());
+                Assert.True(p.WaitForExit(WaitInMS));
+            }
         }
     }
 }
