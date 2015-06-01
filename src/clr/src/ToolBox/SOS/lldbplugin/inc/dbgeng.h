@@ -347,9 +347,8 @@ typedef class IDebugRegister* PDEBUG_REGISTERS;
 class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects, IDebugRegister
 {
 public:
-    virtual HRESULT GetExpression(
-        /* [in] */ PCSTR exp,
-        /* [out] */ PDWORD_PTR result) = 0;
+    virtual DWORD_PTR GetExpression(
+        /* [in] */ PCSTR exp) = 0;
 };
 
 typedef class IDebugClient* PDEBUG_CLIENT;
