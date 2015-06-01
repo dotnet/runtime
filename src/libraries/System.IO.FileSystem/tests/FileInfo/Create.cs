@@ -126,7 +126,7 @@ public class FileInfo_Create
             strLoc = "Loc_87yg7";
 
             iCountTestcases++;
-            fileName = Path.Combine(TestInfo.CurrentDirectory, "!@#$%^&");
+            fileName = Path.Combine(TestInfo.CurrentDirectory, Path.GetRandomFileName() + "!@#$%^&");
             file2 = new FileInfo(fileName);
             fs = file2.Create();
             fs.Dispose();
