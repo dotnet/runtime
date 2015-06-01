@@ -1552,7 +1552,9 @@ add_code_pointer (uintptr_t ip)
 	num_code_pages += add_code_page (code_pages, size_code_pages, ip & CPAGE_MASK);
 }
 
-#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
+/* ELF code crashes on some systems. */
+//#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
+#if 0
 static void
 dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t size)
 {
@@ -1586,7 +1588,9 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	logbuffer->data += len;
 }
 
-#ifdef ELFMAG0
+/* ELF code crashes on some systems. */
+//#if defined(ELFMAG0)
+#if 0
 
 #if SIZEOF_VOID_P == 4
 #define ELF_WSIZE 32
@@ -1675,7 +1679,9 @@ read_elf_symbols (MonoProfiler *prof, const char *filename, void *load_addr)
 }
 #endif
 
-#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
+/* ELF code crashes on some systems. */
+//#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
+#if 0
 static int
 elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 {
