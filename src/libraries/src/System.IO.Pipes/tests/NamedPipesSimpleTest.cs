@@ -37,7 +37,7 @@ public class NamedPipesSimpleTest
         }
     }
 
-    static byte[] ReadBytesAsync(PipeStream pipeStream, int length)
+    static async Task<byte[]> ReadBytesAsync(PipeStream pipeStream, int length)
     {
         Assert.True(pipeStream.IsConnected);
 
@@ -48,22 +48,19 @@ public class NamedPipesSimpleTest
 
         while (readSoFar < length)
         {
-            Task<int> readTask = pipeStream.ReadAsync(buffer, readSoFar, length - readSoFar);
-            readTask.Wait();
-            int len = readTask.Result;
+            int len = await pipeStream.ReadAsync(buffer, readSoFar, length - readSoFar);
+            if (len == 0) break;
             readSoFar += len;
         }
 
         return buffer;
     }
 
-    static void WriteBytesAsync(PipeStream pipeStream, byte[] buffer)
+    static Task WriteBytesAsync(PipeStream pipeStream, byte[] buffer)
     {
         Assert.True(pipeStream.IsConnected);
         Assert.True(buffer.Length > 0);
-
-        Task writeTask = pipeStream.WriteAsync(buffer, 0, buffer.Length);
-        writeTask.Wait();
+        return pipeStream.WriteAsync(buffer, 0, buffer.Length);
     }
 
     static byte[] sendBytes = new byte[] { 123, 234 };
@@ -101,7 +98,7 @@ public class NamedPipesSimpleTest
     [InlineData("TestInD", PipeDirection.In, true, true, true, false)]
     [InlineData("TestInE", PipeDirection.In, true, true, false, true)]
     [InlineData("TestInF", PipeDirection.In, true, true, true, true)]
-    public static void ClientServerOneWayOperations(
+    public static async Task ClientServerOneWayOperations(
         string pipeName, PipeDirection serverDirection,
         bool asyncServerPipe, bool asyncClientPipe,
         bool asyncServerOps, bool asyncClientOps)
@@ -113,20 +110,20 @@ public class NamedPipesSimpleTest
         using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName, serverDirection, 1, PipeTransmissionMode.Byte, serverOptions))
         {
             byte[] received = new byte[] { 0 };
-            Task clientTask = Task.Run(() =>
+            Task clientTask = Task.Run(async () =>
             {
                 using (NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, clientDirection, clientOptions))
                 {
                     if (asyncClientOps)
                     {
-                        client.ConnectAsync().Wait();
+                        await client.ConnectAsync();
                         if (clientDirection == PipeDirection.In)
                         {
-                            received = ReadBytesAsync(client, sendBytes.Length);
+                            received = await ReadBytesAsync(client, sendBytes.Length);
                         }
                         else
                         {
-                            WriteBytesAsync(client, sendBytes);
+                            await WriteBytesAsync(client, sendBytes);
                         }
                     }
                     else
@@ -146,14 +143,14 @@ public class NamedPipesSimpleTest
 
             if (asyncServerOps)
             {
-                server.WaitForConnectionAsync().Wait();
+                await server.WaitForConnectionAsync();
                 if (serverDirection == PipeDirection.Out)
                 {
-                    WriteBytesAsync(server, sendBytes);
+                    await WriteBytesAsync(server, sendBytes);
                 }
                 else
                 {
-                    received = ReadBytesAsync(server, sendBytes.Length);
+                    received = await ReadBytesAsync(server, sendBytes.Length);
                 }
             }
             else {
@@ -168,7 +165,7 @@ public class NamedPipesSimpleTest
                 }
             }
 
-            clientTask.Wait();
+            await clientTask;
             Assert.Equal(sendBytes, received);
 
             server.Disconnect();
@@ -208,7 +205,7 @@ public class NamedPipesSimpleTest
     }
 
     [Fact]
-    public static void ServerPInvokeChecks()
+    public static async Task ServerPInvokeChecks()
     {
         // calling every API related to server and client to detect any bad PInvokes
         using (NamedPipeServerStream server = new NamedPipeServerStream("foo", PipeDirection.Out))
@@ -235,7 +232,7 @@ public class NamedPipesSimpleTest
             Assert.Equal(PipeTransmissionMode.Byte, server.TransmissionMode);
 
             server.Write(new byte[] { 123 }, 0, 1);
-            server.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
+            await server.WriteAsync(new byte[] { 124 }, 0, 1);
             server.Flush();
             if (Interop.IsWindows)
             {
@@ -246,7 +243,7 @@ public class NamedPipesSimpleTest
                 Assert.Throws<PlatformNotSupportedException>(() => server.WaitForPipeDrain());
             }
 
-            clientTask.Wait();
+            await clientTask;
         }
 
         using (NamedPipeServerStream server = new NamedPipeServerStream("foo", PipeDirection.In))
@@ -271,7 +268,7 @@ public class NamedPipesSimpleTest
     }
 
     [Fact]
-    public static void ClientPInvokeChecks()
+    public static async Task ClientPInvokeChecks()
     {
         using (NamedPipeServerStream server = new NamedPipeServerStream("foo", PipeDirection.In))
         {
@@ -299,7 +296,7 @@ public class NamedPipesSimpleTest
                 Assert.Equal(PipeTransmissionMode.Byte, client.TransmissionMode);
 
                 client.Write(new byte[] { 123 }, 0, 1);
-                client.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
+                await client.WriteAsync(new byte[] { 124 }, 0, 1);
                 if (Interop.IsWindows)
                 {
                     client.WaitForPipeDrain();
@@ -310,7 +307,7 @@ public class NamedPipesSimpleTest
                 }
                 client.Flush();
 
-                serverTask.Wait();
+                await serverTask;
             }
         }
 
@@ -335,7 +332,7 @@ public class NamedPipesSimpleTest
                 Assert.Equal(123, readData[0]);
                 Assert.Equal(124, readData[1]);
 
-                serverTask.Wait();
+                await serverTask;
             }
         }
     }
@@ -392,81 +389,68 @@ public class NamedPipesSimpleTest
     }
 
     [Fact]
-    [ActiveIssue(1766)]
-    public static void ServerCloneTests()
+    public static async Task ServerCloneTests()
     {
         const string pipeName = "fooclone";
         byte[] msg1 = new byte[] { 5, 7, 9, 10 };
         byte[] received1 = new byte[] { 0, 0, 0, 0 };
 
-        using (NamedPipeServerStream serverBase = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte))
+        using (NamedPipeServerStream serverBase = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte))
+        using (NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.None))
         {
-            using (NamedPipeServerStream server = new NamedPipeServerStream(PipeDirection.InOut, false, false, serverBase.SafePipeHandle))
+            Task clientTask = Task.Run(() =>
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
+                client.Connect();
+                client.Write(msg1, 0, msg1.Length);
+                if (Interop.IsWindows)
                 {
-                    Task clientTask = Task.Run(() =>
-                    {
-                        client.Connect();
-
-                        client.Write(msg1, 0, msg1.Length);
-
-                        int serverCount = client.NumberOfServerInstances;
-                        Assert.Equal(1, serverCount);
-                    });
+                    Assert.Equal(1, client.NumberOfServerInstances);
                 }
+            });
 
-                server.WaitForConnection();
+            serverBase.WaitForConnection();
+            using (NamedPipeServerStream server = new NamedPipeServerStream(PipeDirection.In, false, true, serverBase.SafePipeHandle))
+            {
                 int len1 = server.Read(received1, 0, msg1.Length);
                 Assert.Equal(msg1.Length, len1);
                 Assert.Equal(msg1, received1);
+                await clientTask;
             }
         }
     }
 
     [Fact]
-    public static void ClientCloneTests()
+    public static async Task ClientCloneTests()
     {
         const string pipeName = "fooClientclone";
-        
+
         byte[] msg1 = new byte[] { 5, 7, 9, 10 };
         byte[] received0 = new byte[] { };
         byte[] received1 = new byte[] { 0, 0, 0, 0 };
 
-        using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte))
+        using (NamedPipeServerStream server = new NamedPipeServerStream(pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte))
+        using (NamedPipeClientStream clientBase = new NamedPipeClientStream(".", pipeName, PipeDirection.Out, PipeOptions.None))
         {
-            using (NamedPipeClientStream clientBase = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
+            await Task.WhenAll(server.WaitForConnectionAsync(), clientBase.ConnectAsync());
+
+            using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.Out, false, true, clientBase.SafePipeHandle))
             {
-                Task clientTask = Task.Run(() =>
+                if (Interop.IsWindows)
                 {
-                    clientBase.Connect();
+                    Assert.Equal(1, client.NumberOfServerInstances);
+                }
+                Assert.Equal(PipeTransmissionMode.Byte, client.TransmissionMode);
 
-                    using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.InOut, false, true, clientBase.SafePipeHandle))
-                    {
-                        client.Write(msg1, 0, msg1.Length);
-
-                        int serverCount = client.NumberOfServerInstances;
-                        Assert.Equal(1, serverCount);
-                        Assert.Equal(PipeTransmissionMode.Byte, client.TransmissionMode);
-                    }
-                });
-
-                server.WaitForConnection();
+                Task clientTask = Task.Run(() => client.Write(msg1, 0, msg1.Length));
                 int len1 = server.Read(received1, 0, msg1.Length);
+                await clientTask;
                 Assert.Equal(msg1.Length, len1);
                 Assert.Equal(msg1, received1);
 
                 // test special cases of buffer lengths = 0
                 int len0 = server.Read(received0, 0, 0);
                 Assert.Equal(0, len0);
-
-                server.Write(received0, 0, 0);
-
-                Task<int> serverTaskRead = server.ReadAsync(received0, 0, 0);
-                serverTaskRead.Wait();
-                Assert.Equal(0, serverTaskRead.Result);
-
-                server.WriteAsync(received0, 0, 0).Wait();
+                Assert.Equal(0, await server.ReadAsync(received0, 0, 0));
             }
         }
     }

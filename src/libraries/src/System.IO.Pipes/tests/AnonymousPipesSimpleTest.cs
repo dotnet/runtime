@@ -57,7 +57,7 @@ public class AnonymousPipesSimpleTest
     }
 
     [Fact]
-    public static void ServerSendsByteClientReceivesAsync()
+    public static async Task ServerSendsByteClientReceivesAsync()
     {
         using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
         {
@@ -69,13 +69,9 @@ public class AnonymousPipesSimpleTest
 
                 byte[] sent = new byte[] { 123 };
                 byte[] received = new byte[] { 0 };
-                Task writeTask = server.WriteAsync(sent, 0, 1);
-                writeTask.Wait();
+                await server.WriteAsync(sent, 0, 1);
 
-                Task<int> readTask = client.ReadAsync(received, 0, 1);
-                readTask.Wait();
-
-                Assert.Equal(1, readTask.Result);
+                Assert.Equal(1, await client.ReadAsync(received, 0, 1));
                 Assert.Equal(sent[0], received[0]);
             }
         }
@@ -131,7 +127,7 @@ public class AnonymousPipesSimpleTest
     }
 
     [Fact]
-    public static void ServerPInvokeChecks()
+    public static async Task ServerPInvokeChecks()
     {
         // calling every API related to server and client to detect any bad PInvokes
         using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
@@ -158,7 +154,7 @@ public class AnonymousPipesSimpleTest
             Assert.Equal(PipeTransmissionMode.Byte, server.TransmissionMode);
 
             server.Write(new byte[] { 123 }, 0, 1);
-            server.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
+            await server.WriteAsync(new byte[] { 124 }, 0, 1);
             server.Flush();
             if (Interop.IsWindows)
             {
@@ -169,7 +165,7 @@ public class AnonymousPipesSimpleTest
                 Assert.Throws<PlatformNotSupportedException>(() => server.WaitForPipeDrain());
             }
 
-            clientTask.Wait();
+            await clientTask;
             server.DisposeLocalCopyOfClientHandle();
         }
 
@@ -191,12 +187,12 @@ public class AnonymousPipesSimpleTest
             Assert.Equal(123, readData[0]);
             Assert.Equal(124, readData[1]);
 
-            clientTask.Wait();
+            await clientTask;
         }
     }
 
     [Fact]
-    public static void ClientPInvokeChecks()
+    public static async Task ClientPInvokeChecks()
     {
         using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
         {
@@ -223,7 +219,7 @@ public class AnonymousPipesSimpleTest
                 Assert.Equal(PipeTransmissionMode.Byte, client.TransmissionMode);
 
                 client.Write(new byte[] { 123 }, 0, 1);
-                client.WriteAsync(new byte[] { 124 }, 0, 1).Wait();
+                await client.WriteAsync(new byte[] { 124 }, 0, 1);
                 if (Interop.IsWindows)
                 {
                     client.WaitForPipeDrain();
@@ -234,7 +230,7 @@ public class AnonymousPipesSimpleTest
                 }
                 client.Flush();
 
-                serverTask.Wait();
+                await serverTask;
             }
         }
 
@@ -258,7 +254,7 @@ public class AnonymousPipesSimpleTest
                 Assert.Equal(123, readData[0]);
                 Assert.Equal(124, readData[1]);
 
-                serverTask.Wait();
+                await serverTask;
             }
         }
     }

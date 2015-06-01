@@ -1,17 +1,15 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO.Pipes;
-using System.Threading.Tasks;
-using Xunit;
-
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
     public class AnonymousPipesThrowsTests
     {
+        private static void NotReachable(object obj) { Assert.True(false, "This should not be reached."); }
+
         // Server parameter validation tests
         [Fact]
         public static void ServerBadPipeDirectionThrows()
@@ -78,8 +76,7 @@ namespace System.IO.Pipes.Tests
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None))
             {
                 Assert.Throws<ArgumentNullException>(() => server.Write(null, 0, 1));
-
-                Assert.ThrowsAsync<ArgumentNullException>(() => server.WriteAsync(null, 0, 1));
+                Assert.Throws<ArgumentNullException>(() => NotReachable(server.WriteAsync(null, 0, 1)));
             }
         }
 
@@ -92,15 +89,13 @@ namespace System.IO.Pipes.Tests
 
                 // array is checked first
                 Assert.Throws<ArgumentNullException>(() => server.Write(null, -1, 1));
-
-                Assert.ThrowsAsync<ArgumentNullException>(() => server.WriteAsync(null, -1, 1));
+                Assert.Throws<ArgumentNullException>(() => NotReachable(server.WriteAsync(null, -1, 1)));
             }
         }
 
         [Fact]
         public static void ServerWriteNegativeCountThrows()
         {
-
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[5], 0, -1));
@@ -111,13 +106,13 @@ namespace System.IO.Pipes.Tests
                 // array is checked first
                 Assert.Throws<ArgumentNullException>(() => server.Write(null, -1, -1));
 
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => server.WriteAsync(new byte[5], 0, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.WriteAsync(new byte[5], 0, -1)));
 
                 // offset is checked before count
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => server.WriteAsync(new byte[1], -1, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.WriteAsync(new byte[1], -1, -1)));
 
                 // array is checked first
-                Assert.ThrowsAsync<ArgumentNullException>(() => server.WriteAsync(null, -1, -1));
+                Assert.Throws<ArgumentNullException>(() => NotReachable(server.WriteAsync(null, -1, -1)));
             }
         }
 
@@ -145,22 +140,22 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<ArgumentException>(() => server.Write(new byte[5], 3, 4));
 
                 // offset out of bounds
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.WriteAsync(new byte[1], 1, 1));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[1], 1, 1)));
 
                 // offset out of bounds for 0 count read
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.WriteAsync(new byte[1], 2, 0));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[1], 2, 0)));
 
                 // offset out of bounds even for 0 length buffer
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.WriteAsync(new byte[0], 1, 0));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[0], 1, 0)));
 
                 // combination offset and count out of bounds
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.WriteAsync(new byte[2], 1, 2));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[2], 1, 2)));
 
                 // edges
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.WriteAsync(new byte[0], int.MaxValue, 0));
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.WriteAsync(new byte[0], int.MaxValue, int.MaxValue));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[0], int.MaxValue, 0)));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[0], int.MaxValue, int.MaxValue)));
 
-                Assert.ThrowsAsync<ArgumentException>(() => server.WriteAsync(new byte[5], 3, 4));
+                Assert.Throws<ArgumentException>(() => NotReachable(server.WriteAsync(new byte[5], 3, 4)));
             }
         }
 
@@ -179,7 +174,7 @@ namespace System.IO.Pipes.Tests
 
                 Assert.Throws<NotSupportedException>(() => server.WaitForPipeDrain());
 
-                Assert.ThrowsAsync<NotSupportedException>(() => server.WriteAsync(new byte[5], 0, 5));
+                Assert.Throws<NotSupportedException>(() => NotReachable(server.WriteAsync(new byte[5], 0, 5)));
             }
         }
 
@@ -190,7 +185,7 @@ namespace System.IO.Pipes.Tests
             {
                 Assert.Throws<ArgumentNullException>(() => server.Read(null, 0, 1));
 
-                Assert.ThrowsAsync<ArgumentNullException>(() => server.ReadAsync(null, 0, 1));
+                Assert.Throws<ArgumentNullException>(() => NotReachable(server.ReadAsync(null, 0, 1)));
             }
         }
 
@@ -204,10 +199,10 @@ namespace System.IO.Pipes.Tests
                 // array is checked first
                 Assert.Throws<ArgumentNullException>(() => server.Read(null, -1, 1));
 
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => server.ReadAsync(new byte[5], -1, 1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.ReadAsync(new byte[5], -1, 1)));
 
                 // array is checked first
-                Assert.ThrowsAsync<ArgumentNullException>(() => server.ReadAsync(null, -1, 1));
+                Assert.Throws<ArgumentNullException>(() => NotReachable(server.ReadAsync(null, -1, 1)));
             }
         }
 
@@ -224,13 +219,13 @@ namespace System.IO.Pipes.Tests
                 // array is checked first
                 Assert.Throws<ArgumentNullException>(() => server.Read(null, -1, -1));
 
-                Assert.ThrowsAsync<System.ArgumentOutOfRangeException>(() => server.ReadAsync(new byte[5], 0, -1));
+                Assert.Throws<System.ArgumentOutOfRangeException>(() => NotReachable(server.ReadAsync(new byte[5], 0, -1)));
 
                 // offset is checked before count
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => server.ReadAsync(new byte[1], -1, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.ReadAsync(new byte[1], -1, -1)));
 
                 // array is checked first
-                Assert.ThrowsAsync<ArgumentNullException>(() => server.ReadAsync(null, -1, -1));
+                Assert.Throws<ArgumentNullException>(() => NotReachable(server.ReadAsync(null, -1, -1)));
             }
         }
 
@@ -258,22 +253,22 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<ArgumentException>(() => server.Read(new byte[5], 3, 4));
 
                 // offset out of bounds
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.ReadAsync(new byte[1], 1, 1));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[1], 1, 1)));
 
                 // offset out of bounds for 0 count read
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.ReadAsync(new byte[1], 2, 0));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[1], 2, 0)));
 
                 // offset out of bounds even for 0 length buffer
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.ReadAsync(new byte[0], 1, 0));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[0], 1, 0)));
 
                 // combination offset and count out of bounds
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.ReadAsync(new byte[2], 1, 2));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[2], 1, 2)));
 
                 // edges
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.ReadAsync(new byte[0], int.MaxValue, 0));
-                Assert.ThrowsAsync<ArgumentException>(null, () => server.ReadAsync(new byte[0], int.MaxValue, int.MaxValue));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[0], int.MaxValue, 0)));
+                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[0], int.MaxValue, int.MaxValue)));
 
-                Assert.ThrowsAsync<ArgumentException>(() => server.ReadAsync(new byte[5], 3, 4));
+                Assert.Throws<ArgumentException>(() => NotReachable(server.ReadAsync(new byte[5], 3, 4)));
             }
         }
 
@@ -288,7 +283,7 @@ namespace System.IO.Pipes.Tests
 
                 Assert.Throws<NotSupportedException>(() => server.InBufferSize);
 
-                Assert.ThrowsAsync<NotSupportedException>(() => server.ReadAsync(new byte[5], 0, 5));
+                Assert.Throws<NotSupportedException>(() => NotReachable(server.ReadAsync(new byte[5], 0, 5)));
             }
         }
 

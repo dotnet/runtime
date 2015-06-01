@@ -16,6 +16,11 @@ namespace System.IO.Pipes
         [SecurityCritical]
         private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
+            // timeout and cancellationToken are currently ignored: [ActiveIssue(812, PlatformID.AnyUnix)]
+            // We should figure out if there's a good way to cancel calls to Open, such as
+            // by sending a signal that causes an EINTR, and then in handling the EINTR result
+            // poll the cancellationToken to see if cancellation was requested.
+
             try
             {
                 // Open the file.  For In or Out, this will block until a client has connected.
