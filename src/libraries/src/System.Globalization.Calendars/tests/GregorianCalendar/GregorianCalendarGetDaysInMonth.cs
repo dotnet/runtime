@@ -11,17 +11,15 @@ namespace System.Globalization.CalendarTests
     public class GregorianCalendarGetDaysInMonth
     {
         private static readonly int[] s_daysInMonth365 =
-    {
-    0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-    }
+        {
+            0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+        };
 
-        ;
         private static readonly int[] s_daysInMonth366 =
-    {
-    0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-    }
+        {
+            0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+        };
 
-        ;
         #region Positive tests
         // PosTest1: leap year, any month other than February
         [Fact]

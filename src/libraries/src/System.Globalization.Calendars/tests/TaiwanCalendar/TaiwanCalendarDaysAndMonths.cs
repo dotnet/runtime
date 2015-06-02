@@ -10,6 +10,7 @@ namespace System.Globalization.CalendarsTests
     public class TaiwanCalendarDaysAndMonths
     {
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void Test1()
         {
             string[] edays = { "\u661F\u671F\u65E5", "\u661F\u671F\u4E00", "\u661F\u671F\u4E8C", "\u661F\u671F\u4E09", "\u661F\u671F\u56DB", "\u661F\u671F\u4E94", "\u661F\u671F\u516D" };

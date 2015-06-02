@@ -13,6 +13,7 @@ namespace System.Globalization.CalendarsTests
         #region Positive Test Cases
         // PosTest1: Call AddMonths to add valid value
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest1()
         {
             System.Globalization.Calendar calendar = new JapaneseCalendar();
@@ -28,6 +29,7 @@ namespace System.Globalization.CalendarsTests
 
         // PosTest2: Call AddMonths to add boundary value
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest2()
         {
             System.Globalization.Calendar calendar = new JapaneseCalendar();
@@ -42,6 +44,7 @@ namespace System.Globalization.CalendarsTests
 
         // PosTest3: Call AddMonths to add month when the day is not in the month
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest3()
         {
             System.Globalization.Calendar calendar = new JapaneseCalendar();
