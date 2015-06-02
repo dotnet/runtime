@@ -32,9 +32,8 @@ namespace System.Text.Unicode
         {
             // If the range hasn't been created, create it now.
             // It's ok if two threads race and one overwrites the other's 'range' value.
-            var newRange = new UnicodeRange(0, 0);
-            Volatile.Write(ref range, newRange);
-            return newRange;
+            range = new UnicodeRange(0, 0);
+            return range;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // the caller should be inlined, not this method
@@ -42,10 +41,8 @@ namespace System.Text.Unicode
         {
             // If the range hasn't been created, create it now.
             // It's ok if two threads race and one overwrites the other's 'range' value.
-            Debug.Assert(last > first, "Code points were specified out of order.");
-            var newRange = UnicodeRange.Create(first, last);
-            Volatile.Write(ref range, newRange);
-            return newRange;
+            range = UnicodeRange.Create(first, last);
+            return range;
         }
     }
 }
