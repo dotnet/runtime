@@ -189,6 +189,9 @@ private:
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
     
+    // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode can be contained.
+    bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode);
+
     LinearScan *m_lsra;
     BasicBlock *currBlock;
     unsigned vtableCallTemp; // local variable we use as a temp for vtable calls
