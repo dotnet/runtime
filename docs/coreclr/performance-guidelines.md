@@ -1,7 +1,9 @@
-# Introduction #
+Performance Requirements
+========================
+
 The .NET runtime supports a wide variety of high performance applications.  As such, performance is a key design element for every change.  This guidance is designed to share how we collect data and analyze the performance of the runtime.
 
-CoreFX performance guidance is available [here](https://github.com/dotnet/corefx/wiki/Performance).
+You may also want to read about [CoreFX performance guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/performance-guidelines.md).
 
 # Design Phase #
 Make sure to address performance during the design phase of any change.  It is much easier to tweak a design to fit performance goals and requirements before implementation has started.

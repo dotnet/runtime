@@ -1,4 +1,5 @@
-# Introduction #
+Garbage Collector Requirements
+==============================
 
 The garbage collector is an integral part of the .NET runtime.  Changes to the .NET runtime can have significant effects on program correctness and performance.  As such, GC has strong implementation and testing requirements.
 

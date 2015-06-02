@@ -1,10 +1,5 @@
-Testing CoreCLR
-===============
-
-These instructions will lead you through testing CoreCLR on Windows. The tests are not fully supported on Linux and OS X and will be updated when they are. 
-
-Building and running tests
-==========================
+Building and running tests on Windows
+=====================================
 
 **Building Tests**        
 

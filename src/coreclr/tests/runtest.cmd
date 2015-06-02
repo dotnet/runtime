@@ -45,12 +45,12 @@ set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
 set UseRoslynCompiler=true
 :CheckMSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corefx/wiki/Developer%%20Guide for build instructions. && exit /b 1
+if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corefx/blob/master/Documentation/developer-guide.md for build instructions. && exit /b 1
 
 :: Set the environment for the  build- Vs cmd prompt
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 
-if not defined VSINSTALLDIR echo Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/wiki/Developer%%20Guide for build instructions. && exit /b 1
+if not defined VSINSTALLDIR echo Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/developer-guide.md for build instructions. && exit /b 1
 
 
 if not defined __BuildArch set __BuildArch=x64
