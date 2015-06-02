@@ -453,7 +453,6 @@ namespace Test
         }
 
         [Fact]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestDefaultEncodings()
         {
             // Check which encodings are available by default.
@@ -467,14 +466,28 @@ namespace Test
             // When it is, comment out this line and remove the previous foreach/assert.
             // Assert.Equal(CrossplatformDefaultEncodings, Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));
 
-            // UTF-8 potentially isn't the default everywhere if a user changes a setting, but we can hope!
-            Assert.Equal(Encoding.UTF8, Encoding.GetEncoding(0));
+            // The default encoding should be something from the known list.
+            Encoding defaultEncoding = Encoding.GetEncoding(0);
+            Assert.NotNull(defaultEncoding);
+            KeyValuePair<int, string> mappedEncoding = Map(defaultEncoding.CodePage, defaultEncoding.WebName);
+            Assert.Contains(mappedEncoding, CrossplatformDefaultEncodings());
 
             // Add the code page provider.
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
+            // Make sure added code pages are identical between the provider and the Encoding class.
+            foreach (object[] mapping in CodePageInfo())
+            {
+                // Get encoding via query string.
+                Encoding encoding = Encoding.GetEncoding((string)mapping[2]);
+                Encoding codePageEncoding = CodePagesEncodingProvider.Instance.GetEncoding((string)mapping[2]);
+                Assert.Equal(encoding, codePageEncoding);
+                Assert.Equal(encoding.CodePage, (int)mapping[0]);
+                Assert.Equal(encoding.WebName, (string)mapping[1]);
+            }
+
             // Adding the code page provider should keep the originals, too.
-            foreach (var mapping in CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1]))))
+            foreach (var mapping in CrossplatformDefaultEncodings())
             {
                 Encoding encoding = Encoding.GetEncoding(mapping.Key);
                 Assert.NotNull(encoding);
@@ -485,14 +498,10 @@ namespace Test
             // Assert.Equal(CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1])).OrderBy(i => i.Key)),
             //               Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));
 
-#if !PLATFORM_UNIX
-            Encoding defaultCodePage = Encoding.GetEncoding(0);
-            Assert.True(defaultCodePage.CodePage != 0);
-            Assert.True(defaultCodePage.WebName != Encoding.UTF8.WebName);
-#else
-        // Probably Unix sticks with UTF by default?
-        Assert.Equal(Encoding.UTF8, Encoding.GetEncoding(0));
-#endif
+            defaultEncoding = Encoding.GetEncoding(0);
+            Assert.NotNull(defaultEncoding);
+            mappedEncoding = Map(defaultEncoding.CodePage, defaultEncoding.WebName);
+            Assert.Contains(mappedEncoding, CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1]))));
         }
 
         [Theory]
