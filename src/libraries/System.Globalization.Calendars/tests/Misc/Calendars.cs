@@ -52,6 +52,7 @@ namespace System.Globalization.CalendarsTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void JapaneseTest()
         {
             JapaneseCalendar cal = new JapaneseCalendar();
@@ -59,6 +60,7 @@ namespace System.Globalization.CalendarsTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void JapaneseLunisolarTest()
         {
             JapaneseLunisolarCalendar cal = new JapaneseLunisolarCalendar();
