@@ -59,10 +59,43 @@ namespace System
 
         public static void ResetColor()
         {
+            if (!ConsoleOutIsTerminal)
+                return;
+
             string resetFormat = TerminalColorInfo.Instance.ResetFormat;
             if (resetFormat != null)
             {
                 Console.Write(resetFormat);
+            }
+        }
+
+        /// <summary>Gets whether Console.Out is targeting a terminal display.</summary>
+        private static bool ConsoleOutIsTerminal
+        {
+            get
+            {
+                // We only want to write out ANSI escape sequences if we're targeting a TTY device,
+                // so we don't want to if the output stream is redirected, either redirected to another
+                // stream via Console.SetOut, or redirected via Unix stdout redirection.
+                // We make a best guess by unwrapping the TextWriter to get at the underlying
+                // UnixConsoleStream, and checking the type of the underlying file descriptor
+                // for that stream: we say it's a TTY if we can get the UnixConsoleStream and
+                // if its type is CHR (a "character device").
+
+                SyncTextWriter stw = Console.Out as SyncTextWriter;
+                if (stw != null)
+                {
+                    StreamWriter sw = stw._out as StreamWriter;
+                    if (sw != null)
+                    {
+                        UnixConsoleStream ucs = sw.BaseStream as UnixConsoleStream;
+                        if (ucs != null)
+                        {
+                            return ucs._handleType == Interop.libcoreclr.FileTypes.S_IFCHR;
+                        }
+                    }
+                }
+                return false;
             }
         }
 
@@ -137,6 +170,13 @@ namespace System
             {
                 throw new ArgumentException(SR.Arg_InvalidConsoleColor);
             }
+
+            // Changing the color involves writing an ANSI character sequence out to the output stream.
+            // We only want to do this if we know that sequence will be interpreted by the output
+            // rather than simply displayed visibly.  A reasonable approximation for this is whether
+            // the underlying stream is our UnixConsoleStream and it's wrapping a character device.
+            if (!ConsoleOutIsTerminal)
+                return;
 
             // See if we've already cached a format string for this foreground/background
             // and specific color choice.  If we have, just output that format string again.
@@ -312,6 +352,8 @@ namespace System
         {
             /// <summary>The file descriptor for the opened file.</summary>
             private readonly SafeFileHandle _handle;
+            /// <summary>The type of the underlying file descriptor.</summary>
+            internal readonly int _handleType;
 
             /// <summary>Initialize the stream.</summary>
             /// <param name="devPath">A path to a "/dev/std*" file.</param>
@@ -321,15 +363,32 @@ namespace System
             {
                 Debug.Assert(devPath != null && devPath.StartsWith("/dev/std"));
                 Debug.Assert(access == FileAccess.Read || access == FileAccess.Write);
-
+                
+                // Open the file descriptor for this stream
                 Interop.libc.OpenFlags flags = 0;
                 switch (access)
                 {
                     case FileAccess.Read: flags = Interop.libc.OpenFlags.O_RDONLY; break;
                     case FileAccess.Write: flags = Interop.libc.OpenFlags.O_WRONLY; break;
                 }
-
                 _handle = SafeFileHandle.Open(devPath, flags, 0);
+
+                // Determine the type of the descriptor (e.g. regular file, character file, pipe, etc.)
+                bool gotFd = false;
+                try
+                {
+                    _handle.DangerousAddRef(ref gotFd);
+                    Interop.libcoreclr.fileinfo buf;
+                    _handleType =
+                        Interop.libcoreclr.GetFileInformationFromFd((int)_handle.DangerousGetHandle(), out buf) == 0 ?
+                            (buf.mode & Interop.libcoreclr.FileTypes.S_IFMT) :
+                            Interop.libcoreclr.FileTypes.S_IFREG; // if something goes wrong, don't fail, just say it's a regular file
+                }
+                finally
+                {
+                    if (gotFd)
+                        _handle.DangerousRelease();
+                }
             }
 
             protected override void Dispose(bool disposing)
