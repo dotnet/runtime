@@ -18,25 +18,6 @@ namespace Test
             // xUnit will keep track of it, do nothing.
         }
 
-        // The characters to encode:
-        //    Latin Small Letter Z (U+007A)
-        //    Latin Small Letter A (U+0061)
-        //    Combining Breve (U+0306)
-        //    Latin Small Letter AE With Acute (U+01FD)
-        //    Greek Small Letter Beta (U+03B2)
-        //    a high-surrogate value (U+D8FF)
-        //    a low-surrogate value (U+DCFF)
-        private static char[] s_myChars = new char[] { 'z', 'a', '\u0306', '\u01FD', '\u03B2', '\uD8FF', '\uDCFF' };
-
-        private static string s_myString = new String(s_myChars);
-        private static byte[] s_leBytes = new byte[] { 0x7A, 0x00, 0x61, 0x00, 0x06, 0x03, 0xFD, 0x01, 0xB2, 0x03, 0xFF, 0xD8, 0xFF, 0xDC };
-        private static byte[] s_beBytes = new byte[] { 0x00, 0x7A, 0x00, 0x61, 0x03, 0x06, 0x01, 0xFD, 0x03, 0xB2, 0xD8, 0xFF, 0xDC, 0xFF };
-        private static byte[] s_utf8Bytes = new byte[] { 0x7A, 0x61, 0xCC, 0x86, 0xC7, 0xBD, 0xCE, 0xB2, 0xF1, 0x8F, 0xB3, 0xBF };
-
-        private static byte[] s_utf8PreambleBytes = new byte[] { 0xEF, 0xBB, 0xBF };
-        private static byte[] s_unicodePreambleBytes = new byte[] { 0xFF, 0xFE };
-        private static byte[] s_unicodeBigEndianPreambleBytes = new byte[] { 0xFE, 0xFF };
-
         public static IEnumerable<object[]> CodePageInfo()
         {
             // The layout is code page, IANA(web) name, and query string.
