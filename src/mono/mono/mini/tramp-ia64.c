@@ -67,6 +67,8 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	desc [0] = buf;
 	desc [1] = func_gp;
 
+	mono_tramp_info_register (mono_tramp_info_create (NULL, buf, code.buf - buf, NULL, NULL));
+
 	return desc;
 }
 

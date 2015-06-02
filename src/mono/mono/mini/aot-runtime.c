@@ -4989,6 +4989,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	gpointer code;
 	guint32 *ut, *ut_end, *entry;
 	int low, high, entry_index = 0;
+	gpointer symbol_addr;
 
 	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, FALSE, FALSE, FALSE)) {
 		method_index = find_aot_method (method, &amodule);
@@ -5027,6 +5028,12 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 
 	code = get_call_table_entry (amodule->unbox_trampoline_addresses, entry_index);
 	g_assert (code);
+
+	find_symbol (amodule->sofile, amodule->globals, "unbox_trampoline_p", &symbol_addr);
+
+	g_assert (symbol_addr);
+
+	mono_tramp_info_register (mono_tramp_info_create (NULL, code, *(guint32*)symbol_addr, NULL, NULL));
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);

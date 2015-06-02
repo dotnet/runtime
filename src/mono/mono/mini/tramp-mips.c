@@ -53,6 +53,8 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	/*g_print ("unbox trampoline at %d for %s:%s\n", this_pos, m->klass->name, m->name);
 	g_print ("unbox code is at %p for method at %p\n", start, addr);*/
 
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL));
+
 	return start;
 }
 
