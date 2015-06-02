@@ -738,7 +738,7 @@ mono_arch_ip_from_context (void *sigctx)
 	return ((CONTEXT*)sigctx)->Rip;
 #else
 	MonoContext *ctx = sigctx;
-	return (gpointer)ctx->rip;
+	return (gpointer)ctx->gregs [AMD64_RIP];
 #endif	
 }
 
