@@ -53,6 +53,7 @@ if(WIN32)
 else()
     list(APPEND DBGSHIM_LIBRARIES
         coreclrpal
+        mscorrc_debug
         palrt
     )
 endif(WIN32)
