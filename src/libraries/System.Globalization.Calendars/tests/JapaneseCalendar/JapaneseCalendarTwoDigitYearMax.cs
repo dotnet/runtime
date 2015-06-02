@@ -12,6 +12,7 @@ namespace System.Globalization.CalendarsTests
         #region Positive Test Cases
         // PosTest1: Call TwoDigitYearMax to get max supported date time
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest1()
         {
             int actual = new JapaneseCalendar().TwoDigitYearMax;
@@ -21,6 +22,7 @@ namespace System.Globalization.CalendarsTests
 
         // PosTest2: Call TwoDigitYearMax to get max supported date time
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public void PosTest2()
         {
             int expected = 200;
