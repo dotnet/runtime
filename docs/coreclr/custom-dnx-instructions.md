@@ -3,7 +3,7 @@ Creating a Custom DNX
 
 These instructions will lead you through creating a custom [DNX](https://github.com/aspnet/dnx) using an official DNX and the results of CoreCLR build. The same approach can be be used with the CoreFX build; however, that part isn't explored with these instructions. CoreFX is a bit harder, too, since you need to worry more about dependencies.
 
-These instructions are specific to Windows and assume that you've just completed the [Windows installation instructions](https://github.com/dotnet/coreclr/wiki/Windows-instructions). They use the same demo `C:\coreclr-demo` directory and assume the same artifacts. The same general idea will work on OS X and Linux once .NET Core is supported more broadly on those OSes.
+These instructions are specific to Windows and assume that you've just completed the [Windows installation instructions](windows-instructions.md). They use the same demo `C:\coreclr-demo` directory and assume the same artifacts. The same general idea will work on OS X and Linux once .NET Core is supported more broadly on those OSes.
 
 Introduction to DNX
 ===================
@@ -54,7 +54,7 @@ Both commands will install a default DNX, which on Windows, is x86 and hosted on
 Trying out DNX
 ==============
 
-As stated above, these instructions assume that you've just completed the [Windows installation instructions](https://github.com/dotnet/coreclr/wiki/Windows-instructions), which included a "Hello World" demo.
+As stated above, these instructions assume that you've just completed the [Windows installation instructions](windows-instructions.md), which included a "Hello World" demo.
 
 You need one extra file for the demo to work, which is project.json. Add it beside HelloWorld.cs.
 
