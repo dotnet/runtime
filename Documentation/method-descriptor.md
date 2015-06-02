@@ -339,4 +339,3 @@ NDirectImportPrecode looks like this on x86:
 	mov eax,pMethodDesc
 	mov eax,eax // dummy instruction that marks the type of the precode
 	jmp NDirectImportThunk // loads P/Invoke target for pMethodDesc lazily
-
