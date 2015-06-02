@@ -1058,6 +1058,8 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	mono_arch_flush_icache (start, code - start);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE, NULL);
 
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL));
+
 	return start;
 }
 
