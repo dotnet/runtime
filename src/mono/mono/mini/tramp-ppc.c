@@ -149,6 +149,8 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 	mono_arch_flush_icache (start, code - start);
 	g_assert ((code - start) <= size);
 
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL));
+
 	return start;
 }
 
