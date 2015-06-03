@@ -216,7 +216,7 @@ namespace System.Linq.Expressions
             ConstructorInfo ci = null;
             if (!type.GetTypeInfo().IsValueType)
             {
-                ci = type.GetConstructor(Array.Empty<Type>());
+                ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(c => c.GetParameters().Length == 0).SingleOrDefault();
                 if (ci == null)
                 {
                     throw Error.TypeMissingDefaultConstructor(type);

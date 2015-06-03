@@ -378,15 +378,6 @@
   <data name="UnsupportedExpressionType" xml:space="preserve">
     <value>The expression type '{0}' is not supported</value>
   </data>
-  <data name="SwitchOverNonInt32ValuesNotSupported" xml:space="preserve">
-    <value>Switch over non Int32 values is not supported</value>
-  </data>
-  <data name="SwitchWithCustomEqualityComparisonMethodNotSupported" xml:space="preserve">
-    <value>Switch with custom equality comparison method is not supported</value>
-  </data>
-  <data name="NonConstantCaseValuesInSwitchNotSupported" xml:space="preserve">
-    <value>Non-constant values in switch are not supported</value>
-  </data>
   <data name="FilterBlockNotSupported" xml:space="preserve">
     <value>Filter blocks are not supported</value>
   </data>
