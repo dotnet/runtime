@@ -7,7 +7,7 @@
     "xunit.abstractions.netcore": "1.0.0-prerelease",
     "xunit.assert": "2.0.0-beta5-build2785",
     "xunit.core.netcore": "1.0.1-prerelease",
-    "xunit.netcore.extensions": "1.0.0-prerelease"
+    "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {
     "dnxcore50": {}
