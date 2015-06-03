@@ -6535,12 +6535,21 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 			return ERR_INVALID_ARGUMENT;
 		}
 		m = mono_object_get_virtual_method (this, m);
+		/* Transform this to the format the rest of the code expects it to be */
+		if (m->klass->valuetype) {
+			this_buf = g_alloca (mono_class_instance_size (m->klass));
+			memcpy (this_buf, mono_object_unbox (this), mono_class_instance_size (m->klass));
+		}
 	} else if ((m->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m->klass->valuetype && invoke->flags & INVOKE_FLAG_VIRTUAL) {
 		if (!this) {
 			DEBUG_PRINTF (1, "[%p] Error: invoke with INVOKE_FLAG_VIRTUAL flag set without this argument.\n", (gpointer)GetCurrentThreadId ());
 			return ERR_INVALID_ARGUMENT;
 		}
 		m = mono_object_get_virtual_method (this, m);
+		if (m->klass->valuetype) {
+			this_buf = g_alloca (mono_class_instance_size (m->klass));
+			memcpy (this_buf, mono_object_unbox (this), mono_class_instance_size (m->klass));
+		}
 	}
 
 	DEBUG_PRINTF (1, "[%p] Invoking method '%s' on receiver '%s'.\n", (gpointer)GetCurrentThreadId (), mono_method_full_name (m, TRUE), this ? this->vtable->klass->name : "<null>");
