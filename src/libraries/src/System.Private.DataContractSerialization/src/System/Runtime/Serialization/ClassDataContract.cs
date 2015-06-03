@@ -408,7 +408,8 @@ namespace System.Runtime.Serialization
                 "System.Tuple`7",
                 "System.Tuple`8",
                 "System.Collections.Generic.Queue`1",
-                "System.Version"
+                "System.Version",
+                "System.Collections.ObjectModel.ReadOnlyCollection`1"
         };
 
         internal static bool IsKnownSerializableType(Type type)
