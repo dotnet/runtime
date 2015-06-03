@@ -47,13 +47,10 @@ Some of the best ways to contribute are to try things out, file bugs, and join i
 
 Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
 
-Please checkout the wiki to read the [contribution guidelines][Contributing Guide] for .NET Core and the deverloper guide for general information.
+Please read the following documents to get started.
 
-* [Contributing Guide][Contributing Guide]
-* [Developer Guide](https://github.com/dotnet/coreclr/wiki/Developer-Guide)
-
-[.NET Foundation forums]: http://forums.dotnetfoundation.org/
-[Contributing Guide]: https://github.com/dotnet/coreclr/wiki/Contributing
+* [Contributing Guide](Documentation/contributing.md)
+* [Developer Guide](Documentation/developer-guide.md)
 
 License
 -------
