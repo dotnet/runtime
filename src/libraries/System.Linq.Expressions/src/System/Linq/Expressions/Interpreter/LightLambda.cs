@@ -214,11 +214,11 @@ namespace System.Linq.Expressions.Interpreter
             var method = delegateType.GetMethod("Invoke");
             if (method.ReturnType == typeof(void))
             {
-                return Internal.Runtime.Augments.DynamicDelegateAugments.CreateObjectArrayDelegate(delegateType, RunVoid);
+                return System.Dynamic.Utils.DelegateHelpers.CreateObjectArrayDelegate(delegateType, RunVoid);
             }
             else
             {
-                return Internal.Runtime.Augments.DynamicDelegateAugments.CreateObjectArrayDelegate(delegateType, Run);
+                return System.Dynamic.Utils.DelegateHelpers.CreateObjectArrayDelegate(delegateType, Run);
             }
 #else
             Func<LightLambda, Delegate> fastCtor = GetRunDelegateCtor(delegateType);

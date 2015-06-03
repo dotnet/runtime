@@ -9,9 +9,7 @@ using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Reflection;
 
-#if !FEATURE_CORECLR
-using Internal.Runtime.Augments;
-#else
+#if FEATURE_CORECLR
 using System.Linq.Expressions.Compiler;
 #endif 
 
@@ -86,28 +84,25 @@ namespace System.Runtime.CompilerServices
             ContractUtils.RequiresNotNull(binder, "binder");
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
-            if (s_siteCtors == null)
-            {
-                // It's okay to just set this, worst case we're just throwing away some data
-                s_siteCtors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
-            }
-            Func<CallSiteBinder, CallSite> ctor;
-
-            MethodInfo method = null;
             var ctors = s_siteCtors;
-            lock (ctors)
-            {
-                if (!ctors.TryGetValue(delegateType, out ctor))
-                {
-                    method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod("Create");
+            if (ctors == null) {
+                // It's okay to just set this, worst case we're just throwing away some data
+                s_siteCtors = ctors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
+            }
 
-                    if (TypeUtils.CanCache(delegateType))
-                    {
-                        ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
-                        ctors.Add(delegateType, ctor);
-                    }
+            Func<CallSiteBinder, CallSite> ctor;
+            MethodInfo method = null;
+            if (!ctors.TryGetValue(delegateType, out ctor))
+            {
+                method = typeof(CallSite<>).MakeGenericType(delegateType).GetMethod("Create");
+
+                if (TypeUtils.CanCache(delegateType))
+                {
+                    ctor = (Func<CallSiteBinder, CallSite>)method.CreateDelegate(typeof(Func<CallSiteBinder, CallSite>));
+                    ctors.Add(delegateType, ctor);
                 }
             }
+
             if (ctor != null)
             {
                 return ctor(binder);
@@ -363,8 +358,8 @@ namespace System.Runtime.CompilerServices
         internal T MakeUpdateDelegate()
         {
 #if !FEATURE_CORECLR
-            s_cachedNoMatch = (T)(object)DynamicDelegateAugments.CreateObjectArrayDelegate(typeof(T), UpdateDelegates.NoMatchGeneric);
-            return (T)(object)DynamicDelegateAugments.CreateObjectArrayDelegate(typeof(T), UpdateDelegates.UpdateAndExecuteGeneric);
+            s_cachedNoMatch = (T)(object)System.Dynamic.Utils.DelegateHelpers.CreateObjectArrayDelegate(typeof(T), UpdateDelegates.NoMatchGeneric);
+            return (T)(object)System.Dynamic.Utils.DelegateHelpers.CreateObjectArrayDelegate(typeof(T), UpdateDelegates.UpdateAndExecuteGeneric);
 #else
             Type target = typeof(T);
             Type[] args;

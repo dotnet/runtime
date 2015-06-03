@@ -10,24 +10,24 @@ namespace System.Dynamic.Utils
     {
         private static readonly CacheDict<MethodBase, ParameterInfo[]> s_paramInfoCache = new CacheDict<MethodBase, ParameterInfo[]>(75);
 
-        public static ParameterInfo[] GetParametersCached(this MethodBase method)
+        internal static ParameterInfo[] GetParametersCached(this MethodBase method)
         {
             ParameterInfo[] pis;
-            lock (s_paramInfoCache)
+            var pic = s_paramInfoCache;
+            if (!pic.TryGetValue(method, out pis))
             {
-                if (!s_paramInfoCache.TryGetValue(method, out pis))
-                {
-                    pis = method.GetParameters();
+                pis = method.GetParameters();
 
-                    Type t = method.DeclaringType;
-                    if (t != null && TypeUtils.CanCache(t))
-                    {
-                        s_paramInfoCache[method] = pis;
-                    }
+                Type t = method.DeclaringType;
+                if (t != null && TypeUtils.CanCache(t))
+                {
+                    pic[method] = pis;
                 }
             }
+
             return pis;
         }
+
 
         public static bool IsSubclassOf(this Type source, Type other)
         {

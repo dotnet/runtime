@@ -737,15 +737,15 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    internal sealed class SwitchInstruction : Instruction
+    internal sealed class IntSwitchInstruction<T> : Instruction
     {
-        private readonly Dictionary<int, int> _cases;
+        private readonly Dictionary<T, int> _cases;
 
         public override string InstructionName
         {
-            get { return "Switch"; }
+            get { return "IntSwitch"; }
         }
-        internal SwitchInstruction(Dictionary<int, int> cases)
+        internal IntSwitchInstruction(Dictionary<T, int> cases)
         {
             Assert.NotNull(cases);
             _cases = cases;
@@ -757,7 +757,41 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             int target;
-            return _cases.TryGetValue((int)frame.Pop(), out target) ? target : 1;
+            return _cases.TryGetValue((T)frame.Pop(), out target) ? target : 1;
+        }
+    }
+
+    internal sealed class StringSwitchInstruction : Instruction
+    {
+        private readonly Dictionary<string, int> _cases;
+        private readonly StrongBox<int> _nullCase;
+
+        public override string InstructionName
+        {
+            get { return "StringSwitch"; }
+        }
+        internal StringSwitchInstruction(Dictionary<string, int> cases, StrongBox<int> nullCase)
+        {
+            Assert.NotNull(cases);
+            Assert.NotNull(nullCase);
+            _cases = cases;
+            _nullCase = nullCase;
+        }
+
+        public override int ConsumedStack { get { return 1; } }
+        public override int ProducedStack { get { return 0; } }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            object value = frame.Pop();
+
+            if (value == null)
+            {
+                return _nullCase.Value;
+            }
+
+            int target;
+            return _cases.TryGetValue((string)value, out target) ? target : 1;
         }
     }
 

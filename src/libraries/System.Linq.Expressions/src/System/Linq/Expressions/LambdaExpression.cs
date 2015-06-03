@@ -10,6 +10,7 @@ using System.Linq.Expressions.Compiler;
 using System.Reflection;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Linq.Expressions;
 
 namespace System.Linq.Expressions
 {
@@ -207,48 +208,46 @@ namespace System.Linq.Expressions
 #endif  
     }
 
+#if !FEATURE_CORECLR
+    // Seperate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
+    public class ExpressionCreator<TDelegate>
+    {
+        public static LambdaExpression CreateExpressionFunc(Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
+        {
+            return new Expression<TDelegate>(body, name, tailCall, parameters);
+        }
+    }
+#endif
 
     public partial class Expression
     {
-#if !FEATURE_CORECLR
-        private class LateboundLambdaExpression : LambdaExpression
-        {
-            internal LateboundLambdaExpression(
-                Type delegateType,
-                string name,
-                Expression body,
-                bool tailCall,
-                ReadOnlyCollection<ParameterExpression> parameters
-            )
-            : base(delegateType, name, body, tailCall, parameters)
-            { }
-        }
-#endif 
-
         /// <summary>
         /// Creates an Expression{T} given the delegate type. Caches the
         /// factory method to speed up repeated creations for the same T.
         /// </summary>
         internal static LambdaExpression CreateLambda(Type delegateType, Expression body, string name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
-#if FEATURE_CORECLR
             // Get or create a delegate to the public Expression.Lambda<T>
             // method and call that will be used for creating instances of this
             // delegate type
-            LambdaFactory fastPath;
+            Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression> fastPath;
             var factories = s_lambdaFactories;
             if (factories == null)
             {
-                s_lambdaFactories = factories = new CacheDict<Type, LambdaFactory>(50);
+                s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
             }
 
             MethodInfo create = null;
             if (!factories.TryGetValue(delegateType, out fastPath))
             {
+#if FEATURE_CORECLR
                 create = typeof(Expression<>).MakeGenericType(delegateType).GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
+#else
+                create = typeof(ExpressionCreator<>).MakeGenericType(delegateType).GetMethod("CreateExpressionFunc", BindingFlags.Static | BindingFlags.Public);
+#endif
                 if (TypeUtils.CanCache(delegateType))
                 {
-                    factories[delegateType] = fastPath = (LambdaFactory)create.CreateDelegate(typeof(LambdaFactory));
+                    factories[delegateType] = fastPath = (Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)create.CreateDelegate(typeof(Func<Expression, string, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
                 }
             }
 
@@ -259,12 +258,6 @@ namespace System.Linq.Expressions
 
             Debug.Assert(create != null);
             return (LambdaExpression)create.Invoke(null, new object[] { body, name, tailCall, parameters });
-#else
-            // Get or create a delegate to the public Expression.Lambda<T>
-            // method and call that will be used for creating instances of this
-            // delegate type
-            return new LateboundLambdaExpression(delegateType, name, body, tailCall, parameters);
-#endif 
         }
 
         /// <summary>
@@ -537,15 +530,11 @@ namespace System.Linq.Expressions
             }
 
             MethodInfo mi;
-            lock (s_lambdaDelegateCache)
-            {
-                if (!s_lambdaDelegateCache.TryGetValue(delegateType, out mi))
-                {
-                    mi = delegateType.GetMethod("Invoke");
-                    if (TypeUtils.CanCache(delegateType))
-                    {
-                        s_lambdaDelegateCache[delegateType] = mi;
-                    }
+            var ldc = s_lambdaDelegateCache;
+            if (!ldc.TryGetValue(delegateType, out mi)) {
+                mi = delegateType.GetMethod("Invoke");
+                if (TypeUtils.CanCache(delegateType)) {
+                    ldc[delegateType] = mi;
                 }
             }
 
