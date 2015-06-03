@@ -150,6 +150,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void CorrectClassesOfInput()
         {
             s_encodingUtil_UTF7.GetCharsTest(new Byte[] { 0x41, 0x09, 0x0D, 0x0A, 0x20, 0x2F, 0x7A }, 0, 7, -1, 0, "A\t\r\n /z", 7);
@@ -246,6 +247,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void MaxCharCount()
         {
             s_encodingUtil_UTF7.GetMaxCharCountTest(0, 1);
@@ -256,6 +258,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void MaxByteCount()
         {
             s_encodingUtil_UTF7.GetMaxByteCountTest(0, 2);
@@ -270,6 +273,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void Preamble()
         {
             s_encodingUtil_UTF7.GetPreambleTest(new Byte[] { });
