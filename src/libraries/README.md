@@ -28,9 +28,9 @@ Want to get more familiar with what's going on in the code?
 
 Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/labels/up%20for%20grabs) is a great place to start or for larger items see the list of [feature approved](https://github.com/dotnet/corefx/labels/feature%20approved). See some of our guides for more details:
 
-* [Contributing Guide](Documentation/contributing-corefx.md)
-* [Developer Guide](developer-guide.md)
-* [Issue Guide](issue-guide.md)
+* [Contributing Guide](Documentation/contributing.md)
+* [Developer Guide](Documentation/developer-guide.md)
+* [Issue Guide](Documentation/issue-guide.md)
 
 You are also encouraged to start a discussion by filing an issue or creating a
 gist.
