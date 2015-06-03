@@ -17,7 +17,7 @@ namespace System.Reflection.PortableExecutable
         private readonly SectionCharacteristics _sectionCharacteristics;
 
         /// <summary>
-        /// An 8-byte, null-padded UTF-8 encoded string. If the string is exactly 8 characters long, there is no terminating null. 
+        /// The name of the section.
         /// </summary>
         public string Name { get { return _name; } }
 
