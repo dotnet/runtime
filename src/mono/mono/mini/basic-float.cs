@@ -704,6 +704,12 @@ class Tests
 		return (int)(f1 / f2);
 	}
 
+	public static int test_1_frem_r4 () {
+		float f1 = 7.0f;
+		float f2 = 2.0f;
+		return (int)(f1 % f2);
+	}
+
 	public static int test_0_fcmp_eq_r4 () {
 		float f1 = 1.0f;
 		float f2 = 1.0f;
