@@ -2147,11 +2147,8 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
 	switch (ins->opcode) {
 	case OP_ICONV_TO_R_UN: {
-#if G_BYTE_ORDER == G_BIG_ENDIAN
+		// This value is OK as-is for both big and little endian because of how it is stored
 		static const guint64 adjust_val = 0x4330000000000000ULL;
-#else
-		static const guint64 adjust_val = 0x0000000000003043ULL;
-#endif
 		int msw_reg = mono_alloc_ireg (cfg);
 		int adj_reg = mono_alloc_freg (cfg);
 		int tmp_reg = mono_alloc_freg (cfg);
@@ -2162,8 +2159,14 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 			basereg = mono_alloc_ireg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IADD_IMM, basereg, cfg->frame_reg, offset);
 		}
+#if G_BYTE_ORDER == G_BIG_ENDIAN
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, msw_reg);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, ins->sreg1);
+#else
+		// For little endian the words are reversed
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset + 4, msw_reg);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, basereg, offset, ins->sreg1);
+#endif
 		MONO_EMIT_NEW_LOAD_R8 (cfg, adj_reg, &adjust_val);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADR8_MEMBASE, tmp_reg, basereg, offset);
 		MONO_EMIT_NEW_BIALU (cfg, OP_FSUB, ins->dreg, tmp_reg, adj_reg);
