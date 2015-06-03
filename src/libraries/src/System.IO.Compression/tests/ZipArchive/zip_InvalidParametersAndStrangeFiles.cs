@@ -185,6 +185,7 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
+        [ActiveIssue(1904, PlatformID.AnyUnix)]
         public static async Task StrangeFiles4()
         {
             ZipTest.IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(
