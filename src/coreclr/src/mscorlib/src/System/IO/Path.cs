@@ -31,26 +31,11 @@ namespace System.IO {
     // cross-platform manner.  Most of the methods don't do a complete
     // full parsing (such as examining a UNC hostname), but they will
     // handle most string operations.  
-    // 
-    // File names cannot contain backslash (\), slash (/), colon (:),
-    // asterick (*), question mark (?), quote ("), less than (<;), 
-    // greater than (>;), or pipe (|).  The first three are used as directory
-    // separators on various platforms.  Asterick and question mark are treated
-    // as wild cards.  Less than, Greater than, and pipe all redirect input
-    // or output from a program to a file or some combination thereof.  Quotes
-    // are special.
-    // 
-    // We are guaranteeing that Path.SeparatorChar is the correct 
-    // directory separator on all platforms, and we will support 
-    // Path.AltSeparatorChar as well.  To write cross platform
-    // code with minimal pain, you can use slash (/) as a directory separator in
-    // your strings.
-     // Class contains only static data, no need to serialize
     [ComVisible(true)]
     public static class Path
     {
         // Platform specific directory separator character.  This is backslash
-        // ('\') on Windows, slash ('/') on Unix, and colon (':') on Mac.
+        // ('\') on Windows and slash ('/') on Unix.
         // 
 #if !PLATFORM_UNIX        
         public static readonly char DirectorySeparatorChar = '\\';
@@ -61,14 +46,9 @@ namespace System.IO {
 #endif // !PLATFORM_UNIX
         
         // Platform specific alternate directory separator character.  
-        // This is backslash ('\') on Unix, and slash ('/') on Windows 
-        // and MacOS.
-        // 
-#if !PLATFORM_UNIX        
+        // There is only one directory separator char on Unix, 
+        // so the same definition is used for both Unix and Windows.
         public static readonly char AltDirectorySeparatorChar = '/';
-#else
-        public static readonly char AltDirectorySeparatorChar = '\\';
-#endif // !PLATFORM_UNIX
     
         // Platform specific volume separator character.  This is colon (':')
         // on Windows and MacOS, and slash ('/') on Unix.  This is mostly
