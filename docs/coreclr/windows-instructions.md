@@ -6,7 +6,7 @@ These instructions will lead you through building CoreCLR and running a "Hello W
 Environment
 ===========
 
-You must install several components to build the CoreCLR and CoreFX repos.These instructions were tested on Windows 7+. 
+You must install several components to build the CoreCLR and CoreFX repos. These instructions were tested on Windows 7+.
 
 Visual Studio
 -------------
@@ -20,7 +20,7 @@ Visual Studio Express is not supported. Visual Studio 2015 isn't supported yet (
 
 **Known Issues**
 
-The DIA SDK gets incorrectly installed when VS 2013 is installed after VS 2012. To [workaround this issue](http://support.microsoft.com/kb/3035999)), copy `%program files (x86)%\Microsoft Visual Studio 11.0\DIA SDK` to  `%program files (x86)%\Microsoft Visual Studio 12.0\DIA SDK`. You can then build CoreCLR.
+The DIA SDK gets incorrectly installed when VS 2013 is installed after VS 2012. To [workaround this issue](http://support.microsoft.com/kb/3035999), copy `%program files (x86)%\Microsoft Visual Studio 11.0\DIA SDK` to  `%program files (x86)%\Microsoft Visual Studio 12.0\DIA SDK`. You can then build CoreCLR.
 
 CMake
 -----
@@ -55,12 +55,12 @@ NuGet
 
 NuGet is required to acquire any .NET assembly dependency that is not built by these instructions.
 
-Download the [NuGet client](https://nuget.org/nuget.exe) and copy to c:\coreclr-demo. Alteratively, you can make download nuget.exe, put it somewhere else and make it part of your path.
+Download the [NuGet client](https://nuget.org/nuget.exe) and copy to c:\coreclr-demo. Alternatively, you can download nuget.exe, put it somewhere else, and add it to your PATH.
 
 Build the Runtime
 =================
 
-To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This will do a clean x64/Debug build of CoreCLR, its native components, mscorlib and the tests. 
+To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This will do a clean x64/Debug build of CoreCLR, its native components, mscorlib.dll, and the tests.
 
 	C:\git\coreclr>build clean
 
@@ -68,16 +68,16 @@ To build CoreCLR, run `build.cmd` from the root of the coreclr repository. This 
 
 	Repo successfully built.
 
-	Product binaries are available at C:\git\coreclr\binaries\Product\Windows_NT.x64.debug
-	Test binaries are available at C:\git\coreclr\binaries\tests\Windows_NT.x64.debug
+	Product binaries are available at C:\git\coreclr\bin\Product\Windows_NT.x64.debug
+	Test binaries are available at C:\git\coreclr\bin\tests\Windows_NT.x64.debug
 
 **build /?** will list supported parameters.
 
 Check the build output.
 
-- Product binaries will be dropped in `Binaries\Product\<arch>\<flavor>` folder. 
-- A NuGet package, Microsoft.Dotnet.CoreCLR, will be created under `Binaries\Product\<arch>\<flavor>\.nuget` folder. 
-- Test binaries will be dropped under `Binaries\Tests\<arch>\<flavor>` folder
+- Product binaries will be dropped in `bin\Product\<OS>.<arch>.<flavor>` folder. 
+- A NuGet package, Microsoft.Dotnet.CoreCLR, will be created under `bin\Product\<OS>.<arch>.<flavor>\.nuget` folder. 
+- Test binaries will be dropped under `bin\Tests\<OS>.<arch>.<flavor>` folder
 
 You will see several files. The interesting ones are:
 
@@ -87,9 +87,9 @@ You will see several files. The interesting ones are:
 
 Copy these files into the demo directory.
 
-	C:\git\coreclr>copy binaries\Product\Windows_NT.x64.debug\CoreRun.exe \coreclr-demo\runtime
-	C:\git\coreclr>copy binaries\Product\Windows_NT.x64.debug\coreclr.dll \coreclr-demo\runtime
-	C:\git\coreclr>copy binaries\Product\Windows_NT.x64.debug\mscorlib.dll \coreclr-demo\runtime
+	C:\git\coreclr>copy bin\Product\Windows_NT.x64.debug\CoreRun.exe \coreclr-demo\runtime
+	C:\git\coreclr>copy bin\Product\Windows_NT.x64.debug\coreclr.dll \coreclr-demo\runtime
+	C:\git\coreclr>copy bin\Product\Windows_NT.x64.debug\mscorlib.dll \coreclr-demo\runtime
 
 Build the Framework
 ===================
@@ -109,12 +109,24 @@ It's also possible to add /t:rebuild to build.cmd to force it to delete the prev
 
 For the purposes of this demo, you need to copy a few required assemblies to the demo folder.
 
-	C:\git\corefx>copy bin\Windows.AnyCPU.Debug\System.Console\System.Console.dll \coreclr-demo
-	C:\git\corefx>copy bin\Windows.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll \coreclr-demo
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Console\System.Console.dll \coreclr-demo
+	C:\git\corefx>copy bin\Windows_NT.AnyCPU.Debug\System.Diagnostics.Debug\System.Diagnostics.Debug.dll \coreclr-demo
 
 The runtime directory should now look like the following:
 
 	c:\git\corefx>dir \coreclr-demo
+
+```
+ Directory of C:\coreclr-demo
+
+05/15/2015  03:58 PM    <DIR>          .
+05/15/2015  03:58 PM    <DIR>          ..
+05/15/2015  02:43 PM    <DIR>          packages
+05/15/2015  03:36 PM    <DIR>          runtime
+05/15/2015  02:44 PM         1,664,512 nuget.exe
+05/15/2015  03:37 PM            51,712 System.Console.dll
+05/15/2015  03:37 PM            21,504 System.Diagnostics.Debug.dll
+```
 
 Restore NuGet Packages
 ======================
@@ -153,7 +165,6 @@ Compile the Demo
 
 Now you need a Hello World application to run. You can write your own, if you'd like. Here's a very simple one:
 
-
 	using System;
 
 	public class Program
@@ -183,6 +194,7 @@ The easiest way to do this is with a little batch magic. Say "no" to any request
 
 You're ready to run Hello World! To do that, run corerun, passing the path to the managed exe, plus any arguments. In this case, no arguments are necessary.
 
-	CoreRun.exe HelloWorld.exe
+	C:\coreclr-demo>cd runtime
+	C:\coreclr-demo\runtime>CoreRun.exe HelloWorld.exe
 
 Over time, this process will get easier. Thanks for trying out CoreCLR. Feel free to try a more interesting demo.
