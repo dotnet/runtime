@@ -34,7 +34,7 @@ namespace Microsoft.Framework.WebEncoders
         [Fact]
         public void GetScalarValueFromUtf16()
         {
-            // TODO: [ActiveIssue(846, PlatformID.Linux | PlatformID.OSX)]
+            // TODO: [ActiveIssue(846, PlatformID.AnyUnix)]
             // This loop should instead be implemented as a [Theory] with multiple [InlineData]s.
             // However, until globalization support is implemented on Unix, this causes failures when
             // the xunit runner is configured with -xml to trace out results.  When it does so with 
