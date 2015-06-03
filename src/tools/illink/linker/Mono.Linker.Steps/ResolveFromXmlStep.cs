@@ -57,6 +57,12 @@ namespace Mono.Linker.Steps {
 		{
 			XPathNavigator nav = _document.CreateNavigator ();
 			nav.MoveToFirstChild ();
+
+			// This step can be created with XML files that aren't necessarily
+			// linker descriptor files. So bail if we don't have a <linker> element.
+			if (nav.LocalName != "linker")
+				return;
+
 			ProcessAssemblies (Context, nav.SelectChildren ("assembly", _ns));
 		}
 
