@@ -14,6 +14,7 @@ namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
+        internal const bool CheckOperationsRequiresSetHandle = true;
         private ThreadPoolBoundHandle _threadPoolBinding;
 
         internal static string GetPipePath(string serverName, string pipeName)
@@ -28,7 +29,7 @@ namespace System.IO.Pipes
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
-        internal static void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
+        internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             // Check that this handle is infact a handle to a pipe.
             if (Interop.mincore.GetFileType(safePipeHandle) != Interop.mincore.FileTypes.FILE_TYPE_PIPE)
@@ -92,6 +93,13 @@ namespace System.IO.Pipes
             return r;
         }
 
+        [SecuritySafeCritical]
+        private Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ReadWriteAsyncParams state = new ReadWriteAsyncParams(buffer, offset, count, cancellationToken);
+            return Task.Factory.FromAsync<int>(BeginRead, EndRead, state);
+        }
+
         [SecurityCritical]
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
@@ -118,6 +126,13 @@ namespace System.IO.Pipes
             }
             Debug.Assert(r >= 0, "PipeStream's WriteCore is likely broken.");
             return;
+        }
+
+        [SecuritySafeCritical]
+        private Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ReadWriteAsyncParams state = new ReadWriteAsyncParams(buffer, offset, count, cancellationToken);
+            return Task.Factory.FromAsync(BeginWrite, EndWrite, state);
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -277,14 +292,14 @@ namespace System.IO.Pipes
         private class ReadWriteAsyncParams
         {
             public ReadWriteAsyncParams() { }
-            public ReadWriteAsyncParams(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public ReadWriteAsyncParams(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 this.Buffer = buffer;
                 this.Offset = offset;
                 this.Count = count;
                 this.CancellationHelper = cancellationToken.CanBeCanceled ? new IOCancellationHelper(cancellationToken) : null;
             }
-            public Byte[] Buffer { get; set; }
+            public byte[] Buffer { get; set; }
             public int Offset { get; set; }
             public int Count { get; set; }
             public IOCancellationHelper CancellationHelper { get; private set; }
@@ -484,66 +499,6 @@ namespace System.IO.Pipes
 
             // Number of buffer written is afsar._numBytes.
             return;
-        }
-
-        [SecuritySafeCritical]
-        public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException("buffer");
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            CheckReadOperations();
-
-            if (!_isAsync)
-            {
-                return base.ReadAsync(buffer, offset, count, cancellationToken);
-            }
-
-            ReadWriteAsyncParams state = new ReadWriteAsyncParams(buffer, offset, count, cancellationToken);
-
-            return Task.Factory.FromAsync<int>(BeginRead, EndRead, state);
-        }
-
-        [SecuritySafeCritical]
-        public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException("buffer");
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            CheckWriteOperations();
-
-            if (!_isAsync)
-            {
-                return base.WriteAsync(buffer, offset, count, cancellationToken);
-            }
-
-            ReadWriteAsyncParams state = new ReadWriteAsyncParams(buffer, offset, count, cancellationToken);
-
-            return Task.Factory.FromAsync(BeginWrite, EndWrite, state);
         }
 
         [SecurityCritical]

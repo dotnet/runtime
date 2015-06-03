@@ -43,7 +43,7 @@ namespace System.IO.Pipes
             }
             else
             {
-                this._cancellationRegistration = this._cancellationToken.Register(Cancel);
+                this._cancellationRegistration = this._cancellationToken.Register(s => ((IOCancellationHelper)s).Cancel(), this);
             }
         }
 

@@ -1,18 +1,17 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO.Pipes;
-using System.Threading.Tasks;
-using Xunit;
-
 using Microsoft.Win32.SafeHandles;
 using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
     public class NamedPipesThrowsTests
     {
+        private static void NotReachable(object obj) { Assert.True(false, "This should not be reached."); }
+
         // Server Parameter Checking throws
         [Fact]
         public static void ServerNullPipeNameThrows()
@@ -97,12 +96,11 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(1764, PlatformID.AnyUnix)]
         public static void ServerNotConnectedThrows()
         {
             using (NamedPipeServerStream server = new NamedPipeServerStream("tempnotconnected", PipeDirection.InOut, 1))
             {
-                // doesn't throw execeptions
+                // doesn't throw exceptions
                 PipeTransmissionMode transmitMode = server.TransmissionMode;
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.ReadMode = (PipeTransmissionMode)999);
 
@@ -138,20 +136,17 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(1763, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
         public static void ServerVerifyMultipleServerInconsistantType()
         {
             const string uniqueServerName = "UniqueName11111";
             using (NamedPipeServerStream server = new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
-                //Assert.Throws<IOException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.Asynchronous));
                 Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.Out));
-                //Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 4, PipeTransmissionMode.Message));
             }
         }
 
         [Fact]
-        [ActiveIssue(1772, PlatformID.AnyUnix)]
         public static void ServerWhenDisplosedThrows()
         {
             using (NamedPipeServerStream server = new NamedPipeServerStream("unique2", PipeDirection.InOut))
@@ -167,18 +162,35 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(1762, PlatformID.AnyUnix)]
-        public static void ServerAfterDisconnectThrows()
+        public static async Task ServerAfterDisconnectThrows()
         {
-            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "unique3", PipeDirection.In))
             {
+                Task clientConnect = client.ConnectAsync();
+                server.WaitForConnection();
+                Assert.Throws<InvalidOperationException>(() => server.IsMessageComplete);
+                Assert.Throws<InvalidOperationException>(() => server.WaitForConnection());
+                await Assert.ThrowsAsync<InvalidOperationException>(() => server.WaitForConnectionAsync());
+
+                server.Disconnect();
+                Assert.Throws<InvalidOperationException>(() => server.Disconnect());    // double disconnect
+                Assert.Throws<InvalidOperationException>(() => server.WriteByte(5));
+                Assert.Throws<InvalidOperationException>(() => server.IsMessageComplete);
+            }
+
+            if (Interop.IsWindows) // on Unix, InOut doesn't result in the same Disconnect-based errors due to allowing for other connections
+            {
+                using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
                 using (NamedPipeClientStream client = new NamedPipeClientStream("unique3"))
                 {
-                    Task clientConnect = client.ConnectAsync(); 
+                    Task clientConnect = client.ConnectAsync();
                     server.WaitForConnection();
+                    await clientConnect;
+
                     Assert.Throws<InvalidOperationException>(() => server.IsMessageComplete);
                     Assert.Throws<InvalidOperationException>(() => server.WaitForConnection());
-                    Assert.ThrowsAsync<InvalidOperationException>(() => server.WaitForConnectionAsync());
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => server.WaitForConnectionAsync());
 
                     server.Disconnect();
                     Assert.Throws<InvalidOperationException>(() => server.Disconnect());    // double disconnect
@@ -190,17 +202,21 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        public static void ServerWaitForConnectThrows()
+        public static async Task ServerWaitForConnectThrows()
         {
             using (NamedPipeServerStream server = new NamedPipeServerStream("unique3", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0))
             {
                 var ctx = new CancellationTokenSource();
 
-                Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
-                ctx.Cancel();
-                Assert.ThrowsAsync<TimeoutException>(() => serverWaitTimeout);
+                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - cancellation token after the operation has been initiated
+                {
+                    Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
+                    ctx.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverWaitTimeout);
+                }
 
-                Assert.ThrowsAsync<TimeoutException>(() => server.WaitForConnectionAsync(ctx.Token));
+                ctx.Cancel();
+                Assert.True(server.WaitForConnectionAsync(ctx.Token).IsCanceled);
             }
         }
 
@@ -294,15 +310,15 @@ namespace System.IO.Pipes.Tests
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream("client1"))
             {
-                Assert.Throws<System.ArgumentOutOfRangeException>(() => client.Connect(-111));
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ConnectAsync(-111));
+                Assert.Throws<ArgumentOutOfRangeException>(() => client.Connect(-111));
+                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(client.ConnectAsync(-111)));
             }
         }
 
         [Fact]
         public static void ClientNullHandleThrows()
         {
-            Assert.Throws<ArgumentNullException>(() =>new NamedPipeClientStream(PipeDirection.InOut, false, true, null));
+            Assert.Throws<ArgumentNullException>(() => new NamedPipeClientStream(PipeDirection.InOut, false, true, null));
         }
 
         [Fact]
@@ -322,7 +338,7 @@ namespace System.IO.Pipes.Tests
                 bool gotRef = false;
                 try
                 {
-                    
+
                     safeHandle.DangerousAddRef(ref gotRef);
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
@@ -354,78 +370,123 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        public static void ClientTryConnectedThrows()
+        public static async Task ClientTryConnectedThrows()
         {
             using (NamedPipeClientStream client = new NamedPipeClientStream(".", "notthere"))
             {
                 var ctx = new CancellationTokenSource();
 
-                Assert.Throws<TimeoutException>(() => client.Connect(60));  // 60 to be over internal 50 interval
+                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - Unix implementation currently ignores timeout and cancellation token once the operation has been initiated
+                {
+                    Assert.Throws<TimeoutException>(() => client.Connect(60));  // 60 to be over internal 50 interval
+                    await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(50));
+                    await Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(60, ctx.Token));
 
-                Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(50));
+                    Task clientConnectToken = client.ConnectAsync(ctx.Token);
+                    ctx.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => clientConnectToken);
+                }
 
-                Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(60, ctx.Token));
-
-                Task clientConnectToken = client.ConnectAsync(ctx.Token);
                 ctx.Cancel();
-                Assert.ThrowsAsync<TimeoutException>(() => clientConnectToken);
-
-                Assert.ThrowsAsync<TimeoutException>(() => client.ConnectAsync(ctx.Token));
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.ConnectAsync(ctx.Token));
             }
         }
 
         [Fact]
-        public static void ClientAllReadyConnectedThrows()
+        public static async Task ClientAllReadyConnectedThrows()
         {
-            using (NamedPipeServerStream server = new NamedPipeServerStream("testServer1"))
+            using (NamedPipeServerStream server = new NamedPipeServerStream("testServer1", PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "testServer1", PipeDirection.InOut, PipeOptions.Asynchronous))
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream("testServer1"))
+                byte[] buffer = new byte[] { 0, 0, 0, 0 };
+
+                Task clientConnect1 = client.ConnectAsync();
+                server.WaitForConnection();
+                await clientConnect1;
+
+                Assert.True(client.IsConnected);
+                Assert.True(server.IsConnected);
+
+                Assert.Throws<InvalidOperationException>(() => client.Connect());
+
+                var ctx = new CancellationTokenSource();
+                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - the cancellation token is ignored after the operation is initiated, due to base Stream's implementation
                 {
-                    byte[] buffer = new byte[] { 0, 0, 0, 0 };
-
-                    Task clientConnect1 = client.ConnectAsync();
-                    server.WaitForConnection();
-                    clientConnect1.Wait();
-
-                    Assert.True(client.IsConnected);
-                    Assert.True(server.IsConnected);
-
-                    Assert.Throws<InvalidOperationException>(() => client.Connect());
-
-                    var ctx = new CancellationTokenSource();
                     Task clientReadToken = client.ReadAsync(buffer, 0, buffer.Length, ctx.Token);
                     ctx.Cancel();
-                    Assert.ThrowsAsync<TimeoutException>(() => clientReadToken);
-                    Assert.ThrowsAsync<TimeoutException>(() => client.ReadAsync(buffer, 0, buffer.Length, ctx.Token));
-
-                    var ctx1 = new CancellationTokenSource();
-                    Task ServerReadToken = server.ReadAsync(buffer, 0, buffer.Length, ctx1.Token);
-                    ctx1.Cancel();
-                    Assert.ThrowsAsync<TimeoutException>(() => ServerReadToken);
-                    Assert.ThrowsAsync<TimeoutException>(() => server.ReadAsync(buffer, 0, buffer.Length, ctx1.Token));
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => clientReadToken);
                 }
+                ctx.Cancel();
+                Assert.True(client.ReadAsync(buffer, 0, buffer.Length, ctx.Token).IsCanceled);
+
+                var ctx1 = new CancellationTokenSource();
+                if (Interop.IsWindows) // [ActiveIssue(812, PlatformID.AnyUnix)] - the cancellation token is ignored after the operation is initiated, due to base Stream's implementation
+                {
+                    Task serverReadToken = server.ReadAsync(buffer, 0, buffer.Length, ctx1.Token);
+                    ctx1.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverReadToken);
+                }
+                ctx1.Cancel();
+                Assert.True(server.ReadAsync(buffer, 0, buffer.Length, ctx1.Token).IsCanceled);
             }
         }
 
         [Fact]
-        [ActiveIssue(1765, PlatformID.AnyUnix)]
-        public static void ClientDisconnectedPipeThrows()
+        public static async Task ClientDisconnectedPipeThrows()
         {
-            using (NamedPipeServerStream server = new NamedPipeServerStream("testServer2", PipeDirection.InOut))
+            using (NamedPipeServerStream server = new NamedPipeServerStream("testServer2", PipeDirection.Out))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "testServer2", PipeDirection.In))
             {
+                byte[] buffer = new byte[] { 0, 0, 0, 0 };
+
+                Task clientConnect1 = client.ConnectAsync();
+                server.WaitForConnection();
+                await clientConnect1;
+
+                Assert.True(client.IsConnected);
+                Assert.True(server.IsConnected);
+
+                client.Dispose();
+
+                Assert.Throws<IOException>(() => server.Write(buffer, 0, buffer.Length));
+                Assert.Throws<IOException>(() => server.WriteByte(123));
+                Assert.Throws<IOException>(() => server.Flush());
+            }
+
+            using (NamedPipeServerStream server = new NamedPipeServerStream("testServer2", PipeDirection.In))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "testServer2", PipeDirection.Out))
+            {
+                byte[] buffer = new byte[] { 0, 0, 0, 0 };
+
+                Task clientConnect1 = client.ConnectAsync();
+                server.WaitForConnection();
+                await clientConnect1;
+
+                Assert.True(client.IsConnected);
+                Assert.True(server.IsConnected);
+
+                client.Dispose();
+
+                server.Read(buffer, 0, buffer.Length);
+                server.ReadByte();
+            }
+
+            if (Interop.IsWindows) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
+            {
+                using (NamedPipeServerStream server = new NamedPipeServerStream("testServer2", PipeDirection.InOut))
                 using (NamedPipeClientStream client = new NamedPipeClientStream("testServer2"))
                 {
                     byte[] buffer = new byte[] { 0, 0, 0, 0 };
 
                     Task clientConnect1 = client.ConnectAsync();
                     server.WaitForConnection();
-                    clientConnect1.Wait();
+                    await clientConnect1;
 
                     Assert.True(client.IsConnected);
                     Assert.True(server.IsConnected);
 
                     client.Dispose();
-                    
+
                     Assert.Throws<IOException>(() => server.Write(buffer, 0, buffer.Length));
                     Assert.Throws<IOException>(() => server.WriteByte(123));
                     Assert.Throws<IOException>(() => server.Flush());
@@ -434,21 +495,41 @@ namespace System.IO.Pipes.Tests
                     int byt = server.ReadByte();
                 }
             }
+
         }
 
         [Fact]
-        [ActiveIssue(1765, PlatformID.AnyUnix)]
-        public static void ServerDisconnectedPipeThrows()
+        public static async Task ServerDisconnectedPipeThrows()
         {
-            using (NamedPipeServerStream server = new NamedPipeServerStream("testServer3", PipeDirection.InOut))
+            using (NamedPipeServerStream server = new NamedPipeServerStream("testServer3", PipeDirection.In))
+            using (NamedPipeClientStream client = new NamedPipeClientStream(".", "testServer3", PipeDirection.Out))
             {
+                byte[] buffer = new byte[] { 0, 0, 0, 0 };
+
+                Task clientConnect1 = client.ConnectAsync();
+                server.WaitForConnection();
+                await clientConnect1;
+
+                Assert.True(client.IsConnected);
+                Assert.True(server.IsConnected);
+
+                server.Dispose();
+
+                Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
+                Assert.Throws<IOException>(() => client.WriteByte(123));
+                Assert.Throws<IOException>(() => client.Flush());
+            }
+
+            if (Interop.IsWindows) // Unix implementation of InOut doesn't fail on server.Write/Read when client disconnects due to allowing for additional connections
+            {
+                using (NamedPipeServerStream server = new NamedPipeServerStream("testServer3", PipeDirection.InOut))
                 using (NamedPipeClientStream client = new NamedPipeClientStream("testServer3"))
                 {
                     byte[] buffer = new byte[] { 0, 0, 0, 0 };
 
                     Task clientConnect1 = client.ConnectAsync();
                     server.WaitForConnection();
-                    clientConnect1.Wait();
+                    await clientConnect1;
 
                     Assert.True(client.IsConnected);
                     Assert.True(server.IsConnected);
@@ -463,6 +544,7 @@ namespace System.IO.Pipes.Tests
                     int byt = client.ReadByte();
                 }
             }
+
         }
     }
 }

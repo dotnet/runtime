@@ -185,15 +185,11 @@ namespace System.IO.Pipes
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyDisconnected);
             }
-            if (InternalHandle == null)
+            if (CheckOperationsRequiresSetHandle && InternalHandle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
-            if (State == PipeState.Closed)
-            {
-                throw __Error.GetPipeNotOpen();
-            }
-            if (InternalHandle.IsClosed)
+            if ((State == PipeState.Closed) || (InternalHandle != null && InternalHandle.IsClosed))
             {
                 throw __Error.GetPipeNotOpen();
             }

@@ -86,6 +86,10 @@ namespace System.IO.Pipes
         public void WaitForConnection()
         {
             CheckConnectOperationsServer();
+            if (State == PipeState.Connected)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyConnected);
+            }
 
             // Open the file.  For In or Out, this will block until a client has connected.
             // Unfortunately for InOut it won't, which is different from the Windows behavior;
