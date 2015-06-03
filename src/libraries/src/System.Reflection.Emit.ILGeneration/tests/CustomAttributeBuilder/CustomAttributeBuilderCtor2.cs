@@ -74,14 +74,14 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
     public class CustomAttributeBuilderCtor2
     {
-        private const int c_MIN_STRING_LENGTH = 1;
-        private const int c_MAX_STRING_LENGTH = 1024;
-        private const string c_FIELD_TESTINT32_NAME = "TestInt";
-        private const string c_FIELD_TESTSTRING_NAME = "TestStringField";
-        private const string c_FIELD_GETONLYSTRING_NAME = "GetString";
-        private const string c_FIELD_GETONLYINT_NAME = "GetInt";
-        private const string c_DEFAULT_NOT_EXIST_FIELDNAME = "DOESNOTEXIST";
-        private const BindingFlags c_FIELD_BINDING_FLAG = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic;
+        private const int MinStringLength = 1;
+        private const int MaxStringLength = 1024;
+        private const string FieldTestInt32Name = "TestInt";
+        private const string FieldTestStringName = "TestStringField";
+        private const string FieldGetOnlyStringName = "GetString";
+        private const string FieldGetOnlyIntName = "GetInt";
+        private const string DefaultNotExistFieldName = "DOESNOTEXIST";
+        private const BindingFlags FieldBindingFlag = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic;
 
         [Fact]
         public void PosTest1()
@@ -91,8 +91,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt2 = 0;
 
             str1 = "PosTest1_Arg";
-            testInt1 = TestLibrary.Generator.GetInt32(-55);
-            testInt2 = TestLibrary.Generator.GetInt32(-55);
+            testInt1 = TestLibrary.Generator.GetInt32();
+            testInt2 = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -108,7 +108,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedField = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -124,10 +124,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             FieldInfo[] verifyFields = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG),
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag),
             };
 
             object[] verifyFieldValues = new object[]
@@ -138,7 +138,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
                 testInt1
             };
 
-            Assert.False(!VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
+            Assert.True(VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
         }
 
         public void PosTest2()
@@ -148,8 +148,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt2 = 0;
 
             str1 = "PosTest2_STR1";
-            testInt1 = TestLibrary.Generator.GetInt32(-55);
-            testInt2 = TestLibrary.Generator.GetInt32(-55);
+            testInt1 = TestLibrary.Generator.GetInt32();
+            testInt2 = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -179,10 +179,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             FieldInfo[] verifyFields = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG),
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag),
             };
 
             object[] verifyFieldValues = new object[]
@@ -193,7 +193,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
                 testInt1
             };
 
-            Assert.False(!VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
+            Assert.True(VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
         }
 
         [Fact]
@@ -223,10 +223,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             FieldInfo[] verifyFields = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG),
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag),
             };
             object[] verifyFieldValues = new object[]
             {
@@ -236,7 +236,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
                 0
             };
 
-            Assert.False(!VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
+            Assert.True(VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
         }
 
         [Fact]
@@ -245,7 +245,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt = 0;
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
-            testInt = TestLibrary.Generator.GetInt32(-55);
+            testInt = TestLibrary.Generator.GetInt32();
 
             Type[] ctorParams = new Type[]
             {
@@ -255,7 +255,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -271,10 +271,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             FieldInfo[] verifyFields = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG),
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag),
             };
             object[] verifyFieldValues = new object[]
             {
@@ -284,7 +284,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
                 0
             };
 
-            Assert.False(!VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
+            Assert.True(VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
         }
 
         // This test case will be failed if we set testString to the following value
@@ -296,7 +296,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString = null;
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
-            testInt = TestLibrary.Generator.GetInt32(-55);
+            testInt = TestLibrary.Generator.GetInt32();
             testString = "PosTest5_TestString";
 
             Type[] ctorParams = new Type[]
@@ -307,8 +307,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -325,10 +325,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             FieldInfo[] verifyFields = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG),
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag),
             };
             object[] verifyFieldValues = new object[]
             {
@@ -338,7 +338,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
                 0
             };
 
-            Assert.False(!VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
+            Assert.True(VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
         }
 
         [Fact]
@@ -351,8 +351,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             testString1 = "PosTest6_TestString1";
             testString2 = "PostTest6_TestString2";
-            testInt1 = TestLibrary.Generator.GetInt32(-55);
-            testInt2 = TestLibrary.Generator.GetInt32(-55);
+            testInt1 = TestLibrary.Generator.GetInt32();
+            testInt2 = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -368,8 +368,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -386,10 +386,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             FieldInfo[] verifyFields = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG),
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag),
             };
             object[] verifyFieldValues = new object[]
             {
@@ -399,7 +399,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
                 testInt1
             };
 
-            Assert.False(!VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
+            Assert.True(VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
         }
 
         [Fact]
@@ -418,7 +418,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -433,10 +433,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             FieldInfo[] verifyFields = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYSTRING_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG),
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyStringName, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag),
             };
             object[] verifyFieldValues = new object[]
             {
@@ -446,7 +446,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
                 0
             };
 
-            Assert.False(!VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
+            Assert.True(VerifyCustomAttribute(cab, CustomAttributeBuilderTestType, verifyFields, verifyFieldValues));
         }
 
         [Fact]
@@ -462,7 +462,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -487,8 +487,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
             testString =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            testInt = TestLibrary.Generator.GetInt32(-55);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = TestLibrary.Generator.GetInt32();
 
             Type[] ctorParams = new Type[]
             {
@@ -498,7 +498,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -566,8 +566,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt1 = 0;
 
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            testInt1 = TestLibrary.Generator.GetInt32(-55);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt1 = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -606,8 +606,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
             int testInt1 = 0;
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            testInt1 = TestLibrary.Generator.GetInt32(-55);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt1 = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -645,8 +645,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt1 = 0;
 
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            testInt1 = TestLibrary.Generator.GetInt32(-55);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt1 = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -658,8 +658,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -683,7 +683,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
 
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -695,7 +695,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_GETONLYINT_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldGetOnlyIntName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -718,7 +718,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
 
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -727,7 +727,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -750,7 +750,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
 
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -759,7 +759,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -782,7 +782,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
 
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -813,7 +813,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString1 = null;
 
             testString1 =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -825,7 +825,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag)
             };
 
             Assert.Throws<ArgumentNullException>(() =>
@@ -845,8 +845,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt = 0;
 
             testString =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            testInt = TestLibrary.Generator.GetInt32(-55);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -862,8 +862,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -888,8 +888,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             string testString = null;
 
             testString =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            testInt = TestLibrary.Generator.GetInt32(-55);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -905,8 +905,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             };
             FieldInfo[] namedFiled = new FieldInfo[]
             {
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTINT32_NAME, c_FIELD_BINDING_FLAG),
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestInt32Name, FieldBindingFlag),
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {
@@ -931,8 +931,8 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int testInt = 0;
 
             testString =
-                TestLibrary.Generator.GetString(-55, false, c_MIN_STRING_LENGTH, c_MAX_STRING_LENGTH);
-            testInt = TestLibrary.Generator.GetInt32(-55);
+                TestLibrary.Generator.GetString(false, MinStringLength, MaxStringLength);
+            testInt = TestLibrary.Generator.GetInt32();
 
             Type CustomAttributeBuilderTestType = typeof(CustomAttributeBuilderTest);
 
@@ -949,7 +949,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             FieldInfo[] namedFiled = new FieldInfo[]
             {
                 null,
-                CustomAttributeBuilderTestType.GetField(c_FIELD_TESTSTRING_NAME, c_FIELD_BINDING_FLAG)
+                CustomAttributeBuilderTestType.GetField(FieldTestStringName, FieldBindingFlag)
             };
             object[] fieldValues = new object[]
             {

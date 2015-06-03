@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
             ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
 
-            Type[] a = new Type[] { typeof(Int16), typeof(bool) };
+            Type[] a = new Type[] { typeof(short), typeof(bool) };
             Type[][] b = new Type[][] { a, a };
 
             int expectedValue = 29;
@@ -48,7 +48,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void NegTest1()
         {
-            Type[] a = new Type[] { typeof(Int16), typeof(bool) };
+            Type[] a = new Type[] { typeof(short), typeof(bool) };
             Type[][] b = new Type[][] { a, a };
 
             Assert.Throws<NullReferenceException>(() => { SignatureHelper sHelper = SignatureHelper.GetPropertySigHelper(null, typeof(string), a, a, a, b, b); });
@@ -58,7 +58,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void NegTest2()
         {
-            Type[] a = new Type[] { typeof(Int16), null };
+            Type[] a = new Type[] { typeof(short), null };
             Type[][] b = new Type[][] { a, a };
 
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);

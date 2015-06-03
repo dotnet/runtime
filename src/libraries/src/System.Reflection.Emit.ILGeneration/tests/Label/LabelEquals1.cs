@@ -11,10 +11,10 @@ namespace System.Refleciton.Emit.ILGeneration.Tests
 {
     public class LabelEquals
     {
-        private const string c_TEST_DYNAMIC_ASSEMBLY_NAME = "TestDynamicAssembly";
-        private const string c_TEST_MODULE_NAME = "TestModuleName";
-        private const string c_TEST_TYPE_NAME = "TestTypeName";
-        private const string c_TEST_METHOD_NAME = "TestMethodName";
+        private const string TestDynamicAssemblyName = "TestDynamicAssembly";
+        private const string TestModuleName = "TestModuleName";
+        private const string TestTypeName = "TestTypeName";
+        private const string TestMethodName = "TestMethodName";
 
         private AssemblyBuilder CreateDynamicAssembly(string name, AssemblyBuilderAccess access)
         {
@@ -29,16 +29,16 @@ namespace System.Refleciton.Emit.ILGeneration.Tests
         {
             Label label = new Label();
             object ob = label;
-            Assert.False(!label.Equals(ob));
+            Assert.True(label.Equals(ob));
         }
 
         [Fact]
         public void PosTest2()
         {
-            AssemblyBuilder assemblyBuilder = this.CreateDynamicAssembly(c_TEST_DYNAMIC_ASSEMBLY_NAME, AssemblyBuilderAccess.Run);
-            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, c_TEST_MODULE_NAME);
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(c_TEST_TYPE_NAME);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod(c_TEST_METHOD_NAME, MethodAttributes.Public);
+            AssemblyBuilder assemblyBuilder = this.CreateDynamicAssembly(TestDynamicAssemblyName, AssemblyBuilderAccess.Run);
+            ModuleBuilder moduleBuilder = TestLibrary.Utilities.GetModuleBuilder(assemblyBuilder, TestModuleName);
+            TypeBuilder typeBuilder = moduleBuilder.DefineType(TestTypeName);
+            MethodBuilder methodBuilder = typeBuilder.DefineMethod(TestMethodName, MethodAttributes.Public);
             ILGenerator iLGenerator = methodBuilder.GetILGenerator();
             Label label1 = iLGenerator.DefineLabel();
             object ob = iLGenerator.DefineLabel();
@@ -48,7 +48,7 @@ namespace System.Refleciton.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest3()
         {
-            object ob = TestLibrary.Generator.GetInt32(-55);
+            object ob = TestLibrary.Generator.GetInt32();
             Label label = new Label();
             Assert.False(label.Equals(ob));
         }

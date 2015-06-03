@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int expectedValue = 11;
             int actualValue;
 
-            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, null, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(Char), typeof(Module) } });
+            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, null, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } });
             actualValue = sHelper.GetSignature().Length;
             Assert.Equal(expectedValue, actualValue);
         }
@@ -50,7 +50,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int expectedValue = 11;
             int actualValue;
 
-            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(Char), typeof(Module) } }, null);
+            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, null);
             actualValue = sHelper.GetSignature().Length;
             Assert.Equal(expectedValue, actualValue);
         }
@@ -65,7 +65,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             int expectedValue = 19;
             int actualValue;
 
-            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(Char), typeof(Module) } }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(Char), typeof(Module) } });
+            sHelper.AddArguments(new Type[] { typeof(string), typeof(int) }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } }, new Type[][] { new Type[] { typeof(string), typeof(int) }, new Type[] { typeof(char), typeof(Module) } });
             actualValue = sHelper.GetSignature().Length;
             Assert.Equal(expectedValue, actualValue);
         }
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
             SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
 
-            Assert.Throws<ArgumentNullException>(() => { sHelper.AddArguments(new Type[] { typeof(Char), null }, null, null); });
+            Assert.Throws<ArgumentNullException>(() => { sHelper.AddArguments(new Type[] { typeof(char), null }, null, null); });
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
             ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
             SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-            Byte[] signature = sHelper.GetSignature();
+            byte[] signature = sHelper.GetSignature();
             //this action will lead the Signature be finished.
 
             Assert.Throws<ArgumentException>(() => { sHelper.AddArguments(new Type[] { typeof(string) }, null, null); });

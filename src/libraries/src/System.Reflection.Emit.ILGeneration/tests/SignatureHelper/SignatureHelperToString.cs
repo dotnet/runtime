@@ -24,7 +24,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             expectedValue = sHelper1.ToString();
             actualValue = sHelper2.ToString();
 
-            Assert.False(!expectedValue.Equals(actualValue));
+            Assert.True(expectedValue.Equals(actualValue));
         }
     }
 }
