@@ -31,7 +31,7 @@ Coding Guidelines
 =================
 
 - [CLR Coding Guide](clr-code-guide.md)
-- [CLR JIT Coding Conventions](clr_jit_coding_conventions.md)
+- [CLR JIT Coding Conventions](clr-jit-coding-conventions.md)
 - [Cross Platform Performance and Eventing Design](cross-platform-performance-and-eventing.md)
 
 Build CoreCLR from Source
