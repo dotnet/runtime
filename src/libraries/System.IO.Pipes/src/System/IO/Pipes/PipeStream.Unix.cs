@@ -6,11 +6,20 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Pipes
 {
     public abstract partial class PipeStream : Stream
     {
+        // The Windows implementation of PipeStream sets the stream's handle during 
+        // creation, and as such should always have a handle, but the Unix implementation 
+        // sometimes sets the handle not during creation but later during connection.  
+        // As such, validation during member access needs to verify a valid handle on 
+        // Windows, but can't assume a valid handle on Unix.
+        internal const bool CheckOperationsRequiresSetHandle = false;
+
         private const string PipeDirectoryPath = "/tmp/corefxnamedpipes/";
 
         internal static string GetPipePath(string serverName, string pipeName)
@@ -62,7 +71,7 @@ namespace System.IO.Pipes
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
-        internal static void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
+        internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             SysCall(safePipeHandle, (fd, _, __) =>
             {
@@ -113,6 +122,19 @@ namespace System.IO.Pipes
             }
         }
 
+        [SecuritySafeCritical]
+        private Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_handle != null, "_handle is null");
+            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            Debug.Assert(CanRead, "can't read");
+            Debug.Assert(buffer != null, "buffer is null");
+            Debug.Assert(offset >= 0, "offset is negative");
+            Debug.Assert(count >= 0, "count is negative");
+
+            return base.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
         [SecurityCritical]
         private unsafe void WriteCore(byte[] buffer, int offset, int count)
         {
@@ -137,6 +159,19 @@ namespace System.IO.Pipes
                     offset += bytesWritten;
                 }
             }
+        }
+
+        [SecuritySafeCritical]
+        private Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            Debug.Assert(_handle != null, "_handle is null");
+            Debug.Assert(!_handle.IsClosed, "_handle is closed");
+            Debug.Assert(CanWrite, "can't write");
+            Debug.Assert(buffer != null, "buffer is null");
+            Debug.Assert(offset >= 0, "offset is negative");
+            Debug.Assert(count >= 0, "count is negative");
+
+            return base.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -277,7 +312,7 @@ namespace System.IO.Pipes
         /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
         /// so as to avoid delegate and closure allocations at the call sites.
         /// </remarks>
-        private static long SysCall(
+        private long SysCall(
             SafePipeHandle handle,
             Func<int, IntPtr, int, long> sysCall,
             IntPtr arg1 = default(IntPtr), int arg2 = default(int))
@@ -292,9 +327,23 @@ namespace System.IO.Pipes
                 int fd = (int)handle.DangerousGetHandle();
                 Debug.Assert(fd >= 0);
 
-                long result;
-                while (Interop.CheckIo(result = sysCall(fd, arg1, arg2))) ;
-                return result;
+                while (true)
+                {
+                    long result = sysCall(fd, arg1, arg2);
+                    if (result < 0)
+                    {
+                        int errno = Marshal.GetLastWin32Error();
+
+                        if (errno == Interop.Errors.EINTR)
+                            continue;
+
+                        if (errno == Interop.Errors.EPIPE)
+                            State = PipeState.Broken;
+
+                        throw Interop.GetExceptionForIoErrno(errno);
+                    }
+                    return result;
+                }
             }
             finally
             {

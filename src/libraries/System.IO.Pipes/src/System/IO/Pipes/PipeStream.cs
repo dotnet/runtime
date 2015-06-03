@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Pipes
 {
@@ -136,6 +138,34 @@ namespace System.IO.Pipes
             return ReadCore(buffer, offset, count);
         }
 
+        [SecuritySafeCritical]
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException("buffer");
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (buffer.Length - offset < count)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            Contract.EndContractBlock();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckReadOperations();
+
+            if (!_isAsync)
+            {
+                return base.ReadAsync(buffer, offset, count, cancellationToken);
+            }
+
+            return ReadAsyncCore(buffer, offset, count, cancellationToken);
+        }
+
         [SecurityCritical]
         public override void Write(byte[] buffer, int offset, int count)
         {
@@ -165,6 +195,35 @@ namespace System.IO.Pipes
 
             return;
         }
+
+        [SecuritySafeCritical]
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (buffer == null)
+                throw new ArgumentNullException("buffer");
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (buffer.Length - offset < count)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            Contract.EndContractBlock();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            CheckWriteOperations();
+
+            if (!_isAsync)
+            {
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+
+            return WriteAsyncCore(buffer, offset, count, cancellationToken);
+        }
+
 
         [ThreadStatic]
         private static byte[] t_singleByteArray;
@@ -279,16 +338,12 @@ namespace System.IO.Pipes
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_PipeDisconnected);
                 }
-                if (_handle == null)
+                if (CheckOperationsRequiresSetHandle && _handle == null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
                 }
 
-                if (_state == PipeState.Closed)
-                {
-                    throw __Error.GetPipeNotOpen();
-                }
-                if (_handle.IsClosed)
+                if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
                 {
                     throw __Error.GetPipeNotOpen();
                 }
@@ -402,17 +457,13 @@ namespace System.IO.Pipes
         [SecurityCritical]
         internal virtual void CheckPipePropertyOperations()
         {
-            if (_handle == null)
+            if (CheckOperationsRequiresSetHandle && _handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
 
             // these throw object disposed
-            if (_state == PipeState.Closed)
-            {
-                throw __Error.GetPipeNotOpen();
-            }
-            if (_handle.IsClosed)
+            if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
             {
                 throw __Error.GetPipeNotOpen();
             }
@@ -433,17 +484,13 @@ namespace System.IO.Pipes
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeDisconnected);
             }
-            if (_handle == null)
+            if (CheckOperationsRequiresSetHandle && _handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
 
             // these throw object disposed
-            if (_state == PipeState.Closed)
-            {
-                throw __Error.GetPipeNotOpen();
-            }
-            if (_handle.IsClosed)
+            if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
             {
                 throw __Error.GetPipeNotOpen();
             }
@@ -463,7 +510,7 @@ namespace System.IO.Pipes
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeDisconnected);
             }
-            if (_handle == null)
+            if (CheckOperationsRequiresSetHandle && _handle == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
@@ -475,11 +522,7 @@ namespace System.IO.Pipes
             }
 
             // these throw object disposed
-            if (_state == PipeState.Closed)
-            {
-                throw __Error.GetPipeNotOpen();
-            }
-            if (_handle.IsClosed)
+            if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
             {
                 throw __Error.GetPipeNotOpen();
             }
