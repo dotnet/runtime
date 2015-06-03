@@ -47,10 +47,18 @@ namespace Mono.Linker.Steps {
 		protected override void Process ()
 		{
 			foreach (string name in Assembly.GetExecutingAssembly ().GetManifestResourceNames ()) {
-				if (!IsReferenced (GetAssemblyName (name)))
+				if (Path.GetExtension (name) != ".xml" || !IsReferenced (GetAssemblyName (name)))
 					continue;
 
-				Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetResolveStep (name));
+				try {
+					if (Context.LogInternalExceptions)
+						Console.WriteLine ("Processing resource linker descriptor: {0}", name);
+					Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetResolveStep (name));
+				} catch (XmlException ex) {
+					/* This could happen if some broken XML file is included. */
+					if (Context.LogInternalExceptions)
+						Console.WriteLine ("Error processing {0}: {1}", name, ex);
+				}
 			}
 
 			foreach (var rsc in Context.GetAssemblies ()
