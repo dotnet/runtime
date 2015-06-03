@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         public void PosTest3()
         {
             string str = "PosTest3";
-            bool b = TestLibrary.Generator.GetByte(-55) > Byte.MaxValue / 2;
+            bool b = TestLibrary.Generator.GetByte() > byte.MaxValue / 2;
 
             Type[] ctorParams = new Type[] { typeof(string), typeof(bool) };
             object[] paramValues = new object[] { str, b };

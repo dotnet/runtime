@@ -86,7 +86,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             AssemblyBuilder myAssembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly_SignatureHelperAddArgument"), AssemblyBuilderAccess.Run);
             ModuleBuilder myModule = TestLibrary.Utilities.GetModuleBuilder(myAssembly, "Module_SignatureHelperAddArgument");
             SignatureHelper sHelper = SignatureHelper.GetFieldSigHelper(myModule);
-            Byte[] signature = sHelper.GetSignature();
+            byte[] signature = sHelper.GetSignature();
             //this action will lead the Signature be finished.
 
             Assert.Throws<ArgumentException>(() => { sHelper.AddArgument(typeof(string), null, null); });

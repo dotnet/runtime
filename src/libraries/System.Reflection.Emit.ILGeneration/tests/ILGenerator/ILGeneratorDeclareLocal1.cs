@@ -29,11 +29,11 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
     public class ILGeneratorDeclareLocal1
     {
-        private const string c_ASSEMBLY_NAME = "ILGeneratorDeclareLocal1";
-        private const string c_DEFAULT_MODULE_NAME = "DynamicModule";
-        private const string c_DEFAULT_TYPE_NAME = "DynamicType";
-        private const AssemblyBuilderAccess c_DEFAULT_ASSEMBLY_BUILDER_ACCESS = AssemblyBuilderAccess.Run;
-        private const MethodAttributes c_DEFAULT_METHOD_ATTRIBUTE = MethodAttributes.Public | MethodAttributes.Static;
+        private const string AssemblyName = "ILGeneratorDeclareLocal1";
+        private const string DefaultModuleName = "DynamicModule";
+        private const string DefaultTypeName = "DynamicType";
+        private const AssemblyBuilderAccess DefaultAssemblyBuilderAccess = AssemblyBuilderAccess.Run;
+        private const MethodAttributes DefaultMethodAttribute = MethodAttributes.Public | MethodAttributes.Static;
 
         private static TypeBuilder s_testTypeBuilder;
 
@@ -43,10 +43,10 @@ namespace System.Reflection.Emit.ILGeneration.Tests
             {
                 if (s_testTypeBuilder == null)
                 {
-                    AssemblyName name = new AssemblyName(c_ASSEMBLY_NAME);
-                    AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(name, c_DEFAULT_ASSEMBLY_BUILDER_ACCESS);
-                    ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, c_DEFAULT_MODULE_NAME);
-                    s_testTypeBuilder = module.DefineType(c_DEFAULT_TYPE_NAME);
+                    AssemblyName name = new AssemblyName(AssemblyName);
+                    AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(name, DefaultAssemblyBuilderAccess);
+                    ModuleBuilder module = TestLibrary.Utilities.GetModuleBuilder(assembly, DefaultModuleName);
+                    s_testTypeBuilder = module.DefineType(DefaultTypeName);
                 }
 
                 return s_testTypeBuilder;
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest1()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest1_Method", c_DEFAULT_METHOD_ATTRIBUTE);
+            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest1_Method", DefaultMethodAttribute);
             ILGenerator generator = method.GetILGenerator();
 
             int index = 0;
@@ -73,7 +73,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest2()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest2_Method", c_DEFAULT_METHOD_ATTRIBUTE);
+            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest2_Method", DefaultMethodAttribute);
             ILGenerator generator = method.GetILGenerator();
 
             generator.BeginScope();
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest3()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest3_Method", c_DEFAULT_METHOD_ATTRIBUTE);
+            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest3_Method", DefaultMethodAttribute);
             ILGenerator generator = method.GetILGenerator();
 
             generator.BeginExceptionBlock();
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest4()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest4_Method", c_DEFAULT_METHOD_ATTRIBUTE);
+            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest4_Method", DefaultMethodAttribute);
             ILGenerator generator = method.GetILGenerator();
 
             generator.BeginExceptionBlock();
@@ -131,7 +131,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
         [Fact]
         public void PosTest5()
         {
-            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest5_Method", c_DEFAULT_METHOD_ATTRIBUTE);
+            MethodBuilder method = TestTypeBuilder.DefineMethod("PosTest5_Method", DefaultMethodAttribute);
             ILGenerator generator = method.GetILGenerator();
 
             generator.BeginExceptionBlock();

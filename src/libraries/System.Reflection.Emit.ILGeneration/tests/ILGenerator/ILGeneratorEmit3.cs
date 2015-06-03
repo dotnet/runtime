@@ -302,7 +302,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             ILGenerator ilgen = methbuild.GetILGenerator();
 
-            for (int i = 0; i <= Byte.MaxValue; ++i)
+            for (int i = 0; i <= byte.MaxValue; ++i)
             {
                 ilgen.DeclareLocal(typeof(string));
             }

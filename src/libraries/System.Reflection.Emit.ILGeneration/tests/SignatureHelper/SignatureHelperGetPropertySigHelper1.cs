@@ -32,7 +32,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 
             int expectedValue = 6;
             int actualValue;
-            SignatureHelper sHelper = SignatureHelper.GetPropertySigHelper(myModule, typeof(Type), new Type[] { typeof(Char), typeof(object) });
+            SignatureHelper sHelper = SignatureHelper.GetPropertySigHelper(myModule, typeof(Type), new Type[] { typeof(char), typeof(object) });
             actualValue = sHelper.GetSignature().Length;
             Assert.Equal(expectedValue, actualValue);
         }

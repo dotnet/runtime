@@ -11,7 +11,7 @@ namespace System.Reflection.Emit.ILGeneration.Tests
 {
     public class ILGeneratorEmitWriteLine
     {
-        [Fact]
+        [Fact, ActiveIssue(1915, PlatformID.AnyUnix)]
         public void PosTest1()
         {
             string name = "Assembly1";
