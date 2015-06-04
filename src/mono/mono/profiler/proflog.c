@@ -377,6 +377,19 @@ typedef struct _LogBuffer LogBuffer;
  *    number of methods that are fully and partially covered.
  */
 
+/*
+ * Format oddities that we ought to fix:
+ *
+ * - Methods written in emit_bt () should be based on the buffer's base
+ *   method instead of the base pointer.
+ * - The TYPE_SAMPLE_HIT event contains (currently) pointless data like
+ *   always-one unmanaged frame count and always-zero IL offsets.
+ *
+ * These are mostly small things and are not worth a format change by
+ * themselves. They should be done when some other major change has to
+ * be done to the format.
+ */
+
 struct _LogBuffer {
 	LogBuffer *next;
 	uint64_t time_base;
