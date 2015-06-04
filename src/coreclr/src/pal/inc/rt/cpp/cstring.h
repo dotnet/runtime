@@ -12,7 +12,7 @@
 #ifdef __cplusplus
 
 #ifndef AtlThrow
-#define AtlThrow(a) RaiseException(STATUS_NO_MEMORY,EXCEPTION_NONCONTINUABLE,0,NULL); 
+#define AtlThrow(a) RaiseException(STATUS_NO_MEMORY,EXCEPTION_NONCONTINUABLE,0,nullptr); 
 #endif
 #ifndef ATLASSERT
 #define ATLASSERT(a) _ASSERTE(a)
@@ -49,7 +49,7 @@ public:
         //   we will overwrite ourselves with the
         //   converted string.
         int cchSize;
-        cchSize = MultiByteToWideChar(CP_ACP, 0, pSrc, -1, NULL, 0);
+        cchSize = MultiByteToWideChar(CP_ACP, 0, pSrc, -1, nullptr, 0);
         if (cchSize == 0)
         {
             AtlThrow(E_OUTOFMEMORY);

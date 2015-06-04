@@ -280,7 +280,10 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define THIS_
 #define THIS                void
 
-#if _MSC_VER
+#ifndef _DECLSPEC_DEFINED_
+#define _DECLSPEC_DEFINED_
+
+#if  defined(_MSC_VER)
 #define DECLSPEC_NOVTABLE   __declspec(novtable)
 #define DECLSPEC_IMPORT     __declspec(dllimport)
 #define DECLSPEC_SELECTANY  __declspec(selectany)
@@ -293,6 +296,8 @@ inline void *__cdecl operator new(size_t, void *_P)
 #define DECLSPEC_IMPORT
 #define DECLSPEC_SELECTANY
 #endif
+
+#endif // !_DECLSPEC_DEFINED_
 
 #define DECLARE_INTERFACE(iface)    interface DECLSPEC_NOVTABLE iface
 #define DECLARE_INTERFACE_(iface, baseiface)    interface DECLSPEC_NOVTABLE iface : public baseiface
@@ -310,12 +315,15 @@ typedef const GUID FAR *LPCGUID;
 
 #ifdef __cplusplus
 extern "C++" {
+#if !defined _SYS_GUID_OPERATOR_EQ_ && !defined _NO_SYS_GUID_OPERATOR_EQ_
+#define _SYS_GUID_OPERATOR_EQ_
 inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
     { return !memcmp(&rguid1, &rguid2, sizeof(GUID)); }
 inline int operator==(REFGUID guidOne, REFGUID guidOther)
     { return IsEqualGUID(guidOne,guidOther); }
 inline int operator!=(REFGUID guidOne, REFGUID guidOther)
     { return !IsEqualGUID(guidOne,guidOther); }
+#endif
 };
 #endif // __cplusplus
 
@@ -342,6 +350,7 @@ typedef GUID CLSID;
 #endif
 #define CLSID_NULL GUID_NULL
 #define IsEqualCLSID(rclsid1, rclsid2) IsEqualGUID(rclsid1, rclsid2)
+typedef CLSID *LPCLSID;
 
 typedef UINT_PTR WPARAM;
 typedef LONG_PTR LRESULT;
@@ -358,7 +367,11 @@ typedef union _ULARGE_INTEGER {
         DWORD LowPart;
         DWORD HighPart;
 #endif
-    } u;
+    } 
+#ifndef PAL_STDCPP_COMPAT
+    u
+#endif // PAL_STDCPP_COMPAT
+     ;
     ULONGLONG QuadPart;
 } ULARGE_INTEGER, *PULARGE_INTEGER;
 
@@ -543,6 +556,8 @@ enum VARENUM {
     VT_LPSTR    = 30,
     VT_LPWSTR   = 31,
     VT_RECORD   = 36,
+    VT_INT_PTR	= 37,
+    VT_UINT_PTR	= 38,  
 
     VT_FILETIME        = 64,
     VT_BLOB            = 65,
@@ -561,6 +576,7 @@ enum VARENUM {
 };
 
 typedef struct tagVARIANT VARIANT, *LPVARIANT;
+typedef struct tagSAFEARRAY SAFEARRAY;
 
 struct tagVARIANT
     {
@@ -593,6 +609,8 @@ struct tagVARIANT
                 DATE date;
                 BSTR bstrVal;
                 interface IUnknown *punkVal;
+                interface IDispatch *pdispVal;
+                SAFEARRAY *parray;
                 BYTE *pbVal;
                 SHORT *piVal;
                 LONG *plVal;
@@ -665,6 +683,7 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 #define V_INTREF(X)      V_UNION(X, pintVal)
 #define V_UINT(X)        V_UNION(X, uintVal)
 #define V_UINTREF(X)     V_UNION(X, puintVal)
+#define V_ARRAY(X)       V_UNION(X, parray)
 
 #ifdef _WIN64
 #define V_INT_PTR(X)        V_UNION(X, llVal)
@@ -687,6 +706,7 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 #define V_UNKNOWN(X)     V_UNION(X, punkVal)
 #define V_UNKNOWNREF(X)  V_UNION(X, ppunkVal)
 #define V_VARIANTREF(X)  V_UNION(X, pvarVal)
+#define V_DISPATCH(X)    V_UNION(X, pdispVal)
 #define V_ERROR(X)       V_UNION(X, scode)
 #define V_ERRORREF(X)    V_UNION(X, pscode)
 #define V_BOOL(X)        V_UNION(X, boolVal)
@@ -809,13 +829,13 @@ enum tagMIMECONTF {
 /******************* shlwapi ************************************/
 
 // note: diff in NULL handing and calling convetion
-#define StrCpyW                 wcscpy
+#define StrCpyW                 PAL_wcscpy
 #define StrCpyNW                lstrcpynW // note: can't be wcsncpy!
-#define StrCatW                 wcscat
-#define StrChrW                 (WCHAR*)wcschr
-#define StrCmpW                 wcscmp
+#define StrCatW                 PAL_wcscat
+#define StrChrW                 (WCHAR*)PAL_wcschr
+#define StrCmpW                 PAL_wcscmp
 #define StrCmpIW                _wcsicmp
-#define StrCmpNW                wcsncmp
+#define StrCmpNW                PAL_wcsncmp
 #define StrCmpNIW               _wcsnicmp
 
 STDAPI_(LPWSTR) StrNCatW(LPWSTR lpFront, LPCWSTR lpBack, int cchMax);
@@ -824,7 +844,7 @@ STDAPI_(LPWSTR) StrStrIW(LPCWSTR lpFirst, LPCWSTR lpSrch);
 STDAPI_(LPWSTR) StrRChrW(LPCWSTR lpStart, LPCWSTR lpEnd, WCHAR wMatch);
 STDAPI_(LPWSTR) StrCatBuffW(LPWSTR pszDest, LPCWSTR pszSrc, int cchDestBuffSize);
 
-#define lstrcmpW                wcscmp
+#define lstrcmpW                PAL_wcscmp
 #define lstrcmpiW               _wcsicmp
 #define wnsprintfW              _snwprintf // note: not 100% compatible (wsprintf should be subset of sprintf...)
 #define wvnsprintfW             _vsnwprintf // note: not 100% compatible (wsprintf should be subset of sprintf...)
@@ -898,13 +918,13 @@ extern "C++" {
 
 #include <safemath.h>
 
-inline errno_t __cdecl _wcslwr_unsafe(wchar_t *str, size_t sz)
+inline errno_t __cdecl _wcslwr_unsafe(WCHAR *str, size_t sz)
 {
     size_t fullSize;
-    if(!ClrSafeInt<size_t>::multiply(sz, sizeof(wchar_t), fullSize))
+    if(!ClrSafeInt<size_t>::multiply(sz, sizeof(WCHAR), fullSize))
         return 1;
-    wchar_t *copy = (wchar_t *)malloc(fullSize);
-    if(copy == NULL)
+    WCHAR *copy = (WCHAR *)malloc(fullSize);
+    if(copy == nullptr)
         return 1;
 
     errno_t retCode = wcscpy_s(copy, sz, str);
@@ -922,7 +942,7 @@ inline errno_t __cdecl _wcslwr_unsafe(wchar_t *str, size_t sz)
 inline errno_t __cdecl _strlwr_unsafe(char *str, size_t sz)
 {
     char *copy = (char *)malloc(sz);
-    if(copy == NULL)
+    if(copy == nullptr)
         return 1;
 
     errno_t retCode = strcpy_s(copy, sz, str);
@@ -945,7 +965,7 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
     for (;;)
     {
         char *buf = (char *)malloc(guess * sizeof(char));
-        if(buf == NULL)
+        if(buf == nullptr)
             return 0;
 
         int ret = _vsnprintf(buf, guess, _Format, _ArgList);
@@ -958,18 +978,21 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
     }
 }
 
-inline int __cdecl _vscwprintf_unsafe(const wchar_t *_Format, va_list _ArgList)
+inline int __cdecl _vscwprintf_unsafe(const WCHAR *_Format, va_list _ArgList)
 {
-    int guess = 10;
+    int guess = 256;
 
     for (;;)
     {
-        wchar_t *buf = (wchar_t *)malloc(guess * sizeof(wchar_t));
-        if(buf == NULL)
+        WCHAR *buf = (WCHAR *)malloc(guess * sizeof(WCHAR));
+        if (buf == nullptr)
             return 0;
 
-        int ret = _vsnwprintf(buf, guess, _Format, _ArgList);
+        va_list apcopy;
+        va_copy(apcopy, _ArgList);
+        int ret = _vsnwprintf(buf, guess, _Format, apcopy);
         free(buf);
+        va_end(apcopy);
 
         if ((ret != -1) && (ret < guess))
             return ret;
@@ -978,7 +1001,7 @@ inline int __cdecl _vscwprintf_unsafe(const wchar_t *_Format, va_list _ArgList)
     }
 }
 
-inline int __cdecl _vsnwprintf_unsafe(wchar_t *_Dst, size_t _SizeInWords, size_t _Count, const wchar_t *_Format, va_list _ArgList)
+inline int __cdecl _vsnwprintf_unsafe(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, va_list _ArgList)
 {
     if (_Count == _TRUNCATE) _Count = _SizeInWords - 1;
     int ret = _vsnwprintf(_Dst, _Count, _Format, _ArgList);
@@ -990,7 +1013,7 @@ inline int __cdecl _vsnwprintf_unsafe(wchar_t *_Dst, size_t _SizeInWords, size_t
     return ret;
 }
 
-inline int __cdecl _snwprintf_unsafe(wchar_t *_Dst, size_t _SizeInWords, size_t _Count, const wchar_t *_Format, ...)
+inline int __cdecl _snwprintf_unsafe(WCHAR *_Dst, size_t _SizeInWords, size_t _Count, const WCHAR *_Format, ...)
 {
     int ret;
     va_list _ArgList;
@@ -1022,9 +1045,9 @@ inline int __cdecl _snprintf_unsafe(char *_Dst, size_t _SizeInWords, size_t _Cou
     return ret;
 }
 
-inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const wchar_t *fileName, const wchar_t *mode)
+inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
 {
-    FILE *result = _wfopen(fileName, mode);
+    PAL_FILE *result = _wfopen(fileName, mode);
     if(result == 0) {
         return 1;
     } else {
@@ -1033,9 +1056,9 @@ inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const wchar_t *fileName, const
     }
 }
 
-inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const char *mode)
+inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const char *mode)
 {
-  FILE *result = fopen(fileName, mode);
+  PAL_FILE *result = PAL_fopen(fileName, mode);
   if(result == 0) {
     return 1;
   } else {
@@ -1046,12 +1069,12 @@ inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const cha
 
 /* _itow_s */
 _SAFECRT__EXTERN_C
-errno_t __cdecl _itow_s(int _Value, wchar_t *_Dst, size_t _SizeInWords, int _Radix);
+errno_t __cdecl _itow_s(int _Value, WCHAR *_Dst, size_t _SizeInWords, int _Radix);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
 template <size_t _SizeInWords>
 inline
-errno_t __cdecl _itow_s(int _Value, wchar_t (&_Dst)[_SizeInWords], int _Radix)
+errno_t __cdecl _itow_s(int _Value, WCHAR (&_Dst)[_SizeInWords], int _Radix)
 {
     return _itow_s(_Value, _Dst, _SizeInWords, _Radix);
 }
@@ -1060,7 +1083,7 @@ errno_t __cdecl _itow_s(int _Value, wchar_t (&_Dst)[_SizeInWords], int _Radix)
 #if _SAFECRT_USE_INLINES
 
 __inline
-errno_t __cdecl _itow_s(int _Value, wchar_t *_Dst, size_t _SizeInWords, int _Radix)
+errno_t __cdecl _itow_s(int _Value, WCHAR *_Dst, size_t _SizeInWords, int _Radix)
 {
     /* validation section */
     _SAFECRT__VALIDATE_STRING(_Dst, _SizeInWords);
@@ -1074,12 +1097,12 @@ errno_t __cdecl _itow_s(int _Value, wchar_t *_Dst, size_t _SizeInWords, int _Rad
 
 /* _i64tow_s */
 _SAFECRT__EXTERN_C
-errno_t __cdecl _i64tow_s(__int64 _Value, wchar_t *_Dst, size_t _SizeInWords, int _Radix);
+errno_t __cdecl _i64tow_s(__int64 _Value, WCHAR *_Dst, size_t _SizeInWords, int _Radix);
 
 #if defined(__cplusplus) && _SAFECRT_USE_CPP_OVERLOADS
 template <size_t _SizeInWords>
 inline
-errno_t __cdecl _i64tow_s(__int64 _Value, wchar_t (&_Dst)[_SizeInWords], int _Radix)
+errno_t __cdecl _i64tow_s(__int64 _Value, WCHAR (&_Dst)[_SizeInWords], int _Radix)
 {
     return _i64tow_s(_Value, _Dst, _SizeInWords, _Radix);
 }
@@ -1088,7 +1111,7 @@ errno_t __cdecl _i64tow_s(__int64 _Value, wchar_t (&_Dst)[_SizeInWords], int _Ra
 #if _SAFECRT_USE_INLINES
 
 __inline
-errno_t __cdecl _i64tow_s(__int64 _Value, wchar_t *_Dst, size_t _SizeInWords, int _Radix)
+errno_t __cdecl _i64tow_s(__int64 _Value, WCHAR *_Dst, size_t _SizeInWords, int _Radix)
 {
     /* validation section */
     _SAFECRT__VALIDATE_STRING(_Dst, _SizeInWords);
@@ -1127,7 +1150,7 @@ errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, 
     _SAFECRT__VALIDATE_STRING(_Dst, _SizeInWords);
 
     szFound = getenv(_Name);
-    if (szFound == NULL)
+    if (szFound == nullptr)
     {
         *_ReturnValue = 0;
         return 0;
@@ -1145,7 +1168,6 @@ errno_t __cdecl getenv_s(size_t *_ReturnValue, char *_Dst, size_t _SizeInWords, 
 STDAPI_(BOOL) PathAppendW(LPWSTR pszPath, LPCWSTR pszMore);
 STDAPI_(int) PathCommonPrefixW(LPCWSTR pszFile1, LPCWSTR pszFile2, LPWSTR  pszPath);
 PALIMPORT LPWSTR PALAPI PathFindFileNameW(LPCWSTR pPath);
-STDAPI_(LPWSTR) PathFindExtensionW(LPCWSTR pszPath);
 STDAPI_(int) PathGetDriveNumberW(LPCWSTR lpsz);
 STDAPI_(BOOL) PathIsRelativeW(LPCWSTR lpszPath);
 STDAPI_(BOOL) PathIsUNCW(LPCWSTR pszPath);
@@ -1311,7 +1333,7 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
-#ifdef _WIN64
+#ifdef BIT64
 #define VALPTR(x) VAL64(x)
 #define GET_UNALIGNED_PTR(x) GET_UNALIGNED_64(x)
 #define GET_UNALIGNED_VALPTR(x) GET_UNALIGNED_VAL64(x)
@@ -1719,8 +1741,10 @@ typedef struct tagVS_FIXEDFILEINFO
 /******************** external includes *************************/
 
 #include "ntimage.h"
-#include "ccombstr.h"
-#include "cstring.h"
+#ifndef PAL_STDCPP_COMPAT
+#include "cpp/ccombstr.h"
+#include "cpp/cstring.h"
+#endif // !PAL_STDCPP_COMPAT
 #include "sscli_version.h"
 
 #endif // RC_INVOKED

@@ -27,6 +27,7 @@ This file is used to define the wchar_t type as a 16-bit type on Unix.
 // __wchar_16_cpp__ instead of wchar_t. This is apparently not necessary under
 // vc++, for whom wchar_t is already a typedef instead of a built-in.
 
+#ifndef PAL_STDCPP_COMPAT
 #if defined (PLATFORM_UNIX) && defined(__GNUC__)
 #undef wchar_t
 #define wchar_t __wchar_16_cpp__
@@ -48,4 +49,5 @@ typedef unsigned short wchar_t;
 #define _WCHAR_T_DEFINED
 #endif // !_WCHAR_T_DEFINED
 #endif // !_WCHAR_T_DEFINED || !_MSC_VER
+#endif // !PAL_STDCPP_COMPAT
 
