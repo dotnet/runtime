@@ -9346,8 +9346,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		 * Emit all LLVM code into a separate assembly/object file and link with it
 		 * normally.
 		 */
-		if (!acfg->aot_opts.asm_only)
+		if (!acfg->aot_opts.asm_only) {
 			acfg->llvm_owriter = TRUE;
+		} else if (acfg->aot_opts.llvm_outfile) {
+			int len = strlen (acfg->aot_opts.llvm_outfile);
+
+			if (len >= 2 && acfg->aot_opts.llvm_outfile [len - 2] == '.' && acfg->aot_opts.llvm_outfile [len - 1] == 'o')
+				acfg->llvm_owriter = TRUE;
+		}
 	}
 
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
@@ -9477,6 +9483,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			}
 			g_assert (acfg->aot_opts.llvm_outfile);
 			acfg->llvm_sfile = g_strdup (acfg->aot_opts.llvm_outfile);
+			if (acfg->llvm_owriter)
+				acfg->llvm_ofile = g_strdup (acfg->aot_opts.llvm_outfile);
+			else
+				acfg->llvm_sfile = g_strdup (acfg->aot_opts.llvm_outfile);
 		} else {
 			acfg->tmpbasename = g_strdup_printf ("%s", "temp");
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
