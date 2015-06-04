@@ -1980,7 +1980,7 @@ CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr)
     if (assembly.ParentDomain == adstore.sharedDomain)
     {
         sos::Object obj(TO_TADDR(objPtr));
-        unsigned long value = 0;
+        ULONG value = 0;
         if (!obj.TryGetHeader(value))
         {
             return NULL;
@@ -3618,6 +3618,7 @@ BOOL GetSOSVersion(VS_FIXEDFILEINFO *pFileInfo)
     return FALSE;
 }
 
+#endif // !FEATURE_PAL
     
 size_t ObjectSize(DWORD_PTR obj,BOOL fIsLargeObject)
 {
@@ -3636,8 +3637,6 @@ size_t ObjectSize(DWORD_PTR obj, DWORD_PTR mt, BOOL fIsValueClass, BOOL fIsLarge
     }
     return size;
 }
-
-#endif // !FEATURE_PAL
 
 // This takes an array of values and sets every non-printable character
 // to be a period.

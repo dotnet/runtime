@@ -53,6 +53,19 @@
 #endif
 #endif // ASSERTE
 
+inline size_t ALIGN_DOWN( size_t val, size_t alignment )
+{
+    // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
+    _ASSERTE( 0 == (alignment & (alignment - 1)) );
+    size_t result = val & ~(alignment - 1);
+    return result;
+}
+
+inline void* ALIGN_DOWN( void* val, size_t alignment )
+{
+    return (void*) ALIGN_DOWN( (size_t)val, alignment );
+}
+
 LinearReadCache::LinearReadCache(ULONG pageSize)
     : mCurrPageStart(0), mPageSize(pageSize), mCurrPageSize(0), mPage(0)
 {
@@ -1298,7 +1311,7 @@ void PrintNotReachableInRange(TADDR rngStart, TADDR rngEnd, BOOL bExcludeReadyFo
         ExtOut("\n");
 }
 
-
+#endif // FEATURE_PAL
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -1340,17 +1353,16 @@ BOOL CardIsSet(const DacpGcHeapDetails &heap, TADDR objAddr)
 {
     // The card table has to be translated to look at the refcount, etc.
     // g_card_table[card_word(card_of(g_lowest_address))].
-    // card_table = card_table + card_word(card_of(heap.lowest_address))*sizeof(DWORD_PTR);
 
     TADDR card_table = TO_TADDR(heap.card_table);
-    card_table = card_table+card_word(card_of((BYTE *)heap.lowest_address))*sizeof(DWORD);
+    card_table = card_table + card_word(card_of((BYTE *)heap.lowest_address))*sizeof(DWORD);
     
     do
     {        
         TADDR card_table_lowest_addr;
         TADDR card_table_next;
 
-        if (MOVE(card_table_lowest_addr,((card_table) & ~(0x10000-1)) + sizeof(PVOID)) != S_OK)
+        if (MOVE(card_table_lowest_addr, ALIGN_DOWN(card_table, 0x1000) + sizeof(PVOID)) != S_OK)
         {
             ExtErr("Error getting card table lowest address\n");
             return FALSE;
@@ -1671,6 +1683,8 @@ BOOL VerifyObject(const DacpGcHeapDetails &heap, DWORD_PTR objAddr, DWORD_PTR MT
 
     return VerifyObject(heap, seg, objAddr, MTAddr, objSize, bVerifyMember);
 }
+
+#ifndef FEATURE_PAL
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2214,6 +2228,8 @@ void HeapTraverser::PrintRefs(size_t obj, size_t methodTable, size_t size)
 #endif
 }
 
+#endif // FEATURE_PAL
+
 void sos::ObjectIterator::BuildError(char *out, size_t count, const char *format, ...) const
 {
     if (out == NULL || count == 0)
@@ -2500,5 +2516,3 @@ bool sos::ObjectIterator::Verify() const
     char *c = NULL;
     return Verify(c, 0);
 }
-
-#endif  // !FEATURE_PAL
