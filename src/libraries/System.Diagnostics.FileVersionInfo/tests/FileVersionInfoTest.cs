@@ -25,7 +25,7 @@ public class FileVersionInfoTest
         VerifyVersionInfo(Path.Combine(Directory.GetCurrentDirectory(), NativeConsoleAppFileName), new MyFVI()
         {
             Comments = "",
-            CompanyName = "This is not a real company name.",
+            CompanyName = "Microsoft Corporation",
             FileBuildPart = 3,
             FileDescription = "This is the description for the native console application.",
             FileMajorPart = 5,
@@ -217,7 +217,7 @@ public class FileVersionInfoTest
     {
         FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(filePath);
         TestStringProperty("Comments", fvi.Comments, expected.Comments);
-        TestStringProperty("CompanyName", fvi.Comments, expected.Comments);
+        TestStringProperty("CompanyName", fvi.CompanyName, expected.CompanyName);
         TestProperty<int>("FileBuildPart", fvi.FileBuildPart, expected.FileBuildPart);
         TestStringProperty("FileDescription", fvi.FileDescription, expected.FileDescription);
         TestProperty<int>("FileMajorPart", fvi.FileMajorPart, expected.FileMajorPart);
