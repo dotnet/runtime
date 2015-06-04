@@ -2419,8 +2419,8 @@ namespace System.Xml.Serialization
             Label labelReturn = ilg.DefineLabel();
             Label labelEndIf = ilg.DefineLabel();
 
-            // Type typeInfo = type.GetTypeInfo();
-            LocalBuilder typeInfo = ilg.DeclareLocal(typeof(TypeInfo), "typeInfo");
+            // TypeInfo typeInfo = type.GetTypeInfo();
+            // typeInfo not declared explicitly
             ilg.Ldc(type);
             MethodInfo getTypeInfoMehod = typeof(IntrospectionExtensions).GetMethod(
                   "GetTypeInfo",
@@ -2429,11 +2429,10 @@ namespace System.Xml.Serialization
                   );
             ilg.Call(getTypeInfoMehod);
 
-            // IEnumerator e = typeInfo.DeclaredConstructors.GetEnumerator();
-            LocalBuilder enumerator = ilg.DeclareLocal(typeof(IEnumerator), "e");
+            // IEnumerator<ConstructorInfo> e = typeInfo.DeclaredConstructors.GetEnumerator();
+            LocalBuilder enumerator = ilg.DeclareLocal(typeof(IEnumerator<>).MakeGenericType(typeof(ConstructorInfo)), "e");
             MethodInfo getDeclaredConstructors = typeof(TypeInfo).GetMethod("get_DeclaredConstructors");
-            MethodInfo getEnumerator =
-                typeof(IEnumerable<>).MakeGenericType(typeof(ConstructorInfo)).GetMethod("GetEnumerator");
+            MethodInfo getEnumerator = typeof(IEnumerable<>).MakeGenericType(typeof(ConstructorInfo)).GetMethod("GetEnumerator");
             ilg.Call(getDeclaredConstructors);
             ilg.Call(getEnumerator);
             ilg.Stloc(enumerator);
@@ -2446,7 +2445,7 @@ namespace System.Xml.Serialization
             LocalBuilder constructorInfo = ilg.DeclareLocal(typeof(ConstructorInfo), "constructorInfo");
             ilg.Stloc(constructorInfo);
 
-            // if (!constructorInfo.IsStatic || constructorInfo.GetParameters.Length() == 0)
+            // if (!constructorInfo.IsStatic && constructorInfo.GetParameters.Length() == 0)
             ilg.Ldloc(constructorInfo);
             MethodInfo constructorIsStatic = typeof(ConstructorInfo).GetMethod("get_IsStatic");
             ilg.Call(constructorIsStatic);
