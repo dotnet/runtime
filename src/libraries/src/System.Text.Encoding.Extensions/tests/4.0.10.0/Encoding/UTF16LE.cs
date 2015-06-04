@@ -12,6 +12,7 @@ namespace EncodingTests
         private static readonly EncodingTestHelper s_encodingUtil_UTF16LE = new EncodingTestHelper("UTF-16LE");
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void GetByteCount_InvalidArgumentAndBoundaryValues()
         {
             s_encodingUtil_UTF16LE.GetByteCountTest(String.Empty, 0, 0, 0);
@@ -29,6 +30,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void GetCharCount_InvalidArgumentAndBoundaryValues()
         {
             Assert.Throws<ArgumentNullException>(() => s_encodingUtil_UTF16LE.GetCharCountTest((Byte[])null, 0, 0, 0));
@@ -86,6 +88,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void GetChars_BufferBoundary()
         {
             Assert.Throws<ArgumentNullException>(() => s_encodingUtil_UTF16LE.GetCharsTest(new Byte[] { 0x61, 0x00, 0x62, 0x00, 0x63, 0x00 }, 0, 6, -2, 0, String.Empty, 0));
@@ -103,6 +106,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void GetBytes_BufferBoundary()
         {
             Assert.Throws<ArgumentNullException>(() => s_encodingUtil_UTF16LE.GetBytesTest("abc", 0, 3, -2, 0, (Byte[])null, 0));
@@ -120,6 +124,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void GetChars_BufferBoundary_Pointer()
         {
             Assert.Throws<ArgumentNullException>(() => s_encodingUtil_UTF16LE.GetCharsTest((Byte[])null, 0, 0, 0, String.Empty, 0));
@@ -135,6 +140,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void GetBytes_BufferBoundary_Pointer()
         {
             Assert.Throws<ArgumentNullException>(() => s_encodingUtil_UTF16LE.GetBytesTest((String)null, 0, 0, 0, new Byte[] { }, 0));
@@ -150,12 +156,14 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void BasicValidInputs()
         {
             s_encodingUtil_UTF16LE.GetCharsTest(new Byte[] { 0x61, 0x00 }, 0, 2, -1, 0, "a", 1);
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void InvalidSequences()
         {
             s_encodingUtil_UTF16LE.GetCharsTest(new Byte[] { 0x61, 0x00, 0x00 }, 0, 3, -1, 0, "\u0061\uFFFD", 2);
@@ -166,6 +174,7 @@ namespace EncodingTests
 
         // They don't represent abstract characters, but still need to be transmitted
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void Specials()
         {
             // U+FFFF, U+FFFE, U+FFF
@@ -180,6 +189,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void Surrogates()
         {
             s_encodingUtil_UTF16LE.GetCharsTest(new Byte[] { 0x00, 0xD8, 0x00, 0xDC }, 0, 4, -1, 0, "\uD800\uDC00", 2);
@@ -212,6 +222,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void MaxCharCount()
         {
             s_encodingUtil_UTF16LE.GetMaxCharCountTest(0, 1);
@@ -223,6 +234,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void MaxByteCount()
         {
             s_encodingUtil_UTF16LE.GetMaxByteCountTest(0, 2);
@@ -236,6 +248,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void Preamble()
         {
             s_encodingUtil_UTF16LE.GetPreambleTest(new Byte[] { 0xFF, 0xFE });

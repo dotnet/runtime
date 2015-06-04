@@ -73,6 +73,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void ValidCodes()
         {
             s_encodingUtil_Latin1.GetCharsTest(new Byte[] { 0x01, 0x09, 0x10, 0x3F, 0x5C, 0x9F, 0xCB, 0xE7, 0xFF }, 0, 9, -1, 0, "\u0001\u0009\u0010\u003F\u005C\u009F\u00CB\u00E7\u00FF", 9);
@@ -82,6 +83,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void MaxCharCount()
         {
             s_encodingUtil_Latin1.GetMaxCharCountTest(0, 0);
@@ -92,6 +94,7 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void MaxByteCount()
         {
             s_encodingUtil_Latin1.GetMaxByteCountTest(0, 1);
@@ -102,12 +105,14 @@ namespace EncodingTests
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void Preamble()
         {
             s_encodingUtil_Latin1.GetPreambleTest(new Byte[] { });
         }
 
         [Fact]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void DefaultFallback()
         {
             s_encodingUtil_Latin1.GetBytesTest("\uD800\uDFFF", 0, 2, -1, 0, new Byte[] { 0x3F, 0x3F }, 2);
