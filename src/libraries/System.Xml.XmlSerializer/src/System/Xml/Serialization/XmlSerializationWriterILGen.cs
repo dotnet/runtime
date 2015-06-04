@@ -2416,6 +2416,66 @@ namespace System.Xml.Serialization
                 }
             }
 
+            Label labelReturn = ilg.DefineLabel();
+            Label labelEndIf = ilg.DefineLabel();
+
+            // TypeInfo typeInfo = type.GetTypeInfo();
+            // typeInfo not declared explicitly
+            ilg.Ldc(type);
+            MethodInfo getTypeInfoMehod = typeof(IntrospectionExtensions).GetMethod(
+                  "GetTypeInfo",
+                  CodeGenerator.StaticBindingFlags,
+                  new[] { typeof(Type) }
+                  );
+            ilg.Call(getTypeInfoMehod);
+
+            // IEnumerator<ConstructorInfo> e = typeInfo.DeclaredConstructors.GetEnumerator();
+            LocalBuilder enumerator = ilg.DeclareLocal(typeof(IEnumerator<>).MakeGenericType(typeof(ConstructorInfo)), "e");
+            MethodInfo getDeclaredConstructors = typeof(TypeInfo).GetMethod("get_DeclaredConstructors");
+            MethodInfo getEnumerator = typeof(IEnumerable<>).MakeGenericType(typeof(ConstructorInfo)).GetMethod("GetEnumerator");
+            ilg.Call(getDeclaredConstructors);
+            ilg.Call(getEnumerator);
+            ilg.Stloc(enumerator);
+
+            ilg.WhileBegin();
+            // ConstructorInfo constructorInfo = e.Current();
+            MethodInfo enumeratorCurrent = typeof(IEnumerator).GetMethod("get_Current");
+            ilg.Ldloc(enumerator);
+            ilg.Call(enumeratorCurrent);
+            LocalBuilder constructorInfo = ilg.DeclareLocal(typeof(ConstructorInfo), "constructorInfo");
+            ilg.Stloc(constructorInfo);
+
+            // if (!constructorInfo.IsStatic && constructorInfo.GetParameters.Length() == 0)
+            ilg.Ldloc(constructorInfo);
+            MethodInfo constructorIsStatic = typeof(ConstructorInfo).GetMethod("get_IsStatic");
+            ilg.Call(constructorIsStatic);
+            ilg.Brtrue(labelEndIf);
+            ilg.Ldloc(constructorInfo);
+            MethodInfo constructorGetParameters = typeof(ConstructorInfo).GetMethod("GetParameters");
+            ilg.Call(constructorGetParameters);
+            ilg.Ldlen();
+            ilg.Ldc(0);
+            ilg.Cne();
+            ilg.Brtrue(labelEndIf);
+
+            // constructorInfo.Invoke(null);
+            MethodInfo constructorInvoke = typeof(ConstructorInfo).GetMethod("Invoke", new Type[] { typeof(object[]) });
+            ilg.Ldloc(constructorInfo);
+            ilg.Load(null);
+            ilg.Call(constructorInvoke);
+            ilg.Br(labelReturn);
+
+            ilg.MarkLabel(labelEndIf);
+            ilg.WhileBeginCondition(); // while (e.MoveNext())
+            MethodInfo IEnumeratorMoveNext = typeof(IEnumerator).GetMethod(
+                "MoveNext",
+                CodeGenerator.InstanceBindingFlags,
+                Array.Empty<Type>());
+            ilg.Ldloc(enumerator);
+            ilg.Call(IEnumeratorMoveNext);
+            ilg.WhileEndCondition();
+            ilg.WhileEnd();
+
             MethodInfo Activator_CreateInstance = typeof(Activator).GetMethod(
                   "CreateInstance",
                   CodeGenerator.StaticBindingFlags,
@@ -2425,6 +2485,7 @@ namespace System.Xml.Serialization
             ilg.Call(Activator_CreateInstance);
             if (cast != null)
                 ilg.ConvertValue(Activator_CreateInstance.ReturnType, cast);
+            ilg.MarkLabel(labelReturn);
         }
 
         internal void WriteLocalDecl(string variableName, SourceInfo initValue)

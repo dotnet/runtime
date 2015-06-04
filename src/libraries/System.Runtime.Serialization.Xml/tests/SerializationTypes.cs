@@ -2109,3 +2109,13 @@ public class TypeWithXmlDocumentProperty
 {
     public XmlDocument Document;
 }
+
+public class TypeWithNonParameterlessConstructor
+{
+    public string StringProperty { get; set; }
+
+    public TypeWithNonParameterlessConstructor(string value)
+    {
+        StringProperty = value;
+    }
+}
