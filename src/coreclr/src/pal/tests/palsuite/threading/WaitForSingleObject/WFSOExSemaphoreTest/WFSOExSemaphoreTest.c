@@ -19,8 +19,8 @@
 /*Based on SleepEx/test2 */
 
 const int ChildThreadWaitTime = 4000;
-const int InterruptTime = 2000; 
-const int AcceptableDelta = 100;
+const int InterruptTime = 2000;
+const DWORD AcceptableDelta = 300;
 
 void RunTest(BOOL AlertThread);
 VOID PALAPI APCFunc(ULONG_PTR dwParam);
