@@ -98,7 +98,8 @@ mono_save_seq_point_info (MonoCompile *cfg)
 				last = ins;
 			}
 
-			if (bb->last_ins && bb->last_ins->opcode == OP_ENDFINALLY && bb->seq_points) {
+			/* The second case handles endfinally opcodes which are in a separate bb by themselves */
+			if ((bb->last_ins && bb->last_ins->opcode == OP_ENDFINALLY && bb->seq_points) || (bb->out_count == 1 && bb->out_bb [0]->code && bb->out_bb [0]->code->opcode == OP_ENDFINALLY)) {
 				MonoBasicBlock *bb2;
 				MonoInst *endfinally_seq_point = NULL;
 
