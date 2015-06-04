@@ -654,11 +654,8 @@ find_method (MonoDomain *domain, void *user_data)
 }
 
 static void
-register_method_local (MonoProfiler *prof, MonoDomain *domain, MonoMethod *method, MonoJitInfo *ji)
+register_method_local (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji)
 {
-	if (!domain)
-		g_assert (ji);
-
 	if (!mono_conc_hashtable_lookup (prof->method_table, method)) {
 		if (!ji) {
 			MethodSearch search = { method, NULL };
@@ -680,10 +677,17 @@ register_method_local (MonoProfiler *prof, MonoDomain *domain, MonoMethod *metho
 }
 
 static void
-emit_method (MonoProfiler *prof, LogBuffer *logbuffer, MonoDomain *domain, MonoMethod *method)
+emit_method (MonoProfiler *prof, LogBuffer *logbuffer, MonoMethod *method)
 {
-	register_method_local (prof, domain, method, NULL);
+	register_method_local (prof, method, NULL);
 	emit_method_inner (logbuffer, method);
+}
+
+static void
+emit_method_as_ptr (MonoProfiler *prof, LogBuffer *logbuffer, MonoMethod *method)
+{
+	register_method_local (prof, method, NULL);
+	emit_ptr (logbuffer, method);
 }
 
 static void
@@ -996,7 +1000,7 @@ collect_bt (FrameData *data)
 }
 
 static void
-emit_bt (LogBuffer *logbuffer, FrameData *data)
+emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 {
 	/* FIXME: this is actually tons of data and we should
 	 * just output it the first time and use an id the next
@@ -1008,7 +1012,7 @@ emit_bt (LogBuffer *logbuffer, FrameData *data)
 	//if (*p != data.count) {
 	//	printf ("bad num frames enc at %d: %d -> %d\n", count, data.count, *p); printf ("frames end: %p->%p\n", p, logbuffer->data); exit(0);}
 	while (data->count) {
-		emit_ptr (logbuffer, data->methods [--data->count]);
+		emit_method_as_ptr (prof, logbuffer, data->methods [--data->count]);
 	}
 }
 
@@ -1035,7 +1039,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 	emit_obj (logbuffer, obj);
 	emit_value (logbuffer, len);
 	if (do_bt)
-		emit_bt (logbuffer, &data);
+		emit_bt (prof, logbuffer, &data);
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_send (prof, logbuffer);
@@ -1220,7 +1224,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 	ENTER_LOG (logbuffer, "enter");
 	emit_byte (logbuffer, TYPE_ENTER | TYPE_METHOD);
 	emit_time (logbuffer, now);
-	emit_method (prof, logbuffer, mono_domain_get (), method);
+	emit_method (prof, logbuffer, method);
 	EXIT_LOG (logbuffer);
 
 	process_requests (prof);
@@ -1237,7 +1241,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 	ENTER_LOG (logbuffer, "leave");
 	emit_byte (logbuffer, TYPE_LEAVE | TYPE_METHOD);
 	emit_time (logbuffer, now);
-	emit_method (prof, logbuffer, mono_domain_get (), method);
+	emit_method (prof, logbuffer, method);
 	EXIT_LOG (logbuffer);
 	if (logbuffer->next)
 		safe_send (prof, logbuffer);
@@ -1258,7 +1262,7 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 	ENTER_LOG (logbuffer, "eleave");
 	emit_byte (logbuffer, TYPE_EXC_LEAVE | TYPE_METHOD);
 	emit_time (logbuffer, now);
-	emit_method (prof, logbuffer, mono_domain_get (), method);
+	emit_method (prof, logbuffer, method);
 	EXIT_LOG (logbuffer);
 	process_requests (prof);
 }
@@ -1269,7 +1273,7 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji, int resu
 	if (result != MONO_PROFILE_OK)
 		return;
 
-	register_method_local (prof, NULL, method, ji);
+	register_method_local (prof, method, ji);
 }
 
 static void
@@ -1318,7 +1322,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 	emit_time (logbuffer, now);
 	emit_obj (logbuffer, object);
 	if (do_bt)
-		emit_bt (logbuffer, &data);
+		emit_bt (prof, logbuffer, &data);
 	EXIT_LOG (logbuffer);
 	process_requests (prof);
 }
@@ -1334,7 +1338,7 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_
 	emit_time (logbuffer, now);
 	emit_value (logbuffer, clause_type);
 	emit_value (logbuffer, clause_num);
-	emit_method (prof, logbuffer, mono_domain_get (), method);
+	emit_method (prof, logbuffer, method);
 	EXIT_LOG (logbuffer);
 }
 
@@ -1354,7 +1358,7 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 	emit_time (logbuffer, now);
 	emit_obj (logbuffer, object);
 	if (do_bt)
-		emit_bt (logbuffer, &data);
+		emit_bt (profiler, logbuffer, &data);
 	EXIT_LOG (logbuffer);
 	process_requests (profiler);
 }
@@ -1873,10 +1877,9 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf)
 		emit_uvalue (logbuffer, mbt_count);
 		for (i = 0; i < mbt_count; ++i) {
 			MonoMethod *method = (MonoMethod *) sample [i * 4 + 0];
-			MonoDomain *domain = (MonoDomain *) sample [i * 4 + 1];
 			uintptr_t native_offset = sample [i * 4 + 3];
 
-			emit_method (prof, logbuffer, domain, method);
+			emit_method (prof, logbuffer, method);
 			emit_svalue (logbuffer, 0); /* il offset will always be 0 from now on */
 			emit_svalue (logbuffer, native_offset);
 		}
