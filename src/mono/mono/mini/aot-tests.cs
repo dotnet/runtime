@@ -206,4 +206,38 @@ class Tests
 		d.Add ("key1", "banana");
 		return d ["key1"] == "banana" ? 0 : 1;
 	}
+
+	class NullableMethods {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static bool GetHasValue<T>(Nullable<T> value) where T : struct {
+			return value.HasValue;
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static T GetValue<T>(Nullable<T> value) where T : struct {
+			return value.Value;
+		}
+	}
+
+	[Category ("DYNCALL")]
+	public static int test_0_dyncall_nullable () {
+		int? v;
+
+		v = 42;
+		NullableMethods.GetHasValue (v);
+		bool b = (bool)typeof (NullableMethods).GetMethod ("GetHasValue").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { v });
+		if (!b)
+			return 1;
+		v = null;
+		b = (bool)typeof (NullableMethods).GetMethod ("GetHasValue").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { v });
+		if (b)
+			return 2;
+
+		v = 42;
+		NullableMethods.GetValue (v);
+		var res = (int)typeof (NullableMethods).GetMethod ("GetValue").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { v });
+		if (res != 42)
+			return 3;
+		return 0;
+	}
 }

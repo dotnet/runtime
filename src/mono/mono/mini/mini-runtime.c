@@ -2268,7 +2268,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			for (i = 0; i < sig->param_count; ++i) {
 				MonoType *t = sig->params [i];
 
-				if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
 					supported = FALSE;
 			}
 
