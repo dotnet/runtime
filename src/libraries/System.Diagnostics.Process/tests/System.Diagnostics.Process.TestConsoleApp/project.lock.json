@@ -54,6 +54,28 @@
           "lib/any/System.IO.FileSystem.Primitives.dll"
         ]
       },
+      "System.IO.Pipes/4.0.0-beta-22927": {
+        "dependencies": {
+          "System.Runtime": "4.0.20-beta-22927",
+          "System.Runtime.InteropServices": "4.0.20-beta-22927",
+          "System.Resources.ResourceManager": "4.0.0-beta-22927",
+          "System.Runtime.Handles": "4.0.0-beta-22927",
+          "System.Threading.Overlapped": "4.0.0-beta-22927",
+          "System.IO.FileSystem.Primitives": "4.0.0-beta-22927",
+          "System.Security.Principal": "4.0.0-beta-22927",
+          "System.Threading": "4.0.10-beta-22927",
+          "System.Threading.Tasks": "4.0.10-beta-22927",
+          "System.IO": "4.0.10-beta-22927",
+          "System.Threading.ThreadPool": "4.0.10-beta-22927",
+          "System.Runtime.Extensions": "4.0.10-beta-22927"
+        },
+        "compile": [
+          "ref/any/System.IO.Pipes.dll"
+        ],
+        "runtime": [
+          "lib/DNXCore50/System.IO.Pipes.dll"
+        ]
+      },
       "System.Private.Uri/4.0.0-beta-22927": {
         "runtime": [
           "lib/DNXCore50/System.Private.Uri.dll"
@@ -104,6 +126,17 @@
           "lib/DNXCore50/System.Runtime.dll"
         ]
       },
+      "System.Runtime.Extensions/4.0.10-beta-22927": {
+        "dependencies": {
+          "System.Runtime": "4.0.20-beta-22927"
+        },
+        "compile": [
+          "ref/any/System.Runtime.Extensions.dll"
+        ],
+        "runtime": [
+          "lib/DNXCore50/System.Runtime.Extensions.dll"
+        ]
+      },
       "System.Runtime.Handles/4.0.0-beta-22927": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-22927"
@@ -127,6 +160,17 @@
         ],
         "runtime": [
           "lib/DNXCore50/System.Runtime.InteropServices.dll"
+        ]
+      },
+      "System.Security.Principal/4.0.0-beta-22927": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22927"
+        },
+        "compile": [
+          "ref/any/System.Security.Principal.dll"
+        ],
+        "runtime": [
+          "lib/any/System.Security.Principal.dll"
         ]
       },
       "System.Text.Encoding/4.0.10-beta-22927": {
@@ -164,6 +208,18 @@
           "lib/DNXCore50/System.Threading.dll"
         ]
       },
+      "System.Threading.Overlapped/4.0.0-beta-22927": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22927",
+          "System.Runtime.Handles": "4.0.0-beta-22927"
+        },
+        "compile": [
+          "ref/any/System.Threading.Overlapped.dll"
+        ],
+        "runtime": [
+          "lib/DNXCore50/System.Threading.Overlapped.dll"
+        ]
+      },
       "System.Threading.Tasks/4.0.10-beta-22927": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-22927"
@@ -173,6 +229,18 @@
         ],
         "runtime": [
           "lib/DNXCore50/System.Threading.Tasks.dll"
+        ]
+      },
+      "System.Threading.ThreadPool/4.0.10-beta-22927": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-22927",
+          "System.Runtime.InteropServices": "4.0.0-beta-22927"
+        },
+        "compile": [
+          "ref/any/System.Threading.ThreadPool.dll"
+        ],
+        "runtime": [
+          "lib/DNXCore50/System.Threading.ThreadPool.dll"
         ]
       }
     }
@@ -229,6 +297,18 @@
         "lib/net46/System.IO.FileSystem.Primitives.dll",
         "ref/any/System.IO.FileSystem.Primitives.dll",
         "ref/net46/System.IO.FileSystem.Primitives.dll"
+      ]
+    },
+    "System.IO.Pipes/4.0.0-beta-22927": {
+      "sha512": "EqCANNFHv1ueoK0Wfc1iD+4ycDrk63xdDd1xYIQJfblPH3YpbLFoGBFT81jGon9YhEhv49pNN9Uru2ewi/fbuQ==",
+      "files": [
+        "System.IO.Pipes.4.0.0-beta-22927.nupkg",
+        "System.IO.Pipes.4.0.0-beta-22927.nupkg.sha512",
+        "System.IO.Pipes.nuspec",
+        "lib/DNXCore50/System.IO.Pipes.dll",
+        "lib/net46/System.IO.Pipes.dll",
+        "ref/any/System.IO.Pipes.dll",
+        "ref/net46/System.IO.Pipes.dll"
       ]
     },
     "System.Private.Uri/4.0.0-beta-22927": {
@@ -300,6 +380,20 @@
         "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
       ]
     },
+    "System.Runtime.Extensions/4.0.10-beta-22927": {
+      "sha512": "8OW2hPfDCo7ASSLjVvgV7hnOKl67K4EFG/JD/Jjv5zi0rZezneJnYGiPRE4KgXNjsxFmJT8NjPrKSDCWZvb2xw==",
+      "files": [
+        "System.Runtime.Extensions.4.0.10-beta-22927.nupkg",
+        "System.Runtime.Extensions.4.0.10-beta-22927.nupkg.sha512",
+        "System.Runtime.Extensions.nuspec",
+        "lib/DNXCore50/System.Runtime.Extensions.dll",
+        "lib/net46/System.Runtime.Extensions.dll",
+        "lib/netcore50/System.Runtime.Extensions.dll",
+        "ref/any/System.Runtime.Extensions.dll",
+        "ref/net46/System.Runtime.Extensions.dll",
+        "runtimes/win8-aot/lib/netcore50/System.Runtime.Extensions.dll"
+      ]
+    },
     "System.Runtime.Handles/4.0.0-beta-22927": {
       "sha512": "fALM0oSPlQjwxgXZG7K0m3IahgNDXIDT6Rk/VSiovrrRjtHTSe3HxKcRwe0oOYdp0URoT/13TH35J/Bg+fHbKw==",
       "files": [
@@ -326,6 +420,18 @@
         "ref/any/System.Runtime.InteropServices.dll",
         "ref/net46/System.Runtime.InteropServices.dll",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.InteropServices.dll"
+      ]
+    },
+    "System.Security.Principal/4.0.0-beta-22927": {
+      "sha512": "jIUqEIJ7vf5B8ZMZW2app5/wQD2M8XCFbuU8kW63cVVLjdvc3ctLv1rO2jSauXP8+eOeg0PhkvDakKVTrFX1Fw==",
+      "files": [
+        "System.Security.Principal.4.0.0-beta-22927.nupkg",
+        "System.Security.Principal.4.0.0-beta-22927.nupkg.sha512",
+        "System.Security.Principal.nuspec",
+        "lib/any/System.Security.Principal.dll",
+        "lib/net46/System.Security.Principal.dll",
+        "ref/any/System.Security.Principal.dll",
+        "ref/net46/System.Security.Principal.dll"
       ]
     },
     "System.Text.Encoding/4.0.10-beta-22927": {
@@ -370,6 +476,19 @@
         "runtimes/win8-aot/lib/netcore50/System.Threading.dll"
       ]
     },
+    "System.Threading.Overlapped/4.0.0-beta-22927": {
+      "sha512": "Oc4KXDlynLlrdcGkWXFkxx9Cl+WT/EW4Ye1Garefpcqeoxz5QZAj+nSaIF5m9ifBBRZHyGSiUbyrgnyqPDPrdg==",
+      "files": [
+        "System.Threading.Overlapped.4.0.0-beta-22927.nupkg",
+        "System.Threading.Overlapped.4.0.0-beta-22927.nupkg.sha512",
+        "System.Threading.Overlapped.nuspec",
+        "lib/DNXCore50/System.Threading.Overlapped.dll",
+        "lib/net46/System.Threading.Overlapped.dll",
+        "lib/netcore50/System.Threading.Overlapped.dll",
+        "ref/any/System.Threading.Overlapped.dll",
+        "ref/net46/System.Threading.Overlapped.dll"
+      ]
+    },
     "System.Threading.Tasks/4.0.10-beta-22927": {
       "sha512": "SeUpExzifr3zENWz5oMF1M0niHwo8c3xKx3k/p5yBZnvmw7Uxrfgj/Pf5kyD50JB48EdqVJ43IhSml6tOX2ZzA==",
       "files": [
@@ -383,12 +502,25 @@
         "ref/net46/System.Threading.Tasks.dll",
         "runtimes/win8-aot/lib/netcore50/System.Threading.Tasks.dll"
       ]
+    },
+    "System.Threading.ThreadPool/4.0.10-beta-22927": {
+      "sha512": "kq7puy/cjwwktXc5Vyk8bLHyvaLBmWX0bfs2EvYRVoHhA5cYPrG0jpttFd/jOdlQ7EnHo2wxn2HwuqEHBs/Rsw==",
+      "files": [
+        "System.Threading.ThreadPool.4.0.10-beta-22927.nupkg",
+        "System.Threading.ThreadPool.4.0.10-beta-22927.nupkg.sha512",
+        "System.Threading.ThreadPool.nuspec",
+        "lib/DNXCore50/System.Threading.ThreadPool.dll",
+        "lib/net46/System.Threading.ThreadPool.dll",
+        "ref/any/System.Threading.ThreadPool.dll",
+        "ref/net46/System.Threading.ThreadPool.dll"
+      ]
     }
   },
   "projectFileDependencyGroups": {
     "": [
       "System.Console >= 4.0.0-beta-*",
       "System.IO >= 4.0.10-beta-*",
+      "System.IO.Pipes >= 4.0.0-beta-*",
       "System.Runtime >= 4.0.20-beta-*",
       "System.Threading.Tasks >= 4.0.10-beta-*"
     ],
