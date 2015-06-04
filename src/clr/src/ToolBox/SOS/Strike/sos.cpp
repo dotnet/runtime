@@ -80,14 +80,14 @@ namespace sos
         return *this;
     }
 
-    bool Object::TryGetHeader(unsigned long &outHeader) const
+    bool Object::TryGetHeader(ULONG &outHeader) const
     {
         struct ObjectHeader
         {
     #ifdef _WIN64
-            unsigned long    _alignpad;
+            ULONG _alignpad;
     #endif
-            unsigned long  SyncBlockValue;      // the Index and the Bits
+            ULONG SyncBlockValue;      // the Index and the Bits
         };
 
         ObjectHeader header;
@@ -102,9 +102,9 @@ namespace sos
     }
 
 
-    unsigned long Object::GetHeader() const
+    ULONG Object::GetHeader() const
     {
-        unsigned long toReturn = 0;
+        ULONG toReturn = 0;
         if (!TryGetHeader(toReturn))
             sos::Throw<DataRead>("Failed to get header for object %p.", GetAddress());
 
@@ -334,7 +334,7 @@ namespace sos
 
     bool Object::GetThinLock(ThinLockInfo &out) const
     {
-        unsigned long header = GetHeader();
+        ULONG header = GetHeader();
         if (header & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK))
         {
             return false;
