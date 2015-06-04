@@ -1,22 +1,30 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.IO.Compression;
 using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    public partial class GZipStreamTests
+    public class ZLibGZipStreamTests : GZipStreamTests, IDisposable
+    {
+        public ZLibGZipStreamTests() { DeflateStreamTests.SetWorkerMode("zlib"); }
+        public void Dispose() { DeflateStreamTests.SetWorkerMode("unknown"); }
+    }
+
+    public class ManagedGZipStreamTests : GZipStreamTests, IDisposable
+    {
+        public ManagedGZipStreamTests() { DeflateStreamTests.SetWorkerMode("managed"); }
+        public void Dispose() { DeflateStreamTests.SetWorkerMode("unknown"); }
+    }
+
+    public abstract class GZipStreamTests
     {
         static String gzTestFile(String fileName) { return Path.Combine("GZTestData", fileName); }
 
         [Fact]
-        public static void BaseStream1()
+        public void BaseStream1()
         {
             var writeStream = new MemoryStream();
             var zip = new GZipStream(writeStream, CompressionMode.Compress);
@@ -26,7 +34,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static void BaseStream2()
+        public void BaseStream2()
         {
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Decompress);
@@ -36,7 +44,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task ModifyBaseStream()
+        public async Task ModifyBaseStream()
         {
             var ms = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.txt.gz"));
 
@@ -47,7 +55,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static void DecompressCanRead()
+        public void DecompressCanRead()
         {
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Decompress);
@@ -59,7 +67,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static void CompressCanWrite()
+        public void CompressCanWrite()
         {
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Compress);
@@ -70,7 +78,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static void CanDisposeBaseStream()
+        public void CanDisposeBaseStream()
         {
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Compress);
@@ -78,7 +86,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static void CanDisposeGZipStream()
+        public void CanDisposeGZipStream()
         {
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Compress);
@@ -90,7 +98,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task CanReadBaseStreamAfterDispose()
+        public async Task CanReadBaseStreamAfterDispose()
         {
             var ms = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.txt.gz"));
 
@@ -104,7 +112,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task DecompressWorks()
+        public async Task DecompressWorks()
         {
             var compareStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.txt"));
             var gzStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.txt.gz"));
@@ -113,7 +121,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task DecompressWorksWithDoc()
+        public async Task DecompressWorksWithDoc()
         {
             var compareStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.doc"));
             var gzStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.doc.gz"));
@@ -122,7 +130,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task DecompressWorksWithDocx()
+        public async Task DecompressWorksWithDocx()
         {
             var compareStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.docx"));
             var gzStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.docx.gz"));
@@ -131,7 +139,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task DecompressWorksWithPdf()
+        public async Task DecompressWorksWithPdf()
         {
             var compareStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.pdf"));
             var gzStream = await LocalMemoryStream.readAppFileAsync(gzTestFile("GZTestDocument.pdf.gz"));
@@ -173,8 +181,9 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(compareArray[i], writtenArray[i]);
             }
         }
+
         [Fact]
-        public static void NullBaseStreamThrows()
+        public void NullBaseStreamThrows()
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
@@ -186,8 +195,9 @@ namespace System.IO.Compression.Tests
                 var deflate = new GZipStream(null, CompressionMode.Compress);
             });
         }
+
         [Fact]
-        public static void DisposedBaseStreamThrows()
+        public void DisposedBaseStreamThrows()
         {
             var ms = new MemoryStream();
             ms.Dispose();
@@ -201,8 +211,9 @@ namespace System.IO.Compression.Tests
                 var deflate = new GZipStream(ms, CompressionMode.Compress);
             });
         }
+
         [Fact]
-        public static void ReadOnlyStreamThrowsOnCompress()
+        public void ReadOnlyStreamThrowsOnCompress()
         {
             var ms = new LocalMemoryStream();
             ms.SetCanWrite(false);
@@ -212,8 +223,9 @@ namespace System.IO.Compression.Tests
                 var gzip = new GZipStream(ms, CompressionMode.Compress);
             });
         }
+
         [Fact]
-        public static void WriteOnlyStreamThrowsOnDecompress()
+        public void WriteOnlyStreamThrowsOnDecompress()
         {
             var ms = new LocalMemoryStream();
             ms.SetCanRead(false);
@@ -223,8 +235,9 @@ namespace System.IO.Compression.Tests
                 var gzip = new GZipStream(ms, CompressionMode.Decompress);
             });
         }
+
         [Fact]
-        public static void TestCtors()
+        public void TestCtors()
         {
             CompressionLevel[] legalValues = new CompressionLevel[] { CompressionLevel.Optimal, CompressionLevel.Fastest, CompressionLevel.NoCompression };
 
@@ -238,23 +251,26 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
         [Fact]
-        public static void TestLevelOptimial()
+        public void TestLevelOptimial()
         {
             TestCtor(CompressionLevel.Optimal);
         }
+
         [Fact]
-        public static void TestLevelNoCompression()
+        public void TestLevelNoCompression()
         {
             TestCtor(CompressionLevel.NoCompression);
         }
+
         [Fact]
-        public static void TestLevelFastest()
+        public void TestLevelFastest()
         {
             TestCtor(CompressionLevel.Fastest);
         }
 
-        public static void TestCtor(CompressionLevel level, bool? leaveOpen = null)
+        private static void TestCtor(CompressionLevel level, bool? leaveOpen = null)
         {
             //Create the GZipStream
             int _bufferSize = 1024;
@@ -306,7 +322,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static async Task Flush()
+        public async Task Flush()
         {
             var ms = new MemoryStream();
             var ds = new GZipStream(ms, CompressionMode.Compress);
@@ -315,18 +331,19 @@ namespace System.IO.Compression.Tests
 
             // Just ensuring Flush doesn't throw
         }
+
         [Fact]
-        public static void FlushFailsAfterDispose()
+        public void FlushFailsAfterDispose()
         {
             var ms = new MemoryStream();
             var ds = new GZipStream(ms, CompressionMode.Compress);
             ds.Dispose();
             Assert.Throws<ObjectDisposedException>(() => { ds.Flush(); });
         }
-        [Fact]
-        public static async Task FlushAsyncFailsAfterDispose()
-        {
 
+        [Fact]
+        public async Task FlushAsyncFailsAfterDispose()
+        {
             var ms = new MemoryStream();
             var ds = new GZipStream(ms, CompressionMode.Compress);
             ds.Dispose();
@@ -337,7 +354,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public static void TestSeekMethodsDecompress()
+        public void TestSeekMethodsDecompress()
         {
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Decompress);
@@ -351,8 +368,9 @@ namespace System.IO.Compression.Tests
             //Should we try all the enums? doesn't seem necessary
             Assert.Throws<NotSupportedException>(delegate { zip.Seek(100L, SeekOrigin.Begin); });
         }
+
         [Fact]
-        public static void TestSeekMethodsCompress()
+        public void TestSeekMethodsCompress()
         {
             var ms = new MemoryStream();
             var zip = new GZipStream(ms, CompressionMode.Compress);
