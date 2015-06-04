@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Xml.Linq;
@@ -1114,12 +1115,19 @@ public class XmlSerializerTests
     [Fact]
     public static void Xml_TypeWithNonPublicDefaultConstructor()
     {
-        System.Reflection.TypeInfo ti = System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(TypeWithNonPublicDefaultConstructor));
+        TypeInfo ti = IntrospectionExtensions.GetTypeInfo(typeof(TypeWithNonPublicDefaultConstructor));
         TypeWithNonPublicDefaultConstructor value = null;
         value = (TypeWithNonPublicDefaultConstructor)FindDefaultConstructor(ti).Invoke(null);
         Assert.StrictEqual("Mr. FooName", value.Name);
-        var actual = SerializeAndDeserialize<TypeWithNonPublicDefaultConstructor>(value, "<?xml version=\"1.0\"?>\r\n<TypeWithNonPublicDefaultConstructor xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Name>Mr. FooName</Name>\r\n</TypeWithNonPublicDefaultConstructor>");
+        var actual = SerializeAndDeserialize(value, "<?xml version=\"1.0\"?>" + Environment.NewLine + "<TypeWithNonPublicDefaultConstructor xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">" + Environment.NewLine + "  <Name>Mr. FooName</Name>" + Environment.NewLine + "</TypeWithNonPublicDefaultConstructor>");
         Assert.StrictEqual(value.Name, actual.Name);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithNonParameterlessConstructor()
+    {
+        var obj = new TypeWithNonParameterlessConstructor("string value");
+        Assert.Throws<InvalidOperationException>(() => { SerializeAndDeserialize(obj, string.Empty); });
     }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null)
