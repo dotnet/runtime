@@ -458,6 +458,11 @@ if POWERPC
 PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
 endif
 
+if POWERPC64
+# These tests hang
+PLATFORM_DISABLED_TESTS=monitor.exe finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
+endif
+
 if ARM
 PLATFORM_DISABLED_TESTS=filter-stack.exe
 endif
