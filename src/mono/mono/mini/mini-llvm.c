@@ -2709,7 +2709,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		emit_dbg_loc (ctx, builder, ins->cil_code);
 
 		nins ++;
-		if (nins > 5000 && builder == starting_builder) {
+		if (nins > 3000 && builder == starting_builder) {
 			/* some steps in llc are non-linear in the size of basic blocks, see #5714 */
 			LLVM_FAILURE (ctx, "basic block too long");
 		}
