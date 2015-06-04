@@ -442,8 +442,8 @@ typedef long time_t;
 #define PAL_INITIALIZE_SYNC_THREAD     0x01
 #define PAL_INITIALIZE_SIGNAL_THREAD   0x02
 
-// PAL_Initialize() flags - do not initialize signal thread (used for ctrl-c handling) for now
-#define PAL_INITIALIZE                 PAL_INITIALIZE_SYNC_THREAD     
+// PAL_Initialize() flags
+#define PAL_INITIALIZE                 PAL_INITIALIZE_SYNC_THREAD | PAL_INITIALIZE_SIGNAL_THREAD
 
 // PAL_InitializeDLL() flags - don't start any of the helper threads
 #define PAL_INITIALIZE_DLL             PAL_INITIALIZE_NONE       
