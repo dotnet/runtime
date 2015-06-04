@@ -24,7 +24,7 @@ Abstract:
 #ifdef __cplusplus
 
 #ifndef AtlThrow
-#define AtlThrow(a) RaiseException(STATUS_NO_MEMORY,EXCEPTION_NONCONTINUABLE,0,NULL); 
+#define AtlThrow(a) RaiseException(STATUS_NO_MEMORY,EXCEPTION_NONCONTINUABLE,0,nullptr); 
 #endif
 #ifndef ATLASSERT
 #define ATLASSERT(a) _ASSERTE(a)
@@ -39,38 +39,38 @@ public:
     BSTR m_str;
     CComBSTR()
     {
-        m_str = NULL;
+        m_str = nullptr;
     }
     CComBSTR(int nSize)
     {
         if (nSize == 0)
-            m_str = NULL;
+            m_str = nullptr;
         else
         {
-            m_str = ::SysAllocStringLen(NULL, nSize);
-            if (m_str == NULL)
+            m_str = ::SysAllocStringLen(nullptr, nSize);
+            if (m_str == nullptr)
                 AtlThrow(E_OUTOFMEMORY);
         }
     }
     CComBSTR(int nSize, LPCOLESTR sz)
     {
         if (nSize == 0)
-            m_str = NULL;
+            m_str = nullptr;
         else
         {
             m_str = ::SysAllocStringLen(sz, nSize);
-            if (m_str == NULL)
+            if (m_str == nullptr)
                 AtlThrow(E_OUTOFMEMORY);
         }
     }
     CComBSTR(LPCOLESTR pSrc)
     {
-        if (pSrc == NULL)
-            m_str = NULL;
+        if (pSrc == nullptr)
+            m_str = nullptr;
         else
         {
             m_str = ::SysAllocString(pSrc);
-            if (m_str == NULL)
+            if (m_str == nullptr)
                 AtlThrow(E_OUTOFMEMORY);
         }
     }
@@ -78,7 +78,7 @@ public:
     CComBSTR(const CComBSTR& src)
     {
         m_str = src.Copy();
-        if (!!src && m_str == NULL)
+        if (!!src && m_str == nullptr)
             AtlThrow(E_OUTOFMEMORY);
 
     }
@@ -89,7 +89,7 @@ public:
         {
             ::SysFreeString(m_str);
             m_str = src.Copy();
-            if (!!src && m_str == NULL)
+            if (!!src && m_str == nullptr)
                 AtlThrow(E_OUTOFMEMORY);
         }
         return *this;
@@ -100,14 +100,14 @@ public:
         if (pSrc != m_str)
         {
             ::SysFreeString(m_str);
-            if (pSrc != NULL)
+            if (pSrc != nullptr)
             {
                 m_str = ::SysAllocString(pSrc);
-                if (m_str == NULL)
+                if (m_str == nullptr)
                     AtlThrow(E_OUTOFMEMORY);
             }
             else
-                m_str = NULL;
+                m_str = nullptr;
         }
         return *this;
     }
@@ -118,11 +118,11 @@ public:
     }
     unsigned int ByteLength() const
     {
-        return (m_str == NULL)? 0 : SysStringByteLen(m_str);
+        return (m_str == nullptr)? 0 : SysStringByteLen(m_str);
     }
     unsigned int Length() const
     {
-        return (m_str == NULL)? 0 : SysStringLen(m_str);
+        return (m_str == nullptr)? 0 : SysStringLen(m_str);
     }
     operator BSTR() const
     {
@@ -134,30 +134,30 @@ public:
     }
     BSTR Copy() const
     {
-        if (m_str == NULL)
-            return NULL;
+        if (m_str == nullptr)
+            return nullptr;
         return ::SysAllocStringLen(m_str, SysStringLen(m_str));
     }
     HRESULT CopyTo(BSTR* pbstr)
     {
-        ATLASSERT(pbstr != NULL);
-        if (pbstr == NULL)
+        ATLASSERT(pbstr != nullptr);
+        if (pbstr == nullptr)
             return E_POINTER;
         *pbstr = Copy();
-        if ((*pbstr == NULL) && (m_str != NULL))
+        if ((*pbstr == nullptr) && (m_str != nullptr))
             return E_OUTOFMEMORY;
         return S_OK;
     }
     // copy BSTR to VARIANT
     HRESULT CopyTo(VARIANT *pvarDest)
     {
-        ATLASSERT(pvarDest != NULL);
+        ATLASSERT(pvarDest != nullptr);
         HRESULT hRes = E_POINTER;
-        if (pvarDest != NULL)
+        if (pvarDest != nullptr)
         {
             V_VT (pvarDest) = VT_BSTR;
             V_BSTR (pvarDest) = Copy();
-            if (V_BSTR (pvarDest) == NULL && m_str != NULL)
+            if (V_BSTR (pvarDest) == nullptr && m_str != nullptr)
                 hRes = E_OUTOFMEMORY;
             else
                 hRes = S_OK;
@@ -176,13 +176,13 @@ public:
     BSTR Detach()
     {
         BSTR s = m_str;
-        m_str = NULL;
+        m_str = nullptr;
         return s;
     }
     void Empty()
     {
         ::SysFreeString(m_str);
-        m_str = NULL;
+        m_str = nullptr;
     }
     HRESULT Append(LPCOLESTR lpsz)
     {
@@ -191,7 +191,7 @@ public:
 
     HRESULT Append(LPCOLESTR lpsz, int nLen)
     {
-        if (lpsz == NULL || (m_str != NULL && nLen == 0))
+        if (lpsz == nullptr || (m_str != nullptr && nLen == 0))
             return S_OK;
         if (nLen < 0)
             return E_INVALIDARG;
@@ -203,12 +203,12 @@ public:
             return E_INVALIDARG;
         
         BSTR b;
-        b = ::SysAllocStringLen(NULL, newSize);
-        if (b == NULL)
+        b = ::SysAllocStringLen(nullptr, newSize);
+        if (b == nullptr)
             return E_OUTOFMEMORY;
         memcpy(b, m_str, n1*sizeof(OLECHAR));
         memcpy(b+n1, lpsz, nLen*sizeof(OLECHAR));
-        b[n1+nLen] = NULL;
+        b[n1+nLen] = 0;
         SysFreeString(m_str);
         m_str = b;
         return S_OK;
@@ -220,14 +220,14 @@ public:
         if (m_str != bstrSrc)
         {
             ::SysFreeString(m_str);
-            if (bstrSrc != NULL)
+            if (bstrSrc != nullptr)
             {
                 m_str = SysAllocStringLen(bstrSrc, SysStringLen(bstrSrc));
-                if (m_str == NULL)
+                if (m_str == nullptr)
                     hr = E_OUTOFMEMORY; 
             }
             else
-                m_str = NULL;
+                m_str = nullptr;
         }
         
         return hr;
@@ -236,13 +236,13 @@ public:
     bool LoadString(HSATELLITE hInst, UINT nID)
     {
         ::SysFreeString(m_str);
-        m_str = NULL;
+        m_str = nullptr;
         WCHAR SatelliteString[MAX_SATELLITESTRING];
         if (PAL_LoadSatelliteStringW(hInst, nID, SatelliteString, MAX_SATELLITESTRING))
         {
             m_str = SysAllocString(SatelliteString);
         }
-        return m_str != NULL;
+        return m_str != nullptr;
     }
 
     bool LoadString(PVOID hInst, UINT nID)
