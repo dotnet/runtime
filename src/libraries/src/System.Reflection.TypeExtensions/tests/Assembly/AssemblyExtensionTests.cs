@@ -23,7 +23,7 @@ namespace System.Reflection.Compatibility.UnitTests.AssemblyTests
         public void GetModulesTest()
         {
             Assembly executingAssembly = this.GetType().GetTypeInfo().Assembly;
-            Assert.True(executingAssembly.GetModules().Length == 1);
+            Assert.Equal(1, executingAssembly.GetModules().Length);
         }
 
         [Fact]
