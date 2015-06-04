@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Reflection.Emit.ILGeneration.Tests</AssemblyName>
+    <RootNamespace>System.Reflection.Emit.ILGeneration.Tests</RootNamespace>
+    <ProjectGuid>{FB037640-0591-4DF4-A331-0BEFE50A200B}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor1.cs" />
+    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor2.cs" />
+    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor3.cs" />
+    <Compile Include="CustomAttributeBuilder\CustomAttributeBuilderCtor4.cs" />
+    <Compile Include="Generator.cs" />
+    <Compile Include="ILGenerator\ILGeneratorDeclareLocal.cs" />
+    <Compile Include="ILGenerator\ILGeneratorDeclareLocal1.cs" />
+    <Compile Include="ILGenerator\ILGeneratorDefineLabel.cs" />
+    <Compile Include="ILGenerator\ILGeneratorEmit1.cs" />
+    <Compile Include="ILGenerator\ILGeneratorEmit2.cs" />
+    <Compile Include="ILGenerator\ILGeneratorEmit3.cs" />
+    <Compile Include="ILGenerator\ILGeneratorEmitWriteLine.cs" />
+    <Compile Include="Label\LabelEquals1.cs" />
+    <Compile Include="Label\LabelGetHashCode.cs" />
+    <Compile Include="LocalBuilder\LocalBuilderIsPinned.cs" />
+    <Compile Include="LocalBuilder\LocalBuilderLocalIndex.cs" />
+    <Compile Include="LocalBuilder\LocalBuilderLocalType.cs" />
+    <Compile Include="ParameterBuilder\SetConstant.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperAddArgument1.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperAddArgument2.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperAddArgument3.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperAddArguments.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperEquals.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetFieldSigHelper.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetHashCode.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetLocalVarSigHelper1.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetLocalVarSigHelper2.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper1.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper2.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetMethodSigHelper4.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetPropertySigHelper1.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetPropertySigHelper2.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperGetSignature.cs" />
+    <Compile Include="SignatureHelper\SignatureHelperToString.cs" />
+    <Compile Include="Utilities.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
