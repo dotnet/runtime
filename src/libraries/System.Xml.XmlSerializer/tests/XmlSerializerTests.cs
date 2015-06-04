@@ -1111,6 +1111,17 @@ public class XmlSerializerTests
         Assert.StrictEqual(value.IntValue, actual.IntValue);
     }
 
+    [Fact]
+    public static void Xml_TypeWithNonPublicDefaultConstructor()
+    {
+        System.Reflection.TypeInfo ti = System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(TypeWithNonPublicDefaultConstructor));
+        TypeWithNonPublicDefaultConstructor value = null;
+        value = (TypeWithNonPublicDefaultConstructor)FindDefaultConstructor(ti).Invoke(null);
+        Assert.StrictEqual("Mr. FooName", value.Name);
+        var actual = SerializeAndDeserialize<TypeWithNonPublicDefaultConstructor>(value, "<?xml version=\"1.0\"?>\r\n<TypeWithNonPublicDefaultConstructor xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Name>Mr. FooName</Name>\r\n</TypeWithNonPublicDefaultConstructor>");
+        Assert.StrictEqual(value.Name, actual.Name);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null)
     {
         XmlSerializer serializer = new XmlSerializer(typeof(T));
