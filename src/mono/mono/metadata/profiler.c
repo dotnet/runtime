@@ -3,6 +3,7 @@
  *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
+ *   Alex Rønne Petersen (alexrp@xamarin.com)
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
