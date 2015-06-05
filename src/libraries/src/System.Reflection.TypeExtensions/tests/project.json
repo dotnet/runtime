@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "System.Collections": "4.0.10-beta-*",
     "System.Diagnostics.Debug": "4.0.10-beta-*",
     "System.Linq": "4.0.0-beta-*",
     "System.Reflection": "4.0.10-beta-*",
