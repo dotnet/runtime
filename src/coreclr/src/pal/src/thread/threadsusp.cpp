@@ -1299,8 +1299,6 @@ CThreadSuspensionInfo::InitializeSignalSets()
     // Note that SIGPROF is used by the BSD thread scheduler and masking it caused a 
     // significant reduction in performance.
     sigaddset(&smDefaultmask, SIGHUP);  
-    sigaddset(&smDefaultmask, SIGINT);
-    sigaddset(&smDefaultmask, SIGQUIT); 
     sigaddset(&smDefaultmask, SIGABRT); 
 #ifdef SIGEMT
     sigaddset(&smDefaultmask, SIGEMT); 
