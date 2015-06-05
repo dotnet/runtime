@@ -15,7 +15,7 @@
     <ProjectFile Include="snskipverf\snskipverf.nativeproj" />
     <ProjectFile Include="sandboxhelper\dirs.proj" />
     <ProjectFile Include="release\release.proj" />
-    <ProjectFile Include="uwp\dirs.proj" Condition="'$(_BuildArch)'!='arm64'" />
+    <ProjectFile Include="uwp\dirs.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(FeatureCoreSystem)' == 'true'">
