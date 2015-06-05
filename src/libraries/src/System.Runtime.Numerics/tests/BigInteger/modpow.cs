@@ -17,10 +17,6 @@ namespace System.Numerics.Tests
             BigInteger result;
             bool b = BigInteger.TryParse("22", out result);
 
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
-
             // ModPow Method - with small numbers - valid
             for (int i = 1; i <= 1; i++)//-2
             {
@@ -40,9 +36,9 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPowNegative()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
+            byte[] tempByteArray3;
 
 
             // ModPow Method - with small numbers - invalid - zero modulus
@@ -102,9 +98,9 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPow3SmallInt()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
+            byte[] tempByteArray3;
             
             // ModPow Method - Three Small BigIntegers
             for (int i = 0; i < s_samples; i++)
@@ -119,9 +115,9 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPow1Large2SmallInt()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
+            byte[] tempByteArray3;
 
             // ModPow Method - One large and two small BigIntegers
             for (int i = 0; i < s_samples; i++)
@@ -144,11 +140,18 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void ModPow1Large2SmallInt_Threshold()
+        {
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold("ReducerThreshold", 8, ModPow1Large2SmallInt);
+        }
+
+        [Fact]
         public static void ModPow2Large1SmallInt()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
+            byte[] tempByteArray3;
 
             // ModPow Method - Two large and one small BigIntegers
             for (int i = 0; i < s_samples; i++)
@@ -161,11 +164,43 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void ModPow2Large1SmallInt_Threshold()
+        {
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold("ReducerThreshold", 8, ModPow2Large1SmallInt);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void ModPow3LargeInt()
+        {
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
+            byte[] tempByteArray3;
+
+            // ModPow Method - Three large BigIntegers
+            for (int i = 0; i < s_samples; i++)
+            {
+                tempByteArray1 = GetRandomByteArray(s_random);
+                tempByteArray2 = GetRandomPosByteArray(s_random);
+                tempByteArray3 = GetRandomByteArray(s_random);
+                VerifyModPowString(Print(tempByteArray3) + Print(tempByteArray2) + Print(tempByteArray1) + "tModPow");
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void ModPow3LargeInt_Threshold()
+        {
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold("ReducerThreshold", 8, ModPow3LargeInt);
+        }
+
+        [Fact]
         public static void ModPow0Power()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
             
             // ModPow Method - zero power
             for (int i = 0; i < s_samples; i++)
@@ -191,9 +226,8 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPow0Base()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
             
             // ModPow Method - zero base
             for (int i = 0; i < s_samples; i++)
@@ -219,9 +253,9 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPowAxiom()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
+            byte[] tempByteArray1;
+            byte[] tempByteArray2;
+            byte[] tempByteArray3;
             
             // Axiom (x^y)%z = modpow(x,y,z)
             for (int i = 0; i < s_samples; i++)
@@ -239,10 +273,6 @@ namespace System.Numerics.Tests
         [Fact]
         public static void ModPowBoundary()
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            byte[] tempByteArray3 = new byte[0];
-
             // Check interesting cases for boundary conditions
             // You'll either be shifting a 0 or 1 across the boundary
             // 32 bit boundary  n2=0

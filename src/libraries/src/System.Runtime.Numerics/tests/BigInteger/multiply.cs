@@ -35,6 +35,14 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunMultiply_TwoLargeBigIntegers_Threshold()
+        {
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold("SquareThreshold", 8, RunMultiply_TwoLargeBigIntegers);
+            BigIntTools.Utils.RunWithFakeThreshold("MultiplyThreshold", 8, RunMultiply_TwoLargeBigIntegers);
+        }
+
+        [Fact]
         public static void RunMultiply_TwoSmallBigIntegers()
         {
             Random random = new Random(s_seed);
