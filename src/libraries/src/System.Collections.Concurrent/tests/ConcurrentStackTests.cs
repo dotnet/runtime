@@ -12,41 +12,6 @@ namespace System.Collections.Concurrent.Tests
     public class ConcurrentStackTests
     {
         [Fact]
-        public static void TestBasicScenarios()
-        {
-            ConcurrentStack<int> cs = new ConcurrentStack<int>();
-            cs.Push(1);
-
-            Task[] tks = new Task[2];
-            tks[0] = Task.Run(() =>
-            {
-                cs.Push(2);
-                cs.Push(3);
-                cs.Push(4);
-            });
-
-            tks[1] = Task.Run(() =>
-            {
-                int item1, item2;
-                var ret1 = cs.TryPop(out item1);
-                // at least one item
-                Assert.True(ret1);
-                var ret2 = cs.TryPop(out item2);
-                // two item
-                if (ret2)
-                {
-                    Assert.True(item1 > item2, String.Format("{0} should greater than {1}", item1, item2));
-                }
-                else // one item
-                {
-                    Assert.Equal(1, item1);
-                }
-            });
-
-            Task.WaitAll(tks);
-        }
-
-        [Fact]
         public static void Test0_Empty()
         {
             ConcurrentStack<int> s = new ConcurrentStack<int>();
