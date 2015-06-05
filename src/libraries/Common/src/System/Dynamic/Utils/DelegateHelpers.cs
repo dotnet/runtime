@@ -10,7 +10,7 @@ using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 using System.Reflection;
 
-#if FEATURE_REFEMIT
+#if !FEATURE_DYNAMIC_DELEGATE
 using System.Reflection.Emit;
 #endif
 
@@ -29,7 +29,7 @@ namespace System.Dynamic.Utils
 
         internal static Delegate CreateObjectArrayDelegate(Type delegateType, System.Func<object[], object> handler)
         {
-#if FEATURE_REFEMIT
+#if !FEATURE_DYNAMIC_DELEGATE
             return CreateObjectArrayDelegateRefEmit(delegateType, handler);
 #else
             return Internal.Runtime.Augments.DynamicDelegateAugments.CreateObjectArrayDelegate(delegateType, handler);
@@ -37,7 +37,7 @@ namespace System.Dynamic.Utils
         }
 
 
-#if FEATURE_REFEMIT
+#if !FEATURE_DYNAMIC_DELEGATE
 
         // We will generate the following code:
         //  
@@ -157,7 +157,7 @@ namespace System.Dynamic.Utils
             return (t.IsPointer) ? typeof(IntPtr) : t;
         }
 
-#endif // FEATURE_REFEMIT
+#endif
 
     }
 }
