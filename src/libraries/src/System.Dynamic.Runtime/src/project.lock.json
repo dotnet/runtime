@@ -172,6 +172,20 @@
           "lib/DNXCore50/System.Reflection.Emit.ILGeneration.dll"
         ]
       },
+      "System.Reflection.Emit.Lightweight/4.0.0-beta-23008": {
+        "dependencies": {
+          "System.Reflection": "4.0.0-beta-23008",
+          "System.Reflection.Primitives": "4.0.0-beta-23008",
+          "System.Runtime": "4.0.0-beta-23008",
+          "System.Reflection.Emit.ILGeneration": "4.0.0-beta-23008"
+        },
+        "compile": [
+          "ref/any/System.Reflection.Emit.Lightweight.dll"
+        ],
+        "runtime": [
+          "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll"
+        ]
+      },
       "System.Reflection.Extensions/4.0.0-beta-23008": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-23008",
@@ -461,6 +475,19 @@
         "ref/net45/_._"
       ]
     },
+    "System.Reflection.Emit.Lightweight/4.0.0-beta-23008": {
+      "sha512": "A+ftyIU9ZtHd9FC74eZNuT7UJynSR50noEmVAhuDKn0a0CFlEznEO9u34qPD4egQFZ2FMfCqhGzQ/gvO/V18xg==",
+      "files": [
+        "System.Reflection.Emit.Lightweight.4.0.0-beta-23008.nupkg",
+        "System.Reflection.Emit.Lightweight.4.0.0-beta-23008.nupkg.sha512",
+        "System.Reflection.Emit.Lightweight.nuspec",
+        "lib/DNXCore50/System.Reflection.Emit.Lightweight.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Reflection.Emit.Lightweight.dll",
+        "ref/any/System.Reflection.Emit.Lightweight.dll",
+        "ref/net45/_._"
+      ]
+    },
     "System.Reflection.Extensions/4.0.0-beta-23008": {
       "sha512": "btrHhR/58LNjwl0OTjWKj4+gYffoNcl/E5V+x1piHFNIvnf7EzLwTkhJ74QnqlycICHz3ZqHmdUT3OsfmcPRSA==",
       "files": [
@@ -608,6 +635,7 @@
       "System.Reflection >= 4.0.10-beta-*",
       "System.Reflection.Emit >= 4.0.0-beta-*",
       "System.Reflection.Emit.ILGeneration >= 4.0.0-beta-*",
+      "System.Reflection.Emit.Lightweight >= 4.0.0-beta-*",
       "System.Reflection.Primitives >= 4.0.0-beta-*",
       "System.Reflection.TypeExtensions >= 4.0.0-beta-*",
       "System.Resources.ResourceManager >= 4.0.0-beta-*",
