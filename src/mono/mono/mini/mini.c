@@ -3047,7 +3047,7 @@ static void
 mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 {
 	MonoInst *poll_addr, *ins;
-	if (cfg->verbose_level)
+	if (cfg->verbose_level > 1)
 		printf ("ADDING SAFE POINT TO BB %d\n", bblock->block_num);
 
 #if defined(__native_client_codegen__)
@@ -3062,9 +3062,16 @@ mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 	 if (bblock->flags & BB_EXCEPTION_HANDLER) {
 		MonoInst *eh_op = bblock->code;
 
-		// we only skip the ops that start EH blocks.
-		if (eh_op && eh_op->opcode != OP_START_HANDLER && eh_op->opcode != OP_GET_EX_OBJ)
+		if (eh_op && eh_op->opcode != OP_START_HANDLER && eh_op->opcode != OP_GET_EX_OBJ) {
 			eh_op = NULL;
+		} else {
+			MonoInst *next_eh_op = eh_op ? eh_op->next : NULL;
+			// skip all EH relateds ops
+			while (next_eh_op && (next_eh_op->opcode == OP_START_HANDLER || next_eh_op->opcode == OP_GET_EX_OBJ)) {
+				eh_op = next_eh_op;
+				next_eh_op = eh_op->next;
+			}
+		}
 
 		mono_bblock_insert_after_ins (bblock, eh_op, poll_addr);
 		mono_bblock_insert_after_ins (bblock, poll_addr, ins);
@@ -3092,13 +3099,19 @@ mono_insert_safepoints (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
 
-	if (cfg->verbose_level)
+	if (cfg->verbose_level > 1)
 		printf ("INSERTING SAFEPOINTS\n");
+	if (cfg->verbose_level > 2)
+		mono_print_code (cfg, "BEFORE SAFEPOINTS");
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		if (bb->loop_body_start || bb == cfg->bb_entry || bb->flags & BB_EXCEPTION_HANDLER)
 			mono_create_gc_safepoint (cfg, bb);
 	}
+
+	if (cfg->verbose_level > 2)
+		mono_print_code (cfg, "AFTER SAFEPOINTS");
+
 }
 
 #else
