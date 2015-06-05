@@ -24,11 +24,8 @@ namespace System.Numerics
             return bits;
         }
 
-#if DEBUG
-        private const int SquareThreshold = 8;
-#else
-        private const int SquareThreshold = 32;
-#endif
+        // Mutable for unit testing...
+        private static int SquareThreshold = 32;
 
         [SecuritySafeCritical]
         private unsafe static void Square(uint* value, int valueLength,
@@ -181,11 +178,8 @@ namespace System.Numerics
             return bits;
         }
 
-#if DEBUG
-        private const int MultiplyThreshold = 8;
-#else
-        private const int MultiplyThreshold = 32;
-#endif
+        // Mutable for unit testing...
+        private static int MultiplyThreshold = 32;
 
         [SecuritySafeCritical]
         private unsafe static void Multiply(uint* left, int leftLength,
