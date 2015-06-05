@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -38,7 +39,14 @@ namespace CoreclrTestLib
                     {
                         if (e.Data == null)
                         {
-                            outputWaitHandle.Set();
+                            try
+                            {
+                                outputWaitHandle.Set();
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                // Noop for access after timeout.
+                            }
                         }
                         else
                         {
@@ -49,7 +57,14 @@ namespace CoreclrTestLib
                     {
                         if (e.Data == null)
                         {
-                            errorWaitHandle.Set();
+                            try
+                            {
+                                errorWaitHandle.Set();
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                // Noop for access after timeout.
+                            }
                         }
                         else
                         {
