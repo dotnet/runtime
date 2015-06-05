@@ -264,14 +264,18 @@ CMiniMdRW::ApplyDelta(
         return E_INVALIDARG;
     }
     
+#ifndef FEATURE_CORECLR    
     // Verify that the delta is based on the base.
     IfFailGo(mdDelta.getEncBaseIdOfModule(pModDelta, &GuidDelta));
     IfFailGo(getEncBaseIdOfModule(pModBase,&GuidBase));
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_DeltaCheck) && (GuidDelta != GuidBase))
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_DeltaCheck) && 
+        CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_UseMinimalDeltas) &&
+        (GuidDelta != GuidBase))
     {
         _ASSERTE(!"The Delta MetaData is based on a different generation than the current MetaData.");
         return E_INVALIDARG;
     }
+#endif //!FEATURE_CORECLR    
     
     // Let the other md prepare for sparse records.
     IfFailGo(mdDelta.StartENCMap());
