@@ -71,9 +71,12 @@ class X
 		Test (i => ProbeArray (new int [int.MaxValue - i]));
 		Test (i => ProbeArray (new int [int.MaxValue - i * 100]));
 
+		// FIXME: This commit 4gb of memory
+		/*
 		Console.WriteLine ("strings");
 		Test (i => ProbeString ("abcd".PadRight(int.MaxValue - i)));
 		Test (i => ProbeString ("abcd".PadRight(int.MaxValue - i * 100)));
+		*/
 
 		//Console.WriteLine ("no objects allocated - all good");
 		return 0;
