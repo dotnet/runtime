@@ -136,6 +136,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
       <Link>Common\Interop\Unix\Interop.GetFileInformation.cs"</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.SetConsoleCtrlHandler.cs">
+      <Link>Common\Interop\Unix\Interop.SetConsoleCtrlHandler.cs"</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
