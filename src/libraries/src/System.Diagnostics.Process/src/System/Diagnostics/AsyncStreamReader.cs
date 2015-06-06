@@ -69,8 +69,7 @@ namespace System.Diagnostics
             if (_sb == null)
             {
                 _sb = new StringBuilder(DefaultBufferSize);
-                _readToBufferTask = Task.Factory.StartNew(s => ((AsyncStreamReader)s).ReadBuffer(),
-                    this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+                _readToBufferTask = Task.Run((Func<Task>)ReadBufferAsync);
             }
             else
             {
@@ -84,7 +83,7 @@ namespace System.Diagnostics
         }
 
         // This is the async callback function. Only one thread could/should call this.
-        private async Task ReadBuffer()
+        private async Task ReadBufferAsync()
         {
             while (true)
             {
