@@ -3158,6 +3158,8 @@ DECLARE_API(DumpPermissionSet)
 void GCPrintGenerationInfo(DacpGcHeapDetails &heap);
 void GCPrintSegmentInfo(DacpGcHeapDetails &heap, DWORD_PTR &total_size);
 
+#endif // FEATURE_PAL
+
 void DisplayInvalidStructuresMessage()
 {
     ExtOut("The garbage collector data structures are not in a valid state for traversal.\n");
@@ -3167,6 +3169,8 @@ void DisplayInvalidStructuresMessage()
     ExtOut("work properly. !dumpheap and !verifyheap may incorrectly complain of heap \n");
     ExtOut("consistency errors.\n");
 }
+
+#ifndef FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -3579,6 +3583,8 @@ namespace sos
     };
 }
 
+#endif // FEATURE_PAL
+
 class DumpHeapImpl
 {
 public:
@@ -3711,7 +3717,7 @@ public:
                 {
                     // Does the object header point to this syncblock index?
                     sos::Object obj = itr->GetObject();
-                    unsigned long header = 0;
+                    ULONG header = 0;
 
                     if (!obj.TryGetHeader(header))
                     {
@@ -3724,8 +3730,8 @@ public:
                         bool valid = false;
                         if ((header & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0 && (header & BIT_SBLK_IS_HASHCODE) == 0)
                         {
-                            unsigned long index = header & MASK_SYNCBLOCKINDEX;
-                            valid = (unsigned long)itr->GetIndex() == index;
+                            ULONG index = header & MASK_SYNCBLOCKINDEX;
+                            valid = (ULONG)itr->GetIndex() == index;
                         }
                         
                         if (!valid)
@@ -4050,7 +4056,6 @@ private:
 #endif
 };
 
-
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -4130,6 +4135,8 @@ DECLARE_API(VerifyHeap)
         return E_FAIL;
     }
 }
+
+#ifndef FEATURE_PAL
 
 enum failure_get_memory
 {

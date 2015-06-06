@@ -320,7 +320,7 @@ namespace sos
          * Throws:
          *   DataRead - we failed to read the object header.
          */
-        unsigned long GetHeader() const;
+        ULONG GetHeader() const;
         
         /* Gets the header for the current object, does not throw any exception.
          * Params:
@@ -328,7 +328,7 @@ namespace sos
          * Returns:
          *   True if we successfully read the object header, false otherwise.
          */
-        bool TryGetHeader(unsigned long &outHeader) const;
+        bool TryGetHeader(ULONG &outHeader) const;
         
         /* Returns the method table of the object this represents.
          * Throws:
