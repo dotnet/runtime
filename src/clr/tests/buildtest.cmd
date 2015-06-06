@@ -118,7 +118,7 @@ exit /b 1
 :GenVSSolution
 :: Regenerate the VS solution
 pushd "%__NativeTestIntermediatesDir%"
-call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectFilesDir%\" %__VSVersion%
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectFilesDir%\" %__VSVersion% %__BuildType%
 popd
 
 :BuildComponents
