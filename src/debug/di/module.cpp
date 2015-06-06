@@ -2202,8 +2202,17 @@ HRESULT CordbModule::ApplyChanges(ULONG  cbMetaData,
                                                     (void **)&pMDImport));
 
     // The left-side will call this same method on its copy of the metadata.
-    IfFailGo(pMDImport->ApplyEditAndContinue(pbMetaData, cbMetaData, &pMDImport2));
-    pMDImport2->AddRef(); // @todo - issue in ApplyEditAndContinue, doesn't addref the out parameter.
+    hr = pMDImport->ApplyEditAndContinue(pbMetaData, cbMetaData, &pMDImport2);
+    if (pMDImport2 != NULL) 
+    {
+        // ApplyEditAndContinue() expects IMDInternalImport**, but we give it RSExtSmartPtr<IMDInternalImport>
+        // Silent cast of RSExtSmartPtr to IMDInternalImport* leads to assignment of a raw pointer
+        // without calling AddRef(), thus we need to do it manually.
+
+        // @todo -  ApplyEditAndContinue should probably AddRef the out parameter.
+        pMDImport2->AddRef(); 
+    }
+    IfFailGo(hr);
 
    
     // We're about to get a new importer object, so release the old one.
