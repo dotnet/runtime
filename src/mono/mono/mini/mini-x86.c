@@ -5884,7 +5884,7 @@ mono_arch_build_imt_thunk (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckI
 	nacl_domain_code_validate (domain, &start, size, &code);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL));
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
 
 	return start;
 }
@@ -6263,7 +6263,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		} else {
 			MonoTrampInfo *info;
 			start = get_delegate_invoke_impl (&info, TRUE, 0);
-			mono_tramp_info_register (info);
+			mono_tramp_info_register (info, NULL);
 		}
 
 		mono_memory_barrier ();
@@ -6288,7 +6288,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		} else {
 			MonoTrampInfo *info;
 			start = get_delegate_invoke_impl (&info, FALSE, sig->param_count);
-			mono_tramp_info_register (info);
+			mono_tramp_info_register (info, NULL);
 		}
 
 		mono_memory_barrier ();
@@ -6307,7 +6307,7 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 
 	code = get_delegate_virtual_invoke_impl (&info, load_imt_reg, offset);
 	if (code)
-		mono_tramp_info_register (info);
+		mono_tramp_info_register (info, NULL);
 	return code;
 }
 

@@ -1171,7 +1171,7 @@ mono_create_handler_block_trampoline (void)
 		gpointer tmp;
 
 		tmp = mono_arch_create_handler_block_trampoline (&info, FALSE);
-		mono_tramp_info_register (info);
+		mono_tramp_info_register (info, NULL);
 		mono_memory_barrier ();
 		code = tmp;
 	}
@@ -1235,7 +1235,7 @@ create_trampoline_code (MonoTrampolineType tramp_type)
 	guchar *code;
 
 	code = mono_arch_create_generic_trampoline (tramp_type, &info, FALSE);
-	mono_tramp_info_register (info);
+	mono_tramp_info_register (info, NULL);
 
 	return code;
 }
@@ -1479,7 +1479,7 @@ mono_create_rgctx_lazy_fetch_trampoline (guint32 offset)
 		ptr = mono_aot_get_lazy_fetch_trampoline (offset);
 	} else {
 		tramp = mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, FALSE);
-		mono_tramp_info_register (info);
+		mono_tramp_info_register (info, NULL);
 		ptr = mono_create_ftnptr (mono_get_root_domain (), tramp);
 	}
 
@@ -1521,7 +1521,7 @@ mono_create_monitor_enter_trampoline (void)
 		MonoTrampInfo *info;
 
 		code = mono_arch_create_monitor_enter_trampoline (&info, FALSE, FALSE);
-		mono_tramp_info_register (info);
+		mono_tramp_info_register (info, NULL);
 	}
 
 	mono_trampolines_unlock ();
@@ -1551,7 +1551,7 @@ mono_create_monitor_enter_v4_trampoline (void)
 		MonoTrampInfo *info;
 
 		code = mono_arch_create_monitor_enter_trampoline (&info, TRUE, FALSE);
-		mono_tramp_info_register (info);
+		mono_tramp_info_register (info, NULL);
 	}
 
 	mono_trampolines_unlock ();
@@ -1581,7 +1581,7 @@ mono_create_monitor_exit_trampoline (void)
 		MonoTrampInfo *info;
 
 		code = mono_arch_create_monitor_exit_trampoline (&info, FALSE);
-		mono_tramp_info_register (info);
+		mono_tramp_info_register (info, NULL);
 	}
 
 	mono_trampolines_unlock ();
@@ -1705,7 +1705,7 @@ mini_get_single_step_trampoline (void)
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
 			MonoTrampInfo *info;
 			tramp = mono_arch_create_sdb_trampoline (TRUE, &info, FALSE);
-			mono_tramp_info_register (info);
+			mono_tramp_info_register (info, NULL);
 #else
 			tramp = NULL;
 			g_assert_not_reached ();
@@ -1737,7 +1737,7 @@ mini_get_breakpoint_trampoline (void)
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
 			MonoTrampInfo *info;
 			tramp = mono_arch_create_sdb_trampoline (FALSE, &info, FALSE);
-			mono_tramp_info_register (info);
+			mono_tramp_info_register (info, NULL);
 #else
 			tramp = NULL;
 			g_assert_not_reached ();

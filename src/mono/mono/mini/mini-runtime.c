@@ -494,12 +494,15 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
  * Frees INFO.
  */
 void
-mono_tramp_info_register (MonoTrampInfo *info)
+mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 {
 	MonoTrampInfo *copy;
 
 	if (!info)
 		return;
+
+	if (!domain)
+		domain = mono_get_root_domain ();
 
 	copy = g_new0 (MonoTrampInfo, 1);
 	copy->code = info->code;
@@ -522,7 +525,7 @@ mono_tramp_info_register (MonoTrampInfo *info)
 
 	/* Only register trampolines that have unwind infos */
 	if (mono_get_root_domain () && copy->uw_info)
-		register_trampoline_jit_info (mono_get_root_domain (), copy);
+		register_trampoline_jit_info (domain, copy);
 
 	if (mono_jit_map_is_enabled ())
 		mono_emit_jit_tramp (info->code, info->code_size, info->name);

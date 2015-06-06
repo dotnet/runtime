@@ -51,7 +51,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 
 	mono_arch_flush_icache (start, code - start);
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL));
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return start;
 }
