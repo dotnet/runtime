@@ -1,6 +1,9 @@
 include_directories("../../pal/prebuilt/corerror")
 if(WIN32)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NOENTRY")
+    # remove /ltcg from resource-only libraries
+    string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELEASE ${CMAKE_SHARED_LINKER_FLAGS_RELEASE})
+    string(REPLACE "/LTCG" "" CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO})
 else()
 
     set (RC_TO_CPP ${CMAKE_CURRENT_SOURCE_DIR}/rctocpp.awk)

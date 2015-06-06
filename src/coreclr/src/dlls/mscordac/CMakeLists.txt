@@ -68,10 +68,15 @@ if(WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
     add_dependencies(mscordaccore mscordaccore_def)
 
+    set(LTCG_FLAG "")
+    if (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Relwithdebinfo)
+        set(LTCG_FLAG "/LTCG")
+    endif()
+
     # Generate export file
     add_custom_command(TARGET mscordaccore
         PRE_LINK
-        COMMAND lib.exe /OUT:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscordaccore.lib /DEF:${CMAKE_CURRENT_BINARY_DIR}/mscordac.def $<TARGET_FILE:daccess> ${STATIC_LIBRARY_FLAGS} ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.dir/$<CONFIG>/mscordac.obj
+        COMMAND lib.exe ${LTCG_FLAG} /OUT:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/mscordaccore.lib /DEF:${CMAKE_CURRENT_BINARY_DIR}/mscordac.def $<TARGET_FILE:daccess> ${STATIC_LIBRARY_FLAGS} ${CMAKE_CURRENT_BINARY_DIR}/mscordaccore.dir/$<CONFIG>/mscordac.obj
         COMMENT "Generating mscordaccore.exp export file"
         VERBATIM
     )
