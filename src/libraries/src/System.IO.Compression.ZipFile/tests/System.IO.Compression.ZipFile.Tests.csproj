@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
-    <ProjectGuid>{ED453083-A80F-480c-AD25-5B8618E8A303}</ProjectGuid>
+    <ProjectGuid>{ED453083-A80F-480C-AD25-5B8618E8A303}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.IO.Compression.ZipFile.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ZipFileConvenienceMethods.cs" />
+    <Compile Include="ZipFileTests.cs" />
     <Compile Include="ZipFileInvalidFileTests.cs" />
     <Compile Include="ZipFileReadOpenUpdateTests.cs" />
     <Compile Include="$(CommonTestPath)\Compression\Utilities\CRC.cs" />
