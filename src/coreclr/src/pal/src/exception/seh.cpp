@@ -105,7 +105,12 @@ SEHInitialize (CPalThread *pthrCurrent, DWORD flags)
     }
 
 #if !HAVE_MACH_EXCEPTIONS
-    SEHInitializeSignals();
+    if (!SEHInitializeSignals())
+    {
+        ERROR("SEHInitializeSignals failed!\n");
+        SEHCleanup();
+        goto SEHInitializeExit;
+    }
 
     if (flags & PAL_INITIALIZE_SIGNAL_THREAD)
     {
