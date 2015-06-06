@@ -32,9 +32,10 @@ Function :
 Parameters :
     None
 
-    (no return value)
+Return :
+    TRUE in case of a success, FALSE otherwise
 --*/
-void SEHInitializeSignals();
+BOOL SEHInitializeSignals();
 
 /*++
 Function :
