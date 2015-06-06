@@ -4231,6 +4231,24 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 			add_generic_class (acfg, mono_class_inflate_generic_class (gcomparer, &ctx), FALSE, "EqualityComparer<T>");
 		}
 	}
+
+	/* Add an instance of EnumComparer<T> which is created dynamically by EqualityComparer<T> for enums */
+	if (klass->image == mono_defaults.corlib && !strcmp (klass->name_space, "System.Collections.Generic") && !strcmp (klass->name, "EqualityComparer`1")) {
+		MonoClass *enum_comparer;
+		MonoClass *tclass = mono_class_from_mono_type (klass->generic_class->context.class_inst->type_argv [0]);
+		MonoGenericContext ctx;
+		MonoType *args [16];
+
+		if (mono_class_is_enum (tclass)) {
+			memset (&ctx, 0, sizeof (ctx));
+			args [0] = &tclass->byval_arg;
+			ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+			enum_comparer = mono_class_from_name (mono_defaults.corlib, "System.Collections.Generic", "EnumEqualityComparer`1");
+			g_assert (enum_comparer);
+			add_generic_class (acfg, mono_class_inflate_generic_class (enum_comparer, &ctx), FALSE, "EqualityComparer<T>");
+		}
+	}
 }
 
 static void
