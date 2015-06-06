@@ -158,15 +158,11 @@ DebugClient::OutputString(
     ULONG mask,
     PCSTR str)
 {
-    if (mask & DEBUG_OUTPUT_ERROR)
-    {
-        m_returnObject.SetError(str);
-    }
-    else 
-    {
-        // Can not use AppendMessage or AppendWarning because they add a newline.
-        m_returnObject.Printf("%s", str);
-    }
+    // Can not use AppendMessage or AppendWarning because they add a newline. SetError
+    // can not be used for DEBUG_OUTPUT_ERROR mask because it caches the error strings
+    // seperately from the normal output so error/normal texts are not intermixed 
+    // correctly.
+    m_returnObject.Printf("%s", str);
 }
 
 //----------------------------------------------------------------------------
