@@ -1,10 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Diagnostics;
-
-using Internal.NativeCrypto;
-
 namespace System.Security.Cryptography
 {
     internal sealed class RNGCryptoServiceProvider : RandomNumberGenerator
@@ -14,9 +10,8 @@ namespace System.Security.Cryptography
             ValidateGetBytesArgs(data);
             if (data.Length > 0)
             {
-                Cng.BCryptGenRandom(data);
+                Interop.BCrypt.BCryptGenRandom(data);
             }
         }
     }
 }
-
