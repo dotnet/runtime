@@ -229,12 +229,10 @@ if (WIN32)
 # The following options are set by the razzle build
 add_compile_options(/TP) # compile all files as C++
 add_compile_options(/FIWarningControl.h) # force include of WarningControl.h
-add_compile_options(/Zi) # enable debugging information
 add_compile_options(/d2Zi+) # make optimized builds debugging easier
 add_compile_options(/nologo) # Suppress Startup Banner
 add_compile_options(/W3) # set warning level to 3
 add_compile_options(/WX) # treat warnings as errors
-add_compile_options(/O1) # minimize space
 add_compile_options(/Oi) # enable intrinsics
 add_compile_options(/Oy-) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
 add_compile_options(/U_MT) # undefine the predefined _MT macro
@@ -253,6 +251,12 @@ add_compile_options(/MP) # Build with Multiple Processes (number of processes eq
 add_compile_options(/GS) # Buffer Security Check
 add_compile_options(/Zm200) # Specify Precompiled Header Memory Allocation Limit of 150MB
 add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4458 /wd4459 /wd4091 /we4640)
+add_compile_options(/O1) # minimize space
+add_compile_options(/Zi) # enable debugging information
+
+if (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Relwithdebinfo)
+  add_compile_options(/GL) # enable WholeProgramOptimization
+endif ()
 
 if (IS_64BIT_BUILD EQUAL 1)
 # The generator expression in the following command means that the /homeparams option is added only for debug builds
@@ -285,9 +289,14 @@ set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/NOVCFEATURE")
 
 # Release build specific flags
 set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG")
+set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
 
 # ReleaseWithDebugInfo build specific flags
 set(CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
+set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
+set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
+
 endif (WIN32)
 
 endif (OVERRIDE_CMAKE_CXX_FLAGS)
