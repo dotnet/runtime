@@ -95,10 +95,10 @@ We don't _yet_ have support for building managed code on FreeBSD, so you'll need
 You will build `mscorlib.dll` out of the coreclr repository and the rest of the framework that out of the corefx repository.  For mscorlib (from a regular command prompt window) run:
 
 ```
-D:\git\coreclr> build.cmd linuxmscorlib
+D:\git\coreclr> build.cmd freebsdmscorlib
 ```
 
-The output is placed in `bin\Product\Linux.x64.Debug\mscorlib.dll`.  You'll want to copy this to the runtime folder on your FreeBSD machine. (e.g. `~/coreclr-demo/runtime`)
+The output is placed in `bin\Product\FreeBSD.x64.Debug\mscorlib.dll`.  You'll want to copy this to the runtime folder on your FreeBSD machine. (e.g. `~/coreclr-demo/runtime`)
 
 For the rest of the framework, you need to pass some special parameters to build.cmd when building out of the CoreFX repository.
 
