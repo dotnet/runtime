@@ -31,6 +31,7 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
+if /i "%1" == "windowsmscorlib" (set __MscorlibOnly=1&set __BuildOS=Windows_NT&shift&goto Arg_Loop)
 if /i "%1" == "linuxmscorlib" (set __MscorlibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
 if /i "%1" == "osxmscorlib" (set __MscorlibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
 
@@ -228,6 +229,7 @@ echo BuildArch can be: x64
 echo BuildType can be: Debug, Release
 echo Clean - optional argument to force a clean build.
 echo VSVersion - optional argument to use VS2013 or VS2015 (default VS2013)
+echo windowsmscorlib - Build mscorlib for Windows
 echo linuxmscorlib - Build mscorlib for Linux
 echo osxmscorlib - Build mscorlib for OS X
 exit /b 1
