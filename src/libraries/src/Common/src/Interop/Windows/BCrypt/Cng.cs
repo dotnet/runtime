@@ -129,14 +129,6 @@ namespace Internal.NativeCrypto
             }
         }
 
-        public static void BCryptGenRandom(byte[] buffer)
-        {
-            const int BCRYPT_USE_SYSTEM_PREFERRED_RNG = 0x00000002;
-            NTSTATUS ntStatus = Interop.BCryptGenRandom(IntPtr.Zero, buffer, buffer.Length, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                throw CreateCryptographicException(ntStatus);
-        }
-
         public static SafeKeyHandle BCryptImportKey(this SafeAlgorithmHandle hAlg, byte[] key)
         {
             unsafe
@@ -309,9 +301,6 @@ namespace Internal.NativeCrypto
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptSetProperty(SafeBCryptHandle hObject, String pszProperty, String pbInput, int cbInput, int dwFlags);
-
-            [DllImport(CngDll, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptGenRandom(IntPtr hAlgorithm, [In, Out] byte[] pbBuffer, int cbBuffer, int dwFlags);
 
             [DllImport(CngDll, CharSet = CharSet.Unicode)]
             public static extern NTSTATUS BCryptImportKey(SafeAlgorithmHandle hAlgorithm, IntPtr hImportKey, String pszBlobType, out SafeKeyHandle hKey, IntPtr pbKeyObject, int cbKeyObject, byte[] pbInput, int cbInput, int dwFlags);
