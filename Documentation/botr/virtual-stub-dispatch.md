@@ -89,7 +89,7 @@ The slot map is a table of zero or more <_type_, [<_slot_, _scope_, (_index | sl
 
 The following is a small class structure (modeled in C#), and what the resulting implementation table and slot map would be for each class.
 
-![Figure 1](images/virtualstubdispatch-fig1.png)
+![Figure 1](../images/virtualstubdispatch-fig1.png)
 
 Thus, looking at this map, we see that the first column of the sub-maps of the slot maps correspond to the slot number in the classic virtual table view (remember that System.Object contributes four virtual methods of its own, which are omitted for clarity). Searches for method implementations are always bottom-up. Thus, if I had an object of type _B_ and I wished to invoke _I.Foo_, I would look for a mapping of _I.Foo_ starting at _B_'s slot map. Not finding it there, I would look in _A_'s slot map and find it there. It states that virtual slot 0 of _I_ (corresponding to _I.Foo_) is implemented by virtual slot 0. Then I return to _B_'s slot map and search for an implementation for slot 0, and find that it is implemented by slot 1 in its own implementation table.
 
@@ -130,7 +130,7 @@ Interface dispatch calls go through stubs. These stubs are all generated on dema
 
 There are currently three types of stubs. The below diagram shows the general control flow between these stubs, and will be explained below.
 
-![Figure 2](images/virtualstubdispatch-fig2.png)
+![Figure 2](../images/virtualstubdispatch-fig2.png)
 
 ### Generic Resolver
 
@@ -160,11 +160,11 @@ One resolve stub is created per token, but they all use a global cache. A stub-p
 
 The former interface virtual table dispatch mechanism results in a code sequence similar to this:
 
-![Figure 3](images/virtualstubdispatch-fig3.png)
+![Figure 3](../images/virtualstubdispatch-fig3.png)
 
 And the typical stub dispatch sequence is:
 
-![Figure 1](images/virtualstubdispatch-fig4.png)
+![Figure 1](../images/virtualstubdispatch-fig4.png)
 
 where expectedMT, failure and target are constants encoded in the stub.
 

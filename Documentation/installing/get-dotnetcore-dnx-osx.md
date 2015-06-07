@@ -7,7 +7,7 @@ These instructions are for .NET Core console apps. If you want to try out ASP.NE
 
 .NET Core NuGet packages and the .NET Core DNX SDKs are available on the [ASP.NET 'vnext' myget feed](https://www.myget.org/F/aspnetvnext), which you can more easily view on [gallery](https://www.myget.org/gallery/aspnetvnext) for the feed.
 
-You can also [build from source](osx-instructions.md). 
+You can also [build from source](../building/osx-instructions.md). 
 
 Installing DNVM
 ===============
@@ -40,7 +40,7 @@ You can see the currently installed DNX versions with `dnvm list`.
 ```
 Active Version              Runtime Arch Location             Alias
 ------ -------              ------- ---- --------             -----
-  *    1.0.0-beta5-11649    coreclr x64  ~/.dnx/runtimes      
+  *    1.0.0-beta5-11649    coreclr x64  ~/.dnx/runtimes
        1.0.0-beta5-11649    mono         ~/.dnx/runtimes      default
 ```
 
@@ -58,8 +58,8 @@ public class Program
     {
         Console.WriteLine("Hello, OS X");
         Console.WriteLine("Love from CoreCLR.");
-    }   
-} 
+    }
+}
 ```
 
 Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to the demo directory.

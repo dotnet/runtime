@@ -29,7 +29,7 @@ The major algorithms contained within the type system are:
 - **LoadTypeHandle:** Primarily used for finding types.
 - **Signature parsing:** Used to compare and gather information about methods and fields.
 - **GetMethod/FieldDesc:** Used to find/load methods/fields.
-- **Virtual Stub Dispatch:** Used to find the destination of virtual calls to interfaces. 
+- **Virtual Stub Dispatch:** Used to find the destination of virtual calls to interfaces.
 
 There are significantly more ancillary data structures and algorithms that provide various bits of information to the rest of the CLR, but they are less significant to the overall understanding of the system.
 
@@ -43,14 +43,14 @@ Dependencies
 
 The type system is generally a service provided to many parts of the CLR, and most core components have some form of dependency on the behavior of the type system. This diagram describes the general dataflow that effects the type system. It is not exhaustive, but calls out the major information flows.
 
-![dependencies](images/type-system-dependencies.png)
+![dependencies](../images/type-system-dependencies.png)
 
 ### Component Dependencies
 
 The primary dependencies of the type system follow:
 
 - The **loader** needed to get the correct metadata to work with.
-- The **metadata system** provides a metadata api to gather information. 
+- The **metadata system** provides a metadata api to gather information.
 - The **security system** informs the type system whether or not certain type system structures are permitted (e.g. inheritance).
 - The **AppDomain** provides a LoaderAllocator to handle allocation behavior for the type system data structures.
 
@@ -81,7 +81,7 @@ Design Goals and Non-goals
 - Accessing information needed at runtime from executing (non-reflection) code is very fast.
 - Accessing information needed at compilation time for generating code is straightforward.
 - The garbage collector/stackwalker is able to access necessary information without taking locks, or allocating memory.
-- Minimal amounts of types are loaded at a time. 
+- Minimal amounts of types are loaded at a time.
 - Minimal amounts of a given type are loaded at type load time.
 - Type system data structures must be storable in NGEN images.
 
@@ -227,7 +227,7 @@ Major entry points are BuildMethodTable, LoadTypeHandleThrowing, CanCastTo\*, Ge
 Related Reading
 ===============
 
-- [ECMA CLI Specification](dotnet-standards.md)
+- [ECMA CLI Specification](../miscellaneous/dotnet-standards.md)
 - [Type Loader](type-loader.md) Book of the Runtime Chapter
 - [Virtual Stub Dispatch](virtual-stub-dispatch.md) Book of the Runtime Chapter
 - [MethodDesc](method-descriptor.md) Book of the Runtime Chapter
