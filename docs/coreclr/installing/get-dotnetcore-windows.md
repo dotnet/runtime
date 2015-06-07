@@ -7,7 +7,7 @@ These instructions are for .NET Core console apps. If you want to try out ASP.NE
 
 .NET Core NuGet packages are available on the [.NET Core myget feed](https://www.myget.org/F/dotnet-core), which you can more easily view on [gallery](https://www.myget.org/gallery/dotnet-core) for the feed.
 
-The preferred approach to acquire .NET Core is via the [.NET Core DNX SDK](get-dotnetcore-dnx-windows.md). It's the easiest approach. Alternatively, you can [build from source](windows-instructions.md). This "raw" approach falls between the two in difficulty.
+The preferred approach to acquire .NET Core is via the [.NET Core DNX SDK](get-dotnetcore-dnx-windows.md). It's the easiest approach. Alternatively, you can [build from source](../building/windows-instructions.md). This "raw" approach falls between the two in difficulty.
 
 NuGet Restore Packages
 ======================
@@ -60,8 +60,8 @@ public class Program
     {
         Console.WriteLine("Hello, Windows");
         Console.WriteLine("Love from CoreCLR.");
-    }   
-} 
+    }
+}
 ```
 
 **Another Option:** Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. To try it, download [corefxlab demo's HelloWorld.cs](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to `C:\coreclr-demo`.
@@ -85,8 +85,8 @@ You need to copy the NuGet package assemblies over to the app folder. You need t
 	C:\coreclr-demo> for /r packages %k in (*.dll) do echo "%k" | findstr "\lib\any\ \lib\netcore50\ \lib\any~win\\" && copy /Y "%k" app
 
 	C:\coreclr-demo> copy packages\Microsoft.NETCore.Runtime.CoreCLR.ConsoleHost-x64.1.0.0-beta-22819\native\win\x64\CoreConsole.exe app\HelloWorld.exe
-	
-This last step might be a bit surprising, copying `CoreConsole.exe` to MyApp.exe, in this case `HelloWorld.exe`. This is closely related to compiling the app, in the instructions above, to MyApp.dll, in this case to `HelloWorld.dll`. 
+
+This last step might be a bit surprising, copying `CoreConsole.exe` to MyApp.exe, in this case `HelloWorld.exe`. This is closely related to compiling the app, in the instructions above, to MyApp.dll, in this case to `HelloWorld.dll`.
 
 We've grown very fond of creating and using managed EXEs that don't require a separate launcher with the .NET Framework on Windows. We wanted the same experience for .NET Core. To enable the experience, we created a launcher that expects a managed assembly of the same name, compiled with a static main method. As a case in point, if you run `CoreConsole.exe` without renaming it, it will expect a `CoreConsole.dll`. The renaming step, which you see above, needs to match the main assembly, compiled as a DLL, and you get an experience that feels launcher-less.
 
@@ -97,10 +97,10 @@ Lastly, if you're a Windows 7 user, you'll need to copy over some API DLLS:
 Run the demo
 ============
 
-You're ready to run Hello World! 
+You're ready to run Hello World!
 
 	C:\coreclr-demo> app\HelloWorld.exe
 	Hello, Windows
 	Love from CoreCLR.
-	
+
 Thanks for trying out CoreCLR. Feel free to try a more interesting demo.
