@@ -2633,10 +2633,6 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 	if (!method)
 		return NULL;
 
-	/* FIXME Support more cases */
-	if (mono_aot_only)
-		return NULL;
-
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		return NULL;
 
@@ -2674,7 +2670,17 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 	if (cache [idx])
 		return cache [idx];
 
-	return cache [idx] = mono_arch_get_delegate_virtual_invoke_impl (sig, method, offset, load_imt_reg);
+	/* FIXME Support more cases */
+	if (mono_aot_only) {
+		char tramp_name [256];
+
+		sprintf (tramp_name, "delegate_virtual_invoke%s_%d", load_imt_reg ? "_imt" : "", offset / SIZEOF_VOID_P);
+		cache [idx] = mono_aot_get_trampoline (tramp_name);
+		g_assert (cache [idx]);
+	} else {
+		cache [idx] = mono_arch_get_delegate_virtual_invoke_impl (sig, method, offset, load_imt_reg);
+	}
+	return cache [idx];
 }
 
 static gpointer
