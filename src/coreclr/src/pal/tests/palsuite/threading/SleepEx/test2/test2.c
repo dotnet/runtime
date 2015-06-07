@@ -20,8 +20,18 @@ const int InterruptTime = 1000;
 /* We need to keep in mind that BSD has a timer resolution of 10ms, so
    we need to adjust our delta to keep that in mind. Besides we need some 
    tolerance to account for different scheduling strategies, heavy load 
-   scenarios, etc */
-const DWORD AcceptableDelta = 50;
+   scenarios, etc.
+   
+   Real-world data also tells us we can expect a big difference between
+   values when run on real iron vs run in a hypervisor.
+
+   Thread-interruption times when run on bare metal will typically yield
+   around 0ms on Linux and between 0 and 16ms on FreeBSD. However, when run
+   in a hypervisor (like VMWare ESXi) we may get values around an order of
+   magnitude higher, up to 110 ms for some tests.
+*/
+const DWORD AcceptableDelta = 150;
+
 const int Iterations = 5;
 
 void RunTest(BOOL AlertThread);
