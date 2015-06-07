@@ -16,8 +16,8 @@ Get .NET Core
 
 |                     |Linux   |Windows |Mac OS X |FreeBSD  |
 |---------------------|--------|--------|---------|---------|
-|Build from **Source**| [Instructions](Documentation/linux-instructions.md) | [Instructions](Documentation/windows-instructions.md) | [Instructions](Documentation/osx-instructions.md) | [Instructions](Documentation/freebsd-instructions.md) |
-|Get **Binaries**     | [DNX SDK](Documentation/get-dotnetcore-dnx-linux.md)|[DNX SDK](Documentation/get-dotnetcore-dnx-windows.md) <br> [Raw](Documentation/get-dotnetcore-windows.md)|[DNX SDK](Documentation/get-dotnetcore-dnx-osx.md)||
+|Build from **Source**| [Instructions](Documentation/building/linux-instructions.md) | [Instructions](Documentation/building/windows-instructions.md) | [Instructions](Documentation/building/osx-instructions.md) | [Instructions](Documentation/building/freebsd-instructions.md) |
+|Get **Binaries**     | [DNX SDK](Documentation/installing/get-dotnetcore-dnx-linux.md)|[DNX SDK](Documentation/installing/get-dotnetcore-dnx-windows.md) <br> [Raw](Documentation/installing/get-dotnetcore-windows.md)|[DNX SDK](Documentation/installing/get-dotnetcore-dnx-osx.md)||
 
 Chat Room
 ---------
@@ -32,11 +32,11 @@ Learn about CoreCLR and .NET Core
 The best ways to learn about CoreCLR are to try out the product instructions and to read the "Book of the Runtime" architecture documents that describe the inner workings of the product. New devs to the CLR team are encouraged to read these documents before making substative changes to the product. They are equally useful for open source contributors.
 
 - [Product instructions](Documentation/README.md)
-- [Introduction to the Common Language Runtime](Documentation/intro-to-clr.md)
+- [Introduction to the Common Language Runtime](Documentation/botr/intro-to-clr.md)
 - [Book of the Runtime](Documentation/README.md#book-of-the-runtime)
 - [CoreCLR Documents](Documentation)
 
-.NET Core is part of ASP.NET 5 and is a subset of the .NET Framework. You can learn more about .NET Core and how and where you can use it in the [CoreCLR is open source][coreclr blog post] blog post. 
+.NET Core is part of ASP.NET 5 and is a subset of the .NET Framework. You can learn more about .NET Core and how and where you can use it in the [CoreCLR is open source][coreclr blog post] blog post.
 
 The [.NET Core Libraries][corefx] repo contains the base class libraries, which provides data types and base functionality (ex: String, Collections, HttpClient) on top of CoreCLR. The two repos together make up .NET Core. The [.NET Core is Open Source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts describes our .NET Core OSS strategy and road map in more detail.
 
@@ -49,8 +49,8 @@ Looking for something to work on? The list of [up-for-grabs issues](https://gith
 
 Please read the following documents to get started.
 
-* [Contributing Guide](Documentation/contributing.md)
-* [Developer Guide](Documentation/developer-guide.md)
+* [Contributing Guide](Documentation/project-docs/contributing.md)
+* [Developer Guide](Documentation/project-docs/developer-guide.md)
 
 License
 -------

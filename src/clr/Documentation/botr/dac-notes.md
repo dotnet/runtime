@@ -58,7 +58,7 @@ DAC marshaling works through a collection of typedefs, macros and templated type
 
 An example may be helpful in understanding how marshaling works. The common debugging scenario is represented in the following block diagram:
 
-![DAC Overview](images/dac-overview.png)
+![DAC Overview](../images/dac-overview.png)
 
 The debugger in this figure could be Visual Studio, MDbg, WinDbg, etc. The debugger interfaces with the CLR debugger interface (DBI) APIs to get the information it needs. Information that must come from the target goes through the DAC. The debugger implements the data target, which is responsible for implementing a ReadVirtual function to read memory in the target. The dotted line in the diagram represents the process boundary.
 
