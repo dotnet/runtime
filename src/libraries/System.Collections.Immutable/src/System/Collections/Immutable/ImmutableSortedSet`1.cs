@@ -1102,10 +1102,39 @@ namespace System.Collections.Immutable
             // and can index into that sequence like a list, so the limited
             // garbage produced is a temporary mutable data structure we use
             // as a reference when creating the immutable one.
-            // The (mutable) SortedSet<T> is much faster at constructing its collection 
-            // when passed a sequence into its constructor than into its Union method.
-            var sortedSet = new SortedSet<T>(this.Concat(addedItems), this.KeyComparer);
-            Node root = Node.NodeTreeFromSortedSet(sortedSet);
+
+            // Produce the initial list containing all elements, including any duplicates.
+            List<T> list;
+            if (this.IsEmpty)
+            {
+                list = new List<T>(addedItems);
+                if (list.Count == 0)
+                {
+                    return this;
+                }
+            }
+            else
+            {
+                list = new List<T>(this);
+                list.AddRange(addedItems);
+            }
+            Debug.Assert(list.Count > 0);
+
+            // Sort the list and remove duplicate entries.
+            IComparer<T> comparer = this.KeyComparer;
+            list.Sort(comparer);
+            int index = 1;
+            for (int i = 1; i < list.Count; i++)
+            {
+                if (comparer.Compare(list[i], list[i - 1]) != 0)
+                {
+                    list[index++] = list[i];
+                }
+            }
+            list.RemoveRange(index, list.Count - index);
+
+            // Use the now sorted list of unique items to construct a new sorted set.
+            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
             return this.Wrap(root);
         }
 
@@ -2128,7 +2157,7 @@ namespace System.Collections.Immutable
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
             [Pure]
-            private static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
+            internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
             {
                 Requires.NotNull(items, "items");
                 Debug.Assert(start >= 0);
