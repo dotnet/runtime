@@ -99,9 +99,7 @@ namespace System.IO.Pipes
                 TranslateFlags(_direction, _options, _inheritability), 
                 (int)Interop.libc.Permissions.S_IRWXU);
 
-            // Ignore _inBufferSize and _outBufferSize.  They're optional, and the fcntl F_SETPIPE_SZ for changing 
-            // a pipe's buffer size is Linux specific.
-
+            InitializeBufferSize(serverHandle, _outBufferSize); // there's only one capacity on Linux; just use the out buffer size
             InitializeHandle(serverHandle, isExposed: false, isAsync: (_options & PipeOptions.Asynchronous) != 0);
             State = PipeState.Connected;
         }
