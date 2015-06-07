@@ -7,7 +7,7 @@ These instructions are for .NET Core console apps. If you want to try out ASP.NE
 
 .NET Core NuGet packages and the .NET Core DNX SDKs are available on the [ASP.NET 'vnext' myget feed](https://www.myget.org/F/aspnetvnext), which you can more easily view on [gallery](https://www.myget.org/gallery/aspnetvnext) for the feed.
 
-You can also [build from source](linux-instructions.md). 
+You can also [build from source](../building/linux-instructions.md). 
 
 Environment
 ===========
@@ -17,11 +17,11 @@ These instructions are written assuming the Ubuntu 14.04 LTS, since that's the d
 Packages
 --------
 
-Install the `libunwind8`, `libssl-dev` and `unzip` packages: 
+Install the `libunwind8`, `libssl-dev` and `unzip` packages:
 
 	sudo apt-get install libunwind8 libssl-dev unzip
 
-You also need a latest version of Mono, which is required for DNU. This is a temporary requirement. 
+You also need a latest version of Mono, which is required for DNU. This is a temporary requirement.
 
 	sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 	echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
@@ -41,7 +41,7 @@ Installing DNVM
 You need DNVM to acquire a (or multiple) .NET Execution Environment (DNX) SDKs. DNVM is simply a script, which doesn't depend on .NET.
 
 	curl -sSL https://raw.githubusercontent.com/aspnet/Home/dev/dnvminstall.sh | DNX_BRANCH=dev sh && source ~/.dnx/dnvm/dnvm.sh
-	 
+
 You can see the currently installed DNX versions with `dnvm list`, which will display an empty set of installed runtimes.
 
 	dnvm list
@@ -64,7 +64,7 @@ You can see the currently installed DNX versions with `dnvm list`.
 ```
 Active Version              Runtime Arch Location             Alias
 ------ -------              ------- ---- --------             -----
-  *    1.0.0-beta5-11649    coreclr x64  ~/.dnx/runtimes      
+  *    1.0.0-beta5-11649    coreclr x64  ~/.dnx/runtimes
        1.0.0-beta5-11649    mono         ~/.dnx/runtimes      default
 ```
 
@@ -82,8 +82,8 @@ public class Program
     {
         Console.WriteLine("Hello, Linux");
         Console.WriteLine("Love from CoreCLR.");
-    }   
-} 
+    }
+}
 ```
 
 Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to the demo directory.
@@ -118,6 +118,6 @@ You can run your app with .NET Core, although make sure to switch to that DNX.
 
     dnvm use 1.0.0-beta5-11649 -r coreclr
 	dnx . run
-	
+
 	Hello, Linux
 	Love from CoreCLR.

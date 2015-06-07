@@ -38,7 +38,7 @@ The RyuJIT IR can be described at a high level as follows:
   * It includes the type of the node, as well as value number, assertions, and register assignments when available.
 * `LclVarDsc` represents a local variable, argument or JIT-created temp. It has a `gtLclNum` which is the identifier usually associated with the variable in the JIT and its dumps. The `LclVarDsc` contains the type, use count, weighted use count, frame or register assignment etc. These are often referred to simply as “lclVars”. They can be tracked (`lvTracked`), in which case they participate in dataflow analysis, and have a different index (`lvVarIndex`) to allow for the use of dense bit vectors.
 
-![RyuJIT IR Overview](images/ryujit-ir-overview.png)
+![RyuJIT IR Overview](../images/ryujit-ir-overview.png)
 
 The IR has two modes:
 
@@ -46,7 +46,7 @@ The IR has two modes:
 * In linear-order mode, non-statement nodes have both parent-child links as well as execution order links (`gtPrev` and `gtNext`).
   * In the interest of maintaining functionality that depends upon the validity of the tree ordering, the linear mode of the `GenTree` IR has an unusual constraint that the execution order must represent a valid traversal of the parent-child links.
 
-A separate representation, `insGroup` and `instrDesc`, is used during the actual instruction encoding. 
+A separate representation, `insGroup` and `instrDesc`, is used during the actual instruction encoding.
 
 ### Statement Order
 
@@ -76,26 +76,26 @@ For this snippet of code (extracted from [tests/src/JIT/CodeGenBringUpTests/DblR
 A stripped-down dump of the `GenTree` nodes just after they are imported looks like this:
 
     ▌ stmtExpr  void  (top level) (IL 0x000...0x026)
-    │        ┌──▌ lclVar    double V00 arg0         
+    │        ┌──▌ lclVar    double V00 arg0
     │     ┌──▌ *         double
     │     │  └──▌ dconst    double 2.00
     │  ┌──▌ /         double
     │  │  │  ┌──▌ mathFN    double sqrt
-    │  │  │  │  │     ┌──▌ lclVar    double V02 arg2         
+    │  │  │  │  │     ┌──▌ lclVar    double V02 arg2
     │  │  │  │  │  ┌──▌ *         double
-    │  │  │  │  │  │  │  ┌──▌ lclVar    double V00 arg0         
+    │  │  │  │  │  │  │  ┌──▌ lclVar    double V00 arg0
     │  │  │  │  │  │  └──▌ *         double
     │  │  │  │  │  │     └──▌ dconst    double 4.00
     │  │  │  │  └──▌ -         double
-    │  │  │  │     │       lclVar    double V01 arg1         
+    │  │  │  │     │       lclVar    double V01 arg1
     │  │  │  │     └──▌ *         double
-    │  │  │  │        └──▌ lclVar    double V01 arg1         
+    │  │  │  │        └──▌ lclVar    double V01 arg1
     │  │  └──▌ +         double
     │  │     └──▌ unary -   double
-    │  │        └──▌ lclVar    double V01 arg1         
+    │  │        └──▌ lclVar    double V01 arg1
     └──▌  =         double
        └──▌ indir     double
-          └──▌ lclVar    byref  V03 arg3      
+          └──▌ lclVar    byref  V03 arg3
 
 ## Types
 
@@ -118,7 +118,7 @@ Static single assignment (SSA) form is constructed in a traditional manner [[1]]
 
 ## Value Numbering
 
-Value numbering utilizes SSA for lvlVar values, but also performs value numbering of expression trees. It takes advantage of type safety by not invalidating the value number for field references with a heap write, unless the write is to the same field. The IR nodes are annotated with the value numbers, which are indexes into a type-specific value number store. Value numbering traverses the trees, performing symbolic evaluation of many operations. 
+Value numbering utilizes SSA for lvlVar values, but also performs value numbering of expression trees. It takes advantage of type safety by not invalidating the value number for field references with a heap write, unless the write is to the same field. The IR nodes are annotated with the value numbers, which are indexes into a type-specific value number store. Value numbering traverses the trees, performing symbolic evaluation of many operations.
 
 # Phases of RyuJIT
 
@@ -310,7 +310,7 @@ After rationalization, the nodes are presented in execution order, and the `GT_C
     └──▌  storeIndir double
 
 
-Note that the first operand of the first comma has been extracted into a separate statement, but the second comma causes an embedded statement to be created, in order to preserve execution order. 
+Note that the first operand of the first comma has been extracted into a separate statement, but the second comma causes an embedded statement to be created, in order to preserve execution order.
 
 ## <a name="lowering"/>Lowering
 
@@ -335,14 +335,14 @@ Is transformed into this, in which the addressing mode is explicit:
           ┌──▌  lclVar    ref    V00 arg0
           │  ┌──▌  lclVar    int    V03 loc1
           ├──▌  cast      long <- int
-       ┌──▌  lea(b+(i*4)+16) byref 
+       ┌──▌  lea(b+(i*4)+16) byref
     ┌──▌  indir     int
 
 The next pass annotates the nodes with register requirements, and this is done in an execution order traversal (effectively post-order) in order to ensure that the children are visited prior to the parent. It may also do some transformations that do not require the parent context, such as determining the code generation strategy for block assignments (e.g. `GT_COPYBLK`) which may become helper calls, unrolled loops, or an instruction like rep stos.
 
 The register requirements are expressed in the `TreeNodeInfo` (`gtLsraInfo`) for each node.  For example, for the `copyBlk` node in this snippet:
 
-    Source      │  ┌──▌  const(h)  long   0xCA4000 static 
+    Source      │  ┌──▌  const(h)  long   0xCA4000 static
     Destination │  ├──▌  &lclVar   byref  V04 loc4
                 │  ├──▌  const     int    34
                 └──▌  copyBlk   void
@@ -384,7 +384,7 @@ Post-conditions:
 * For all lvlVars that are register candidates:
   * `lvRegNum` = initial register location (or `REG_STK`)
   * `lvRegister` flag set if it always lives in the same register
-  * `lvSpilled` flag is set if it is ever spilled 
+  * `lvSpilled` flag is set if it is ever spilled
 * The maximum number of simultaneously-live spill locations of each type (used for spilling expression trees) has been communicated via calls to `compiler->tmpPreAllocateTemps(type)`.
 
 ## <a name="code-generation"/>Code Generation
@@ -397,7 +397,7 @@ The process of code generation is relatively straightforward, as Lowering has do
   * Otherwise, “consume” all the register operands of the node.
     * This updates the liveness information (i.e. marking a lvlVar as dead if this is the last use), and performs any needed copies.
     * This must be done in correct execution order, obeying any reverse flags (GTF_REVERSE_OPS) on the operands, so that register conflicts are handled properly.
-  * Track the live variables in registers, as well as the live stack variables that contain GC refs. 
+  * Track the live variables in registers, as well as the live stack variables that contain GC refs.
   * Produce the `instrDesc(s)` for the operation, with the current live GC references.
   * Update the scope information (debug info) at block boundaries.
 * Generate the prolog and epilog code.
@@ -436,7 +436,7 @@ Ordering:
 * After normalization the `gtStmtList` of the containing statement points to the first node to be executed.
 * Prior to normalization, the `gtNext` and `gtPrev` pointers on the expression (non-statement) `GenTree` nodes are invalid. The expression nodes are only traversed via the links from parent to child (e.g. `node->gtGetOp1()`, or `node->gtOp.gtOp1`). The `gtNext/gtPrev` links are set by `fgSetBlockOrder()`.
   * After normalization, and prior to rationalization, the parent/child links remain the primary traversal mechanism. The evaluation order of any nested expression-statements (usually assignments) is enforced by the `GT_COMMA` in which they are contained.
-* After rationalization, all `GT_COMMA` nodes are eliminated, and the primary traversal mechanism becomes the `gtNext/gtPrev` links. Statements may be embedded within other statements, but the nodes of each statement preserve the valid traversal order. 
+* After rationalization, all `GT_COMMA` nodes are eliminated, and the primary traversal mechanism becomes the `gtNext/gtPrev` links. Statements may be embedded within other statements, but the nodes of each statement preserve the valid traversal order.
 * In tree ordering:
   * The `gtPrev` of the first node (`gtStmtList`) is always null.
   * The `gtNext` of the last node (`gtStmtExpr`) is always null.
@@ -499,7 +499,7 @@ These can be set in one of three ways:
 * Setting the environment variable `COMPLUS_<flagname>`. For example, the following will set the `JitDump` flag so that the compilation of all methods named ‘Main’ will be dumped:
 
     set COMPLUS_JitDump=Main
-    
+
 * Setting the registry key `HKCU\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
 * Setting the registry key `HKLM\Software\Microsoft\.NETFramework`, Value `<flagName>`, type `REG_SZ` or `REG_DWORD` (depending on the flag).
 
@@ -517,7 +517,7 @@ The namespace, class name, and argument types are optional, and if they are not 
 
 		Main
 
-will match all methods named Main from any class and any number of arguments. 
+will match all methods named Main from any class and any number of arguments.
 
 <types> is a comma separated list of type names. Note that presently only the number of arguments and not the types themselves are used to distinguish methods. Thus, Main(Foo, Bar), and Main(int, int) will both match any main method with two arguments.
 
@@ -536,11 +536,11 @@ Below are some of the most useful `COMPLUS` variables. Where {method-list} is sp
 * `COMPLUS_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
 * `COMPLUS_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
 
-See also: [CLR Configuration Knobs](https://github.com/dotnet/coreclr/blob/master/Documentation/clr-configuration-knobs.md)
+See also: [CLR Configuration Knobs](../miscellaneous/clr-configuration-knobs.md)
 
 # Reading a JitDump
 
-One of the best ways of learning about the JIT compiler is examining a compilation dump in detail. The dump shows you all the really important details of the basic data structures without all the implementation detail of the code. Debugging a JIT bug almost always begins with a JitDump. Only after the problem is isolated by the dump does it make sense to start debugging the JIT code itself. 
+One of the best ways of learning about the JIT compiler is examining a compilation dump in detail. The dump shows you all the really important details of the basic data structures without all the implementation detail of the code. Debugging a JIT bug almost always begins with a JitDump. Only after the problem is isolated by the dump does it make sense to start debugging the JIT code itself.
 
 Dumps are also useful because they give you good places to place breakpoints. If you want to see what is happening at some point in the dump, simply search for the dump text in the source code. This gives you a great place to put a conditional breakpoint.
 
@@ -550,24 +550,24 @@ There is not a strong convention about what or how the information is dumped, bu
 
 It takes some time to learn to “read” the expression trees, which are printed with the children indented from the parent, and, for binary operators, with the first operand below the parent and the second operand above.
 
-Here is an example dump 
+Here is an example dump
 
     [000027] ------------             ▌  stmtExpr  void  (top level) (IL 0x010...  ???)
     [000026] --C-G-------             └──▌  return    double
     [000024] --C-G-------                └──▌  call      double BringUpTest.DblSqrt
-    [000021] ------------                   │     ┌──▌  lclVar    double V02 arg2         
+    [000021] ------------                   │     ┌──▌  lclVar    double V02 arg2
     [000022] ------------                   │  ┌──▌  -         double
-    [000020] ------------                   │  │  └──▌  lclVar    double V03 loc0         
+    [000020] ------------                   │  │  └──▌  lclVar    double V03 loc0
     [000023] ------------ arg0              └──▌  *         double
-    [000017] ------------                      │     ┌──▌  lclVar    double V01 arg1         
+    [000017] ------------                      │     ┌──▌  lclVar    double V01 arg1
     [000018] ------------                      │  ┌──▌  -         double
-    [000016] ------------                      │  │  └──▌  lclVar    double V03 loc0         
+    [000016] ------------                      │  │  └──▌  lclVar    double V03 loc0
     [000019] ------------                      └──▌  *         double
-    [000013] ------------                         │     ┌──▌  lclVar    double V00 arg0         
+    [000013] ------------                         │     ┌──▌  lclVar    double V00 arg0
     [000014] ------------                         │  ┌──▌  -         double
-    [000012] ------------                         │  │  └──▌  lclVar    double V03 loc0         
+    [000012] ------------                         │  │  └──▌  lclVar    double V03 loc0
     [000015] ------------                         └──▌  *         double
-    [000011] ------------                            └──▌  lclVar    double V03 loc0         
+    [000011] ------------                            └──▌  lclVar    double V03 loc0
 
 The tree nodes are indented to represent the parent-child relationship. Binary operators print first the right hand side, then the operator node itself, then the left hand side. This scheme makes sense if you look at the dump “sideways” (lean your head to the left). Oriented this way, the left hand side operator is actually on the left side, and the right hand operator is on the right side so you can almost visualize the tree if you look at it sideways. The indentation level is also there as a backup.
 
