@@ -16,7 +16,7 @@ namespace System.Text
         // Using indices from s_encodingNamesIndices, we binary search this string when mapping
         // an encoding name to a codepage. Note that these names are all lowercase and are
         // sorted alphabetically.
-        // 
+        //
         private const string s_encodingNames =
             "437" + // 437
             "arabic" + // 28596
@@ -755,7 +755,7 @@ namespace System.Text
             3406
         };
 
-        // 
+        //
         // s_codePagesByName contains the list of supported codepages which match the encoding
         // names listed in s_encodingNames. The way mapping works is we binary search
         // s_encodingNames using s_encodingNamesIndices until we find a match for a given name.
@@ -1129,7 +1129,7 @@ namespace System.Text
             950 // x-x-big5
         };
 
-        // 
+        //
         // When retrieving the value for System.Text.Encoding.WebName or
         // System.Text.Encoding.EncodingName given System.Text.Encoding.CodePage,
         // we perform a linear search on s_mappedCodePages to find the index of the
@@ -1250,6 +1250,7 @@ namespace System.Text
             28599, // iso-8859-9
             28603, // iso-8859-13
             28605, // iso-8859-15
+            29001, // x-europa
             38598, // iso-8859-8-i
             50220, // iso-2022-jp
             50221, // csiso2022jp
@@ -1273,7 +1274,7 @@ namespace System.Text
             57011 // x-iscii-pa
         };
 
-        // 
+        //
         // s_webNames is a concatenation of the default encoding names
         // for each code page. It is used in retrieving the value for
         // System.Text.Encoding.WebName given System.Text.Encoding.CodePage.
@@ -1391,6 +1392,7 @@ namespace System.Text
             "iso-8859-9" + // 28599
             "iso-8859-13" + // 28603
             "iso-8859-15" + // 28605
+            "x-europa" + // 29001
             "iso-8859-8-i" + // 38598
             "iso-2022-jp" + // 50220
             "csiso2022jp" + // 50221
@@ -1413,7 +1415,7 @@ namespace System.Text
             "x-iscii-gu" + // 57010
             "x-iscii-pa"; // 57011
 
-        // 
+        //
         // s_webNameIndices contains the start index of each code page's default
         // web name in the string s_webNames. It is indexed by an index into
         // s_mappedCodePages.
@@ -1530,37 +1532,38 @@ namespace System.Text
             956, // iso-8859-9 (28599)
             966, // iso-8859-13 (28603)
             977, // iso-8859-15 (28605)
-            988, // iso-8859-8-i (38598)
-            1000, // iso-2022-jp (50220)
-            1011, // csiso2022jp (50221)
-            1022, // iso-2022-jp (50222)
-            1033, // iso-2022-kr (50225)
-            1044, // x-cp50227 (50227)
-            1053, // euc-jp (51932)
-            1059, // euc-cn (51936)
-            1065, // euc-kr (51949)
-            1071, // hz-gb-2312 (52936)
-            1081, // gb18030 (54936)
-            1088, // x-iscii-de (57002)
-            1098, // x-iscii-be (57003)
-            1108, // x-iscii-ta (57004)
-            1118, // x-iscii-te (57005)
-            1128, // x-iscii-as (57006)
-            1138, // x-iscii-or (57007)
-            1148, // x-iscii-ka (57008)
-            1158, // x-iscii-ma (57009)
-            1168, // x-iscii-gu (57010)
-            1178, // x-iscii-pa (57011)
-            1188
+            988, // x-europa (29001)
+            996, // iso-8859-8-i (38598)
+            1008, // iso-2022-jp (50220)
+            1019, // csiso2022jp (50221)
+            1030, // iso-2022-jp (50222)
+            1041, // iso-2022-kr (50225)
+            1052, // x-cp50227 (50227)
+            1061, // euc-jp (51932)
+            1067, // euc-cn (51936)
+            1073, // euc-kr (51949)
+            1079, // hz-gb-2312 (52936)
+            1089, // gb18030 (54936)
+            1096, // x-iscii-de (57002)
+            1106, // x-iscii-be (57003)
+            1116, // x-iscii-ta (57004)
+            1126, // x-iscii-te (57005)
+            1136, // x-iscii-as (57006)
+            1146, // x-iscii-or (57007)
+            1156, // x-iscii-ka (57008)
+            1166, // x-iscii-ma (57009)
+            1176, // x-iscii-gu (57010)
+            1186, // x-iscii-pa (57011)
+            1196
         };
 
-        // 
+        //
         // s_englishNames is the concatenation of the English names for each codepage.
         // It is used in retrieving the value for System.Text.Encoding.EncodingName
         // given System.Text.Encoding.CodePage.
         // This is done rather than using a large readonly array of strings to avoid
         // generating a large amount of code in the static constructor.
-        // 
+        //
         private const string s_englishNames =
             "IBM EBCDIC (US-Canada)" + // 37
             "OEM United States" + // 437
@@ -1672,6 +1675,7 @@ namespace System.Text
             "Turkish (ISO)" + // 28599
             "Estonian (ISO)" + // 28603
             "Latin 9 (ISO)" + // 28605
+            "Europa" + // 29001
             "Hebrew (ISO-Logical)" + // 38598
             "Japanese (JIS)" + // 50220
             "Japanese (JIS-Allow 1 byte Kana)" + // 50221
@@ -1694,7 +1698,7 @@ namespace System.Text
             "ISCII Gujarati" + // 57010
             "ISCII Punjabi"; // 57011
 
-        // 
+        //
         // s_englishNameIndices contains the start index of each code page's English
         // name in the string s_englishNames. It is indexed by an index into
         // s_mappedCodePages.
@@ -1811,28 +1815,29 @@ namespace System.Text
             2008, // Turkish (ISO) (28599)
             2021, // Estonian (ISO) (28603)
             2035, // Latin 9 (ISO) (28605)
-            2048, // Hebrew (ISO-Logical) (38598)
-            2068, // Japanese (JIS) (50220)
-            2082, // Japanese (JIS-Allow 1 byte Kana) (50221)
-            2114, // Japanese (JIS-Allow 1 byte Kana - SO/SI) (50222)
-            2154, // Korean (ISO) (50225)
-            2166, // Chinese Simplified (ISO-2022) (50227)
-            2195, // Japanese (EUC) (51932)
-            2209, // Chinese Simplified (EUC) (51936)
-            2233, // Korean (EUC) (51949)
-            2245, // Chinese Simplified (HZ) (52936)
-            2268, // Chinese Simplified (GB18030) (54936)
-            2296, // ISCII Devanagari (57002)
-            2312, // ISCII Bengali (57003)
-            2325, // ISCII Tamil (57004)
-            2336, // ISCII Telugu (57005)
-            2348, // ISCII Assamese (57006)
-            2362, // ISCII Oriya (57007)
-            2373, // ISCII Kannada (57008)
-            2386, // ISCII Malayalam (57009)
-            2401, // ISCII Gujarati (57010)
-            2415, // ISCII Punjabi (57011)
-            2428
+            2048, // Europa (29001)
+            2054, // Hebrew (ISO-Logical) (38598)
+            2074, // Japanese (JIS) (50220)
+            2088, // Japanese (JIS-Allow 1 byte Kana) (50221)
+            2120, // Japanese (JIS-Allow 1 byte Kana - SO/SI) (50222)
+            2160, // Korean (ISO) (50225)
+            2172, // Chinese Simplified (ISO-2022) (50227)
+            2201, // Japanese (EUC) (51932)
+            2215, // Chinese Simplified (EUC) (51936)
+            2239, // Korean (EUC) (51949)
+            2251, // Chinese Simplified (HZ) (52936)
+            2274, // Chinese Simplified (GB18030) (54936)
+            2302, // ISCII Devanagari (57002)
+            2318, // ISCII Bengali (57003)
+            2331, // ISCII Tamil (57004)
+            2342, // ISCII Telugu (57005)
+            2354, // ISCII Assamese (57006)
+            2368, // ISCII Oriya (57007)
+            2379, // ISCII Kannada (57008)
+            2392, // ISCII Malayalam (57009)
+            2407, // ISCII Gujarati (57010)
+            2421, // ISCII Punjabi (57011)
+            2434
         };
     }
 }
