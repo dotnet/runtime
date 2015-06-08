@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     public static class DecryptorReusabilty
     {
         [Fact]
+        [ActiveIssue(1965, PlatformID.AnyUnix)]
         public static void TestDecryptorReusability()
         {
             byte[] expectedPlainText = new byte[]
