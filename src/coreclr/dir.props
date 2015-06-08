@@ -58,11 +58,12 @@
 
   <!-- Setup common target properties that we use to conditionally include sources -->
   <PropertyGroup>
-    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
     <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
     <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
-
-    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+    
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
   
   <!-- Common NuGet properties -->
