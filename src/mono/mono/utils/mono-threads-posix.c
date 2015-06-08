@@ -236,30 +236,6 @@ mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid)
 	return handle;
 }
 
-gpointer
-mono_threads_core_prepare_interrupt (HANDLE thread_handle)
-{
-	return wapi_prepare_interrupt_thread (thread_handle);
-}
-
-void
-mono_threads_core_finish_interrupt (gpointer wait_handle)
-{
-	wapi_finish_interrupt_thread (wait_handle);
-}
-
-void
-mono_threads_core_self_interrupt (void)
-{
-	wapi_self_interrupt ();
-}
-
-void
-mono_threads_core_clear_interruption (void)
-{
-	wapi_clear_interruption ();
-}
-
 int
 mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 {

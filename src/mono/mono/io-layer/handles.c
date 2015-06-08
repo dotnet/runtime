@@ -45,6 +45,7 @@
 
 #include <mono/utils/mono-mutex.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-threads.h>
 #undef DEBUG_REFS
 
 #if 0
@@ -1537,17 +1538,50 @@ static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex
 	return(ret);
 }
 
-int _wapi_handle_timedwait_signal (struct timespec *timeout, gboolean poll)
+int
+_wapi_handle_timedwait_signal (struct timespec *timeout, gboolean poll, gboolean *alerted)
 {
-	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, TRUE, poll);
+	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, TRUE, poll, alerted);
 }
 
-int _wapi_handle_timedwait_signal_handle (gpointer handle,
-										  struct timespec *timeout, gboolean alertable, gboolean poll)
+static void
+signal_handle_and_unref (gpointer handle)
+{
+	pthread_cond_t *cond;
+	mono_mutex_t *mutex;
+	guint32 idx;
+
+	g_assert (handle);
+
+	/* If we reach here, then interrupt token is set to the flag value, which
+	 * means that the target thread is either
+	 * - before the first CAS in timedwait, which means it won't enter the wait.
+	 * - it is after the first CAS, so it is already waiting, or it will enter
+	 *    the wait, and it will be interrupted by the broadcast. */
+	idx = GPOINTER_TO_UINT (handle);
+	cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
+	mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
+
+	mono_mutex_lock (mutex);
+	mono_cond_broadcast (cond);
+	mono_mutex_unlock (mutex);
+
+	_wapi_handle_unref (handle);
+}
+
+int
+_wapi_handle_timedwait_signal_handle (gpointer handle, struct timespec *timeout,
+		gboolean alertable, gboolean poll, gboolean *alerted)
 {
 	DEBUG ("%s: waiting for %p (type %s)", __func__, handle,
 		   _wapi_handle_typename[_wapi_handle_type (handle)]);
-	
+
+	if (alertable)
+		g_assert (alerted);
+
+	if (alerted)
+		*alerted = FALSE;
+
 	if (_WAPI_SHARED_HANDLE (_wapi_handle_type (handle))) {
 		if (WAPI_SHARED_HANDLE_DATA(handle).signalled == TRUE) {
 			return (0);
@@ -1581,8 +1615,12 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 		pthread_cond_t *cond;
 		mono_mutex_t *mutex;
 
-		if (alertable && !wapi_thread_set_wait_handle (handle))
-			return 0;
+		if (alertable) {
+			mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
+			if (*alerted)
+				return 0;
+			_wapi_handle_ref (handle);
+		}
 
 		cond = &_WAPI_PRIVATE_HANDLES (idx).signal_cond;
 		mutex = &_WAPI_PRIVATE_HANDLES (idx).signal_mutex;
@@ -1597,8 +1635,13 @@ int _wapi_handle_timedwait_signal_handle (gpointer handle,
 				res = mono_cond_wait (cond, mutex);
 		}
 
-		if (alertable)
-			wapi_thread_clear_wait_handle (handle);
+		if (alertable) {
+			mono_thread_info_uninstall_interrupt (alerted);
+			if (!*alerted) {
+				/* if it is alerted, then the handle is unref in the interrupt callback */
+				_wapi_handle_unref (handle);
+			}
+		}
 
 		return res;
 	}

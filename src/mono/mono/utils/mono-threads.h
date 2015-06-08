@@ -117,6 +117,12 @@ and reduce the number of casts drastically.
 #define THREADS_STATE_MACHINE_DEBUG MOSTLY_ASYNC_SAFE_PRINTF
 #endif
 
+#if 1
+#define THREADS_INTERRUPT_DEBUG(...)
+#else
+#define THREADS_INTERRUPT_DEBUG MOSTLY_ASYNC_SAFE_PRINTF
+#endif
+
 /* If this is defined, use the signals backed on Mach. Debug only as signals can't be made usable on OSX. */
 // #define USE_SIGNALS_ON_MACH
 
@@ -169,6 +175,8 @@ enum {
 typedef enum {
 	MONO_SERVICE_REQUEST_SAMPLE = 1,
 } MonoAsyncJob;
+
+typedef struct _MonoThreadInfoInterruptToken MonoThreadInfoInterruptToken;
 
 typedef struct {
 	MonoLinkedListSetNode node;
@@ -243,6 +251,8 @@ typedef struct {
 	volatile gint32 service_requests;
 
 	void *jit_data;
+
+	MonoThreadInfoInterruptToken *interrupt_token;
 } MonoThreadInfo;
 
 typedef struct {
@@ -401,20 +411,29 @@ mono_thread_info_exit (void);
 HANDLE
 mono_thread_info_open_handle (void);
 
-gpointer
-mono_thread_info_prepare_interrupt (HANDLE thread_handle);
+void
+mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer data, gboolean *interrupted);
 
 void
-mono_thread_info_finish_interrupt (gpointer wait_handle);
+mono_thread_info_uninstall_interrupt (gboolean *interrupted);
+
+MonoThreadInfoInterruptToken*
+mono_thread_info_prepare_interrupt (THREAD_INFO_TYPE *info);
 
 void
-mono_thread_info_interrupt (HANDLE thread_handle);
+mono_thread_info_finish_interrupt (MonoThreadInfoInterruptToken *token);
 
 void
 mono_thread_info_self_interrupt (void);
 
 void
-mono_thread_info_clear_interruption (void);
+mono_thread_info_clear_self_interrupt (void);
+
+gboolean
+mono_thread_info_is_interrupt_state (THREAD_INFO_TYPE *info);
+
+void
+mono_thread_info_describe_interrupt_token (THREAD_INFO_TYPE *info, GString *text);
 
 gboolean
 mono_thread_info_is_live (THREAD_INFO_TYPE *info);
@@ -522,10 +541,6 @@ void mono_threads_core_unregister (THREAD_INFO_TYPE *info);
 HANDLE mono_threads_core_open_handle (void);
 HANDLE mono_threads_core_open_thread_handle (HANDLE handle, MonoNativeThreadId tid);
 void mono_threads_core_set_name (MonoNativeThreadId tid, const char *name);
-gpointer mono_threads_core_prepare_interrupt (HANDLE thread_handle);
-void mono_threads_core_finish_interrupt (gpointer wait_handle);
-void mono_threads_core_self_interrupt (void);
-void mono_threads_core_clear_interruption (void);
 
 MonoNativeThreadId mono_native_thread_id_get (void);
 

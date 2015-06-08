@@ -30,14 +30,6 @@ extern gsize GetCurrentThreadId(void); /* NB return is 32bit in MS API */
 extern void Sleep(guint32 ms);
 extern guint32 SleepEx(guint32 ms, gboolean alertable);
 
-void wapi_clear_interruption (void);
-gboolean wapi_thread_set_wait_handle (gpointer handle);
-void wapi_thread_clear_wait_handle (gpointer handle);
-void wapi_self_interrupt (void);
-
-gpointer wapi_prepare_interrupt_thread (gpointer thread_handle);
-void wapi_finish_interrupt_thread (gpointer wait_handle);
-
 gpointer wapi_create_thread_handle (void);
 void wapi_thread_handle_set_exited (gpointer handle, guint32 exitstatus);
 void wapi_ref_thread_handle (gpointer handle);

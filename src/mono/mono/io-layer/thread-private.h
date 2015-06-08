@@ -20,19 +20,10 @@
 
 extern struct _WapiHandleOps _wapi_thread_ops;
 
-#define INTERRUPTION_REQUESTED_HANDLE (gpointer)0xFFFFFFFE
-
 struct _WapiHandle_thread
 {
 	pthread_t id;
 	GPtrArray *owned_mutexes;
-	/* 
-     * Handle this thread waits on. If this is INTERRUPTION_REQUESTED_HANDLE,
-	 * it means the thread is interrupted by another thread, and shouldn't enter
-	 * a wait.
-	 * This also acts as a reference for the handle.
-	 */
-	gpointer wait_handle;
 };
 
 typedef struct _WapiHandle_thread WapiHandle_thread;
