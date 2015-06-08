@@ -130,7 +130,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 
 		ret = _wapi_handle_ops_special_wait (handle, timeout, alertable);
 	
-		if (alertable && _wapi_thread_apc_pending (current_thread)) {
+		if (alertable && _wapi_thread_cur_apc_pending ()) {
 			apc_pending = TRUE;
 			ret = WAIT_IO_COMPLETION;
 		}
@@ -154,7 +154,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		}
 	}
 	
-	if (alertable && _wapi_thread_apc_pending (current_thread)) {
+	if (alertable && _wapi_thread_cur_apc_pending ()) {
 		apc_pending = TRUE;
 		ret = WAIT_IO_COMPLETION;
 		goto done;
@@ -197,7 +197,7 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 		}
 	
 		if (alertable)
-			apc_pending = _wapi_thread_apc_pending (current_thread);
+			apc_pending = _wapi_thread_cur_apc_pending ();
 
 		if(waited==0 && !apc_pending) {
 			/* Condition was signalled, so hopefully
@@ -352,7 +352,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		}
 	}
 	
-	if (alertable && _wapi_thread_apc_pending (current_thread)) {
+	if (alertable && _wapi_thread_cur_apc_pending ()) {
 		apc_pending = TRUE;
 		ret = WAIT_IO_COMPLETION;
 		goto done;
@@ -389,7 +389,7 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 		}
 
 		if (alertable) {
-			apc_pending = _wapi_thread_apc_pending (current_thread);
+			apc_pending = _wapi_thread_cur_apc_pending ();
 		}
 
 		if (waited==0 && !apc_pending) {
@@ -590,7 +590,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		_wapi_calc_timeout (&abstime, timeout);
 	}
 
-	if (alertable && _wapi_thread_apc_pending (current_thread))
+	if (alertable && _wapi_thread_cur_apc_pending ())
 		return WAIT_IO_COMPLETION;
 	
 	for (i = 0; i < numobjects; i++) {
@@ -648,7 +648,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		thr_ret = _wapi_handle_unlock_signal_mutex (NULL);
 		g_assert (thr_ret == 0);
 		
-		if (alertable && _wapi_thread_apc_pending (current_thread)) {
+		if (alertable && _wapi_thread_cur_apc_pending ()) {
 			retval = WAIT_IO_COMPLETION;
 			break;
 		}

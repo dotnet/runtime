@@ -243,7 +243,7 @@ SleepEx (guint32 ms, gboolean alertable)
 	if (alertable) {
 		current_thread = get_current_thread_handle ();
 		
-		if (_wapi_thread_apc_pending (current_thread))
+		if (_wapi_thread_cur_apc_pending ())
 			return WAIT_IO_COMPLETION;
 	}
 	
@@ -271,7 +271,7 @@ SleepEx (guint32 ms, gboolean alertable)
 	while (TRUE) {
 		ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
 
-		if (alertable && _wapi_thread_apc_pending (current_thread))
+		if (alertable && _wapi_thread_cur_apc_pending ())
 			return WAIT_IO_COMPLETION;
 
 		if (ret == 0)
@@ -288,7 +288,7 @@ again:
 	memset (&rem, 0, sizeof (rem));
 	ret=nanosleep(&req, &rem);
 
-	if (alertable && _wapi_thread_apc_pending (current_thread))
+	if (alertable && _wapi_thread_cur_apc_pending ())
 		return WAIT_IO_COMPLETION;
 	
 	if(ret==-1) {
@@ -316,16 +316,9 @@ Sleep(guint32 ms)
 gboolean
 _wapi_thread_cur_apc_pending (void)
 {
-	return _wapi_thread_apc_pending (get_current_thread_handle ());
-}
-
-gboolean
-_wapi_thread_apc_pending (gpointer handle)
-{
 	WapiHandle_thread *thread;
 
-	thread = lookup_thread (handle);
-	
+	thread = lookup_thread (get_current_thread_handle ());
 	return thread->wait_handle == INTERRUPTION_REQUESTED_HANDLE;
 }
 
