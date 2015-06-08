@@ -31,9 +31,10 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
-if /i "%1" == "windowsmscorlib" (set __MscorlibOnly=1&set __BuildOS=Windows_NT&shift&goto Arg_Loop)
+if /i "%1" == "freebsdmscorlib" (set __MscorlibOnly=1&set __BuildOS=FreeBSD&shift&goto Arg_Loop)
 if /i "%1" == "linuxmscorlib" (set __MscorlibOnly=1&set __BuildOS=Linux&shift&goto Arg_Loop)
 if /i "%1" == "osxmscorlib" (set __MscorlibOnly=1&set __BuildOS=OSX&shift&goto Arg_Loop)
+if /i "%1" == "windowsmscorlib" (set __MscorlibOnly=1&set __BuildOS=Windows_NT&shift&goto Arg_Loop)
 
 if /i "%1" == "vs2013" (set __VSVersion=%1&set __VSProductVersion=120&shift&goto Arg_Loop)
 if /i "%1" == "vs2015" (set __VSVersion=%1&set __VSProductVersion=140&shift&goto Arg_Loop)
