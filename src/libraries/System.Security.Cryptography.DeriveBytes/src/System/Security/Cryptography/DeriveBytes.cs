@@ -5,10 +5,6 @@ namespace System.Security.Cryptography
 {
     public abstract class DeriveBytes : IDisposable
     {
-        protected DeriveBytes()
-        {
-        }
-
         public abstract byte[] GetBytes(int cb);
         public abstract void Reset();
 
@@ -20,7 +16,6 @@ namespace System.Security.Cryptography
 
         protected virtual void Dispose(bool disposing)
         {
-            return;
         }
     }
 }
