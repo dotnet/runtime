@@ -6161,6 +6161,42 @@ get_delegate_invoke_impl (gboolean has_target, guint32 param_count, guint32 *cod
 	return start;
 }
 
+#define MAX_VIRTUAL_DELEGATE_OFFSET 32
+
+static gpointer
+get_delegate_virtual_invoke_impl (gboolean load_imt_reg, int offset, guint32 *code_size)
+{
+	guint8 *code, *start;
+	int size = 24;
+
+	/*
+	 * The stack contains:
+	 * <delegate>
+	 * <return addr>
+	 */
+	start = code = mono_global_codeman_reserve (size);
+
+	/* Replace the this argument with the target */
+	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
+	x86_mov_reg_membase (code, X86_ECX, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, target), 4);
+	x86_mov_membase_reg (code, X86_ESP, 4, X86_ECX, 4);
+
+	if (load_imt_reg) {
+		/* Load the IMT reg */
+		x86_mov_reg_membase (code, MONO_ARCH_IMT_REG, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, method), 4);
+	}
+
+	/* Load the vtable */
+	x86_mov_reg_membase (code, X86_EAX, X86_ECX, MONO_STRUCT_OFFSET (MonoObject, vtable), 4);
+	x86_jump_membase (code, X86_EAX, offset);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
+
+	if (code_size)
+		*code_size = code - start;
+
+	return start;
+}
+
 GSList*
 mono_arch_get_delegate_invoke_impls (void)
 {
@@ -6176,6 +6212,18 @@ mono_arch_get_delegate_invoke_impls (void)
 	for (i = 0; i < MAX_ARCH_DELEGATE_PARAMS; ++i) {
 		code = get_delegate_invoke_impl (FALSE, i, &code_len);
 		tramp_name = g_strdup_printf ("delegate_invoke_impl_target_%d", i);
+		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
+		g_free (tramp_name);
+	}
+
+	for (i = 0; i < MAX_VIRTUAL_DELEGATE_OFFSET; ++i) {
+		code = get_delegate_virtual_invoke_impl (TRUE, i * SIZEOF_VOID_P, &code_len);
+		tramp_name = g_strdup_printf ("delegate_virtual_invoke_imt_%d", i);
+		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
+		g_free (tramp_name);
+
+		code = get_delegate_virtual_invoke_impl (FALSE, i * SIZEOF_VOID_P, &code_len);
+		tramp_name = g_strdup_printf ("delegate_virtual_invoke_%d", i);
 		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
 		g_free (tramp_name);
 	}
@@ -6245,32 +6293,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 gpointer
 mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
 {
-	guint8 *code, *start;
-	int size = 24;
-
-	/*
-	 * The stack contains:
-	 * <delegate>
-	 * <return addr>
-	 */
-	start = code = mono_global_codeman_reserve (size);
-
-	/* Replace the this argument with the target */
-	x86_mov_reg_membase (code, X86_EAX, X86_ESP, 4, 4);
-	x86_mov_reg_membase (code, X86_ECX, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, target), 4);
-	x86_mov_membase_reg (code, X86_ESP, 4, X86_ECX, 4);
-
-	if (load_imt_reg) {
-		/* Load the IMT reg */
-		x86_mov_reg_membase (code, MONO_ARCH_IMT_REG, X86_EAX, MONO_STRUCT_OFFSET (MonoDelegate, method), 4);
-	}
-
-	/* Load the vtable */
-	x86_mov_reg_membase (code, X86_EAX, X86_ECX, MONO_STRUCT_OFFSET (MonoObject, vtable), 4);
-	x86_jump_membase (code, X86_EAX, offset);
-	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE, NULL);
-
-	return start;
+	return get_delegate_virtual_invoke_impl (load_imt_reg, offset, NULL);
 }
 
 mgreg_t
