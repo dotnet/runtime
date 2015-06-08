@@ -53,6 +53,8 @@ OpenEventW
 OpenMutexW
 OpenSemaphoreW
 PAL_Random
+PAL_RegisterModule
+PAL_UnregisterModule
 QueryPerformanceCounter  
 QueryPerformanceFrequency
 RaiseException
