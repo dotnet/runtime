@@ -1,15 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.IO;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Test
 {
     public partial class ZipTest
     {
-        private static void ConstructorThrows<TException>(Func<ZipArchive> constructor, String Message = "") where TException : Exception
+        private static void ConstructorThrows<TException>(Func<ZipArchive> constructor, string Message = "") where TException : Exception
         {
             Assert.Throws<TException>(() =>
             {
@@ -18,9 +16,9 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
-        public static void InvalidInstanceMethods()
+        public void InvalidInstanceMethods()
         {
-            String zipFileName = StreamHelpers.CreateTempCopyFile(zfile("normal.zip"));
+            string zipFileName = CreateTempCopyFile(zfile("normal.zip"));
             using (ZipArchive archive = ZipFile.Open(zipFileName, ZipArchiveMode.Update))
             {
                 //non-existent entry
@@ -37,7 +35,7 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
-        public static void InvalidConstructors()
+        public void InvalidConstructors()
         {
             //out of range enum values
             ConstructorThrows<ArgumentOutOfRangeException>(() =>
@@ -45,7 +43,7 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
-        public static void InvalidFiles()
+        public void InvalidFiles()
         {
             ConstructorThrows<InvalidDataException>(() => ZipFile.OpenRead(bad("EOCDmissing.zip")));
             ConstructorThrows<InvalidDataException>(() => ZipFile.Open(bad("EOCDmissing.zip"), ZipArchiveMode.Update));
@@ -99,7 +97,7 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
-        public static void UnsupportedCompression()
+        public void UnsupportedCompression()
         {
             //lzma compression method
             UnsupportedCompressionRoutine(bad("LZMA.zip"), true);
@@ -107,7 +105,7 @@ namespace System.IO.Compression.Test
             UnsupportedCompressionRoutine(bad("invalidDeflate.zip"), false);
         }
 
-        private static void UnsupportedCompressionRoutine(String filename, Boolean throwsOnOpen)
+        private void UnsupportedCompressionRoutine(string filename, Boolean throwsOnOpen)
         {
             using (ZipArchive archive = ZipFile.OpenRead(filename))
             {
@@ -125,8 +123,8 @@ namespace System.IO.Compression.Test
                 }
             }
 
-            String updatedCopyName = StreamHelpers.CreateTempCopyFile(filename);
-            String name;
+            string updatedCopyName = CreateTempCopyFile(filename);
+            string name;
             Int64 length, compressedLength;
             DateTimeOffset lastWriteTime;
             using (ZipArchive archive = ZipFile.Open(updatedCopyName, ZipArchiveMode.Update))
@@ -152,13 +150,52 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
-        public static void InvalidDates()
+        public void InvalidDates()
         {
             using (ZipArchive archive = ZipFile.OpenRead(bad("invaliddate.zip")))
             {
                 Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
             }
+
+            FileInfo fileWithBadDate = new FileInfo(GetTmpFilePath());
+            fileWithBadDate.Create().Dispose();
+            fileWithBadDate.LastWriteTimeUtc = new DateTime(1970, 1, 1, 1, 1, 1);
+
+            string archivePath = GetTmpFilePath();
+            using (FileStream output = File.Open(archivePath, FileMode.Create))
+            using (ZipArchive archive = new ZipArchive(output, ZipArchiveMode.Create))
+            {
+                archive.CreateEntryFromFile(fileWithBadDate.FullName, "SomeEntryName");
+            }
+            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+            {
+                Assert.Equal(new DateTime(1980, 1, 1, 0, 0, 0), archive.Entries[0].LastWriteTime.DateTime);
+            }
         }
+
+        [Fact]
+        public void FilesOutsideDirectory()
+        {
+            string archivePath = GetTmpFilePath();
+            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            using (StreamWriter writer = new StreamWriter(archive.CreateEntry(Path.Combine("..", "entry1"), CompressionLevel.Optimal).Open()))
+            {
+                writer.Write("This is a test.");
+            }
+            Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTmpDirPath()));
+        }
+
+        [Fact]
+        public void DirectoryEntryWithData()
+        {
+            string archivePath = GetTmpFilePath();
+            using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
+            using (StreamWriter writer = new StreamWriter(archive.CreateEntry("testdir" + Path.DirectorySeparatorChar, CompressionLevel.Optimal).Open()))
+            {
+                writer.Write("This is a test.");
+            }
+            Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTmpDirPath()));
+        }
+
     }
 }
-
