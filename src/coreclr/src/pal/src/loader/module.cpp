@@ -480,9 +480,17 @@ FreeLibrary(
             // This module may be foreign to our PAL, so leave our PAL.
             // If it depends on us, it will re-enter.
             PAL_LeaveHolder holder;
-            module->pDllMain((HMODULE)module, DLL_PROCESS_DETACH, NULL);
+            module->pDllMain(module->hinstance, DLL_PROCESS_DETACH, NULL);
         }
 
+        if (module->hinstance)
+        {
+            PUNREGISTER_MODULE unregisterModule = (PUNREGISTER_MODULE)dlsym(module->dl_handle, "PAL_UnregisterModule");
+            if (unregisterModule)
+            {
+                 unregisterModule(module->hinstance);
+            }
+        }
 /* ...and set nesting level back to what it was */
 #if !_NO_DEBUG_MESSAGES_
         DBG_change_entrylevel(old_level);
@@ -665,6 +673,57 @@ done:
     LOGEXIT("GetModuleFileNameW returns DWORD %u\n", retval);
     PERF_EXIT(GetModuleFileNameW);
     return retval;
+}
+
+/*++
+Function:
+  PAL_RegisterModule
+
+  Register the module with the target module and return a module handle in
+  the target module's context.
+
+--*/
+
+HINSTANCE
+PALAPI
+PAL_RegisterModule(
+    IN LPCSTR lpLibFileName)
+{
+    HINSTANCE hinstance = NULL;
+
+    int err = PAL_InitializeDLL();
+    if(err == 0)
+    {
+        PERF_ENTRY(PAL_RegisterModule);
+        ENTRY("PAL_RegisterModule(%s)\n", lpLibFileName ? lpLibFileName : "");
+
+        hinstance = (HINSTANCE)LOADLoadLibrary(lpLibFileName, FALSE);
+
+        LOGEXIT("PAL_RegisterModule returns HINSTANCE %p\n", hinstance);
+        PERF_EXIT(PAL_RegisterModule);
+    }
+
+    return hinstance;
+}
+
+/*++
+Function:
+  PAL_UnregisterModule
+
+  Used to cleanup the module HINSTANCE from PAL_RegisterModule.
+--*/
+VOID
+PALAPI
+PAL_UnregisterModule(
+    IN HINSTANCE hInstance)
+{
+    PERF_ENTRY(PAL_UnregisterModule);
+    ENTRY("PAL_UnregisterModule(hInstance=%p)\n", hInstance);
+
+    FreeLibrary(hInstance);
+
+    LOGEXIT("PAL_UnregisterModule returns\n");
+    PERF_EXIT(PAL_UnregisterModule);
 }
 
 /*++
@@ -896,6 +955,7 @@ BOOL LOADInitializeModules(LPWSTR exe_name)
     exe_module.next = &pal_module;
     exe_module.prev = &pal_module;
     exe_module.pDllMain = NULL;
+    exe_module.hinstance = NULL;
     exe_module.ThreadLibCalls = TRUE;
     
     TRACE("Initializing module for PAL library\n");
@@ -906,6 +966,7 @@ BOOL LOADInitializeModules(LPWSTR exe_name)
     pal_module.next = &exe_module;
     pal_module.prev = &exe_module;
     pal_module.pDllMain = NULL;
+    pal_module.hinstance = NULL;
     pal_module.ThreadLibCalls = TRUE;
 
     // For platforms where we can't trust the handle to be constant, we need to 
@@ -1102,7 +1163,7 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
                     // This module may be foreign to our PAL, so leave our PAL.
                     // If it depends on us, it will re-enter.
                     PAL_LeaveHolder holder;
-                    module->pDllMain((HMODULE) module, dwReason, lpReserved);
+                    module->pDllMain(module->hinstance, dwReason, lpReserved);
                 }
 
 #if !_NO_DEBUG_MESSAGES_
@@ -1309,6 +1370,7 @@ static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name)
     module->refcount = 1;
 #endif  // NEED_DLCOMPAT
     module->self = module;
+    module->hinstance = NULL;
     module->ThreadLibCalls = TRUE;
     module->next = NULL;
     module->prev = NULL;
@@ -1454,11 +1516,27 @@ static HMODULE LOADLoadLibrary(LPCSTR ShortAsciiName, BOOL fDynamic)
     /* If it did contain a DllMain, call it. */
     if(module->pDllMain)
     {
-        DWORD dllmain_retval;
+        DWORD dllmain_retval = FALSE;
 
         TRACE("Calling DllMain (%p) for module %S\n", 
               module->pDllMain, 
               module->lib_name ? module->lib_name : W16_NULLSTRING);
+
+        if (NULL == module->hinstance)
+        {
+            PREGISTER_MODULE registerModule = (PREGISTER_MODULE)dlsym(module->dl_handle, "PAL_RegisterModule");
+            if (registerModule)
+            {
+                module->hinstance = registerModule(ShortAsciiName);
+            }
+            else
+            {
+                // If the target module doesn't have the PAL_RegisterModule export, then use this PAL's
+                // module handle assuming that the target module is referencing this PAL's exported 
+                // functions on said handle.
+                module->hinstance = (HINSTANCE)module;
+            }
+        }
 
         {
 #if !_NO_DEBUG_MESSAGES_
@@ -1471,8 +1549,7 @@ static HMODULE LOADLoadLibrary(LPCSTR ShortAsciiName, BOOL fDynamic)
                 // This module may be foreign to our PAL, so leave our PAL.
                 // If it depends on us, it will re-enter.
                 PAL_LeaveHolder holder;
-                dllmain_retval = module->pDllMain((HINSTANCE) module,
-                    DLL_PROCESS_ATTACH, fDynamic ? NULL : (LPVOID)-1);
+                dllmain_retval = module->pDllMain(module->hinstance, DLL_PROCESS_ATTACH, fDynamic ? NULL : (LPVOID)-1);
             }
 
 #if !_NO_DEBUG_MESSAGES_
@@ -1556,7 +1633,7 @@ static void LOAD_SEH_CallDllMain(MODSTRUCT *module, DWORD dwReason, LPVOID lpRes
             // This module may be foreign to our PAL, so leave our PAL.
             // If it depends on us, it will re-enter.
             PAL_LeaveHolder holder;
-            pParam->module->pDllMain((HMODULE)pParam->module, pParam->dwReason, pParam->lpReserved);
+            pParam->module->pDllMain(pParam->module->hinstance, pParam->dwReason, pParam->lpReserved);
         }
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
@@ -1897,7 +1974,13 @@ BOOL LOADInitCoreCLRModules(
         return FALSE;
     }
     PDLLMAIN pRuntimeDllMain = (PDLLMAIN)dlsym(pal_module.dl_handle, "CoreDllMain");
-    return pRuntimeDllMain((HMODULE)&pal_module, DLL_PROCESS_ATTACH, NULL);
+    if (!pRuntimeDllMain)
+    {
+        ERROR("Can not find the CoreDllMain entry point in %s\n", szCoreCLRPath);
+        return FALSE;
+    }
+    pal_module.hinstance = (HINSTANCE)LOADLoadLibrary(szCoreCLRPath, FALSE);
+    return pRuntimeDllMain(pal_module.hinstance, DLL_PROCESS_ATTACH, NULL);
 }
 
 // Get base address of the module containing a given symbol 

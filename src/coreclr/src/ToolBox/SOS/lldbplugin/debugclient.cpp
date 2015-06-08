@@ -10,9 +10,10 @@
 #include <dbgtargetcontext.h>
 #include <string>
 
-DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject) :
+DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, char *coreclrDirectory) :
     m_debugger(debugger),
-    m_returnObject(returnObject)
+    m_returnObject(returnObject),
+    m_coreclrDirectory(coreclrDirectory)
 {
 }
 
@@ -859,6 +860,12 @@ DebugClient::GetFrameOffset(
 //----------------------------------------------------------------------------
 // IDebugClient
 //----------------------------------------------------------------------------
+
+PCSTR
+DebugClient::GetCoreClrDirectory()
+{
+    return m_coreclrDirectory;
+}
 
 DWORD_PTR
 DebugClient::GetExpression(
