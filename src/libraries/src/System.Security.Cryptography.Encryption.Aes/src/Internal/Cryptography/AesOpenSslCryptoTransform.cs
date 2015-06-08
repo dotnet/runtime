@@ -231,7 +231,7 @@ namespace Internal.Cryptography
 
             if (rawDecrypt.Length == 0)
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             return DepadBlock(rawDecrypt, 0, rawDecrypt.Length);
@@ -262,7 +262,7 @@ namespace Internal.Cryptography
 
             if (outputBytes == 0)
             {
-                return new byte[0];
+                return Array.Empty<byte>();
             }
 
             byte[] userData = new byte[outputBytes];
