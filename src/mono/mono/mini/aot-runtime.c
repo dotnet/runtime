@@ -837,7 +837,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			if (!m)
 				return FALSE;
 			mono_class_init (m->klass);
-			ref->method = mono_marshal_get_remoting_invoke_with_check (m);
+			if (mono_aot_only)
+				ref->method = m;
+			else
+				ref->method = mono_marshal_get_remoting_invoke_with_check (m);
 			break;
 		}
 		case MONO_WRAPPER_PROXY_ISINST: {
