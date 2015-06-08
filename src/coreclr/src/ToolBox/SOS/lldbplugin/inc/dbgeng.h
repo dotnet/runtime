@@ -347,6 +347,11 @@ typedef class IDebugRegister* PDEBUG_REGISTERS;
 class IDebugClient : IDebugControl2, IDebugDataSpaces, IDebugSymbols, IDebugSystemObjects, IDebugRegister
 {
 public:
+    // Returns the coreclr module directory found by lldb plugin 
+    // in the target process.
+    virtual PCSTR GetCoreClrDirectory() = 0;
+
+    // Evaluates a lldb expression into a value.
     virtual DWORD_PTR GetExpression(
         /* [in] */ PCSTR exp) = 0;
 };
