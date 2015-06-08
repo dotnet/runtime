@@ -240,4 +240,14 @@ class Tests
 			return 3;
 		return 0;
 	}
+
+	enum AnEnum {
+		A = 0,
+		B = 1
+	}
+
+	public static int test_0_enum_eq_comparer () {
+		var c = EqualityComparer<AnEnum>.Default;
+		return (!c.Equals (AnEnum.A, AnEnum.B) && c.Equals (AnEnum.A, AnEnum.A)) ? 0 : 1;
+	}
 }

@@ -5546,9 +5546,11 @@ emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst 
 }
 
 static gboolean
-is_unsafe_mov_compatible (MonoClass *param_klass, MonoClass *return_klass)
+is_unsafe_mov_compatible (MonoCompile *cfg, MonoClass *param_klass, MonoClass *return_klass)
 {
 	uint32_t align;
+
+	param_klass = mono_class_from_mono_type (mini_get_underlying_type (cfg, &param_klass->byval_arg));
 
 	//Only allow for valuetypes
 	if (!param_klass->valuetype || !return_klass->valuetype)
@@ -5580,11 +5582,11 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 	MonoClass *return_klass = mono_class_from_mono_type (fsig->ret);
 
 	//Valuetypes that are semantically equivalent
-	if (is_unsafe_mov_compatible (param_klass, return_klass))
+	if (is_unsafe_mov_compatible (cfg, param_klass, return_klass))
 		return args [0];
 
 	//Arrays of valuetypes that are semantically equivalent
-	if (param_klass->rank == 1 && return_klass->rank == 1 && is_unsafe_mov_compatible (param_klass->element_class, return_klass->element_class))
+	if (param_klass->rank == 1 && return_klass->rank == 1 && is_unsafe_mov_compatible (cfg, param_klass->element_class, return_klass->element_class))
 		return args [0];
 
 	return NULL;
