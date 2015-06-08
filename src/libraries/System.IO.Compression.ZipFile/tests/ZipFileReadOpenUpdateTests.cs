@@ -9,7 +9,7 @@ namespace System.IO.Compression.Test
     public partial class ZipTest
     {
         [Fact]
-        public static void ReadStreamOps()
+        public void ReadStreamOps()
         {
             using (ZipArchive archive = ZipFile.OpenRead(zfile("normal.zip")))
             {
@@ -27,12 +27,12 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
-        public static void UpdateReadTwice()
+        public void UpdateReadTwice()
         {
             using (ZipArchive archive = ZipFile.Open(zfile("small.zip"), ZipArchiveMode.Update))
             {
                 ZipArchiveEntry entry = archive.Entries[0];
-                String contents1, contents2;
+                string contents1, contents2;
                 using (StreamReader s = new StreamReader(entry.Open()))
                 {
                     contents1 = s.ReadToEnd();
@@ -46,10 +46,10 @@ namespace System.IO.Compression.Test
         }
 
         [Fact]
-        public static async Task UpdateAddFile()
+        public async Task UpdateAddFile()
         {
             //add file
-            String testArchive = StreamHelpers.CreateTempCopyFile(zfile("normal.zip"));
+            string testArchive = CreateTempCopyFile(zfile("normal.zip"));
 
             using (ZipArchive archive = ZipFile.Open(testArchive, ZipArchiveMode.Update))
             {
@@ -59,7 +59,7 @@ namespace System.IO.Compression.Test
             await IsZipSameAsDirAsync(testArchive, zmodified("addFile"), ZipArchiveMode.Read);
 
             //add file and read entries before
-            testArchive = StreamHelpers.CreateTempCopyFile(zfile("normal.zip"));
+            testArchive = CreateTempCopyFile(zfile("normal.zip"));
 
             using (ZipArchive archive = ZipFile.Open(testArchive, ZipArchiveMode.Update))
             {
@@ -72,7 +72,7 @@ namespace System.IO.Compression.Test
 
 
             //add file and read entries after
-            testArchive = StreamHelpers.CreateTempCopyFile(zfile("normal.zip"));
+            testArchive = CreateTempCopyFile(zfile("normal.zip"));
 
             using (ZipArchive archive = ZipFile.Open(testArchive, ZipArchiveMode.Update))
             {
@@ -84,9 +84,9 @@ namespace System.IO.Compression.Test
             await IsZipSameAsDirAsync(testArchive, zmodified("addFile"), ZipArchiveMode.Read);
         }
 
-        private static async Task UpdateArchive(ZipArchive archive, String installFile, String entryName)
+        private static async Task UpdateArchive(ZipArchive archive, string installFile, string entryName)
         {
-            String fileName = installFile;
+            string fileName = installFile;
             ZipArchiveEntry e = archive.CreateEntry(entryName);
 
             var file = FileData.GetFile(fileName);
