@@ -1333,13 +1333,16 @@ namespace System.Linq
         /// <summary>
         /// Groups in parallel the elements of a sequence according to a specified key selector function.
         /// </summary>
-        /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <param name="source">An OrderedParallelQuery{TSource}than contains 
-        /// elements to sort.</param>
+        /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <returns>An OrderedParallelQuery{TSource}whose elements are sorted 
-        /// descending according to a key.</returns>
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// group and its key.</returns>
+        /// <exception cref="T:System.ArgumentNullException">
+        /// <paramref name="source"/> or <paramref name="keySelector"/>
+        /// is a null reference (Nothing in Visual Basic).
+        /// </exception>
         public static ParallelQuery<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(
             this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector)
         {
@@ -1349,14 +1352,13 @@ namespace System.Linq
         /// <summary>
         /// Groups in parallel the elements of a sequence according to a specified key selector function and compares the keys by using a specified comparer.
         /// </summary>
-        /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
-        /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>>.</typeparam>
-        /// <param name="source">An OrderedParallelQuery{TSource} than contains 
-        /// elements to sort.</param>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
+        /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <param name="comparer">An IComparer{TSource} to compare keys.</param>
-        /// <returns>An OrderedParallelQuery{TSource} whose elements are sorted 
-        /// descending according to a key.</returns>
+        /// <param name="comparer">An equality comparer to compare keys.</param>
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// group and its key.</returns>
         /// <exception cref="T:System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> is a null reference (Nothing in Visual Basic).
         /// </exception>
@@ -1373,16 +1375,16 @@ namespace System.Linq
         /// Groups in parallel the elements of a sequence according to a specified key selector function and 
         /// projects the elements for each group by using a specified function.
         /// </summary>
-        /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <typeparam name="TElement">The type of the elements in the IGrouping</typeparam>
-        /// <param name="source">An OrderedParallelQuery&lt;(Of &lt;(TElement&gt;)&gt;) than contains 
-        /// elements to sort.</param>
+        /// <typeparam name="TElement">The type of the elements in each 
+        /// IGrouping{TKey, TElement}.</typeparam>
+        /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <param name="elementSelector">A function to map each source element to an element in an  IGrouping.</param>
-        /// <returns>A ParallelQuery&lt;IGrouping&lt;TKey, TElement&gt;&gt; in C# or 
-        /// ParallelQuery(Of IGrouping(Of TKey, TElement)) in Visual Basic where each IGrouping 
-        /// generic object contains a collection of objects of type <typeparamref name="TElement"/> and a key.</returns>
+        /// <param name="elementSelector">A function to map each source element to an element in an 
+        /// IGrouping{Key, TElement}.</param>
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// group and its key.</returns>
         /// <exception cref="T:System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
@@ -1398,18 +1400,17 @@ namespace System.Linq
         /// The keys are compared by using a comparer and each group's elements are projected by 
         /// using a specified function.
         /// </summary>
-        /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
-        /// <typeparam name="TElement">The type of the elements in the IGrouping</typeparam>
-        /// <param name="source">An OrderedParallelQuery{TSource}than contains elements to sort.</param>
+        /// <typeparam name="TElement">The type of the elements in each 
+        /// IGrouping{TKey, TElement}.</typeparam>
+        /// <param name="source">A sequence whose elements to group.</param>
         /// <param name="keySelector">A function to extract a key from an element.</param>
-        /// <param name="elementSelector">A function to map each source element to an element in an  IGrouping.</param>
-        /// <param name="comparer">An IComparer{TSource} to compare keys.</param>
-        /// <returns>
-        /// A ParallelQuery{IGrouping{TKey, TElement}} in C# or 
-        /// ParallelQuery(Of IGrouping(Of TKey, TElement)) in Visual Basic where each IGrouping 
-        /// generic object contains a collection of objects of type <typeparamref name="TElement"/> and a key.
-        /// </returns>
+        /// <param name="elementSelector">A function to map each source element to an element in an 
+        /// IGrouping{Key, TElement}.</param>
+        /// <param name="comparer">An equality comparer to compare keys.</param>
+        /// <returns>A collection of elements of type IGrouping{TKey, TElement}, where each element represents a 
+        /// group and its key.</returns>
         /// <exception cref="T:System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="elementSelector"/> is a null reference (Nothing in Visual Basic).
@@ -1444,8 +1445,8 @@ namespace System.Linq
         /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result value returned by <paramref name="resultSelector"/>.</typeparam>
-        /// <param name="source">A sequence whose elements to group.</param>
-        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="source">A sequence whose elements to group.</param>       
+        /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
         /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
         /// projection over a group and its key.</returns>
@@ -1472,15 +1473,11 @@ namespace System.Linq
         /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
         /// <typeparam name="TResult">The type of the result value returned by <paramref name="resultSelector"/>.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
-        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
-        /// <param name="comparer">An IEqualityComparer{TKey} to compare keys.</param>
-        /// <returns>
-        /// An <B>ParallelQuery&lt;IGrouping&lt;TKey, TResult&gt;&gt;</B> in C# or 
-        /// <B>ParallelQuery(Of IGrouping(Of TKey, TResult))</B> in Visual Basic where each 
-        /// IGrouping&lt;(Of &lt;(TKey, TResult&gt;)&gt;) object contains a collection of objects 
-        /// of type <typeparamref name="TResult"/> and a key.
-        /// </returns>
+        /// <param name="comparer">An equality comparer to compare keys.</param>
+        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
+        /// projection over a group and its key.</returns>
         /// <exception cref="T:System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
         /// <paramref name="resultSelector"/> is a null reference (Nothing in Visual Basic).
@@ -1505,11 +1502,11 @@ namespace System.Linq
         /// IGrouping{TKey, TElement}.</typeparam>
         /// <typeparam name="TResult">The type of the result value returned by <paramref name="resultSelector"/>.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
-        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="elementSelector">A function to map each source element to an element in an 
-        /// IGrouping&lt;TKey, TElement&gt;.</param>
+        /// IGrouping{Key, TElement}.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
-        /// <returns>A collection of elements of type <typeparamref name="TElement"/> where each element represents a 
+        /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
         /// projection over a group and its key.</returns>
         /// <exception cref="T:System.ArgumentNullException">
         /// <paramref name="source"/> or <paramref name="keySelector"/> or
@@ -1535,11 +1532,11 @@ namespace System.Linq
         /// IGrouping{TKey, TElement}.</typeparam>
         /// <typeparam name="TResult">The type of the result value returned by <paramref name="resultSelector"/>.</typeparam>
         /// <param name="source">A sequence whose elements to group.</param>
-        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="keySelector">A function to extract a key from an element.</param>
         /// <param name="elementSelector">A function to map each source element to an element in an 
         /// IGrouping{Key, TElement}.</param>
         /// <param name="resultSelector">A function to create a result value from each group.</param>
-        /// <param name="comparer">An IEqualityComparer{TKey} to compare keys.</param>
+        /// <param name="comparer">An equality comparer to compare keys.</param>
         /// <returns>A collection of elements of type <typeparamref name="TResult"/> where each element represents a 
         /// projection over a group and its key.</returns>
         /// <exception cref="T:System.ArgumentNullException">
@@ -5354,12 +5351,12 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Converts the elements of a ParallelQuery to the specified type.
+        /// Converts the elements of a weakly-typed ParallelQuery to the specified stronger type.
         /// </summary>
-        /// <typeparam name="TResult">The type to convert the elements of <paramref name="source"/> to.</typeparam>
-        /// <param name="source">The sequence that contains the elements to be converted.</param>
+        /// <typeparam name="TResult">The stronger type to convert the elements of <paramref name="source"/> to.</typeparam>
+        /// <param name="source">The sequence that contains the weakly typed elements to be converted.</param>
         /// <returns>
-        /// A sequence that contains each element of the source sequence converted to the specified type.
+        /// A sequence that contains each weakly-type element of the source sequence converted to the specified stronger type.
         /// </returns>
         /// <exception cref="T:System.ArgumentNullException">
         /// <paramref name="source"/> is a null reference (Nothing in Visual Basic).
