@@ -506,7 +506,6 @@ namespace Test
 
         [Theory]
         [MemberData("SpecificCodepageEncodings")]
-        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestRoundtrippingSpecificCodepageEncoding(string encodingName, byte[] bytes, string expected)
         {
             Encoding encoding = CodePagesEncodingProvider.Instance.GetEncoding(encodingName);
