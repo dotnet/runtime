@@ -250,4 +250,9 @@ class Tests
 		var c = EqualityComparer<AnEnum>.Default;
 		return (!c.Equals (AnEnum.A, AnEnum.B) && c.Equals (AnEnum.A, AnEnum.A)) ? 0 : 1;
 	}
+
+	public static int test_0_enum_comparer () {
+		var c = Comparer<AnEnum>.Default;
+		return c.Compare (AnEnum.A, AnEnum.A);
+	}
 }
