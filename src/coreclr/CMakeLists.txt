@@ -254,9 +254,7 @@ add_compile_options(/wd4960 /wd4961 /wd4603 /wd4627 /wd4838 /wd4456 /wd4457 /wd4
 add_compile_options(/O1) # minimize space
 add_compile_options(/Zi) # enable debugging information
 
-if (CMAKE_BUILD_TYPE STREQUAL Release OR CMAKE_BUILD_TYPE STREQUAL Relwithdebinfo)
-  add_compile_options(/GL) # enable WholeProgramOptimization
-endif ()
+add_compile_options($<$<OR:$<CONFIG:Release>,$<CONFIG:Relwithdebinfo>>:/GL>)
 
 if (IS_64BIT_BUILD EQUAL 1)
 # The generator expression in the following command means that the /homeparams option is added only for debug builds
