@@ -32,12 +32,6 @@ mono_threads_init_platform (void)
 }
 
 void
-mono_threads_core_interrupt (MonoThreadInfo *info)
-{
-	thread_abort (info->native_handle);
-}
-
-void
 mono_threads_core_abort_syscall (MonoThreadInfo *info)
 {
 	kern_return_t ret;

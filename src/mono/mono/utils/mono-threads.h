@@ -457,7 +457,6 @@ gboolean mono_threads_core_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_k
 gboolean mono_threads_core_resume (THREAD_INFO_TYPE *info);
 void mono_threads_platform_register (THREAD_INFO_TYPE *info); //ok
 void mono_threads_platform_free (THREAD_INFO_TYPE *info);
-void mono_threads_core_interrupt (THREAD_INFO_TYPE *info);
 void mono_threads_core_abort_syscall (THREAD_INFO_TYPE *info);
 gboolean mono_threads_core_needs_abort_syscall (void);
 HANDLE mono_threads_core_create_thread (LPTHREAD_START_ROUTINE start, gpointer arg, guint32 stack_size, guint32 creation_flags, MonoNativeThreadId *out_tid);
