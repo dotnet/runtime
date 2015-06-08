@@ -88,7 +88,7 @@ and reduce the number of casts drastically.
 /* Logging - enable them below if you need specific logging for the category you need */
 #define MOSTLY_ASYNC_SAFE_PRINTF(...) do { \
 	char __buff[1024];	__buff [0] = '\0'; \
-	snprintf (__buff, sizeof (__buff), __VA_ARGS__);	\
+	g_snprintf (__buff, sizeof (__buff), __VA_ARGS__);	\
 	write (1, __buff, strlen (__buff));	\
 } while (0)
 
