@@ -3261,7 +3261,7 @@ add_method (MonoAotCompile *acfg, MonoMethod *method)
 static void
 add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
 {
-	if (mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE))
+	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE))
 		method = mini_get_shared_method (method);
 	else if ((acfg->opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE))
 		/* Use the gsharedvt version */
@@ -6936,7 +6936,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				if (m->is_inflated) {
 					if (!(mono_class_generic_sharing_enabled (m->klass) &&
 						  mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) &&
-						!method_has_type_vars (m)) {
+						(!method_has_type_vars (m) || mono_method_is_generic_sharable_full (m, TRUE, TRUE, FALSE))) {
 						if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 							if (mono_aot_mode_is_full (&acfg->aot_opts))
 								add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
