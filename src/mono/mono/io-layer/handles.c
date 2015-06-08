@@ -1537,21 +1537,9 @@ static int timedwait_signal_poll_cond (pthread_cond_t *cond, mono_mutex_t *mutex
 	return(ret);
 }
 
-int _wapi_handle_wait_signal (gboolean poll)
-{
-	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, NULL, TRUE, poll);
-}
-
 int _wapi_handle_timedwait_signal (struct timespec *timeout, gboolean poll)
 {
 	return _wapi_handle_timedwait_signal_handle (_wapi_global_signal_handle, timeout, TRUE, poll);
-}
-
-int _wapi_handle_wait_signal_handle (gpointer handle, gboolean alertable)
-{
-	DEBUG ("%s: waiting for %p", __func__, handle);
-	
-	return _wapi_handle_timedwait_signal_handle (handle, NULL, alertable, FALSE);
 }
 
 int _wapi_handle_timedwait_signal_handle (gpointer handle,

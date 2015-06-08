@@ -190,12 +190,8 @@ guint32 WaitForSingleObjectEx(gpointer handle, guint32 timeout,
 			goto done;
 		}
 			
-		if (timeout == INFINITE) {
-			waited = _wapi_handle_wait_signal_handle (handle, alertable);
-		} else {
-			waited = _wapi_handle_timedwait_signal_handle (handle, &abstime, alertable, FALSE);
-		}
-	
+		waited = _wapi_handle_timedwait_signal_handle (handle, timeout == INFINITE ? NULL : &abstime, alertable, FALSE);
+
 		if (alertable)
 			apc_pending = _wapi_thread_cur_apc_pending ();
 
@@ -381,12 +377,8 @@ guint32 SignalObjectAndWait(gpointer signal_handle, gpointer wait,
 			ret = WAIT_OBJECT_0;
 			goto done;
 		}
-		
-		if (timeout == INFINITE) {
-			waited = _wapi_handle_wait_signal_handle (wait, alertable);
-		} else {
-			waited = _wapi_handle_timedwait_signal_handle (wait, &abstime, alertable, FALSE);
-		}
+
+		waited = _wapi_handle_timedwait_signal_handle (wait, timeout == INFINITE ? NULL : &abstime, alertable, FALSE);
 
 		if (alertable) {
 			apc_pending = _wapi_thread_cur_apc_pending ();
@@ -633,11 +625,7 @@ guint32 WaitForMultipleObjectsEx(guint32 numobjects, gpointer *handles,
 		
 		if (!done) {
 			/* Enter the wait */
-			if (timeout == INFINITE) {
-				ret = _wapi_handle_wait_signal (poll);
-			} else {
-				ret = _wapi_handle_timedwait_signal (&abstime, poll);
-			}
+			ret = _wapi_handle_timedwait_signal (timeout == INFINITE ? NULL : &abstime, poll);
 		} else {
 			/* No need to wait */
 			ret = 0;
