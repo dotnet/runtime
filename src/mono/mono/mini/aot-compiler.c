@@ -6956,7 +6956,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 						  mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) &&
 						(!method_has_type_vars (m) || mono_method_is_generic_sharable_full (m, TRUE, TRUE, FALSE))) {
 						if (m->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-							if (mono_aot_mode_is_full (&acfg->aot_opts))
+							if (mono_aot_mode_is_full (&acfg->aot_opts) && !method_has_type_vars (m))
 								add_extra_method_with_depth (acfg, mono_marshal_get_native_wrapper (m, TRUE, TRUE), depth + 1);
 						} else {
 							add_extra_method_with_depth (acfg, m, depth + 1);
