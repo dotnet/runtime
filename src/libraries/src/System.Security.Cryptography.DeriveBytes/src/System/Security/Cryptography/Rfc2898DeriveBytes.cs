@@ -12,44 +12,53 @@ namespace System.Security.Cryptography
     {
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations)
         {
-            Salt = salt;
-            IterationCount = iterations;
+            if (salt == null)
+                throw new ArgumentNullException("salt");
+            if (salt.Length < MinimumSaltSize)
+                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, "salt");
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException("iterations", SR.ArgumentOutOfRange_NeedPosNum);
             if (password == null)
                 throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
+
+            _salt = salt.CloneByteArray();
+            _iterations = (uint)iterations;
             _password = password.CloneByteArray();
             _hmacSha1 = new HMACSHA1(_password);
 
-            // We "should" call Initialize() here but we've already called it twice indirectly through setting the Salt and IterationCount properties.
-            return;
+            Initialize();
         }
 
-        public Rfc2898DeriveBytes(String password, byte[] salt)
+        public Rfc2898DeriveBytes(string password, byte[] salt)
              : this(password, salt, 1000)
         {
         }
 
-        public Rfc2898DeriveBytes(String password, byte[] salt, int iterations)
+        public Rfc2898DeriveBytes(string password, byte[] salt, int iterations)
             : this(new UTF8Encoding(false).GetBytes(password), salt, iterations)
         {
         }
 
-        public Rfc2898DeriveBytes(String password, int saltSize)
+        public Rfc2898DeriveBytes(string password, int saltSize)
             : this(password, saltSize, 1000)
         {
         }
 
-        public Rfc2898DeriveBytes(String password, int saltSize, int iterations)
+        public Rfc2898DeriveBytes(string password, int saltSize, int iterations)
         {
             if (saltSize < 0)
                 throw new ArgumentOutOfRangeException("saltSize", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (saltSize < MinimumSaltSize)
+                throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, "saltSize");
+            if (iterations <= 0)
+                throw new ArgumentOutOfRangeException("iterations", SR.ArgumentOutOfRange_NeedPosNum);
 
-            Salt = Helpers.GenerateRandom(saltSize);
-            IterationCount = iterations;
+            _salt = Helpers.GenerateRandom(saltSize);
+            _iterations = (uint)iterations;
             _password = new UTF8Encoding(false).GetBytes(password);
             _hmacSha1 = new HMACSHA1(_password);
 
-            // We "should" call Initialize() here but we've already called it twice indirectly through setting the Salt and IterationCount properties.
-            return;
+            Initialize();
         }
 
         public int IterationCount
@@ -79,7 +88,7 @@ namespace System.Security.Cryptography
             {
                 if (value == null)
                     throw new ArgumentNullException("value");
-                if (value.Length < 8)
+                if (value.Length < MinimumSaltSize)
                     throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
                 _salt = value.CloneByteArray();
                 Initialize();
@@ -204,5 +213,6 @@ namespace System.Security.Cryptography
         private int _endIndex;
 
         private const int BlockSize = 20;
+        private const int MinimumSaltSize = 8;
     }
 }
