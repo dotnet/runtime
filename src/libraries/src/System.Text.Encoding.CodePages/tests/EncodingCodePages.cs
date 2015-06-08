@@ -508,9 +508,9 @@ namespace Test
             {
                 Encoding encoding = Encoding.GetEncoding(mapping.Key);
                 Assert.NotNull(encoding);
-                Assert.Equal(encoding, Encoding.GetEncoding(mapping.Value));
 #if !PLATFORM_UNIX
-                // Currently Unix seems to only have UTF-8 as a default...
+                // Currently Unix returns different results depending on how the encoding is requested.
+                Assert.Equal(encoding, Encoding.GetEncoding(mapping.Value));
                 Assert.Equal(mapping.Value, encoding.WebName);
 #endif
             }
