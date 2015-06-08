@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -25,9 +26,18 @@ namespace Internal.Cryptography
         }
 
         // encodes the integer i into a 4-byte array, in big endian.
-        public static byte[] Int(uint i)
+        public static void WriteInt(uint i, byte[] arr, int offset)
         {
-            return unchecked(new byte[] { (byte)(i >> 24), (byte)(i >> 16), (byte)(i >> 8), (byte)i });
+            unchecked
+            {
+                Debug.Assert(arr != null);
+                Debug.Assert(arr.Length >= offset + sizeof(uint));
+
+                arr[offset] = (byte)(i >> 24);
+                arr[offset + 1] = (byte)(i >> 16);
+                arr[offset + 2] = (byte)(i >> 8);
+                arr[offset + 3] = (byte)i;
+            }
         }
     }
 }

@@ -178,11 +178,9 @@ namespace System.Security.Cryptography
         // where i is the block number.
         private byte[] Func()
         {
-            byte[] INT_block = Helpers.Int(_block);
-
-            byte[] temp = new byte[_salt.Length + INT_block.Length];
+            byte[] temp = new byte[_salt.Length + sizeof(uint)];
             Buffer.BlockCopy(_salt, 0, temp, 0, _salt.Length);
-            Buffer.BlockCopy(INT_block, 0, temp, _salt.Length, INT_block.Length);
+            Helpers.WriteInt(_block, temp, _salt.Length);
 
             temp = _hmacSha1.ComputeHash(temp);
             
