@@ -130,30 +130,43 @@
 	: "=r" (offset))
 #endif
 #elif defined(__s390x__)
-# if defined(PIC)
+# if defined(__PIC__)
+#  if !defined(__PIE__)
 // This only works if libmono is linked into the application
-#  define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
-						__asm__ ("basr	%%r1,0\n\t"			\
-							 "j	0f\n\t"				\
-							 ".quad " #var "@TLSGD\n\t"		\
+#   define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
+						__asm__ ("basr  %%r1,0\n\t"			\
+							 "j     0f\n\t"				\
+							 ".quad " #var "@TLSGD\n"		\
 							 "0:\n\t"				\
-							 "lg	%%r2,4(%%r1)\n\t"		\
+							 "lg    %%r2,4(%%r1)\n\t"		\
 							 "brasl	%%r14,__tls_get_offset@PLT:tls_gdcall:"#var"\n\t" \
 							 "lgr	%0,%%r2\n\t"			\
 							: "=r" (foo) : 				\
 							: "1", "2", "14", "cc");		\
 						offset = foo; } while (0)
+#  elif __PIE__ == 1
+#   define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  					\
+						__asm__ ("lg	%0," #var "@GOTNTPOFF(%%r12)\n\t"	\
+							 : "=r" (foo));					\
+						offset = foo; } while (0)
+#  elif __PIE__ == 2
+#   define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
+						__asm__ ("larl	%%r1," #var "@INDNTPOFF\n\t"	\
+							 "lg	%0,0(%%r1)\n\t"			\
+							 : "=r" (foo) :				\
+							 : "1", "cc");				\
+						offset = foo; } while (0)
+#  endif
 # else
-#  define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
-						__asm__ ("basr	%%r1,0\n\t"			\
-							 "j	0f\n\t"				\
-							 ".quad " #var "@NTPOFF\n"		\
-							 "0:\n\t"				\
-							 "lg	%0,4(%%r1)\n\t"			\
-							: "=r" (foo) : : "1");			\
+#  define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  			\
+						__asm__ ("basr  %%r1,0\n\t"		\
+							 "j     0f\n\t"			\
+							 ".quad " #var "@NTPOFF\n"	\
+							 "0:\n\t"			\
+							 "lg    %0,4(%%r1)\n\t"		\
+							: "=r" (foo) : : "1");		\
 						offset = foo; } while (0)
 # endif
-
 #else
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 #endif
