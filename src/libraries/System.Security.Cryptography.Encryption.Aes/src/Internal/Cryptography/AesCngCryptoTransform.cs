@@ -77,7 +77,7 @@ namespace Internal.Cryptography
         protected abstract byte[] UncheckedTransformFinalBlock(SafeKeyHandle hKey, byte[] currentIv, byte[] inputBuffer, int inputOffset, int inputCount);
 
         private SafeKeyHandle _hKey;
-        private byte[] _iv;         // This IV never changes.
+        private byte[] _iv;         // _iv holds a copy of the original IV for Reset(), until it is cleared by Dispose().
         private byte[] _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
 
         private static readonly SafeAlgorithmHandle s_hAlg = Cng.BCryptOpenAlgorithmProvider(Cng.BCRYPT_AES_ALGORITHM, null, Cng.OpenAlgorithmProviderFlags.NONE);

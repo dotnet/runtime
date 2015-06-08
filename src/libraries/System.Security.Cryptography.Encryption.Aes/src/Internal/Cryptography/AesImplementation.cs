@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -21,16 +20,16 @@ namespace Internal.Cryptography
 
         public sealed override void GenerateIV()
         {
-            byte[] iv = new byte[this.BlockSize / 8];
+            byte[] iv = new byte[BlockSize / BitsPerByte];
             s_rng.GetBytes(iv);
-            this.IV = iv;
+            IV = iv;
         }
 
         public sealed override void GenerateKey()
         {
-            byte[] key = new byte[this.KeySize / 8];
+            byte[] key = new byte[KeySize / BitsPerByte];
             s_rng.GetBytes(key);
-            this.Key = key;
+            Key = key;
         }
 
         protected sealed override void Dispose(bool disposing)
@@ -42,18 +41,19 @@ namespace Internal.Cryptography
         {
             if (rgbKey == null)
                 throw new ArgumentNullException("key");
-            int keySize = rgbKey.Length * 8;
+            int keySize = rgbKey.Length * BitsPerByte;
             if (!keySize.IsLegalSize(this.LegalKeySizes))
                 throw new ArgumentException(SR.Format(SR.Cryptography_InvalidKeySize, "key"));
-            if (rgbIV != null && rgbIV.Length * 8 != this.BlockSize)
+            if (rgbIV != null && rgbIV.Length * BitsPerByte != BlockSize)
                 throw new ArgumentException(SR.Format(SR.Cryptography_InvalidIVSize, "iv"));
 
             if (encrypting)
-                return CreateEncryptor(Mode, Padding, rgbKey, rgbIV, BlockSize / 8);
+                return CreateEncryptor(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte);
             else
-                return CreateDecryptor(Mode, Padding, rgbKey, rgbIV, BlockSize / 8);
+                return CreateDecryptor(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte);
         }
 
+        private const int BitsPerByte = 8;
         private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
     }
 }
