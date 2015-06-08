@@ -5,7 +5,7 @@ rem This file invokes cmake and generates the build system for windows.
 set argC=0
 for %%x in (%*) do Set /A argC+=1
 
-if NOT %argC%==3 GOTO :USAGE
+if NOT %argC%==2 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
 setlocal
@@ -24,13 +24,13 @@ if defined CMakePath goto DoGen
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& .\probe-win.ps1"') do %%a
 
 :DoGen
-"%CMakePath%" "-DCMAKE_USER_MAKE_RULES_OVERRIDE=%basePath%\windows-compiler-override.txt" "-DCMAKE_BUILD_TYPE=%3" -G "Visual Studio %__VSString% Win64" %1
+"%CMakePath%" "-DCMAKE_USER_MAKE_RULES_OVERRIDE=%basePath%\windows-compiler-override.txt" -G "Visual Studio %__VSString% Win64" %1
 endlocal
 GOTO :DONE
 
 :USAGE
   echo "Usage..."
-  echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion> <BuildType>"
+  echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion>"
   echo "Specify the path to the top level CMake file - <ProjectK>/src/NDP"
   echo "Specify the VSVersion to be used - VS2013 or VS2015"
   EXIT /B 1
