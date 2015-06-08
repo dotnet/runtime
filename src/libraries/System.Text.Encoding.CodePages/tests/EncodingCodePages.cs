@@ -453,8 +453,7 @@ namespace Test
         }
 
         [Fact]
-        // Specific asserts which would fail on Unix are conditionally not run.
-        // [ActiveIssue(846, PlatformID.AnyUnix)]
+        [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestDefaultEncodings()
         {
             ValidateDefaultEncodings();
@@ -508,11 +507,8 @@ namespace Test
             {
                 Encoding encoding = Encoding.GetEncoding(mapping.Key);
                 Assert.NotNull(encoding);
-#if !PLATFORM_UNIX
-                // Currently Unix returns different results depending on how the encoding is requested.
                 Assert.Equal(encoding, Encoding.GetEncoding(mapping.Value));
                 Assert.Equal(mapping.Value, encoding.WebName);
-#endif
             }
         }
 
