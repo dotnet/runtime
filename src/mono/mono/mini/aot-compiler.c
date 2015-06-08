@@ -8731,6 +8731,10 @@ collect_methods (MonoAotCompile *acfg)
 		}
 		*/
 
+		if (method->is_generic || method->klass->generic_container)
+			/* Compile the ref shared version instead */
+			method = mini_get_shared_method (method);
+
 		/* Since we add the normal methods first, their index will be equal to their zero based token index */
 		add_method_with_index (acfg, method, i, FALSE);
 		acfg->method_index ++;
@@ -8748,14 +8752,6 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, &error);
 		report_loader_error (acfg, &error, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (&error));
 
-		/*
-		if (strcmp (method->name, "gshared2"))
-			continue;
-		*/
-		/*
-		if (!strstr (method->klass->image->name, "mini"))
-			continue;
-		*/
 		if (method->is_generic || method->klass->generic_container) {
 			MonoMethod *gshared;
 
