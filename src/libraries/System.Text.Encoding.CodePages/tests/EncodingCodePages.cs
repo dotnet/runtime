@@ -453,16 +453,18 @@ namespace Test
         }
 
         [Fact]
+        // Specific asserts which would fail on Unix are conditionally not run.
+        // [ActiveIssue(846, PlatformID.AnyUnix)]
         public static void TestDefaultEncodings()
         {
-            // Check which encodings are available by default.
-            foreach (var mapping in CrossplatformDefaultEncodings())
+            ValidateDefaultEncodings();
+
+            foreach (object[] mapping in CodePageInfo())
             {
-                Encoding encoding = Encoding.GetEncoding(mapping.Key);
-                Assert.NotNull(encoding);
-                Assert.Equal(mapping.Value, encoding.WebName);
+                Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding((int)mapping[0]));
+                Assert.Throws<ArgumentException>(() => Encoding.GetEncoding((string)mapping[2]));
             }
-            // Currently the class EncodingInfo isn't present in corefx, but this method should check for the exhaustive list
+            // Currently the class EncodingInfo isn't present in corefx, so this checks none of the code pages are present.
             // When it is, comment out this line and remove the previous foreach/assert.
             // Assert.Equal(CrossplatformDefaultEncodings, Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));
 
@@ -478,30 +480,40 @@ namespace Test
             // Make sure added code pages are identical between the provider and the Encoding class.
             foreach (object[] mapping in CodePageInfo())
             {
-                // Get encoding via query string.
-                Encoding encoding = Encoding.GetEncoding((string)mapping[2]);
-                Encoding codePageEncoding = CodePagesEncodingProvider.Instance.GetEncoding((string)mapping[2]);
+                Encoding encoding = Encoding.GetEncoding((int)mapping[0]);
+                Encoding codePageEncoding = CodePagesEncodingProvider.Instance.GetEncoding((int)mapping[0]);
                 Assert.Equal(encoding, codePageEncoding);
                 Assert.Equal(encoding.CodePage, (int)mapping[0]);
                 Assert.Equal(encoding.WebName, (string)mapping[1]);
+                // Get encoding via query string.
+                Assert.Equal(Encoding.GetEncoding((string)mapping[2]), CodePagesEncodingProvider.Instance.GetEncoding((string)mapping[2]));
             }
-
             // Adding the code page provider should keep the originals, too.
-            foreach (var mapping in CrossplatformDefaultEncodings())
-            {
-                Encoding encoding = Encoding.GetEncoding(mapping.Key);
-                Assert.NotNull(encoding);
-                Assert.Equal(mapping.Value, encoding.WebName);
-            }
-            // Currently the class EncodingInfo isn't present in corefx, but this method should check for the exhaustive list
+            ValidateDefaultEncodings();
+            // Currently the class EncodingInfo isn't present in corefx, so this checks the complete list
             // When it is, comment out this line and remove the previous foreach/assert.
             // Assert.Equal(CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1])).OrderBy(i => i.Key)),
             //               Encoding.GetEncodings().OrderBy(i => i.CodePage).Select(i => Map(i.CodePage, i.WebName)));
 
+            // Default encoding may have changed, should still be something on the combined list.
             defaultEncoding = Encoding.GetEncoding(0);
             Assert.NotNull(defaultEncoding);
             mappedEncoding = Map(defaultEncoding.CodePage, defaultEncoding.WebName);
             Assert.Contains(mappedEncoding, CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1]))));
+        }
+
+        private static void ValidateDefaultEncodings()
+        {
+            foreach (var mapping in CrossplatformDefaultEncodings())
+            {
+                Encoding encoding = Encoding.GetEncoding(mapping.Key);
+                Assert.NotNull(encoding);
+                Assert.Equal(encoding, Encoding.GetEncoding(mapping.Value));
+#if !PLATFORM_UNIX
+                // Currently Unix seems to only have UTF-8 as a default...
+                Assert.Equal(mapping.Value, encoding.WebName);
+#endif
+            }
         }
 
         [Theory]
