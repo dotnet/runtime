@@ -21,17 +21,6 @@ namespace Microsoft.Framework.WebEncoders
         private static readonly UTF8Encoding _utf8EncodingThrowOnInvalidBytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         [Fact]
-        public void GetDefinedCharacterBitmap_ReturnsSingletonInstance()
-        {
-            // Act
-            uint[] retVal1 = UnicodeHelpers.GetDefinedCharacterBitmap();
-            uint[] retVal2 = UnicodeHelpers.GetDefinedCharacterBitmap();
-
-            // Assert
-            Assert.Same(retVal1, retVal2);
-        }
-
-        [Fact]
         public void GetScalarValueFromUtf16()
         {
             // TODO: [ActiveIssue(846, PlatformID.AnyUnix)]
