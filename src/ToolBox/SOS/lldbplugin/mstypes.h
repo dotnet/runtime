@@ -51,6 +51,8 @@ typedef int HRESULT;
 #define E_NOTIMPL                        (HRESULT)0x80004001
 #define E_FAIL                           (HRESULT)0x80004005
 
+#define MAX_PATH                         260 
+
 #if defined(_MSC_VER) || defined(__llvm__)
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 #else
