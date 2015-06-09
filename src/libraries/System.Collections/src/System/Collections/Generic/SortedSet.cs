@@ -257,25 +257,24 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            List<Node> processQueue = new List<Node>();
-            processQueue.Add(_root);
+            Queue<Node> processQueue = new Queue<Node>();
+            processQueue.Enqueue(_root);
             Node current;
 
             while (processQueue.Count != 0)
             {
-                current = processQueue[0];
-                processQueue.RemoveAt(0);
+                current = processQueue.Dequeue();
                 if (!action(current))
                 {
                     return false;
                 }
                 if (current.Left != null)
                 {
-                    processQueue.Add(current.Left);
+                    processQueue.Enqueue(current.Left);
                 }
                 if (current.Right != null)
                 {
-                    processQueue.Add(current.Right);
+                    processQueue.Enqueue(current.Right);
                 }
             }
             return true;
@@ -2084,25 +2083,24 @@ namespace System.Collections.Generic
                     return true;
                 }
 
-                List<Node> processQueue = new List<Node>();
-                processQueue.Add(_root);
+                Queue<Node> processQueue = new Queue<Node>();
+                processQueue.Enqueue(_root);
                 Node current;
 
                 while (processQueue.Count != 0)
                 {
-                    current = processQueue[0];
-                    processQueue.RemoveAt(0);
+                    current = processQueue.Dequeue();
                     if (IsWithinRange(current.Item) && !action(current))
                     {
                         return false;
                     }
                     if (current.Left != null && (!_lBoundActive || Comparer.Compare(_min, current.Item) < 0))
                     {
-                        processQueue.Add(current.Left);
+                        processQueue.Enqueue(current.Left);
                     }
                     if (current.Right != null && (!_uBoundActive || Comparer.Compare(_max, current.Item) > 0))
                     {
-                        processQueue.Add(current.Right);
+                        processQueue.Enqueue(current.Right);
                     }
                 }
                 return true;
