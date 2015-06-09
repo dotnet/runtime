@@ -1822,7 +1822,9 @@ mini_get_nullified_class_init_trampoline (void)
 		MonoTrampInfo *info;
 
 		if (mono_aot_only) {
-			tramp = mono_aot_get_trampoline ("nullified_class_init_trampoline");
+			/* Not used */
+			g_assert_not_reached ();
+			tramp = NULL;
 		} else {
 			tramp = mono_arch_get_nullified_class_init_trampoline (&info);
 			mono_tramp_info_register (info);

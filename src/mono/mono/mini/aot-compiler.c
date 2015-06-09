@@ -6211,8 +6211,6 @@ emit_trampolines (MonoAotCompile *acfg)
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
 
-		mono_arch_get_nullified_class_init_trampoline (&info);
-		emit_trampoline (acfg, acfg->got_offset, info);
 #if defined(MONO_ARCH_MONITOR_OBJECT_REG)
 		mono_arch_create_monitor_enter_trampoline (&info, FALSE, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);

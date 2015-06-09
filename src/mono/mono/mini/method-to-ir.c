@@ -3689,7 +3689,11 @@ static void
 emit_class_init (MonoCompile *cfg, MonoClass *klass, MonoBasicBlock **out_bblock)
 {
 	/* This could be used as a fallback if needed */
-	//emit_generic_class_init (cfg, klass, out_bblock);
+	if (cfg->compile_aot) {
+		/* With the overhead of plt entries, the inline version is comparable in size/speed */
+		emit_generic_class_init (cfg, klass, out_bblock);
+		return;
+	}
 
 	*out_bblock = cfg->cbb;
 
