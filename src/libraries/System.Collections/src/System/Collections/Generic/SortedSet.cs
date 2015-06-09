@@ -95,12 +95,8 @@ namespace System.Collections.Generic
                 //breadth first traversal to recreate nodes
                 if (baseSortedSet.Count == 0)
                 {
-                    _count = 0;
-                    _version = 0;
-                    _root = null;
                     return;
                 }
-
 
                 //pre order way to replicate nodes
                 Stack<Node> theirStack = new Stack<SortedSet<T>.Node>(2 * log2(baseSortedSet.Count) + 2);
@@ -138,23 +134,27 @@ namespace System.Collections.Generic
                     }
                 }
                 _count = baseSortedSet._count;
-                _version = 0;
             }
             else
-            {     //As it stands, you're doing an NlogN sort of the collection
-                List<T> els = new List<T>(collection);
-                els.Sort(_comparer);
-                for (int i = 1; i < els.Count; i++)
+            {
+                int count;
+                T[] els = EnumerableHelpers.ToArray(collection, out count);
+                if (count > 0)
                 {
-                    if (comparer.Compare(els[i], els[i - 1]) == 0)
+                    Array.Sort(els, 0, count, _comparer);
+                    int index = 1;
+                    for (int i = 1; i < count; i++)
                     {
-                        els.RemoveAt(i);
-                        i--;
+                        if (comparer.Compare(els[i], els[i - 1]) != 0)
+                        {
+                            els[index++] = els[i];
+                        }
                     }
+                    count = index;
+
+                    _root = ConstructRootFromSortedArray(els, 0, count - 1, null);
+                    _count = count;
                 }
-                _root = ConstructRootFromSortedArray(els.ToArray(), 0, els.Count - 1, null);
-                _count = els.Count;
-                _version = 0;
             }
         }
 
@@ -257,25 +257,24 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            List<Node> processQueue = new List<Node>();
-            processQueue.Add(_root);
+            Queue<Node> processQueue = new Queue<Node>();
+            processQueue.Enqueue(_root);
             Node current;
 
             while (processQueue.Count != 0)
             {
-                current = processQueue[0];
-                processQueue.RemoveAt(0);
+                current = processQueue.Dequeue();
                 if (!action(current))
                 {
                     return false;
                 }
                 if (current.Left != null)
                 {
-                    processQueue.Add(current.Left);
+                    processQueue.Enqueue(current.Left);
                 }
                 if (current.Right != null)
                 {
-                    processQueue.Add(current.Right);
+                    processQueue.Enqueue(current.Right);
                 }
             }
             return true;
@@ -2084,25 +2083,24 @@ namespace System.Collections.Generic
                     return true;
                 }
 
-                List<Node> processQueue = new List<Node>();
-                processQueue.Add(_root);
+                Queue<Node> processQueue = new Queue<Node>();
+                processQueue.Enqueue(_root);
                 Node current;
 
                 while (processQueue.Count != 0)
                 {
-                    current = processQueue[0];
-                    processQueue.RemoveAt(0);
+                    current = processQueue.Dequeue();
                     if (IsWithinRange(current.Item) && !action(current))
                     {
                         return false;
                     }
                     if (current.Left != null && (!_lBoundActive || Comparer.Compare(_min, current.Item) < 0))
                     {
-                        processQueue.Add(current.Left);
+                        processQueue.Enqueue(current.Left);
                     }
                     if (current.Right != null && (!_uBoundActive || Comparer.Compare(_max, current.Item) > 0))
                     {
-                        processQueue.Add(current.Right);
+                        processQueue.Enqueue(current.Right);
                     }
                 }
                 return true;
