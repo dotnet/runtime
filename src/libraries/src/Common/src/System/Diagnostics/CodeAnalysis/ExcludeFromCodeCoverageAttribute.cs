@@ -3,7 +3,6 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    // Missing from .NET for Windows store, NET 4.5
     [AttributeUsage(AttributeTargets.All, Inherited = false, AllowMultiple = false)]
     internal sealed class ExcludeFromCodeCoverageAttribute : Attribute
     {

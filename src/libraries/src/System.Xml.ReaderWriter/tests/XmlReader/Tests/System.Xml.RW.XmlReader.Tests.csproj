@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{507DB29F-74F5-4B34-A240-ABE7BD168DF6}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Xml.RW.XmlReaderDisposeTests</AssemblyName>
-    <RootNamespace>XMLTests.ReaderWriter.DisposeTests</RootNamespace>
+    <AssemblyName>System.Xml.RW.XmlReader.Tests</AssemblyName>
+    <RootNamespace>XMLTests.ReaderWriter.Tests</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
