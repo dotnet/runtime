@@ -159,10 +159,6 @@ namespace System.IO.Pipes
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        [SecurityCritical]
-        private unsafe static readonly IOCompletionCallback s_WaitForConnectionCallback =
-            new IOCompletionCallback(NamedPipeServerStream.AsyncWaitForConnectionCallback);
-
 #if RunAs
         // This method calls a delegate while impersonating the client. Note that we will not have
         // access to the client's security token until it has written at least once to the pipe 
@@ -263,7 +259,7 @@ namespace System.IO.Pipes
             // Create and store async stream class library specific data in the 
             // async result
             PipeAsyncResult asyncResult = new PipeAsyncResult();
-            asyncResult._handle = InternalHandle;
+            asyncResult._threadPoolBinding = _threadPoolBinding;
             asyncResult._userCallback = callback;
             asyncResult._userStateObject = state;
 
@@ -273,16 +269,17 @@ namespace System.IO.Pipes
             ManualResetEvent waitHandle = new ManualResetEvent(false);
             asyncResult._waitHandle = waitHandle;
 
-            // Create a managed overlapped class
-            // We will set the file offsets later
-            Overlapped overlapped = new Overlapped();
-            overlapped.OffsetLow = 0;
-            overlapped.OffsetHigh = 0;
-            overlapped.AsyncResult = asyncResult;
-
-            // Pack the Overlapped class, and store it in the async result
-            NativeOverlapped* intOverlapped = overlapped.Pack(s_WaitForConnectionCallback, null);
+            NativeOverlapped* intOverlapped = _threadPoolBinding.AllocateNativeOverlapped((errorCode, numBytes, pOverlapped) =>
+            {
+                // Unpack overlapped, free the pinned overlapped, and complete the operation
+                PipeAsyncResult ar = (PipeAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                Debug.Assert(ar._overlapped == pOverlapped);
+                ar._threadPoolBinding.FreeNativeOverlapped(pOverlapped);
+                ar._overlapped = null;
+                AsyncWaitForConnectionCallback(errorCode, numBytes, ar);
+            }, asyncResult, null);
             asyncResult._overlapped = intOverlapped;
+
             if (!Interop.mincore.ConnectNamedPipe(InternalHandle, intOverlapped))
             {
                 int errorCode = Marshal.GetLastWin32Error();
@@ -298,7 +295,7 @@ namespace System.IO.Pipes
 
                 // WaitForConnectionCallback will not be called because we completed synchronously.
                 // Either the pipe is already connected, or there was an error. Unpin and free the overlapped again.
-                Overlapped.Free(intOverlapped);
+                _threadPoolBinding.FreeNativeOverlapped(intOverlapped);
                 asyncResult._overlapped = null;
 
                 // Did the client already connect to us?
@@ -398,19 +395,8 @@ namespace System.IO.Pipes
 
         // Callback to be called by the OS when completing the async WaitForConnection operation.
         [SecurityCritical]
-        unsafe private static void AsyncWaitForConnectionCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
+        unsafe private static void AsyncWaitForConnectionCallback(uint errorCode, uint numBytes, PipeAsyncResult asyncResult)
         {
-            // Unpack overlapped
-            Overlapped overlapped = Overlapped.Unpack(pOverlapped);
-
-            // Extract async result from overlapped 
-            PipeAsyncResult asyncResult = (PipeAsyncResult)overlapped.AsyncResult;
-
-            // Free the pinned overlapped:    
-            Debug.Assert(asyncResult._overlapped == pOverlapped);
-            Overlapped.Free(pOverlapped);
-            asyncResult._overlapped = null;
-
             // Special case for when the client has already connected to us.
             if (errorCode == Interop.mincore.Errors.ERROR_PIPE_CONNECTED)
             {
