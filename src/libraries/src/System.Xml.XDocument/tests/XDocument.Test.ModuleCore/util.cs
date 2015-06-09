@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace Microsoft.Test.ModuleCore
 {
     ////////////////////////////////////////////////////////////////

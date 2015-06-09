@@ -26,6 +26,7 @@
     <Compile Include="ctestmodule.cs" />
     <Compile Include="cvariation.cs" />
     <Compile Include="interop.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

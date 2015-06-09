@@ -11,6 +11,8 @@ using System.Xml.Linq;
 
 using Microsoft.Test.ModuleCore;
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace CoreXml.Test.XLinq
 {
     public static class Helpers
