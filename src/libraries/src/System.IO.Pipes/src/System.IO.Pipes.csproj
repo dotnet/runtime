@@ -206,8 +206,15 @@
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Linux.cs" />
+    <Compile Include="System\IO\Pipes\PipeStream.Linux.cs" />
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
       <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.fcntl.cs">
+      <Link>Common\Interop\Unix\Interop.fcntl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.FcntlCommands.cs">
+      <Link>Common\Interop\Linux\Interop.FcntlCommands.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.OpenFlags.cs">
       <Link>Common\Interop\Linux\Interop.OpenFlags.cs</Link>
@@ -216,6 +223,7 @@
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.OSX.cs" />
+    <Compile Include="System\IO\Pipes\PipeStream.OSX.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
       <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>

@@ -20,7 +20,7 @@ namespace System.IO.Pipes
         // Windows, but can't assume a valid handle on Unix.
         internal const bool CheckOperationsRequiresSetHandle = false;
 
-        private const string PipeDirectoryPath = "/tmp/corefxnamedpipes/";
+        private static readonly string PipeDirectoryPath = Path.Combine(Path.GetTempPath(), "corefxnamedpipes");
 
         internal static string GetPipePath(string serverName, string pipeName)
         {
@@ -66,7 +66,7 @@ namespace System.IO.Pipes
             }
 
             // Return the pipe path
-            return PipeDirectoryPath + pipeName;
+            return Path.Combine(PipeDirectoryPath, pipeName);
         }
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
@@ -213,10 +213,7 @@ namespace System.IO.Pipes
                 {
                     throw new NotSupportedException(SR.NotSupported_UnreadableStream);
                 }
-
-                // On Linux this could be retrieved using F_GETPIPE_SZ with fcntl, but that's non-conforming
-                // and works only on recent versions of Linux.  For now, we'll leave this as unsupported.
-                throw new PlatformNotSupportedException();
+                return InBufferSizeCore;
             }
         }
 
@@ -235,9 +232,7 @@ namespace System.IO.Pipes
                 {
                     throw new NotSupportedException(SR.NotSupported_UnwritableStream);
                 }
-
-                // See comments in inBufferSize
-                throw new PlatformNotSupportedException();
+                return OutBufferSizeCore;
             }
         }
 
