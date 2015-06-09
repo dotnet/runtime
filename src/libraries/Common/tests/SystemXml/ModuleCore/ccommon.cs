@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;		//Assert
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace OLEDB.Test.ModuleCore
 {
     ////////////////////////////////////////////////////////////////
