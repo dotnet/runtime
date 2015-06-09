@@ -5363,6 +5363,8 @@ namespace System.Linq
         /// </exception>
         public static ParallelQuery<TResult> Cast<TResult>(this ParallelQuery source)
         {
+            if (source == null) throw new ArgumentNullException("source");
+
             return source.Cast<TResult>();
         }
 
