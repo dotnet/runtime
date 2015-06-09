@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
 
 using System;
 using System.IO;
@@ -14,7 +12,7 @@ using System.Globalization;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public class XmlWriterDelegator
 #else
     internal class XmlWriterDelegator
@@ -227,7 +225,7 @@ namespace System.Runtime.Serialization
             WriteStartElement(null, localName, ns);
         }
 
-        internal void WriteStartElement(string prefix, string localName, string ns)
+        internal virtual void WriteStartElement(string prefix, string localName, string ns)
         {
             writer.WriteStartElement(prefix, localName, ns);
             depth++;

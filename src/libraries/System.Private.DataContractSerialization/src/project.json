@@ -24,6 +24,7 @@
     "System.Xml.XmlSerializer": "4.0.10-beta-*"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dnxcore50": {},
+    "netcore50": {}
   }
 }

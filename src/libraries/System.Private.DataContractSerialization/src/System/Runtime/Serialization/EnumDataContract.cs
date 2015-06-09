@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 using System;
 using System.Collections;
@@ -17,7 +15,11 @@ using System.Linq;
 
 namespace System.Runtime.Serialization
 {
+#if NET_NATIVE
+    public sealed class EnumDataContract : DataContract
+#else
     internal sealed class EnumDataContract : DataContract
+#endif
     {
         [SecurityCritical]
         /// <SecurityNote>
@@ -32,10 +34,12 @@ namespace System.Runtime.Serialization
         /// Safe - doesn't leak anything
         /// </SecurityNote>
         [SecuritySafeCritical]
-        internal EnumDataContract() : base(new EnumDataContractCriticalHelper())
+        public EnumDataContract() : base(new EnumDataContractCriticalHelper())
         {
             _helper = base.Helper as EnumDataContractCriticalHelper;
         }
+
+        public XmlQualifiedName BaseContractName { get; set; }
 
         /// <SecurityNote>
         /// Critical - initializes SecurityCritical field 'helper'
@@ -46,7 +50,7 @@ namespace System.Runtime.Serialization
         {
             _helper = base.Helper as EnumDataContractCriticalHelper;
         }
-        internal List<DataMember> Members
+        public List<DataMember> Members
         {
             /// <SecurityNote>
             /// Critical - fetches the critical Members property
@@ -55,9 +59,10 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.Members; }
+            set { _helper.Members = value; }
         }
 
-        internal List<long> Values
+        public List<long> Values
         {
             /// <SecurityNote>
             /// Critical - fetches the critical Values property
@@ -66,9 +71,10 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.Values; }
+            set { _helper.Values = value; }
         }
 
-        internal bool IsFlags
+        public bool IsFlags
         {
             /// <SecurityNote>
             /// Critical - fetches the critical IsFlags property
@@ -77,9 +83,10 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.IsFlags; }
+            set { _helper.IsFlags = value; }
         }
 
-        internal bool IsULong
+        public bool IsULong
         {
             /// <SecurityNote>
             /// Critical - fetches the critical IsULong property
@@ -88,9 +95,10 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.IsULong; }
+            set { _helper.IsULong = value; }
         }
 
-        private XmlDictionaryString[] ChildElementNames
+        public XmlDictionaryString[] ChildElementNames
         {
             /// <SecurityNote>
             /// Critical - fetches the critical ChildElementNames property
@@ -99,6 +107,7 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.ChildElementNames; }
+            set { _helper.ChildElementNames = value; }
         }
 
         internal override bool CanContainReferences
@@ -180,11 +189,13 @@ namespace System.Runtime.Serialization
             internal List<DataMember> Members
             {
                 get { return _members; }
+                set { _members = value; }
             }
 
             internal List<long> Values
             {
                 get { return _values; }
+                set { _values = value; }
             }
 
             internal bool IsFlags
@@ -196,11 +207,13 @@ namespace System.Runtime.Serialization
             internal bool IsULong
             {
                 get { return _isULong; }
+                set { _isULong = value; }
             }
 
             internal XmlDictionaryString[] ChildElementNames
             {
                 get { return _childElementNames; }
+                set { _childElementNames = value; }
             }
 
             private void ImportBaseType(Type baseType)

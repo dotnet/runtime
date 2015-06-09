@@ -1,10 +1,10 @@
-//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.IO;
+
 namespace System.Xml
 {
-    using System.IO;
-
     public interface IStreamProvider
     {
         Stream GetStream();

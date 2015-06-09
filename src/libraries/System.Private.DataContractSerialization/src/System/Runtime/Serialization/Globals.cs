@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 using System;
 using System.ComponentModel;
@@ -535,6 +533,64 @@ namespace System.Runtime.Serialization
             }
         }
 
+#if NET_NATIVE
+        [SecurityCritical]
+        private static Type s_typeOfISerializableDataNode;
+        internal static Type TypeOfISerializableDataNode
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_typeOfISerializableDataNode == null)
+                    s_typeOfISerializableDataNode = typeof(ISerializableDataNode);
+                return s_typeOfISerializableDataNode;
+            }
+        }
+
+        [SecurityCritical]
+        private static Type s_typeOfClassDataNode;
+        internal static Type TypeOfClassDataNode
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_typeOfClassDataNode == null)
+                    s_typeOfClassDataNode = typeof(ClassDataNode);
+                return s_typeOfClassDataNode;
+            }
+        }
+
+        [SecurityCritical]
+        private static Type s_typeOfCollectionDataNode;
+        internal static Type TypeOfCollectionDataNode
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_typeOfCollectionDataNode == null)
+                    s_typeOfCollectionDataNode = typeof(CollectionDataNode);
+                return s_typeOfCollectionDataNode;
+            }
+        }
+
+        [SecurityCritical]
+        private static Type s_typeOfSafeSerializationManager;
+        private static bool s_typeOfSafeSerializationManagerSet;
+        internal static Type TypeOfSafeSerializationManager
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (!s_typeOfSafeSerializationManagerSet)
+                {
+                    s_typeOfSafeSerializationManager = TypeOfInt.GetTypeInfo().Assembly.GetType("System.Runtime.Serialization.SafeSerializationManager");
+                    s_typeOfSafeSerializationManagerSet = true;
+                }
+                return s_typeOfSafeSerializationManager;
+            }
+        }
+#endif
+
         [SecurityCritical]
         private static Type s_typeOfNullable;
         internal static Type TypeOfNullable
@@ -1031,6 +1087,11 @@ namespace System.Runtime.Serialization
         public const string KeyLocalName = "Key";
         public const string ValueLocalName = "Value";
         public const string MscorlibAssemblyName = "0";
+#if NET_NATIVE
+        public const string SafeSerializationManagerName = "SafeSerializationManager";
+        public const string SafeSerializationManagerNamespace = "http://schemas.datacontract.org/2004/07/System.Runtime.Serialization";
+        public const string ISerializableFactoryTypeLocalName = "FactoryType";
+#endif
     }
 }
 

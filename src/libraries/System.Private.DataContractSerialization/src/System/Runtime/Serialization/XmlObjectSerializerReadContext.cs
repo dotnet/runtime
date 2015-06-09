@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
 
 namespace System.Runtime.Serialization
 {
@@ -12,10 +10,13 @@ namespace System.Runtime.Serialization
     using System.Text;
     using System.Xml;
     using System.Xml.Serialization;
+    using System.Security;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
+#if !NET_NATIVE
     using ExtensionDataObject = System.Object;
+#endif
 
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public class XmlObjectSerializerReadContext : XmlObjectSerializerContext
 #else
     internal class XmlObjectSerializerReadContext : XmlObjectSerializerContext
@@ -263,6 +264,45 @@ namespace System.Runtime.Serialization
             }
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(xmlReader, SR.Format(SR.UnexpectedElementExpectingElements, xmlReader.NodeType, xmlReader.LocalName, xmlReader.NamespaceURI, stringBuilder.ToString()))));
         }
+
+#if NET_NATIVE
+        public static void ThrowMissingRequiredMembers(object obj, XmlDictionaryString[] memberNames, byte[] expectedElements, byte[] requiredElements)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            int missingMembersCount = 0;
+            for (int i = 0; i < memberNames.Length; i++)
+            {
+                if (IsBitSet(expectedElements, i) && IsBitSet(requiredElements, i))
+                {
+                    if (stringBuilder.Length != 0)
+                        stringBuilder.Append(", ");
+                    stringBuilder.Append(memberNames[i]);
+                    missingMembersCount++;
+                }
+            }
+
+            if (missingMembersCount == 1)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonOneRequiredMemberNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+            }
+            else
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonRequiredMembersNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+            }
+        }
+
+        public static void ThrowDuplicateMemberException(object obj, XmlDictionaryString[] memberNames, int memberIndex)
+        {
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex])));
+        }
+
+        [SecuritySafeCritical]
+        private static bool IsBitSet(byte[] bytes, int bitIndex)
+        {
+            throw new NotImplementedException();
+            //return BitFlagsGenerator.IsBitSet(bytes, bitIndex);
+        }
+#endif
 
         protected void HandleMemberNotFound(XmlReaderDelegator xmlReader, ExtensionDataObject extensionData, int memberIndex)
         {
