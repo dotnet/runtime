@@ -761,7 +761,7 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
         ThrowLastError();
     }
 
-#if defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST) || defined(DACCESS_COMPILE)
+#if (defined(FEATURE_CORECLR) || !defined(SELF_NO_HOST)) && !defined(CROSSGEN_COMPILE)
     typedef void (__stdcall* pSxsJitStartup) (CoreClrCallbacks const & cccallbacks);
     pSxsJitStartup sxsJitStartupFn = (pSxsJitStartup) GetProcAddress(*phJit, "sxsJitStartup");
     if (sxsJitStartupFn == NULL)
