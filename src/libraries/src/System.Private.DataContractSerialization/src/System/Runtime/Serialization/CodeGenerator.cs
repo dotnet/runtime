@@ -1,8 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-// ***NOTE*** If this code is changed, make corresponding changes in System.ServiceModel.CodeGenerator also
 
 using System;
 using System.Collections;
@@ -15,7 +12,7 @@ using System.IO;
 using System.Security;
 using System.Diagnostics;
 
-
+#if !NET_NATIVE
 namespace System.Runtime.Serialization
 {
     internal class CodeGenerator
@@ -1498,7 +1495,6 @@ namespace System.Runtime.Serialization
             }
             else if (source.IsAssignableFrom(target))
             {
-                //assert(source.GetTypeInfo().IsValueType == false);
                 Castclass(target);
             }
             else if (target.GetTypeInfo().IsInterface || source.GetTypeInfo().IsInterface)
@@ -1791,3 +1787,4 @@ namespace System.Runtime.Serialization
         }
     }
 }
+#endif

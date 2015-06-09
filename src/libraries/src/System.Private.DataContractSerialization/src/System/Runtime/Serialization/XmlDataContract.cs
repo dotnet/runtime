@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 namespace System.Runtime.Serialization
 {
@@ -17,8 +15,13 @@ namespace System.Runtime.Serialization
     using System.Linq;
     using XmlSchemaType = System.Object;
 
+#if NET_NATIVE
+    public delegate IXmlSerializable CreateXmlSerializableDelegate();
+    public sealed class XmlDataContract : DataContract
+#else
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     internal sealed class XmlDataContract : DataContract
+#endif
     {
         [SecurityCritical]
         /// <SecurityNote>
@@ -33,7 +36,7 @@ namespace System.Runtime.Serialization
         /// Safe - doesn't leak anything
         /// </SecurityNote>
         [SecuritySafeCritical]
-        internal XmlDataContract() : base(new XmlDataContractCriticalHelper())
+        public XmlDataContract() : base(new XmlDataContractCriticalHelper())
         {
             _helper = base.Helper as XmlDataContractCriticalHelper;
         }
@@ -48,7 +51,7 @@ namespace System.Runtime.Serialization
             _helper = base.Helper as XmlDataContractCriticalHelper;
         }
 
-        internal override DataContractDictionary KnownDataContracts
+        public override DataContractDictionary KnownDataContracts
         {
             /// <SecurityNote>
             /// Critical - fetches the critical KnownDataContracts property 
@@ -76,7 +79,7 @@ namespace System.Runtime.Serialization
             { return _helper.IsAnonymous; }
         }
 
-        internal override bool HasRoot
+        public override bool HasRoot
         {
             /// <SecurityNote>
             /// Critical - fetches the critical HasRoot property
@@ -93,7 +96,7 @@ namespace System.Runtime.Serialization
             { _helper.HasRoot = value; }
         }
 
-        internal override XmlDictionaryString TopLevelElementName
+        public override XmlDictionaryString TopLevelElementName
         {
             /// <SecurityNote>
             /// Critical - fetches the critical TopLevelElementName property
@@ -110,7 +113,7 @@ namespace System.Runtime.Serialization
             { _helper.TopLevelElementName = value; }
         }
 
-        internal override XmlDictionaryString TopLevelElementNamespace
+        public override XmlDictionaryString TopLevelElementNamespace
         {
             /// <SecurityNote>
             /// Critical - fetches the critical TopLevelElementNamespace property
@@ -126,6 +129,8 @@ namespace System.Runtime.Serialization
             set
             { _helper.TopLevelElementNamespace = value; }
         }
+
+#if !NET_NATIVE
         internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
         {
             /// <SecurityNote>
@@ -150,13 +155,16 @@ namespace System.Runtime.Serialization
                 return _helper.CreateXmlSerializableDelegate;
             }
         }
+#else
+        public CreateXmlSerializableDelegate CreateXmlSerializableDelegate { get; set; }
+#endif
 
         internal override bool CanContainReferences
         {
             get { return false; }
         }
 
-        internal override bool IsBuiltInDataContract
+        public override bool IsBuiltInDataContract
         {
             get
             {
@@ -302,6 +310,8 @@ namespace System.Runtime.Serialization
 
             return ctor;
         }
+
+#if !NET_NATIVE
         /// <SecurityNote>
         /// Critical - calls CodeGenerator.BeginMethod which is SecurityCritical
         /// Safe - self-contained: returns the delegate to the generated IL but otherwise all IL generation is self-contained here
@@ -399,6 +409,7 @@ namespace System.Runtime.Serialization
 
             return false;
         }
+#endif
 
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
         {

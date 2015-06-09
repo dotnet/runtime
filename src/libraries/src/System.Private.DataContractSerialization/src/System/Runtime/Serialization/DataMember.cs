@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 using System;
 using System.Collections;
@@ -14,7 +12,11 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
+#if NET_NATIVE
+    public class DataMember
+#else
     internal class DataMember
+#endif
     {
         [SecurityCritical]
         /// <SecurityNote>
@@ -29,7 +31,7 @@ namespace System.Runtime.Serialization
         /// Safe - doesn't leak anything
         /// </SecurityNote>
         [SecuritySafeCritical]
-        internal DataMember()
+        public DataMember()
         {
             _helper = new CriticalHelper();
         }
@@ -61,7 +63,7 @@ namespace System.Runtime.Serialization
             { return _helper.MemberInfo; }
         }
 
-        internal string Name
+        public string Name
         {
             [SecuritySafeCritical]
             get
@@ -71,7 +73,7 @@ namespace System.Runtime.Serialization
             { _helper.Name = value; }
         }
 
-        internal int Order
+        public int Order
         {
             [SecuritySafeCritical]
             get
@@ -81,7 +83,7 @@ namespace System.Runtime.Serialization
             { _helper.Order = value; }
         }
 
-        internal bool IsRequired
+        public bool IsRequired
         {
             [SecuritySafeCritical]
             get
@@ -91,7 +93,7 @@ namespace System.Runtime.Serialization
             { _helper.IsRequired = value; }
         }
 
-        internal bool EmitDefaultValue
+        public bool EmitDefaultValue
         {
             [SecuritySafeCritical]
             get
@@ -101,7 +103,7 @@ namespace System.Runtime.Serialization
             { _helper.EmitDefaultValue = value; }
         }
 
-        internal bool IsNullable
+        public bool IsNullable
         {
             [SecuritySafeCritical]
             get
@@ -111,7 +113,7 @@ namespace System.Runtime.Serialization
             { _helper.IsNullable = value; }
         }
 
-        internal bool IsGetOnlyCollection
+        public bool IsGetOnlyCollection
         {
             [SecuritySafeCritical]
             get
@@ -135,7 +137,7 @@ namespace System.Runtime.Serialization
             { return _helper.MemberTypeContract; }
         }
 
-        internal bool HasConflictingNameAndType
+        public bool HasConflictingNameAndType
         {
             [SecuritySafeCritical]
             get

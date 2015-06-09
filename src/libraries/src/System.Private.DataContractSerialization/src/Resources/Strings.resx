@@ -921,4 +921,167 @@
   <data name="UnknownDataContract" xml:space="preserve">
     <value>Unknown data contract: '{0}'.</value>
   </data>
+    <data name="SerializationCodeIsMissingForType" xml:space="preserve">
+    <value>Type '{0}' cannot be serialized, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type.</value>
+  </data>
+  <data name="InvalidXmlDeserializingExtensionData" xml:space="preserve">
+    <value>The XML encountered when deserializing extension data is invalid.</value>
+  </data>
+  <data name="InvalidStateInExtensionDataReader" xml:space="preserve">
+    <value>An internal error has occurred. ExtensionDataReader is in an invalid state.</value>
+  </data>
+  <data name="InvalidDataNode" xml:space="preserve">
+    <value>'{0}' is an invalid data node when deserializing extension data.</value>
+  </data>
+  <data name="JsonTypeNotSupportedByDataContractJsonSerializer" xml:space="preserve">
+    <value>DataContractJsonSerializer does not support objects of type '{0}'.</value>
+  </data>
+  <data name="GetOnlyCollectionMustHaveAddMethod" xml:space="preserve">
+    <value>Collection interface type '{0}' is being used as a get-only property and does not have an Add method. Consider adding a setter to the property or using a collection data contract that does have an Add method - for example IList or ICollection&lt;T&gt;.</value>
+  </data>
+  <data name="JsonUnexpectedAttributeValue" xml:space="preserve">
+    <value>The attribute 'type' must have one of the following strings as its values: 'string', 'number', 'array', 'object', 'null', or 'boolean'.  Encountered unexpected value '{0}'</value>
+  </data>
+  <data name="JsonInvalidDateTimeString" xml:space="preserve">
+    <value>DateTime content '{0}' does not start with '{1}' and end with '{2}' as required for JSON.</value>
+  </data>
+  <data name="GenericCallbackException" xml:space="preserve">
+    <value>A user callback threw an exception.  Check the exception stack and inner exception to determine the callback that failed.</value>
+  </data>
+    <data name="JsonEncounteredUnexpectedCharacter" xml:space="preserve">
+    <value>Encountered unexpected character '{0}'.</value>
+  </data>
+    <data name="JsonOffsetExceedsBufferSize" xml:space="preserve">
+    <value>The specified offset exceeds the buffer size ({0} bytes).</value>
+  </data>
+    <data name="JsonSizeExceedsRemainingBufferSpace" xml:space="preserve">
+    <value>The specified size exceeds the remaining buffer space ('{0}' bytes).</value>
+  </data>
+    <data name="InvalidCharacterEncountered" xml:space="preserve">
+    <value>Encountered invalid character '{0}'.</value>
+  </data>
+    <data name="JsonInvalidFFFE" xml:space="preserve">
+    <value>Characters with hexadecimal values 0xFFFE and 0xFFFF are not valid.</value>
+  </data>
+    <data name="JsonDateTimeOutOfRange" xml:space="preserve">
+    <value>DateTime values that are greater than DateTime.MaxValue or smaller than DateTime.MinValue when converted to UTC cannot be serialized to JSON.</value>
+  </data>
+    <data name="JsonWriteArrayNotSupported" xml:space="preserve">
+    <value>To write JSON arrays, use XML writer methods to write the attribute type='array' followed by methods like WriteStartElement (with the local name 'item'), WriteAttributeString, and WriteEndElement to write the JSON array items.</value>
+  </data>
+  <data name="JsonMethodNotSupported" xml:space="preserve">
+    <value>This XmlDictionaryWriter implementation does not support the '{0}' method.</value>
+  </data>
+  <data name="JsonNoMatchingStartAttribute" xml:space="preserve">
+    <value>There is no open attribute.</value>
+  </data>
+  <data name="JsonNamespaceMustBeEmpty" xml:space="preserve">
+    <value>Encountered unexpected namespace '{0}'. The namespace must be empty.</value>
+  </data>
+  <data name="JsonEndElementNoOpenNodes" xml:space="preserve">
+    <value>No corresponding start element is open.</value>
+  </data>
+  <data name="JsonOpenAttributeMustBeClosedFirst" xml:space="preserve">
+    <value>Cannot call {0} while an attribute is being written.</value>
+  </data>
+  <data name="JsonMustSpecifyDataType" xml:space="preserve">
+    <value>You must write an attribute '{0}'='{1}' after writing the attribute with local name '{2}'.</value>
+  </data>
+    <data name="JsonXmlProcessingInstructionNotSupported" xml:space="preserve">
+    <value>Processing instructions (other than the XML declaration) are not supported.</value>
+  </data>
+  <data name="JsonXmlInvalidDeclaration" xml:space="preserve">
+    <value>XML declaration can only be written at the beginning of the document.</value>
+  </data>
+  <data name="JsonInvalidLocalNameEmpty" xml:space="preserve">
+    <value>The empty string is not a valid local name in JSON.</value>
+  </data>
+  <data name="JsonPrefixMustBeNullOrEmpty" xml:space="preserve">
+    <value>Encountered unexpected prefix '{0}'. The prefix must be null or empty.</value>
+  </data>
+  <data name="JsonAttributeMustHaveElement" xml:space="preserve">
+    <value>WriteStartElement must be called at least once before WriteStartAttribute may be called.</value>
+  </data>
+  <data name="JsonAttributeAlreadyWritten" xml:space="preserve">
+    <value>Cannot write attribute with local name '{0}' multiple times.</value>
+  </data>
+  <data name="JsonServerTypeSpecifiedForInvalidDataType" xml:space="preserve">
+    <value>Attempted to write an attribute with local name '{0}' after writing the attribute '{1}'='{2}'. An attribute with local name '{0}' may be written only after writing the attribute '{1}'='{3}'.</value>
+  </data>
+  <data name="JsonUnexpectedAttributeLocalName" xml:space="preserve">
+    <value>Encountered unexpected attribute local name '{0}'. 'type' and '__type' are the only allowed local names for attributes. 'type' can be used to influence how data is written; its valid values are 'object', 'string', 'number', 'null', 'boolean', and 'array'. '__type' can be used to provide type hint information to the writer.</value>
+  </data>
+  <data name="JsonInvalidWriteState" xml:space="preserve">
+    <value>'{0}' cannot be called while WriteState is '{1}'.</value>
+  </data>
+  <data name="JsonMultipleRootElementsNotAllowedOnWriter" xml:space="preserve">
+    <value>This XmlDictionaryWriter implementation does not support the writing of multiple root elements.</value>
+  </data>
+  <data name="JsonInvalidRootElementName" xml:space="preserve">
+    <value>Encountered invalid root element name '{0}'. '{1}' is the only allowed root element name.</value>
+  </data>
+  <data name="JsonNodeTypeArrayOrObjectNotSpecified" xml:space="preserve">
+    <value>WriteStartElement cannot be called immediately after WriteStartElement without writing the 'type'='array' or 'type='object' attribute.</value>
+  </data>
+  <data name="JsonInvalidItemNameForArrayElement" xml:space="preserve">
+    <value>Encountered unexpected element local name '{0}' for item in collection. '{1}' is the only valid local name for elements in a collection.</value>
+  </data>
+  <data name="JsonInvalidStartElementCall" xml:space="preserve">
+    <value>WriteStartElement can be called at only the start of a document or immediately after calling WriteEndElement.</value>
+  </data>
+  <data name="JsonOnlyWhitespace" xml:space="preserve">
+    <value>Unexpected character '{0}'. '{1}' can write only white space characters.</value>
+  </data>
+  <data name="JsonWriterClosed" xml:space="preserve">
+    <value>The writer is closed.</value>
+  </data>
+  <data name="JsonCannotWriteStandaloneTextAfterQuotedText" xml:space="preserve">
+    <value>Cannot write a CLR value that maps to number, array, object, true, false or null in JSON after a string value has been written.</value>
+  </data>
+  <data name="JsonMustUseWriteStringForWritingAttributeValues" xml:space="preserve">
+    <value>To write attribute values with this XmlDictionaryWriter implementation, you must write either string or char[] values.</value>
+  </data>
+  <data name="JsonInvalidDataTypeSpecifiedForServerType" xml:space="preserve">
+    <value>Attempted to write an attribute '{0}'='{1}' after writing the attribute with local name '{2}'. The attribute with local name '{2}' is only valid with an attribute '{0}'='{3}'.</value>
+  </data>
+  <data name="JsonInvalidMethodBetweenStartEndAttribute" xml:space="preserve">
+    <value>Cannot write content while an attribute is being written.</value>
+  </data>
+  <data name="JsonCannotWriteTextAfterNonTextAttribute" xml:space="preserve">
+    <value>Attempted to write text after writing attribute type='{0}'. Text may be written only after the attributes type='number', type='boolean', or type='string'.</value>
+  </data>
+  <data name="JsonNestedArraysNotSupported" xml:space="preserve">
+    <value>Nested arrays are not supported.</value>
+  </data>
+  <data name="JsonEncodingNotSupported" xml:space="preserve">
+    <value>Encoding not supported in JSON. UTF-8, Unicode, and BigEndianUnicode are the only supported encodings.</value>
+  </data>
+  <data name="JsonExpectedEncoding" xml:space="preserve">
+    <value>The expected encoding '{0}' does not match the actual encoding '{1}'.</value>
+  </data>
+  <data name="JsonUnexpectedEndOfFile" xml:space="preserve">
+    <value>Unexpected end of file.</value>
+  </data>
+  <data name="AssemblyNotFound" xml:space="preserve">
+    <value>Assembly '{0}' is not found.</value>
+  </data>
+  <data name="ClrTypeNotFound" xml:space="preserve">
+    <value>The deserializer cannot load the type to deserialize because type '{1}' could not be found in assembly '{0}'. Check that the type being serialized has the same contract as the type being deserialized and the same assembly is used.</value>
+  </data>
+  <data name="AttributeNotFound" xml:space="preserve">
+    <value>XML '{2}' '{3}:{4}' does not contain expected attribute '{0}:{1}'. The deserializer has no knowledge of which type to deserialize. Check that the type being serialized has the same contract as the type being deserialized.</value>
+  </data>
+  <data name="JsonDuplicateMemberInInput" xml:space="preserve">
+    <value>The data contract type '{0}' cannot be deserialized because the data member '{1}' was found more than once in the input.</value>
+  </data>
+  <data name="JsonRequiredMembersNotFound" xml:space="preserve">
+    <value>The data contract type '{0}' cannot be deserialized because the required data members '{1}' were not found.</value>
+  </data>
+  <data name="JsonOneRequiredMemberNotFound" xml:space="preserve">
+    <value>The data contract type '{0}' cannot be deserialized because the required data member '{1}' was not found.</value>
+  </data>
+  <data name="EnumTypeNotSupportedByDataContractJsonSerializer" xml:space="preserve">
+    <value>DataContractJsonSerializer does not support data members of type '{0}'.  Consider using int, System.Object, or a concrete enum definition instead.</value>
+  </data>
+  
 </root>

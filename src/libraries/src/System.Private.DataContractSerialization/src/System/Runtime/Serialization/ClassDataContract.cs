@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 namespace System.Runtime.Serialization
 {
@@ -18,7 +16,7 @@ namespace System.Runtime.Serialization
     using System.Security;
     using System.Linq;
 
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public sealed class ClassDataContract : DataContract
 #else
     internal sealed class ClassDataContract : DataContract
@@ -61,6 +59,13 @@ namespace System.Runtime.Serialization
         private ClassDataContractCriticalHelper _helper;
 
         private bool _isScriptObject;
+
+#if NET_NATIVE
+        public ClassDataContract() : base(new ClassDataContractCriticalHelper())
+        {
+            InitClassDataContract();
+        }
+#endif
 
         /// <SecurityNote>
         /// Critical - initializes SecurityCritical field 'helper'
@@ -144,6 +149,12 @@ namespace System.Runtime.Serialization
                 }
                 return _childElementNamespaces;
             }
+#if NET_NATIVE
+            set
+            {
+                _childElementNamespaces = value;
+            }
+#endif
         }
 
         internal MethodInfo OnSerializing
@@ -190,7 +201,8 @@ namespace System.Runtime.Serialization
             { return _helper.OnDeserialized; }
         }
 
-        internal override DataContractDictionary KnownDataContracts
+#if !NET_NATIVE
+        public override DataContractDictionary KnownDataContracts
         {
             /// <SecurityNote>
             /// Critical - fetches the critical knownDataContracts property
@@ -200,7 +212,7 @@ namespace System.Runtime.Serialization
             get
             { return _helper.KnownDataContracts; }
         }
-
+#endif
 
         internal bool IsNonAttributedType
         {
@@ -212,6 +224,24 @@ namespace System.Runtime.Serialization
             get
             { return _helper.IsNonAttributedType; }
         }
+
+#if NET_NATIVE
+        public bool HasDataContract
+        {
+            [SecuritySafeCritical]
+            get
+            { return _helper.HasDataContract; }
+            set { _helper.HasDataContract = value; }
+        }
+
+        public bool HasExtensionData
+        {
+            [SecuritySafeCritical]
+            get
+            { return _helper.HasExtensionData; }
+            set { _helper.HasExtensionData = value; }
+        }
+#endif
 
         internal bool IsKeyValuePairAdapter
         {
@@ -241,10 +271,6 @@ namespace System.Runtime.Serialization
             { return _helper.GetKeyValuePairMethodInfo; }
         }
 
-
-
-
-
         /// <SecurityNote>
         /// Critical - fetches information about which constructor should be used to initialize non-attributed types that are valid for serialization
         /// Safe - only needs to be protected for write
@@ -255,6 +281,7 @@ namespace System.Runtime.Serialization
             return _helper.GetNonAttributedTypeConstructor();
         }
 
+#if !NET_NATIVE
         internal XmlFormatClassWriterDelegate XmlFormatWriterDelegate
         {
             /// <SecurityNote>
@@ -279,7 +306,11 @@ namespace System.Runtime.Serialization
                 return _helper.XmlFormatWriterDelegate;
             }
         }
+#else
+        public XmlFormatClassWriterDelegate XmlFormatWriterDelegate { get; set; }
+#endif
 
+#if !NET_NATIVE
         internal XmlFormatClassReaderDelegate XmlFormatReaderDelegate
         {
             /// <SecurityNote>
@@ -304,10 +335,17 @@ namespace System.Runtime.Serialization
                 return _helper.XmlFormatReaderDelegate;
             }
         }
+#else
+        public XmlFormatClassReaderDelegate XmlFormatReaderDelegate { get; set; }
+#endif
 
         internal static ClassDataContract CreateClassDataContractForKeyValue(Type type, XmlDictionaryString ns, string[] memberNames)
         {
+#if !NET_NATIVE
             return new ClassDataContract(type, ns, memberNames);
+#else
+            return (ClassDataContract)DataContract.GetDataContractFromGeneratedAssembly(type);
+#endif
         }
 
         internal static void CheckAndAddMember(List<DataMember> members, DataMember memberContract, Dictionary<string, DataMember> memberNamesTable)
@@ -690,8 +728,10 @@ namespace System.Runtime.Serialization
             private List<DataMember> _members;
             private MethodInfo _onSerializing, _onSerialized;
             private MethodInfo _onDeserializing, _onDeserialized;
+#if !NET_NATIVE
             private DataContractDictionary _knownDataContracts;
             private bool _isKnownTypeAttributeChecked;
+#endif
             private bool _isMethodChecked;
             /// <SecurityNote>
             /// in serialization/deserialization we base the decision whether to Demand SerializationFormatter permission on this value and hasDataContract
@@ -702,6 +742,9 @@ namespace System.Runtime.Serialization
             /// in serialization/deserialization we base the decision whether to Demand SerializationFormatter permission on this value and isNonAttributedType
             /// </SecurityNote>
             private bool _hasDataContract;
+#if NET_NATIVE
+            private bool _hasExtensionData;
+#endif
             private bool _isScriptObject;
 
             private XmlDictionaryString[] _childElementNamespaces;
@@ -1235,7 +1278,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-
+#if !NET_NATIVE
             internal override DataContractDictionary KnownDataContracts
             {
                 [SecurityCritical]
@@ -1259,11 +1302,22 @@ namespace System.Runtime.Serialization
                 set
                 { _knownDataContracts = value; }
             }
+#endif
 
             internal bool HasDataContract
             {
                 get { return _hasDataContract; }
+#if NET_NATIVE
+                set { _hasDataContract = value; }
+#endif
             }
+#if NET_NATIVE
+            internal bool HasExtensionData
+            {
+                get { return _hasExtensionData; }
+                set { _hasExtensionData = value; }
+            }
+#endif
 
             internal bool IsNonAttributedType
             {
