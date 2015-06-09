@@ -32,14 +32,13 @@ namespace System.Collections.Generic
         private const int MinimumGrow = 4;
         private const int GrowFactor = 200;  // double each time
         private const int DefaultCapacity = 4;
-        private static T[] s_emptyArray = Array.Empty<T>();
 
         // Creates a queue with room for capacity objects. The default initial
         // capacity and grow factor are used.
         /// <include file='doc\Queue.uex' path='docs/doc[@for="Queue.Queue"]/*' />
         public Queue()
         {
-            _array = s_emptyArray;
+            _array = Array.Empty<T>();
         }
 
         // Creates a queue with room for capacity objects. The default grow factor
@@ -50,11 +49,7 @@ namespace System.Collections.Generic
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-
             _array = new T[capacity];
-            _head = 0;
-            _tail = 0;
-            _size = 0;
         }
 
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
@@ -67,8 +62,6 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException("collection");
 
             _array = new T[DefaultCapacity];
-            _size = 0;
-            _version = 0;
 
             using (IEnumerator<T> en = collection.GetEnumerator())
             {
