@@ -104,10 +104,10 @@ namespace System.IO.Pipes.Tests
                 PipeTransmissionMode transmitMode = server.TransmissionMode;
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.ReadMode = (PipeTransmissionMode)999);
 
-                if (Interop.IsWindows)
+                if (Interop.IsWindows || Interop.IsLinux)
                 {
-                    int inbuffersize = server.InBufferSize;
-                    int outbuffersize = server.OutBufferSize;
+                    Assert.Equal(0, server.InBufferSize);
+                    Assert.Equal(0, server.OutBufferSize);
                 }
                 else
                 {
