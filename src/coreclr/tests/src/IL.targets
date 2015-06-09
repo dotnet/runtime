@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Required by Microsoft.Common.targets -->
+  <Target Name="CreateManifestResourceNames" Condition="'@(EmbeddedResource)' != ''" />
+
+  <Target Name="CoreCompile"
+          Inputs="$(MSBuildAllProjects);
+                  @(Compile)"
+          Outputs="@(IntermediateAssembly);"
+          Returns=""
+          DependsOnTargets="$(CoreCompileDependsOn)">
+    <PropertyGroup>
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">/DLL</_OutputTypeArgument>
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">/EXE</_OutputTypeArgument>
+
+      <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">/KEY=$(KeyOriginatorFile)</_KeyFileArgument>
+    </PropertyGroup>
+
+    <Exec Command="ilasm /QUIET $(_OutputTypeArgument) /OUTPUT=@(IntermediateAssembly) $(_KeyFileArgument) @(Compile)">
+      <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
+    </Exec>
+    <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />
+  </Target>
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+</Project>
