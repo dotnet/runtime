@@ -9,14 +9,14 @@ namespace System.IO.Compression.Tests
 {
     public class ZLibGZipStreamTests : GZipStreamTests, IDisposable
     {
-        public ZLibGZipStreamTests() { DeflateStreamTests.SetWorkerMode("zlib"); }
-        public void Dispose() { DeflateStreamTests.SetWorkerMode("unknown"); }
+        public ZLibGZipStreamTests() { Common.SetDeflaterMode("zlib"); }
+        public void Dispose() { Common.SetDeflaterMode("unknown"); }
     }
 
     public class ManagedGZipStreamTests : GZipStreamTests, IDisposable
     {
-        public ManagedGZipStreamTests() { DeflateStreamTests.SetWorkerMode("managed"); }
-        public void Dispose() { DeflateStreamTests.SetWorkerMode("unknown"); }
+        public ManagedGZipStreamTests() { Common.SetDeflaterMode("managed"); }
+        public void Dispose() { Common.SetDeflaterMode("unknown"); }
     }
 
     public abstract class GZipStreamTests

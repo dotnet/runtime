@@ -10,28 +10,19 @@ namespace System.IO.Compression.Tests
 {
     public class ZLibDeflateStreamTests : DeflateStreamTests, IDisposable
     {
-        public ZLibDeflateStreamTests() { SetWorkerMode("zlib"); }
-        public void Dispose() { SetWorkerMode("unknown"); }
+        public ZLibDeflateStreamTests() { Common.SetDeflaterMode("zlib"); }
+        public void Dispose() { Common.SetDeflaterMode("unknown"); }
     }
 
     public class ManagedDeflateStreamTests : DeflateStreamTests, IDisposable
     {
-        public ManagedDeflateStreamTests() { SetWorkerMode("managed"); }
-        public void Dispose() { SetWorkerMode("unknown"); }
+        public ManagedDeflateStreamTests() { Common.SetDeflaterMode("managed"); }
+        public void Dispose() { Common.SetDeflaterMode("unknown"); }
     }
 
     public abstract class DeflateStreamTests
     {
         static string gzTestFile(String fileName) { return Path.Combine("GZTestData", fileName); }
-
-        internal static void SetWorkerMode(string mode)
-        {
-            FieldInfo forceType = typeof(DeflateStream).GetTypeInfo().GetDeclaredField("s_forcedTestingDeflaterType");
-            if (forceType != null)
-            {
-                forceType.SetValue(null, mode == "zlib" ? (byte)2 : mode == "managed" ? (byte)1 : (byte)0);
-            }
-        }
 
         [Fact]
         public void BaseStream1()
