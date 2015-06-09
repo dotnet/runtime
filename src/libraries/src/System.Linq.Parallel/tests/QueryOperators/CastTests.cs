@@ -118,10 +118,9 @@ namespace Test
         }
 
         [Fact]
-        public static void Cast_NullReferenceException()
+        public static void Cast_ArgumentNullException()
         {
-            // Everything else throws ArgumentNullException, but Cast is missing the check that would do so.
-            Assert.Throws<NullReferenceException>(() => ((ParallelQuery<object>)null).Cast<int>());
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).Cast<int>());
         }
 
         private class Castable
