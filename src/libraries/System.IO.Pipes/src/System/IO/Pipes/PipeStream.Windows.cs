@@ -15,7 +15,7 @@ namespace System.IO.Pipes
     public abstract partial class PipeStream : Stream
     {
         internal const bool CheckOperationsRequiresSetHandle = true;
-        private ThreadPoolBoundHandle _threadPoolBinding;
+        internal ThreadPoolBoundHandle _threadPoolBinding;
 
         internal static string GetPipePath(string serverName, string pipeName)
         {
