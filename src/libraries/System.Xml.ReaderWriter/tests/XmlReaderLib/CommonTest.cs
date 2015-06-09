@@ -10,6 +10,8 @@ using System.Text;
 using XmlCoreTest.Common;
 using OLEDB.Test.ModuleCore;
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace XmlReaderTest.Common
 {
     ////////////////////////////////////////////////////////////////

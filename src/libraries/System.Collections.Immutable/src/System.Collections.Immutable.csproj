@@ -96,10 +96,12 @@
     <Compile Include="System\Collections\Immutable\KeysOrValuesCollectionAccessor.cs" />
     <Compile Include="System\Collections\Immutable\RefAsValueType.cs" />
     <Compile Include="System\Collections\Immutable\SecureObjectPool.cs" />
-    <Compile Include="System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
     <Compile Include="System\Linq\ImmutableArrayExtensions.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Interfaces.cd" />
