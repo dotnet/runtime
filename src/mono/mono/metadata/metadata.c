@@ -1979,13 +1979,13 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	for (i = 0; i < method->param_count; ++i) {
 		if (*ptr == MONO_TYPE_SENTINEL) {
 			if (method->call_convention != MONO_CALL_VARARG || def) {
-				g_assert (!mono_loader_get_last_error ());
+				mono_loader_assert_no_error ();
 				mono_error_set_bad_image (error, m, "Found sentinel for methoddef or no vararg");
 				g_free (pattrs);
 				return NULL;
 			}
 			if (method->sentinelpos >= 0) {
-				g_assert (!mono_loader_get_last_error ());
+				mono_loader_assert_no_error ();
 				mono_error_set_bad_image (error, m, "Found sentinel twice in the same signature.");
 				g_free (pattrs);
 				return NULL;
@@ -2024,7 +2024,7 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	 * Add signature to a cache and increase ref count...
 	 */
 
-	g_assert (!mono_loader_get_last_error ());
+	mono_loader_assert_no_error ();
 	return method;
 }
 
@@ -6065,7 +6065,7 @@ mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 
 		return TRUE;
 	for (i = 0; i < container->type_argc; i++) {
 		if (!get_constraints (image, start_row + i, &mono_generic_container_get_param_info (container, i)->constraints, container, error)) {
-			g_assert (!mono_loader_get_last_error ());
+			mono_loader_assert_no_error ();
 			return FALSE;
 		}
 	}

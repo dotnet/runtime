@@ -1224,6 +1224,9 @@ void
 mono_loader_clear_error    (void);
 
 void
+mono_loader_assert_no_error (void);
+
+void
 mono_reflection_init       (void);
 
 void

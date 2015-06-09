@@ -4904,7 +4904,7 @@ mono_module_get_types (MonoDomain *domain, MonoImage *image, MonoArray **excepti
 		if (!exportedOnly || mono_module_type_is_visible (tdef, image, i + 1)) {
 			MonoError error;
 			klass = mono_class_get_checked (image, (i + 1) | MONO_TOKEN_TYPE_DEF, &error);
-			g_assert (!mono_loader_get_last_error ()); /* Plug any leaks */
+			mono_loader_assert_no_error (); /* Plug any leaks */
 			
 			if (klass) {
 				mono_array_setref (res, count, mono_type_get_object (domain, &klass->byval_arg));
