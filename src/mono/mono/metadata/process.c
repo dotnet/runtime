@@ -373,7 +373,7 @@ static void process_get_assembly_fileversion (MonoObject *filever, MonoAssembly 
 
 static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
 {
-	MonoClass *filever_class;
+	static MonoClass *filever_class = NULL;
 	MonoObject *item, *filever;
 	MonoDomain *domain = mono_domain_get ();
 	char filename [80] = "[In Memory] ";
@@ -384,9 +384,11 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 	 */
 	item = mono_object_new (domain, proc_class);
 
-	filever_class = mono_class_from_name (system_assembly,
+	if (!filever_class)
+		filever_class = mono_class_from_name (system_assembly,
 					    "System.Diagnostics",
 					    "FileVersionInfo");
+
 	filever = mono_object_new (domain, filever_class);
 
 	process_get_assembly_fileversion (filever, assembly);
@@ -403,7 +405,7 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 
 static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
 {
-	MonoClass *filever_class;
+	static MonoClass *filever_class = NULL;
 	MonoObject *item, *filever;
 	MonoDomain *domain=mono_domain_get ();
 	MODULEINFO modinfo;
@@ -413,9 +415,11 @@ static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *f
 	 */
 	item=mono_object_new (domain, proc_class);
 
-	filever_class=mono_class_from_name (system_assembly,
+	if (!filever_class)
+		filever_class=mono_class_from_name (system_assembly,
 					    "System.Diagnostics",
 					    "FileVersionInfo");
+
 	filever=mono_object_new (domain, filever_class);
 
 	process_get_fileversion (filever, filename);
@@ -474,7 +478,7 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	DWORD needed;
 	guint32 count = 0, module_count = 0, assembly_count = 0;
 	guint32 i, num_added = 0;
-	MonoClass *proc_class;
+	static MonoClass *proc_class = NULL;
 	GPtrArray *assemblies = NULL;
 	static HANDLE current_process = 0;
 	
@@ -495,7 +499,9 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	}
 
 	count = module_count + assembly_count; 
-	proc_class = mono_class_from_name (system_assembly, "System.Diagnostics", "ProcessModule");
+	if (!proc_class)
+		proc_class = mono_class_from_name (system_assembly, "System.Diagnostics", "ProcessModule");
+
 	temp_arr = mono_array_new (mono_domain_get (), proc_class, count);
 
 	for (i = 0; i < module_count; i++) {
