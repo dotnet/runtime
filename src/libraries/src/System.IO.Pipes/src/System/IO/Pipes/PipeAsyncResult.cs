@@ -9,11 +9,10 @@ namespace System.IO.Pipes
 {
     internal unsafe sealed class PipeAsyncResult : IAsyncResult
     {
+        internal ThreadPoolBoundHandle _threadPoolBinding;
         internal AsyncCallback _userCallback;   // User code callback
         internal Object _userStateObject;
         internal ManualResetEvent _waitHandle;
-        [SecurityCritical]
-        internal SafePipeHandle _handle;
         [SecurityCritical]
         internal NativeOverlapped* _overlapped;
 
