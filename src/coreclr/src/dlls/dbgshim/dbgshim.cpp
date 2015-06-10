@@ -142,47 +142,6 @@ HRESULT GetStartupNotificationEvent(DWORD debuggeePID,
     return S_OK;
 }
 
-//-----------------------------------------------------------------------------
-// Public API.
-//
-// CloseCLREnumeration -- used to free resources allocated by EnumerateCLRs
-//
-// pHandleArray -- handle array originally returned by EnumerateCLRs
-// pStringArray -- string array originally returned by EnumerateCLRs
-// dwArrayLength -- array length originally returned by EnumerateCLRs
-//
-//-----------------------------------------------------------------------------
-HRESULT CloseCLREnumeration(HANDLE* pHandleArray, LPWSTR* pStringArray, DWORD dwArrayLength)
-{
-    PUBLIC_CONTRACT;
-
-    if ((pHandleArray + dwArrayLength) != (HANDLE*)pStringArray)
-        return E_INVALIDARG;
-
-    // It's possible that EnumerateCLRs found nothing to enumerate, in which case
-    // pointers and count are zeroed.  If a debugger calls this function in that
-    // case, let's not try to delete [] on NULL.
-    if (pHandleArray == NULL)
-        return S_OK;
-
-#ifndef FEATURE_PAL
-    for (DWORD i = 0; i < dwArrayLength; i++)
-    {
-        HANDLE hTemp = pHandleArray[i];
-        if (   (NULL != hTemp)
-            && (INVALID_HANDLE_VALUE != hTemp))
-        {
-            CloseHandle(hTemp);
-        }
-    }
-#endif // FEATURE_PAL
-
-    delete[] pHandleArray;
-    return S_OK;
-}
-
-#ifndef FEATURE_PAL
-
 HRESULT GetContinueStartupEvent(DWORD debuggeePID, 
                                 LPCWSTR szTelestoFullPath,
                                 __out HANDLE* phContinueStartupEvent);
@@ -223,8 +182,9 @@ void GetTargetCLRMetrics(LPCWSTR szTelestoFullPath,
     CONSISTENCY_CHECK(szTelestoFullPath != NULL);
     CONSISTENCY_CHECK(pEngineMetricsOut != NULL);
 
+#ifndef FEATURE_PAL
     HRESULT hr = S_OK;
-    
+
     HandleHolder hCoreClrFile = WszCreateFile(szTelestoFullPath, 
                                               GENERIC_READ, 
                                               FILE_SHARE_READ, 
@@ -353,7 +313,13 @@ void GetTargetCLRMetrics(LPCWSTR szTelestoFullPath,
     }
 
     // Holder will call FreeLibrary()
+#else 
+    //TODO: So far on POSIX systems we only support one version of debugging interface
+    // in future we might want to detect it the same way we do it on Windows.
+    pEngineMetricsOut->dwDbiVersion = CorDebugLatestVersion; 
+#endif // FEATURE_PAL
 }
+
 
 // Returns true iff the module represents CoreClr.
 bool IsCoreClr(const WCHAR* pModulePath)
@@ -362,9 +328,9 @@ bool IsCoreClr(const WCHAR* pModulePath)
 
     //strip off everything up to and including the last slash in the path to get name
     const WCHAR* pModuleName = pModulePath;
-    while(wcschr(pModuleName, W('\\')) != NULL)
+    while(wcschr(pModuleName, DIRECTORY_SEPARATOR_CHAR_W) != NULL)
     {
-        pModuleName = wcschr(pModuleName, W('\\'));
+        pModuleName = wcschr(pModuleName, DIRECTORY_SEPARATOR_CHAR_W);
         pModuleName++; // pass the slash
     }
 
@@ -406,8 +372,6 @@ bool IsCoreClrWithGoodHeader(HANDLE hProcess, HMODULE hModule)
     return false;
 }
 
-#endif // !FEATURE_PAL
-
 //-----------------------------------------------------------------------------
 // Public API.
 //
@@ -439,7 +403,6 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
     if ((ppHandleArrayOut == NULL) || (ppStringArrayOut == NULL) || (pdwArrayLengthOut == NULL))
         return E_INVALIDARG;
 
-#ifndef FEATURE_PAL
     HandleHolder hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, debuggeePID);
     if (NULL == hProcess)
         ThrowHR(E_FAIL);
@@ -474,9 +437,6 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
 
         return S_OK;
     }
-#else
-    DWORD count = 1;
-#endif // FEATURE_PAL
 
     size_t cbEventArrayData     = sizeof(HANDLE) * count;               // event array data
     size_t cbStringArrayData    = sizeof(LPWSTR) * count;               // string array data
@@ -494,7 +454,6 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
     WCHAR*  pStringData     = (WCHAR*)  &pOutBuffer[cbEventArrayData + cbStringArrayData];
     DWORD idx = 0;
 
-#ifndef FEATURE_PAL
     // There's no guarantee that another coreclr hasn't loaded already anyhow,
     // so if we get the corner case that the second time through we enumerate
     // more coreclrs, just ignore the extras.
@@ -514,6 +473,7 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
             pStringArray[idx] = &pStringData[idx * MAX_PATH];
             GetModuleFileNameEx(hProcess, modules[i], pStringArray[idx], MAX_PATH);
 
+#ifndef FEATURE_PAL
             // fill in event handle -- if GetContinueStartupEvent fails, it will still return 
             // INVALID_HANDLE_VALUE in hContinueStartupEvent, which is what we want.  we don't
             // want to bail out of the enumeration altogether if we can't get an event from
@@ -524,6 +484,9 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
             _ASSERTE(SUCCEEDED(hr) == (hContinueStartupEvent != INVALID_HANDLE_VALUE));
 
             pEventArray[idx] = hContinueStartupEvent;
+#else
+            pEventArray[idx] = NULL;
+#endif // FEATURE_PAL
 
             idx++;
         }
@@ -548,11 +511,6 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
 
         // Strings themselves don't need moved.
     }
-#else 
-    pStringArray[idx] = &pStringData[idx * MAX_PATH];
-    wcscpy_s(pStringArray[idx], MAX_PATH, MAKEDLLNAME_W(W("coreclr")));
-    idx++;
-#endif // FEATURE_PAL
 
     *ppHandleArrayOut = pEventArray;
     *ppStringArrayOut = pStringArray;
@@ -561,7 +519,44 @@ HRESULT EnumerateCLRs(DWORD debuggeePID,
     return S_OK;
 }
 
+//-----------------------------------------------------------------------------
+// Public API.
+//
+// CloseCLREnumeration -- used to free resources allocated by EnumerateCLRs
+//
+// pHandleArray -- handle array originally returned by EnumerateCLRs
+// pStringArray -- string array originally returned by EnumerateCLRs
+// dwArrayLength -- array length originally returned by EnumerateCLRs
+//
+//-----------------------------------------------------------------------------
+HRESULT CloseCLREnumeration(HANDLE* pHandleArray, LPWSTR* pStringArray, DWORD dwArrayLength)
+{
+    PUBLIC_CONTRACT;
+
+    if ((pHandleArray + dwArrayLength) != (HANDLE*)pStringArray)
+        return E_INVALIDARG;
+
+    // It's possible that EnumerateCLRs found nothing to enumerate, in which case
+    // pointers and count are zeroed.  If a debugger calls this function in that
+    // case, let's not try to delete [] on NULL.
+    if (pHandleArray == NULL)
+        return S_OK;
+
 #ifndef FEATURE_PAL
+    for (DWORD i = 0; i < dwArrayLength; i++)
+    {
+        HANDLE hTemp = pHandleArray[i];
+        if (   (NULL != hTemp)
+            && (INVALID_HANDLE_VALUE != hTemp))
+        {
+            CloseHandle(hTemp);
+        }
+    }
+#endif // FEATURE_PAL
+
+    delete[] pHandleArray;
+    return S_OK;
+}
 
 //-----------------------------------------------------------------------------
 // Get the base address of a module from the remote process.
@@ -581,7 +576,9 @@ BYTE* GetRemoteModuleBaseAddress(DWORD dwPID, LPCWSTR szFullModulePath)
 
     HandleHolder hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPID);
     if (NULL == hProcess)
+    {
         ThrowHR(E_FAIL);
+    }
 
     // These shouldn't be freed
     HMODULE modules[1000];
@@ -609,12 +606,9 @@ BYTE* GetRemoteModuleBaseAddress(DWORD dwPID, LPCWSTR szFullModulePath)
         }
     }
 
-
     // Successfully enumerated modules but couldn't find the requested one.
     return NULL;
 }
-
-#endif // FEATURE_PAL
 
 // DBI version: max 8 hex chars
 // SEMICOLON: 1
@@ -692,20 +686,12 @@ HRESULT CreateVersionStringFromModule(DWORD pidDebuggee,
         {        
             CorDebugInterfaceVersion dbiVersion = CorDebugInvalidVersion;
             BYTE* hmodTargetCLR = NULL;
-#ifndef FEATURE_PAL            
             CLR_ENGINE_METRICS metricsStruct;
 
             GetTargetCLRMetrics(szModuleName, &metricsStruct); // throws
             dbiVersion = (CorDebugInterfaceVersion) metricsStruct.dwDbiVersion;
-            
-            hmodTargetCLR = GetRemoteModuleBaseAddress(pidDebuggee, szModuleName); // throws
-#else
-            //TODO: So far on POSIX systems we only support one version of debugging interface
-            // in future we might want to detect it the same way we do it on Windows.
-            dbiVersion = CorDebugLatestVersion; 
-            hmodTargetCLR = (BYTE *)GetDynamicLibraryAddressInProcess(pidDebuggee, MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A));
-#endif // FEATURE_PAL    
 
+            hmodTargetCLR = GetRemoteModuleBaseAddress(pidDebuggee, szModuleName); // throws
             if (hmodTargetCLR == NULL)
             {
                 hr = COR_E_FILENOTFOUND;
@@ -768,7 +754,6 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
     return S_OK;
 }
 
-#ifndef FEATURE_PAL
 //-----------------------------------------------------------------------------
 // Appends "\mscordbi.dll" to the path. This converts a directory name into the full path to mscordbi.dll.
 // 
@@ -777,9 +762,10 @@ HRESULT ParseVersionString(LPCWSTR szDebuggeeVersion, CorDebugInterfaceVersion *
 //-----------------------------------------------------------------------------
 void AppendDbiDllName(SString & szFullDbiPath)
 {
-    const WCHAR * pDbiDllName = W("\\") MAKEDLLNAME_W(W("mscordbi"));
+    const WCHAR * pDbiDllName = DIRECTORY_SEPARATOR_STR_W MAKEDLLNAME_W(W("mscordbi"));
     szFullDbiPath.Append(pDbiDllName);
 }
+
 
 //-----------------------------------------------------------------------------
 // Return a path to the dbi next to the runtime, if present.
@@ -811,7 +797,7 @@ void GetDbiFilenameNextToRuntime(DWORD pidDebuggee, HMODULE hmodTargetCLR, SStri
     // Step 2: 'Coreclr.dll' --> 'mscordbi.dll' 
     // 
     WCHAR * pCoreClrPath = modulePath;
-    WCHAR * pLast = wcsrchr(pCoreClrPath, '\\');
+    WCHAR * pLast = wcsrchr(pCoreClrPath, DIRECTORY_SEPARATOR_CHAR_W);
     if (pLast == NULL)
     {
         ThrowHR(E_FAIL);
@@ -833,6 +819,7 @@ void GetDbiFilenameNextToRuntime(DWORD pidDebuggee, HMODULE hmodTargetCLR, SStri
     szFullCoreClrPath.Set(pCoreClrPath, (COUNT_T)wcslen(pCoreClrPath));
 }
 
+
 //---------------------------------------------------------------------------------------
 //
 // The current policy is that the DBI DLL must live right next to the coreclr DLL.  We check the product
@@ -848,6 +835,7 @@ void GetDbiFilenameNextToRuntime(DWORD pidDebuggee, HMODULE hmodTargetCLR, SStri
 
 bool CheckDbiAndRuntimeVersion(SString & szFullDbiPath, SString & szFullCoreClrPath)
 {
+#ifndef FEATURE_PAL
     DWORD dwDbiVersionMS = 0;
     DWORD dwDbiVersionLS = 0;
     DWORD dwCoreClrVersionMS = 0;
@@ -866,16 +854,11 @@ bool CheckDbiAndRuntimeVersion(SString & szFullDbiPath, SString & szFullCoreClrP
     {
         return false;
     }
+#else
+    return true;
+#endif // FEATURE_PAL
 }
 
-#else
-
-// Functions that we'll look for in the loaded Mscordbi module.
-typedef HRESULT (STDAPICALLTYPE *FPCreateCordbObject)(
-    int iDebuggerVersion, 
-    IUnknown ** ppCordb);
-
-#endif // FEATURE_PAL
 
 //-----------------------------------------------------------------------------
 // Public API.
@@ -905,6 +888,8 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
     HRESULT hr = S_OK;
     HMODULE hMod = NULL;
     IUnknown * pCordb = NULL;
+    FPCoreCLRCreateCordbObject fpCreate2 = NULL;
+
     LOG((LF_CORDB, LL_EVERYTHING, "Calling CreateDebuggerInterfaceFromVersion, ver=%S\n", szDebuggeeVersion));
 
     if ((szDebuggeeVersion == NULL) || (ppCordb == NULL))
@@ -914,7 +899,6 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
     }
 
     *ppCordb = NULL;
-
 
     //
     // Step 1: Parse version information into internal data structures
@@ -928,7 +912,6 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
     if (FAILED(hr))
         goto Exit;
 
-#ifndef FEATURE_PAL
     //
     // Step 2:  Find the proper Dbi module (mscordbi.dll) and load it.
     // 
@@ -954,7 +937,11 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
         // Issue:951525: coreclr mscordbi load fails on downlevel OS since LoadLibraryEx can't find 
         // dependent forwarder DLLs. Force LoadLibrary to look for dependencies in szFullDbiPath plus the default
         // search paths.
+#ifndef FEATURE_PAL
         hMod = WszLoadLibraryEx(szFullDbiPath, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+#else
+        hMod = LoadLibraryExW(szFullDbiPath, NULL, 0);
+#endif
     }
     EX_CATCH_HRESULT(hrIgnore); // failure leaves hMod null
 
@@ -977,7 +964,7 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
     //
     // Step 3: Now that module is loaded, instantiate an ICorDebug.
     // 
-    FPCoreCLRCreateCordbObject fpCreate2 = (FPCoreCLRCreateCordbObject)GetProcAddress(hMod, "CoreCLRCreateCordbObject");
+    fpCreate2 = (FPCoreCLRCreateCordbObject)GetProcAddress(hMod, "CoreCLRCreateCordbObject");
     if (fpCreate2 == NULL)
     {
         // New-style creation API didn't exist - this DBI must be the wrong version, for the Mix07 protocol
@@ -987,23 +974,6 @@ HRESULT CreateDebuggingInterfaceFromVersionEx(
 
     // Invoke to instantiate an ICorDebug. This export was introduced after the Mix'07 release.
     hr = fpCreate2(iDebuggerVersion, pidDebuggee, hmodTargetCLR, &pCordb);
-#else
-    {
-        hMod = LoadLibraryExW(MAKEDLLNAME_W(W("mscordbi")), NULL, 0);
-        if (NULL == hMod)
-        {
-            hr = CORDBG_E_DEBUG_COMPONENT_MISSING;
-            goto Exit;
-        }
-        FPCoreCLRCreateCordbObject fpCreate2 = (FPCoreCLRCreateCordbObject)GetProcAddress(hMod, "CoreCLRCreateCordbObject");
-        if (hmodTargetCLR == NULL || fpCreate2 == NULL)
-        {
-            hr = CORDBG_E_INCOMPATIBLE_PROTOCOL;
-            goto Exit;
-        }
-        hr = fpCreate2(iDebuggerVersion, pidDebuggee, hmodTargetCLR, &pCordb);
-    }
-#endif // FEATURE_PAL
     _ASSERTE((pCordb == NULL) == FAILED(hr));
 
 Exit:
