@@ -1,5 +1,5 @@
 {
-  "locked": false,
+  "locked": true,
   "version": -9997,
   "targets": {
     "DNXCore,Version=v5.0": {
@@ -349,7 +349,7 @@
           "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll"
         ]
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00052": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00053": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10-beta-22703",
           "System.IO": "4.0.10-beta-22703",
@@ -789,11 +789,11 @@
         "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00052": {
-      "sha512": "ZVgAdZVaO2Snaj6F0U9vBhaqRuVM0VTLw5cZE3HOebnAjssaAoiOJUfVq5sgozEON1hPc+ysBVzAufMwlf9kdQ==",
+    "xunit.netcore.extensions/1.0.0-prerelease-00053": {
+      "sha512": "Nr3usfWn6O4WWWJyIN9wgMENawbcGuZ0wjlVkBFxbC+O0KRc2K+F8sWNJ7mN6RN8wlczI3tizEcve83m/MvqtQ==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00052.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00052.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00053.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00053.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
       ]
