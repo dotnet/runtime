@@ -86,7 +86,7 @@ namespace System.Collections.Generic
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Clear"]/*' />
         public void Clear()
         {
-            ArrayT<T>.Clear(_array, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+            Array.Clear(_array, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
             _size = 0;
             _version++;
         }
@@ -141,7 +141,7 @@ namespace System.Collections.Generic
             else
             {
                 // Legacy fallback in case we ever end up copying within the same array.
-                ArrayT<T>.Copy(_array, 0, array, arrayIndex, _size);
+                Array.Copy(_array, 0, array, arrayIndex, _size);
                 Array.Reverse(array, arrayIndex, _size);
             }
         }
@@ -208,8 +208,7 @@ namespace System.Collections.Generic
             int threshold = (int)(((double)_array.Length) * 0.9);
             if (_size < threshold)
             {
-                T[] newarray = ArrayT<T>.Resize(_array, _size, _size);
-                _array = newarray;
+                Array.Resize(ref _array, _size);
                 _version++;
             }
         }
@@ -244,8 +243,7 @@ namespace System.Collections.Generic
         {
             if (_size == _array.Length)
             {
-                T[] newArray = ArrayT<T>.Resize(_array, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length, _size);
-                _array = newArray;
+                Array.Resize(ref _array, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length);
             }
             _array[_size++] = item;
             _version++;

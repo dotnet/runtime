@@ -30,9 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs">
-      <Link>System\ArrayT.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>

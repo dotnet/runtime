@@ -2715,7 +2715,7 @@ namespace System.Linq
 
         void ICollection<TElement>.CopyTo(TElement[] array, int arrayIndex)
         {
-            ArrayT<TElement>.Copy(elements, 0, array, arrayIndex, count);
+            Array.Copy(elements, 0, array, arrayIndex, count);
         }
 
         bool ICollection<TElement>.Remove(TElement item)
@@ -2845,7 +2845,8 @@ namespace System.Linq
         {
             int newSize = checked(_count * 2 + 1);
             int[] newBuckets = new int[newSize];
-            Slot[] newSlots = ArrayT<Slot>.Resize(_slots, newSize, _count);
+            Slot[] newSlots = new Slot[newSize];
+            Array.Copy(_slots, 0, newSlots, 0, _count);
             for (int i = 0; i < _count; i++)
             {
                 int bucket = newSlots[i].hashCode % newSize;
@@ -3103,8 +3104,7 @@ namespace System.Linq
                     }
                     else if (items.Length == count)
                     {
-                        TElement[] newItems = ArrayT<TElement>.Resize(items, checked(count * 2), count);
-                        items = newItems;
+                        Array.Resize(ref items, checked(count * 2));
                     }
                     items[count] = item;
                     count++;
@@ -3119,7 +3119,9 @@ namespace System.Linq
             if (count == 0) return new TElement[0];
             if (items.Length == count) return items;
 
-            return ArrayT<TElement>.Resize(items, count, count);
+            var arr = new TElement[count];
+            Array.Copy(items, 0, arr, 0, count);
+            return arr;
         }
     }
 

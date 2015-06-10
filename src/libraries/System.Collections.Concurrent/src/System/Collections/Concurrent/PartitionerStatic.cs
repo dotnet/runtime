@@ -665,7 +665,7 @@ namespace System.Collections.Concurrent
                     {
                         // adjust index and do the actual copy
                         actualNumElementsGrabbed = (endPos < _fillBufferSize) ? endPos : _fillBufferSize - beginPos;
-                        ArrayT<KeyValuePair<long, TSource>>.Copy(fillBufferLocalRef, beginPos, destArray, 0, actualNumElementsGrabbed);
+                        Array.Copy(fillBufferLocalRef, beginPos, destArray, 0, actualNumElementsGrabbed);
                     }
 
                     // let the record show we are no longer accessing the buffer

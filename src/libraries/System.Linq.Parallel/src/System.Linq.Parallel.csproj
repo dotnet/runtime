@@ -158,9 +158,6 @@
   </ItemGroup>
   <!-- Common or Common-branched source files -->
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs">
-      <Link>Common\System\ArrayT.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Resource files -->
   <ItemGroup>

@@ -157,8 +157,8 @@ namespace System.Collections.Generic
 
                 // clear the elements so that the gc can reclaim the references.
                 // clear only up to _lastIndex for _slots 
-                ArrayT<Slot>.Clear(_slots, 0, _lastIndex);
-                ArrayT<int>.Clear(_buckets, 0, _buckets.Length);
+                Array.Clear(_slots, 0, _lastIndex);
+                Array.Clear(_buckets, 0, _buckets.Length);
                 _lastIndex = 0;
                 _count = 0;
                 _freeList = -1;
@@ -919,11 +919,11 @@ namespace System.Collections.Generic
 
             Debug.Assert(_buckets != null, "SetCapacity called on a set with no elements");
 
-            Slot[] newSlots;
-            if (_slots == null)
-                newSlots = new Slot[newSize];
-            else
-                newSlots = ArrayT<Slot>.Resize(_slots, newSize, _lastIndex);
+            Slot[] newSlots = new Slot[newSize];
+            if (_slots != null)
+            {
+                Array.Copy(_slots, 0, newSlots, 0, _lastIndex);
+            }
 
             if (forceNewHashCodes)
             {
