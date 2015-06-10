@@ -859,7 +859,7 @@ public sealed class BufferedStream : Stream {
         // guaranteed to reduce the number of writes, we prefer it.
         // We pick a simple strategy that makes degenerate cases rare if our assumptions are right.
         //
-        // For ever write, we use a simple heuristic (below) to decide whether to use the buffer.
+        // For every write, we use a simple heuristic (below) to decide whether to use the buffer.
         // The heuristic has the desirable property (*) that if the specified user data can fit into the currently available
         // buffer space without filling it up completely, the heuristic will always tell us to use the buffer. It will also
         // tell us to use the buffer in cases where the current write would fill the buffer, but the remaining data is small
