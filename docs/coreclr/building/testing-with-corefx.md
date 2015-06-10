@@ -7,7 +7,7 @@ In order to do this you need to create a file called `localpublish.props` under 
 The contents of the file should look like this (make sure to update the version to the current version of the CoreCLR package used by CoreFx):
 
   <Project ToolsVersion="12.0" DefaultTargets="Build" 
-         xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+         xmlns="http://schemas.microsoft.com/developer/msbuilding/2003">
       <ItemGroup>
       <LocalPackages Include="$(PackagesBinDir)">
           <PackageName>Microsoft.DotNet.CoreCLR</PackageName>
