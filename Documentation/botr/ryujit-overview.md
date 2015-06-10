@@ -536,7 +536,7 @@ Below are some of the most useful `COMPLUS` variables. Where {method-list} is sp
 * `COMPLUS_JitTimeLogFile`={file name} – this specifies a log file to which timing information is written.
 * `COMPLUS_JitTimeLogCsv`={file name} – this specifies a log file to which summary timing information can be written, in CSV form.
 
-See also: [CLR Configuration Knobs](../miscellaneous/clr-configuration-knobs.md)
+See also: [CLR Configuration Knobs](../project-docs/clr-configuration-knobs.md)
 
 # Reading a JitDump
 
