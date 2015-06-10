@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 using System;
 using System.Collections;
@@ -14,7 +12,11 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
+#if NET_NATIVE
+    public abstract class PrimitiveDataContract : DataContract
+#else
     internal abstract class PrimitiveDataContract : DataContract
+#endif
     {
         [SecurityCritical]
         /// <SecurityNote>
@@ -47,7 +49,7 @@ namespace System.Runtime.Serialization
         internal abstract string WriteMethodName { get; }
         internal abstract string ReadMethodName { get; }
 
-        internal override XmlDictionaryString TopLevelElementNamespace
+        public override XmlDictionaryString TopLevelElementNamespace
         {
             /// <SecurityNote>
             /// Critical - for consistency with base class
@@ -74,7 +76,7 @@ namespace System.Runtime.Serialization
             get { return true; }
         }
 
-        internal override bool IsBuiltInDataContract
+        public override bool IsBuiltInDataContract
         {
             get
             {
@@ -199,9 +201,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class CharDataContract : PrimitiveDataContract
+#else
     internal class CharDataContract : PrimitiveDataContract
+#endif
     {
-        internal CharDataContract() : this(DictionaryGlobals.CharLocalName, DictionaryGlobals.SerializationNamespace)
+        public CharDataContract() : this(DictionaryGlobals.CharLocalName, DictionaryGlobals.SerializationNamespace)
         {
         }
 
@@ -224,10 +230,13 @@ namespace System.Runtime.Serialization
         }
     }
 
-
+#if NET_NATIVE
+    public class BooleanDataContract : PrimitiveDataContract
+#else
     internal class BooleanDataContract : PrimitiveDataContract
+#endif
     {
-        internal BooleanDataContract() : base(typeof(bool), DictionaryGlobals.BooleanLocalName, DictionaryGlobals.SchemaNamespace)
+        public BooleanDataContract() : base(typeof(bool), DictionaryGlobals.BooleanLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -246,9 +255,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class SignedByteDataContract : PrimitiveDataContract
+#else
     internal class SignedByteDataContract : PrimitiveDataContract
+#endif
     {
-        internal SignedByteDataContract() : base(typeof(sbyte), DictionaryGlobals.SignedByteLocalName, DictionaryGlobals.SchemaNamespace)
+        public SignedByteDataContract() : base(typeof(sbyte), DictionaryGlobals.SignedByteLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -267,9 +280,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class UnsignedByteDataContract : PrimitiveDataContract
+#else
     internal class UnsignedByteDataContract : PrimitiveDataContract
+#endif
     {
-        internal UnsignedByteDataContract() : base(typeof(byte), DictionaryGlobals.UnsignedByteLocalName, DictionaryGlobals.SchemaNamespace)
+        public UnsignedByteDataContract() : base(typeof(byte), DictionaryGlobals.UnsignedByteLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -288,9 +305,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class ShortDataContract : PrimitiveDataContract
+#else
     internal class ShortDataContract : PrimitiveDataContract
+#endif
     {
-        internal ShortDataContract() : base(typeof(short), DictionaryGlobals.ShortLocalName, DictionaryGlobals.SchemaNamespace)
+        public ShortDataContract() : base(typeof(short), DictionaryGlobals.ShortLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -309,9 +330,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class UnsignedShortDataContract : PrimitiveDataContract
+#else
     internal class UnsignedShortDataContract : PrimitiveDataContract
+#endif
     {
-        internal UnsignedShortDataContract() : base(typeof(ushort), DictionaryGlobals.UnsignedShortLocalName, DictionaryGlobals.SchemaNamespace)
+        public UnsignedShortDataContract() : base(typeof(ushort), DictionaryGlobals.UnsignedShortLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -330,9 +355,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class IntDataContract : PrimitiveDataContract
+#else
     internal class IntDataContract : PrimitiveDataContract
+#endif
     {
-        internal IntDataContract() : base(typeof(int), DictionaryGlobals.IntLocalName, DictionaryGlobals.SchemaNamespace)
+        public IntDataContract() : base(typeof(int), DictionaryGlobals.IntLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -351,9 +380,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class UnsignedIntDataContract : PrimitiveDataContract
+#else
     internal class UnsignedIntDataContract : PrimitiveDataContract
+#endif
     {
-        internal UnsignedIntDataContract() : base(typeof(uint), DictionaryGlobals.UnsignedIntLocalName, DictionaryGlobals.SchemaNamespace)
+        public UnsignedIntDataContract() : base(typeof(uint), DictionaryGlobals.UnsignedIntLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -372,9 +405,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class LongDataContract : PrimitiveDataContract
+#else
     internal class LongDataContract : PrimitiveDataContract
+#endif
     {
-        internal LongDataContract() : this(DictionaryGlobals.LongLocalName, DictionaryGlobals.SchemaNamespace)
+        public LongDataContract() : this(DictionaryGlobals.LongLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -396,9 +433,14 @@ namespace System.Runtime.Serialization
                 : HandleReadValue(reader.ReadElementContentAsLong(), context);
         }
     }
+
+#if NET_NATIVE
+    public class UnsignedLongDataContract : PrimitiveDataContract
+#else
     internal class UnsignedLongDataContract : PrimitiveDataContract
+#endif
     {
-        internal UnsignedLongDataContract() : base(typeof(ulong), DictionaryGlobals.UnsignedLongLocalName, DictionaryGlobals.SchemaNamespace)
+        public UnsignedLongDataContract() : base(typeof(ulong), DictionaryGlobals.UnsignedLongLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -417,9 +459,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class FloatDataContract : PrimitiveDataContract
+#else
     internal class FloatDataContract : PrimitiveDataContract
+#endif
     {
-        internal FloatDataContract() : base(typeof(float), DictionaryGlobals.FloatLocalName, DictionaryGlobals.SchemaNamespace)
+        public FloatDataContract() : base(typeof(float), DictionaryGlobals.FloatLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -438,9 +484,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class DoubleDataContract : PrimitiveDataContract
+#else
     internal class DoubleDataContract : PrimitiveDataContract
+#endif
     {
-        internal DoubleDataContract() : base(typeof(double), DictionaryGlobals.DoubleLocalName, DictionaryGlobals.SchemaNamespace)
+        public DoubleDataContract() : base(typeof(double), DictionaryGlobals.DoubleLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -459,9 +509,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class DecimalDataContract : PrimitiveDataContract
+#else
     internal class DecimalDataContract : PrimitiveDataContract
+#endif
     {
-        internal DecimalDataContract() : base(typeof(decimal), DictionaryGlobals.DecimalLocalName, DictionaryGlobals.SchemaNamespace)
+        public DecimalDataContract() : base(typeof(decimal), DictionaryGlobals.DecimalLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -480,9 +534,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class DateTimeDataContract : PrimitiveDataContract
+#else
     internal class DateTimeDataContract : PrimitiveDataContract
+#endif
     {
-        internal DateTimeDataContract() : base(typeof(DateTime), DictionaryGlobals.DateTimeLocalName, DictionaryGlobals.SchemaNamespace)
+        public DateTimeDataContract() : base(typeof(DateTime), DictionaryGlobals.DateTimeLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -501,9 +559,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class StringDataContract : PrimitiveDataContract
+#else
     internal class StringDataContract : PrimitiveDataContract
+#endif
     {
-        internal StringDataContract() : this(DictionaryGlobals.StringLocalName, DictionaryGlobals.SchemaNamespace)
+        public StringDataContract() : this(DictionaryGlobals.StringLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -536,9 +598,13 @@ namespace System.Runtime.Serialization
         internal HexBinaryDataContract() : base(DictionaryGlobals.hexBinaryLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
+#if NET_NATIVE
+    public class ByteArrayDataContract : PrimitiveDataContract
+#else
     internal class ByteArrayDataContract : PrimitiveDataContract
+#endif
     {
-        internal ByteArrayDataContract() : base(typeof(byte[]), DictionaryGlobals.ByteArrayLocalName, DictionaryGlobals.SchemaNamespace)
+        public ByteArrayDataContract() : base(typeof(byte[]), DictionaryGlobals.ByteArrayLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -563,9 +629,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class ObjectDataContract : PrimitiveDataContract
+#else
     internal class ObjectDataContract : PrimitiveDataContract
+#endif
     {
-        internal ObjectDataContract() : base(typeof(object), DictionaryGlobals.ObjectLocalName, DictionaryGlobals.SchemaNamespace)
+        public ObjectDataContract() : base(typeof(object), DictionaryGlobals.ObjectLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -614,9 +684,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class TimeSpanDataContract : PrimitiveDataContract
+#else
     internal class TimeSpanDataContract : PrimitiveDataContract
+#endif
     {
-        internal TimeSpanDataContract() : this(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SerializationNamespace)
+        public TimeSpanDataContract() : this(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SerializationNamespace)
         {
         }
 
@@ -639,9 +713,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class GuidDataContract : PrimitiveDataContract
+#else
     internal class GuidDataContract : PrimitiveDataContract
+#endif
     {
-        internal GuidDataContract() : this(DictionaryGlobals.GuidLocalName, DictionaryGlobals.SerializationNamespace)
+        public GuidDataContract() : this(DictionaryGlobals.GuidLocalName, DictionaryGlobals.SerializationNamespace)
         {
         }
 
@@ -664,10 +742,13 @@ namespace System.Runtime.Serialization
         }
     }
 
-
+#if NET_NATIVE
+    public class UriDataContract : PrimitiveDataContract
+#else
     internal class UriDataContract : PrimitiveDataContract
+#endif
     {
-        internal UriDataContract() : base(typeof(Uri), DictionaryGlobals.UriLocalName, DictionaryGlobals.SchemaNamespace)
+        public UriDataContract() : base(typeof(Uri), DictionaryGlobals.UriLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 
@@ -692,9 +773,13 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public class QNameDataContract : PrimitiveDataContract
+#else
     internal class QNameDataContract : PrimitiveDataContract
+#endif
     {
-        internal QNameDataContract() : base(typeof(XmlQualifiedName), DictionaryGlobals.QNameLocalName, DictionaryGlobals.SchemaNamespace)
+        public QNameDataContract() : base(typeof(XmlQualifiedName), DictionaryGlobals.QNameLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
 

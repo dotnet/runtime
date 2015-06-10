@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 using System;
 using System.Xml;
@@ -11,11 +9,13 @@ using System.Reflection.Emit;
 using System.Collections;
 using System.Collections.Generic;
 using System.Security;
-
+#if NET_NATIVE
+using Internal.Runtime.Augments;
+#endif
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public delegate object XmlFormatClassReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces);
     public delegate object XmlFormatCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
     public delegate void XmlFormatGetOnlyCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
@@ -29,6 +29,7 @@ namespace System.Runtime.Serialization
     internal sealed class XmlFormatReaderGenerator
 #endif
     {
+#if !NET_NATIVE
         [SecurityCritical]
         /// <SecurityNote>
         /// Critical - holds instance of CriticalHelper which keeps state that was produced within an assert
@@ -848,6 +849,17 @@ namespace System.Runtime.Serialization
                 _ilg.Throw();
             }
         }
+#endif
+
+        [SecuritySafeCritical]
+        static internal object UnsafeGetUninitializedObject(Type type)
+        {
+#if !NET_NATIVE
+            return TryGetUninitializedObjectWithFormatterServices(type) ?? Activator.CreateInstance(type);
+#else
+            return RuntimeAugments.NewObject(type.TypeHandle);
+#endif
+        }
 
         /// <SecurityNote>
         /// Critical - Elevates by calling GetUninitializedObject which has a LinkDemand
@@ -862,7 +874,7 @@ namespace System.Runtime.Serialization
 #endif
         {
             var type = DataContract.GetDataContractForInitialization(id).TypeForInitialization;
-            return TryGetUninitializedObjectWithFormatterServices(type) ?? Activator.CreateInstance(type);
+            return UnsafeGetUninitializedObject(type);
         }
 
         static internal object TryGetUninitializedObjectWithFormatterServices(Type type)

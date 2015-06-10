@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
 
 namespace System.Runtime.Serialization
 {
@@ -278,11 +276,7 @@ namespace System.Runtime.Serialization
             try
             {
                 CheckNull(reader, "reader");
-                {
-                    return InternalReadObject(reader, verifyObjectName
-                                                                      , dataContractResolver
-                                                                                            );
-                }
+                return InternalReadObject(reader, verifyObjectName, dataContractResolver);
             }
             catch (XmlException ex)
             {

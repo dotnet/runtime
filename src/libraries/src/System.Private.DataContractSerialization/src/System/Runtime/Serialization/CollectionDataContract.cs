@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 namespace System.Runtime.Serialization
 {
@@ -99,7 +97,11 @@ namespace System.Runtime.Serialization
         }
     }
 
+#if NET_NATIVE
+    public enum CollectionKind : byte
+#else
     internal enum CollectionKind : byte
+#endif
     {
         None,
         GenericDictionary,
@@ -113,7 +115,7 @@ namespace System.Runtime.Serialization
         Array,
     }
 
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public sealed class CollectionDataContract : DataContract
 #else
     internal sealed class CollectionDataContract : DataContract
@@ -146,6 +148,11 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private CollectionDataContractCriticalHelper _helper;
 
+        [SecuritySafeCritical]
+        public CollectionDataContract(CollectionKind kind) : base(new CollectionDataContractCriticalHelper(kind))
+        {
+            InitCollectionDataContract(this);
+        }
 
         /// <SecurityNote>
         /// Critical - initializes SecurityCritical field 'helper'
@@ -230,7 +237,7 @@ namespace System.Runtime.Serialization
             { return _helper.Kind; }
         }
 
-        internal Type ItemType
+        public Type ItemType
         {
             /// <SecurityNote>
             /// Critical - fetches the critical itemType property
@@ -239,6 +246,7 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _helper.ItemType; }
+            set { _helper.ItemType = value; }
         }
 
         public DataContract ItemContract
@@ -249,7 +257,13 @@ namespace System.Runtime.Serialization
             /// </SecurityNote>
             [SecuritySafeCritical]
             get
-            { return _itemContract ?? _helper.ItemContract; }
+            {
+#if !NET_NATIVE
+                return _itemContract ?? _helper.ItemContract;
+#else
+                return _itemContract ?? DataContract.GetDataContractFromGeneratedAssembly(this.ItemType);
+#endif
+            }
             /// <SecurityNote>
             /// Critical - sets the critical itemContract property
             /// </SecurityNote>
@@ -272,7 +286,7 @@ namespace System.Runtime.Serialization
             { return _helper.SharedTypeContract; }
         }
 
-        internal string ItemName
+        public string ItemName
         {
             /// <SecurityNote>
             /// Critical - fetches the critical itemName property
@@ -298,9 +312,10 @@ namespace System.Runtime.Serialization
             [SecuritySafeCritical]
             get
             { return _collectionItemName; }
+            set { _collectionItemName = value; }
         }
 
-        internal string KeyName
+        public string KeyName
         {
             /// <SecurityNote>
             /// Critical - fetches the critical keyName property
@@ -317,7 +332,7 @@ namespace System.Runtime.Serialization
             { _helper.KeyName = value; }
         }
 
-        internal string ValueName
+        public string ValueName
         {
             /// <SecurityNote>
             /// Critical - fetches the critical valueName property
@@ -418,7 +433,7 @@ namespace System.Runtime.Serialization
             { return _helper.Constructor; }
         }
 
-        internal override DataContractDictionary KnownDataContracts
+        public override DataContractDictionary KnownDataContracts
         {
             /// <SecurityNote>
             /// Critical - fetches the critical knownDataContracts property
@@ -457,6 +472,7 @@ namespace System.Runtime.Serialization
             { return _helper.ItemNameSetExplicit; }
         }
 
+#if !NET_NATIVE
         internal XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
         {
             /// <SecurityNote>
@@ -481,7 +497,11 @@ namespace System.Runtime.Serialization
                 return _helper.XmlFormatWriterDelegate;
             }
         }
+#else
+        public XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate { get; set; }
+#endif
 
+#if !NET_NATIVE
         internal XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate
         {
             /// <SecurityNote>
@@ -506,7 +526,11 @@ namespace System.Runtime.Serialization
                 return _helper.XmlFormatReaderDelegate;
             }
         }
+#else
+        public XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate { get; set; }
+#endif
 
+#if !NET_NATIVE
         internal XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate
         {
             /// <SecurityNote>
@@ -531,8 +555,11 @@ namespace System.Runtime.Serialization
                 return _helper.XmlFormatGetOnlyCollectionReaderDelegate;
             }
         }
-        [SecurityCritical]
+#else
+        public XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate { get; set; }
+#endif
 
+        [SecurityCritical]
         /// <SecurityNote>
         /// Critical - holds all state used for (de)serializing collections.
         ///            since the data is cached statically, we lock down access to it.
@@ -637,6 +664,12 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            internal CollectionDataContractCriticalHelper(CollectionKind kind)
+                : base()
+            {
+                Init(kind, null, null);
+            }
+
             // array
             internal CollectionDataContractCriticalHelper(Type type) : base(type)
             {
@@ -688,6 +721,7 @@ namespace System.Runtime.Serialization
             internal Type ItemType
             {
                 get { return _itemType; }
+                set { _itemType = value; }
             }
 
             internal DataContract ItemContract
@@ -903,6 +937,33 @@ namespace System.Runtime.Serialization
             }
         }
 
+        internal static bool TryCreateGetOnlyCollectionDataContract(Type type, out DataContract dataContract)
+        {
+#if !NET_NATIVE
+            Type itemType;
+            if (type.IsArray)
+            {
+                dataContract = new CollectionDataContract(type);
+                return true;
+            }
+            else
+            {
+                return IsCollectionOrTryCreate(type, true /*tryCreate*/, out dataContract, out itemType, false /*constructorRequired*/);
+            }
+#else
+            dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
+            if (dataContract is CollectionDataContract)
+            {
+                return true;
+            }
+            else
+            {
+                dataContract = null;
+                return false;
+            }
+#endif
+        }
+
         internal static MethodInfo GetTargetMethodWithName(string name, Type type, Type interfaceType)
         {
             Type t = type.GetInterfaces().Where(it => it.Equals(interfaceType)).FirstOrDefault();
@@ -1101,7 +1162,11 @@ namespace System.Runtime.Serialization
                     GetCollectionMethods(type, knownInterfaceType, addMethodTypeArray,
                                      true /*addMethodOnInterface*/,
                                      out getEnumeratorMethod, out addMethod);
+#if !NET_NATIVE
                     dataContract = new CollectionDataContract(type, kind, itemType, getEnumeratorMethod, addMethod, defaultCtor, !constructorRequired);
+#else
+                    dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
+#endif
                 }
             }
 
@@ -1366,7 +1431,7 @@ namespace System.Runtime.Serialization
             return o;
         }
 
-        public class DictionaryEnumerator : IEnumerator<KeyValue<object, object>>
+        internal class DictionaryEnumerator : IEnumerator<KeyValue<object, object>>
         {
             private IDictionaryEnumerator _enumerator;
 
@@ -1401,7 +1466,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        public class GenericDictionaryEnumerator<K, V> : IEnumerator<KeyValue<K, V>>
+        internal class GenericDictionaryEnumerator<K, V> : IEnumerator<KeyValue<K, V>>
         {
             private IEnumerator<KeyValuePair<K, V>> _enumerator;
 
