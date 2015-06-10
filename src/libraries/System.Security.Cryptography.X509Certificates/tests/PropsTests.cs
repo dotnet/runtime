@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestNotBefore()
         {
-            DateTime expected = new DateTime(2013, 1, 24, 14, 33, 39);
+            DateTime expected = new DateTime(2013, 1, 24, 22, 33, 39, DateTimeKind.Utc).ToLocalTime();
 
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestNotAfter()
         {
-            DateTime expected = new DateTime(2014, 4, 24, 15, 33, 39);
+            DateTime expected = new DateTime(2014, 4, 24, 22, 33, 39, DateTimeKind.Utc).ToLocalTime();
 
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
