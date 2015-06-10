@@ -497,6 +497,15 @@ namespace System.Collections.Generic
     /// </summary>
     internal sealed class LowLevelListWithIList<T> : LowLevelList<T>, IList<T>
     {
+        public LowLevelListWithIList()
+        {
+        }
+
+        public LowLevelListWithIList(int capacity)
+            : base(capacity)
+        {
+        }
+
         // Is this List read-only?
         bool ICollection<T>.IsReadOnly
         {
