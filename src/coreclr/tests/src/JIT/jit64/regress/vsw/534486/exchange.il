@@ -1,0 +1,49 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern mscorlib {}
+
+.assembly Stack
+{
+}
+
+.method public static void Assert(bool)
+{
+    ret
+}
+
+.method public static int32 Main()
+{
+	.entrypoint
+		.locals init
+		(
+			native unsigned int,
+                        native int
+		)
+        ldc.i4 10
+        stloc.0
+    ldc.i4.0
+    stloc.1
+  label:
+    ldloc.1
+    ldc.i4.5
+    beq.s end
+    ldc.i4.1
+    ldloc.1
+    add
+    stloc.1
+    newobj instance void [mscorlib]System.Object::.ctor()
+    callvirt   instance class [mscorlib]System.Type [mscorlib]System.Object::GetType()
+    ldtoken    [mscorlib]System.String
+    call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+    ceq
+    call       void Assert(bool)
+    ldloc.0
+    ldc.i4 0
+    bne.un.s label
+  end:
+    ldc.i4 100
+    ret
+}
+
+
