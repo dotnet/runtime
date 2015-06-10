@@ -57,6 +57,35 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
+        [Theory]
+        [InlineData(64)]        // too small
+        [InlineData(129)]       // in valid range but not valid increment
+        [InlineData(384)]       // too large
+        [InlineData(536870928)] // number of bits overflows and wraps around to a valid size
+        public static void InvalidKeySizes(int invalidKeySize)
+        {
+            using (Aes aes = Aes.Create())
+            {
+                // Test KeySize property
+                Assert.Throws<CryptographicException>(() => aes.KeySize = invalidKeySize);
+
+                // Test passing a key to CreateEncryptor and CreateDecryptor
+                aes.GenerateIV();
+                byte[] iv = aes.IV;
+                byte[] key;
+                try
+                {
+                    key = new byte[invalidKeySize];
+                }
+                catch (OutOfMemoryException) // in case there isn't enough memory at test-time to allocate the large array
+                {
+                    return;
+                }
+                Assert.Throws<ArgumentException>("key", () => aes.CreateEncryptor(key, iv));
+                Assert.Throws<ArgumentException>("key", () => aes.CreateDecryptor(key, iv));
+            }
+        }
+
         [Fact]
         public static void VerifyKeyGeneration_Default()
         {
