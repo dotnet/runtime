@@ -202,8 +202,10 @@ namespace System.Security.Cryptography.RNG.Tests
 
             // Over the long run there should be about as many 1s as 0s.
             // This isn't a guarantee, just a statistical observation.
-            // Allow a 3% tolerance band before considering it to have gotten out of hand.
-            Assert.True(bitDifference < 0.03);
+            // Allow a 7% tolerance band before considering it to have gotten out of hand.
+            const double AllowedTolerance = 0.07;
+            Assert.True(bitDifference < AllowedTolerance, 
+                "Expected bitDifference < " + AllowedTolerance + ", got " + bitDifference + ".");
         }
     }
 }

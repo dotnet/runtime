@@ -3,6 +3,8 @@
 
 using System;
 
+[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+
 namespace XmlCoreTest.Common
 {
     public static class MiscUtil
