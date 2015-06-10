@@ -1107,6 +1107,16 @@ namespace System.Collections.Immutable
             List<T> list;
             if (this.IsEmpty)
             {
+                // If the additional items enumerable list is known to be empty, too,
+                // then just return this empty instance.
+                int count;
+                if (addedItems.TryGetCount(out count) && count == 0)
+                {
+                    return this;
+                }
+
+                // Otherwise, construct a list from the items.  The Count could still
+                // be zero, in which case, again, just return this empty instance.
                 list = new List<T>(addedItems);
                 if (list.Count == 0)
                 {
@@ -1115,6 +1125,9 @@ namespace System.Collections.Immutable
             }
             else
             {
+                // Build the list from this set and then add the additional items.
+                // Even if the additional items is empty, this set isn't, so we know
+                // the resulting list will not be empty.
                 list = new List<T>(this);
                 list.AddRange(addedItems);
             }
