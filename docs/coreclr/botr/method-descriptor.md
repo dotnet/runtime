@@ -50,11 +50,11 @@ P/Invoke methods. These are methods marked with DllImport attribute.
 
 **EEImpl**
 
-Delegate methods whose implementation is provided by the runtime (Invoke, BeginInvoke, EndInvoke). See [ECMA 335 Partition II - Delegates](dotnet-standards.md).
+Delegate methods whose implementation is provided by the runtime (Invoke, BeginInvoke, EndInvoke). See [ECMA 335 Partition II - Delegates](../project-docs/dotnet-standards.md).
 
 **Array**
 
-Array methods whose implementation is provided by the runtime (Get, Set, Address). See [ECMA Partition II – Arrays](dotnet-standards.md).
+Array methods whose implementation is provided by the runtime (Get, Set, Address). See [ECMA Partition II – Arrays](../project-docs/dotnet-standards.md).
 
 **ComInterop**
 
@@ -87,7 +87,7 @@ Each MethodDesc has a slot, which contains the entry point of the method. The sl
 
 The slot is either in MethodTable or in MethodDesc itself. The location of the slot is determined by `mdcHasNonVtableSlot` bit on MethodDesc.
 
-The slot is stored in MethodTable for methods that require efficient lookup via slot index, e.g. virtual methods or methods on generic types. The MethodDesc contains the slot index to allow fast lookup of the entry point in this case. 
+The slot is stored in MethodTable for methods that require efficient lookup via slot index, e.g. virtual methods or methods on generic types. The MethodDesc contains the slot index to allow fast lookup of the entry point in this case.
 
 Otherwise, the slot is part of the MethodDesc itself. This arrangement improves data locality and saves working set. Also, it is not even always possible to preallocate a slot in a MethodTable upfront for dynamically created MethodDescs, such as for methods added by Edit & Continue, instantiations of generic methods or [dynamic methods](https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/Reflection/Emit/DynamicMethod.cs).
 
@@ -96,7 +96,7 @@ MethodDesc Chunks
 
 The MethodDescs are allocated in chunks to save space. Multiple MethodDesc tend to have identical MethodTable and upper bits of metadata token. MethodDescChunk is formed by hoisting the common information in front of an array of multiple MethodDescs. The MethodDesc contains just the index of itself in the array.
 
-![Figure 1](images/methoddesc-fig1.png)
+![Figure 1](../images/methoddesc-fig1.png)
 
 Figure 1 MethodDescChunk and MethodTable
 
@@ -175,7 +175,7 @@ The worker code of the stub is wrapped by a precode fragment that can be mapped 
 
 **Temporary entry points:** Methods must provide entry points before they are jitted so that jitted code has an address to call them. These temporary entry points are provided by precode. They are a specific form of stub wrappers.
 
-This technique is a lazy approach to jitting, which provides a performance optimization in both space and time. Otherwise, the transitive closure of a method would need to be jitted before it was executed. This would be a waste, since only the dependencies of taken code branches (e.g. if statement) require jitting. 
+This technique is a lazy approach to jitting, which provides a performance optimization in both space and time. Otherwise, the transitive closure of a method would need to be jitted before it was executed. This would be a waste, since only the dependencies of taken code branches (e.g. if statement) require jitting.
 
 Each temporary entry point is much smaller than a typical method body. They need to be small since there are a lot of them, even at the cost of performance. The temporary entry points are executed just once before the actual code for the method is generated.
 
@@ -185,13 +185,13 @@ The **stable entry point** is either the native code or the precode. The **nativ
 
 Temporary entry points are never saved into NGen images. All entry points in NGen images are stable entry points that are never changed. It is an important optimization that reduced private working set.
 
-![Figure 2](images/methoddesc-fig2.png)
+![Figure 2](../images/methoddesc-fig2.png)
 
 Figure 2 Entry Point State Diagram
 
 A method can have both native code and precode if there is a need to do work before the actual method body is executed. This situation typically happens for NGen image fixups. Native code is an optional MethodDesc slot in this case. This is necessary to lookup the native code of the method in a cheap uniform way.
 
-![Figure 3](images/methoddesc-fig3.png)
+![Figure 3](../images/methoddesc-fig3.png)
 
 Figure 3 The most complex case of Precode, Stub and Native Code
 
@@ -285,7 +285,7 @@ Compact entry point is a space efficient implementation of temporary entry point
 
 Temporary entry points implemented using StubPrecode or FixupPrecode can be patched to point to the actual code. Jitted code can call temporary entry point directly. The temporary entry point can be multicallable entry points in this case.
 
-Compact entry points cannot be patched to point to the actual code. Jitted code cannot call them directly. They are trading off speed for size. Calls to these entry points are indirected via slots in a table (FuncPtrStubs) that are patched to point to the actual entry point eventually. A request for a multicallable entry point allocates a StubPrecode or FixupPrecode on demand in this case. 
+Compact entry points cannot be patched to point to the actual code. Jitted code cannot call them directly. They are trading off speed for size. Calls to these entry points are indirected via slots in a table (FuncPtrStubs) that are patched to point to the actual entry point eventually. A request for a multicallable entry point allocates a StubPrecode or FixupPrecode on demand in this case.
 
 The raw speed difference is the cost of an indirect call for a compact entry point vs. the cost of one direct call and one direct jump on the given platform. The the later used to be faster  by a few percent in large server scenario since it can be predicted by the hardware better (2005). It is not always the case on current (2015) hardware.
 

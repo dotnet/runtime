@@ -174,7 +174,7 @@ FCalls require a lot of glue, too much to describe here. Look at [fcall.h][fcall
 
 ### GC Holes, FCall, and QCall
 
-A much more complete discussion on GC holes can be found in the [CLR Code Guide](clr-code-guide.md). Look for ["Is your code GC-safe?"](clr-code-guide.md#is-your-code-gc-safe). This tailored discussion motivates some of the reasons why FCall and QCall have some of their strange conventions.
+A much more complete discussion on GC holes can be found in the [CLR Code Guide](../coding-guidelines/clr-code-guide.md). Look for ["Is your code GC-safe?"](../coding-guidelines/clr-code-guide.md#is-your-code-gc-safe). This tailored discussion motivates some of the reasons why FCall and QCall have some of their strange conventions.
 
 Object references passed as parameters to FCall methods are not GC-protected, meaning that if a GC occurs, those references will point to the old location in memory of an object, not the new location. For this reason, FCalls usually follow the discipline of accepting something like "StringObject*" as their parameter type, then explicitly converting that to a STRINGREF before doing operations that may trigger a GC. You must GC protect object references before triggering a GC, if you expect to be able to use that object reference later.
 
