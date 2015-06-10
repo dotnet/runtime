@@ -3,19 +3,23 @@ Documents Index
 
 This repo includes several documents that explain both high-level and low-level concepts about the .NET runtime. These are very useful for contributors, to get context that can be very difficult to acquire from just reading code.
 
+Intro to .NET Core
+==================
+
+.NET Core is a self-contained .NET runtime and framework that implements [ECMA 335](dotnet-standards.md). It can be (and has been) ported to multiple architectures and platforms. It support a variety of installation options, having no specific deployment requirements itself.
+
 Learn about .NET Core
 ====================
 
-- [Brief Intro to .NET Core](dotnetcore-intro.md)
 - [[WIP] Official .NET Core Docs](http://dotnet.readthedocs.org)
 
 Get .NET Core
 =============
 
-- [Get .NET Core DNX SDK on Windows](installing/get-dotnetcore-dnx-windows.md)
-- [Get .NET Core DNX SDK on OS X](installing/get-dotnetcore-dnx-osx.md)
-- [Get .NET Core DNX SDK on Linux](installing/get-dotnetcore-dnx-linux.md)
-- [Get .NET Core (Raw) on Windows](installing/get-dotnetcore-windows.md)
+- [Get .NET Core DNX SDK on Windows](install/get-dotnetcore-dnx-windows.md)
+- [Get .NET Core DNX SDK on OS X](install/get-dotnetcore-dnx-osx.md)
+- [Get .NET Core DNX SDK on Linux](install/get-dotnetcore-dnx-linux.md)
+- [Get .NET Core (Raw) on Windows](install/get-dotnetcore-windows.md)
 
 Project Docs
 ============
@@ -68,15 +72,15 @@ Book of the Runtime
 Decoder Rings
 =============
 
-- [.NET Core Glossary](decoders/glossary.md)
-- [.NET Filename Encyclopedia](decoders/dotnet-filenames.md)
+- [.NET Core Glossary](project-docs/glossary.md)
+- [.NET Filename Encyclopedia](project-docs/dotnet-filenames.md)
 
 Other Information
 =================
 
 - [CoreFX Repo documentation](https://github.com/dotnet/corefx/tree/master/Documentation)
 - [Porting to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/support-dotnet-core-instructions.md)
-- [.NET Standards (Ecma)](miscellaneous/dotnet-standards.md)
-- [CLR Configuration Knobs](miscellaneous/clr-configuration-knobs.md)
+- [.NET Standards (Ecma)](project-docs/dotnet-standards.md)
+- [CLR Configuration Knobs](project-docs/clr-configuration-knobs.md)
 - [MSDN Entry for the CLR](http://msdn.microsoft.com/library/8bs2ecf4.aspx)
 - [Wikipedia Entry for the CLR](http://en.wikipedia.org/wiki/Common_Language_Runtime)
