@@ -549,17 +549,15 @@ BOOL IsManagedObject(IUnknown *pIUnknown)
     }
     CONTRACTL_END;
 
-    if (AppX::IsAppXProcess())
+    //Check based on IUnknown slots, i.e. we'll see whether the IP maps to a CCW.
+    if (MapIUnknownToWrapper(pIUnknown) != NULL)
     {
-        //In AppX we don't support IManagedObject so we'll do the check based on
-        //IUnknown slots, i.e. we'll see whether the IP maps to a CCW.
-        if (MapIUnknownToWrapper(pIUnknown) != NULL)
-        {
-            // We found an existing CCW hence this is a managed exception.
-            return TRUE;
-        }
+        // We found an existing CCW hence this is a managed exception.
+        return TRUE;
     }
-    else
+    
+    // QI IManagedObject. Note AppX doesn't support IManagedObject
+    if (!AppX::IsAppXProcess())
     {
         SafeComHolder<IManagedObject> pManagedObject = NULL;
         HRESULT hrLocal = SafeQueryInterface(pIUnknown, IID_IManagedObject, (IUnknown**)&pManagedObject);
