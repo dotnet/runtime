@@ -23,6 +23,7 @@ Abstract:
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
 #include "pal/handlemgr.hpp"
+#include "pal/module.h"
 #include "procprivate.hpp"
 #include "pal/palinternal.h"
 #include "pal/process.h"
@@ -172,7 +173,18 @@ static int checkFileType(char *lpFileName);
 static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode,
                            BOOL bTerminateUnconditionally);
 
+//
+// Struct for temporary process module list
+//
+struct ProcessModules
+{
+    struct ProcessModules *Next;
+    PVOID BaseAddress;
+    CHAR Name[0];
+};
 
+ProcessModules *CreateProcessModules(IN HANDLE hProcess, OUT LPDWORD lpCount);
+void DestroyProcessModules(IN ProcessModules *listHead);
 
 /*++
 Function:
@@ -1754,6 +1766,236 @@ OpenProcessExit:
     LOGEXIT("OpenProcess returns HANDLE %p\n", hProcess);
     PERF_EXIT(OpenProcess);
     return hProcess;
+}
+
+/*++
+Function:
+  EnumProcessModules
+
+Abstract
+  Returns a process's module list
+
+Return
+  TRUE if it succeeded, FALSE otherwise
+
+Notes
+  This API is tricky because the module handles are never closed/freed so there can't be any 
+  allocations for the module handle or name strings, etc. The "handles" are actually the base 
+  addresses of the modules. The module handles should only be used by GetModuleFileNameExW 
+  below. 
+--*/
+BOOL
+PALAPI
+EnumProcessModules(
+    IN HANDLE hProcess,
+    OUT HMODULE *lphModule,
+    IN DWORD cb,
+    OUT LPDWORD lpcbNeeded)
+{
+    PERF_ENTRY(EnumProcessModules);
+    ENTRY("EnumProcessModules(hProcess=0x%08x, cb=%d)\n", hProcess, cb);
+
+    BOOL result = TRUE;
+    DWORD count = 0;
+
+    ProcessModules *listHead = CreateProcessModules(hProcess, &count);
+    if (listHead != NULL)
+    {
+        for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
+        {
+            if (cb <= 0)
+            {
+                break;
+            }
+            cb -= sizeof(HMODULE);
+            *lphModule = (HMODULE)entry->BaseAddress;
+            lphModule++;
+        }
+    }
+    else
+    {
+        result = FALSE;
+    }
+
+    DestroyProcessModules(listHead);
+
+    if (lpcbNeeded)
+    {
+        // This return value isn't exactly up to spec because it should return the actual
+        // number of modules in the process even if "cb" isn't big enough but for our use
+        // it works just fine.
+        (*lpcbNeeded) = count * sizeof(HMODULE);
+    }
+
+    LOGEXIT("EnumProcessModules returns %d\n", result);
+    PERF_EXIT(EnumProcessModules);
+    return result;
+}
+
+/*++
+Function:
+  GetModuleFileNameExW
+
+  Used only with module handles returned from EnumProcessModule (for dbgshim). 
+
+--*/
+DWORD
+PALAPI
+GetModuleFileNameExW(
+    IN HANDLE hProcess,
+    IN HMODULE hModule,
+    OUT LPWSTR lpFilename,
+    IN DWORD nSize
+)
+{
+    DWORD result = 0;
+    DWORD count = 0;
+
+    ProcessModules *listHead = CreateProcessModules(hProcess, &count);
+    if (listHead != NULL)
+    {
+        for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
+        {
+            if ((HMODULE)entry->BaseAddress == hModule)
+            {
+                // Convert CHAR string into WCHAR string
+                result = MultiByteToWideChar(CP_ACP, 0, entry->Name, -1, lpFilename, nSize);
+                break;
+            }
+        }
+    }
+
+    DestroyProcessModules(listHead);
+
+    return result;
+}
+
+/*++
+Function:
+  CreateProcessModules
+
+Abstract
+  Returns a process's module list
+
+Return
+  ProcessModules * list
+
+--*/
+ProcessModules *
+CreateProcessModules(
+    IN HANDLE hProcess,
+    OUT LPDWORD lpCount)
+{
+    DWORD dwProcessId = PROCGetProcessIDFromHandle(hProcess);
+    if (dwProcessId == 0)
+    {
+        SetLastError(ERROR_INVALID_HANDLE);
+        return NULL;
+    }
+
+#ifdef HAVE_PROCFS_CTL 
+    // Here we read /proc/<pid>/maps file in order to parse it and figure out what it says 
+    // about a library we are looking for. This file looks something like this:
+    //
+    // [address]      [perms] [offset] [dev] [inode]     [pathname] - HEADER is not preset in an actual file
+    //
+    // 35b1800000-35b1820000 r-xp 00000000 08:02 135522  /usr/lib64/ld-2.15.so
+    // 35b1a1f000-35b1a20000 r--p 0001f000 08:02 135522  /usr/lib64/ld-2.15.so
+    // 35b1a20000-35b1a21000 rw-p 00020000 08:02 135522  /usr/lib64/ld-2.15.so
+    // 35b1a21000-35b1a22000 rw-p 00000000 00:00 0       [heap]
+    // 35b1c00000-35b1dac000 r-xp 00000000 08:02 135870  /usr/lib64/libc-2.15.so
+    // 35b1dac000-35b1fac000 ---p 001ac000 08:02 135870  /usr/lib64/libc-2.15.so
+    // 35b1fac000-35b1fb0000 r--p 001ac000 08:02 135870  /usr/lib64/libc-2.15.so
+    // 35b1fb0000-35b1fb2000 rw-p 001b0000 08:02 135870  /usr/lib64/libc-2.15.so
+
+    // Making something like: /proc/123/maps
+    char mapFileName[100]; 
+    int chars = snprintf(mapFileName, sizeof(mapFileName), "/proc/%d/maps", dwProcessId);
+    _ASSERTE(chars > 0 && chars <= sizeof(mapFileName));
+
+    FILE *mapsFile = fopen(mapFileName, "r");
+    if (mapsFile == NULL) 
+    {
+        SetLastError(ERROR_INVALID_HANDLE);
+        return NULL;
+    }
+
+    LockModuleList();
+
+    CPalThread* pThread = InternalGetCurrentThread();	
+    ProcessModules *listHead = NULL;
+    char *line = NULL;
+    size_t lineLen = 0;
+    int count = 0;
+    ssize_t read;
+
+    // Reading maps file line by line 
+    while ((read = getline(&line, &lineLen, mapsFile)) != -1) 
+    {
+        void *startAddress, *endAddress, *offset;
+        int devHi, devLo, inode;
+        char moduleName[PATH_MAX];
+
+        if (sscanf(line, "%p-%p %*[-rwxsp] %p %x:%x %d %s\n", &startAddress, &endAddress, &offset, &devHi, &devLo, &inode, moduleName) == 7)
+        {
+            if (inode != 0)
+            {
+                bool dup = false;
+                for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
+                {
+                    if (strcmp(moduleName, entry->Name) == 0)
+                    {
+                        dup = true;
+                        break;
+                    }
+                }
+
+                if (!dup)
+                {
+                    int cbModuleName = strlen(moduleName) + 1;
+                    ProcessModules *entry = (ProcessModules *)InternalMalloc(pThread, sizeof(ProcessModules) + cbModuleName);
+                    if (entry == NULL)
+                    {
+                        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+                        DestroyProcessModules(listHead);
+                        listHead = NULL;
+                        count = 0;
+                        break;
+                    }
+                    strcpy_s(entry->Name, cbModuleName, moduleName);
+                    entry->BaseAddress = startAddress;
+                    entry->Next = listHead;
+                    listHead = entry;
+                    count++;
+                }
+            }
+        }
+    }
+
+    *lpCount = count;
+
+    free(line); // We didn't allocate line, but as per contract of getline we should free it
+    fclose(mapsFile);
+    UnlockModuleList();
+
+    return listHead;
+#else
+    _ASSERTE(!"Not implemented on this platform");
+    return NULL;
+#endif
+}
+
+void
+DestroyProcessModules(IN ProcessModules *listHead)
+{
+    CPalThread* pThread = InternalGetCurrentThread();	
+
+    for (ProcessModules *entry = listHead; entry != NULL; )
+    {
+        ProcessModules *next = entry->Next;
+        InternalFree(pThread, entry);
+        entry = next;
+    }
 }
 
 /*++

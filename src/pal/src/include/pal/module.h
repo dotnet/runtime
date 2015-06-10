@@ -21,24 +21,6 @@ Abstract:
 #ifndef _PAL_MODULE_H_
 #define _PAL_MODULE_H_
 
-#if defined(CORECLR) && defined(__APPLE__)
-
-#include <CoreFoundation/CFBundle.h>
-
-// Name of the CoreCLR bundle executable
-#define CORECLR_BUNDLE_NAME "coreclr"
-
-// Name of the CoreCLR bundle root directory.
-#define CORECLR_BUNDLE_DIR "CoreCLR.bundle"
-
-// Directory components between the bundle root and the executable.
-#define CORECLR_BUNDLE_PATH "Contents/MacOS/"
-
-// Abstract the API used to load and query for functions in the CoreCLR binary to make it easier to change the
-// underlying implementation.
-typedef CFBundleRef CORECLRHANDLE;
-#endif // CORECLR && __APPLE__
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -65,22 +47,18 @@ typedef struct _MODSTRUCT
     HMODULE self;         /* circular reference to this module */
     void *dl_handle;      /* handle returned by dlopen() */
     HINSTANCE hinstance;  /* handle returned by PAL_RegisterLibrary */
-#if defined(CORECLR) && defined(__APPLE__)
-    CORECLRHANDLE sys_module; /* System modules can be loaded via mechanisms other than dlopen() under
-                               * CoreCLR/Mac */
-#endif // CORECLR && __APPLE__
     LPWSTR lib_name;      /* full path of module */
     INT refcount;         /* reference count */
                           /* -1 means infinite reference count - module is never released */
     BOOL ThreadLibCalls;  /* TRUE for DLL_THREAD_ATTACH/DETACH notifications 
-                              enabled, FALSE if they are disabled */
+                             enabled, FALSE if they are disabled */
 
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     ino_t inode;
     dev_t device;
 #endif
 
-    PDLLMAIN pDllMain; /* entry point of module */
+    PDLLMAIN pDllMain;    /* entry point of module */
 
     /* reference to next and previous modules in list (in load order) */
     struct _MODSTRUCT *next;
@@ -204,23 +182,6 @@ Return value:
 --*/
 BOOL PAL_LOADUnloadPEFile(void * ptr);
 
-
-#if !defined(CORECLR) || !defined(__APPLE__)
-/*++
-    LOADGetLibRotorPalSoFileName
-
-    Retrieve the full path of the librotor_pal.so being used.
-
-Parameters:
-    OUT pwzBuf - WCHAR buffer of MAX_PATH length to receive file name
-
-Return value:
-    0 if successful
-    -1 if failure, with last error set.
---*/
-int LOADGetLibRotorPalSoFileName(LPSTR pszBuf);
-#endif // !CORECLR || !__APPLE__
-
 /*++
     LOADInitCoreCLRModules
 
@@ -235,21 +196,6 @@ Return value:
     FALSE if failure
 --*/
 BOOL LOADInitCoreCLRModules(const char *szCoreCLRPath);
-
-#if defined(CORECLR) && defined(__APPLE__)
-// Abstract the API used to load and query for functions in the CoreCLR binary to make it easier to change the
-// underlying implementation.
-
-// Load the CoreCLR module into memory given the directory in which it resides. Returns NULL on failure.
-CORECLRHANDLE LoadCoreCLR(const char *szPath);
-
-// Lookup the named function in the given CoreCLR image. Returns NULL on failure.
-void *LookupFunctionInCoreCLR(CORECLRHANDLE hCoreCLR, const char *szFunction);
-
-// Locate the CoreCLR module handle associated with the code currently executing. Returns NULL on failure.
-CORECLRHANDLE FindCoreCLRHandle();
-
-#endif // CORECLR && __APPLE__
 
 #ifdef __cplusplus
 }
