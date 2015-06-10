@@ -1,0 +1,52 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+
+.assembly extern mscorlib {}
+.assembly switchdefaultonly1 {}
+.module switchdefaultonly3_il_d.exe
+
+.class private auto ansi beforefieldinit switchdefaultonly1
+       extends [mscorlib]System.Object
+{
+  .method private hidebysig static int32 
+          Main(string[] args) cil managed
+  {
+    .entrypoint
+    // Code size       44 (0x2c)
+    .maxstack  2
+    .locals init ([0] int32 V_0)
+    IL_0000:  ldarg.0
+    IL_0001:  ldlen
+    IL_0002:  conv.i4
+    IL_0003:  stloc.0
+    IL_0004:  ldloc.0
+    IL_0005:  ldc.i4.1
+    IL_0006:  sub
+    IL_0007:  switch     ( 
+                          IL_0010)
+    IL_0010:  br.s       IL_0012
+
+    .try
+    {
+      IL_0012:  ldarg.0
+      IL_0013:  ldlen
+      IL_0014:  conv.i4
+      IL_0015:  call       void [mscorlib]System.Console::WriteLine(int32)
+      IL_001a:  leave.s    IL_0024
+
+    }  // end .try
+    catch [mscorlib]System.Exception 
+    {
+      IL_001c:  pop
+      IL_001d:  call       void [mscorlib]System.GC::Collect()
+      IL_0022:  leave.s    IL_0024
+
+    }  // end handler
+    IL_0024:  br.s       IL_0026
+
+    IL_0026:  ldc.i4     0x64
+    IL_002b:  ret
+  } // end of method switchdefaultonly1::Main
+
+} // end of class switchdefaultonly1

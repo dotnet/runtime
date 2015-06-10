@@ -1,0 +1,34 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly ILGEN_0x38e5583b {}
+.class ILGEN_0x38e5583b {
+
+//BEGIN STATIC FIELDS
+.field static	unsigned int8 field_0x0
+.field static	unsigned int16 field_0x1
+.field static	unsigned int32 field_0x2
+.field static	unsigned int64 field_0x3
+.field static	int8 field_0x4
+.field static	int16 field_0x5
+.field static	int32 field_0x6
+.field static	int64 field_0x7
+.field static	float32 field_0x8
+.field static	float64 field_0x9
+//END STATIC FIELDS
+.method static int32 main() {
+.entrypoint
+.maxstack	18
+
+ .locals (unsigned int8[] local_0x0,unsigned int16[] local_0x1,unsigned int32[] local_0x2,unsigned int64[] local_0x3,int8[] local_0x4,int16[] local_0x5,int32[] local_0x6,int64[] local_0x7,float32[] local_0x8,float64[] local_0x9,unsigned int8 local_0xa,unsigned int16 local_0xb,int8 local_0xc,int16 local_0xd,int32 local_0xe,int64 local_0xf,float32 local_0x10,float64 local_0x11)
+
+.try {
+	ldc.i4.5
+pop leave out_of_here
+} catch [mscorlib]System.OverflowException { 
+pop leave out_of_here
+}
+out_of_here: ldc.i4 100 ret
+}
+}

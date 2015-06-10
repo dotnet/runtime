@@ -1,0 +1,107 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern mscorlib {}
+.assembly asm1{}
+
+.data LONG_DATA = int64(0x0000000100000002)
+
+.class sealed beforefieldinit S extends [mscorlib]System.ValueType
+{
+	.field int32 m_i1;
+	.field int32 m_i2;
+
+.method public specialname rtspecialname instance void .ctor()
+{
+	ldarg 0
+	ldc.i4 101
+	stfld int32 S::m_i1
+
+	ldarg 0
+	ldc.i4 102
+	stfld int32 S::m_i2
+
+	ret
+}
+
+.method public instance void Incr()
+{
+	ldarg 0
+	dup
+	ldfld int32 S::m_i1
+	ldc.i4 1
+	add
+	stfld int32 S::m_i1
+
+	ldarg 0
+	dup
+	ldfld int32 S::m_i2
+	ldc.i4 1
+	add
+	stfld int32 S::m_i2
+
+	ret
+}
+
+}
+
+
+.class public asm1
+{
+.field static int64 s_long at LONG_DATA
+.field static int32 s_i
+
+.method public static specialname rtspecialname void .cctor()
+{
+	ldc.i4 1
+	stsfld int32 asm1::s_i
+	ret
+}
+
+.method public specialname rtspecialname instance void .ctor()
+{
+	ldarg 0
+	call instance void object::.ctor()
+	ret
+}
+
+.method public static int32 Main(string[] args)
+{
+	.entrypoint
+	.locals init(class asm1 obj, int32 i, valuetype S s)
+	.maxstack  8
+
+	ldloca s
+	call instance void S::.ctor()
+
+	ldloc s
+	ldsfld int32 asm1::s_i
+	brfalse L1
+L0:
+	stloc s
+	ldstr "L0"
+	call void [mscorlib]System.Console::WriteLine(string)
+	ldloca s
+	call instance void S::Incr()
+	ldloc s
+	ldsfld int32 asm1::s_i
+	brtrue L2
+	
+L1:
+	stloc s
+	ldstr "L1"
+	call void [mscorlib]System.Console::WriteLine(string)
+	ldloca s
+	call instance void S::Incr()
+	ldloc s
+
+L2:
+	ldfld int32 S::m_i2
+	call void [mscorlib]System.Console::WriteLine(int32)
+
+        ldc.i4 100
+	ret
+}
+
+
+}

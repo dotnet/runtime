@@ -1,0 +1,48 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly ILGEN_0x493230e7 {}
+.class ILGEN_0x493230e7 {
+.method static int32 Method_0x2d7c921() {
+.maxstack	11
+ ldc.r4 float32(0x6ef1549c)
+ call float64 [mscorlib]System.Math::Sin(float64)
+ ldc.r8 4.4
+ bgt Branch_0x2
+ ldc.i4 0xe
+ br Branch_0x3
+Branch_0x2:
+ ldc.i4.6
+Branch_0x3:
+ ldc.i4.8
+ ble.un Branch_0x0
+ br Branch_0x1
+Branch_0x0:
+ ldc.i4.8
+ ldc.i4.3
+ ldc.i4 0xc
+ add
+ sub.ovf.un
+ pop
+Branch_0x1:
+ ldc.i4 0x8e9bf46e
+ ret
+}
+.method static int32 Main() {
+.entrypoint
+.maxstack	20
+.try {
+call int32 ILGEN_0x493230e7::Method_0x2d7c921()
+ pop
+leave END
+} catch [mscorlib]System.OverflowException {
+pop
+leave END
+}
+END:
+ldc.i4 100
+ret
+
+}
+}

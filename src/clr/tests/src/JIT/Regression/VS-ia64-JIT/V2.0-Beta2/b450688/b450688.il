@@ -1,0 +1,56 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// Metadata version: v2.0.50131
+.assembly extern mscorlib
+{
+  .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
+  .ver 2:0:0:0
+}
+.assembly repro
+{
+}
+
+.corflags 0x00000001    //  ILONLY
+
+.method static object Test() cil managed
+{
+	.locals init (string retVal,
+		class [mscorlib]System.Exception nestedException)
+
+try_begin:
+	ldstr "pass"
+	stloc.0
+	leave try_end
+try_end:
+	ldloc.0
+	ret
+catch_begin:
+	stloc.1
+	ldloc.1
+	callvirt instance string [mscorlib]System.Object::ToString()
+	call void [mscorlib]System.Console::WriteLine(string)
+	ldstr "fail"
+	stloc.0
+	ldloc.0
+	ldloc.1
+	newobj instance void [mscorlib]System.Exception::.ctor(string, class [mscorlib]System.Exception)
+	throw
+catch_end:
+	ldloc.1
+	ret	
+	.try try_begin to try_end catch [mscorlib]System.Exception handler catch_begin to catch_end
+}
+
+.method public static int32 Main() cil managed
+{
+	.entrypoint
+
+	call object Test()
+	call void [mscorlib]System.Console::WriteLine(object)
+
+	ldstr "Test SUCCESS"
+	call void [mscorlib]System.Console::WriteLine(string)
+	ldc.i4 100
+	ret
+}

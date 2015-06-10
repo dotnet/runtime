@@ -1,0 +1,45 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern mscorlib
+{
+}
+.assembly test
+{
+}
+.module test.exe
+// MVID: {3DA3EDA0-F1A4-42F9-8E0B-F269420E91A5}
+
+.file alignment 512
+
+// Image base: 0x034f0000
+.class private sequential ansi sealed beforefieldinit Test
+       extends [mscorlib]System.ValueType
+{
+  .field public static valuetype Test test1 at bytearray2
+  .field public int32 m_v1
+  .method private hidebysig static void Dump(valuetype Test &arg) cil managed
+  {
+    .maxstack  8
+    ldarg.0
+    ldfld int32 Test::m_v1
+    ldc.i4 0x04030201
+    sub
+    call void [mscorlib]System.Console::Write(int32)
+    call void [mscorlib]System.Console::WriteLine()
+    ret
+  }
+  .method private hidebysig static int32 Main() cil managed
+  {
+    .entrypoint
+    .maxstack  1
+    .locals (int32 V_0)
+    ldsflda valuetype Test Test::test1
+    call void Test::Dump(valuetype Test &arg)
+    ldc.i4.s   100
+    ret
+  } // end of method Test::Main
+
+} // end of class Test
+.data bytearray1 = bytearray ( 0 0 0 )
+.data bytearray2 = bytearray ( 1 2 3 4 )

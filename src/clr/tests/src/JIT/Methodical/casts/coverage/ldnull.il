@@ -1,0 +1,63 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern mscorlib
+{
+}
+.assembly 'ldnull'
+{
+}
+.namespace JitTest
+{
+  .class private auto ansi beforefieldinit TestClass
+         extends [mscorlib]System.Object
+  {
+    .method private hidebysig static int32
+            Main() cil managed
+    {
+      .entrypoint
+      // Code size       36 (0x24)
+      .maxstack  2
+      .locals (class JitTest.TestClass V_0,
+               class JitTest.TestClass V_1)
+      ldnull
+      isinst JitTest.TestClass
+      stloc.0
+      
+      ldnull
+      castclass JitTest.TestClass
+      stloc.1
+      
+      IL_0004:  ldloc.0
+      IL_0005:  brtrue.s   IL_000a
+
+      IL_0007:  ldloc.1
+      IL_0008:  brfalse.s  IL_0017
+
+      IL_000a:  ldstr      "Failed => 101"
+      IL_000f:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0014:  ldc.i4.s   101
+      IL_0016:  ret
+
+      IL_0017:  ldstr      "Passed => 100"
+      IL_001c:  call       void [mscorlib]System.Console::WriteLine(string)
+      IL_0021:  ldc.i4.s   100
+      IL_0023:  ret
+    } // end of method TestClass::Main
+
+    .method public hidebysig specialname rtspecialname 
+            instance void .ctor() cil managed
+    {
+      // Code size       7 (0x7)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+      IL_0006:  ret
+    } // end of method TestClass::.ctor
+
+  } // end of class TestClass
+
+} // end of namespace JitTest
+
+//*********** DISASSEMBLY COMPLETE ***********************
+// WARNING: Created Win32 resource file ldnull.res
