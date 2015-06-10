@@ -46,8 +46,12 @@ namespace Internal.Cryptography
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(this.LegalKeySizes))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, "key");
 
-            if (rgbIV != null && rgbIV.Length * BitsPerByte != BlockSize)
-                throw new ArgumentException(SR.Cryptography_InvalidIVSize, "iv");
+            if (rgbIV != null)
+            {
+                long ivSize = rgbIV.Length * (long)BitsPerByte;
+                if (ivSize != BlockSize)
+                    throw new ArgumentException(SR.Cryptography_InvalidIVSize, "iv");
+            }
 
             if (encrypting)
                 return CreateEncryptor(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte);

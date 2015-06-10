@@ -86,6 +86,30 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
+        [Theory]
+        [InlineData(64)]        // smaller than default BlockSize
+        [InlineData(129)]       // larger than default BlockSize
+        [InlineData(536870928)] // number of bits overflows and wraps around to default BlockSize
+        public static void InvalidIVSizes(int invalidIvSize)
+        {
+            using (Aes aes = Aes.Create())
+            {
+                aes.GenerateKey();
+                byte[] key = aes.Key;
+                byte[] iv;
+                try
+                {
+                    iv = new byte[invalidIvSize];
+                }
+                catch (OutOfMemoryException) // in case there isn't enough memory at test-time to allocate the large array
+                {
+                    return;
+                }
+                Assert.Throws<ArgumentException>("iv", () => aes.CreateEncryptor(key, iv));
+                Assert.Throws<ArgumentException>("iv", () => aes.CreateDecryptor(key, iv));
+            }
+        }
+
         [Fact]
         public static void VerifyKeyGeneration_Default()
         {
