@@ -93,9 +93,9 @@
           "lib/aspnetcore50/System.Runtime.Extensions.dll"
         ]
       },
-      "System.Runtime.Handles/4.0.0-beta-22927": {
+      "System.Runtime.Handles/4.0.0-beta-23008": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-22927"
+          "System.Runtime": "4.0.0-beta-23008"
         },
         "compile": [
           "ref/any/System.Runtime.Handles.dll"
@@ -141,9 +141,9 @@
           "lib/aspnetcore50/System.Threading.dll"
         ]
       },
-      "System.Threading.Tasks/4.0.10-beta-22927": {
+      "System.Threading.Tasks/4.0.10-beta-23008": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-22927"
+          "System.Runtime": "4.0.0-beta-23008"
         },
         "compile": [
           "ref/any/System.Threading.Tasks.dll"
@@ -204,7 +204,7 @@
           "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll"
         ]
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00050": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00053": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10-beta-22703",
           "System.IO": "4.0.10-beta-22703",
@@ -336,17 +336,17 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Runtime.Extensions.dll"
       ]
     },
-    "System.Runtime.Handles/4.0.0-beta-22927": {
-      "sha512": "fALM0oSPlQjwxgXZG7K0m3IahgNDXIDT6Rk/VSiovrrRjtHTSe3HxKcRwe0oOYdp0URoT/13TH35J/Bg+fHbKw==",
+    "System.Runtime.Handles/4.0.0-beta-23008": {
+      "sha512": "MC+Xc6KdYugsDK3xBefREfzPgzwhM1nDAF/nbaGLllx/huXsIvoBjFXRpxtbXfKrShYZBvInsfaElCpx28b1Rg==",
       "files": [
-        "System.Runtime.Handles.4.0.0-beta-22927.nupkg",
-        "System.Runtime.Handles.4.0.0-beta-22927.nupkg.sha512",
+        "System.Runtime.Handles.4.0.0-beta-23008.nupkg",
+        "System.Runtime.Handles.4.0.0-beta-23008.nupkg.sha512",
         "System.Runtime.Handles.nuspec",
         "lib/DNXCore50/System.Runtime.Handles.dll",
-        "lib/net46/System.Runtime.Handles.dll",
+        "lib/net46/_._",
         "lib/netcore50/System.Runtime.Handles.dll",
         "ref/any/System.Runtime.Handles.dll",
-        "ref/net46/System.Runtime.Handles.dll",
+        "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.Handles.dll"
       ]
     },
@@ -389,17 +389,17 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Threading.dll"
       ]
     },
-    "System.Threading.Tasks/4.0.10-beta-22927": {
-      "sha512": "SeUpExzifr3zENWz5oMF1M0niHwo8c3xKx3k/p5yBZnvmw7Uxrfgj/Pf5kyD50JB48EdqVJ43IhSml6tOX2ZzA==",
+    "System.Threading.Tasks/4.0.10-beta-23008": {
+      "sha512": "G47/e2ZxNzYmfAXgHA7UwxdTGVJPD4bLmG/v1pxyPTyTsPzNA3CjqHVId27PsDdfo/L3w2Cl+oZM1s+pHfXXRw==",
       "files": [
-        "System.Threading.Tasks.4.0.10-beta-22927.nupkg",
-        "System.Threading.Tasks.4.0.10-beta-22927.nupkg.sha512",
+        "System.Threading.Tasks.4.0.10-beta-23008.nupkg",
+        "System.Threading.Tasks.4.0.10-beta-23008.nupkg.sha512",
         "System.Threading.Tasks.nuspec",
         "lib/DNXCore50/System.Threading.Tasks.dll",
-        "lib/net46/System.Threading.Tasks.dll",
+        "lib/net46/_._",
         "lib/netcore50/System.Threading.Tasks.dll",
         "ref/any/System.Threading.Tasks.dll",
-        "ref/net46/System.Threading.Tasks.dll",
+        "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Threading.Tasks.dll"
       ]
     },
@@ -493,11 +493,11 @@
         "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00050": {
-      "sha512": "PoQB+RKMYPWEhclcQ/n09ZbYKwRKGadgQCMkCmhQIewOiev8AcaO03yoTbO5oEEcOxHKnl3DsGffB+IZD/Z45g==",
+    "xunit.netcore.extensions/1.0.0-prerelease-00053": {
+      "sha512": "Nr3usfWn6O4WWWJyIN9wgMENawbcGuZ0wjlVkBFxbC+O0KRc2K+F8sWNJ7mN6RN8wlczI3tizEcve83m/MvqtQ==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00050.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00050.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00053.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00053.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
       ]

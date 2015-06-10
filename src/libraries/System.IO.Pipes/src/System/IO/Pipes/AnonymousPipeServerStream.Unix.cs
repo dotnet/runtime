@@ -38,6 +38,10 @@ namespace System.IO.Pipes
                 (IntPtr)fds[direction == PipeDirection.In ? Interop.libc.WriteEndOfPipe : Interop.libc.ReadEndOfPipe], 
                 ownsHandle: true);
 
+            // Configure the pipe.  For buffer size, the size applies to the pipe, rather than to 
+            // just one end's file descriptor, so we only need to do this with one of the handles.
+            InitializeBufferSize(serverHandle, bufferSize);
+
             // We're connected.  Finish initialization using the newly created handles.
             InitializeHandle(serverHandle, isExposed: false, isAsync: false);
             _clientHandle = clientHandle;

@@ -29,14 +29,11 @@ namespace System.Collections.Generic
         private Object _syncRoot;
 
         private const int DefaultCapacity = 4;
-        private static T[] s_emptyArray = Array.Empty<T>();
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Stack"]/*' />
         public Stack()
         {
-            _array = s_emptyArray;
-            _size = 0;
-            _version = 0;
+            _array = Array.Empty<T>();
         }
 
         // Create a stack with a specific initial capacity.  The initial capacity
@@ -47,8 +44,6 @@ namespace System.Collections.Generic
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             _array = new T[capacity];
-            _size = 0;
-            _version = 0;
         }
 
         // Fills a Stack with the contents of a particular collection.  The items are
@@ -59,28 +54,7 @@ namespace System.Collections.Generic
         {
             if (collection == null)
                 throw new ArgumentNullException("collection");
-
-            ICollection<T> c = collection as ICollection<T>;
-            if (c != null)
-            {
-                int count = c.Count;
-                _array = new T[count];
-                c.CopyTo(_array, 0);
-                _size = count;
-            }
-            else
-            {
-                _size = 0;
-                _array = new T[DefaultCapacity];
-
-                using (IEnumerator<T> en = collection.GetEnumerator())
-                {
-                    while (en.MoveNext())
-                    {
-                        Push(en.Current);
-                    }
-                }
-            }
+            _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
         /// <include file='doc\Stack.uex' path='docs/doc[@for="Stack.Count"]/*' />

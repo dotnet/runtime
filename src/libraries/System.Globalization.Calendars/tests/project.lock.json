@@ -1,5 +1,5 @@
 {
-  "locked": false,
+  "locked": true,
   "version": -9997,
   "targets": {
     "DNXCore,Version=v5.0": {
@@ -25,18 +25,18 @@
           "lib/aspnetcore50/System.Diagnostics.Debug.dll"
         ]
       },
-      "System.Globalization/4.0.0-beta-22927": {
+      "System.Globalization/4.0.0-beta-23008": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-22927"
+          "System.Runtime": "4.0.0-beta-23008"
         },
         "compile": [
           "ref/any/System.Globalization.dll"
         ]
       },
-      "System.Globalization.Calendars/4.0.0-beta-22927": {
+      "System.Globalization.Calendars/4.0.0-beta-23008": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-22927",
-          "System.Globalization": "4.0.0-beta-22927"
+          "System.Runtime": "4.0.0-beta-23008",
+          "System.Globalization": "4.0.0-beta-23008"
         },
         "compile": [
           "ref/any/System.Globalization.Calendars.dll"
@@ -70,7 +70,7 @@
           "lib/aspnetcore50/System.Linq.dll"
         ]
       },
-      "System.Private.Uri/4.0.0-beta-22927": {
+      "System.Private.Uri/4.0.0-beta-23008": {
         "runtime": [
           "lib/DNXCore50/System.Private.Uri.dll"
         ]
@@ -99,9 +99,9 @@
           "lib/aspnetcore50/System.Reflection.Primitives.dll"
         ]
       },
-      "System.Runtime/4.0.20-beta-22927": {
+      "System.Runtime/4.0.20-beta-23008": {
         "dependencies": {
-          "System.Private.Uri": "4.0.0-beta-22927"
+          "System.Private.Uri": "4.0.0-beta-23008"
         },
         "compile": [
           "ref/any/System.Runtime.dll"
@@ -110,9 +110,9 @@
           "lib/DNXCore50/System.Runtime.dll"
         ]
       },
-      "System.Runtime.Extensions/4.0.10-beta-22927": {
+      "System.Runtime.Extensions/4.0.10-beta-23008": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-22927"
+          "System.Runtime": "4.0.20-beta-23008"
         },
         "compile": [
           "ref/any/System.Runtime.Extensions.dll"
@@ -169,9 +169,9 @@
           "lib/aspnetcore50/System.Threading.dll"
         ]
       },
-      "System.Threading.Tasks/4.0.10-beta-22927": {
+      "System.Threading.Tasks/4.0.10-beta-23008": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-22927"
+          "System.Runtime": "4.0.0-beta-23008"
         },
         "compile": [
           "ref/any/System.Threading.Tasks.dll"
@@ -232,7 +232,7 @@
           "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.core.dll"
         ]
       },
-      "xunit.netcore.extensions/1.0.0-prerelease-00052": {
+      "xunit.netcore.extensions/1.0.0-prerelease-00053": {
         "dependencies": {
           "System.Diagnostics.Debug": "4.0.10-beta-22703",
           "System.IO": "4.0.10-beta-22703",
@@ -285,12 +285,12 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Diagnostics.Debug.dll"
       ]
     },
-    "System.Globalization/4.0.0-beta-22927": {
-      "sha512": "2DiD1XCbMvmc4xQq7XS+h/JNuMlXbborsuAjEjSrsO1HmHlRdtNdV+DySteb7QogTe2jhyMkGRnDzTUJhm0suA==",
+    "System.Globalization/4.0.0-beta-23008": {
+      "sha512": "tEn1NaY8Hlheh18xv7cWJVIbziXDXxWIPGYm9QsCO+0/qB9goaA9aHOBvFxgmUyeh9Quzc9N/pjirNUh3w93oQ==",
       "files": [
         "License.rtf",
-        "System.Globalization.4.0.0-beta-22927.nupkg",
-        "System.Globalization.4.0.0-beta-22927.nupkg.sha512",
+        "System.Globalization.4.0.0-beta-23008.nupkg",
+        "System.Globalization.4.0.0-beta-23008.nupkg.sha512",
         "System.Globalization.nuspec",
         "lib/net45/_._",
         "lib/win8/_._",
@@ -299,11 +299,11 @@
         "ref/win8/_._"
       ]
     },
-    "System.Globalization.Calendars/4.0.0-beta-22927": {
-      "sha512": "4BqjFoGyGLaRYJxZYl654d5FMEpu5dDR7dFACYBqtNytcHy0e7ICG+s90Kmv0geruO81I4vHyKFFhhRIoYb+Gw==",
+    "System.Globalization.Calendars/4.0.0-beta-23008": {
+      "sha512": "mq25ueZr9X4gm3xJha5Thty7Xa2Q9EI+W4v4j7Ccb5fvwLhU/4Ths4Q5ThwAlXlsaHMADYXtMFShyhmA20D3IA==",
       "files": [
-        "System.Globalization.Calendars.4.0.0-beta-22927.nupkg",
-        "System.Globalization.Calendars.4.0.0-beta-22927.nupkg.sha512",
+        "System.Globalization.Calendars.4.0.0-beta-23008.nupkg",
+        "System.Globalization.Calendars.4.0.0-beta-23008.nupkg.sha512",
         "System.Globalization.Calendars.nuspec",
         "lib/DNXCore50/System.Globalization.Calendars.dll",
         "lib/net46/System.Globalization.Calendars.dll",
@@ -339,11 +339,11 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Linq.dll"
       ]
     },
-    "System.Private.Uri/4.0.0-beta-22927": {
-      "sha512": "iugPtkQOqHeCuyvBsQ3Z8vc+4YgL1ySVhe5IiMYIJ5J9kVqMGC9/9tb7SNd80nVSMYIOV/L/SPI1dTDYC+FOvA==",
+    "System.Private.Uri/4.0.0-beta-23008": {
+      "sha512": "q2VlKvy9ufHawdI5abrNKXvUIgFZYnBYMtPqK8gy1kEVhaQ1LWR7WLprwgI11mk7Ef18+P5mj08gCuXbl/rINw==",
       "files": [
-        "System.Private.Uri.4.0.0-beta-22927.nupkg",
-        "System.Private.Uri.4.0.0-beta-22927.nupkg.sha512",
+        "System.Private.Uri.4.0.0-beta-23008.nupkg",
+        "System.Private.Uri.4.0.0-beta-23008.nupkg.sha512",
         "System.Private.Uri.nuspec",
         "lib/DNXCore50/System.Private.Uri.dll",
         "lib/netcore50/System.Private.Uri.dll",
@@ -378,31 +378,31 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Reflection.Primitives.dll"
       ]
     },
-    "System.Runtime/4.0.20-beta-22927": {
-      "sha512": "W8n/HCb4n/qKmWohYKmCQa9PN91T92zBxkT1H+kK8OlM6BvKmlTs9XUA56em0sCF/h3wvJUXzLI0k7aBv2JgDw==",
+    "System.Runtime/4.0.20-beta-23008": {
+      "sha512": "YX9/7Q6EHadgTLjH4Sa5zKHGMTMrwiMynAlQxMSQLGYCyJX6Z4/hejrBR7cNxrRddXnzxs5OALdEZqdU80zwxw==",
       "files": [
-        "System.Runtime.4.0.20-beta-22927.nupkg",
-        "System.Runtime.4.0.20-beta-22927.nupkg.sha512",
+        "System.Runtime.4.0.20-beta-23008.nupkg",
+        "System.Runtime.4.0.20-beta-23008.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/DNXCore50/System.Runtime.dll",
-        "lib/net46/System.Runtime.dll",
+        "lib/net46/_._",
         "lib/netcore50/System.Runtime.dll",
         "ref/any/System.Runtime.dll",
-        "ref/net46/System.Runtime.dll",
+        "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
       ]
     },
-    "System.Runtime.Extensions/4.0.10-beta-22927": {
-      "sha512": "8OW2hPfDCo7ASSLjVvgV7hnOKl67K4EFG/JD/Jjv5zi0rZezneJnYGiPRE4KgXNjsxFmJT8NjPrKSDCWZvb2xw==",
+    "System.Runtime.Extensions/4.0.10-beta-23008": {
+      "sha512": "488ce5N/0JQ2EbMzolr3CiIwqY64HEtxh3bIRDZ87p1eY2hQ79pROseFjQQ5n9q7aG+xs1D5CWVzuXcps976tA==",
       "files": [
-        "System.Runtime.Extensions.4.0.10-beta-22927.nupkg",
-        "System.Runtime.Extensions.4.0.10-beta-22927.nupkg.sha512",
+        "System.Runtime.Extensions.4.0.10-beta-23008.nupkg",
+        "System.Runtime.Extensions.4.0.10-beta-23008.nupkg.sha512",
         "System.Runtime.Extensions.nuspec",
         "lib/DNXCore50/System.Runtime.Extensions.dll",
-        "lib/net46/System.Runtime.Extensions.dll",
+        "lib/net46/_._",
         "lib/netcore50/System.Runtime.Extensions.dll",
         "ref/any/System.Runtime.Extensions.dll",
-        "ref/net46/System.Runtime.Extensions.dll",
+        "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.Extensions.dll"
       ]
     },
@@ -458,17 +458,17 @@
         "lib/portable-wpa81+wp80+win80+net45+aspnetcore50/System.Threading.dll"
       ]
     },
-    "System.Threading.Tasks/4.0.10-beta-22927": {
-      "sha512": "SeUpExzifr3zENWz5oMF1M0niHwo8c3xKx3k/p5yBZnvmw7Uxrfgj/Pf5kyD50JB48EdqVJ43IhSml6tOX2ZzA==",
+    "System.Threading.Tasks/4.0.10-beta-23008": {
+      "sha512": "G47/e2ZxNzYmfAXgHA7UwxdTGVJPD4bLmG/v1pxyPTyTsPzNA3CjqHVId27PsDdfo/L3w2Cl+oZM1s+pHfXXRw==",
       "files": [
-        "System.Threading.Tasks.4.0.10-beta-22927.nupkg",
-        "System.Threading.Tasks.4.0.10-beta-22927.nupkg.sha512",
+        "System.Threading.Tasks.4.0.10-beta-23008.nupkg",
+        "System.Threading.Tasks.4.0.10-beta-23008.nupkg.sha512",
         "System.Threading.Tasks.nuspec",
         "lib/DNXCore50/System.Threading.Tasks.dll",
-        "lib/net46/System.Threading.Tasks.dll",
+        "lib/net46/_._",
         "lib/netcore50/System.Threading.Tasks.dll",
         "ref/any/System.Threading.Tasks.dll",
-        "ref/net46/System.Threading.Tasks.dll",
+        "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Threading.Tasks.dll"
       ]
     },
@@ -562,11 +562,11 @@
         "lib/portable-net45+aspnetcore50+win+wpa81+wp80/xunit.runner.utility.xml"
       ]
     },
-    "xunit.netcore.extensions/1.0.0-prerelease-00052": {
-      "sha512": "ZVgAdZVaO2Snaj6F0U9vBhaqRuVM0VTLw5cZE3HOebnAjssaAoiOJUfVq5sgozEON1hPc+ysBVzAufMwlf9kdQ==",
+    "xunit.netcore.extensions/1.0.0-prerelease-00053": {
+      "sha512": "Nr3usfWn6O4WWWJyIN9wgMENawbcGuZ0wjlVkBFxbC+O0KRc2K+F8sWNJ7mN6RN8wlczI3tizEcve83m/MvqtQ==",
       "files": [
-        "xunit.netcore.extensions.1.0.0-prerelease-00052.nupkg",
-        "xunit.netcore.extensions.1.0.0-prerelease-00052.nupkg.sha512",
+        "xunit.netcore.extensions.1.0.0-prerelease-00053.nupkg",
+        "xunit.netcore.extensions.1.0.0-prerelease-00053.nupkg.sha512",
         "xunit.netcore.extensions.nuspec",
         "lib/portable-wpa80+win80+net45+aspnetcore50/Xunit.NetCore.Extensions.dll"
       ]

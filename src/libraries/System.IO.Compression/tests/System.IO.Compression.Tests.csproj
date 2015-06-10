@@ -22,8 +22,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common.cs" />
     <Compile Include="DeflateStreamTests.cs" />
     <Compile Include="GZipStreamTests.cs" />
+    <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.cs" />
     <Compile Include="ZipArchive\zip_InvalidParametersAndStrangeFiles.cs" />
     <Compile Include="ZipArchive\zip_ManualAndCompatibilityTests.cs" />
@@ -37,9 +39,6 @@
     <Compile Include="$(CommonTestPath)\Compression\Utilities\StreamHelpers.cs" />
     <Compile Include="$(CommonTestPath)\Compression\Utilities\ZipTestHelper.cs" />
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="DeflateStream\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Temporary until we have new work in build tools to
