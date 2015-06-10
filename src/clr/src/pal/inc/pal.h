@@ -3358,6 +3358,20 @@ GetModuleFileNameW(
 #define GetModuleFileName GetModuleFileNameA
 #endif
 
+PALIMPORT
+DWORD
+PALAPI
+GetModuleFileNameExW(
+    IN HANDLE hProcess,
+    IN HMODULE hModule,
+    OUT LPWSTR lpFilename,
+    IN DWORD nSize
+    );
+
+#ifdef UNICODE
+#define GetModuleFileNameEx GetModuleFileNameExW
+#endif
+
 // Get base address of the module containing a given symbol 
 PALAPI
 LPCVOID
@@ -4550,16 +4564,26 @@ OpenProcess(
     );
 
 PALIMPORT
+BOOL
+PALAPI
+EnumProcessModules(
+    IN HANDLE hProcess,
+    OUT HMODULE *lphModule,
+    IN DWORD cb,
+    OUT LPDWORD lpcbNeeded
+    );
+
+PALIMPORT
 VOID
 PALAPI
 OutputDebugStringA(
-           IN LPCSTR lpOutputString);
+    IN LPCSTR lpOutputString);
 
 PALIMPORT
 VOID
 PALAPI
 OutputDebugStringW(
-           IN LPCWSTR lpOutputStrig);
+    IN LPCWSTR lpOutputStrig);
 
 #ifdef UNICODE
 #define OutputDebugString OutputDebugStringW
