@@ -7,7 +7,7 @@ These instructions are for .NET Core console apps. If you want to try out ASP.NE
 
 .NET Core NuGet packages and the .NET Core DNX SDKs are available on the [ASP.NET 'vnext' myget feed](https://www.myget.org/F/aspnetvnext), which you can more easily view on [gallery](https://www.myget.org/gallery/aspnetvnext) for the feed.
 
-You can also acquire .NET Core directly via [NuGet restore](get-coreclr-windows.md) or [build from source](windows-instructions.md). 
+You can also acquire .NET Core directly via [NuGet restore](get-dotnetcore-windows.md) or [build from source](../building/windows-instructions.md). 
 
 Installing DNVM
 ===============
@@ -25,7 +25,7 @@ You can see the currently installed DNX versions with `dnvm list`, which will di
 Installing a .NET Core DNX
 ==========================
 
-It's easy to install the latest .NET Core-based DNX, using the `dnvm install` command. 
+It's easy to install the latest .NET Core-based DNX, using the `dnvm install` command.
 
 	C:\coreclr-demo> dnvm install -r coreclr latest -u
 
@@ -69,8 +69,8 @@ public class Program
     {
         Console.WriteLine("Hello, Windows");
         Console.WriteLine("Love from CoreCLR.");
-    }   
-} 
+    }
+}
 ```
 
 Some people on the .NET Core team are partial to a demo console app on corefxlab repo which will print a picture for you. Download the [corefxlab demo](https://raw.githubusercontent.com/dotnet/corefxlab/master/demos/CoreClrConsoleApplications/HelloWorld/HelloWorld.cs) to `C:\coreclr-demo`.

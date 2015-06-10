@@ -14,7 +14,7 @@ The public Thread interface available to managed code intentionally hides the de
 
 - Managed threads are not necessarily mapped to a single native thread (and may not be mapped to a native thread at all).
 - Different operating systems expose different abstractions for native threads.
-- In principle, managed threads are "virtualized". 
+- In principle, managed threads are "virtualized".
 
 The CLR provide equivalent abstractions for managed threads, implemented by the CLR itself. For example, it does not expose the operating system's thread-local storage (TLS) mechanism, but instead provide managed "thread-static" variables. Similarly, it does not expose the native thread's "thread ID," but instead provide a "managed thread ID" which is generated independently of the OS. However, for diagnostic purposes, some details of the underlying native thread may be obtained via types in the System.Diagnostics namespace.
 
@@ -168,19 +168,19 @@ Thus entering cooperative mode in native code is discouraged. In cases where  co
 
 Similarly, GCX\_PREEMP potentially _releases_ a lock that had been held by the thread. Great care must be taken to ensure that all GC references are properly protected before entering preemptive mode.
 
-The [Rules of the Code](clr-code-guide.md) document describes the disciplines needed to ensure safety around GC mode switches.
+The [Rules of the Code](../coding-guidelines/clr-code-guide.md) document describes the disciplines needed to ensure safety around GC mode switches.
 
 Crst
 ----
 
-Just as Monitor is the preferred locking mechanism for managed code, Crst is the preferred mechanism for VM code. Like Monitor, Crst is a hybrid lock that is aware of hosts and GC modes. Crst also implements deadlock avoidance via "lock leveling," described in the [Crst Leveling chapter of the BotR](clr-code-guide.md#entering-and-leaving-crsts).
+Just as Monitor is the preferred locking mechanism for managed code, Crst is the preferred mechanism for VM code. Like Monitor, Crst is a hybrid lock that is aware of hosts and GC modes. Crst also implements deadlock avoidance via "lock leveling," described in the [Crst Leveling chapter of the BotR](../coding-guidelines/clr-code-guide.md#entering-and-leaving-crsts).
 
 It is generally illegal to acquire a Crst while in cooperative mode, though exceptions are made where absolutely necessary.
 
 Special Threads
 ===============
 
-In addition to managing threads created by managed code, the CLR creates several "special" threads for its own use. 
+In addition to managing threads created by managed code, the CLR creates several "special" threads for its own use.
 
 Finalizer Thread
 ----------------
