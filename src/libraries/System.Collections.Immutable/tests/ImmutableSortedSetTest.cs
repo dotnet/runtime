@@ -77,6 +77,7 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
+        [ActiveIssue(780)]
         public void EmptyTest()
         {
             this.EmptyTestHelper(Empty<int>(), 5, null);
