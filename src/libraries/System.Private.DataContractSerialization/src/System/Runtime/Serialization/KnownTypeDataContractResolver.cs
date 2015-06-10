@@ -1,15 +1,12 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
 
 using System.Xml;
 using System.Reflection;
 
-
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public sealed class KnownTypeDataContractResolver : DataContractResolver
 #else
     internal sealed class KnownTypeDataContractResolver : DataContractResolver

@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 using System;
 using System.Xml;
@@ -16,17 +14,14 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context,ClassDataContract dataContract);
+#if USE_REFEMIT || NET_NATIVE
+    public delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
     public delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
-
-    public sealed class XmlFormatWriterGenerator
 #else
     internal delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
     internal delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
 
     internal sealed class XmlFormatWriterGenerator
-#endif
     {
         [SecurityCritical]
         /// <SecurityNote>
@@ -732,6 +727,5 @@ namespace System.Runtime.Serialization
             }
         }
     }
+#endif
 }
-
-

@@ -73,7 +73,7 @@ namespace System.Runtime.Serialization
             get
             { return ExceptionDataContractCriticalHelper.EssentialExceptionFields; }
         }
-        internal override Dictionary<XmlQualifiedName, DataContract> KnownDataContracts //inherited as internal
+        public override Dictionary<XmlQualifiedName, DataContract> KnownDataContracts //inherited as internal
         {
             [SecuritySafeCritical]
             get
@@ -469,6 +469,7 @@ namespace System.Runtime.Serialization
             Type exceptionType = Globals.TypeOfException;
             PropertyInfo messageProperty = exceptionType.GetProperty("Message");
             MethodInfo messageGetter = messageProperty.GetMethod;
+#if !NET_NATIVE
             DynamicMethod baseMessageImpl = new DynamicMethod("NonVirtual_Message", typeof(string), new Type[] { Globals.TypeOfException }, Globals.TypeOfException);
 
             ILGenerator gen = baseMessageImpl.GetILGenerator();
@@ -477,7 +478,9 @@ namespace System.Runtime.Serialization
             gen.Emit(OpCodes.Ret);
 
             string messageValue = (string)baseMessageImpl.Invoke(null, new object[] { value });
-
+#else
+            string messageValue = string.Empty;
+#endif
 
             // Populate the values for the necessary System.Exception private fields.
             Dictionary<string, object> fieldToValueDictionary = new Dictionary<string, object>();

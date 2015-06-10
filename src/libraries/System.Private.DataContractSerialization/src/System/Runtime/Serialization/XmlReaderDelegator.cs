@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
 
 using System;
 using System.Xml;
@@ -13,8 +11,8 @@ using System.Collections.Generic;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT
-    public class XmlReaderDelegator 
+#if USE_REFEMIT || NET_NATIVE
+    public class XmlReaderDelegator
 #else
     internal class XmlReaderDelegator
 #endif

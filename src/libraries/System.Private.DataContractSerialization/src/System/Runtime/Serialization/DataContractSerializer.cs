@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
 
 namespace System.Runtime.Serialization
 {
@@ -65,6 +63,13 @@ namespace System.Runtime.Serialization
         {
             Initialize(type, rootName, rootNamespace, knownTypes, int.MaxValue, false, false, null, false);
         }
+
+#if NET_NATIVE
+        public DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
+        {
+            Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, null, false);
+        }
+#endif
 
         public DataContractSerializer(Type type, XmlDictionaryString rootName, XmlDictionaryString rootNamespace,
             IEnumerable<Type> knownTypes,
@@ -345,7 +350,7 @@ namespace System.Runtime.Serialization
 
         internal static DataContract GetDataContract(DataContract declaredTypeContract, Type declaredType, Type objectType)
         {
-            if (declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredTypeContract.TypeIsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 return declaredTypeContract;
             }
@@ -380,6 +385,10 @@ namespace System.Runtime.Serialization
             if (dataContractResolver == null)
                 dataContractResolver = this.DataContractResolver;
 
+#if NET_NATIVE
+            // Give the root contract a chance to initialize or pre-verify the read
+            RootContract.PrepareToRead(xmlReader);
+#endif
             if (verifyObjectName)
             {
                 if (!InternalIsStartObject(xmlReader))

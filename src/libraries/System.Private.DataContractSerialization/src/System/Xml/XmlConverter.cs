@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//------------------------------------------------------------
-//------------------------------------------------------------
 
 using System;
 using System.IO;
@@ -701,6 +699,158 @@ namespace System.Xml
                 result = value;
             return true;
         }
+
+#if NET_NATIVE
+        static public int ToChars(int value, byte[] chars, int offset)
+        {
+            int count = ToCharsR(value, chars, offset + MaxInt32Chars);
+            Buffer.BlockCopy(chars, offset + MaxInt32Chars - count, chars, offset, count);
+            return count;
+        }
+
+        static public int ToChars(long value, byte[] chars, int offset)
+        {
+            int count = ToCharsR(value, chars, offset + MaxInt64Chars);
+            Buffer.BlockCopy(chars, offset + MaxInt64Chars - count, chars, offset, count);
+            return count;
+        }
+
+        static public int ToCharsR(long value, byte[] chars, int offset)
+        {
+            int count = 0;
+            if (value >= 0)
+            {
+                while (value > int.MaxValue)
+                {
+                    long valueDiv10 = value / 10;
+                    count++;
+                    chars[--offset] = (byte)('0' + (int)(value - valueDiv10 * 10));
+                    value = valueDiv10;
+                }
+            }
+            else
+            {
+                while (value < int.MinValue)
+                {
+                    long valueDiv10 = value / 10;
+                    count++;
+                    chars[--offset] = (byte)('0' - (int)(value - valueDiv10 * 10));
+                    value = valueDiv10;
+                }
+            }
+            Fx.Assert(value >= int.MinValue && value <= int.MaxValue, "");
+            return count + ToCharsR((int)value, chars, offset);
+        }
+
+        [SecuritySafeCritical]
+        private static unsafe bool IsNegativeZero(float value)
+        {
+            // Simple equals function will report that -0 is equal to +0, so compare bits instead
+            float negativeZero = -0e0F;
+            return (*(Int32*)&value == *(Int32*)&negativeZero);
+        }
+
+        [SecuritySafeCritical]
+        private static unsafe bool IsNegativeZero(double value)
+        {
+            // Simple equals function will report that -0 is equal to +0, so compare bits instead
+            double negativeZero = -0e0;
+            return (*(Int64*)&value == *(Int64*)&negativeZero);
+        }
+
+        private static int ToInfinity(bool isNegative, byte[] buffer, int offset)
+        {
+            if (isNegative)
+            {
+                buffer[offset + 0] = (byte)'-';
+                buffer[offset + 1] = (byte)'I';
+                buffer[offset + 2] = (byte)'N';
+                buffer[offset + 3] = (byte)'F';
+                return 4;
+            }
+            else
+            {
+                buffer[offset + 0] = (byte)'I';
+                buffer[offset + 1] = (byte)'N';
+                buffer[offset + 2] = (byte)'F';
+                return 3;
+            }
+        }
+
+        private static int ToZero(bool isNegative, byte[] buffer, int offset)
+        {
+            if (isNegative)
+            {
+                buffer[offset + 0] = (byte)'-';
+                buffer[offset + 1] = (byte)'0';
+                return 2;
+            }
+            else
+            {
+                buffer[offset] = (byte)'0';
+                return 1;
+            }
+        }
+
+        static public int ToChars(double value, byte[] buffer, int offset)
+        {
+            if (double.IsInfinity(value))
+                return ToInfinity(double.IsNegativeInfinity(value), buffer, offset);
+            if (value == 0.0)
+                return ToZero(IsNegativeZero(value), buffer, offset);
+            return ToAsciiChars(value.ToString("R", NumberFormatInfo.InvariantInfo), buffer, offset);
+        }
+
+        static public int ToChars(float value, byte[] buffer, int offset)
+        {
+            if (float.IsInfinity(value))
+                return ToInfinity(float.IsNegativeInfinity(value), buffer, offset);
+            if (value == 0.0)
+                return ToZero(IsNegativeZero(value), buffer, offset);
+            return ToAsciiChars(value.ToString("R", NumberFormatInfo.InvariantInfo), buffer, offset);
+        }
+
+        static public int ToChars(decimal value, byte[] buffer, int offset)
+        {
+            return ToAsciiChars(value.ToString(null, NumberFormatInfo.InvariantInfo), buffer, offset);
+        }
+
+        static public int ToChars(UInt64 value, byte[] buffer, int offset)
+        {
+            return ToAsciiChars(value.ToString(null, NumberFormatInfo.InvariantInfo), buffer, offset);
+        }
+
+        private static int ToAsciiChars(string s, byte[] buffer, int offset)
+        {
+            for (int i = 0; i < s.Length; i++)
+            {
+                Fx.Assert(s[i] < 128, "");
+                buffer[offset++] = (byte)s[i];
+            }
+            return s.Length;
+        }
+
+        static public int ToChars(bool value, byte[] buffer, int offset)
+        {
+            if (value)
+            {
+                buffer[offset + 0] = (byte)'t';
+                buffer[offset + 1] = (byte)'r';
+                buffer[offset + 2] = (byte)'u';
+                buffer[offset + 3] = (byte)'e';
+                return 4;
+            }
+            else
+            {
+                buffer[offset + 0] = (byte)'f';
+                buffer[offset + 1] = (byte)'a';
+                buffer[offset + 2] = (byte)'l';
+                buffer[offset + 3] = (byte)'s';
+                buffer[offset + 4] = (byte)'e';
+                return 5;
+            }
+        }
+#endif
 
         private static int ToInt32D2(byte[] chars, int offset)
         {
