@@ -114,7 +114,8 @@ namespace System.Linq.Parallel
         {
             int newSize = checked(_count * 2 + 1);
             int[] newBuckets = new int[newSize];
-            Slot[] newSlots = ArrayT<Slot>.Resize(_slots, newSize, _count);
+            Slot[] newSlots = new Slot[newSize];
+            Array.Copy(_slots, 0, newSlots, 0, _count);
             for (int i = 0; i < _count; i++)
             {
                 int bucket = newSlots[i].hashCode % newSize;
