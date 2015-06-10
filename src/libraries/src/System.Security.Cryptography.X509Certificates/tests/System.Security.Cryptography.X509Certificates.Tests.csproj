@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Cryptography.X509Certificates.Tests</AssemblyName>
+    <RootNamespace>System.Security.Cryptography.X509Certificates.Tests</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Disabled on Linux/OSX (Issue 1986) -->
+    <UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Cryptography.X509Certificates.csproj">
+      <Project>{6f8576c2-6cd0-4df3-8394-00b002d82e40}</Project>
+      <Name>System.Security.Cryptography.X509Certificates</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ByteUtils.cs" />
+    <Compile Include="CertTests.cs" />
+    <Compile Include="CollectionTests.cs" />
+    <Compile Include="CtorTests.cs" />
+    <Compile Include="ExportTests.cs" />
+    <Compile Include="ExtensionsTests.cs" />
+    <Compile Include="FindTests.cs" />
+    <Compile Include="InteropTests.cs" />
+    <Compile Include="LoadFromFileTests.cs" />
+    <Compile Include="NameTests.cs" />
+    <Compile Include="PfxTests.cs" />
+    <Compile Include="PropsTests.cs" />
+    <Compile Include="PublicKeyTests.cs" />
+    <Compile Include="TestData.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
