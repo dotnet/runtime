@@ -1,0 +1,171 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6F8576C2-6CD0-4DF3-8394-00B002D82E40}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+  <ItemGroup>
+    <Compile Include="Internal\Cryptography\ICertificatePal.cs" />
+    <Compile Include="$(CommonPath)\System\ArrayT.cs">
+      <Link>Common\System\ArrayT.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
+      <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Cryptography\ErrorCode.cs" />
+    <Compile Include="Internal\Cryptography\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\Oids.cs" />
+    <Compile Include="Internal\Cryptography\IX509Pal.cs" />
+    <Compile Include="Internal\Cryptography\IStorePal.cs" />
+    <Compile Include="Internal\Cryptography\IChainPal.cs" />
+    <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
+    <Compile Include="System\Security\Cryptography\DSACryptoServiceProviderStub.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\PublicKey.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\StoreLocation.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\StoreName.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedName.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X500DistinguishedNameFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2Collection.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2Enumerator.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateCollection.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateEnumerator.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Chain.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainElement.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainElementCollection.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainElementEnumerator.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainPolicy.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainStatus.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainStatusFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ContentType.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509EnhancedKeyUsageExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Extension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ExtensionCollection.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509ExtensionEnumerator.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509FindType.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509KeyStorageFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509KeyUsageExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509KeyUsageFlags.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509NameType.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationFlag.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509RevocationMode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Store.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierExtension.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509SubjectKeyIdentifierHashAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509VerificationFlags.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.Import.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\CertificatePal.PrivateKey.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\ChainPal.BuildChain.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\ChainPal.GetChainStatusInformation.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Helpers.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.advapi32.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.crypt32.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.Libraries.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.localization.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Primitives.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\Native\SafeHandles.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\StorePal.Export.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\StorePal.Find.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\StorePal.Import.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.CustomExtensions.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.GetCertContentType.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.PublicKey.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Windows\X509Pal.X500DistinguishedName.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\OidInfo.cs">
+      <Link>Common\Interop\Windows\Crypt32\OidInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509CertificateReader.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509ChainProcessor.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509Encoder.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\OpenSslX509StoreProvider.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\X509Pal.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ASN1.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.ASN1.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Bignum.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Bignum.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Bio.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Bio.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.d2i.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.d2i.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs">
+      <Link>Common\Interop\Unix\libcoreclr\Interop.EnsureOpenSslInitialized.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.ERR.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.ERR.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Initialization.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Initialization.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.RSA.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.RSA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.X509.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509Ext.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.X509Ext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.NativeCrypto.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.NativeCrypto.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeBignumHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeX509Handle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeX509Handle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeX509NameHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeX509NameHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
