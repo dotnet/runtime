@@ -121,11 +121,49 @@ namespace System.Collections.Immutable.Test
         }
 
         [Fact]
-        public void ToImmutableSortedSetTest()
+        public void ToImmutableSortedSetFromArrayTest()
         {
             var set = new[] { 1, 2, 2 }.ToImmutableSortedSet();
             Assert.Same(Comparer<int>.Default, set.KeyComparer);
             Assert.Equal(2, set.Count);
+        }
+
+        [Theory]
+        [InlineData(new int[] { }, new int[] { })]
+        [InlineData(new int[] { 1 }, new int[] { 1 })]
+        [InlineData(new int[] { 1, 1 }, new int[] { 1 })]
+        [InlineData(new int[] { 1, 1, 1 }, new int[] { 1 })]
+        [InlineData(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 3, 2, 1 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 1, 1, 3 }, new int[] { 1, 3 })]
+        [InlineData(new int[] { 1, 2, 2 }, new int[] { 1, 2 })]
+        [InlineData(new int[] { 1, 2, 2, 3, 3, 3 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 1, 2, 3, 1, 2, 3 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 1, 1, 2, 2, 2, 3, 3, 3, 3 }, new int[] { 1, 2, 3 })]
+        public void ToImmutableSortedSetFromEnumerableTest(int[] input, int[] expectedOutput)
+        {
+            IEnumerable<int> enumerableInput = input.Select(i => i); // prevent querying for indexable interfaces
+            var set = enumerableInput.ToImmutableSortedSet();
+            Assert.Equal((IEnumerable<int>)expectedOutput, set.ToArray());
+        }
+
+        [Theory]
+        [InlineData(new int[] { }, new int[] { 1 })]
+        [InlineData(new int[] { 1 }, new int[] { 1 })]
+        [InlineData(new int[] { 1, 1 }, new int[] { 1 })]
+        [InlineData(new int[] { 1, 1, 1 }, new int[] { 1 })]
+        [InlineData(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 3, 2, 1 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 1, 1, 3 }, new int[] { 1, 3 })]
+        [InlineData(new int[] { 1, 2, 2 }, new int[] { 1, 2 })]
+        [InlineData(new int[] { 1, 2, 2, 3, 3, 3 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 1, 2, 3, 1, 2, 3 }, new int[] { 1, 2, 3 })]
+        [InlineData(new int[] { 1, 1, 2, 2, 2, 3, 3, 3, 3 }, new int[] { 1, 2, 3 })]
+        public void UnionWithEnumerableTest(int[] input, int[] expectedOutput)
+        {
+            IEnumerable<int> enumerableInput = input.Select(i => i); // prevent querying for indexable interfaces
+            var set = ImmutableSortedSet.Create(1).Union(enumerableInput);
+            Assert.Equal((IEnumerable<int>)expectedOutput, set.ToArray());
         }
 
         [Fact]

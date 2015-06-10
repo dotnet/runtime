@@ -1102,10 +1102,52 @@ namespace System.Collections.Immutable
             // and can index into that sequence like a list, so the limited
             // garbage produced is a temporary mutable data structure we use
             // as a reference when creating the immutable one.
-            // The (mutable) SortedSet<T> is much faster at constructing its collection 
-            // when passed a sequence into its constructor than into its Union method.
-            var sortedSet = new SortedSet<T>(this.Concat(addedItems), this.KeyComparer);
-            Node root = Node.NodeTreeFromSortedSet(sortedSet);
+
+            // Produce the initial list containing all elements, including any duplicates.
+            List<T> list;
+            if (this.IsEmpty)
+            {
+                // If the additional items enumerable list is known to be empty, too,
+                // then just return this empty instance.
+                int count;
+                if (addedItems.TryGetCount(out count) && count == 0)
+                {
+                    return this;
+                }
+
+                // Otherwise, construct a list from the items.  The Count could still
+                // be zero, in which case, again, just return this empty instance.
+                list = new List<T>(addedItems);
+                if (list.Count == 0)
+                {
+                    return this;
+                }
+            }
+            else
+            {
+                // Build the list from this set and then add the additional items.
+                // Even if the additional items is empty, this set isn't, so we know
+                // the resulting list will not be empty.
+                list = new List<T>(this);
+                list.AddRange(addedItems);
+            }
+            Debug.Assert(list.Count > 0);
+
+            // Sort the list and remove duplicate entries.
+            IComparer<T> comparer = this.KeyComparer;
+            list.Sort(comparer);
+            int index = 1;
+            for (int i = 1; i < list.Count; i++)
+            {
+                if (comparer.Compare(list[i], list[i - 1]) != 0)
+                {
+                    list[index++] = list[i];
+                }
+            }
+            list.RemoveRange(index, list.Count - index);
+
+            // Use the now sorted list of unique items to construct a new sorted set.
+            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
             return this.Wrap(root);
         }
 
@@ -1674,26 +1716,6 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Creates a node tree from an existing (mutable) collection.
-            /// </summary>
-            /// <param name="collection">The collection.</param>
-            /// <returns>The root of the node tree.</returns>
-            [Pure]
-            internal static Node NodeTreeFromSortedSet(SortedSet<T> collection)
-            {
-                Requires.NotNull(collection, "collection");
-                Contract.Ensures(Contract.Result<Node>() != null);
-
-                if (collection.Count == 0)
-                {
-                    return EmptyNode;
-                }
-
-                var list = collection.AsOrderedCollection();
-                return NodeTreeFromList(list, 0, list.Count);
-            }
-
-            /// <summary>
             /// See the <see cref="ICollection{T}"/> interface.
             /// </summary>
             internal void CopyTo(T[] array, int arrayIndex)
@@ -2128,7 +2150,7 @@ namespace System.Collections.Immutable
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
             [Pure]
-            private static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
+            internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
             {
                 Requires.NotNull(items, "items");
                 Debug.Assert(start >= 0);
