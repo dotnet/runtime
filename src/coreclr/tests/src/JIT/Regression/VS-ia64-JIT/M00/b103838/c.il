@@ -1,0 +1,32 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly c
+{
+}
+.method static int32 Main()
+{
+    .entrypoint
+    .maxstack 2
+    .locals init (int32 i,
+             char c,
+             unsigned int16 u)
+
+    ldc.i4     0xFFFFF
+    stloc.0
+    ldloc.0
+    conv.u2
+    dup
+    stloc.1
+    stloc.2
+    ldloc.0
+    call       void [mscorlib]System.Console::WriteLine(int32)
+    ldloc.1
+    call       void [mscorlib]System.Console::WriteLine(int32)
+    ldloc.2
+    call       void [mscorlib]System.Console::WriteLine(int32)
+    ldc.i4 100
+    ret
+}
+
