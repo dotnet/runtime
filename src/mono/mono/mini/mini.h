@@ -125,6 +125,8 @@
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!(t)->byref && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 
+#define MONO_AOT_TRAMP_PAGE_SIZE 16384
+
 /* Constants used to encode different types of methods in AOT */
 enum {
 	MONO_AOT_METHODREF_MIN = 240,

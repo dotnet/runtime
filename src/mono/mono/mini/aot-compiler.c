@@ -1167,24 +1167,25 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	guint8 *code;
 	guint8 *loop_start, *loop_branch_back, *loop_end_check, *imt_found_check;
 	int i;
+	int pagesize = MONO_AOT_TRAMP_PAGE_SIZE;
 #define COMMON_TRAMP_SIZE 16
-	int count = (mono_pagesize () - COMMON_TRAMP_SIZE) / 8;
+	int count = (pagesize - COMMON_TRAMP_SIZE) / 8;
 	int imm8, rot_amount;
 	char symbol [128];
 
 	if (!acfg->aot_opts.use_trampolines_page)
 		return;
 
-	acfg->tramp_page_size = mono_pagesize ();
+	acfg->tramp_page_size = pagesize;
 
 	sprintf (symbol, "%sspecific_trampolines_page", acfg->user_symbol_prefix);
-	emit_alignment (acfg, mono_pagesize ());
+	emit_alignment (acfg, pagesize);
 	emit_global (acfg, symbol, TRUE);
 	emit_label (acfg, symbol);
 
 	/* emit the generic code first, the trampoline address + 8 is in the lr register */
 	code = buf;
-	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	imm8 = mono_arm_is_rotated_imm8 (pagesize, &rot_amount);
 	ARM_SUB_REG_IMM (code, ARMREG_LR, ARMREG_LR, imm8, rot_amount);
 	ARM_LDR_IMM (code, ARMREG_R1, ARMREG_LR, -8);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_LR, -4);
@@ -1212,7 +1213,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	emit_global (acfg, symbol, TRUE);
 	emit_label (acfg, symbol);
 	code = buf;
-	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	imm8 = mono_arm_is_rotated_imm8 (pagesize, &rot_amount);
 	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
 	ARM_LDR_IMM (code, MONO_ARCH_RGCTX_REG, ARMREG_IP, -8);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, -4);
@@ -1239,7 +1240,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	emit_label (acfg, symbol);
 	code = buf;
 	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3));
-	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	imm8 = mono_arm_is_rotated_imm8 (pagesize, &rot_amount);
 	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_IP, -8);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_IP, -4);
@@ -1269,7 +1270,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	/* Need at least two free registers, plus a slot for storing the pc */
 	ARM_PUSH (code, (1 << ARMREG_R0)|(1 << ARMREG_R1)|(1 << ARMREG_R2));
 
-	imm8 = mono_arm_is_rotated_imm8 (mono_pagesize (), &rot_amount);
+	imm8 = mono_arm_is_rotated_imm8 (pagesize, &rot_amount);
 	ARM_SUB_REG_IMM (code, ARMREG_IP, ARMREG_IP, imm8, rot_amount);
 	ARM_LDR_IMM (code, ARMREG_R0, ARMREG_IP, -8);
 

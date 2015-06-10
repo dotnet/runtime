@@ -4650,15 +4650,14 @@ get_new_trampoline_from_page (int tramp_type)
 		return code;
 	}
 	mono_aot_page_unlock ();
-	psize = mono_pagesize ();
 	/* the trampoline template page is in the mscorlib module */
 	image = mono_defaults.corlib;
 	g_assert (image);
 
+	psize = MONO_AOT_TRAMP_PAGE_SIZE;
+
 	amodule = image->aot_module;
 	g_assert (amodule);
-
-	g_assert (amodule->info.tramp_page_size == psize);
 
 	if (tramp_type == MONO_AOT_TRAMP_SPECIFIC)
 		tpage = load_function (amodule, "specific_trampolines_page");
@@ -4741,7 +4740,7 @@ get_new_specific_trampoline_from_page (gpointer tramp, gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_SPECIFIC);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
@@ -4757,7 +4756,7 @@ get_new_rgctx_trampoline_from_page (gpointer tramp, gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_STATIC_RGCTX);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
@@ -4773,7 +4772,7 @@ get_new_imt_trampoline_from_page (gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_IMT_THUNK);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	/*g_warning ("new imt trampoline at %p for data %p, (stored at %p)", code, arg, data);*/
 	return code;
@@ -4788,7 +4787,7 @@ get_new_gsharedvt_arg_trampoline_from_page (gpointer tramp, gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_GSHAREDVT_ARG);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
