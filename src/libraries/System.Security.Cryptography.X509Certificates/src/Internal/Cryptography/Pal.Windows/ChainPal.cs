@@ -31,13 +31,13 @@ namespace Internal.Cryptography.Pal
 
             CERT_CHAIN_POLICY_PARA para = new CERT_CHAIN_POLICY_PARA()
             {
-                cbSize = Marshal.SizeOf(typeof(CERT_CHAIN_POLICY_PARA)),
+                cbSize = Marshal.SizeOf<CERT_CHAIN_POLICY_PARA>(),
                 dwFlags = (int)flags,
             };
 
             CERT_CHAIN_POLICY_STATUS status = new CERT_CHAIN_POLICY_STATUS()
             {
-                cbSize = Marshal.SizeOf(typeof(CERT_CHAIN_POLICY_STATUS)),
+                cbSize = Marshal.SizeOf<CERT_CHAIN_POLICY_STATUS>(),
             };
 
             if (!Interop.crypt32.CertVerifyCertificateChainPolicy(ChainPolicy.CERT_CHAIN_POLICY_BASE, _chain, ref para, ref status))

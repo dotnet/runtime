@@ -43,7 +43,7 @@ namespace Internal.Cryptography.Pal
                 using (SafeCertStoreHandle extraStoreHandle = ConvertExtraStoreToSafeHandle(extraStore))
                 {
                     CERT_CHAIN_PARA chainPara = new CERT_CHAIN_PARA();
-                    chainPara.cbSize = Marshal.SizeOf(typeof(CERT_CHAIN_PARA));
+                    chainPara.cbSize = Marshal.SizeOf<CERT_CHAIN_PARA>();
 
                     int applicationPolicyCount;
                     using (SafeHandle applicationPolicyOids = applicationPolicy.ToLpstrArray(out applicationPolicyCount))
