@@ -23,14 +23,14 @@
           "lib/aspnetcore50/mscorrc.dll"
         ]
       },
-      "System.Runtime/4.0.0-beta-22927": {
+      "System.Runtime/4.0.0-beta-23008": {
         "compile": [
           "ref/any/System.Runtime.dll"
         ]
       },
-      "System.Threading.Tasks/4.0.10-beta-22927": {
+      "System.Threading.Tasks/4.0.10-beta-23008": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-22927"
+          "System.Runtime": "4.0.0-beta-23008"
         },
         "compile": [
           "ref/any/System.Threading.Tasks.dll"
@@ -111,12 +111,12 @@
         "lib/aspnetcore50/mscorrc.dll"
       ]
     },
-    "System.Runtime/4.0.0-beta-22927": {
-      "sha512": "L/qL5PaMAePAUAWel3GstHN1hIZNvAS36wrjaTkrs1EGNzNOa3BTxfdJrL2Brn95yUVivZHZoylmqLF6/VqneQ==",
+    "System.Runtime/4.0.0-beta-23008": {
+      "sha512": "ka530IZcM7TNWuXkI1luAIa8ynC+Kzk1Wdnyowe7Lpr8CzKpIiaLxY6rDHXeJNL2qhmuifc5l7ILQbB8U4glrA==",
       "files": [
         "License.rtf",
-        "System.Runtime.4.0.0-beta-22927.nupkg",
-        "System.Runtime.4.0.0-beta-22927.nupkg.sha512",
+        "System.Runtime.4.0.0-beta-23008.nupkg",
+        "System.Runtime.4.0.0-beta-23008.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/net45/_._",
         "lib/win8/_._",
@@ -125,17 +125,17 @@
         "ref/win8/_._"
       ]
     },
-    "System.Threading.Tasks/4.0.10-beta-22927": {
-      "sha512": "SeUpExzifr3zENWz5oMF1M0niHwo8c3xKx3k/p5yBZnvmw7Uxrfgj/Pf5kyD50JB48EdqVJ43IhSml6tOX2ZzA==",
+    "System.Threading.Tasks/4.0.10-beta-23008": {
+      "sha512": "G47/e2ZxNzYmfAXgHA7UwxdTGVJPD4bLmG/v1pxyPTyTsPzNA3CjqHVId27PsDdfo/L3w2Cl+oZM1s+pHfXXRw==",
       "files": [
-        "System.Threading.Tasks.4.0.10-beta-22927.nupkg",
-        "System.Threading.Tasks.4.0.10-beta-22927.nupkg.sha512",
+        "System.Threading.Tasks.4.0.10-beta-23008.nupkg",
+        "System.Threading.Tasks.4.0.10-beta-23008.nupkg.sha512",
         "System.Threading.Tasks.nuspec",
         "lib/DNXCore50/System.Threading.Tasks.dll",
-        "lib/net46/System.Threading.Tasks.dll",
+        "lib/net46/_._",
         "lib/netcore50/System.Threading.Tasks.dll",
         "ref/any/System.Threading.Tasks.dll",
-        "ref/net46/System.Threading.Tasks.dll",
+        "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Threading.Tasks.dll"
       ]
     },
