@@ -20,6 +20,7 @@
   <ItemGroup>
     <Compile Include="AnonymousPipesSimpleTest.cs" />
     <Compile Include="AnonymousPipesThrowsTests.cs" />
+    <Compile Include="BaseCommonTests.cs" />
     <Compile Include="NamedPipesSimpleTest.cs" />
     <Compile Include="NamedPipesThrowsTests.cs" />
     <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">

@@ -6,10 +6,8 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public class AnonymousPipesThrowsTests
+    public class AnonymousPipesThrowsTests : BaseCommonTests
     {
-        private static void NotReachable(object obj) { Assert.True(false, "This should not be reached."); }
-
         // Server parameter validation tests
         [Fact]
         public static void ServerBadPipeDirectionThrows()
@@ -27,17 +25,20 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ServerBadInheritabilityThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>new AnonymousPipeServerStream(PipeDirection.Out, (System.IO.HandleInheritability)999));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new AnonymousPipeServerStream(PipeDirection.Out, (System.IO.HandleInheritability)999, 500));
+            Assert.Throws<ArgumentOutOfRangeException>("inheritability", () =>new AnonymousPipeServerStream(PipeDirection.Out, (System.IO.HandleInheritability)999));
+            Assert.Throws<ArgumentOutOfRangeException>("inheritability", () => new AnonymousPipeServerStream(PipeDirection.Out, (System.IO.HandleInheritability)999, 500));
+            Assert.Throws<ArgumentOutOfRangeException>("inheritability", () => new AnonymousPipeServerStream(PipeDirection.In, (System.IO.HandleInheritability)999));
+            Assert.Throws<ArgumentOutOfRangeException>("inheritability", () => new AnonymousPipeServerStream(PipeDirection.In, (System.IO.HandleInheritability)999, 500));
         }
 
         [Fact]
         public static void ServerBadBufferThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None, -500));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new AnonymousPipeServerStream(PipeDirection.InOut, HandleInheritability.None, -500));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new AnonymousPipeServerStream((PipeDirection)123, HandleInheritability.None, 500));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new AnonymousPipeServerStream((PipeDirection)123, HandleInheritability.None, -500));
+            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None, -500));
+            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => new AnonymousPipeServerStream(PipeDirection.InOut, HandleInheritability.None, -500));
+            Assert.Throws<ArgumentOutOfRangeException>("bufferSize", () => new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.None, -500));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new AnonymousPipeServerStream((PipeDirection)123, HandleInheritability.None, 500));
+            Assert.Throws<ArgumentOutOfRangeException>("direction", () => new AnonymousPipeServerStream((PipeDirection)123, HandleInheritability.None, -500));
         }
 
         [Fact]
@@ -45,14 +46,14 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream dummyserver = new AnonymousPipeServerStream(PipeDirection.Out))
             {
-                Assert.Throws<ArgumentNullException>(() =>new AnonymousPipeServerStream(PipeDirection.Out, null, dummyserver.ClientSafePipeHandle));
+                Assert.Throws<ArgumentNullException>("serverSafePipeHandle", () =>new AnonymousPipeServerStream(PipeDirection.Out, null, dummyserver.ClientSafePipeHandle));
 
-                Assert.Throws<ArgumentNullException>(() =>new AnonymousPipeServerStream(PipeDirection.Out, dummyserver.SafePipeHandle, null));
+                Assert.Throws<ArgumentNullException>("clientSafePipeHandle", () =>new AnonymousPipeServerStream(PipeDirection.Out, dummyserver.SafePipeHandle, null));
 
                 SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
-                Assert.Throws<ArgumentException>(() =>new AnonymousPipeServerStream(PipeDirection.Out, pipeHandle, dummyserver.ClientSafePipeHandle));
+                Assert.Throws<ArgumentException>("serverSafePipeHandle", () =>new AnonymousPipeServerStream(PipeDirection.Out, pipeHandle, dummyserver.ClientSafePipeHandle));
 
-                Assert.Throws<ArgumentException>(() =>new AnonymousPipeServerStream(PipeDirection.Out, dummyserver.SafePipeHandle, pipeHandle));
+                Assert.Throws<ArgumentException>("clientSafePipeHandle", () =>new AnonymousPipeServerStream(PipeDirection.Out, dummyserver.SafePipeHandle, pipeHandle));
             }
         }
 
@@ -75,8 +76,7 @@ namespace System.IO.Pipes.Tests
             // force different constructor path
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None))
             {
-                Assert.Throws<ArgumentNullException>(() => server.Write(null, 0, 1));
-                Assert.Throws<ArgumentNullException>(() => NotReachable(server.WriteAsync(null, 0, 1)));
+                ConnectedPipeWriteBufferNullThrows(server);
             }
         }
 
@@ -85,11 +85,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[5], -1, 1));
-
-                // array is checked first
-                Assert.Throws<ArgumentNullException>(() => server.Write(null, -1, 1));
-                Assert.Throws<ArgumentNullException>(() => NotReachable(server.WriteAsync(null, -1, 1)));
+                ConnectedPipeWriteNegativeOffsetThrows(server);
             }
         }
 
@@ -98,21 +94,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[5], 0, -1));
-
-                // offset is checked before count
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[1], -1, -1));
-
-                // array is checked first
-                Assert.Throws<ArgumentNullException>(() => server.Write(null, -1, -1));
-
-                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.WriteAsync(new byte[5], 0, -1)));
-
-                // offset is checked before count
-                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.WriteAsync(new byte[1], -1, -1)));
-
-                // array is checked first
-                Assert.Throws<ArgumentNullException>(() => NotReachable(server.WriteAsync(null, -1, -1)));
+                ConnectedPipeWriteNegativeCountThrows(server);
             }
         }
 
@@ -121,41 +103,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
             {
-                // offset out of bounds
-                Assert.Throws<ArgumentException>(null, () => server.Write(new byte[1], 1, 1));
-
-                // offset out of bounds for 0 count read
-                Assert.Throws<ArgumentException>(null, () => server.Write(new byte[1], 2, 0));
-
-                // offset out of bounds even for 0 length buffer
-                Assert.Throws<ArgumentException>(null, () => server.Write(new byte[0], 1, 0));
-
-                // combination offset and count out of bounds
-                Assert.Throws<ArgumentException>(null, () => server.Write(new byte[2], 1, 2));
-
-                // edges
-                Assert.Throws<ArgumentException>(null, () => server.Write(new byte[0], int.MaxValue, 0));
-                Assert.Throws<ArgumentException>(null, () => server.Write(new byte[0], int.MaxValue, int.MaxValue));
-
-                Assert.Throws<ArgumentException>(() => server.Write(new byte[5], 3, 4));
-
-                // offset out of bounds
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[1], 1, 1)));
-
-                // offset out of bounds for 0 count read
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[1], 2, 0)));
-
-                // offset out of bounds even for 0 length buffer
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[0], 1, 0)));
-
-                // combination offset and count out of bounds
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[2], 1, 2)));
-
-                // edges
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[0], int.MaxValue, 0)));
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.WriteAsync(new byte[0], int.MaxValue, int.MaxValue)));
-
-                Assert.Throws<ArgumentException>(() => NotReachable(server.WriteAsync(new byte[5], 3, 4)));
+                ConnectedPipeWriteArrayOutOfBoundsThrows(server);
             }
         }
 
@@ -164,17 +112,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
             {
-                Assert.Throws<NotSupportedException>(() => server.Write(new byte[5], 0, 5));
-
-                Assert.Throws<NotSupportedException>(() => server.WriteByte(123));
-
-                Assert.Throws<NotSupportedException>(() => server.Flush());
-
-                Assert.Throws<NotSupportedException>(() => server.OutBufferSize);
-
-                Assert.Throws<NotSupportedException>(() => server.WaitForPipeDrain());
-
-                Assert.Throws<NotSupportedException>(() => NotReachable(server.WriteAsync(new byte[5], 0, 5)));
+                ConnectedPipeReadOnlyThrows(server);
             }
         }
 
@@ -183,9 +121,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
             {
-                Assert.Throws<ArgumentNullException>(() => server.Read(null, 0, 1));
-
-                Assert.Throws<ArgumentNullException>(() => NotReachable(server.ReadAsync(null, 0, 1)));
+                ConnectedPipeReadBufferNullThrows(server);
             }
         }
 
@@ -194,15 +130,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Read(new byte[5], -1, 1));
-
-                // array is checked first
-                Assert.Throws<ArgumentNullException>(() => server.Read(null, -1, 1));
-
-                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.ReadAsync(new byte[5], -1, 1)));
-
-                // array is checked first
-                Assert.Throws<ArgumentNullException>(() => NotReachable(server.ReadAsync(null, -1, 1)));
+                ConnectedPipeReadNegativeOffsetThrows(server);
             }
         }
 
@@ -211,21 +139,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
             {
-                Assert.Throws<System.ArgumentOutOfRangeException>(() => server.Read(new byte[5], 0, -1));
-
-                // offset is checked before count
-                Assert.Throws<ArgumentOutOfRangeException>(() => server.Read(new byte[1], -1, -1));
-
-                // array is checked first
-                Assert.Throws<ArgumentNullException>(() => server.Read(null, -1, -1));
-
-                Assert.Throws<System.ArgumentOutOfRangeException>(() => NotReachable(server.ReadAsync(new byte[5], 0, -1)));
-
-                // offset is checked before count
-                Assert.Throws<ArgumentOutOfRangeException>(() => NotReachable(server.ReadAsync(new byte[1], -1, -1)));
-
-                // array is checked first
-                Assert.Throws<ArgumentNullException>(() => NotReachable(server.ReadAsync(null, -1, -1)));
+                ConnectedPipeReadNegativeCountThrows(server);
             }
         }
 
@@ -234,41 +148,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
             {
-                // offset out of bounds
-                Assert.Throws<ArgumentException>(null, () => server.Read(new byte[1], 1, 1));
-
-                // offset out of bounds for 0 count read
-                Assert.Throws<ArgumentException>(null, () => server.Read(new byte[1], 2, 0));
-
-                // offset out of bounds even for 0 length buffer
-                Assert.Throws<ArgumentException>(null, () => server.Read(new byte[0], 1, 0));
-
-                // combination offset and count out of bounds
-                Assert.Throws<ArgumentException>(null, () => server.Read(new byte[2], 1, 2));
-
-                // edges
-                Assert.Throws<ArgumentException>(null, () => server.Read(new byte[0], int.MaxValue, 0));
-                Assert.Throws<ArgumentException>(null, () => server.Read(new byte[0], int.MaxValue, int.MaxValue));
-
-                Assert.Throws<ArgumentException>(() => server.Read(new byte[5], 3, 4));
-
-                // offset out of bounds
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[1], 1, 1)));
-
-                // offset out of bounds for 0 count read
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[1], 2, 0)));
-
-                // offset out of bounds even for 0 length buffer
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[0], 1, 0)));
-
-                // combination offset and count out of bounds
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[2], 1, 2)));
-
-                // edges
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[0], int.MaxValue, 0)));
-                Assert.Throws<ArgumentException>(null, () => NotReachable(server.ReadAsync(new byte[0], int.MaxValue, int.MaxValue)));
-
-                Assert.Throws<ArgumentException>(() => NotReachable(server.ReadAsync(new byte[5], 3, 4)));
+                ConnectedPipeReadArrayOutOfBoundsThrows(server);
             }
         }
 
@@ -277,13 +157,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
             {
-                Assert.Throws<NotSupportedException>(() => server.Read(new byte[5], 0, 5));
-
-                Assert.Throws<NotSupportedException>(() => server.ReadByte());
-
-                Assert.Throws<NotSupportedException>(() => server.InBufferSize);
-
-                Assert.Throws<NotSupportedException>(() => NotReachable(server.ReadAsync(new byte[5], 0, 5)));
+                ConnectedPipeWriteOnlyThrows(server);
             }
         }
 
@@ -292,15 +166,42 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
             {
-                Assert.Throws<NotSupportedException>(() => server.Length);
+                ConnectedPipeUnsupportedOperationThrows(server);
+            }
+        }
 
-                Assert.Throws<NotSupportedException>(() => server.SetLength(10L));
+        [Fact]
+        public static void ServerReadOnlyDisconnectedPipeThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                server.Dispose();
 
-                Assert.Throws<NotSupportedException>(() => server.Position);
+                OtherSidePipeDisconnectWriteThrows(client);
+            }
+        }
 
-                Assert.Throws<NotSupportedException>(() => server.Position = 10L);
+        [Fact]
+        public static void ServerWriteOnlyDisconnectedPipeThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+                server.Dispose();
 
-                Assert.Throws<NotSupportedException>(() => server.Seek(10L, System.IO.SeekOrigin.Begin));
+                OtherSidePipeDisconnectVerifyRead(client);
+            }
+        }
+
+        [Fact]
+        public static void ServerReadOnlyCancelReadTokenThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+
+                ConnectedPipeCancelReadTokenThrows(server);
             }
         }
 
@@ -308,28 +209,28 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void ClientPipeHandleStringAsNullThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new AnonymousPipeClientStream((string)null));
-            Assert.Throws<ArgumentNullException>(() => new AnonymousPipeClientStream(PipeDirection.Out, (string)null));
+            Assert.Throws<ArgumentNullException>("pipeHandleAsString", () => new AnonymousPipeClientStream((string)null));
+            Assert.Throws<ArgumentNullException>("pipeHandleAsString", () => new AnonymousPipeClientStream(PipeDirection.Out, (string)null));
         }
         
         [Fact]
         public static void ClientPipeHandleStringAsNotNumericThrows()
         {
-            Assert.Throws<ArgumentException>(() => new AnonymousPipeClientStream("abc"));
-            Assert.Throws<ArgumentException>(() => new AnonymousPipeClientStream(PipeDirection.Out, "abc"));
+            Assert.Throws<ArgumentException>("pipeHandleAsString", () => new AnonymousPipeClientStream("abc"));
+            Assert.Throws<ArgumentException>("pipeHandleAsString", () => new AnonymousPipeClientStream(PipeDirection.Out, "abc"));
         }
 
         [Fact]
         public static void ClientPipeHandleStringAsNotValidThrows()
         {
-            Assert.Throws<ArgumentException>(() => new AnonymousPipeClientStream("-1"));
-            Assert.Throws<ArgumentException>(() => new AnonymousPipeClientStream(PipeDirection.Out, "-1"));
+            Assert.Throws<ArgumentException>("pipeHandleAsString", () => new AnonymousPipeClientStream("-1"));
+            Assert.Throws<ArgumentException>("pipeHandleAsString", () => new AnonymousPipeClientStream(PipeDirection.Out, "-1"));
         }
 
         [Fact]
         public static void ClientPipeHandleAsNullThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => new AnonymousPipeClientStream(PipeDirection.In, (SafePipeHandle)null));
+            Assert.Throws<ArgumentNullException>("safePipeHandle", () => new AnonymousPipeClientStream(PipeDirection.In, (SafePipeHandle)null));
         }
 
         [Fact]
@@ -337,7 +238,7 @@ namespace System.IO.Pipes.Tests
         {
             SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
 
-            Assert.Throws<ArgumentException>(() => new AnonymousPipeClientStream(PipeDirection.In, pipeHandle));
+            Assert.Throws<ArgumentException>("safePipeHandle", () => new AnonymousPipeClientStream(PipeDirection.In, pipeHandle));
         }
 
         [Fact]
@@ -349,18 +250,160 @@ namespace System.IO.Pipes.Tests
             Assert.Throws<NotSupportedException>(() => new AnonymousPipeClientStream(PipeDirection.InOut, pipeHandle));
         }
 
-
         [Fact]
         public static void ClientReadModeThrows()
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
             {
-                using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
-                {
-                    Assert.Throws<ArgumentOutOfRangeException>(() => client.ReadMode = (PipeTransmissionMode)999);
+                Assert.Throws<ArgumentOutOfRangeException>(() => client.ReadMode = (PipeTransmissionMode)999);
 
-                    Assert.Throws<NotSupportedException>(() => client.ReadMode = PipeTransmissionMode.Message);
-                }
+                Assert.Throws<NotSupportedException>(() => client.ReadMode = PipeTransmissionMode.Message);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteBufferNullThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeWriteBufferNullThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteNegativeOffsetThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeWriteNegativeOffsetThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteNegativeCountThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeWriteNegativeCountThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteArrayOutOfBoundsThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeWriteArrayOutOfBoundsThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadOnlyThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeReadOnlyThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadBufferNullThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeReadBufferNullThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadNegativeOffsetThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeReadNegativeOffsetThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadNegativeCountThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeReadNegativeCountThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadArrayOutOfBoundsThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeReadArrayOutOfBoundsThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteOnlyThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeWriteOnlyThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientUnsupportedOperationThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                ConnectedPipeUnsupportedOperationThrows(client);
+            }
+        }
+
+        [Fact]
+        public static void ClientWriteOnlyDisconnectedPipeThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.In))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.Out, server.ClientSafePipeHandle))
+            {
+                client.Dispose();
+
+                OtherSidePipeDisconnectVerifyRead(server);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadOnlyDisconnectedPipeThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+                client.Dispose();
+
+                OtherSidePipeDisconnectWriteThrows(server);
+            }
+        }
+
+        [Fact]
+        public static void ClientReadOnlyCancelReadTokenThrows()
+        {
+            using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
+            {
+
+                ConnectedPipeCancelReadTokenThrows(client);
             }
         }
     }
