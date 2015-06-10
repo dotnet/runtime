@@ -1,0 +1,70 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern mscorlib { }
+.assembly ctor_null1 { }
+ 
+.class private auto ansi sealed MyDelegate
+       extends [mscorlib]System.MulticastDelegate
+{
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor(object 'object',
+                               native unsigned int 'method') runtime managed { }
+  .method public hidebysig virtual instance void
+          Invoke() runtime managed { }
+  .method public hidebysig newslot virtual 
+          instance class [mscorlib]System.IAsyncResult 
+          BeginInvoke(class [mscorlib]System.AsyncCallback callback,
+                      object 'object') runtime managed { }
+  .method public hidebysig newslot virtual 
+          instance void  EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed { }
+}
+
+.class public auto ansi explicit beforefieldinit TestClass
+       extends [mscorlib]System.Object
+{
+  .field [0xFFFFF0] string m_strField
+  .method public hidebysig instance void DelegateFunc() il managed
+  {
+    ldarg.0
+    ldfld string TestClass::m_strField
+    call  void [mscorlib] System.Console::WriteLine(string)
+    ret
+  }
+  .method public hidebysig static int32 Main(class System.String[] args) il managed
+  {
+    .entrypoint
+    .maxstack  3
+    .locals init (class MyDelegate V_0)
+    		.try {
+    			ldnull
+    			ldftn      instance void TestClass::DelegateFunc()
+    			newobj     instance void MyDelegate::.ctor(object,
+                                                         native unsigned int)
+			ldstr 	   "ArgumentException NOT thrown, Test FAILED"
+			call       void [mscorlib]System.Console::WriteLine(string)
+			leave.s FAILURE
+		} catch [mscorlib]System.ArgumentException
+		{
+			ldstr      "ArgumentException thrown, Test SUCCESS"
+			call       void [mscorlib]System.Console::WriteLine(string)
+                        leave.s SUCCESS
+		}
+
+SUCCESS:
+      ldc.i4 100
+      ret
+ 
+FAILURE:
+      ldc.i4 101
+      ret
+  }
+  .method public hidebysig specialname rtspecialname 
+          instance void .ctor() il managed
+  {
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0006:  ret
+  }
+}

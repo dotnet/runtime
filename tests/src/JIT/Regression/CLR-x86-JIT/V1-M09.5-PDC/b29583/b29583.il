@@ -1,0 +1,48 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly 'box' { }
+
+.namespace BoxTest
+{
+  .class auto ansi App extends [mscorlib]System.Object
+  {
+    .method private static int32 Main() il managed
+    {
+		.entrypoint
+		.maxstack  3
+		.locals (class [mscorlib]System.Object obj, float64 F)
+		
+		ldc.r8  0.1
+		stloc  F
+		
+		ldloc  F
+		box  [mscorlib]System.Double
+		stloc	obj
+		
+		ldloca	obj
+		mkrefany	[mscorlib]System.Object
+		dup
+		refanytype
+		pop
+		refanyval	[mscorlib]System.Object
+		ldind.ref
+		unbox 		[mscorlib]System.Double
+		
+		ldind.r8
+		ldc.r8  0.1
+		beq     ok
+		
+		ldc.i4.1
+		ldstr "Failed"
+		br done
+ok:	
+		ldc.i4 100
+		ldstr "Passed"
+done:
+		call   void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+		ret
+    }
+  }
+}
