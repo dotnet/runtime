@@ -1499,7 +1499,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	/*
 	 * Try loading the module using a variety of names
 	 */
-	for (i = 0; i < 4; ++i) {
+	for (i = 0; i < 5; ++i) {
 		char *base_name = NULL, *dir_name = NULL;
 		gboolean is_absolute = is_absolute_path (new_scope);
 		
@@ -1533,6 +1533,14 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 				break;
 			}
 			continue;
+		case 3:
+			if (!is_absolute && mono_dl_get_system_dir ()) {
+				dir_name = mono_dl_get_system_dir ();
+				file_name = g_path_get_basename (new_scope);
+				base_name = NULL;
+			} else
+				continue;
+			break;
 		default:
 #ifndef TARGET_WIN32
 			if (!g_ascii_strcasecmp ("user32.dll", new_scope) ||

@@ -159,4 +159,10 @@ mono_dl_get_executable_path (char *buf, int buflen)
 	return -1; //TODO
 }
 
+const char*
+mono_dl_get_system_dir (void)
+{
+	return NULL;
+}
+
 #endif

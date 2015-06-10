@@ -50,4 +50,15 @@ mono_dl_get_executable_path (char *buf, int buflen)
 	return -1;
 }
 
+const char*
+mono_dl_get_system_dir (void)
+{
+#ifdef TARGET_IOS
+	/* IOS9 can't load system libraries using relative paths, i.e. 'libc' doesn't work, but '/usr/lib/libc' does. */
+	return "/usr/lib";
+#else
+	return NULL;
+#endif
+}
+
 #endif

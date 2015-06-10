@@ -47,6 +47,13 @@ mono_dl_get_executable_path (char *buf, int buflen)
 {
 	return readlink ("/proc/self/exe", buf, buflen - 1);
 }
+
+const char*
+mono_dl_get_system_dir (void)
+{
+	return NULL;
+}
+
 #endif
 
 void *

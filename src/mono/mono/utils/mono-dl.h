@@ -43,6 +43,7 @@ void* mono_dl_lookup_symbol (MonoDl *module, const char *name);
 int mono_dl_convert_flags (int flags);
 char* mono_dl_current_error_string (void);
 int mono_dl_get_executable_path (char *buf, int buflen);
+const char* mono_dl_get_system_dir (void);
 
 #endif /* __MONO_UTILS_DL_H__ */
 
