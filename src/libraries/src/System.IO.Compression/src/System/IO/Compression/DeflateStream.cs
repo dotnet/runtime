@@ -25,8 +25,13 @@ namespace System.IO.Compression
         private bool _wroteHeader;
         private bool _wroteBytes;
 
-        private enum WorkerType : byte { Managed, ZLib, Unknown };
+        private enum WorkerType : byte { Unknown = 0, Managed = 1, ZLib = 2 };
         private static readonly WorkerType s_deflaterType = GetDeflaterType();
+#if DEBUG
+        // This field is used for testing purposes and is accessed via reflection.
+        // NOTE: If the name of this field changes, the test must also be updated.
+        private static WorkerType s_forcedTestingDeflaterType = WorkerType.Unknown;
+#endif
 
         public DeflateStream(Stream stream, CompressionMode mode)
             : this(stream, mode, false)
@@ -105,7 +110,17 @@ namespace System.IO.Compression
 
         private static IDeflater CreateDeflater(CompressionLevel? compressionLevel)
         {
-            switch (s_deflaterType)
+            // The deflator type (zlib or managed) is normally determined by s_deflatorType,
+            // which is initialized by the provider based on what's available on the system.
+            // But for testing purposes, we sometimes want to override this, forcing
+            // compression/decompression to use a particular type.
+            WorkerType deflatorType = s_deflaterType;
+#if DEBUG
+            if (s_forcedTestingDeflaterType != WorkerType.Unknown)
+                deflatorType = s_forcedTestingDeflaterType;
+#endif
+
+            switch (deflatorType)
             {
                 case WorkerType.Managed:
                     return new DeflaterManaged();
