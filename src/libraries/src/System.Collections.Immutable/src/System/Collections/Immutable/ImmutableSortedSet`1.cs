@@ -1716,26 +1716,6 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Creates a node tree from an existing (mutable) collection.
-            /// </summary>
-            /// <param name="collection">The collection.</param>
-            /// <returns>The root of the node tree.</returns>
-            [Pure]
-            internal static Node NodeTreeFromSortedSet(SortedSet<T> collection)
-            {
-                Requires.NotNull(collection, "collection");
-                Contract.Ensures(Contract.Result<Node>() != null);
-
-                if (collection.Count == 0)
-                {
-                    return EmptyNode;
-                }
-
-                var list = collection.AsOrderedCollection();
-                return NodeTreeFromList(list, 0, list.Count);
-            }
-
-            /// <summary>
             /// See the <see cref="ICollection{T}"/> interface.
             /// </summary>
             internal void CopyTo(T[] array, int arrayIndex)
