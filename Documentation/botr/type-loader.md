@@ -26,7 +26,7 @@ cast is safe and can be done).
 This performance requirement rules out any dictionary look up
 approaches and leaves us with the following high-level architecture.
 
-![Figure 1](images/typeloader-fig1.png)
+![Figure 1](../images/typeloader-fig1.png)
 
 Figure 1 The abstract high-level object design
 
@@ -98,7 +98,7 @@ If **MyClass** fails to load, for example because it's supposed to be defined in
 
 The most universal type designation in the CLR is the **TypeHandle**. It's an abstract entity which encapsulates a pointer to either a **MethodTable** (representing "ordinary" types like **System.Object** or **List<string>** ) or a **TypeDesc** (representing byrefs, pointers, function pointers, arrays, and generic variables). It constitutes the identity of a type in that two handles are equal if and only if they represent the same type. To save space, the fact that a **TypeHandle** contains a **TypeDesc** is indicated by setting the second lowest bit of the pointer to 1 (i.e. (ptr | 2)) instead of using additional flags<sup>2</sup>. **TypeDesc** is "abstract" and has the following inheritance hierarchy.
 
-![Figure 2](images/typeloader-fig2.png)
+![Figure 2](../images/typeloader-fig2.png)
 
 Figure 2 The TypeDesc hierarchy
 
@@ -176,7 +176,7 @@ Runtime][generics-design] for more detailed explanation of load levels.
 
 In the generics-free world, everything is nice and everyone is happy because every ordinary (not represented by a **TypeDesc**) type has one **MethodTable** pointing to its associated **EEClass** which in turn points back to the **MethodTable**. All instances of the type contain a pointer to the **MethodTable** as their first field at offset 0, i.e. at the address seen as the reference value. To conserve space, **MethodDescs** representing methods declared by the type are organized in a linked list of chunks pointed to by the **EEClass**<sup>4</sup>.
 
-![Figure 3](images/typeloader-fig3.png)
+![Figure 3](../images/typeloader-fig3.png)
 
 Figure 3 Non-generic type with non-generic methods
 
@@ -287,7 +287,7 @@ that there is a considerable amount of information that they can
 share. This sharing has a positive impact on the memory footprint and
 consequently also performance.
 
-![Figure 4](images/typeloader-fig4.png)
+![Figure 4](../images/typeloader-fig4.png)
 
 Figure 4 Generic type with non-generic methods - shared EEClass
 

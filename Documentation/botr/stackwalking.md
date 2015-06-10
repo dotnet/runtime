@@ -26,7 +26,7 @@ Because we control the format of the frames we're interested in (we'll delve int
 
 The following diagram illustrates a stack containing all the frames types (note that this document uses a convention where stacks grow towards the top of the page):
 
-![image](images/stack.png)
+![image](../images/stack.png)
 
 # Making Frames Crawlable
 
