@@ -155,6 +155,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue(1984, PlatformID.AnyUnix)]
         public static void PublicOnlyPrivateExport()
         {
             RSAParameters imported = new RSAParameters
