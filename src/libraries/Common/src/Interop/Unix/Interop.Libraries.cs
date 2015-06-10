@@ -9,5 +9,6 @@ internal static partial class Interop
         internal const string LibCoreClr= "libcoreclr";        // CoreCLR runtime
         internal const string LibCrypto = "libcrypto";         // OpenSSL crypto library
         internal const string Zlib = "libz";                   // zlib compression library
+        internal const string CryptoInterop = "System.Security.Cryptography.Native";
     }
 }
