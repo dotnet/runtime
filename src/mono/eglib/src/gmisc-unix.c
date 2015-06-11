@@ -104,12 +104,14 @@ get_pw_data (void)
 				home_dir = g_strdup (pw.pw_dir);
 			if (user_name == NULL)
 				user_name = g_strdup (pw.pw_name);
-		} else {
-			if (user_name == NULL)
-				user_name = "somebody";
 		}
 	}
 #endif
+
+	if (user_name == NULL)
+		user_name = "somebody";
+	if (home_dir == NULL)
+		home_dir = "/";
 
 	pthread_mutex_unlock (&pw_lock);
 }
