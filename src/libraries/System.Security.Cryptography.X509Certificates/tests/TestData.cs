@@ -373,7 +373,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         internal static string NormalizeX500String(string expected)
         {
-            if (StringComparer.Ordinal.Equals("Windows_NT", Environment.GetEnvironmentVariable("OS")))
+            if (Interop.IsWindows)
             {
                 return expected;
             }

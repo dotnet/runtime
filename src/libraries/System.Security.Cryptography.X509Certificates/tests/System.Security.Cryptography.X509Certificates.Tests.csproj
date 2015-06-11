@@ -31,6 +31,9 @@
     <Compile Include="PropsTests.cs" />
     <Compile Include="PublicKeyTests.cs" />
     <Compile Include="TestData.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs">
+      <Link>Common\Interop\Interop.PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
