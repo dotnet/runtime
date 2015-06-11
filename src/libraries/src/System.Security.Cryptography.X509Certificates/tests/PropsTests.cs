@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    "CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+                    TestData.NormalizeX500String("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
                     c.Issuer);
             }
         }
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+                    TestData.NormalizeX500String("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
                     c.Subject);
             }
         }
@@ -174,6 +174,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestContentType()
         {
             X509ContentType ct = X509Certificate2.GetCertContentType(TestData.MsCertificate);
@@ -181,6 +182,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestArchive()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -196,6 +198,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestFriendlyName()
         {
             using (var c = new X509Certificate2(TestData.MsCertificate))
@@ -216,7 +219,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+                    TestData.NormalizeX500String("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
                     c.SubjectName.Name);
             }
         }
@@ -227,7 +230,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c = new X509Certificate2(TestData.MsCertificate))
             {
                 Assert.Equal(
-                    "CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+                    TestData.NormalizeX500String("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"),
                     c.IssuerName.Name);
 
             }
