@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 Reset();
 
-                X509ChainPolicy chainPolicy = this.ChainPolicy;
+                X509ChainPolicy chainPolicy = ChainPolicy;
                 _pal = ChainPal.BuildChain(
                     false,
                     certificate.Pal,

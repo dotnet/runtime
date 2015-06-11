@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509Certificate other = obj as X509Certificate;
             if (other == null)
                 return false;
-            return this.Equals(other);
+            return Equals(other);
         }
 
         public virtual bool Equals(X509Certificate other)
@@ -133,13 +133,13 @@ namespace System.Security.Cryptography.X509Certificates
             if (other == null)
                 return false;
 
-            if (this.Pal == null)
+            if (Pal == null)
                 return other.Pal == null;
 
-            if (!this.Issuer.Equals(other.Issuer))
+            if (!Issuer.Equals(other.Issuer))
                 return false;
 
-            byte[] thisSerialNumber = this.GetSerialNumber();
+            byte[] thisSerialNumber = GetSerialNumber();
             byte[] otherSerialNumber = other.GetSerialNumber();
             if (thisSerialNumber.Length != otherSerialNumber.Length)
                 return false;
@@ -264,19 +264,19 @@ namespace System.Security.Cryptography.X509Certificates
             // Subject
             sb.AppendLine("[Subject]");
             sb.Append("  ");
-            sb.AppendLine(this.Subject);
+            sb.AppendLine(Subject);
 
             // Issuer
             sb.AppendLine();
             sb.AppendLine("[Issuer]");
             sb.Append("  ");
-            sb.AppendLine(this.Issuer);
+            sb.AppendLine(Issuer);
 
             // Serial Number
             sb.AppendLine();
             sb.AppendLine("[Serial Number]");
             sb.Append("  ");
-            byte[] serialNumber = this.GetSerialNumber();
+            byte[] serialNumber = GetSerialNumber();
             Array.Reverse(serialNumber);
             sb.Append(serialNumber.ToHexArrayUpper());
             sb.AppendLine();
@@ -285,19 +285,19 @@ namespace System.Security.Cryptography.X509Certificates
             sb.AppendLine();
             sb.AppendLine("[Not Before]");
             sb.Append("  ");
-            sb.AppendLine(FormatDate(this.GetNotBefore()));
+            sb.AppendLine(FormatDate(GetNotBefore()));
 
             // NotAfter
             sb.AppendLine();
             sb.AppendLine("[Not After]");
             sb.Append("  ");
-            sb.AppendLine(FormatDate(this.GetNotAfter()));
+            sb.AppendLine(FormatDate(GetNotAfter()));
 
             // Thumbprint
             sb.AppendLine();
             sb.AppendLine("[Thumbprint]");
             sb.Append("  ");
-            sb.Append(this.GetCertHash().ToHexArrayUpper());
+            sb.Append(GetCertHash().ToHexArrayUpper());
             sb.AppendLine();
 
             return sb.ToString();

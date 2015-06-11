@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (!_decoded)
                 {
-                    X509Pal.Instance.DecodeX509KeyUsageExtension(this.RawData, out _keyUsages);
+                    X509Pal.Instance.DecodeX509KeyUsageExtension(RawData, out _keyUsages);
                     _decoded = true;
                 }
                 return _keyUsages;
