@@ -370,5 +370,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             "29008DE8B851E2C30B6BF73F219BCE651E5972E62D651BA171D1DA9831A449D99" +
             "AF4E2F4B9EE3FD0991EF305ADDA633C44EB5E4979751280B3F54F9CCD561AC27D" +
             "3426BC6FF32E8E1AAF9F7C0150A726B").HexToByteArray();
+
+        internal static string NormalizeX500String(string expected)
+        {
+            if (StringComparer.Ordinal.Equals("Windows_NT", Environment.GetEnvironmentVariable("OS")))
+            {
+                return expected;
+            }
+
+            // Windows calls OID(2.5.4.8) "S", which matches ITU X.520.
+            // OpenSSL calls it "ST", because RFC1327 calls "S" surname.
+            // 
+            // This provides a test mitigation for issue 1985, allowing the
+            // thrust of the test to proceed with this one known problem.
+            return expected.Replace(" S=", " ST=");
+        }
     }
 }
