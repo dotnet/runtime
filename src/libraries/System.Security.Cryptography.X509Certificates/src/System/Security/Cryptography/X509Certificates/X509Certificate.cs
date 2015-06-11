@@ -262,32 +262,42 @@ namespace System.Security.Cryptography.X509Certificates
             StringBuilder sb = new StringBuilder();
 
             // Subject
-            sb.Append("[Subject]" + Environment.NewLine + "  ");
-            sb.Append(this.Subject);
+            sb.AppendLine("[Subject]");
+            sb.Append("  ");
+            sb.AppendLine(this.Subject);
 
             // Issuer
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Issuer]" + Environment.NewLine + "  ");
-            sb.Append(this.Issuer);
+            sb.AppendLine();
+            sb.AppendLine("[Issuer]");
+            sb.Append("  ");
+            sb.AppendLine(this.Issuer);
 
             // Serial Number
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Serial Number]" + Environment.NewLine + "  ");
+            sb.AppendLine();
+            sb.AppendLine("[Serial Number]");
+            sb.Append("  ");
             byte[] serialNumber = this.GetSerialNumber();
             Array.Reverse(serialNumber);
-            sb.Append(serialNumber.ToHexStringUpper());
+            sb.AppendLine(serialNumber.ToHexStringUpper());
 
             // NotBefore
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Not Before]" + Environment.NewLine + "  ");
-            sb.Append(FormatDate(this.GetNotBefore()));
+            sb.AppendLine();
+            sb.AppendLine("[Not Before]");
+            sb.Append("  ");
+            sb.AppendLine(FormatDate(this.GetNotBefore()));
 
             // NotAfter
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Not After]" + Environment.NewLine + "  ");
-            sb.Append(FormatDate(this.GetNotAfter()));
+            sb.AppendLine();
+            sb.AppendLine("[Not After]");
+            sb.Append("  ");
+            sb.AppendLine(FormatDate(this.GetNotAfter()));
 
             // Thumbprint
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Thumbprint]" + Environment.NewLine + "  ");
-            sb.Append(this.GetCertHash().ToHexStringUpper());
+            sb.AppendLine();
+            sb.AppendLine("[Thumbprint]");
+            sb.Append("  ");
+            sb.AppendLine(this.GetCertHash().ToHexStringUpper());
 
-            sb.Append(Environment.NewLine);
             return sb.ToString();
         }
 
@@ -362,4 +372,3 @@ namespace System.Security.Cryptography.X509Certificates
         private const X509KeyStorageFlags KeyStorageFlagsAll = (X509KeyStorageFlags)0x1f;
     }
 }
-
