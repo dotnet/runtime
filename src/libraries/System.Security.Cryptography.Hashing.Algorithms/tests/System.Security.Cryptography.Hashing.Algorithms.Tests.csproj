@@ -22,6 +22,7 @@
   <ItemGroup>
     <Compile Include="ByteUtils.cs" />
     <Compile Include="HashAlgorithmTest.cs" />
+    <Compile Include="InvalidUsageTests.cs" />
     <Compile Include="HmacSha1Tests.cs" />
     <Compile Include="HmacSha256Tests.cs" />
     <Compile Include="HmacSha384Tests.cs" />
