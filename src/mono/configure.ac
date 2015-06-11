@@ -3239,7 +3239,7 @@ case "$host" in
 	X11="libX11.so.6"
 	;;
     *-*-*freebsd*)
-    	LIBC="libc.so"
+    	LIBC="libc.so.7"
 	INTL="libintl.so"
 	SQLITE="libsqlite.so"
 	SQLITE3="libsqlite3.so"
