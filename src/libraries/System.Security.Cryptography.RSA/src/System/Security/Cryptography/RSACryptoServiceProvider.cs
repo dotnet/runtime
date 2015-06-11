@@ -308,6 +308,7 @@ namespace System.Security.Cryptography
                 SafeProvHandle safeProvHandleTemp = SafeProvHandle.InvalidHandle;
                 AcquireSafeProviderHandle(ref safeProvHandleTemp);
                 CapiHelper.ImportKeyBlob(safeProvHandleTemp, (CspProviderFlags)0, keyBlob, ref _safeKeyHandle);
+                _safeProvHandle = safeProvHandleTemp;
             }
             else
             {
