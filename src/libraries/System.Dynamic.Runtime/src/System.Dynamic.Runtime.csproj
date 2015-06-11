@@ -7,9 +7,9 @@
     <ProjectGuid>{C4E89B8C-07DB-40CA-8C99-82A23E8F5F39}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Dynamic.Runtime</AssemblyName>
-    <AssemblyVersion>4.0.10.0</AssemblyVersion>
-    <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
+    <AssemblyVersion>4.0.10.0</AssemblyVersion>
+    <DefineConstants Condition=" '$(IsInterpreting)' != 'true' " >$(DefineConstants);FEATURE_CORECLR</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -71,12 +71,6 @@
     <Compile Include="$(CommonPath)\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs">
       <Link>Common\System\Runtime\CompilerServices\TrueReadOnlyCollection.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.Map.cs">
-      <Link>Common\System\Dynamic\Utils\CollectionExtensions.Map.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
-      <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -119,8 +113,22 @@
     <Compile Include="System\Runtime\CompilerServices\RuleCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.Map.cs">
+      <Link>Common\System\Dynamic\Utils\CollectionExtensions.Map.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
+      <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
+    </Compile>
+
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(IsInterpreting)' == 'true' ">
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\DelegateHelpers.cs">
+      <Link>Common\System\Dynamic\Utils\DelegateHelpers.cs</Link>
+    </Compile>
+
+    <None Include="projectInterpreting.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
