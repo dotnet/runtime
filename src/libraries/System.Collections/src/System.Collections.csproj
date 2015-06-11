@@ -42,9 +42,6 @@
     <Compile Include="System\Collections\StructuralComparisons.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs">
-      <Link>Common\System\ArrayT.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\HashHelpers.cs">
       <Link>Common\System\Collections\HashHelpers.cs</Link>
     </Compile>

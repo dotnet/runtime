@@ -137,14 +137,9 @@ namespace System.Collections.Generic
                 {
                     if (value > 0)
                     {
-#if TYPE_LOADER_IMPLEMENTATION
                         T[] newItems = new T[value];
-                        for (int i = 0; i < _size; i++)
-                            newItems[i] = _items[i];
+                        Array.Copy(_items, 0, newItems, 0, _size);
                         _items = newItems;
-#else
-                        _items = ArrayT<T>.Resize(_items, value, _size);
-#endif
                     }
                     else
                     {
@@ -237,7 +232,7 @@ namespace System.Collections.Generic
         {
             if (_size > 0)
             {
-                ArrayT<T>.Clear(_items, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+                Array.Clear(_items, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
                 _size = 0;
             }
             _version++;
@@ -279,13 +274,13 @@ namespace System.Collections.Generic
             Contract.EndContractBlock();
 
             // Delegate rest of error checking to Array.Copy.
-            ArrayT<T>.Copy(_items, index, array, arrayIndex, count);
+            Array.Copy(_items, index, array, arrayIndex, count);
         }
 
         public void CopyTo(T[] array, int arrayIndex)
         {
             // Delegate rest of error checking to Array.Copy.
-            ArrayT<T>.Copy(_items, 0, array, arrayIndex, _size);
+            Array.Copy(_items, 0, array, arrayIndex, _size);
         }
 
         // Returns the index of the first occurrence of a given value in a range of
@@ -338,7 +333,7 @@ namespace System.Collections.Generic
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             if (index < _size)
             {
-                ArrayT<T>.Copy(_items, index, _items, index + 1, _size - index);
+                Array.Copy(_items, index, _items, index + 1, _size - index);
             }
             _items[index] = item;
             _size++;
@@ -372,22 +367,22 @@ namespace System.Collections.Generic
                     EnsureCapacity(_size + count);
                     if (index < _size)
                     {
-                        ArrayT<T>.Copy(_items, index, _items, index + count, _size - index);
+                        Array.Copy(_items, index, _items, index + count, _size - index);
                     }
 
                     // If we're inserting a List into itself, we want to be able to deal with that.
                     if (this == c)
                     {
                         // Copy first part of _items to insert location
-                        ArrayT<T>.Copy(_items, 0, _items, index, index);
+                        Array.Copy(_items, 0, _items, index, index);
                         // Copy last part of _items back to inserted location
-                        ArrayT<T>.Copy(_items, index + count, _items, index * 2, _size - index);
+                        Array.Copy(_items, index + count, _items, index * 2, _size - index);
                     }
                     else
                     {
                         T[] itemsToInsert = new T[count];
                         c.CopyTo(itemsToInsert, 0);
-                        ArrayT<T>.Copy(itemsToInsert, 0, _items, index, count);
+                        Array.Copy(itemsToInsert, 0, _items, index, count);
                     }
                     _size += count;
                 }
@@ -451,7 +446,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            ArrayT<T>.Clear(_items, freeIndex, _size - freeIndex);
+            Array.Clear(_items, freeIndex, _size - freeIndex);
             int result = _size - freeIndex;
             _size = freeIndex;
             _version++;
@@ -471,7 +466,7 @@ namespace System.Collections.Generic
             _size--;
             if (index < _size)
             {
-                ArrayT<T>.Copy(_items, index + 1, _items, index, _size - index);
+                Array.Copy(_items, index + 1, _items, index, _size - index);
             }
             _items[_size] = default(T);
             _version++;
@@ -485,7 +480,7 @@ namespace System.Collections.Generic
             Contract.Ensures(Contract.Result<T[]>().Length == Count);
 
             T[] array = new T[_size];
-            ArrayT<T>.Copy(_items, 0, array, 0, _size);
+            Array.Copy(_items, 0, array, 0, _size);
             return array;
         }
 #endif

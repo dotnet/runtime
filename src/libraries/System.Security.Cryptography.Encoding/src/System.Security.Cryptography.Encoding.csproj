@@ -28,9 +28,6 @@
     <Compile Include="System\Security\Cryptography\OidGroup.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs">
-      <Link>Common\System\ArrayT.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>

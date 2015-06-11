@@ -22,9 +22,6 @@
     <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>

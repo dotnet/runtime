@@ -72,7 +72,7 @@ namespace System.Collections.Generic
                             newLength = count + 1;
                         }
 
-                        arr = ArrayT<T>.Resize(arr, newLength, count);
+                        Array.Resize(ref arr, newLength);
                     }
                     arr[count++] = item;
                 }
