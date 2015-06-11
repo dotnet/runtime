@@ -58,14 +58,10 @@ namespace System.Security.Cryptography
             // Default the buffer size to 4K.
             byte[] buffer = new byte[4096];
             int bytesRead;
-            do
+            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
             {
-                bytesRead = inputStream.Read(buffer, 0, 4096);
-                if (bytesRead > 0)
-                {
-                    HashCore(buffer, 0, bytesRead);
-                }
-            } while (bytesRead > 0);
+                HashCore(buffer, 0, bytesRead);
+            }
             return CaptureHashCodeAndReinitialize();
         }
 
