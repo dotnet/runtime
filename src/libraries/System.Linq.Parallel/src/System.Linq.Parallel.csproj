@@ -52,6 +52,7 @@
     <Compile Include="System\Linq\Parallel\Partitioning\UnorderedHashRepartitionStream.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\AssociativeAggregationOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\BinaryQueryOperator.cs" />
+    <Compile Include="System\Linq\Parallel\QueryOperators\Binary\ConcatQueryOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\Binary\ExceptQueryOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\Binary\GroupJoinQueryOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\Binary\HashJoinQueryOperatorEnumerator.cs" />
@@ -107,7 +108,6 @@
     <Compile Include="System\Linq\Parallel\QueryOperators\ScanQueryOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\UnaryQueryOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\Unary\AnyAllSearchOperator.cs" />
-    <Compile Include="System\Linq\Parallel\QueryOperators\Unary\ConcatQueryOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\Unary\ContainsSearchOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\Unary\DefaultIfEmptyQueryOperator.cs" />
     <Compile Include="System\Linq\Parallel\QueryOperators\Unary\DistinctQueryOperator.cs" />
