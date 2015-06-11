@@ -30,6 +30,11 @@ namespace Internal.Cryptography.Pal
 
                 _cert = Interop.libcrypto.d2i_X509(IntPtr.Zero, ppData, data.Length);
 
+                if (_cert.IsInvalid)
+                {
+                    throw new CryptographicException();
+                }
+
                 // X509_check_purpose has the effect of populating the sha1_hash value,
                 // and other "initialize" type things.
                 bool init = Interop.libcrypto.X509_check_purpose(_cert, -1, 0);
