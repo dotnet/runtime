@@ -449,7 +449,7 @@ namespace Internal.Cryptography.Pal
             for (int i = 1; i < len; i++)
             {
                 // ensure every character is either a digit or a dot
-                if (Char.IsDigit(keyValue[i]))
+                if (char.IsDigit(keyValue[i]))
                     continue;
                 if (keyValue[i] != '.' || keyValue[i + 1] == '.') // disallow double dots
                     throw new ArgumentException(SR.Argument_InvalidOidValue);

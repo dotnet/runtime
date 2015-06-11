@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                if (!this.HasPrivateKey)
+                if (!HasPrivateKey)
                     return null;
 
                 AsymmetricAlgorithm privateKey = _lazyPrivateKey;
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                AsymmetricAlgorithm publicKey = this.PublicKey.Key;
+                AsymmetricAlgorithm publicKey = PublicKey.Key;
                 Pal.SetPrivateKey(value, publicKey);
                 _lazyPrivateKey = value;
             }
@@ -185,9 +185,9 @@ namespace System.Security.Cryptography.X509Certificates
                 PublicKey publicKey = _lazyPublicKey;
                 if (publicKey == null)
                 {
-                    String keyAlgorithmOid = this.GetKeyAlgorithm();
-                    byte[] parameters = this.GetKeyAlgorithmParameters();
-                    byte[] keyValue = this.GetPublicKey();
+                    String keyAlgorithmOid = GetKeyAlgorithm();
+                    byte[] parameters = GetKeyAlgorithmParameters();
+                    byte[] keyValue = GetPublicKey();
                     Oid oid = new Oid(keyAlgorithmOid);
                     publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue));
                 }
@@ -307,146 +307,156 @@ namespace System.Security.Cryptography.X509Certificates
                 return ToString();
 
             StringBuilder sb = new StringBuilder();
-            String newLine = Environment.NewLine;
-            String newLine2 = newLine + newLine;
-            String newLinesp2 = newLine + "  ";
 
             // Version
-            sb.Append("[Version]");
-            sb.Append(newLinesp2);
-            sb.Append("V" + this.Version);
+            sb.AppendLine("[Version]");
+            sb.Append("  V");
+            sb.Append(Version);
 
             // Subject
-            sb.Append(newLine2);
-            sb.Append("[Subject]");
-            sb.Append(newLinesp2);
-            sb.Append(this.SubjectName.Name);
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Subject]");
+            sb.Append("  ");
+            sb.Append(SubjectName.Name);
             String simpleName = GetNameInfo(X509NameType.SimpleName, false);
             if (simpleName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("Simple Name: ");
                 sb.Append(simpleName);
             }
             String emailName = GetNameInfo(X509NameType.EmailName, false);
             if (emailName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("Email Name: ");
                 sb.Append(emailName);
             }
             String upnName = GetNameInfo(X509NameType.UpnName, false);
             if (upnName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("UPN Name: ");
                 sb.Append(upnName);
             }
             String dnsName = GetNameInfo(X509NameType.DnsName, false);
             if (dnsName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("DNS Name: ");
                 sb.Append(dnsName);
             }
 
             // Issuer
-            sb.Append(newLine2);
-            sb.Append("[Issuer]");
-            sb.Append(newLinesp2);
-            sb.Append(this.IssuerName.Name);
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Issuer]");
+            sb.Append("  ");
+            sb.Append(IssuerName.Name);
             simpleName = GetNameInfo(X509NameType.SimpleName, true);
             if (simpleName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("Simple Name: ");
                 sb.Append(simpleName);
             }
             emailName = GetNameInfo(X509NameType.EmailName, true);
             if (emailName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("Email Name: ");
                 sb.Append(emailName);
             }
             upnName = GetNameInfo(X509NameType.UpnName, true);
             if (upnName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("UPN Name: ");
                 sb.Append(upnName);
             }
             dnsName = GetNameInfo(X509NameType.DnsName, true);
             if (dnsName.Length > 0)
             {
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("DNS Name: ");
                 sb.Append(dnsName);
             }
 
             // Serial Number
-            sb.Append(newLine2);
-            sb.Append("[Serial Number]");
-            sb.Append(newLinesp2);
-            sb.Append(this.SerialNumber);
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Serial Number]");
+            sb.Append("  ");
+            sb.AppendLine(SerialNumber);
 
             // NotBefore
-            sb.Append(newLine2);
-            sb.Append("[Not Before]");
-            sb.Append(newLinesp2);
-            sb.Append(FormatDate(this.NotBefore));
+            sb.AppendLine();
+            sb.AppendLine("[Not Before]");
+            sb.Append("  ");
+            sb.AppendLine(FormatDate(NotBefore));
 
             // NotAfter
-            sb.Append(newLine2);
-            sb.Append("[Not After]");
-            sb.Append(newLinesp2);
-            sb.Append(FormatDate(this.NotAfter));
+            sb.AppendLine();
+            sb.AppendLine("[Not After]");
+            sb.Append("  ");
+            sb.AppendLine(FormatDate(NotAfter));
 
             // Thumbprint
-            sb.Append(newLine2);
-            sb.Append("[Thumbprint]");
-            sb.Append(newLinesp2);
-            sb.Append(this.Thumbprint);
+            sb.AppendLine();
+            sb.AppendLine("[Thumbprint]");
+            sb.Append("  ");
+            sb.AppendLine(Thumbprint);
 
             // Signature Algorithm
-            sb.Append(newLine2);
-            sb.Append("[Signature Algorithm]");
-            sb.Append(newLinesp2);
-            sb.Append(this.SignatureAlgorithm.FriendlyName + "(" + this.SignatureAlgorithm.Value + ")");
+            sb.AppendLine();
+            sb.AppendLine("[Signature Algorithm]");
+            sb.Append("  ");
+            sb.Append(SignatureAlgorithm.FriendlyName);
+            sb.Append('(');
+            sb.Append(SignatureAlgorithm.Value);
+            sb.AppendLine(")");
 
             // Public Key
-            sb.Append(newLine2);
+            sb.AppendLine();
             sb.Append("[Public Key]");
             // It could throw if it's some user-defined CryptoServiceProvider
             try
             {
-                PublicKey pubKey = this.PublicKey;
+                PublicKey pubKey = PublicKey;
 
-                String temp = pubKey.Oid.FriendlyName;
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("Algorithm: ");
-                sb.Append(temp);
+                sb.Append(pubKey.Oid.FriendlyName);
                 // So far, we only support RSACryptoServiceProvider & DSACryptoServiceProvider Keys
                 try
                 {
-                    temp = pubKey.Key.KeySize.ToString();
-                    sb.Append(newLinesp2);
+                    sb.AppendLine();
+                    sb.Append("  ");
                     sb.Append("Length: ");
-                    sb.Append(temp);
+                    sb.Append(pubKey.Key.KeySize);
                 }
                 catch (NotSupportedException)
                 {
                 }
 
-                temp = pubKey.EncodedKeyValue.Format(true);
-                sb.Append(newLinesp2);
+                sb.AppendLine();
+                sb.Append("  ");
                 sb.Append("Key Blob: ");
-                sb.Append(temp);
+                sb.AppendLine(pubKey.EncodedKeyValue.Format(true));
 
-                temp = pubKey.EncodedParameters.Format(true);
-                sb.Append(newLinesp2);
+                sb.Append("  ");
                 sb.Append("Parameters: ");
-                sb.Append(temp);
+                sb.Append(pubKey.EncodedParameters.Format(true));
             }
             catch (CryptographicException)
             {
@@ -456,24 +466,26 @@ namespace System.Security.Cryptography.X509Certificates
             Pal.AppendPrivateKeyInfo(sb);
 
             // Extensions
-            X509ExtensionCollection extensions = this.Extensions;
+            X509ExtensionCollection extensions = Extensions;
             if (extensions.Count > 0)
             {
-                sb.Append(newLine2);
+                sb.AppendLine();
+                sb.AppendLine();
                 sb.Append("[Extensions]");
-                String temp;
                 foreach (X509Extension extension in extensions)
                 {
                     try
                     {
-                        temp = extension.Oid.FriendlyName;
-                        sb.Append(newLine);
-                        sb.Append("* " + temp);
-                        sb.Append("(" + extension.Oid.Value + "):");
+                        sb.AppendLine();
+                        sb.Append("* ");
+                        sb.Append(extension.Oid.FriendlyName);
+                        sb.Append('(');
+                        sb.Append(extension.Oid.Value);
+                        sb.Append("):");
 
-                        temp = extension.Format(true);
-                        sb.Append(newLinesp2);
-                        sb.Append(temp);
+                        sb.AppendLine();
+                        sb.Append("  ");
+                        sb.Append(extension.Format(true));
                     }
                     catch (CryptographicException)
                     {
@@ -481,7 +493,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            sb.Append(newLine);
+            sb.AppendLine();
             return sb.ToString();
         }
 
@@ -518,4 +530,3 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile X509ExtensionCollection _lazyExtensions;
     }
 }
-

@@ -18,8 +18,8 @@ namespace System.Security.Cryptography.X509Certificates
         public PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue)
         {
             _oid = new Oid(oid);
-            this.EncodedParameters = new AsnEncodedData(parameters);
-            this.EncodedKeyValue = new AsnEncodedData(keyValue);
+            EncodedParameters = new AsnEncodedData(parameters);
+            EncodedKeyValue = new AsnEncodedData(keyValue);
             return;
         }
 
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 AsymmetricAlgorithm key = _lazyKey;
                 if (key == null)
-                    key = _lazyKey = X509Pal.Instance.DecodePublicKey(this.Oid, this.EncodedKeyValue.RawData, this.EncodedParameters.RawData);
+                    key = _lazyKey = X509Pal.Instance.DecodePublicKey(Oid, EncodedKeyValue.RawData, EncodedParameters.RawData);
                 return key;
             }
         }

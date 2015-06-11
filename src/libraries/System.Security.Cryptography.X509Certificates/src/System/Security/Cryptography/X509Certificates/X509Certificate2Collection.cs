@@ -21,17 +21,17 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509Certificate2Collection(X509Certificate2 certificate)
         {
-            this.Add(certificate);
+            Add(certificate);
         }
 
         public X509Certificate2Collection(X509Certificate2[] certificates)
         {
-            this.AddRange(certificates);
+            AddRange(certificates);
         }
 
         public X509Certificate2Collection(X509Certificate2Collection certificates)
         {
-            this.AddRange(certificates);
+            AddRange(certificates);
         }
 
         public new X509Certificate2 this[int index]

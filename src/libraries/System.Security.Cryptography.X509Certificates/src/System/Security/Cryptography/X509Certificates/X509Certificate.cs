@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509Certificate other = obj as X509Certificate;
             if (other == null)
                 return false;
-            return this.Equals(other);
+            return Equals(other);
         }
 
         public virtual bool Equals(X509Certificate other)
@@ -133,13 +133,13 @@ namespace System.Security.Cryptography.X509Certificates
             if (other == null)
                 return false;
 
-            if (this.Pal == null)
+            if (Pal == null)
                 return other.Pal == null;
 
-            if (!this.Issuer.Equals(other.Issuer))
+            if (!Issuer.Equals(other.Issuer))
                 return false;
 
-            byte[] thisSerialNumber = this.GetSerialNumber();
+            byte[] thisSerialNumber = GetSerialNumber();
             byte[] otherSerialNumber = other.GetSerialNumber();
             if (thisSerialNumber.Length != otherSerialNumber.Length)
                 return false;
@@ -262,32 +262,44 @@ namespace System.Security.Cryptography.X509Certificates
             StringBuilder sb = new StringBuilder();
 
             // Subject
-            sb.Append("[Subject]" + Environment.NewLine + "  ");
-            sb.Append(this.Subject);
+            sb.AppendLine("[Subject]");
+            sb.Append("  ");
+            sb.AppendLine(Subject);
 
             // Issuer
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Issuer]" + Environment.NewLine + "  ");
-            sb.Append(this.Issuer);
+            sb.AppendLine();
+            sb.AppendLine("[Issuer]");
+            sb.Append("  ");
+            sb.AppendLine(Issuer);
 
             // Serial Number
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Serial Number]" + Environment.NewLine + "  ");
-            byte[] serialNumber = this.GetSerialNumber();
+            sb.AppendLine();
+            sb.AppendLine("[Serial Number]");
+            sb.Append("  ");
+            byte[] serialNumber = GetSerialNumber();
             Array.Reverse(serialNumber);
-            sb.Append(serialNumber.ToHexStringUpper());
+            sb.Append(serialNumber.ToHexArrayUpper());
+            sb.AppendLine();
 
             // NotBefore
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Not Before]" + Environment.NewLine + "  ");
-            sb.Append(FormatDate(this.GetNotBefore()));
+            sb.AppendLine();
+            sb.AppendLine("[Not Before]");
+            sb.Append("  ");
+            sb.AppendLine(FormatDate(GetNotBefore()));
 
             // NotAfter
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Not After]" + Environment.NewLine + "  ");
-            sb.Append(FormatDate(this.GetNotAfter()));
+            sb.AppendLine();
+            sb.AppendLine("[Not After]");
+            sb.Append("  ");
+            sb.AppendLine(FormatDate(GetNotAfter()));
 
             // Thumbprint
-            sb.Append(Environment.NewLine + Environment.NewLine + "[Thumbprint]" + Environment.NewLine + "  ");
-            sb.Append(this.GetCertHash().ToHexStringUpper());
+            sb.AppendLine();
+            sb.AppendLine("[Thumbprint]");
+            sb.Append("  ");
+            sb.Append(GetCertHash().ToHexArrayUpper());
+            sb.AppendLine();
 
-            sb.Append(Environment.NewLine);
             return sb.ToString();
         }
 
@@ -362,4 +374,3 @@ namespace System.Security.Cryptography.X509Certificates
         private const X509KeyStorageFlags KeyStorageFlagsAll = (X509KeyStorageFlags)0x1f;
     }
 }
-

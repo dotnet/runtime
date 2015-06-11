@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Text;
 using System.Diagnostics;
 using System.Globalization;
-using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
@@ -16,59 +14,54 @@ namespace Internal.Cryptography
             return (byte[])(src.Clone());
         }
 
-        // Encode a byte array as an upper case hex string.
-        public static String ToHexStringUpper(this byte[] bytes)
+        // Encode a byte array as an array of upper-case hex characters.
+        public static char[] ToHexArrayUpper(this byte[] bytes)
         {
-            StringBuilder sb = new StringBuilder(bytes.Length * 2);
+            char[] chars = new char[bytes.Length * 2];
+            int i = 0;
             foreach (byte b in bytes)
             {
-                sb.AppendFormat("{0:X2}", b);
+                chars[i++] = NibbleToHex((byte)(b >> 4));
+                chars[i++] = NibbleToHex((byte)(b & 0xF));
             }
-            return sb.ToString();
+            return chars;
+        }
+
+        // Encode a byte array as an upper case hex string.
+        public static string ToHexStringUpper(this byte[] bytes)
+        {
+            return new string(ToHexArrayUpper(bytes));
         }
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api. The parsing rules are overly forgiving but for compat reasons,
         // they cannot be tightened.
-        public static byte[] DecodeHexString(this String s)
+        public static byte[] DecodeHexString(this string s)
         {
-            String hexString = DiscardWhiteSpaces(s);
-            uint cbHex = (uint)hexString.Length / 2;
+            int whitespaceCount = 0;
+
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (char.IsWhiteSpace(s[i]))
+                    whitespaceCount++;
+            }
+
+            uint cbHex = (uint)(s.Length - whitespaceCount) / 2;
             byte[] hex = new byte[cbHex];
-            int i = 0;
-            for (int index = 0; index < cbHex; index++)
+
+            for (int index = 0, i = 0; index < cbHex; index++)
             {
-                hex[index] = (byte)((HexToByte(hexString[i]) << 4) | HexToByte(hexString[i + 1]));
-                i += 2;
+                if (char.IsWhiteSpace(s[i]))
+                {
+                    i++;
+                }
+                else
+                {
+                    hex[index] = (byte)((HexToByte(s[i]) << 4) | HexToByte(s[i + 1]));
+                    i += 2;
+                }
             }
+
             return hex;
-        }
-
-        private static String DiscardWhiteSpaces(String inputBuffer)
-        {
-            return DiscardWhiteSpaces(inputBuffer, 0, inputBuffer.Length);
-        }
-
-        private static String DiscardWhiteSpaces(String inputBuffer, int inputOffset, int inputCount)
-        {
-            int i, iCount = 0;
-            for (i = 0; i < inputCount; i++)
-            {
-                if (Char.IsWhiteSpace(inputBuffer[inputOffset + i]))
-                {
-                    iCount++;
-                }
-            }
-
-            char[] rgbOut = new char[inputCount - iCount];
-            iCount = 0;
-            for (i = 0; i < inputCount; i++)
-            {
-                if (!Char.IsWhiteSpace(inputBuffer[inputOffset + i]))
-                {
-                    rgbOut[iCount++] = inputBuffer[inputOffset + i];
-                }
-            }
-            return new String(rgbOut);
         }
 
         private static byte HexToByte(char val)
@@ -81,6 +74,14 @@ namespace Internal.Cryptography
                 return (byte)((val - 'A') + 10);
             else
                 return 0xFF;
+        }
+
+        private static char NibbleToHex(byte b)
+        {
+            Debug.Assert(b >= 0 && b <= 15);
+            return (char)(b >= 0 && b <= 9 ? 
+                '0' + b : 
+                'A' + (b - 10));
         }
 
         public static bool ContentsEqual(this byte[] a1, byte[] a2)
@@ -115,5 +116,3 @@ namespace Internal.Cryptography
         }
     }
 }
-
-
