@@ -358,197 +358,197 @@ namespace System.Xml
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
                 /* 9F (.) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A0 (�) */
+                /* A0 (.) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A1 (�) */
+                /* A1 (¡) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A2 (�) */
+                /* A2 (¢) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A3 (�) */
+                /* A3 (£) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A4 () */
+                /* A4 (¤) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A5 (�) */
+                /* A5 (¥) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A6 (�) */
+                /* A6 (¦) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A7 () */
+                /* A7 (§) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A8 (") */
+                /* A8 (¨) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* A9 (c) */
+                /* A9 (©) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* AA (�) */
+                /* AA (ª) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* AB (�) */
+                /* AB («) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* AC (�) */
+                /* AC (¬) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* AD (-) */
+                /* AD (.) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* AE (r) */
+                /* AE (®) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* AF (_) */
+                /* AF (¯) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B0 (�) */
+                /* B0 (°) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B1 (�) */
+                /* B1 (±) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B2 (�) */
+                /* B2 (²) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B3 (3) */
+                /* B3 (³) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B4 (') */
+                /* B4 (´) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B5 (�) */
+                /* B5 (µ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B6 () */
+                /* B6 (¶) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B7 (�) */
+                /* B7 (·) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B8 (,) */
+                /* B8 (¸) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* B9 (1) */
+                /* B9 (¹) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* BA (�) */
+                /* BA (º) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* BB (�) */
+                /* BB (») */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* BC (�) */
+                /* BC (¼) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* BD (�) */
+                /* BD (½) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* BE (_) */
+                /* BE (¾) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* BF (�) */
+                /* BF (¿) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C0 (A) */
+                /* C0 (À) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C1 (A) */
+                /* C1 (Á) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C2 (A) */
+                /* C2 (Â) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C3 (A) */
+                /* C3 (Ã) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C4 (�) */
+                /* C4 (Ä) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C5 (�) */
+                /* C5 (Å) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C6 (�) */
+                /* C6 (Æ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C7 (�) */
+                /* C7 (Ç) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C8 (E) */
+                /* C8 (È) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* C9 (�) */
+                /* C9 (É) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* CA (E) */
+                /* CA (Ê) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* CB (E) */
+                /* CB (Ë) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* CC (I) */
+                /* CC (Ì) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* CD (I) */
+                /* CD (Í) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* CE (I) */
+                /* CE (Î) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* CF (I) */
+                /* CF (Ï) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D0 (D) */
+                /* D0 (Ð) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D1 (�) */
+                /* D1 (Ñ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D2 (O) */
+                /* D2 (Ò) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D3 (O) */
+                /* D3 (Ó) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D4 (O) */
+                /* D4 (Ô) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D5 (O) */
+                /* D5 (Õ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D6 (�) */
+                /* D6 (Ö) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D7 (x) */
+                /* D7 (×) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D8 (O) */
+                /* D8 (Ø) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* D9 (U) */
+                /* D9 (Ù) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* DA (U) */
+                /* DA (Ú) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* DB (U) */
+                /* DB (Û) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* DC (�) */
+                /* DC (Ü) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* DD (Y) */
+                /* DD (Ý) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* DE (_) */
+                /* DE (Þ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* DF (�) */
+                /* DF (ß) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E0 (�) */
+                /* E0 (à) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E1 (�) */
+                /* E1 (á) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E2 (�) */
+                /* E2 (â) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E3 (a) */
+                /* E3 (ã) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E4 (�) */
+                /* E4 (ä) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E5 (�) */
+                /* E5 (å) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E6 (�) */
+                /* E6 (æ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E7 (�) */
+                /* E7 (ç) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E8 (�) */
+                /* E8 (è) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* E9 (�) */
+                /* E9 (é) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* EA (�) */
+                /* EA (ê) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* EB (�) */
+                /* EB (ë) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* EC (�) */
+                /* EC (ì) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* ED (�) */
+                /* ED (í) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* EE (�) */
+                /* EE (î) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* EF (�) */
+                /* EF (ï) */
                          CharType.None|CharType.FirstName|CharType.Name,
-                /* F0 (d) */
+                /* F0 (ð) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F1 (�) */
+                /* F1 (ñ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F2 (�) */
+                /* F2 (ò) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F3 (�) */
+                /* F3 (ó) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F4 (�) */
+                /* F4 (ô) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F5 (o) */
+                /* F5 (õ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F6 (�) */
+                /* F6 (ö) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F7 (�) */
+                /* F7 (÷) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F8 (o) */
+                /* F8 (ø) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* F9 (�) */
+                /* F9 (ù) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* FA (�) */
+                /* FA (ú) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* FB (�) */
+                /* FB (û) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* FC (�) */
+                /* FC (ü) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* FD (y) */
+                /* FD (ý) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* FE (_) */
+                /* FE (þ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-                /* FF (�) */
+                /* FF (ÿ) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
             };
 
