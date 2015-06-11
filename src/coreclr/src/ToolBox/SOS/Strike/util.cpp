@@ -4141,8 +4141,11 @@ HRESULT LoadClrDebugDll(void)
         {
             return E_FAIL;
         }
-        // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path
-        HMODULE hdac = LoadLibraryA(MAKEDLLNAME_A("mscordaccore"));
+        char dacModulePath[MAX_PATH];
+        strcpy_s(dacModulePath, _countof(dacModulePath), g_ExtClient->GetCoreClrDirectory());
+        strcat_s(dacModulePath, _countof(dacModulePath), MAKEDLLNAME_A("mscordaccore"));
+
+        HMODULE hdac = LoadLibraryA(dacModulePath);
         if (hdac == NULL)
         {
             return E_FAIL;
@@ -4419,8 +4422,16 @@ public:
         *phModule = callbackData.hModule;
         return hr;
 #else
-        // Assumes that LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH on OSx) is set to runtime binaries path. Ignore the version info for now.
-        *phModule = LoadLibraryW(pwszFileName);
+        WCHAR modulePath[MAX_PATH];
+        int length = MultiByteToWideChar(CP_ACP, 0, g_ExtClient->GetCoreClrDirectory(), -1, modulePath, _countof(modulePath));
+        if (0 >= length)
+        {
+            ExtOut("MultiByteToWideChar(coreclrDirectory) failed. Last error = 0x%x\n", GetLastError());
+            return E_FAIL;
+        }
+        wcscat_s(modulePath, _countof(modulePath), pwszFileName);
+
+        *phModule = LoadLibraryW(modulePath);
         if (*phModule == NULL)
         {
             HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
