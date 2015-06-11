@@ -105,6 +105,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void X509CertEmptyToString()
+        {
+            using (var c = new X509Certificate())
+            {
+                string expectedResult = "System.Security.Cryptography.X509Certificates.X509Certificate";
+                Assert.Equal(expectedResult, c.ToString());
+                Assert.Equal(expectedResult, c.ToString(false));
+                Assert.Equal(expectedResult, c.ToString(true));
+            }
+        }
+
+        [Fact]
+        public static void X509Cert2EmptyToString()
+        {
+            using (var c2 = new X509Certificate2())
+            {
+                string expectedResult = "System.Security.Cryptography.X509Certificates.X509Certificate2";
+                Assert.Equal(expectedResult, c2.ToString());
+                Assert.Equal(expectedResult, c2.ToString(false));
+                Assert.Equal(expectedResult, c2.ToString(true));
+            }
+        }
+
+        [Fact]
         [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2ToStringVerbose()
         {
@@ -113,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             foreach (X509Certificate2 c in store.Certificates)
             {
-                Assert.NotNull(c.ToString(true));
+                Assert.False(string.IsNullOrWhiteSpace(c.ToString(true)));
             }
         }
 
