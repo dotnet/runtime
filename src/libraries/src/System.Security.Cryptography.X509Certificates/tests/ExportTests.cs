@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class ExportTests
     {
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsCert()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -19,6 +20,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsSerializedCert()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -36,6 +38,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsPfx()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -52,6 +55,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsPfxWithPassword()
         {
             const string password = "Cotton";
@@ -70,6 +74,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ExportAsPfxVerifyPassword()
         {
             const string password = "Cotton";
