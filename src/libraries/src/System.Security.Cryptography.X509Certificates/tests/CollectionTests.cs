@@ -317,6 +317,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestExportStore(X509ContentType.Pkcs7);
         }
 
+        [Fact]
+        public static void X509CertificateCollectionSyncRoot()
+        {
+            var cc = new X509CertificateCollection();
+            Assert.NotNull(((ICollection)cc).SyncRoot);
+            Assert.Same(((ICollection)cc).SyncRoot, ((ICollection)cc).SyncRoot);
+        }
+
         private static void TestExportSingleCert(X509ContentType ct)
         {
             using (var msCer = new X509Certificate2(TestData.MsCertificate))

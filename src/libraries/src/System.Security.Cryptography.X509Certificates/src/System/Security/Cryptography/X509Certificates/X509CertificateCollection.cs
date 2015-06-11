@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Interlocked = System.Threading.Interlocked;
 
@@ -49,7 +50,11 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                return Interlocked.CompareExchange(ref _syncRoot, new Object(), null);
+                if (_syncRoot == null)
+                {
+                    Interlocked.CompareExchange(ref _syncRoot, new object(), null);
+                }
+                return _syncRoot;
             }
         }
 
