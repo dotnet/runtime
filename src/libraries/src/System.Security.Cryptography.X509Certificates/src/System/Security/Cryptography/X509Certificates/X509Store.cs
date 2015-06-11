@@ -28,34 +28,34 @@ namespace System.Security.Cryptography.X509Certificates
             switch (storeName)
             {
                 case StoreName.AddressBook:
-                    this.Name = "AddressBook";
+                    Name = "AddressBook";
                     break;
                 case StoreName.AuthRoot:
-                    this.Name = "AuthRoot";
+                    Name = "AuthRoot";
                     break;
                 case StoreName.CertificateAuthority:
-                    this.Name = "CA";
+                    Name = "CA";
                     break;
                 case StoreName.Disallowed:
-                    this.Name = "Disallowed";
+                    Name = "Disallowed";
                     break;
                 case StoreName.My:
-                    this.Name = "My";
+                    Name = "My";
                     break;
                 case StoreName.Root:
-                    this.Name = "Root";
+                    Name = "Root";
                     break;
                 case StoreName.TrustedPeople:
-                    this.Name = "TrustedPeople";
+                    Name = "TrustedPeople";
                     break;
                 case StoreName.TrustedPublisher:
-                    this.Name = "TrustedPublisher";
+                    Name = "TrustedPublisher";
                     break;
                 default:
                     throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeName"));
             }
 
-            this.Location = storeLocation;
+            Location = storeLocation;
             return;
         }
 
@@ -64,8 +64,8 @@ namespace System.Security.Cryptography.X509Certificates
             if (storeLocation != StoreLocation.CurrentUser && storeLocation != StoreLocation.LocalMachine)
                 throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.Arg_EnumIllegalVal, "storeLocation"));
 
-            this.Location = storeLocation;
-            this.Name = storeName;
+            Location = storeLocation;
+            Name = storeName;
             return;
         }
 
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Open(OpenFlags flags)
         {
             Close();
-            _storePal = StorePal.FromSystemStore(this.Name, this.Location, flags);
+            _storePal = StorePal.FromSystemStore(Name, Location, flags);
             return;
         }
 

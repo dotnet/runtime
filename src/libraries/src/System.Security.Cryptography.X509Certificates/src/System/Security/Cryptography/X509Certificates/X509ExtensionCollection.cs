@@ -83,10 +83,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_Index);
-            if (index + this.Count > array.Length)
+            if (index + Count > array.Length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            for (int i = 0; i < this.Count; i++)
+            for (int i = 0; i < Count; i++)
             {
                 array.SetValue(this[i], index);
                 index++;

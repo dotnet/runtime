@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                if (!this.HasPrivateKey)
+                if (!HasPrivateKey)
                     return null;
 
                 AsymmetricAlgorithm privateKey = _lazyPrivateKey;
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                AsymmetricAlgorithm publicKey = this.PublicKey.Key;
+                AsymmetricAlgorithm publicKey = PublicKey.Key;
                 Pal.SetPrivateKey(value, publicKey);
                 _lazyPrivateKey = value;
             }
@@ -185,9 +185,9 @@ namespace System.Security.Cryptography.X509Certificates
                 PublicKey publicKey = _lazyPublicKey;
                 if (publicKey == null)
                 {
-                    String keyAlgorithmOid = this.GetKeyAlgorithm();
-                    byte[] parameters = this.GetKeyAlgorithmParameters();
-                    byte[] keyValue = this.GetPublicKey();
+                    String keyAlgorithmOid = GetKeyAlgorithm();
+                    byte[] parameters = GetKeyAlgorithmParameters();
+                    byte[] keyValue = GetPublicKey();
                     Oid oid = new Oid(keyAlgorithmOid);
                     publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue));
                 }
@@ -311,14 +311,14 @@ namespace System.Security.Cryptography.X509Certificates
             // Version
             sb.AppendLine("[Version]");
             sb.Append("  V");
-            sb.Append(this.Version);
+            sb.Append(Version);
 
             // Subject
             sb.AppendLine();
             sb.AppendLine();
             sb.AppendLine("[Subject]");
             sb.Append("  ");
-            sb.Append(this.SubjectName.Name);
+            sb.Append(SubjectName.Name);
             String simpleName = GetNameInfo(X509NameType.SimpleName, false);
             if (simpleName.Length > 0)
             {
@@ -357,7 +357,7 @@ namespace System.Security.Cryptography.X509Certificates
             sb.AppendLine();
             sb.AppendLine("[Issuer]");
             sb.Append("  ");
-            sb.Append(this.IssuerName.Name);
+            sb.Append(IssuerName.Name);
             simpleName = GetNameInfo(X509NameType.SimpleName, true);
             if (simpleName.Length > 0)
             {
@@ -396,33 +396,33 @@ namespace System.Security.Cryptography.X509Certificates
             sb.AppendLine();
             sb.AppendLine("[Serial Number]");
             sb.Append("  ");
-            sb.AppendLine(this.SerialNumber);
+            sb.AppendLine(SerialNumber);
 
             // NotBefore
             sb.AppendLine();
             sb.AppendLine("[Not Before]");
             sb.Append("  ");
-            sb.AppendLine(FormatDate(this.NotBefore));
+            sb.AppendLine(FormatDate(NotBefore));
 
             // NotAfter
             sb.AppendLine();
             sb.AppendLine("[Not After]");
             sb.Append("  ");
-            sb.AppendLine(FormatDate(this.NotAfter));
+            sb.AppendLine(FormatDate(NotAfter));
 
             // Thumbprint
             sb.AppendLine();
             sb.AppendLine("[Thumbprint]");
             sb.Append("  ");
-            sb.AppendLine(this.Thumbprint);
+            sb.AppendLine(Thumbprint);
 
             // Signature Algorithm
             sb.AppendLine();
             sb.AppendLine("[Signature Algorithm]");
             sb.Append("  ");
-            sb.Append(this.SignatureAlgorithm.FriendlyName);
+            sb.Append(SignatureAlgorithm.FriendlyName);
             sb.Append('(');
-            sb.Append(this.SignatureAlgorithm.Value);
+            sb.Append(SignatureAlgorithm.Value);
             sb.AppendLine(")");
 
             // Public Key
@@ -431,7 +431,7 @@ namespace System.Security.Cryptography.X509Certificates
             // It could throw if it's some user-defined CryptoServiceProvider
             try
             {
-                PublicKey pubKey = this.PublicKey;
+                PublicKey pubKey = PublicKey;
 
                 sb.AppendLine();
                 sb.Append("  ");
@@ -466,7 +466,7 @@ namespace System.Security.Cryptography.X509Certificates
             Pal.AppendPrivateKeyInfo(sb);
 
             // Extensions
-            X509ExtensionCollection extensions = this.Extensions;
+            X509ExtensionCollection extensions = Extensions;
             if (extensions.Count > 0)
             {
                 sb.AppendLine();

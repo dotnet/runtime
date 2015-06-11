@@ -41,7 +41,7 @@ namespace Internal.Cryptography.Pal
                 // We never want to stomp over certificate private keys.
                 cspParameters.Flags |= CspProviderFlags.UseExistingKey;
 
-                int algId = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, this.KeyAlgorithm, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
+                int algId = OidInfo.FindOidInfo(CryptOidInfoKeyType.CRYPT_OID_INFO_OID_KEY, KeyAlgorithm, OidGroup.PublicKeyAlgorithm, fallBackToAllGroups: true).AlgId;
                 switch (algId)
                 {
                     case AlgId.CALG_RSA_KEYX:
