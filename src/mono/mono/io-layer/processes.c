@@ -1673,6 +1673,7 @@ static gboolean match_procname_to_modulename (char *procname, char *modulename)
 	if (procname == NULL || modulename == NULL)
 		return (FALSE);
 
+	DEBUG ("%s: procname=\"%s\", modulename=\"%s\"", __func__, procname, modulename);
 	pname = mono_path_resolve_symlinks (procname);
 	mname = mono_path_resolve_symlinks (modulename);
 
@@ -1701,6 +1702,7 @@ static gboolean match_procname_to_modulename (char *procname, char *modulename)
 	g_free (pname);
 	g_free (mname);
 
+	DEBUG ("%s: result is %d", __func__, result);
 	return result;
 }
 
@@ -1726,6 +1728,8 @@ open_process_map (int pid, const char *mode)
 	return fp;
 }
 #endif
+
+static char *get_process_name_from_proc (pid_t pid);
 
 gboolean EnumProcessModules (gpointer process, gpointer *modules,
 			     guint32 size, guint32 *needed)
@@ -1755,6 +1759,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 
 	if (WAPI_IS_PSEUDO_PROCESS_HANDLE (process)) {
 		pid = WAPI_HANDLE_TO_PID (process);
+		proc_name = get_process_name_from_proc (pid);
 	} else {
 		process_handle = lookup_process_handle (process);
 		if (!process_handle) {
@@ -1879,7 +1884,31 @@ get_process_name_from_proc (pid_t pid)
 
 	free(pi);
 #endif
-#elif defined(__OpenBSD__) || defined(__FreeBSD__)
+#elif defined(__FreeBSD__)
+	mib [0] = CTL_KERN;
+	mib [1] = KERN_PROC;
+	mib [2] = KERN_PROC_PID;
+	mib [3] = pid;
+	if (sysctl(mib, 4, NULL, &size, NULL, 0) < 0) {
+		DEBUG ("%s: sysctl() failed: %d", __func__, errno);
+		return(ret);
+	}
+
+	if ((pi = malloc(size)) == NULL)
+		return(ret);
+
+	if (sysctl (mib, 4, pi, &size, NULL, 0) < 0) {
+		if (errno == ENOMEM) {
+			free(pi);
+			DEBUG ("%s: Didn't allocate enough memory for kproc info", __func__);
+		}
+		return(ret);
+	}
+
+	if (strlen (pi->ki_comm) > 0)
+		ret = g_strdup (pi->ki_comm);
+	free(pi);
+#elif defined(__OpenBSD__)
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC;
 	mib [2] = KERN_PROC_PID;
@@ -1888,8 +1917,10 @@ get_process_name_from_proc (pid_t pid)
 	mib [5] = 0;
 
 retry:
-	if (sysctl(mib, 6, NULL, &size, NULL, 0) < 0)
+	if (sysctl(mib, 6, NULL, &size, NULL, 0) < 0) {
+		DEBUG ("%s: sysctl() failed: %d", __func__, errno);
 		return(ret);
+	}
 
 	if ((pi = malloc(size)) == NULL)
 		return(ret);
