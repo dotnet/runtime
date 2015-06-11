@@ -5396,7 +5396,6 @@ static void
 emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 {
 	MonoMethod *method;
-	GList *l;
 	int pindex, buf_size, n_patches;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;

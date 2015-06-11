@@ -766,7 +766,7 @@ patch-libtool:
 	chmod a+x ../../libtool
 
 # Utility target for patching libtool to get rid of the 'ranlib: file <file> has no symbols" warnings
-patch-libtool-osx:
+patch-osx-libtool:
 	sed -e 's/old_archive_cmds=.*/old_archive_cmds="libtool -no_warning_for_no_symbols -static -o \\$$oldlib \\$$oldobjs"/g' < ../../libtool > 2; mv 2 ../../libtool
 	chmod a+x ../../libtool
 
