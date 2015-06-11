@@ -1,0 +1,55 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly b04726
+{
+}
+.class _simple {
+
+.method static int32 main(class System.String[]) {
+.entrypoint
+.maxstack	100
+
+.locals (int32, int32, int32, int32)
+ ldc.i4 1
+ ldc.i4 1
+ ldc.i4 1
+ ldc.i4 1
+ stloc.0
+ stloc.1
+ stloc.2
+ stloc.3
+
+ldc.r8 1.197221e+011
+ldc.r8 1.694962e+011
+cgt.un
+conv.r4
+ldloc.0
+conv.r4
+sub
+ldc.r4 4.294685e+008
+ldloc.2
+neg
+stloc.2
+ldc.i4.7
+ldloc.3
+or
+stloc.3
+mul
+conv.i4
+ldc.r8 2.491291e+008
+ldc.r8 0x60a44b334f393dd9
+ldc.i4.5
+not
+stloc.1
+clt.un
+stloc.0
+ldc.i4 3865498784
+sub
+
+ldc.i4 100
+add
+ret
+}
+}

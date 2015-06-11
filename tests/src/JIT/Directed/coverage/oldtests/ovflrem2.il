@@ -1,0 +1,69 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+
+.assembly extern mscorlib {}
+.assembly ovflrem2 {}
+.class private auto ansi beforefieldinit ovflrem2
+       extends [mscorlib]System.Object
+{
+  .method private hidebysig static int32  Main(string[] args) cil managed
+  {
+    .entrypoint
+    .maxstack  10
+    
+    ldc.i4     0x80000000
+    conv.u4
+    ldc.i4 1
+    rem
+    dup
+    call void [mscorlib]System.Console::WriteLine(int32)
+    ldc.i4 0
+    ceq
+    brfalse FAIL    
+
+    ldc.i4     0xFFFFFFFF
+    conv.u4
+    ldc.i4 1
+    rem
+    dup
+    call void [mscorlib]System.Console::WriteLine(int32)
+    ldc.i4.0
+    ceq
+    brfalse FAIL    
+
+    ldc.i4     0x79999999
+    conv.u4
+    ldc.i4.m1
+    rem
+    dup
+    call void [mscorlib]System.Console::WriteLine(int32)
+    ldc.i4 0
+    ceq
+    brfalse FAIL 
+    
+    .try
+    {
+    ldc.i4     0x80000000
+    conv.u4
+    ldc.i4.m1
+    rem
+    leave FAIL
+    }
+    catch [mscorlib]System.OverflowException
+    {
+    	leave PASS
+    }
+PASS:
+    	ldstr "PASSED"
+    	call void [mscorlib]System.Console::WriteLine(string)
+    	ldc.i4 100
+    	ret
+FAIL:
+    	ldstr "FAILED"
+    	call void [mscorlib]System.Console::WriteLine(string)
+    	ldc.i4 1
+    	ret
+  }
+
+}

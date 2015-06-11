@@ -1,0 +1,91 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+
+
+
+
+.assembly extern mscorlib
+{
+                           
+  
+           
+  
+}
+.assembly 'bug'
+{
+
+  //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
+  //                                                                                  bool) = ( 01 00 00 01 00 00 ) 
+  
+  .permission reqmin ['mscorlib']System.Security.Permissions.SecurityPermissionAttribute ( "SkipVerification" = true )
+  
+}
+.module 'bug.exe'
+// MVID: {90803FD0-8E18-44C9-A242-98463ADD450D}
+.namespace JitTest
+{
+  .class private auto ansi Test
+         extends ['mscorlib']System.Object
+  {
+    .method private hidebysig static void DoStuff(method void *()) il managed
+    {
+      // Code size       1 (0x1)
+      	.maxstack  8
+      	ldarg.0
+      	tail. calli	void()
+      	ret
+    } // end of method 'Test::DoStuff'
+    .method private hidebysig static method void *() RetStuff() il managed
+    {
+      // Code size       1 (0x1)
+      .maxstack  8
+      ldftn 		void JitTest.Test::DummyMethod()
+      ret
+    } // end of method 'Test::DoStuff'
+    .method private hidebysig static void DummyMethod() il managed
+    {
+      // Code size       1 (0x1)
+      .maxstack  8
+      ldstr "Looks good."
+      call  void [mscorlib]System.Console::WriteLine(class [mscorlib]System.String)
+      ret
+    } // end of method 'Test::DoStuff'
+
+    .method private hidebysig static void TestMain() il managed
+    {
+		.maxstack  4
+		.locals (int32 V_0)
+		ldftn 		void JitTest.Test::DummyMethod()
+		ldftn		void JitTest.Test::DoStuff(method void *())
+		calli		void (method void *())
+		ldftn		method void *() JitTest.Test::RetStuff()
+		calli		method void *()()
+		tail. calli void()
+		ret
+    } // end of method 'Test::TestMain'
+
+    .method private hidebysig static int32 Main() il managed
+    {
+		.entrypoint
+		.maxstack  4
+		ldftn 		void JitTest.Test::TestMain()
+		calli		void ()
+		ldc.i4 0x64
+		ret
+    } // end of method 'Test::Main'
+
+    .method public hidebysig specialname rtspecialname 
+            instance void .ctor() il managed
+    {
+      // Code size       7 (0x7)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void ['mscorlib']System.Object::.ctor()
+      IL_0006:  ret
+    } // end of method 'Test::.ctor'
+
+  } // end of class 'Test'
+
+} // end of namespace 'JitTest'
+//*********** DISASSEMBLY COMPLETE ***********************

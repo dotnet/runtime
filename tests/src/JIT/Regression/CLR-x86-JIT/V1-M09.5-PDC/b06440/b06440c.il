@@ -1,0 +1,50 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly b06440c
+{
+}
+.class _simple {
+
+.method static int32 main(class [mscorlib]System.String[]) {
+.entrypoint
+.maxstack	100
+
+.locals (int64, float32, float64, float64, float64, float64)
+
+	ldc.i8 0  stloc.0
+	ldc.r4 0  stloc.1
+	ldc.r8 0  stloc.2
+	ldc.r8 0  stloc.3
+	ldc.r8 0  stloc 4
+	ldc.r8 0  stloc 5
+
+  ldloc 4
+  stloc 5
+
+  ldloc 2
+  stloc 4
+
+  ldloc 4
+  stloc 3
+
+  ldloc 3
+  conv.r4
+  stloc 1
+
+    ldloc 5
+    ldloc 2
+   sub
+   conv.u8
+  
+   ldc.i8 -89
+  sub
+  stloc 0
+
+ ldc.i4 0  //-126
+ldc.i4 100
+add	
+ ret
+}
+}

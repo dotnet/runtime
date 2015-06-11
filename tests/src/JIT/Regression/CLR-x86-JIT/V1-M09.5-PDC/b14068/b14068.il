@@ -1,0 +1,35 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly b14068
+{
+}
+.class ILGEN_622380794 {
+
+.field static	int64 field_0x5
+.field static	float32 field_0xa
+
+.method static int32 main() {
+.entrypoint
+.maxstack	20
+.try {
+ ldsflda int64 ILGEN_622380794::field_0x5
+ ldsflda float32 ILGEN_622380794::field_0xa
+ ldc.r4 4.4
+ stind.r4
+ ldc.r8 3.982374e+012
+ conv.ovf.u2
+ conv.u8
+ stind.i8
+ leave stop
+}
+catch [mscorlib]System.OverflowException {
+ pop
+ leave stop
+}
+stop:
+ ldc.i4 100
+ ret
+}
+}

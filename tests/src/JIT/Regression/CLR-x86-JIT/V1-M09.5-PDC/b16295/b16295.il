@@ -1,0 +1,42 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly a1 {}
+.class ILGEN_622380794 {
+
+.field static	unsigned int16 field_0x1
+.field static	int16 field_0x3
+
+.method static int32 main() {
+.entrypoint
+.maxstack	10
+
+ .locals (unsigned int32[] local_0x2)
+
+ ldc.i4 255
+ newarr [mscorlib]System.UInt32 
+ stloc local_0x2
+
+
+ ldc.i4 0x19 
+ stsfld unsigned int16 ILGEN_622380794::field_0x1
+ ldc.i4 0x41 
+ stsfld int16 ILGEN_622380794::field_0x3
+
+
+ BLOCK_2:
+ ldsfld int16 ILGEN_622380794::field_0x3
+
+ ldloc local_0x2
+ ldsfld unsigned int16 ILGEN_622380794::field_0x1
+ ldc.i4 7
+ stelem.i4
+
+  dup
+  sub
+ldc.i4 100
+add
+  ret
+}
+}

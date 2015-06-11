@@ -1,0 +1,42 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern mscorlib {}
+.assembly EHTest {}
+.class public EHTest
+{
+	.field private static int64 fld1
+	.field private static int32 fld2
+
+	.method public static int32 f1() cil managed
+	{
+	.entrypoint
+	.maxstack 50
+
+	start_try: 
+		leave OUT
+	end_try: //
+
+	start_catch: 
+		ldc.i4 19
+		ldc.i4 14
+		shr
+		neg
+		ldc.i4 22
+		shl
+		not
+		newarr     [mscorlib]System.Int64
+		ldc.i4 93
+		stsfld int32 EHTest::fld2
+		ldc.i4 53
+		ldelem.i8
+		stsfld int64 EHTest::fld1
+		leave OUT
+	end_catch: //
+
+	OUT:
+		ldc.i4 100
+	ret
+	.try start_try to end_try catch [mscorlib]System.Exception handler start_catch to end_catch
+	}
+}

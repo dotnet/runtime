@@ -1,0 +1,42 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly b06730
+{
+}
+
+.class ILGEN_939524508 {
+.method static int32 main(class System.String[]) {
+.entrypoint
+.maxstack	7
+ .locals ( float32, int32, int32, int32, float32, int32,
+ float32, float32, int32, int64, int64, int64, float64)
+
+//ldc.i8 5
+//stloc 9
+
+      ldloc 12
+      ldloc 12
+      ldloc 9
+     stloc 10
+    add
+  conv.u1
+      ldloc 2
+      ldloc 2
+     add
+    conv.i8
+      ldc.i8 0x5757a9976481e71
+      ldloc 10
+    and
+   mul
+      ldloc 9
+     conv.i8
+  cgt
+ xor
+conv.i4
+pop
+ldc.i4 100
+ret
+}
+}
