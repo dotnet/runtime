@@ -1,0 +1,27 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly conv.exe{}
+.class public conv {
+.method public static float32 r4(float32) {
+.maxstack	2
+	ldarg	0
+	ret
+}
+.method public static int32 main() {
+.entrypoint
+.maxstack	10
+        ldc.r4  -1.0
+        dup
+        call    float32 conv::r4(float32)
+        ceq
+        brfalse FAIL
+PASS:
+	ldc.i4	100
+	ret
+FAIL:
+	ldc.i4	0x0
+	ret
+}
+}

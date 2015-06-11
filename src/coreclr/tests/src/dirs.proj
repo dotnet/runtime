@@ -25,6 +25,7 @@
     </ItemGroup>
     <ItemGroup>
       <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)"/>
+      <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)"/>
     </ItemGroup>
   </Target>
 

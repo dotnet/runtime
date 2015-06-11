@@ -1,0 +1,33 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly ILGEN_0xbbdad33b {}
+.class ILGEN_0xbbdad33b {
+.method static int32 Main() {
+.entrypoint
+.maxstack	5
+.try {
+   ldc.i4 0x760be285
+  conv.ovf.i1
+  ldc.i4.0
+ldc.i4 0x760be285
+ sub.ovf.un
+ bgt.un Branch_0x2
+  ldc.i4 1
+ br Branch_0x3
+Branch_0x2:
+ ldc.i4.m1
+Branch_0x3:
+ pop
+leave END
+} catch [mscorlib]System.OverflowException {
+pop
+leave END
+}
+END:
+ldc.i4 100
+ret
+
+}
+}

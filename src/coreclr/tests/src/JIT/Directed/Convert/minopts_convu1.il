@@ -1,0 +1,33 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly ILGEN_0xb0847955 {}
+ .assembly extern mscorlib{auto}
+
+.class ILGEN_0xb0847955 {
+
+
+.method static unsigned int8  Method_0xbf6432ff() {
+.zeroinit 
+.maxstack	9
+
+   ldc.i4 0x15676d9b
+   conv.u1
+   ret
+   //If the conversion fails, we get a non 100 (Failing) return code.
+}
+
+.method static int32 Main() {
+.entrypoint
+.maxstack	23
+
+ call unsigned int8  ILGEN_0xb0847955::Method_0xbf6432ff()
+conv.i4
+ldc.i4 55
+sub
+  dup
+  call void [mscorlib]System.Console::WriteLine(int32)
+ ret
+}
+
+}
