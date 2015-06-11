@@ -1,0 +1,42 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly ILGEN_0x7fec790f {}
+.class ILGEN_0x7fec790f {
+
+.field static	unsigned int16 field_0x7
+.method static float32 Method_0x4945() {
+.maxstack	13
+
+ .locals (int64 local_0x1)
+
+ ldc.i8 0x5c5b6efa93b3355 
+ stloc local_0x1
+ ldc.i4 0x33fc10a9 
+ stsfld unsigned int16 ILGEN_0x7fec790f::field_0x7
+
+Start_Orphan_0:
+ ldsfld unsigned int16 ILGEN_0x7fec790f::field_0x7
+ ldc.r8 float64(0x65c4195b6df36085)
+ ldloc local_0x1
+ conv.r8
+ clt
+ conv.i4
+ shr
+ stsfld unsigned int16 ILGEN_0x7fec790f::field_0x7
+End_Orphan_0:
+
+ ldc.r4 55
+ ret
+}
+.method static int32 Main() {
+.entrypoint
+.maxstack	20
+ call float32 ILGEN_0x7fec790f::Method_0x4945()
+ conv.i4
+ ldc.i4 45
+ add
+ ret
+}
+}

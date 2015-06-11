@@ -1,0 +1,63 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern mscorlib {}
+
+.assembly test1 {}
+.module test1.exe
+
+.namespace Test
+{
+  .class private auto ansi beforefieldinit Class1 extends [mscorlib]System.Object
+  {
+
+    .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
+    {
+      .maxstack  8
+      ldarg.0
+      call       instance void [mscorlib]System.Object::.ctor()
+      ret
+    }
+
+
+    .method public hidebysig instance void Clear() cil managed
+    {
+      .maxstack  2
+
+      .try
+      {
+        leave.s    DONE
+      }
+      finally
+      {
+        ldarg.0
+        ldnull
+        pop
+        pop
+        endfinally
+      }
+
+      DONE:
+      ret
+    }
+
+
+    .method public hidebysig static int32 Main(string[] args) cil managed
+    {
+      .entrypoint
+      .maxstack  1
+
+      newobj     instance void Test.Class1::.ctor()
+      callvirt   instance void Test.Class1::Clear()
+
+      ldstr      "Passed"
+      call       void [mscorlib]System.Console::WriteLine(string)
+      ldc.i4     100
+      ret
+    }
+
+
+  }
+  
+}
+

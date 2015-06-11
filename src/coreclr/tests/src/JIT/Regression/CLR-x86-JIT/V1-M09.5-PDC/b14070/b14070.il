@@ -1,0 +1,30 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly b14070
+{
+}
+.class ILGEN_622380794 {
+
+.field static	int64 field_0x1
+
+.method static int32 main() {
+.entrypoint
+.maxstack	20
+
+ .locals (float32 local_0x2)
+ ldc.r4 0
+ stloc.0
+ 
+ ldsflda int64 ILGEN_622380794::field_0x1
+ ldind.i8
+ conv.u
+ ldloc local_0x2
+ conv.u1
+ cgt
+ldc.i4 100
+add
+ret
+}
+}

@@ -1,0 +1,69 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+
+
+
+
+.assembly extern mscorlib
+{
+                           
+  
+           
+  
+}
+.assembly 'test'
+{
+
+
+  //                                                                                  bool) = ( 01 00 00 01 00 00 ) 
+  
+  
+}
+.module 'test.exe'
+// MVID: {37F05BF1-E8CC-42FA-A268-D866F07CFFF8}
+.namespace TestCase
+{
+  .class private auto ansi Test
+         extends [mscorlib]System.Object
+  {
+    .method private hidebysig static int32 Main() il managed
+    {
+      .entrypoint
+      // Code size       39 (0x27)
+      .maxstack  5
+		ldc.i4		0xfffffff2
+		ldc.i4		0xffffff00
+		and
+		dup
+		brtrue		story_about_bad
+		pop
+		ldc.i4		0x0000fff2
+		ldc.i4		0xffffff00
+		and
+		dup
+		brfalse		story_about_good
+story_about_bad:
+		ldc.i4		0xffffff00
+		ceq
+story_about_good:
+		pop
+		ldc.i4 100
+		ret
+    } // end of method 'Test::Main'
+
+    .method public hidebysig specialname rtspecialname 
+            instance void .ctor() il managed
+    {
+      // Code size       7 (0x7)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+      IL_0006:  ret
+    } // end of method 'Test::.ctor'
+
+  } // end of class 'Test'
+
+} // end of namespace 'TestCase'
+
+//*********** DISASSEMBLY COMPLETE ***********************

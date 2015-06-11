@@ -49,7 +49,7 @@
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" Condition="'$(ProjectLanguage)' == 'CSharp'" />
 
   <!-- TODO (#1122): import this from the ToolsDir once it becomes available -->
-  <Import Project="$(ProjectDir)IL.targets" Condition="'$(ProjectLanguage)' == 'IL'" />
+  <Import Project="$(ProjectDir)src\IL.targets" Condition="'$(ProjectLanguage)' == 'IL'" />
 
   <Import Project="$(ToolsDir)packageresolve.targets" Condition="Exists('$(ToolsDir)packageresolve.targets')" />
 
