@@ -58,7 +58,7 @@ namespace Internal.Cryptography.Pal
 
         public IntPtr Handle
         {
-            get { return IntPtr.Zero; }
+            get { return _cert == null ? IntPtr.Zero : _cert.DangerousGetHandle(); }
         }
 
         public string Issuer
