@@ -54,11 +54,14 @@
 #endif
 #endif
 
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
 #include <sys/proc.h>
 #include <sys/sysctl.h>
 #  if !defined(__OpenBSD__)
 #    include <sys/utsname.h>
+#  endif
+#  if defined(__FreeBSD__)
+#    include <sys/user.h>  /* struct kinfo_proc */
 #  endif
 #endif
 
@@ -115,7 +118,7 @@ static guint32 process_wait (gpointer handle, guint32 timeout, gboolean alertabl
 static void process_close (gpointer handle, gpointer data);
 static gboolean is_pid_valid (pid_t pid);
 
-#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__))
+#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__))
 static FILE *
 open_process_map (int pid, const char *mode);
 #endif
@@ -175,7 +178,7 @@ is_pid_valid (pid_t pid)
 {
 	gboolean result = FALSE;
 
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
 	if (((kill(pid, 0) == 0) || (errno == EPERM)) && pid != 0)
 		result = TRUE;
 #elif defined(__HAIKU__)
@@ -1448,7 +1451,7 @@ static GSList *load_modules (void)
 	
 	return(ret);
 }
-#elif defined(__OpenBSD__)
+#elif defined(__OpenBSD__) || defined(__FreeBSD__)
 #include <link.h>
 static int load_modules_callback (struct dl_phdr_info *info, size_t size, void *ptr)
 {
@@ -1701,7 +1704,7 @@ static gboolean match_procname_to_modulename (char *procname, char *modulename)
 	return result;
 }
 
-#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__))
+#if !(defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__))
 static FILE *
 open_process_map (int pid, const char *mode)
 {
@@ -1728,7 +1731,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 			     guint32 size, guint32 *needed)
 {
 	WapiHandle_process *process_handle;
-#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX)
+#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX) && !defined(__FreeBSD__)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -1763,7 +1766,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 		proc_name = process_handle->proc_name;
 	}
 	
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__)
 	mods = load_modules ();
 	if (!proc_name) {
 		modules[0] = NULL;
@@ -1818,7 +1821,7 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 static char *
 get_process_name_from_proc (pid_t pid)
 {
-#if defined(__OpenBSD__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
 	int mib [6];
 	size_t size;
 	struct kinfo_proc *pi;
@@ -1876,7 +1879,7 @@ get_process_name_from_proc (pid_t pid)
 
 	free(pi);
 #endif
-#elif defined(__OpenBSD__)
+#elif defined(__OpenBSD__) || defined(__FreeBSD__)
 	mib [0] = CTL_KERN;
 	mib [1] = KERN_PROC;
 	mib [2] = KERN_PROC_PID;
@@ -1902,8 +1905,13 @@ retry:
 		return(ret);
 	}
 
+#if defined(__OpenBSD__)
 	if (strlen (pi->p_comm) > 0)
 		ret = g_strdup (pi->p_comm);
+#elif defined(__FreeBSD__)
+	if (strlen (pi->ki_comm) > 0)
+		ret = g_strdup (pi->ki_comm);
+#endif
 
 	free(pi);
 #elif defined(__HAIKU__)
@@ -2010,7 +2018,7 @@ get_module_name (gpointer process, gpointer module,
 	char *procname_ext = NULL;
 	glong len;
 	gsize bytes;
-#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX)
+#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX) && !defined(__FreeBSD__)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -2044,7 +2052,7 @@ get_module_name (gpointer process, gpointer module,
 	}
 
 	/* Look up the address in /proc/<pid>/maps */
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
+#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__HAIKU__)
 	mods = load_modules ();
 #else
 	fp = open_process_map (pid, "r");
@@ -2150,7 +2158,7 @@ GetModuleInformation (gpointer process, gpointer module,
 {
 	WapiHandle_process *process_handle;
 	pid_t pid;
-#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX)
+#if !defined(__OpenBSD__) && !defined(PLATFORM_MACOSX) && !defined(__FreeBSD__)
 	FILE *fp;
 #endif
 	GSList *mods = NULL;
@@ -2181,7 +2189,7 @@ GetModuleInformation (gpointer process, gpointer module,
 		proc_name = g_strdup (process_handle->proc_name);
 	}
 
-#if defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__HAIKU__)
+#if defined(PLATFORM_MACOSX) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__HAIKU__)
 	mods = load_modules ();
 #else
 	/* Look up the address in /proc/<pid>/maps */
