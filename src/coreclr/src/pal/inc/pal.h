@@ -515,6 +515,18 @@ PAL_InitializeDebug(
     void);
 
 PALIMPORT
+HINSTANCE
+PALAPI
+PAL_RegisterModule(
+    IN LPCSTR lpLibFileName);
+
+PALIMPORT
+VOID 
+PALAPI
+PAL_UnregisterModule(
+    IN HINSTANCE hInstance);
+
+PALIMPORT
 HMODULE
 PALAPI
 PAL_RegisterLibraryW(
