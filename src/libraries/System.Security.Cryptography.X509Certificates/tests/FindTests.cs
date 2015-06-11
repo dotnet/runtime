@@ -96,24 +96,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void FindByNullName()
         {
             RunExceptionTest<ArgumentNullException>(X509FindType.FindBySubjectName, null);
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void FindByThumbprint_Object()
         {
             RunExceptionTest<CryptographicException>(X509FindType.FindByThumbprint, new object());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void FindByInvalidThumbprint()
         {
             RunZeroMatchTest(X509FindType.FindByThumbprint, "Nothing");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void FindByValidThumbprint()
         {
             RunTest(
@@ -128,36 +132,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestSubjectName_Object()
         {
             RunExceptionTest<CryptographicException>(X509FindType.FindBySubjectName, new object());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestSubjectName_NoMatch()
         {
             RunZeroMatchTest(X509FindType.FindBySubjectName, "Nothing");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestSubjectName_Match()
         {
             RunSingleMatchTest_MsCer(X509FindType.FindBySubjectName, "Microsoft Corporation");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestDistinguishedSubjectName_Object()
         {
             RunExceptionTest<CryptographicException>(X509FindType.FindBySubjectDistinguishedName, new object());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestDistinguishedSubjectName_NoMatch()
         {
             RunZeroMatchTest(X509FindType.FindBySubjectDistinguishedName, "Nothing");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestDistinguishedSubjectName_Match()
         {
             RunSingleMatchTest_MsCer(
@@ -166,12 +176,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTimeValid_Object()
         {
             RunExceptionTest<CryptographicException>(X509FindType.FindByTimeValid, new object());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTimeValid_Before()
         {
             RunTest(
@@ -189,6 +201,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTimeValid_After()
         {
             RunTest(
@@ -206,6 +219,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTimeValid_Between()
         {
             RunTest(
@@ -232,6 +246,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTimeValid_Match()
         {
             RunTest(
@@ -246,6 +261,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_Decimal()
         {
             // Decimal string is an allowed input format.
@@ -255,6 +271,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_DecimalLeadingZeros()
         {
             // Checking that leading zeros are ignored.
@@ -264,6 +281,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_DecimalNegative()
         {
             // This serial number has the high bit on which means that it's easier to misinterpret as a negative number.
@@ -274,6 +292,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_Hex()
         {
             // Hex string is also an allowed input format.
@@ -283,6 +302,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_HexIgnoreCase()
         {
             // Hex string is also an allowed input format and case-blind
@@ -292,6 +312,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_HexLeadingZeros()
         {
             // Checking that leading zeros are ignored.
@@ -301,6 +322,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySerialNumber_NoMatch()
         {
             RunZeroMatchTest(
@@ -309,30 +331,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByExtension_FriendlyName()
         {
             RunSingleMatchTest_MsCer(X509FindType.FindByExtension, "Enhanced Key Usage");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByExtension_OidValue()
         {
             RunSingleMatchTest_MsCer(X509FindType.FindByExtension, "2.5.29.37");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByExtension_UnknownFriendlyName()
         {
             RunExceptionTest<ArgumentException>(X509FindType.FindByExtension, "BOGUS");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByExtension_NoMatch()
         {
             RunZeroMatchTest(X509FindType.FindByExtension, "2.9");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySubjectKeyIdentifier_MatchA()
         {
             RunSingleMatchTest_PfxCer(
@@ -341,6 +368,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySubjectKeyIdentifier_MatchB()
         {
             RunSingleMatchTest_MsCer(
@@ -349,12 +377,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestBySubjectKeyIdentifier_NoMatch()
         {
             RunZeroMatchTest(X509FindType.FindBySubjectKeyIdentifier, "");
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByApplicationPolicy_MatchAll()
         {
             RunTest(
@@ -376,6 +406,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByApplicationPolicy_NoPolicyAlwaysMatches()
         {
             // PfxCer doesn't have any application policies which means it's good for all usages (even nonsensical ones.)
@@ -383,6 +414,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByApplicationPolicy_NoMatch()
         {
             RunTest(
@@ -399,6 +431,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByCertificatePolicies_MatchA()
         {
             using (var policyCert = new X509Certificate2(TestData.CertWithPolicies))
@@ -412,6 +445,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByCertificatePolicies_MatchB()
         {
             using (var policyCert = new X509Certificate2(TestData.CertWithPolicies))
@@ -425,6 +459,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByCertificatePolicies_NoMatch()
         {
             using (var policyCert = new X509Certificate2(TestData.CertWithPolicies))
@@ -437,6 +472,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTemplate_MatchA()
         {
             using (var templatedCert = new X509Certificate2(TestData.CertWithTemplateData))
@@ -450,6 +486,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTemplate_MatchB()
         {
             using (var templatedCert = new X509Certificate2(TestData.CertWithTemplateData))
@@ -463,6 +500,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByTemplate_NoMatch()
         {
             using (var templatedCert = new X509Certificate2(TestData.CertWithTemplateData))

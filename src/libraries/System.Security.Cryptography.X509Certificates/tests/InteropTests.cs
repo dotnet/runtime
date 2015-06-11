@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class InteropTests
     {
         [Fact]
-        [ActiveIssue(0, PlatformID.AnyUnix)]
+        [PlatformSpecific(PlatformID.Windows)]
         public static void TestHandle()
         {
             //
@@ -41,6 +41,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(PlatformID.Windows)]
         public static void TestHandleCtor()
         {
             IntPtr pCertContext = IntPtr.Zero;

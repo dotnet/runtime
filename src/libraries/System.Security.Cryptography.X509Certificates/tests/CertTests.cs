@@ -81,6 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         /// This test is for excerising X509Store and X509Chain code without actually installing any certificate 
         /// </summary>
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509CertStoreChain()
         {
             X509Store store = new X509Store("My", StoreLocation.LocalMachine);
@@ -104,6 +105,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2ToStringVerbose()
         {
             X509Store store = new X509Store("My", StoreLocation.CurrentUser);

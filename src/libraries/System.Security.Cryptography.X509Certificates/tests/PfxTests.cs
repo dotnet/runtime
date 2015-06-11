@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class PfxTests
     {
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestConstructor()
         {
             byte[] expectedThumbprint = "71cb4e2b02738ad44f8b382c93bd17ba665f9914".HexToByteArray();
@@ -23,6 +24,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestRawData()
         {
             byte[] expectedRawData = (
@@ -56,6 +58,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestPrivateKey()
         {
             using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
@@ -72,6 +75,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestSetPrivateKey()
         {
             X509Certificate2 current;

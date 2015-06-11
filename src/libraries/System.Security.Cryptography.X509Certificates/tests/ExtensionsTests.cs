@@ -129,60 +129,70 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_CrlSign()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.CrlSign, false, "03020102".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_DataEncipherment()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.DataEncipherment, false, "03020410".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_DecipherOnly()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.DecipherOnly, false, "0303070080".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_DigitalSignature()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false, "03020780".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_EncipherOnly()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.EncipherOnly, false, "03020001".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_KeyAgreement()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.KeyAgreement, false, "03020308".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_KeyCertSign()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.KeyCertSign, false, "03020204".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_KeyEncipherment()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.KeyEncipherment, false, "03020520".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_None()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.None, false, "030100".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void KeyUsageExtension_NonRepudiation()
         {
             TestKeyUsageExtension(X509KeyUsageFlags.NonRepudiation, false, "03020640".HexToByteArray());
@@ -204,30 +214,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void BasicConstraintsExtension_Leaf()
         {
             TestBasicConstraintsExtension(false, false, 0, false, "3000".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void BasicConstraintsExtension_CA_NoLength()
         {
             TestBasicConstraintsExtension(true, false, 0, false, "30030101ff".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void BasicConstraintsExtension_Leaf_Length0()
         {
             TestBasicConstraintsExtension(false, true, 0, false, "3003020100".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void BasicConstraintsExtension_LeafLongPath()
         {
             TestBasicConstraintsExtension(false, true, 7654321, false, "3005020374cbb1".HexToByteArray());
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void BasicConstraintsExtension_CA_559()
         {
             TestBasicConstraintsExtension(true, true, 559, false, "30070101ff0202022f".HexToByteArray());
@@ -248,6 +263,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void EnhancedKeyUsageExtension_Empty()
         {
             OidCollection usages = new OidCollection();
@@ -255,6 +271,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void EnhancedKeyUsageExtension_2Oids()
         {
             Oid oid1 = Oid.FromOidValue("1.3.6.1.5.5.7.3.1", OidGroup.EnhancedKeyUsage);
@@ -282,6 +299,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_Bytes()
         {
             byte[] sk = { 1, 2, 3, 4 };
@@ -296,6 +314,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_String()
         {
             string sk = "01ABcd";
@@ -310,6 +329,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKey()
         {
             PublicKey pk = new X509Certificate2(TestData.MsCertificate).PublicKey;
@@ -324,6 +344,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeySha1()
         {
             TestSubjectKeyIdentifierExtension(
@@ -335,6 +356,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeyShortSha1()
         {
             TestSubjectKeyIdentifierExtension(
@@ -346,6 +368,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void SubjectKeyIdentifierExtension_PublicKeyCapiSha1()
         {
             TestSubjectKeyIdentifierExtension(
