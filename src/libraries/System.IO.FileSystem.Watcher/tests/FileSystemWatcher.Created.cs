@@ -45,6 +45,7 @@ public partial class FileSystemWatcher_4000_Tests
     }
 
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_Created_MoveDirectory()
     {
         // create two test directories

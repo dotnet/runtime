@@ -9,6 +9,7 @@ using Xunit;
 public partial class FileSystemWatcher_4000_Tests
 {
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_Changed_LastWrite_File()
     {
         using (var file = Utility.CreateTestFile())
@@ -26,6 +27,7 @@ public partial class FileSystemWatcher_4000_Tests
     }
 
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_Changed_LastWrite_Directory()
     {
         using (var dir = Utility.CreateTestDirectory())
