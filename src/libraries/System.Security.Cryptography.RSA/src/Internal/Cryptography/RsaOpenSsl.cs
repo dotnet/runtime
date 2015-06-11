@@ -145,6 +145,8 @@ namespace Internal.Cryptography
         
         public override unsafe void ImportParameters(RSAParameters parameters)
         {
+            ValidateParameters(ref parameters);
+
             SafeRsaHandle key = Interop.libcrypto.RSA_new();
             bool imported = false;
 
@@ -205,6 +207,35 @@ namespace Internal.Cryptography
                 if (handle != null)
                 {
                     handle.Dispose();
+                }
+            }
+        }
+
+        private static void ValidateParameters(ref RSAParameters parameters)
+        {
+            if (parameters.Modulus == null || parameters.Exponent == null)
+                throw new CryptographicException(SR.Argument_InvalidValue);
+
+            if (parameters.D == null)
+            {
+                if (parameters.P != null ||
+                    parameters.DP != null ||
+                    parameters.Q != null ||
+                    parameters.DQ != null ||
+                    parameters.InverseQ != null)
+                {
+                    throw new CryptographicException(SR.Argument_InvalidValue);
+                }
+            }
+            else
+            {
+                if (parameters.P == null ||
+                    parameters.DP == null ||
+                    parameters.Q == null ||
+                    parameters.DQ == null ||
+                    parameters.InverseQ == null)
+                {
+                    throw new CryptographicException(SR.Argument_InvalidValue);
                 }
             }
         }

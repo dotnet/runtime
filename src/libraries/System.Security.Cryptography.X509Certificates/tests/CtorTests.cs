@@ -71,6 +71,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
         public static void TestNullConstructorArguments()
         {
             Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (String)null));
@@ -97,6 +98,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Throws<CryptographicException>(() => c.GetCertHash());
                 }
             }
+        }
+
+        [Fact]
+        public static void InvalidCertificateBlob()
+        {
+            Assert.Throws<CryptographicException>(() => new X509Certificate2(new byte[] { 0x01, 0x02, 0x03 }));
         }
     }
 }

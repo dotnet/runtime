@@ -8,8 +8,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.RSA.Tests</AssemblyName>
     <RootNamespace>System.Security.Cryptography.Rsa.Tests</RootNamespace>
-	<!-- Disabled on Linux/OSX (Issue 1986) -->
-	<UnsupportedPlatforms>Linux;OSX</UnsupportedPlatforms>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.RSA.csproj">
