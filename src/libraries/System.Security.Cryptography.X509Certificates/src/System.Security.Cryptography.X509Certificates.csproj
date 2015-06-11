@@ -112,8 +112,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Bignum.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Bignum.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Bio.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.Bio.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.BIO.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.BIO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.d2i.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.d2i.cs</Link>
@@ -127,8 +127,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.Initialization.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.RSA.cs">
-      <Link>Common\Interop\Unix\libcrypto\Interop.RSA.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.Rsa.cs">
+      <Link>Common\Interop\Unix\libcrypto\Interop.Rsa.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libcrypto\Interop.X509.cs">
       <Link>Common\Interop\Unix\libcrypto\Interop.X509.cs</Link>
