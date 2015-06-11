@@ -278,7 +278,8 @@ namespace System.Security.Cryptography.X509Certificates
             sb.Append("  ");
             byte[] serialNumber = this.GetSerialNumber();
             Array.Reverse(serialNumber);
-            sb.AppendLine(serialNumber.ToHexStringUpper());
+            sb.Append(serialNumber.ToHexArrayUpper());
+            sb.AppendLine();
 
             // NotBefore
             sb.AppendLine();
@@ -296,7 +297,8 @@ namespace System.Security.Cryptography.X509Certificates
             sb.AppendLine();
             sb.AppendLine("[Thumbprint]");
             sb.Append("  ");
-            sb.AppendLine(this.GetCertHash().ToHexStringUpper());
+            sb.Append(this.GetCertHash().ToHexArrayUpper());
+            sb.AppendLine();
 
             return sb.ToString();
         }
