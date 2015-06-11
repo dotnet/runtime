@@ -25,9 +25,6 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\ArrayT.cs">
-      <Link>Common\System\ArrayT.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>Common\System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>

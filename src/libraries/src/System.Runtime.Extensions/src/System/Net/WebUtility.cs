@@ -517,7 +517,7 @@ namespace System.Net
 
             if (decodedBytesCount < decodedBytes.Length)
             {
-                decodedBytes = ArrayT<byte>.Resize(decodedBytes, decodedBytesCount, decodedBytesCount);
+                Array.Resize(ref decodedBytes, decodedBytesCount);
             }
 
             return decodedBytes;

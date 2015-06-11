@@ -38,9 +38,6 @@
     <Compile Include="System\Security\Cryptography\RSAParameters.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="$(CommonPath)\System\ArrayT.cs">
-      <Link>Common\System\ArrayT.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>

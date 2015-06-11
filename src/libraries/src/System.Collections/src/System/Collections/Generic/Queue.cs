@@ -102,11 +102,11 @@ namespace System.Collections.Generic
         public void Clear()
         {
             if (_head < _tail)
-                ArrayT<T>.Clear(_array, _head, _size);
+                Array.Clear(_array, _head, _size);
             else
             {
-                ArrayT<T>.Clear(_array, _head, _array.Length - _head);
-                ArrayT<T>.Clear(_array, 0, _tail);
+                Array.Clear(_array, _head, _array.Length - _head);
+                Array.Clear(_array, 0, _tail);
             }
 
             _head = 0;
@@ -141,11 +141,11 @@ namespace System.Collections.Generic
             if (numToCopy == 0) return;
 
             int firstPart = (_array.Length - _head < numToCopy) ? _array.Length - _head : numToCopy;
-            ArrayT<T>.Copy(_array, _head, array, arrayIndex, firstPart);
+            Array.Copy(_array, _head, array, arrayIndex, firstPart);
             numToCopy -= firstPart;
             if (numToCopy > 0)
             {
-                ArrayT<T>.Copy(_array, 0, array, arrayIndex + _array.Length - _head, numToCopy);
+                Array.Copy(_array, 0, array, arrayIndex + _array.Length - _head, numToCopy);
             }
         }
 
@@ -313,12 +313,12 @@ namespace System.Collections.Generic
 
             if (_head < _tail)
             {
-                ArrayT<T>.Copy(_array, _head, arr, 0, _size);
+                Array.Copy(_array, _head, arr, 0, _size);
             }
             else
             {
-                ArrayT<T>.Copy(_array, _head, arr, 0, _array.Length - _head);
-                ArrayT<T>.Copy(_array, 0, arr, _array.Length - _head, _tail);
+                Array.Copy(_array, _head, arr, 0, _array.Length - _head);
+                Array.Copy(_array, 0, arr, _array.Length - _head, _tail);
             }
 
             return arr;
@@ -334,12 +334,12 @@ namespace System.Collections.Generic
             {
                 if (_head < _tail)
                 {
-                    ArrayT<T>.Copy(_array, _head, newarray, 0, _size);
+                    Array.Copy(_array, _head, newarray, 0, _size);
                 }
                 else
                 {
-                    ArrayT<T>.Copy(_array, _head, newarray, 0, _array.Length - _head);
-                    ArrayT<T>.Copy(_array, 0, newarray, _array.Length - _head, _tail);
+                    Array.Copy(_array, _head, newarray, 0, _array.Length - _head);
+                    Array.Copy(_array, 0, newarray, _array.Length - _head, _tail);
                 }
             }
 
