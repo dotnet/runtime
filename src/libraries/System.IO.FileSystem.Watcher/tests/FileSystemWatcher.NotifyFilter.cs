@@ -10,6 +10,7 @@ using Xunit;
 public partial class FileSystemWatcher_4000_Tests
 {
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_NotifyFilter_Attributes()
     {
         using (var file = Utility.CreateTestFile())
@@ -32,6 +33,7 @@ public partial class FileSystemWatcher_4000_Tests
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows | PlatformID.OSX)]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_NotifyFilter_CreationTime()
     {
         using (var file = Utility.CreateTestFile())
@@ -92,6 +94,7 @@ public partial class FileSystemWatcher_4000_Tests
     }
 
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_NotifyFilter_LastAccessTime()
     {
         using (var file = Utility.CreateTestFile())
@@ -110,6 +113,7 @@ public partial class FileSystemWatcher_4000_Tests
     }
 
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_NotifyFilter_LastWriteTime()
     {
         using (var file = Utility.CreateTestFile())
@@ -128,6 +132,7 @@ public partial class FileSystemWatcher_4000_Tests
     }
 
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_NotifyFilter_Size()
     {
         using (var file = Utility.CreateTestFile())
@@ -198,6 +203,7 @@ public partial class FileSystemWatcher_4000_Tests
 
 
     [Fact]
+    [ActiveIssue(2011, PlatformID.OSX)]
     public static void FileSystemWatcher_NotifyFilter_Negative()
     {
         using (var file = Utility.CreateTestFile())
