@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Interlocked = System.Threading.Interlocked;
 
@@ -26,13 +27,13 @@ namespace System.Security.Cryptography.X509Certificates
         public X509CertificateCollection(X509Certificate[] value)
             : this()
         {
-            this.AddRange(value);
+            AddRange(value);
         }
 
         public X509CertificateCollection(X509CertificateCollection value)
             : this()
         {
-            this.AddRange(value);
+            AddRange(value);
         }
 
         public int Count
@@ -49,7 +50,11 @@ namespace System.Security.Cryptography.X509Certificates
         {
             get
             {
-                return Interlocked.CompareExchange(ref _syncRoot, new Object(), null);
+                if (_syncRoot == null)
+                {
+                    Interlocked.CompareExchange(ref _syncRoot, new object(), null);
+                }
+                return _syncRoot;
             }
         }
 
@@ -109,7 +114,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             for (int i = 0; i < value.Length; i++)
             {
-                this.Add(value[i]);
+                Add(value[i]);
             }
         }
 
@@ -120,7 +125,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             for (int i = 0; i < value.Count; i++)
             {
-                this.Add(value[i]);
+                Add(value[i]);
             }
         }
 

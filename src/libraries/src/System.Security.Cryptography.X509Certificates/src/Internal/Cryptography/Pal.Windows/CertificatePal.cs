@@ -396,7 +396,7 @@ namespace Internal.Cryptography.Pal
             CspKeyContainerInfo cspKeyContainerInfo = null;
             try
             {
-                if (this.HasPrivateKey)
+                if (HasPrivateKey)
                 {
                     CspParameters parameters = GetPrivateKey();
                     cspKeyContainerInfo = new CspKeyContainerInfo(parameters);
