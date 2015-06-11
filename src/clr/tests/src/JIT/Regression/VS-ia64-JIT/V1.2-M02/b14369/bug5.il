@@ -1,0 +1,40 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+.assembly extern legacy library mscorlib {}
+.assembly ILGEN_0xa2df15de {}
+.class ILGEN_0xa2df15de {
+.field static native int[] field_0x0
+.method static int32 Main() {
+.entrypoint
+
+ .locals init (native int[] LOCAL_0x2,float32 LOCAL_0x17,object LOCAL_0x19)
+   ldc.i4 255
+  newarr [mscorlib]System.IntPtr 
+ stloc LOCAL_0x2
+  ldc.r4 float32(0xab46b293) 
+ stloc LOCAL_0x17
+  newobj     instance void [mscorlib]System.Object::.ctor()
+ stloc LOCAL_0x19
+
+Start_Orphan_0:
+ ldloca LOCAL_0x19
+Start_Orphan_2:
+Start_Orphan_4:
+    ldsfld native int[] ILGEN_0xa2df15de::field_0x0
+   stloc LOCAL_0x2
+End_Orphan_4:
+  ldc.r4 55.5
+  ldc.r4 float32(0x3e734204) 
+  rem 
+ stloc LOCAL_0x17
+End_Orphan_2:
+  ldloca LOCAL_0x19
+ ldind.ref
+stind.ref
+End_Orphan_0:
+  ldc.i4 100
+ ret
+}
+
+}
