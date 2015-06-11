@@ -145,6 +145,7 @@ typedef struct MonoCompileArch {
 #define PPC_LAST_FPARG_REG ppc_f13
 #define PPC_PASS_STRUCTS_BY_VALUE 1
 #define PPC_THREAD_PTR_REG ppc_r13
+#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #else
 #define PPC_RET_ADDR_OFFSET 4
 #define PPC_STACK_PARAM_OFFSET 8
