@@ -10,6 +10,7 @@
 class sosCommand : public lldb::SBCommandPluginInterface
 {
     void *m_sosHandle;
+    char m_coreclrDirectory[MAX_PATH];
 
 public:
     sosCommand()
@@ -22,7 +23,7 @@ public:
                char** arguments,
                lldb::SBCommandReturnObject &result)
     {
-        DebugClient* client = new DebugClient(debugger, result);
+        DebugClient* client = new DebugClient(debugger, result, m_coreclrDirectory);
         if (arguments)
         {
             LoadSos(client);
@@ -44,7 +45,7 @@ public:
                     HRESULT hr = commandFunc(client, sosArgs);
                     if (hr != S_OK)
                     {
-                        client->Output(DEBUG_OUTPUT_ERROR, "%s %s failed", sosCommand, sosArgs);
+                        client->Output(DEBUG_OUTPUT_ERROR, "%s %s failed\n", sosCommand, sosArgs);
                     }
                 }
                 else
@@ -67,22 +68,37 @@ public:
             const char *directory = client->GetModuleDirectory(coreclrModule);
             if (directory == NULL)
             {
-                client->Output(DEBUG_OUTPUT_WARNING, "The %s module is not loaded yet in the target process.\n", coreclrModule);
+                client->Output(DEBUG_OUTPUT_WARNING, "The %s module is not loaded yet in the target process\n", coreclrModule);
             }
             else 
             {
-                std::string sosLibrary;
-                sosLibrary.append(directory);
-                sosLibrary.append("/");
-                sosLibrary.append(MAKEDLLNAME_A("sos"));
+                std::string directoryString;
+                directoryString.append(directory);
+                directoryString.append("/");
+                directoryString.copy(m_coreclrDirectory, MAX_PATH, 0);
 
-                m_sosHandle = dlopen(sosLibrary.c_str(), RTLD_NOW);
-                if (m_sosHandle == NULL)
-                {
-                    client->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s.\n", sosLibrary.c_str(), dlerror());
-                }
+                // Load the DAC module first explicitly because SOS and DBI
+                // have implicit references to the DAC's PAL.
+                LoadModule(client, MAKEDLLNAME_A("mscordaccore"));
+
+                m_sosHandle = LoadModule(client, MAKEDLLNAME_A("sos"));
             }
         }
+    }
+
+    void *
+    LoadModule(DebugClient *client, const char *moduleName)
+    {
+        std::string modulePath(m_coreclrDirectory);
+        modulePath.append(moduleName);
+
+        void *moduleHandle = dlopen(modulePath.c_str(), RTLD_NOW);
+        if (moduleHandle == NULL)
+        {
+            client->Output(DEBUG_OUTPUT_ERROR, "dlopen(%s) failed %s\n", modulePath.c_str(), dlerror());
+        }
+
+        return moduleHandle;
     }
 };
 
