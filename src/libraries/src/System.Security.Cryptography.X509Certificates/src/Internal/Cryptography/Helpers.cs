@@ -35,13 +35,13 @@ namespace Internal.Cryptography
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api. The parsing rules are overly forgiving but for compat reasons,
         // they cannot be tightened.
-        public static byte[] DecodeHexString(this String s)
+        public static byte[] DecodeHexString(this string s)
         {
             int whitespaceCount = 0;
 
             for (int i = 0; i < s.Length; i++)
             {
-                if (Char.IsWhiteSpace(s[i]))
+                if (char.IsWhiteSpace(s[i]))
                     whitespaceCount++;
             }
 
@@ -50,7 +50,7 @@ namespace Internal.Cryptography
 
             for (int index = 0, i = 0; index < cbHex; index++)
             {
-                if (Char.IsWhiteSpace(s[i]))
+                if (char.IsWhiteSpace(s[i]))
                 {
                     i++;
                 }
