@@ -12,7 +12,28 @@ namespace Internal.Cryptography
     internal abstract class HashProvider
     {
         // Adds new data to be hashed. This can be called repeatedly in order to hash data from incontiguous sources.
-        public abstract void AppendHashData(byte[] data, int offset, int count);
+        public void AppendHashData(byte[] data, int offset, int count)
+        {
+            // AppendHashData can be called via exposed APIs (e.g. a type that derives from
+            // HMACSHA1 and calls HashCore) and could be passed bad data from there.  It could
+            // also receive a bad count from HashAlgorithm reading from a Stream that returns
+            // an invalid number of bytes read.  Since our implementations of AppendHashDataCore
+            // end up using unsafe code, we want to be sure the arguments are valid.
+            if (data == null)
+                throw new ArgumentNullException("data", SR.ArgumentNull_Buffer);
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (data.Length - offset < count)
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
+
+            AppendHashDataCore(data, offset, count);
+        }
+
+        // Adds new data to be hashed. This can be called repeatedly in order to hash data from incontiguous sources.
+        // Argument validation is handled by AppendHashData.
+        public abstract void AppendHashDataCore(byte[] data, int offset, int count);
 
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
         public abstract byte[] FinalizeHashAndReset();
@@ -24,6 +45,4 @@ namespace Internal.Cryptography
         public abstract void Dispose(bool disposing);
     }
 }
-
-
 
