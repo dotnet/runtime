@@ -3577,8 +3577,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	MonoClass *klass;
 	gboolean from_plt = method == NULL;
 	MonoMemPool *mp;
-	int i, pindex, n_patches, used_strings;
-	gboolean keep_patches = TRUE;
+	int pindex, n_patches;
 	guint8 *p;
 	MonoJitInfo *jinfo = NULL;
 	guint8 *code, *info;
@@ -3590,7 +3589,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		return NULL;
 	}
 
-	if ((domain != mono_get_root_domain ()) && (!(amodule->info.opts & MONO_OPT_SHARED)))
+	if (domain != mono_get_root_domain ())
 		/* Non shared AOT code can't be used in other appdomains */
 		return NULL;
 
@@ -3654,22 +3653,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		klass = decode_klass_ref (amodule, p, &p);
 	}
 
-	if (amodule->info.opts & MONO_OPT_SHARED)
-		used_strings = decode_value (p, &p);
-	else
-		used_strings = 0;
-
-	for (i = 0; i < used_strings; i++) {
-		guint token = decode_value (p, &p);
-		mono_ldstr (mono_get_root_domain (), image, mono_metadata_token_index (token));
-	}
-
-	if (amodule->info.opts & MONO_OPT_SHARED)	
-		keep_patches = FALSE;
-
 	n_patches = decode_value (p, &p);
-
-	keep_patches = FALSE;
 
 	if (n_patches) {
 		MonoJumpInfo *patches;
@@ -3677,10 +3661,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		gboolean llvm;
 		gpointer *got;
 
-		if (keep_patches)
-			mp = domain->mp;
-		else
-			mp = mono_mempool_new ();
+		mp = mono_mempool_new ();
 
 		if ((gpointer)code >= amodule->info.jit_code_start && (gpointer)code <= amodule->info.jit_code_end) {
 			llvm = FALSE;
@@ -3718,8 +3699,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 		g_free (got_slots);
 
-		if (!keep_patches)
-			mono_mempool_destroy (mp);
+		mono_mempool_destroy (mp);
 	}
 
 	if (mini_get_debug_options ()->load_aot_jit_info_eagerly)
@@ -3772,11 +3752,6 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	return code;
 
  cleanup:
-	/* FIXME: The space in domain->mp is wasted */	
-	if (amodule->info.opts & MONO_OPT_SHARED)
-		/* No need to cache patches */
-		mono_mempool_destroy (mp);
-
 	if (jinfo)
 		g_free (jinfo);
 

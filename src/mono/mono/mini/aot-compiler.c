@@ -5429,16 +5429,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		/* Not needed when loading the method */
 		encode_value (0, p, &p);
 
-	/* String table */
-	if (cfg->opt & MONO_OPT_SHARED) {
-		encode_value (g_list_length (cfg->ldstr_list), p, &p);
-		for (l = cfg->ldstr_list; l; l = l->next) {
-			encode_value ((long)l->data, p, &p);
-		}
-	}
-	else
-		/* Used only in shared mode */
-		g_assert (!cfg->ldstr_list);
+	g_assert (!(cfg->opt & MONO_OPT_SHARED));
 
 	n_patches = 0;
 	for (pindex = 0; pindex < patches->len; ++pindex) {
