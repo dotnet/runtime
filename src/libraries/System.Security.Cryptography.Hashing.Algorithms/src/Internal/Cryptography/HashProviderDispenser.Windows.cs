@@ -61,14 +61,11 @@ namespace Internal.Cryptography
                 return;
             }
 
-            public sealed override void AppendHashData(byte[] rgb, int ib, int cb)
+            public sealed override unsafe void AppendHashDataCore(byte[] data, int offset, int count)
             {
-                unsafe
+                fixed (byte* pRgb = data)
                 {
-                    fixed (byte* pRgb = rgb)
-                    {
-                        _hHash.BCryptHashData(pRgb + ib, cb);
-                    }
+                    _hHash.BCryptHashData(pRgb + offset, count);
                 }
             }
 

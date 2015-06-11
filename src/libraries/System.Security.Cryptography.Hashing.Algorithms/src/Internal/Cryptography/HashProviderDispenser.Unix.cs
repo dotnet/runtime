@@ -75,12 +75,8 @@ namespace Internal.Cryptography
                 Check(Interop.libcrypto.EVP_DigestInit_ex(_ctx, algorithmEvp, IntPtr.Zero));
             }
 
-            public sealed override unsafe void AppendHashData(byte[] data, int offset, int count)
+            public sealed override unsafe void AppendHashDataCore(byte[] data, int offset, int count)
             {
-                Debug.Assert(data != null);
-                Debug.Assert(offset >= 0 && count >= 0);
-                Debug.Assert((offset + count) >= 0 && (offset + count) <= data.Length);
-
                 fixed (byte* md = data)
                 {
                     Check(Interop.libcrypto.EVP_DigestUpdate(_ctx, md + offset, (IntPtr)count));
@@ -135,12 +131,8 @@ namespace Internal.Cryptography
                 }
             }
 
-            public sealed override unsafe void AppendHashData(byte[] data, int offset, int count)
+            public sealed override unsafe void AppendHashDataCore(byte[] data, int offset, int count)
             {
-                Debug.Assert(data != null);
-                Debug.Assert(offset >= 0 && count >= 0);
-                Debug.Assert((offset + count) >= 0 && (offset + count) <= data.Length);
-
                 fixed (byte* md = data)
                 {
                     Check(Interop.libcrypto.HMAC_Update(ref _hmacCtx, md + offset, count));
