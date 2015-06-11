@@ -20,6 +20,7 @@
     <Compile Include="CreditCardAttributeTests.cs" />
     <Compile Include="CustomValidationAttributeTests.cs" />
     <Compile Include="DataTypeAttributeTests.cs" />
+    <Compile Include="EditableAttributeTests.cs" />
     <Compile Include="EmailAddressAttributeTests.cs" />
     <Compile Include="EnumDataTypeAttributeTests.cs" />
     <Compile Include="FileExtensionsAttributeTests.cs" />
@@ -29,6 +30,7 @@
     <Compile Include="RangeAttributeTests.cs" />
     <Compile Include="RegularExpressionAttributeTests.cs" />
     <Compile Include="RequiredAttributeTests.cs" />
+    <Compile Include="ScaffoldColumnAttributeTests.cs" />
     <Compile Include="Schema\ColumnAttributeTests.cs" />
     <Compile Include="Schema\DatabaseGeneratedAttributeTests.cs" />
     <Compile Include="Schema\ForeignKeyAttributeTests.cs" />

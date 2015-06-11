@@ -10,7 +10,7 @@ namespace System.ComponentModel.DataAnnotations
     /// <remarks>
     ///     This attribute neither enforces nor guarantees editability; the underlying data
     ///     store might allow changing the data regardless of this attribute.  The presence
-    ///     of this attribute signals intent to the consumer of the attribute whethere or not
+    ///     of this attribute signals intent to the consumer of the attribute whether or not
     ///     the end user should be allowed to change the value via the client application.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
