@@ -140,7 +140,12 @@ namespace Internal.Cryptography.Pal
             get
             {
                 IntPtr serialNumberPtr = Interop.libcrypto.X509_get_serialNumber(_cert);
-                return Interop.NativeCrypto.GetAsn1StringBytes(serialNumberPtr);
+                byte[] serial = Interop.NativeCrypto.GetAsn1StringBytes(serialNumberPtr);
+
+                // Windows returns this in BigInteger Little-Endian,
+                // OpenSSL returns this in BigInteger Big-Endian.
+                Array.Reverse(serial);
+                return serial;
             }
         }
 
