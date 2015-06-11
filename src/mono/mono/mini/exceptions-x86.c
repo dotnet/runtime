@@ -12,6 +12,9 @@
 #include <glib.h>
 #include <signal.h>
 #include <string.h>
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
 
 #include <mono/metadata/abi-details.h>
 #include <mono/arch/x86/x86-codegen.h>
