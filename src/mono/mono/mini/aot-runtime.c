@@ -3649,69 +3649,6 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 	if (!res)
 		goto cleanup;
 
-#if 0
-	p = info;
-
-	if (method) {
-		klass = method->klass;
-		decode_klass_ref (amodule, p, &p);
-	} else {
-		klass = decode_klass_ref (amodule, p, &p);
-	}
-
-	n_patches = decode_value (p, &p);
-
-	if (n_patches) {
-		MonoJumpInfo *patches;
-		guint32 *got_slots;
-		gboolean llvm;
-		gpointer *got;
-
-		mp = mono_mempool_new ();
-
-		if ((gpointer)code >= amodule->info.jit_code_start && (gpointer)code <= amodule->info.jit_code_end) {
-			llvm = FALSE;
-			got = amodule->got;
-		} else {
-			llvm = TRUE;
-			got = amodule->llvm_got;
-			g_assert (got);
-		}
-
-		patches = load_patch_info (amodule, mp, n_patches, llvm, &got_slots, p, &p);
-		if (patches == NULL)
-			goto cleanup;
-
-		for (pindex = 0; pindex < n_patches; ++pindex) {
-			MonoJumpInfo *ji = &patches [pindex];
-			gpointer addr;
-
-			/*
-			 * For SFLDA, we need to call resolve_patch_target () since the GOT slot could have
-			 * been initialized by load_method () for a static cctor before the cctor has
-			 * finished executing (#23242).
-			 */
-			if (!got [got_slots [pindex]] || ji->type == MONO_PATCH_INFO_SFLDA) {
-				addr = mono_resolve_patch_target (method, domain, code, ji, TRUE);
-				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
-					addr = mono_create_ftnptr (domain, addr);
-				mono_memory_barrier ();
-				got [got_slots [pindex]] = addr;
-				if (ji->type == MONO_PATCH_INFO_METHOD_JUMP)
-					register_jump_target_got_slot (domain, ji->data.method, &(got [got_slots [pindex]]));
-			}
-			ji->type = MONO_PATCH_INFO_NONE;
-		}
-
-		g_free (got_slots);
-
-		mono_mempool_destroy (mp);
-	}
-
-	if (mini_get_debug_options ()->load_aot_jit_info_eagerly)
-		jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
-#endif
-
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT)) {
 		char *full_name;
 
