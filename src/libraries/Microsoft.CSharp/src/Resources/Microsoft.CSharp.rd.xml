@@ -52,6 +52,7 @@
           <Method Name="GetLength" Dynamic="Required"/>
           <Method Name="get_Length" Dynamic="Required"/>
         </Type>
+        <Type Name="Nullable`1" Dynamic="Required All"/>
         <Type Name="Nullable&lt;System.Char&gt;" Dynamic="Required Public"/>
         <Type Name="Nullable&lt;System.SByte&gt;" Dynamic="Required Public"/>
         <Type Name="Nullable&lt;System.Byte&gt;" Dynamic="Required Public"/>
@@ -82,5 +83,13 @@
         <Type Name="Object" Dynamic="Required Public" />
       </Namespace>
     </Assembly>
+
+    <Assembly Name="System.Linq.Expressions">
+      <Namespace Name="System.Linq.Expressions">
+        <Type Name="Expression" Dynamic="Required Public">
+        </Type>
+      </Namespace>
+    </Assembly>
+
   </Library>
 </Directives>
