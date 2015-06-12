@@ -11,32 +11,34 @@ namespace System.IO.Compression
         #region fields
 
         private readonly Stream _baseStream;
-        private readonly EventHandler _onClosed;
-        private Boolean _canRead, _canWrite, _canSeek;
-        private Boolean _isDisposed;
         private readonly Boolean _closeBaseStream;
+
+        // Delegate that will be invoked on stream disposing
+        private readonly Action<ZipArchiveEntry> _onClosed;
+
+        // Instance that will be passed to _onClose delegate
+        private readonly ZipArchiveEntry _zipArchiveEntry;
+        private Boolean _isDisposed;
 
         #endregion
 
         #region constructors
 
-        internal WrappedStream(Stream baseStream, Boolean canRead, Boolean canWrite, Boolean canSeek, EventHandler onClosed)
-            : this(baseStream, canRead, canWrite, canSeek, false, onClosed)
+        internal WrappedStream(Stream baseStream, Boolean closeBaseStream)
+            : this(baseStream, closeBaseStream, null, null)
         { }
 
-        internal WrappedStream(Stream baseStream, Boolean canRead, Boolean canWrite, Boolean canSeek, Boolean closeBaseStream, EventHandler onClosed)
+        private WrappedStream(Stream baseStream, Boolean closeBaseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry> onClosed)
         {
             _baseStream = baseStream;
-            _onClosed = onClosed;
-            _canRead = canRead;
-            _canSeek = canSeek;
-            _canWrite = canWrite;
-            _isDisposed = false;
             _closeBaseStream = closeBaseStream;
+            _onClosed = onClosed;
+            _zipArchiveEntry = entry;
+            _isDisposed = false;
         }
 
-        internal WrappedStream(Stream baseStream, EventHandler onClosed)
-            : this(baseStream, true, true, true, onClosed)
+        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry> onClosed)
+            : this(baseStream, false, entry, onClosed)
         { }
 
         #endregion
@@ -68,11 +70,11 @@ namespace System.IO.Compression
             }
         }
 
-        public override bool CanRead { get { return _canRead && _baseStream.CanRead; } }
+        public override bool CanRead { get { return !_isDisposed && _baseStream.CanRead; } }
 
-        public override bool CanSeek { get { return _canSeek && _baseStream.CanSeek; } }
+        public override bool CanSeek { get { return !_isDisposed && _baseStream.CanSeek; } }
 
-        public override bool CanWrite { get { return _canWrite && _baseStream.CanWrite; } }
+        public override bool CanWrite { get { return !_isDisposed && _baseStream.CanWrite; } }
 
         #endregion
 
@@ -145,14 +147,11 @@ namespace System.IO.Compression
             if (disposing && !_isDisposed)
             {
                 if (_onClosed != null)
-                    _onClosed(this, null);
+                    _onClosed(_zipArchiveEntry);
 
                 if (_closeBaseStream)
                     _baseStream.Dispose();
 
-                _canRead = false;
-                _canWrite = false;
-                _canSeek = false;
                 _isDisposed = true;
             }
             base.Dispose(disposing);
@@ -317,10 +316,11 @@ namespace System.IO.Compression
 
         //this is the position in BaseBaseStream
         private Int64 _initialPosition;
-
+        private readonly ZipArchiveEntry _zipArchiveEntry;
+        private readonly EventHandler _onClose;
         // Called when the stream is closed.
-        // parameters are initialPosition, currentPosition, checkSum
-        private readonly Action<Int64, Int64, UInt32> _saveCrcAndSizes;
+        // parameters are initialPosition, currentPosition, checkSum, baseBaseStream, zipArchiveEntry and onClose handler
+        private readonly Action<Int64, Int64, UInt32, Stream, ZipArchiveEntry, EventHandler> _saveCrcAndSizes;
 
         #endregion
 
@@ -329,10 +329,14 @@ namespace System.IO.Compression
         /* parameters to saveCrcAndSizes are
          *  initialPosition (initialPosition in baseBaseStream),
          *  currentPosition (in this CheckSumAndSizeWriteStream),
-         *  checkSum (of data passed into this CheckSumAndSizeWriteStream)
+         *  checkSum (of data passed into this CheckSumAndSizeWriteStream),
+         *  baseBaseStream it's a backingStream, passed here so as to avoid closure allocation,
+         *  zipArchiveEntry passed here so as to avoid closure allocation,
+         *  onClose handler passed here so as to avoid closure allocation
         */
-        public CheckSumAndSizeWriteStream(Stream baseStream, Stream baseBaseStream,
-                                            Boolean leaveOpenOnClose, Action<Int64, Int64, UInt32> saveCrcAndSizes)
+        public CheckSumAndSizeWriteStream(Stream baseStream, Stream baseBaseStream, Boolean leaveOpenOnClose,
+            ZipArchiveEntry entry, EventHandler onClose,
+            Action<Int64, Int64, UInt32, Stream, ZipArchiveEntry, EventHandler> saveCrcAndSizes)
         {
             _baseStream = baseStream;
             _baseBaseStream = baseBaseStream;
@@ -342,6 +346,8 @@ namespace System.IO.Compression
             _canWrite = true;
             _isDisposed = false;
             _initialPosition = 0;
+            _zipArchiveEntry = entry;
+            _onClose = onClose;
             _saveCrcAndSizes = saveCrcAndSizes;
         }
 
@@ -458,7 +464,7 @@ namespace System.IO.Compression
                 if (!_leaveOpenOnClose)
                     _baseStream.Dispose();        // Close my super-stream (flushes the last data)
                 if (_saveCrcAndSizes != null)
-                    _saveCrcAndSizes(_initialPosition, Position, _checksum);
+                    _saveCrcAndSizes(_initialPosition, Position, _checksum, _baseBaseStream, _zipArchiveEntry, _onClose);
                 _isDisposed = true;
             }
             base.Dispose(disposing);
