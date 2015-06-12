@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
                 String oidValue = new Oid(oid).Value;
                 foreach (X509Extension extension in _list)
                 {
-                    if (String.Compare(extension.Oid.Value, oidValue, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (String.Equals(extension.Oid.Value, oidValue, StringComparison.OrdinalIgnoreCase))
                         return extension;
                 }
                 return null;

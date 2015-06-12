@@ -37,7 +37,7 @@ namespace Internal.NativeCrypto
         {
             string wszUpgrade = null;
             SafeProvHandle safeProvHandle = SafeProvHandle.InvalidHandle;
-            if (string.Compare(wszProvider, MS_DEF_DSS_DH_PROV) == 0)
+            if (string.Equals(wszProvider, MS_DEF_DSS_DH_PROV, StringComparison.Ordinal))
             {
                 // If this is the base DSS/DH provider, see if we can use the enhanced provider instead.
                 if (S_OK == AcquireCryptContext(ref safeProvHandle, null, MS_ENH_DSS_DH_PROV, dwProvType,
@@ -64,8 +64,8 @@ namespace Internal.NativeCrypto
         /// <returns>Returns upgrade CSP name</returns>
         public static string UpgradeRSA(int dwProvType, string wszProvider)
         {
-            bool requestedEnhanced = (string.Compare(wszProvider, MS_ENHANCED_PROV) == 0);
-            bool requestedBase = (string.Compare(wszProvider, MS_DEF_PROV) == 0);
+            bool requestedEnhanced = string.Equals(wszProvider, MS_ENHANCED_PROV, StringComparison.Ordinal);
+            bool requestedBase = string.Equals(wszProvider, MS_DEF_PROV, StringComparison.Ordinal);
             string wszUpgrade = null;
             SafeProvHandle safeProvHandle = SafeProvHandle.InvalidHandle;
             if (requestedBase || requestedEnhanced)
