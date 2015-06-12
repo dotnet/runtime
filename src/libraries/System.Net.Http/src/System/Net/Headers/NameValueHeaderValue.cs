@@ -62,7 +62,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(_name != null);
 
-            int nameHashCode = _name.ToLowerInvariant().GetHashCode();
+            int nameHashCode = StringComparer.OrdinalIgnoreCase.GetHashCode(_name);
 
             if (!string.IsNullOrEmpty(_value))
             {
@@ -73,7 +73,7 @@ namespace System.Net.Http.Headers
                     return nameHashCode ^ _value.GetHashCode();
                 }
 
-                return nameHashCode ^ _value.ToLowerInvariant().GetHashCode();
+                return nameHashCode ^ StringComparer.OrdinalIgnoreCase.GetHashCode(_value);
             }
 
             return nameHashCode;
@@ -88,7 +88,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            if (string.Compare(_name, other._name, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!string.Equals(_name, other._name, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -105,11 +105,11 @@ namespace System.Net.Http.Headers
             if (_value[0] == '"')
             {
                 // We have a quoted string, so we need to do case-sensitive comparison.
-                return (string.CompareOrdinal(_value, other._value) == 0);
+                return string.Equals(_value, other._value, StringComparison.Ordinal);
             }
             else
             {
-                return (string.Compare(_value, other._value, StringComparison.OrdinalIgnoreCase) == 0);
+                return string.Equals(_value, other._value, StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -307,7 +307,7 @@ namespace System.Net.Http.Headers
 
             foreach (var value in values)
             {
-                if (string.Compare(value.Name, name, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(value.Name, name, StringComparison.OrdinalIgnoreCase))
                 {
                     return value;
                 }

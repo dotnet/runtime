@@ -69,17 +69,17 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return (string.Compare(_name, other._name, StringComparison.OrdinalIgnoreCase) == 0) &&
-                (string.Compare(_version, other._version, StringComparison.OrdinalIgnoreCase) == 0);
+            return string.Equals(_name, other._name, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_version, other._version, StringComparison.OrdinalIgnoreCase);
         }
 
         public override int GetHashCode()
         {
-            int result = _name.ToLowerInvariant().GetHashCode();
+            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_name);
 
             if (!string.IsNullOrEmpty(_version))
             {
-                result = result ^ _version.ToLowerInvariant().GetHashCode();
+                result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(_version);
             }
 
             return result;

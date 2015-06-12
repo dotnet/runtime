@@ -95,13 +95,13 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return (string.Compare(_unit, other._unit, StringComparison.OrdinalIgnoreCase) == 0) &&
+            return string.Equals(_unit, other._unit, StringComparison.OrdinalIgnoreCase) &&
                 HeaderUtilities.AreEqualCollections(Ranges, other.Ranges);
         }
 
         public override int GetHashCode()
         {
-            int result = _unit.ToLowerInvariant().GetHashCode();
+            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_unit);
 
             foreach (RangeItemHeaderValue range in Ranges)
             {

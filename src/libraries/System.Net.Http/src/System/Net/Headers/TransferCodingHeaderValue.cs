@@ -141,14 +141,14 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return (string.Compare(_value, other._value, StringComparison.OrdinalIgnoreCase) == 0) &&
+            return string.Equals(_value, other._value, StringComparison.OrdinalIgnoreCase) &&
                 HeaderUtilities.AreEqualCollections(_parameters, other._parameters);
         }
 
         public override int GetHashCode()
         {
             // The value string is case-insensitive.
-            return _value.ToLowerInvariant().GetHashCode() ^ NameValueHeaderValue.GetHashCode(_parameters);
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(_value) ^ NameValueHeaderValue.GetHashCode(_parameters);
         }
 
         // Implement ICloneable explicitly to allow derived types to "override" the implementation.

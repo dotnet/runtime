@@ -1118,7 +1118,7 @@ namespace System.Net.Http.Unit.Tests
 
             foreach (var value in values)
             {
-                if (string.Compare(value.Name, name, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(value.Name, name, StringComparison.OrdinalIgnoreCase))
                 {
                     return value;
                 }
