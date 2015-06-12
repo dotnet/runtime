@@ -333,7 +333,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var noCacheHeader in _noCacheHeaders)
                 {
-                    result = result ^ noCacheHeader.ToLowerInvariant().GetHashCode();
+                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(noCacheHeader);
                 }
             }
 
@@ -341,7 +341,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (var privateHeader in _privateHeaders)
                 {
-                    result = result ^ privateHeader.ToLowerInvariant().GetHashCode();
+                    result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(privateHeader);
                 }
             }
 

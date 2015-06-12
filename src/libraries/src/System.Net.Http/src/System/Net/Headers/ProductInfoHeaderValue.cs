@@ -74,7 +74,7 @@ namespace System.Net.Http.Headers
             if (_product == null)
             {
                 // We compare comments using case-sensitive comparison.
-                return string.CompareOrdinal(_comment, other._comment) == 0;
+                return string.Equals(_comment, other._comment, StringComparison.Ordinal);
             }
 
             return _product.Equals(other._product);

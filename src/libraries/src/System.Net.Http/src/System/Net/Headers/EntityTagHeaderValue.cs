@@ -92,7 +92,7 @@ namespace System.Net.Http.Headers
             }
 
             // Since the tag is a quoted-string we treat it case-sensitive.
-            return ((_isWeak == other._isWeak) && (string.CompareOrdinal(_tag, other._tag) == 0));
+            return ((_isWeak == other._isWeak) && string.Equals(_tag, other._tag, StringComparison.Ordinal));
         }
 
         public override int GetHashCode()
