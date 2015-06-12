@@ -236,7 +236,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.genclas
     public class MemberClassWithAnotherTypeConstraint<T, U>
         where T : U
     {
-        public static int Status;
         public static implicit operator MyStruct[] (MemberClassWithAnotherTypeConstraint<T, U> p1)
         {
             return new MyStruct[]
