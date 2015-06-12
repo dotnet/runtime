@@ -38,6 +38,10 @@
 #include <sys/syscall.h>
 #endif
 
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
+
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
@@ -2214,7 +2218,15 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 		 * it will deadlock. Call the syscall directly instead.
 		 */
 		pid = mono_runtime_syscall_fork ();
-
+#if defined (__linux__) && defined (HAVE_PCRTL)
+		if (pid > 0) {
+			// Allow gdb to attach to the process even if ptrace_scope sysctl variable is set to
+			// a value other than 0 (the most permissive ptrace scope). Most modern Linux
+			// distributions set the scope to 1 which allows attaching only to direct children of
+			// the current process
+			prctl (PR_SET_PTRACER, pid, 0, 0, 0);
+		}
+#endif
 		if (pid == 0) {
 			dup2 (STDERR_FILENO, STDOUT_FILENO);
 
