@@ -29,6 +29,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
     public class MemberClass<T>
     {
+        [ThreadStatic]
         public static int Status;
         public bool? this[string p1, float p2, short[] p3]
         {
@@ -238,6 +239,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     public class MemberClassWithClassConstraint<T>
         where T : class
     {
+        [ThreadStatic]
         public static int Status;
         public int this[int x]
         {
@@ -271,6 +273,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     public class MemberClassWithNewConstraint<T>
         where T : new()
     {
+        [ThreadStatic]
         public static int Status;
         public dynamic this[T t]
         {
