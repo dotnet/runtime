@@ -179,7 +179,7 @@ typedef struct {
 
 
 #define PARAM_REGS 4
-#define DYN_CALL_STACK_ARGS 6
+#define DYN_CALL_STACK_ARGS 10
 
 typedef struct {
 	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
@@ -270,7 +270,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
-#define MONO_ARCH_DYN_CALL_PARAM_AREA 24
+#define MONO_ARCH_DYN_CALL_PARAM_AREA (DYN_CALL_STACK_ARGS * sizeof (mgreg_t))
 
 #ifndef MONO_CROSS_COMPILE
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
