@@ -726,7 +726,7 @@ namespace System.Xml
                     }
                 }
 
-                // string.Compare does reference euqality first for us, so we don't have to do it here
+                // string.Compare does reference equality first for us, so we don't have to do it here
                 int result = string.Compare(localName, localName2, StringComparison.Ordinal);
                 if (result != 0)
                 {
