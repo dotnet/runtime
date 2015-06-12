@@ -466,12 +466,12 @@ is_socket_async_callback (MonoImage *system_image, MonoClass *class)
 static gboolean
 is_async_read_handler (MonoImage *system_image, MonoClass *class)
 {
-	MonoClass *process_class = NULL;
+	MonoClass *async_read_handler_class = NULL;
 
-	process_class = mono_class_from_name (system_image, "System.Diagnostics", "Process");
-	g_assert (process_class);
+	async_read_handler_class = mono_class_from_name (system_image, "System.Diagnostics", "Process/AsyncReadHandler");
+	g_assert (async_read_handler_class);
 
-	return class->nested_in && class->nested_in == process_class && strcmp (class->name, "AsyncReadHandler") == 0;
+	return class == async_read_handler_class;
 }
 
 gboolean
