@@ -717,6 +717,7 @@ void
 mono_arch_exceptions_init (void)
 {
 	guint8 *tramp;
+	MonoTrampInfo *tinfo;
 
 /* 
  * If we're running WoW64, we need to set the usermode exception policy 
@@ -745,22 +746,28 @@ mono_arch_exceptions_init (void)
 	}
 
 	/* LLVM needs different throw trampolines */
-	tramp = get_throw_trampoline ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, FALSE, FALSE, NULL, FALSE);
+	tramp = get_throw_trampoline ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, FALSE, FALSE, &tinfo, FALSE);
 	mono_register_jit_icall (tramp, "llvm_throw_exception_trampoline", NULL, TRUE);
+	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_rethrow_exception_trampoline", TRUE, TRUE, FALSE, FALSE, FALSE, NULL, FALSE);
+	tramp = get_throw_trampoline ("llvm_rethrow_exception_trampoline", TRUE, TRUE, FALSE, FALSE, FALSE, &tinfo, FALSE);
 	mono_register_jit_icall (tramp, "llvm_rethrow_exception_trampoline", NULL, TRUE);
+	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, FALSE, FALSE, NULL, FALSE);
+	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, FALSE, FALSE, &tinfo, FALSE);
 	mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
+	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_abs_trampoline", FALSE, TRUE, TRUE, TRUE, FALSE, NULL, FALSE);
+	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_abs_trampoline", FALSE, TRUE, TRUE, TRUE, FALSE, &tinfo, FALSE);
 	mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
+	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_resume_unwind_trampoline", FALSE, FALSE, FALSE, FALSE, TRUE, NULL, FALSE);
+	tramp = get_throw_trampoline ("llvm_resume_unwind_trampoline", FALSE, FALSE, FALSE, FALSE, TRUE, &tinfo, FALSE);
 	mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
+	mono_tramp_info_register (tinfo, NULL);
 
-	signal_exception_trampoline = mono_x86_get_signal_exception_trampoline (NULL, FALSE);
+	signal_exception_trampoline = mono_x86_get_signal_exception_trampoline (&tinfo, FALSE);
+	mono_tramp_info_register (tinfo, NULL);
 }
 
 /*
