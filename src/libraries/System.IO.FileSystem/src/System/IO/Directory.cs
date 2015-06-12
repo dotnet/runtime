@@ -578,12 +578,12 @@ namespace System.IO
 
             StringComparison pathComparison = PathInternal.GetComparison();
 
-            if (String.Compare(sourcePath, destPath, pathComparison) == 0)
+            if (String.Equals(sourcePath, destPath, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
             String sourceRoot = Path.GetPathRoot(sourcePath);
             String destinationRoot = Path.GetPathRoot(destPath);
-            if (String.Compare(sourceRoot, destinationRoot, pathComparison) != 0)
+            if (!String.Equals(sourceRoot, destinationRoot, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             FileSystem.Current.MoveDirectory(fullsourceDirName, fulldestDirName);

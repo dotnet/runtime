@@ -418,13 +418,13 @@ namespace System.IO
                 fullSourcePath = FullPath + PathHelpers.DirectorySeparatorCharAsString;
 
             StringComparison pathComparison = PathInternal.GetComparison();
-            if (String.Compare(fullSourcePath, fullDestDirName, pathComparison) == 0)
+            if (String.Equals(fullSourcePath, fullDestDirName, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
             String sourceRoot = Path.GetPathRoot(fullSourcePath);
             String destinationRoot = Path.GetPathRoot(fullDestDirName);
 
-            if (String.Compare(sourceRoot, destinationRoot, pathComparison) != 0)
+            if (!String.Equals(sourceRoot, destinationRoot, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             FileSystem.Current.MoveDirectory(FullPath, fullDestDirName);
