@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ImportFromFileTests()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
