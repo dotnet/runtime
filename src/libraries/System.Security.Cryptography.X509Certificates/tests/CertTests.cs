@@ -10,13 +10,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class CertTests
     {
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509CertTest()
         {
             const string CertSubject =
                 @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com";
 
-            using (X509Certificate cert = new X509Certificate("microsoft.cer"))
+            using (X509Certificate cert = new X509Certificate("TestData\\microsoft.cer"))
             {
                 Assert.Equal(CertSubject, cert.Subject);
                 Assert.Equal(CertSubject, cert.Issuer);
@@ -50,13 +50,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2Test()
         {
             const string CertName =
                 @"E=admin@digsigtrust.com, CN=ABA.ECOM Root CA, O=""ABA.ECOM, INC."", L=Washington, S=DC, C=US";
 
-            using (X509Certificate2 cert2 = new X509Certificate2("test.cer"))
+            using (X509Certificate2 cert2 = new X509Certificate2("TestData\\test.cer"))
             {
                 Assert.Equal(CertName, cert2.IssuerName.Name);
                 Assert.Equal(CertName, cert2.SubjectName.Name);
@@ -118,10 +118,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2CreateFromPfxFile()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2("DummyTcpServer.pfx"))
+            using (X509Certificate2 cert2 = new X509Certificate2("TestData\\DummyTcpServer.pfx"))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -129,10 +129,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2CreateFromPfxWithPassword()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2("test.pfx", "test"))
+            using (X509Certificate2 cert2 = new X509Certificate2("TestData\\test.pfx", "test"))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());

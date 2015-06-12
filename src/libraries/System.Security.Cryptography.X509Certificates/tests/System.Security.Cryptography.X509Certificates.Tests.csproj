@@ -39,4 +39,19 @@
     <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <!-- Temporary until we have new work in build tools to
+       deploy content from nuget packages -->
+  <Target Name="CopyX509TestDataToTestDirectory" AfterTargets="CopyTestToTestDirectory" Inputs="$(PackagesDir)$(X509TestPackage)\content" Outputs="$(TestPath)%(TestTargetFramework.Folder)\*.*">
+    <PropertyGroup>
+      <X509TestPackage>System.Security.Cryptography.X509Certificates.TestData\1.0.0-prerelease</X509TestPackage>
+      <TestTargetFrameworkFolder>%(TestTargetFramework.Folder)</TestTargetFrameworkFolder>
+    </PropertyGroup>
+    <ItemGroup>
+      <X509TestDataSrc Include="$(PackagesDir)$(X509TestPackage)\content\**\*.*" />
+      <X509TestDataDest Include="@(X509TestDataSrc->'$(TestPath)$(TestTargetFrameworkFolder)\%(RecursiveDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(X509TestDataSrc)" DestinationFiles="@(X509TestDataDest)" SkipUnchangedFiles="$(SkipCopyUnchangedFiles)" OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
 </Project>

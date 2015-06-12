@@ -313,6 +313,7 @@
           "lib/DNXCore50/System.Security.Cryptography.RSA.dll"
         ]
       },
+      "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {},
       "System.Text.Encoding/4.0.10-beta-23008": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-23008"
@@ -757,6 +758,22 @@
         "ref/net46/System.Security.Cryptography.RSA.dll"
       ]
     },
+    "System.Security.Cryptography.X509Certificates.TestData/1.0.0-prerelease": {
+      "sha512": "UbpXPyovZcwfKhYg/O85pLjFEO3hkrEjCLGus7P9y45Peoqrfc8XKzdCW5k5WIDCtLw9M1PJHGlOFV/U0D1tkg==",
+      "files": [
+        "System.Security.Cryptography.X509Certificates.TestData.1.0.0-prerelease.nupkg",
+        "System.Security.Cryptography.X509Certificates.TestData.1.0.0-prerelease.nupkg.sha512",
+        "System.Security.Cryptography.X509Certificates.TestData.nuspec",
+        "content/TestData/DummyTcpServer.pfx",
+        "content/TestData/microsoft.cer",
+        "content/TestData/MS.cer",
+        "content/TestData/My.cer",
+        "content/TestData/My.pfx",
+        "content/TestData/test.cer",
+        "content/TestData/test.pfx",
+        "content/TestData/Windows6.1-KB3004361-x64.msu"
+      ]
+    },
     "System.Text.Encoding/4.0.10-beta-23008": {
       "sha512": "dDcnfqdj6stUj1o1mNZIxEDTI0er7TVER+CVcng+6rEejErS5HQjIEsuEepQSiAF3VDiZu8ZI89RAUuQbCSjEw==",
       "files": [
@@ -952,6 +969,7 @@
       "System.Security.Cryptography.Encoding >= 4.0.0-beta-*",
       "System.Security.Cryptography.Encryption >= 4.0.0-beta-*",
       "System.Security.Cryptography.RSA >= 4.0.0-beta-*",
+      "System.Security.Cryptography.X509Certificates.TestData >= 1.0.0-prerelease",
       "xunit >= 2.0.0-beta5-build2785",
       "xunit.abstractions.netcore >= 1.0.0-prerelease",
       "xunit.assert >= 2.0.0-beta5-build2785",
