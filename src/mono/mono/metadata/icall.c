@@ -2026,6 +2026,14 @@ fill_iface_array (gpointer key, gpointer value, gpointer user_data)
 		mono_metadata_free_type (inflated);
 }
 
+static guint
+get_interfaces_hash (gconstpointer v1)
+{
+	MonoClass *k = (MonoClass*)v1;
+
+	return k->type_token;
+}
+
 ICALL_EXPORT MonoArray*
 ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 {
@@ -2035,7 +2043,7 @@ ves_icall_Type_GetInterfaces (MonoReflectionType* type)
 	FillIfaceArrayData data = { 0 };
 	int len;
 
-	GHashTable *iface_hash = g_hash_table_new (NULL, NULL);
+	GHashTable *iface_hash = g_hash_table_new (get_interfaces_hash, NULL);
 
 	if (class->generic_class && class->generic_class->context.class_inst->is_open) {
 		data.context = mono_class_get_context (class);
