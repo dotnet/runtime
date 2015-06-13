@@ -49,7 +49,7 @@ You can see the currently installed DNX versions with `dnvm list`, which will di
 Installing the .NET Core DNX SDK
 ================================
 
-You first need to acquire the Mono DNX. It doesn't include Mono, but is needed to use the DNX tools on top of Mono. In particular, the DNU command is not yet supported on .NET Core, requiring us to use Mono for this purpose (until DNU runs on .NET Core). Mono is the default DNX, do you can acquire it via `dnvnm upgrade`.
+You first need to acquire the Mono DNX. It doesn't include Mono, but is needed to use the DNX tools on top of Mono. In particular, the DNU command is not yet supported on .NET Core, requiring us to use Mono for this purpose (until DNU runs on .NET Core). Mono is the default DNX, do you can acquire it via `dnvm upgrade`.
 
 	dnvm upgrade -u
 
