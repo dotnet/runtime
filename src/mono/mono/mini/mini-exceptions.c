@@ -2218,7 +2218,7 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 		 * it will deadlock. Call the syscall directly instead.
 		 */
 		pid = mono_runtime_syscall_fork ();
-#if defined (__linux__) && defined (HAVE_PRCTL)
+#if defined (HAVE_PRCTL) && defined(PR_SET_PTRACER)
 		if (pid > 0) {
 			// Allow gdb to attach to the process even if ptrace_scope sysctl variable is set to
 			// a value other than 0 (the most permissive ptrace scope). Most modern Linux
