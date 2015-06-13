@@ -1535,7 +1535,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			continue;
 		case 3:
 			if (!is_absolute && mono_dl_get_system_dir ()) {
-				dir_name = mono_dl_get_system_dir ();
+				dir_name = (char*)mono_dl_get_system_dir ();
 				file_name = g_path_get_basename (new_scope);
 				base_name = NULL;
 			} else
