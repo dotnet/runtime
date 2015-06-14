@@ -69,6 +69,9 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -85,6 +88,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.strerror.cs">
       <Link>Common\Interop\Unix\Interop.strerror.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
@@ -104,6 +110,9 @@
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
       <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.OSX.cs" />
@@ -113,6 +122,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
       <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
