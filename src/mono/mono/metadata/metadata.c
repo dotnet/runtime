@@ -3218,6 +3218,7 @@ compare_type_literals (int class_type, int type_type)
 	case MONO_TYPE_R8:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+	case MONO_TYPE_CLASS:
 		return TRUE;
 	default:
 		return FALSE;
