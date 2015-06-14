@@ -90,6 +90,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (store.Certificates.Count > 0)
             {
                 X509Chain chain = new X509Chain();
+                Assert.NotNull(chain.SafeHandle);
+                Assert.Same(chain.SafeHandle, chain.SafeHandle);
+                Assert.True(chain.SafeHandle.IsInvalid);
+
                 foreach (X509Certificate2 c in store.Certificates)
                 {
                     // can't guarantee success, so no Assert 

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -12,22 +13,27 @@ namespace Internal.Cryptography.Pal.Native
     /// </summary>
     internal abstract class SafePointerHandle<T> : SafeHandle where T : SafeHandle, new()
     {
-        public SafePointerHandle()
+        protected SafePointerHandle()
             : base(IntPtr.Zero, true)
         {
         }
 
         public sealed override bool IsInvalid
         {
-            get
-            {
-                return handle == IntPtr.Zero;
-            }
+            get { return handle == IntPtr.Zero; }
         }
 
         public static T InvalidHandle
         {
-            get { return new T(); }
+            get { return SafeHandleCache<T>.GetInvalidHandle(() => new T()); }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!SafeHandleCache<T>.IsCachedInvalidHandle(this))
+            {
+                base.Dispose(disposing);
+            }
         }
     }
 
@@ -146,14 +152,11 @@ namespace Internal.Cryptography.Pal.Native
     /// </summary>
     internal sealed class SafeLocalAllocHandle : SafePointerHandle<SafeLocalAllocHandle>
     {
-        public SafeLocalAllocHandle()
-            : base()
-        {
-        }
-
         public static SafeLocalAllocHandle Create(int cb)
         {
-            return new SafeLocalAllocHandle(Marshal.AllocHGlobal(cb));
+            var h = new SafeLocalAllocHandle();
+            h.SetHandle(Marshal.AllocHGlobal(cb));
+            return h;
         }
 
         protected sealed override bool ReleaseHandle()
@@ -161,13 +164,5 @@ namespace Internal.Cryptography.Pal.Native
             Marshal.FreeHGlobal(handle);
             return true;
         }
-
-        private SafeLocalAllocHandle(IntPtr p)
-            : base()
-        {
-            handle = p;
-        }
     }
 }
-
-

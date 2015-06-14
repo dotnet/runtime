@@ -48,7 +48,7 @@ namespace Internal.Cryptography.Pal
                         void* pvObject = fromFile ? (void*)pFileName : (void*)&blob;
 
                         ContentType contentType;
-                        SafeCertStoreHandle certStore = SafeCertStoreHandle.InvalidHandle;
+                        SafeCertStoreHandle certStore;
                         if (!Interop.crypt32.CryptQueryObject(
                             fromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
                             pvObject,
@@ -86,7 +86,7 @@ namespace Internal.Cryptography.Pal
 
                         if (!persistKeySet)
                         {
-                            SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
+                            SafeCertContextHandle pCertContext = null;
                             while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
                             {
                                 CRYPTOAPI_BLOB nullBlob = new CRYPTOAPI_BLOB(0, null);
