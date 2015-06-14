@@ -5,15 +5,13 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    /// <summary>
-    ///     Contains internal path helpers that are shared between many projects.
-    /// </summary>
-    internal static class PathInternal
+    /// <summary>Contains internal path helpers that are shared between many projects.</summary>
+    internal static partial class PathInternal
     {
         /// <summary>
-        ///     Returns a value indicating if the given path contains invalid characters (", &lt;, &gt;, | 
-        ///     NUL, or any ASCII char whose integer representation is in the range of 1 through 31), 
-        ///     optionally checking for ? and *.
+        /// Returns a value indicating if the given path contains invalid characters (", &lt;, &gt;, | 
+        /// NUL, or any ASCII char whose integer representation is in the range of 1 through 31), 
+        /// optionally checking for ? and *.
         /// </summary>
         internal static bool HasIllegalCharacters(string path, bool checkAdditional = false)
         {
@@ -34,14 +32,6 @@ namespace System.IO
             }
 
             return false;
-        }
-        
-        /// <summary>
-        ///   Returns a comparison that can be used to compare file and directory names for equality.
-        /// </summary>
-        internal static StringComparison GetComparison()
-        {
-            return StringComparison.OrdinalIgnoreCase;
         }
     }
 }
