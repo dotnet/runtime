@@ -25,17 +25,26 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Unix -->
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Linux.cs">
-      <Link>Common\System\IO\PathInternal.Linux.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.OSX.cs">
-      <Link>Common\System\IO\PathInternal.OSX.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

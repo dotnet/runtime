@@ -5,14 +5,10 @@ using System.Diagnostics.Contracts;
 
 namespace System.IO
 {
-    /// <summary>
-    ///     Contains internal path helpers that are shared between many projects.
-    /// </summary>
-    internal static class PathInternal
+    /// <summary>Contains internal path helpers that are shared between many projects.</summary>
+    internal static partial class PathInternal
     {
-        /// <summary>
-        ///     Returns a value indicating if the given path contains invalid characters.
-        /// </summary>
+        /// <summary>Returns a value indicating if the given path contains invalid characters.</summary>
         internal static bool HasIllegalCharacters(string path, bool checkAdditional = false)
         {
             Contract.Requires(path != null);
@@ -25,19 +21,11 @@ namespace System.IO
 
                 // checkAdditional is meant to check for additional characters 
                 // permitted in a search path but disallowed in a normal path.
-                // In Windows this is * and ?,but Linux and OSX permit such characters
+                // In Windows this is * and ?,but Unix permits such characters
                 // in the filename so checkAdditional is ignored.
             }
 
             return false;
-        }
-        
-        /// <summary>
-        ///   Returns a comparison that can be used to compare file and directory names for equality.
-        /// </summary>
-        internal static StringComparison GetComparison()
-        {
-            return StringComparison.Ordinal;
         }
     }
 }
