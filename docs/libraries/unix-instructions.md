@@ -1,5 +1,5 @@
-Building CoreFX on Linux
-========================
+Building CoreFX on FreeBSD, Linux and OS X
+==========================================
 
 CoreFx can be built on top of current [Mono CI builds](#installing-mono-packages) or a direct [build/install of Mono](http://www.mono-project.com/docs/compiling-mono/). It builds using MSBuild and Roslyn and requires changes that have not yet made it to official released builds.
 
@@ -76,3 +76,5 @@ System.Diagnostics.FileVersionInfo.Tests.csproj does not build on Unix. https://
 System.Diagnostics.Debug.Tests does not build on Unix. https://github.com/dotnet/corefx/issues/1609
 
 Mono fails when trying to get custom attributes on CoreFx assemblies. https://bugzilla.xamarin.com/show_bug.cgi?id=29679
+
+Some third party dependencies may incorrectly assume that `bash` is always installed in `/bin/`. This can manifest itself in errors like `corefx/packages/dnx-mono.1.0.0-beta5-11760/bin/dnu: not found`. The simplest way to get around this until fixed upstream is simply making the assumption correct: `sudo ln -s /usr/local/bin/bash /bin/bash`.
