@@ -45,7 +45,7 @@ Coding Guidelines
 Building from Source
 ====================
 
-- [Building on Linux](linux-instructions.md)
+- [Building CoreFX on FreeBSD, Linux and OS X](unix-instructions.md)
 - [Code Coverage](code-coverage.md)
 
 Other Information
