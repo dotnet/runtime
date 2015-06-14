@@ -643,17 +643,21 @@ namespace System.IO.Compression
             Boolean isIntermediateStream = true;
 
             Boolean leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
-            CheckSumAndSizeWriteStream checkSumStream =
-                new CheckSumAndSizeWriteStream(compressorStream, backingStream, leaveCompressorStreamOpenOnClose,
-                    (Int64 initialPosition, Int64 currentPosition, UInt32 checkSum) =>
-                    {
-                        _crc32 = checkSum;
-                        _uncompressedSize = currentPosition;
-                        _compressedSize = backingStream.Position - initialPosition;
+            var checkSumStream = new CheckSumAndSizeWriteStream(
+                compressorStream, 
+                backingStream, 
+                leaveCompressorStreamOpenOnClose, 
+                this, 
+                onClose,
+                (Int64 initialPosition, Int64 currentPosition, UInt32 checkSum, Stream backing, ZipArchiveEntry thisRef, EventHandler closeHandler) =>
+                {
+                    thisRef._crc32 = checkSum;
+                    thisRef._uncompressedSize = currentPosition;
+                    thisRef._compressedSize = backing.Position - initialPosition;
 
-                        if (onClose != null)
-                            onClose(this, EventArgs.Empty);
-                    });
+                    if (closeHandler != null)
+                        closeHandler(thisRef, EventArgs.Empty);
+                });
 
             return checkSumStream;
         }
@@ -701,12 +705,13 @@ namespace System.IO.Compression
                                                             (object o, EventArgs e) =>
                                                             {
                                                                 //release the archive stream
-                                                                _archive.ReleaseArchiveStream(this);
-                                                                _outstandingWriteStream = null;
+                                                                var entry = (ZipArchiveEntry)o;
+                                                                entry._archive.ReleaseArchiveStream(entry);
+                                                                entry._outstandingWriteStream = null;
                                                             });
             _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this);
 
-            return new WrappedStream(_outstandingWriteStream, (object o, EventArgs e) => _outstandingWriteStream.Dispose());
+            return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
         private Stream OpenInUpdateMode()
@@ -720,14 +725,13 @@ namespace System.IO.Compression
             _currentlyOpenForWrite = true;
             //always put it at the beginning for them
             UncompressedData.Seek(0, SeekOrigin.Begin);
-            return new WrappedStream(UncompressedData,
-                                     (object o, EventArgs e) =>
+            return new WrappedStream(UncompressedData, this, thisRef => 
                                      {
                                          //once they close, we know uncompressed length, but still not compressed length
                                          //so we don't fill in any size information
                                          //those fields get figured out when we call GetCompressor as we write it to
                                          //the actual archive
-                                         _currentlyOpenForWrite = false;
+                                         thisRef._currentlyOpenForWrite = false;
                                      });
         }
 
