@@ -137,7 +137,7 @@ namespace Internal.Cryptography.Pal
                     certInfo.SerialNumber.pbData = pCmsgSignerInfo->SerialNumber.pbData;
                 }
 
-                SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
+                SafeCertContextHandle pCertContext = null;
                 if (!Interop.crypt32.CertFindCertificateInStore(hCertStore, CertFindType.CERT_FIND_SUBJECT_CERT, &certInfo, ref pCertContext))
                     throw new CryptographicException(Marshal.GetHRForLastWin32Error());
 
@@ -147,7 +147,7 @@ namespace Internal.Cryptography.Pal
 
         private static SafeCertContextHandle FilterPFXStore(byte[] rawData, String password, PfxCertStoreFlags pfxCertStoreFlags)
         {
-            SafeCertStoreHandle hStore = SafeCertStoreHandle.InvalidHandle;
+            SafeCertStoreHandle hStore;
             unsafe
             {
                 fixed (byte* pbRawData = rawData)
@@ -164,7 +164,7 @@ namespace Internal.Cryptography.Pal
                 // Find the first cert with private key. If none, then simply take the very first cert. Along the way, delete the keycontainers
                 // of any cert we don't accept.
                 SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
-                SafeCertContextHandle pEnumContext = SafeCertContextHandle.InvalidHandle;
+                SafeCertContextHandle pEnumContext = null;
                 while (Interop.crypt32.CertEnumCertificatesInStore(hStore, ref pEnumContext))
                 {
                     if (pEnumContext.ContainsPrivateKey)

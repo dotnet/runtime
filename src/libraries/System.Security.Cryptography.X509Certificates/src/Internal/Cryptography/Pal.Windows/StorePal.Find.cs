@@ -478,7 +478,7 @@ namespace Internal.Cryptography.Pal
             if (findResults.IsInvalid)
                 throw new CryptographicException(Marshal.GetHRForLastWin32Error());
 
-            SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
+            SafeCertContextHandle pCertContext = null;
             while (Interop.crypt32.CertFindCertificateInStore(_certStore, dwFindType, pvFindPara, ref pCertContext))
             {
                 if (filter != null && !filter(pCertContext))
