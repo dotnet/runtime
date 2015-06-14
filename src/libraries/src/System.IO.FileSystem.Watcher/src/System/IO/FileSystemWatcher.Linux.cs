@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 
 namespace System.IO
 {
@@ -299,7 +298,10 @@ namespace System.IO
 
                 // Add a watch for the full path.  If the path is already being watched, this will return 
                 // the existing descriptor.  This works even in the case of a rename.
-                int wd = (int)SysCall(fd => Interop.libc.inotify_add_watch(fd, fullPath, (uint)_notifyFilters));
+                int wd = (int)SysCall(
+                    (fd, path, thisRef) => Interop.libc.inotify_add_watch(fd, path, (uint)thisRef._notifyFilters),
+                    fullPath,
+                    this);
 
                 // Then store the path information into our map.
                 WatchedDirectory directoryEntry;
@@ -401,15 +403,15 @@ namespace System.IO
                 // And if the caller has requested, remove the associated inotify watch.
                 if (removeInotify)
                 {
-                    SysCall(fd => 
+                    SysCall((fd, dirEntry, _) => 
                     {
                         // Remove the inotify watch.  This could fail if our state has become inconsistent
                         // with the state of the world (e.g. due to lost events).  So we don't want failures
                         // to throw exceptions, but we do assert to detect coding problems during debugging.
-                        long result = Interop.libc.inotify_rm_watch(fd, directoryEntry.WatchDescriptor);
+                        long result = Interop.libc.inotify_rm_watch(fd, dirEntry.WatchDescriptor);
                         Debug.Assert(result >= 0);
                         return 0;
-                    });
+                    }, directoryEntry, 0);
                 }
             }
 
@@ -423,14 +425,14 @@ namespace System.IO
                 {
                     // Remove all watches (inotiy_rm_watch) and clear out the map.
                     // No additional watches will be added after this point.
-                    SysCall(fd => {
-                        foreach (int wd in _wdToPathMap.Keys)
+                    SysCall((fd, thisRef, _) => {
+                        foreach (int wd in thisRef._wdToPathMap.Keys)
                         {
                             int result = Interop.libc.inotify_rm_watch(fd, wd);
                             Debug.Assert(result >= 0); // ignore errors; they're non-fatal, but they also shouldn't happen
                         }
                         return 0;
-                    });
+                    }, this, 0);
                     _wdToPathMap.Clear();
                 }
             }
@@ -628,15 +630,15 @@ namespace System.IO
                     {
                         try
                         {
-                            _bufferAvailable = (int)SysCall(fd => {
+                            _bufferAvailable = (int)SysCall((fd, thisRef, _) => {
                                 long result;
-                                fixed (byte* buf = _buffer)
+                                fixed (byte* buf = thisRef._buffer)
                                 {
-                                    result = (long)Interop.libc.read(fd, buf, (IntPtr)_buffer.Length);
+                                    result = (long)Interop.libc.read(fd, buf, (IntPtr)thisRef._buffer.Length);
                                 }
-                                Debug.Assert(result <= _buffer.Length);
+                                Debug.Assert(result <= thisRef._buffer.Length);
                                 return result;
-                            });
+                            }, this, 0);
                         }
                         catch (ArgumentException)
                         {
@@ -710,10 +712,15 @@ namespace System.IO
             /// and less than zero on failure.  In the case of failure, errno is expected to
             /// be set to the relevant error code.
             /// </summary>
-            /// <param name="handle">The SafeFileHandle that wraps the file descriptor to use with the system call.</param>
             /// <param name="sysCall">A delegate that invokes the system call.  It's passed the associated file descriptor and should return the result.</param>
+            /// <param name="arg1">The first argument to be passed to the system call, after the file descriptor.</param>
+            /// <param name="arg2">The second argument to be passed to the system call.</param>
             /// <returns>The return value of the system call.</returns>
-            private long SysCall(Func<int, long> sysCall)
+            /// <remarks>
+            /// Arguments are expected to be passed via <paramref name="arg1"/> and <paramref name="arg2"/>
+            /// so as to avoid delegate and closure allocations at the call sites.
+            /// </remarks>
+            private long SysCall<TArg1, TArg2>(Func<int, TArg1, TArg2, long> sysCall, TArg1 arg1, TArg2 arg2)
             {
                 bool gotRefOnHandle = false;
                 try
@@ -726,7 +733,7 @@ namespace System.IO
                     Debug.Assert(fd >= 0);
 
                     long result;
-                    while (Interop.CheckIo(result = sysCall(fd), isDirectory: true)) ;
+                    while (Interop.CheckIo(result = sysCall(fd, arg1, arg2), isDirectory: true));
                     return result;
                 }
                 finally
