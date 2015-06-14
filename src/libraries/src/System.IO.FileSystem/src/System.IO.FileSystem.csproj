@@ -74,6 +74,9 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
@@ -302,12 +305,15 @@
     <Compile Include="$(CommonPath)\Interop\Unix\libcoreclr\Interop.GetFileInformation.cs">
       <Link>Common\Interop\Unix\Interop.GetInformation.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
+      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="System\IO\UnixFileStream.Linux.cs" />
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Linux.cs">
-      <Link>Common\System\IO\PathInternal.Linux.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
       <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
@@ -327,8 +333,8 @@
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.OSX.cs">
-      <Link>Common\System\IO\PathInternal.OSX.cs</Link>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
+      <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.readdir.cs">
       <Link>Common\Interop\OSX\Interop.readdir.cs</Link>
