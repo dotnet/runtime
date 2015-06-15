@@ -432,10 +432,11 @@ namespace System.Numerics
             Int32 i = number.scale;
             Int32 cur = 0;
 
+            BigInteger ten = 10;
             value = 0;
             while (--i >= 0)
             {
-                value *= 10;
+                value *= ten;
                 if (number.digits[cur] != '\0')
                 {
                     value += (Int32)(number.digits[cur++] - '0');
