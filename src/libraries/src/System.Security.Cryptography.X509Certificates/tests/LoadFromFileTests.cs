@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             // X509Certificate2 can also extract the certificate from a signed file.
 
-            string path = @"TestData\Windows6.1-KB3004361-x64.msu";
+            string path = Path.Combine("TestData", "Windows6.1-KB3004361-x64.msu");
             if (!File.Exists(path))
                 throw new Exception(string.Format("Test infrastructure failure: Expected to find file \"{0}\".", path));
 
@@ -152,9 +152,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509Certificate2 LoadCertificateFromFile()
         {
-            string path = @"TestData\Ms.cer";
+            string path = Path.Combine("TestData", "Ms.cer");
             if (!File.Exists(path))
-                throw new Exception(String.Format("Test infrastructure failure: Expected to find file \"{0}\".", path));
+                throw new Exception(string.Format("Test infrastructure failure: Expected to find file \"{0}\".", path));
             byte[] data = File.ReadAllBytes(path);
             Assert.Equal(TestData.MsCertificate, data);
 
