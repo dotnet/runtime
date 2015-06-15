@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestContentType()
         {
-            String fileName = @"TestData\My.pfx";
+            string fileName = Path.Combine("TestData", "My.pfx");
             if (!File.Exists(fileName))
                 throw new Exception("Test infrastructure failure: Expected to find file: \"" + fileName + "\".");
             X509ContentType ct = X509Certificate2.GetCertContentType(fileName);
