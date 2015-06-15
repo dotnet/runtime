@@ -299,7 +299,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
  * Sets the cfg exception if an opcode is not supported.
  */
 MonoInst*
-mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins, MonoBasicBlock **out_cbb)
+mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 {
 	MonoInst *repl = NULL;
 	int type = ins->type;
@@ -556,7 +556,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins, MonoBasicBlock **out_cbb
 				}
 			}
 
-			call = mono_emit_jit_icall_by_info (cfg, info, args, out_cbb);
+			call = mono_emit_jit_icall_by_info (cfg, info, args);
 			call->dreg = ins->dreg;
 
 			NULLIFY_INS (ins);
