@@ -42,39 +42,32 @@ namespace System.IO.Compression
         {
             if (stream == null)
                 throw new ArgumentNullException("stream");
+            
+            switch (mode)
+            {
+                case CompressionMode.Decompress:
+                    if (!stream.CanRead)
+                    {
+                        throw new ArgumentException(SR.NotReadableStream, "stream");
+                    }
+                    _inflater = new Inflater();
+                    break;
 
-            if (CompressionMode.Compress != mode && CompressionMode.Decompress != mode)
-                throw new ArgumentException(SR.ArgumentOutOfRange_Enum, "mode");
+                case CompressionMode.Compress:
+                    if (!stream.CanWrite)
+                    {
+                        throw new ArgumentException(SR.NotWriteableStream, "stream");
+                    }
+                    _deflater = CreateDeflater(null);
+                    break;
+
+                default:
+                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, "mode");
+            }
 
             _stream = stream;
             _mode = mode;
             _leaveOpen = leaveOpen;
-
-            switch (_mode)
-            {
-                case CompressionMode.Decompress:
-
-                    if (!_stream.CanRead)
-                    {
-                        throw new ArgumentException(SR.NotReadableStream, "stream");
-                    }
-
-                    _inflater = new Inflater();
-
-                    break;
-
-                case CompressionMode.Compress:
-
-                    if (!_stream.CanWrite)
-                    {
-                        throw new ArgumentException(SR.NotWriteableStream, "stream");
-                    }
-
-                    _deflater = CreateDeflater(null);
-
-                    break;
-            }  // switch (_mode)
-
             _buffer = new byte[DefaultBufferSize];
         }
 
@@ -120,22 +113,16 @@ namespace System.IO.Compression
                 deflatorType = s_forcedTestingDeflaterType;
 #endif
 
-            switch (deflatorType)
+            if (deflatorType == WorkerType.ZLib)
             {
-                case WorkerType.Managed:
-                    return new DeflaterManaged();
-
-                case WorkerType.ZLib:
-                    if (compressionLevel.HasValue)
-                        return new DeflaterZLib(compressionLevel.Value);
-                    else
-                        return new DeflaterZLib();
-
-                default:
-                    // We do not expect this to ever be thrown.
-                    // But this is better practice than returning null.
-                    Environment.FailFast("Program entered an unexpected state.");
-                    return null; // we'll not reach here
+                return compressionLevel.HasValue ?
+                    new DeflaterZLib(compressionLevel.Value) :
+                    new DeflaterZLib();
+            }
+            else
+            {
+                Debug.Assert(deflatorType == WorkerType.Managed);
+                return new DeflaterManaged();
             }
         }
 
@@ -221,7 +208,6 @@ namespace System.IO.Compression
         public override void Flush()
         {
             EnsureNotDisposed();
-            return;
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
@@ -273,9 +259,13 @@ namespace System.IO.Compression
                 Debug.Assert(_inflater.NeedsInput(), "We can only run into this case if we are short of input");
 
                 int bytes = _stream.Read(_buffer, 0, _buffer.Length);
-                if (bytes == 0)
+                if (bytes <= 0)
                 {
-                    break;      //Do we want to throw an exception here?
+                    break;
+                }
+                else if (bytes > _buffer.Length)
+                {
+                    throw new InvalidDataException(SR.GenericInvalidData);
                 }
 
                 _inflater.SetInput(_buffer, 0, bytes);
@@ -385,6 +375,10 @@ namespace System.IO.Compression
                     {
                         // This indicates the base stream has received EOF
                         return 0;
+                    }
+                    else if (bytesRead > _buffer.Length)
+                    {
+                        throw new InvalidDataException(SR.GenericInvalidData);
                     }
 
                     cancellationToken.ThrowIfCancellationRequested();
