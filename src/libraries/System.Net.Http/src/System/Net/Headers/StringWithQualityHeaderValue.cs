@@ -72,7 +72,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            if (string.Compare(_value, other._value, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!string.Equals(_value, other._value, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -92,7 +92,7 @@ namespace System.Net.Http.Headers
 
         public override int GetHashCode()
         {
-            int result = _value.ToLowerInvariant().GetHashCode();
+            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_value);
 
             if (_quality.HasValue)
             {

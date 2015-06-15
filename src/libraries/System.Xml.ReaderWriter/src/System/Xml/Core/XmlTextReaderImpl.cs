@@ -2300,14 +2300,14 @@ namespace System.Xml
                 return _ps.encoding;
             }
 
-            if (0 == String.Compare(newEncodingName, "ucs-2", StringComparison.OrdinalIgnoreCase) ||
-                0 == String.Compare(newEncodingName, "utf-16", StringComparison.OrdinalIgnoreCase) ||
-                0 == String.Compare(newEncodingName, "iso-10646-ucs-2", StringComparison.OrdinalIgnoreCase) ||
-                0 == String.Compare(newEncodingName, "ucs-4", StringComparison.OrdinalIgnoreCase))
+            if (String.Equals(newEncodingName, "ucs-2", StringComparison.OrdinalIgnoreCase) ||
+                String.Equals(newEncodingName, "utf-16", StringComparison.OrdinalIgnoreCase) ||
+                String.Equals(newEncodingName, "iso-10646-ucs-2", StringComparison.OrdinalIgnoreCase) ||
+                String.Equals(newEncodingName, "ucs-4", StringComparison.OrdinalIgnoreCase))
             {
                 if (_ps.encoding.WebName != "utf-16BE" &&
                      _ps.encoding.WebName != "utf-16" &&
-                     0 != String.Compare(newEncodingName, "ucs-4", StringComparison.OrdinalIgnoreCase))
+                     !String.Equals(newEncodingName, "ucs-4", StringComparison.OrdinalIgnoreCase))
                 {
                     ThrowWithoutLineInfo(SR.Xml_MissingByteOrderMark);
                 }
@@ -2315,7 +2315,7 @@ namespace System.Xml
             }
 
             Encoding newEncoding = null;
-            if (0 == String.Compare(newEncodingName, "utf-8", StringComparison.OrdinalIgnoreCase))
+            if (String.Equals(newEncodingName, "utf-8", StringComparison.OrdinalIgnoreCase))
             {
                 newEncoding = new UTF8Encoding(true, true);
             }
@@ -5030,7 +5030,7 @@ namespace System.Xml
             int nameEndPos = ParseName();
             string target = _nameTable.Add(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos);
 
-            if (string.Compare(target, "xml", StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(target, "xml", StringComparison.OrdinalIgnoreCase))
             {
                 Throw(target.Equals("xml") ? SR.Xml_XmlDeclNotFirst : SR.Xml_InvalidPIName, target);
             }

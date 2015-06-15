@@ -94,7 +94,7 @@ namespace System.Net.Http
                 return true;
             }
 
-            return (string.Compare(_method, other._method, StringComparison.OrdinalIgnoreCase) == 0);
+            return string.Equals(_method, other._method, StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion
@@ -106,7 +106,7 @@ namespace System.Net.Http
 
         public override int GetHashCode()
         {
-            return _method.ToUpperInvariant().GetHashCode();
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(_method);
         }
 
         public override string ToString()

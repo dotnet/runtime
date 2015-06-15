@@ -26,8 +26,8 @@ namespace System.Net.Http
             Debug.Assert(uri != null);
 
             string scheme = uri.Scheme;
-            return ((string.Compare("http", scheme, StringComparison.OrdinalIgnoreCase) == 0) ||
-                (string.Compare("https", scheme, StringComparison.OrdinalIgnoreCase) == 0));
+            return string.Equals("http", scheme, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals("https", scheme, StringComparison.OrdinalIgnoreCase);
         }
 
         // Returns true if the task was faulted or canceled and sets tcs accordingly.
