@@ -2,21 +2,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
-using Internal.NativeCrypto;
-using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
 
-using System.Security.Cryptography;
-
-using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
-using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
-using System.Security.Cryptography.X509Certificates;
+using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
@@ -49,7 +41,7 @@ namespace Internal.Cryptography.Pal
             return status.dwError == 0;
         }
 
-        public IEnumerable<X509ChainElement> ChainElements
+        public X509ChainElement[] ChainElements
         {
             get
             {
@@ -58,7 +50,7 @@ namespace Internal.Cryptography.Pal
                     CERT_CHAIN_CONTEXT* pCertChainContext = (CERT_CHAIN_CONTEXT*)(_chain.DangerousGetHandle());
                     CERT_SIMPLE_CHAIN* pCertSimpleChain = pCertChainContext->rgpChain[0];
 
-                    LowLevelListWithIList<X509ChainElement> chainElements = new LowLevelListWithIList<X509ChainElement>();
+                    X509ChainElement[] chainElements = new X509ChainElement[pCertSimpleChain->cElement];
                     for (int i = 0; i < pCertSimpleChain->cElement; i++)
                     {
                         CERT_CHAIN_ELEMENT* pChainElement = pCertSimpleChain->rgpElement[i];
@@ -68,7 +60,7 @@ namespace Internal.Cryptography.Pal
                         String information = Marshal.PtrToStringUni(pChainElement->pwszExtendedErrorInfo);
 
                         X509ChainElement chainElement = new X509ChainElement(certificate, chainElementStatus, information);
-                        chainElements.Add(chainElement);
+                        chainElements[i] = chainElement;
                     }
 
                     GC.KeepAlive(this);

@@ -1,5 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Security.Cryptography.X509Certificates;
 
 using Microsoft.Win32.SafeHandles;
@@ -18,7 +20,7 @@ namespace Internal.Cryptography.Pal
             return null;
         }
 
-        public IEnumerable<X509ChainElement> ChainElements
+        public X509ChainElement[] ChainElements
         {
             get { throw new NotImplementedException(); }
         }
