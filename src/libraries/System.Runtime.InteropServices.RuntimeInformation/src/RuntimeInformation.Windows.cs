@@ -5,9 +5,9 @@ namespace System.Runtime.InteropServices
 {
     public static class RuntimeInformation
     {
-        public static bool IsOperatingSystem(OSName osName)
+        public static bool IsOSPlatform(OSPlatform osPlatform)
         {
-            return OSName.Linux == osName;
+            return OSPlatform.Windows == osPlatform;
         }
     }
 }
