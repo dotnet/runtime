@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
 
 namespace System.IO.Compression
 {
@@ -221,7 +221,6 @@ namespace System.IO.Compression
 
 
             public ZLibStreamHandle()
-
                 : base(new IntPtr(-1), true)
             {
                 _zStream = new ZStream();
@@ -236,7 +235,7 @@ namespace System.IO.Compression
             public override bool IsInvalid
             {
                 [SecurityCritical]
-                get { return DangerousGetHandle() == new IntPtr(-1); }
+                get { return handle == new IntPtr(-1); }
             }
 
             public State InitializationState
@@ -250,9 +249,6 @@ namespace System.IO.Compression
             [SecurityCritical]
             protected override bool ReleaseHandle()
             {
-                // We are in a finalizer thread at the end of the App and the finalization of the dynamically loaded ZLib happend
-                // to be scheduled first. In such case we have no hope of properly freeing zStream. If the process is dying - we
-                // do not care. In other cases somethign went badly wrong anyway:
                 switch (InitializationState)
                 {
                     case State.NotInitialized: return true;
@@ -412,48 +408,17 @@ namespace System.IO.Compression
             public string GetErrorMessage()
             {
                 // This can work even after XxflateEnd().
-
-                if (ZNullPtr.Equals(_zStream.msg))
-                    return String.Empty;
-
-                unsafe
-                {
-                    StringBuilder sb = new StringBuilder();
-                    SByte* pMessage = (SByte*)_zStream.msg;
-                    char c;
-                    do
-                    {
-                        c = (char)*pMessage;
-                        pMessage++;
-                        sb.Append(c);
-                    } while ((sbyte)c != 0);
-
-                    return sb.ToString();
-                }
+                return _zStream.msg != ZNullPtr ? Marshal.PtrToStringAnsi(_zStream.msg) : string.Empty;
             }
 
             #endregion  // Expose ZLib functions for use by user / Fx code (add more as required)
 
-            [SecurityCritical]
-            internal static Int32 ZLibCompileFlags()
-            {
-                return Interop.zlib.zlibCompileFlags();
-            }
         }  // class ZLibStreamHandle
 
         #endregion  // ZLib Stream Handle type
 
 
         #region public factory methods for ZLibStreamHandle
-
-
-        [SecurityCritical]
-        public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle)
-        {
-            return CreateZLibStreamForDeflate(out zLibStreamHandle,
-                                              CompressionLevel.DefaultCompression, Deflate_DefaultWindowBits,
-                                              Deflate_DefaultMemLevel, CompressionStrategy.DefaultStrategy);
-        }
 
 
         [SecurityCritical]
@@ -466,13 +431,6 @@ namespace System.IO.Compression
 
 
         [SecurityCritical]
-        public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle)
-        {
-            return CreateZLibStreamForInflate(out zLibStreamHandle, Deflate_DefaultWindowBits);
-        }
-
-
-        [SecurityCritical]
         public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
         {
             zLibStreamHandle = new ZLibStreamHandle();
@@ -480,16 +438,6 @@ namespace System.IO.Compression
         }
 
         #endregion  // public factory methods for ZLibStreamHandle
-
-
-        #region public utility APIs
-
-        [SecurityCritical]
-        public static Int32 ZLibCompileFlags()
-        {
-            return ZLibStreamHandle.ZLibCompileFlags();
-        }
-        #endregion  // public utility APIs
 
     }  // internal class ZLibNative
 }  // namespace System.IO.Compression
