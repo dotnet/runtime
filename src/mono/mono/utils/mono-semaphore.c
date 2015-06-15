@@ -61,16 +61,21 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 	}
 
 	copy = ts;
-	while ((res = WAIT_BLOCK (sem, &ts)) == -1 && errno == EINTR) {
+#ifdef USE_MACH_SEMA
+	gettimeofday (&t, NULL);
+	while ((res = WAIT_BLOCK (sem, &ts)) == KERN_ABORTED)
+#else
+	while ((res = WAIT_BLOCK (sem, &ts)) == -1 && errno == EINTR)
+#endif
+	{
+#ifdef USE_MACH_SEMA
 		struct timeval current;
+#endif
 		if (alertable)
 			return -1;
-#ifdef USE_MACH_SEMA
-		memset (&current, 0, sizeof (current));
-#else
-		gettimeofday (&current, NULL);
-#endif
 		ts = copy;
+#ifdef USE_MACH_SEMA
+		gettimeofday (&current, NULL);
 		ts.tv_sec -= (current.tv_sec - t.tv_sec);
 		ts.tv_nsec -= (current.tv_usec - t.tv_usec) * 1000;
 		if (ts.tv_nsec < 0) {
@@ -85,6 +90,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 			ts.tv_sec = 0;
 			ts.tv_nsec = 0;
 		}
+#endif
 	}
 
 	/* OSX might return > 0 for error */
