@@ -22,6 +22,9 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>Common\System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
+    </Compile>
     <Compile Include="Internal\Cryptography\ErrorCode.cs" />
     <Compile Include="Internal\Cryptography\Helpers.cs" />
     <Compile Include="Internal\Cryptography\Oids.cs" />

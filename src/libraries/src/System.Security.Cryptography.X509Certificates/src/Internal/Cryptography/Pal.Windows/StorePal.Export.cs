@@ -27,7 +27,7 @@ namespace Internal.Cryptography.Pal
             {
                 case X509ContentType.Cert:
                     {
-                        SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
+                        SafeCertContextHandle pCertContext = null;
                         if (!Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
                             return null;
                         try
@@ -48,7 +48,7 @@ namespace Internal.Cryptography.Pal
 
                 case X509ContentType.SerializedCert:
                     {
-                        SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
+                        SafeCertContextHandle pCertContext = null;
                         if (!Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
                             return null;
 

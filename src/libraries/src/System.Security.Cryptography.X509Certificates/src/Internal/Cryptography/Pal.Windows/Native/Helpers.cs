@@ -23,11 +23,10 @@ namespace Internal.Cryptography.Pal.Native
         /// </summary>
         public static SafeHandle ToLpstrArray(this OidCollection oids, out int numOids)
         {
-            SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.InvalidHandle;
             if (oids == null || oids.Count == 0)
             {
                 numOids = 0;
-                return safeLocalAllocHandle;
+                return SafeLocalAllocHandle.InvalidHandle;
             }
 
             // Copy the oid strings to a local list to prevent a security race condition where
@@ -52,7 +51,7 @@ namespace Internal.Cryptography.Pal.Native
                     }
                 }
 
-                safeLocalAllocHandle = SafeLocalAllocHandle.Create(allocationSize);
+                SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.Create(allocationSize);
                 byte** pOidPointers = (byte**)(safeLocalAllocHandle.DangerousGetHandle());
                 byte* pOidContents = (byte*)(pOidPointers + numOids);
 

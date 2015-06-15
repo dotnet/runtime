@@ -27,7 +27,7 @@ namespace Internal.Cryptography.Pal
             {
                 LowLevelListWithIList<X509Certificate2> certificates = new LowLevelListWithIList<X509Certificate2>();
 
-                SafeCertContextHandle pCertContext = SafeCertContextHandle.InvalidHandle;
+                SafeCertContextHandle pCertContext = null;
                 while (Interop.crypt32.CertEnumCertificatesInStore(_certStore, ref pCertContext))
                 {
                     X509Certificate2 cert = new X509Certificate2(pCertContext.DangerousGetHandle());
@@ -49,7 +49,7 @@ namespace Internal.Cryptography.Pal
             unsafe
             {
                 SafeCertContextHandle existingCertContext = ((CertificatePal)certificate).CertContext;
-                SafeCertContextHandle enumCertContext = SafeCertContextHandle.InvalidHandle;
+                SafeCertContextHandle enumCertContext = null;
                 CERT_CONTEXT* pCertContext = existingCertContext.CertContext;
                 if (!Interop.crypt32.CertFindCertificateInStore(_certStore, CertFindType.CERT_FIND_EXISTING, pCertContext, ref enumCertContext))
                     return; // The certificate is not present in the store, simply return.
