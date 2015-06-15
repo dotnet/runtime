@@ -1,15 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 using Internal.Cryptography.Pal;
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -25,15 +20,22 @@ namespace Microsoft.Win32.SafeHandles
             get { return handle == IntPtr.Zero; }
         }
 
+        public static SafeX509ChainHandle InvalidHandle
+        {
+            get { return SafeHandleCache<SafeX509ChainHandle>.GetInvalidHandle(() => new SafeX509ChainHandle()); }
+        }
+
         protected override bool ReleaseHandle()
         {
             return ChainPal.ReleaseSafeX509ChainHandle(handle);
         }
 
-        internal static SafeX509ChainHandle InvalidHandle
+        protected override void Dispose(bool disposing)
         {
-            get { return new SafeX509ChainHandle(); }
+            if (!SafeHandleCache<SafeX509ChainHandle>.IsCachedInvalidHandle(this))
+            {
+                base.Dispose(disposing);
+            }
         }
     }
 }
-

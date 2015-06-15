@@ -104,15 +104,15 @@ namespace Internal.Cryptography.Pal.Native
             /// <summary>
             /// A less error-prone wrapper for CertEnumCertificatesInStore().
             /// 
-            /// To begin the enumeration, set pCertContext to SafeCertStoreHandle.InvalidHandle. Each iteration replaces pCertContext with
-            /// the next certificate in the iteration. The final call sets pCertContext back to SafeCertStoreHandle.InvalidHandle and returns "false"
-            /// to indicate the the end of the store has been reached.
+            /// To begin the enumeration, set pCertContext to null. Each iteration replaces pCertContext with
+            /// the next certificate in the iteration. The final call sets pCertContext to an invalid SafeCertStoreHandle 
+            /// and returns "false" to indicate the the end of the store has been reached.
             /// </summary>
             public static bool CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, ref SafeCertContextHandle pCertContext)
             {
                 unsafe
                 {
-                    CERT_CONTEXT* pPrevCertContext = pCertContext.Disconnect();
+                    CERT_CONTEXT* pPrevCertContext = pCertContext == null ? null : pCertContext.Disconnect();
                     pCertContext = CertEnumCertificatesInStore(hCertStore, pPrevCertContext);
                     return !pCertContext.IsInvalid;
                 }
@@ -226,13 +226,13 @@ namespace Internal.Cryptography.Pal.Native
             /// <summary>
             /// A less error-prone wrapper for CertEnumCertificatesInStore().
             /// 
-            /// To begin the enumeration, set pCertContext to SafeCertStoreHandle.InvalidHandle. Each iteration replaces pCertContext with
-            /// the next certificate in the iteration. The final call sets pCertContext back to SafeCertStoreHandle.InvalidHandle and returns "false"
-            /// to indicate the the end of the store has been reached.
+            /// To begin the enumeration, set pCertContext to null. Each iteration replaces pCertContext with
+            /// the next certificate in the iteration. The final call sets pCertContext to an invalid SafeCertStoreHandle 
+            /// and returns "false" to indicate the the end of the store has been reached.
             /// </summary>
             public static unsafe bool CertFindCertificateInStore(SafeCertStoreHandle hCertStore, CertFindType dwFindType, void* pvFindPara, ref SafeCertContextHandle pCertContext)
             {
-                CERT_CONTEXT* pPrevCertContext = pCertContext.Disconnect();
+                CERT_CONTEXT* pPrevCertContext = pCertContext == null ? null : pCertContext.Disconnect();
                 pCertContext = CertFindCertificateInStore(hCertStore, CertEncodingType.All, CertFindFlags.None, dwFindType, pvFindPara, pPrevCertContext);
                 return !pCertContext.IsInvalid;
             }
