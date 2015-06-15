@@ -105,8 +105,8 @@ namespace System.Net.Http.Headers
 
             // 'agent' is a host/token, i.e. use case-insensitive comparison. Use case-sensitive comparison for 'text'
             // since it is a quoted string.
-            if ((_code != other._code) || (string.Compare(_agent, other._agent, StringComparison.OrdinalIgnoreCase) != 0) ||
-                (string.CompareOrdinal(_text, other._text) != 0))
+            if ((_code != other._code) || (!string.Equals(_agent, other._agent, StringComparison.OrdinalIgnoreCase)) ||
+                (!string.Equals(_text, other._text, StringComparison.Ordinal)))
             {
                 return false;
             }
@@ -123,7 +123,9 @@ namespace System.Net.Http.Headers
 
         public override int GetHashCode()
         {
-            int result = _code.GetHashCode() ^ _agent.ToLowerInvariant().GetHashCode() ^ _text.GetHashCode();
+            int result = _code.GetHashCode() ^
+                StringComparer.OrdinalIgnoreCase.GetHashCode(_agent) ^
+                _text.GetHashCode();
 
             if (_date.HasValue)
             {

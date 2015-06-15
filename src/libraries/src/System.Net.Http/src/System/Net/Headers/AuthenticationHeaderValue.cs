@@ -74,19 +74,19 @@ namespace System.Net.Http.Headers
 
             if (string.IsNullOrEmpty(_parameter) && string.IsNullOrEmpty(other._parameter))
             {
-                return (string.Compare(_scheme, other._scheme, StringComparison.OrdinalIgnoreCase) == 0);
+                return (string.Equals(_scheme, other._scheme, StringComparison.OrdinalIgnoreCase));
             }
             else
             {
                 // Since we can't parse the parameter, we use case-sensitive comparison.
-                return (string.Compare(_scheme, other._scheme, StringComparison.OrdinalIgnoreCase) == 0) &&
-                    (string.CompareOrdinal(_parameter, other._parameter) == 0);
+                return string.Equals(_scheme, other._scheme, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(_parameter, other._parameter, StringComparison.Ordinal);
             }
         }
 
         public override int GetHashCode()
         {
-            int result = _scheme.ToLowerInvariant().GetHashCode();
+            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_scheme);
 
             if (!string.IsNullOrEmpty(_parameter))
             {

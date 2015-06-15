@@ -178,14 +178,14 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return (string.Compare(_dispositionType, other._dispositionType, StringComparison.OrdinalIgnoreCase) == 0) &&
+            return string.Equals(_dispositionType, other._dispositionType, StringComparison.OrdinalIgnoreCase) &&
                 HeaderUtilities.AreEqualCollections(_parameters, other._parameters);
         }
 
         public override int GetHashCode()
         {
             // The dispositionType string is case-insensitive.
-            return _dispositionType.ToLowerInvariant().GetHashCode() ^ NameValueHeaderValue.GetHashCode(_parameters);
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(_dispositionType) ^ NameValueHeaderValue.GetHashCode(_parameters);
         }
 
         // Implement ICloneable explicitly to allow derived types to "override" the implementation.

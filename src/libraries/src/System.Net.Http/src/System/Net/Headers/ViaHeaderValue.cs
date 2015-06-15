@@ -113,19 +113,20 @@ namespace System.Net.Http.Headers
 
             // Note that for token and host case-insensitive comparison is used. Comments are compared using case-
             // sensitive comparison.
-            return (string.Compare(_protocolVersion, other._protocolVersion, StringComparison.OrdinalIgnoreCase) == 0) &&
-                (string.Compare(_receivedBy, other._receivedBy, StringComparison.OrdinalIgnoreCase) == 0) &&
-                (string.Compare(_protocolName, other._protocolName, StringComparison.OrdinalIgnoreCase) == 0) &&
-                (string.CompareOrdinal(_comment, other._comment) == 0);
+            return string.Equals(_protocolVersion, other._protocolVersion, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_receivedBy, other._receivedBy, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_protocolName, other._protocolName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(_comment, other._comment, StringComparison.Ordinal);
         }
 
         public override int GetHashCode()
         {
-            int result = _protocolVersion.ToLowerInvariant().GetHashCode() ^ _receivedBy.ToLowerInvariant().GetHashCode();
+            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolVersion) ^
+                StringComparer.OrdinalIgnoreCase.GetHashCode(_receivedBy);
 
             if (!string.IsNullOrEmpty(_protocolName))
             {
-                result = result ^ _protocolName.ToLowerInvariant().GetHashCode();
+                result = result ^ StringComparer.OrdinalIgnoreCase.GetHashCode(_protocolName);
             }
 
             if (!string.IsNullOrEmpty(_comment))

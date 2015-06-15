@@ -3646,7 +3646,7 @@ namespace System.Xml
             int nameEndPos = await ParseNameAsync().ConfigureAwait(false);
             string target = _nameTable.Add(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos);
 
-            if (string.Compare(target, "xml", StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(target, "xml", StringComparison.OrdinalIgnoreCase))
             {
                 Throw(target.Equals("xml") ? SR.Xml_XmlDeclNotFirst : SR.Xml_InvalidPIName, target);
             }

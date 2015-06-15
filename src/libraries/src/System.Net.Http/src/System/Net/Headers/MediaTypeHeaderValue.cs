@@ -113,14 +113,14 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return (string.Compare(_mediaType, other._mediaType, StringComparison.OrdinalIgnoreCase) == 0) &&
+            return string.Equals(_mediaType, other._mediaType, StringComparison.OrdinalIgnoreCase) &&
                 HeaderUtilities.AreEqualCollections(_parameters, other._parameters);
         }
 
         public override int GetHashCode()
         {
             // The media-type string is case-insensitive.
-            return _mediaType.ToLowerInvariant().GetHashCode() ^ NameValueHeaderValue.GetHashCode(_parameters);
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(_mediaType) ^ NameValueHeaderValue.GetHashCode(_parameters);
         }
 
         public static MediaTypeHeaderValue Parse(string input)

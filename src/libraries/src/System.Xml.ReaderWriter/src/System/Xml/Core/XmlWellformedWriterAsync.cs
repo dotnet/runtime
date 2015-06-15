@@ -817,7 +817,7 @@ namespace System.Xml
                 }
 
                 // xml declaration is a special case (not a processing instruction, but we allow WriteProcessingInstruction as a convenience)
-                if (name.Length == 3 && string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) == 0)
+                if (name.Length == 3 && string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase))
                 {
                     if (_currentState != State.Start)
                     {

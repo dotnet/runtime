@@ -2139,7 +2139,7 @@ namespace System.Net.Http.Unit.Tests
 
                 if ((xs != null) && (ys != null))
                 {
-                    return string.Compare(xs, ys, StringComparison.OrdinalIgnoreCase) == 0;
+                    return string.Equals(xs, ys, StringComparison.OrdinalIgnoreCase);
                 }
 
                 return x.Equals(y);

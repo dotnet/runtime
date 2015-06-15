@@ -127,12 +127,12 @@ namespace System.Net.Http.Headers
             }
 
             return ((_from == other._from) && (_to == other._to) && (_length == other._length) &&
-                (string.Compare(_unit, other._unit, StringComparison.OrdinalIgnoreCase) == 0));
+                string.Equals(_unit, other._unit, StringComparison.OrdinalIgnoreCase));
         }
 
         public override int GetHashCode()
         {
-            int result = _unit.ToLowerInvariant().GetHashCode();
+            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_unit);
 
             if (HasRange)
             {
