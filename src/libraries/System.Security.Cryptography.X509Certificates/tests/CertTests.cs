@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
-using System.Text;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -10,13 +9,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     public static class CertTests
     {
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509CertTest()
         {
             const string CertSubject =
                 @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com";
 
-            using (X509Certificate cert = new X509Certificate("microsoft.cer"))
+            using (X509Certificate cert = new X509Certificate(Path.Combine("TestData", "microsoft.cer")))
             {
                 Assert.Equal(CertSubject, cert.Subject);
                 Assert.Equal(CertSubject, cert.Issuer);
@@ -50,13 +49,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2Test()
         {
             const string CertName =
                 @"E=admin@digsigtrust.com, CN=ABA.ECOM Root CA, O=""ABA.ECOM, INC."", L=Washington, S=DC, C=US";
 
-            using (X509Certificate2 cert2 = new X509Certificate2("test.cer"))
+            DateTime notBefore = new DateTime(1999, 7, 12, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();
+            DateTime notAfter = new DateTime(2009, 7, 9, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();
+
+            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.cer")))
             {
                 Assert.Equal(CertName, cert2.IssuerName.Name);
                 Assert.Equal(CertName, cert2.SubjectName.Name);
@@ -67,8 +69,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.True(pubKey.Key is RSACryptoServiceProvider);
                 Assert.Equal("RSA", pubKey.Oid.FriendlyName);
 
-                Assert.Equal(new DateTime(2009, 7, 9, 10, 33, 53), cert2.NotAfter);
-                Assert.Equal(new DateTime(1999, 7, 12, 10, 33, 53), cert2.NotBefore);
+                Assert.Equal(notAfter, cert2.NotAfter);
+                Assert.Equal(notBefore, cert2.NotBefore);
 
                 Assert.Equal("00D01E4090000046520000000100000004", cert2.SerialNumber);
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);
@@ -146,10 +148,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2CreateFromPfxFile()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2("DummyTcpServer.pfx"))
+            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "DummyTcpServer.pfx")))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -157,10 +159,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void X509Cert2CreateFromPfxWithPassword()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2("test.pfx", "test"))
+            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), "test"))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());

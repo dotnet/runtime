@@ -3,7 +3,7 @@
 
 using System.Linq;
 using System.Collections;
-
+using System.IO;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -268,13 +268,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(1977, PlatformID.Any)]
+        [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void ImportFromFileTests()
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
                 X509Certificate2Collection cc2 = new X509Certificate2Collection();
-                cc2.Import(@"TestData\My.pfx", TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet);
+                cc2.Import(Path.Combine("TestData" ,"My.pfx"), TestData.PfxDataPassword, X509KeyStorageFlags.DefaultKeySet);
                 int count = cc2.Count;
                 Assert.Equal(1, count);
 
