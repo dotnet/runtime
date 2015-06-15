@@ -1881,6 +1881,9 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		int file_index = add_line_number_file_name (w, loc->source_file, 0, 0);
 		emit_uleb128 (w, file_index + 1);
 		emit_uleb128 (w, loc->row);
+
+		mono_debug_symfile_free_location (loc);
+		loc = NULL;
 	} else {
 		emit_uleb128 (w, 0);
 		emit_uleb128 (w, 0);
