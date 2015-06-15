@@ -55,7 +55,7 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 #endif
 	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000 + t.tv_usec * 1000;
-	while (ts.tv_nsec > NSEC_PER_SEC) {
+	while (ts.tv_nsec >= NSEC_PER_SEC) {
 		ts.tv_nsec -= NSEC_PER_SEC;
 		ts.tv_sec++;
 	}
