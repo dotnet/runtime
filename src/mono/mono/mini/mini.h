@@ -2837,6 +2837,7 @@ MonoType* mini_type_get_underlying_type (MonoGenericSharingContext *gsctx, MonoT
 MonoMethod* mini_get_shared_method (MonoMethod *method);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
 MonoMethod* mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt);
+int mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry);
 
 int mini_type_stack_size (MonoGenericSharingContext *gsctx, MonoType *t, int *align);
 int mini_type_stack_size_full (MonoGenericSharingContext *gsctx, MonoType *t, guint32 *align, gboolean pinvoke);

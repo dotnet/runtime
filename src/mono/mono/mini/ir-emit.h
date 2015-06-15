@@ -754,8 +754,8 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 		(b)->real_offset = cfg->real_offset;	\
 	} while (0)
 
-/* Emit a one-way conditional branch */
-/* 
+/*
+ * Emit a one-way conditional branch and start a new bblock.
  * The inst_false_bb field of the cond branch will not be set, the JIT code should be
  * prepared to deal with this.
  */

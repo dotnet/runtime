@@ -3084,6 +3084,68 @@ mini_get_shared_method (MonoMethod *method)
 	return mini_get_shared_method_full (method, FALSE, FALSE);
 }
 
+int
+mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
+{
+	guint32 slot = -1;
+
+	switch (entry->data->type) {
+	case MONO_PATCH_INFO_CLASS:
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, &entry->data->data.klass->byval_arg, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	case MONO_PATCH_INFO_METHOD:
+	case MONO_PATCH_INFO_METHODCONST:
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, entry->data->data.method, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	case MONO_PATCH_INFO_FIELD:
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, entry->data->data.field, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	case MONO_PATCH_INFO_SIGNATURE:
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, entry->data->data.sig, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+		MonoJumpInfoGSharedVtCall *call_info = g_malloc0 (sizeof (MonoJumpInfoGSharedVtCall)); //mono_domain_alloc0 (domain, sizeof (MonoJumpInfoGSharedVtCall));
+
+		memcpy (call_info, entry->data->data.gsharedvt, sizeof (MonoJumpInfoGSharedVtCall));
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, call_info, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	}
+	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+		MonoGSharedVtMethodInfo *info;
+		MonoGSharedVtMethodInfo *oinfo = entry->data->data.gsharedvt_method;
+		int i;
+
+		/* Make a copy into the domain mempool */
+		info = g_malloc0 (sizeof (MonoGSharedVtMethodInfo)); //mono_domain_alloc0 (domain, sizeof (MonoGSharedVtMethodInfo));
+		info->method = oinfo->method;
+		info->num_entries = oinfo->num_entries;
+		info->entries = g_malloc0 (sizeof (MonoRuntimeGenericContextInfoTemplate) * info->num_entries);
+		for (i = 0; i < oinfo->num_entries; ++i) {
+			MonoRuntimeGenericContextInfoTemplate *otemplate = &oinfo->entries [i];
+			MonoRuntimeGenericContextInfoTemplate *template = &info->entries [i];
+
+			memcpy (template, otemplate, sizeof (MonoRuntimeGenericContextInfoTemplate));
+		}
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	}
+	case MONO_PATCH_INFO_VIRT_METHOD: {
+		MonoJumpInfoVirtMethod *info;
+		MonoJumpInfoVirtMethod *oinfo = entry->data->data.virt_method;
+
+		info = g_malloc0 (sizeof (MonoJumpInfoVirtMethod));
+		memcpy (info, oinfo, sizeof (MonoJumpInfoVirtMethod));
+		slot = mono_method_lookup_or_register_info (entry->method, entry->in_mrgctx, info, entry->info_type, mono_method_get_context (entry->method));
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	return slot;
+}
+
 #if defined(ENABLE_GSHAREDVT)
 
 #include "../../../mono-extensions/mono/mini/mini-generic-sharing-gsharedvt.c"

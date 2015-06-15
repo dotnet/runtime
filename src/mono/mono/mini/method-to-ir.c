@@ -3368,6 +3368,12 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 	}
 }
 
+/*
+ * emit_get_rgctx:
+ *
+ *   Emit IR to return either the this pointer for instance method,
+ * or the mrgctx for static methods.
+ */
 static MonoInst*
 emit_get_rgctx (MonoCompile *cfg, MonoMethod *method, int context_used)
 {
@@ -3432,10 +3438,100 @@ mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean i
 	return res;
 }
 
+/*
+ * emit_rgctx_fetch:
+ *
+ *   Emit IR to load the value of the rgctx entry ENTRY from the rgctx
+ * given by RGCTX.
+ */
 static inline MonoInst*
 emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
 {
+	/* Inline version, not currently used */
+#if 0
+	int i, slot, depth, index, rgctx_reg, val_reg, res_reg;
+	gboolean mrgctx;
+	MonoBasicBlock *is_null_bb, *end_bb;
+	MonoInst *res, *ins, *call;
+
+	slot = mini_get_rgctx_entry_slot (entry);
+
+	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
+	index = MONO_RGCTX_SLOT_INDEX (slot);
+	if (mrgctx)
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+	for (depth = 0; ; ++depth) {
+		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
+
+		if (index < size - 1)
+			break;
+		index -= size - 1;
+	}
+
+	NEW_BBLOCK (cfg, end_bb);
+	NEW_BBLOCK (cfg, is_null_bb);
+
+	if (mrgctx) {
+		rgctx_reg = rgctx->dreg;
+	} else {
+		rgctx_reg = alloc_preg (cfg);
+
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, rgctx_reg, rgctx->dreg, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
+		// FIXME: Avoid this check by allocating the table when the vtable is created etc.
+		NEW_BBLOCK (cfg, is_null_bb);
+
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+	}
+
+	for (i = 0; i < depth; ++i) {
+		int array_reg = alloc_preg (cfg);
+
+		/* load ptr to next array */
+		if (mrgctx && i == 0)
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, rgctx_reg, MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT);
+		else
+			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, rgctx_reg, 0);
+		rgctx_reg = array_reg;
+		/* is the ptr null? */
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
+		/* if yes, jump to actual trampoline */
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+	}
+
+	/* fetch slot */
+	val_reg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, val_reg, rgctx_reg, (index + 1) * sizeof (gpointer));
+	/* is the slot null? */
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, val_reg, 0);
+	/* if yes, jump to actual trampoline */
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+
+	/* Fastpath */
+	res_reg = alloc_preg (cfg);
+	MONO_INST_NEW (cfg, res, OP_MOVE);
+	res->dreg = res_reg;
+	res->sreg1 = val_reg;
+	MONO_ADD_INS (cfg->cbb, res);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+	/* Slowpath */
+	MONO_START_BB (cfg, is_null_bb);
+	// FIXME: This should use a jit icall
+	call = mono_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
+	MONO_INST_NEW (cfg, ins, OP_MOVE);
+	ins->dreg = res_reg;
+	ins->sreg1 = call->dreg;
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
+
+	MONO_START_BB (cfg, end_bb);
+
+	return res;
+#else
 	return mono_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
+#endif
 }
 
 static MonoInst*
