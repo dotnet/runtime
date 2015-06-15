@@ -817,7 +817,9 @@ emit_all_line_number_info (MonoDwarfWriter *w)
 		MethodLineNumberInfo *info = l->data;
 		MonoDebugMethodJitInfo *dmji;
 
-		dmji = mono_debug_find_method (info->method, mono_domain_get ());;
+		dmji = mono_debug_find_method (info->method, mono_domain_get ());
+		if (!dmji)
+			continue;
 		emit_line_number_info (w, info->method, info->start_symbol, info->end_symbol, info->code, info->code_size, dmji);
 		mono_debug_free_method_jit_info (dmji);
 	}
