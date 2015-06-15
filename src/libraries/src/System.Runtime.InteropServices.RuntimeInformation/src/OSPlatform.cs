@@ -41,8 +41,8 @@ namespace System.Runtime.InteropServices
 
         private OSPlatform(string osPlatform)
         {
-            if (osPlatform == null) throw new ArgumentNullException("name");
-            if (osPlatform.Length == 0) throw new ArgumentException(SR.Argument_EmptyValue, "name");
+            if (osPlatform == null) throw new ArgumentNullException("osPlatform");
+            if (osPlatform.Length == 0) throw new ArgumentException(SR.Argument_EmptyValue, "osPlatform");
             
             _osPlatform = osPlatform;
         }
