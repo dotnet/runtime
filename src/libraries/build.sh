@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __packageroot=$__scriptpath/packages
@@ -11,6 +11,8 @@ __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MS
 
 if [ $(uname) == "Linux" ]; then
     __monoroot=/usr
+elif [ $(uname) == "FreeBSD" ]; then
+    __monoroot=/usr/local
 else
     __monoroot=/Library/Frameworks/Mono.framework/Versions/Current
 fi
@@ -69,6 +71,8 @@ fi
 
 if [ $(uname) == "Linux" ]; then
     __osgroup=Linux
+elif [ $(uname) == "FreeBSD" ]; then
+    __osgroup=FreeBSD
 else
     __osgroup=OSX
 fi
