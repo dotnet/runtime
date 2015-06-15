@@ -1,21 +1,26 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
 using System.Collections;
 using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509ChainElementCollection : ICollection, IEnumerable
     {
+        private readonly X509ChainElement[] _elements;
+
+        internal X509ChainElementCollection()
+        {
+            _elements = Array.Empty<X509ChainElement>();
+        }
+
+        internal X509ChainElementCollection(X509ChainElement[] chainElements)
+        {
+            Debug.Assert(chainElements != null, "chainElements != null");
+            _elements = chainElements;
+        }
+
         public int Count
         {
             get { return _elements.Length; }
@@ -26,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates
             get { return false; }
         }
 
-        public Object SyncRoot
+        public object SyncRoot
         {
             get { return this; }
         }
@@ -79,21 +84,5 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return new X509ChainElementEnumerator(this);
         }
-
-        internal X509ChainElementCollection()
-        {
-            _elements = new X509ChainElement[0];
-            return;
-        }
-
-        internal X509ChainElementCollection(IEnumerable<X509ChainElement> chainElements)
-        {
-            _elements = new LowLevelList<X509ChainElement>(chainElements).ToArray();
-            return;
-        }
-
-
-        private X509ChainElement[] _elements;
     }
 }
-
