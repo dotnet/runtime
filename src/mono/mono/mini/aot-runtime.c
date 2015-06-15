@@ -2079,6 +2079,20 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	init_gots (amodule);
 
 	/*
+	 * Register the plt region as a single trampoline so we can unwind from this code
+	 */
+	mono_tramp_info_register (
+		mono_tramp_info_create (
+			NULL,
+			amodule->plt,
+			amodule->plt_end - amodule->plt,
+			NULL,
+			mono_unwind_get_cie_program ()
+			),
+		NULL
+		);
+
+	/*
 	 * Since we store methoddef and classdef tokens when referring to methods/classes in
 	 * referenced assemblies, we depend on the exact versions of the referenced assemblies.
 	 * MS calls this 'hard binding'. This means we have to load all referenced assemblies
