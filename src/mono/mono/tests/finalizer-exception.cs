@@ -18,7 +18,8 @@ public class FinalizerException {
 		int* values = stackalloc int [20];
 		aptr = new IntPtr (values);
 		if (depth <= 0) {
-			new FinalizerException ();
+			for (int i = 0; i < 10; i++)
+				new FinalizerException ();
 			return;
 		}
 		MakeException (depth - 1);
