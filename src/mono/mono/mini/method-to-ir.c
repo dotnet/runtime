@@ -5353,7 +5353,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 		g_assert (cfg->generic_sharing_context);
 		context_used = mini_class_check_context_used (cfg, klass);
 		g_assert (context_used);
-		rgctx_ins = emit_get_gsharedvt_info (cfg, &klass->byval_arg, MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE);
+		rgctx_ins = emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_ARRAY_ELEMENT_SIZE);
 		MONO_EMIT_NEW_BIALU (cfg, OP_IMUL, mult_reg, index2_reg, rgctx_ins->dreg);
 	} else {
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_MUL_IMM, mult_reg, index2_reg, size);
