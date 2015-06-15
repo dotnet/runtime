@@ -96,10 +96,7 @@ namespace System.Xml
 
         static public XmlDictionaryReader CreateTextReader(Stream stream, XmlDictionaryReaderQuotas quotas)
         {
-            XmlReaderSettings readerSettings = new XmlReaderSettings();
-            readerSettings.CheckCharacters = false;
-            XmlReader reader = XmlReader.Create(stream, readerSettings);
-            return XmlDictionaryReader.CreateDictionaryReader(reader);
+            return CreateTextReader(stream, null, quotas, null);
         }
 
         static public XmlDictionaryReader CreateTextReader(Stream stream, Encoding encoding,
