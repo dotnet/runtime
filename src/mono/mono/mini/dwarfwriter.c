@@ -1645,8 +1645,12 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		prev_il_offset = il_offset;
 
 		loc = mono_debug_symfile_lookup_location (minfo, il_offset);
-		if (!(loc && loc->source_file))
+		if (!loc)
 			continue;
+		if (!loc->source_file) {
+			mono_debug_symfile_free_location (loc);
+			continue;
+		}
 
 		line_diff = (gint32)loc->row - (gint32)prev_line;
 		addr_diff = i - prev_native_offset;
