@@ -1017,7 +1017,6 @@ typedef struct {
 	gint32 vcall_offset;
 	gpointer addr;
 	MonoMethodSignature *sig, *gsig;
-	MonoGenericContext gsctx;
 } GSharedVtTrampInfo;
 
 static guint
@@ -1036,8 +1035,7 @@ tramp_info_equal (gconstpointer a, gconstpointer b)
 
 	/* The signatures should be internalized */
 	return tramp1->is_in == tramp2->is_in && tramp1->calli == tramp2->calli && tramp1->vcall_offset == tramp2->vcall_offset &&
-		tramp1->addr == tramp2->addr && tramp1->sig == tramp2->sig && tramp1->gsig == tramp2->gsig &&
-		tramp1->gsctx.class_inst == tramp2->gsctx.class_inst && tramp1->gsctx.method_inst == tramp2->gsctx.method_inst;
+		tramp1->addr == tramp2->addr && tramp1->sig == tramp2->sig && tramp1->gsig == tramp2->gsig;
 }
 
 /*
@@ -1062,13 +1060,13 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 		inited = TRUE;
 	}
 
+	memset (&tinfo, 0, sizeof (tinfo));
 	tinfo.is_in = gsharedvt_in;
 	tinfo.calli = calli;
 	tinfo.vcall_offset = vcall_offset;
 	tinfo.addr = addr;
 	tinfo.sig = normal_sig;
 	tinfo.gsig = gsharedvt_sig;
-	memcpy (&tinfo.gsctx, gsctx, sizeof (MonoGenericSharingContext));
 
 	domain_info = domain_jit_info (domain);
 
@@ -1282,22 +1280,11 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoMethodSignature *gsig = oti->data;
 		MonoMethodSignature *sig = data;
 		gpointer addr;
-		MonoJitInfo *caller_ji;
-		MonoGenericJitInfo *gji;
 
 		/*
 		 * This is an indirect call to the address passed by the caller in the rgctx reg.
 		 */
-		//printf ("CALLI\n");
-
-		g_assert (caller);
-		caller_ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (caller), NULL);
-		g_assert (caller_ji);
-		gji = mono_jit_info_get_generic_jit_info (caller_ji);
-		g_assert (gji);
-
-		addr = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, gji->generic_sharing_context, -1, TRUE);
-
+		addr = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, NULL, -1, TRUE);
 		return addr;
 	}
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
@@ -1306,10 +1293,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoMethodSignature *call_sig;
 		MonoMethod *method;
 		gpointer addr;
-		MonoJitInfo *caller_ji, *callee_ji;
+		MonoJitInfo *callee_ji;
 		gboolean virtual = oti->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT;
 		gint32 vcall_offset;
-		MonoGenericJitInfo *gji, *callee_gji = NULL;
 		gboolean callee_gsharedvt;
 
 		/* This is the original generic signature used by the caller */
@@ -1341,19 +1327,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			vcall_offset = -1;
 		}
 
-		g_assert (caller);
-		caller_ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (caller), NULL);
-		g_assert (caller_ji);
-		gji = mono_jit_info_get_generic_jit_info (caller_ji);
-		g_assert (gji);
-
 		// FIXME: This loads information in the AOT case
 		callee_ji = mini_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (addr), NULL);
 		callee_gsharedvt = ji_is_gsharedvt (callee_ji);
-		if (callee_gsharedvt) {
-			callee_gji = mono_jit_info_get_generic_jit_info (callee_ji);
-			g_assert (callee_gji);
-		}
 
 		/*
 		 * For gsharedvt calls made out of gsharedvt methods, the callee could end up being a gsharedvt method, or a normal
@@ -1374,7 +1350,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			sig = mono_method_signature (method);
 			gsig = call_sig;
 
-			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, gji->generic_sharing_context, vcall_offset, FALSE);
+			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, NULL, vcall_offset, FALSE);
 #if 0
 			if (virtual)
 				printf ("OUT-VCALL: %s\n", mono_method_full_name (method, TRUE));
@@ -1406,12 +1382,12 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				sig = mono_method_signature (method);
 				gsig = mono_method_signature (jinfo_get_method (callee_ji)); 
 
-				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, callee_gji->generic_sharing_context, -1, FALSE);
+				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, NULL, -1, FALSE);
 
 				sig = mono_method_signature (method);
 				gsig = call_sig;
 
-				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, gji->generic_sharing_context, -1, FALSE);
+				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, NULL, -1, FALSE);
 
 				//printf ("OUT-IN-RGCTX: %s\n", mono_method_full_name (method, TRUE));
 			}
