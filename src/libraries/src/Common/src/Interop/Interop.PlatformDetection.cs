@@ -4,8 +4,8 @@
 using System;
 using System.Runtime.InteropServices;
 
-// TODO: This implementation is temporary until Environment.OSVersion is officially exposed,
-//       at which point that should be used instead.
+// TODO: This implementation is temporary until System.Runtime.InteropServices.RuntimeInformation
+//       is available, at which point that should be used instead.
 
 internal static partial class Interop
 {
@@ -39,22 +39,27 @@ internal static partial class Interop
         {
             if (Environment.NewLine != "\r\n")
             {
-                unsafe
+                IntPtr buffer = Marshal.AllocHGlobal(8192); // the size of the uname struct is platform-specific; this should be large enough for any OS
+                try
                 {
-                    byte* buffer = stackalloc byte[8192]; // the size use with uname is platform specific; this should be large enough for any OS
                     if (uname(buffer) == 0)
                     {
-                        return Marshal.PtrToStringAnsi((IntPtr)buffer) == "Darwin" ?
-                            OperatingSystem.OSX :
-                            OperatingSystem.Linux;
+                        switch (Marshal.PtrToStringAnsi((IntPtr)buffer))
+                        {
+                            case "Darwin":
+                                return OperatingSystem.OSX;
+                            default:
+                                return OperatingSystem.Linux;
+                        }
                     }
                 }
+                finally { Marshal.FreeHGlobal(buffer); }
             }
             return OperatingSystem.Windows;
         });
 
         // not in src\Interop\Unix to avoiding pulling platform-dependent files into all projects
         [DllImport("libc")]
-        private static extern unsafe uint uname(byte* buf); 
+        private static extern uint uname(IntPtr buf); 
     }
 }

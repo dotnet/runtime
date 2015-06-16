@@ -9,7 +9,6 @@
     <RootNamespace>System.Diagnostics.Process.Tests</RootNamespace>
     <AssemblyName>System.Diagnostics.Process.Tests</AssemblyName>
     <NuGetPackageImportStamp>b62eec4b</NuGetPackageImportStamp>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
