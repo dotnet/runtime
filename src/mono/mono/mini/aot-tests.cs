@@ -106,6 +106,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("DYNCALL")]
 	[Category ("GSHAREDVT")]
 	static int test_0_arm64_dyncall_gsharedvt_out_hfa_double () {
 		/* gsharedvt out trampoline with double hfa argument */
@@ -124,6 +125,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("DYNCALL")]
 	[Category ("GSHAREDVT")]
 	static int test_0_arm64_dyncall_gsharedvt_out_hfa_float () {
 		/* gsharedvt out trampoline with double hfa argument */
