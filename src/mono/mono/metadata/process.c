@@ -113,6 +113,20 @@ static void process_set_field_string (MonoObject *obj, const gchar *fieldname,
 	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
+static void process_set_field_string_char (MonoObject *obj, const gchar *fieldname,
+				      const gchar *val)
+{
+	MonoClassField *field;
+	MonoString *string;
+
+	LOGDEBUG (g_message ("%s: Setting field %s to [%s]", __func__, fieldname, val));
+
+	string=mono_string_new (mono_object_domain (obj), val);
+	
+	field=mono_class_get_field_from_name (mono_object_class (obj), fieldname);
+	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
+}
+
 static void process_set_field_int (MonoObject *obj, const gchar *fieldname,
 				   guint32 val)
 {
@@ -350,9 +364,49 @@ static void process_get_fileversion (MonoObject *filever, gunichar2 *filename)
 	}
 }
 
+static void process_get_assembly_fileversion (MonoObject *filever, MonoAssembly *assembly)
+{
+	process_set_field_int (filever, "filemajorpart", assembly->aname.major);
+	process_set_field_int (filever, "fileminorpart", assembly->aname.minor);
+	process_set_field_int (filever, "filebuildpart", assembly->aname.build);
+}
+
+static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_class)
+{
+	static MonoClass *filever_class = NULL;
+	MonoObject *item, *filever;
+	MonoDomain *domain = mono_domain_get ();
+	char filename [80] = "[In Memory] ";
+	char *modulename = assembly->aname.name;
+
+	strncat (filename, modulename, 80);
+
+	/* Build a System.Diagnostics.ProcessModule with the data.
+	 */
+	item = mono_object_new (domain, proc_class);
+
+	if (!filever_class)
+		filever_class = mono_class_from_name (system_assembly,
+					    "System.Diagnostics",
+					    "FileVersionInfo");
+
+	filever = mono_object_new (domain, filever_class);
+
+	process_get_assembly_fileversion (filever, assembly);
+	process_set_field_string_char (filever, "filename", filename);
+	process_set_field_object (item, "version_info", filever);
+
+	process_set_field_intptr (item, "baseaddr", assembly->image->raw_data);
+	process_set_field_int (item, "memory_size", assembly->image->raw_data_len);
+	process_set_field_string_char (item, "filename", filename);
+	process_set_field_string_char (item, "modulename", modulename);
+
+	return item;
+}
+
 static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 *modulename, MonoClass *proc_class)
 {
-	MonoClass *filever_class;
+	static MonoClass *filever_class = NULL;
 	MonoObject *item, *filever;
 	MonoDomain *domain=mono_domain_get ();
 	MODULEINFO modinfo;
@@ -362,9 +416,11 @@ static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *f
 	 */
 	item=mono_object_new (domain, proc_class);
 
-	filever_class=mono_class_from_name (system_assembly,
+	if (!filever_class)
+		filever_class=mono_class_from_name (system_assembly,
 					    "System.Diagnostics",
 					    "FileVersionInfo");
+
 	filever=mono_object_new (domain, filever_class);
 
 	process_get_fileversion (filever, filename);
@@ -390,6 +446,28 @@ static MonoObject* process_add_module (HANDLE process, HMODULE mod, gunichar2 *f
 	return item;
 }
 
+static GPtrArray* get_domain_assemblies (MonoDomain *domain)
+{
+	GSList *tmp;
+	GPtrArray *assemblies;
+
+	/* 
+	 * Make a copy of the list of assemblies because we can't hold the assemblies
+	 * lock while creating objects etc.
+	 */
+	assemblies = g_ptr_array_new ();
+	mono_domain_assemblies_lock (domain);
+	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+		MonoAssembly *ass = tmp->data;
+		if (ass->image->fileio_used)
+			continue;
+		g_ptr_array_add (assemblies, ass);
+	}
+	mono_domain_assemblies_unlock (domain);
+
+	return assemblies;
+}
+
 /* Returns an array of System.Diagnostics.ProcessModule */
 MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this, HANDLE process)
 {
@@ -399,24 +477,60 @@ MonoArray *ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject 
 	gunichar2 filename[MAX_PATH];
 	gunichar2 modname[MAX_PATH];
 	DWORD needed;
-	guint32 count = 0;
+	guint32 count = 0, module_count = 0, assembly_count = 0;
 	guint32 i, num_added = 0;
-	MonoClass *proc_class;
+	static MonoClass *proc_class = NULL;
+	GPtrArray *assemblies = NULL;
+	static HANDLE current_process = 0;
+	
+	if (current_process == 0) {
+		int pid = mono_process_current_pid ();
+		current_process = ves_icall_System_Diagnostics_Process_GetProcess_internal (pid);
+	}
 
 	STASH_SYS_ASS (this);
 
+	if (process == current_process) {
+		assemblies = get_domain_assemblies (mono_domain_get ());
+		assembly_count = assemblies->len;
+	}
+
 	if (EnumProcessModules (process, mods, sizeof(mods), &needed)) {
-		count = needed / sizeof(HMODULE);
+		module_count += needed / sizeof(HMODULE);
+	}
+
+	count = module_count + assembly_count; 
+	if (!proc_class)
 		proc_class = mono_class_from_name (system_assembly, "System.Diagnostics", "ProcessModule");
-		temp_arr = mono_array_new (mono_domain_get (), proc_class, count);
-		for (i = 0; i < count; i++) {
-			if (GetModuleBaseName (process, mods[i], modname, MAX_PATH) &&
-					GetModuleFileNameEx (process, mods[i], filename, MAX_PATH)) {
-				MonoObject *module = process_add_module (process, mods[i],
-						filename, modname, proc_class);
-				mono_array_setref (temp_arr, num_added++, module);
-			}
+
+	temp_arr = mono_array_new (mono_domain_get (), proc_class, count);
+
+	for (i = 0; i < module_count; i++) {
+		if (GetModuleBaseName (process, mods[i], modname, MAX_PATH) &&
+				GetModuleFileNameEx (process, mods[i], filename, MAX_PATH)) {
+			MonoObject *module = process_add_module (process, mods[i],
+					filename, modname, proc_class);
+			mono_array_setref (temp_arr, num_added++, module);
 		}
+	}
+
+	if (assemblies) {
+		for (i = 0; i < assembly_count; i++) {
+			MonoAssembly *ass = g_ptr_array_index (assemblies, i);
+			MonoObject *module = get_process_module (ass, proc_class);
+			mono_array_setref (temp_arr, num_added++, module);
+		}
+		g_ptr_array_free (assemblies, TRUE);
+	}
+
+	if (count == num_added) {
+		arr = temp_arr;
+	} else {
+		/* shorter version of the array */
+		arr = mono_array_new (mono_domain_get (), proc_class, num_added);
+
+		for (i = 0; i < num_added; i++)
+			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
 	}
 
 	if (count == num_added) {
