@@ -1271,6 +1271,16 @@ public static class DataContractJsonSerializerTests
         Assert.True(output.OnDeserializedMethodInvoked, "output.OnDeserializedMethodInvoked is false");
     }
 
+    [Fact]
+    public static void DCJS_DeserializeEmptyString()
+    {
+        var serializer = new DataContractJsonSerializer(typeof (object));
+        Assert.Throws<SerializationException>(() =>
+        {
+            serializer.ReadObject(new MemoryStream());
+        });
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null)
     {
         DataContractJsonSerializer dcjs;

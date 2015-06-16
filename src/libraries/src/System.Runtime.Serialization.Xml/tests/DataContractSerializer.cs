@@ -1703,6 +1703,16 @@ public static class DataContractSerializerTests
         Assert.StrictEqual(value.TestProperty, actual.TestProperty);
     }
 
+    [Fact]
+    public static void DCS_DeserializeEmptyString()
+    {
+        var serializer = new DataContractSerializer(typeof (object));
+        Assert.Throws<XmlException>(() =>
+        {
+            serializer.ReadObject(new MemoryStream());
+        });
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)
     {
         DataContractSerializer dcs;
