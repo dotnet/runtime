@@ -10,6 +10,32 @@
   <Target Name="GetAssemblyVersion"
           Returns="$(AssemblyVersion)"/>
 
+  <!-- Returns the set of files to be included in the nuget package
+       with appropriate metadata.-->
+  <Target Name="GetFilesToPackage"
+          Returns="@(FilesToPackage)">
+
+    <PropertyGroup>
+      <PackagePath Condition="'$(PackagePath)' == ''">$(TargetPath)</PackagePath>
+      <DocPackagePath Condition="'$(DocPackagePath)' == ''">$(DocumentationFile)</DocPackagePath>
+
+       <!-- default to treat as 'dotnet' package based portable library -->
+      <PackageTargetFramework Condition="'$(PackageTargetFramework)' == ''">dotnet</PackageTargetFramework>
+      <PackageTargetPath Condition="'$(PackageTargetPath)' == ''">lib/dotnet</PackageTargetPath>
+    </PropertyGroup>
+    
+    <ItemGroup>
+       <FilesToPackage Include="$(PackagePath)">
+         <TargetFramework>$(PackageTargetFramework)</TargetFramework>
+         <TargetPath>$(PackageTargetPath)</TargetPath>
+       </FilesToPackage>
+       <FilesToPackage Include="$(DocPackagePath)" Condition="Exists('$(DocPackagePath)')">
+         <TargetFramework>$(PackageTargetFramework)</TargetFramework>
+         <TargetPath>$(PackageTargetPath)</TargetPath>
+       </FilesToPackage>
+    </ItemGroup>
+  </Target>
+
   <Import Project="$(ToolsDir)Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets')" />
   <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
 
