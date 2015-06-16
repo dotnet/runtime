@@ -1128,7 +1128,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 
 static gpointer
 instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti,
-				  MonoGenericContext *context, MonoClass *class, guint8 *caller)
+				  MonoGenericContext *context, MonoClass *class)
 {
 	gpointer data;
 	gboolean temporary;
@@ -1426,7 +1426,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				offset += size;
 				break;
 			default:
-				res->entries [i] = instantiate_info (domain, template, context, class, NULL);
+				res->entries [i] = instantiate_info (domain, template, context, class);
 				break;
 			}
 		}
@@ -1792,7 +1792,7 @@ alloc_rgctx_array (MonoDomain *domain, int n, gboolean is_mrgctx)
 }
 
 static gpointer
-fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContext *rgctx, guint8 *caller, guint32 slot,
+fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContext *rgctx, guint32 slot,
 		MonoGenericInst *method_inst)
 {
 	gpointer info;
@@ -1847,7 +1847,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	oti = class_get_rgctx_template_oti (get_shared_class (class),
 										method_inst ? method_inst->type_argc : 0, slot, TRUE, TRUE, &do_free);
 	/* This might take the loader lock */
-	info = instantiate_info (domain, &oti, &context, class, caller);
+	info = instantiate_info (domain, &oti, &context, class);
 
 	/*
 	if (method_inst)
@@ -1875,13 +1875,12 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 /*
  * mono_class_fill_runtime_generic_context:
  * @class_vtable: a vtable
- * @caller: caller method address
  * @slot: a slot index to be instantiated
  *
  * Instantiates a slot in the RGCTX, returning its value.
  */
 gpointer
-mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint8 *caller, guint32 slot)
+mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot)
 {
 	static gboolean inited = FALSE;
 	static int num_alloced = 0;
@@ -1906,7 +1905,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint8 *calle
 
 	mono_domain_unlock (domain);
 
-	info = fill_runtime_generic_context (class_vtable, rgctx, caller, slot, 0);
+	info = fill_runtime_generic_context (class_vtable, rgctx, slot, 0);
 
 	DEBUG (printf ("get rgctx slot: %s %d -> %p\n", mono_type_full_name (&class_vtable->klass->byval_arg), slot, info));
 
@@ -1916,18 +1915,16 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint8 *calle
 /*
  * mono_method_fill_runtime_generic_context:
  * @mrgctx: an MRGCTX
- * @caller: caller method address
  * @slot: a slot index to be instantiated
  *
  * Instantiates a slot in the MRGCTX.
  */
 gpointer
-mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint8* caller, guint32 slot)
+mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot)
 {
 	gpointer info;
 
-	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, caller, slot,
-		mrgctx->method_inst);
+	info = fill_runtime_generic_context (mrgctx->class_vtable, (MonoRuntimeGenericContext*)mrgctx, slot, mrgctx->method_inst);
 
 	return info;
 }
