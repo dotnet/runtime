@@ -66,8 +66,13 @@ public class SyncTextReader
         }
         finally
         {
+            TextWriter oldWriter = Console.Out;
             Console.SetOut(savedStandardOutput);
+            oldWriter.Dispose();
+
+            TextReader oldReader = Console.In;
             Console.SetIn(savedStandardInput);
+            oldReader.Dispose();
         }
     }
 
@@ -163,6 +168,12 @@ public class SyncTextReader
             Assert.Equal(5, result);
             Assert.Equal(expected, buffer);
             Assert.Equal(-1, Console.Read()); // We should be at EOF now. 
+
+            // Invalid args
+            Assert.Throws<ArgumentNullException>(() => { Console.In.ReadBlockAsync(null, 0, 0); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Console.In.ReadBlockAsync(new char[1], -1, 0); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Console.In.ReadBlockAsync(new char[1], 0, -1); });
+            Assert.Throws<ArgumentException>(() => { Console.In.ReadBlockAsync(new char[1], 1, 1); });
         });
     }
 
@@ -181,6 +192,12 @@ public class SyncTextReader
             Assert.Equal(5, result);
             Assert.Equal(expected, buffer);
             Assert.Equal(-1, Console.Read()); // We should be at EOF now.
+
+            // Invalid args
+            Assert.Throws<ArgumentNullException>(() => { Console.In.ReadAsync(null, 0, 0); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Console.In.ReadAsync(new char[1], -1, 0); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { Console.In.ReadAsync(new char[1], 0, -1); });
+            Assert.Throws<ArgumentException>(() => { Console.In.ReadAsync(new char[1], 1, 1); });
         });
     }
 

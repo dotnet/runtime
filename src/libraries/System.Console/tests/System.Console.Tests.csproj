@@ -8,12 +8,11 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Console.Tests</AssemblyName>
     <RootNamespace>System.Console.Tests</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CancelKeyPress.cs" />
     <Compile Include="Helpers.cs" />
@@ -27,6 +26,7 @@
     <Compile Include="Timeout.cs" />
     <Compile Include="ThreadSafety.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.PlatformDetection.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Console.csproj">
