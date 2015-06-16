@@ -11,7 +11,9 @@ class Helpers
     {
         const string TestString = "Test";
 
-        TextWriter oldErrorToRestore = getHelper();
+        TextWriter oldWriterToRestore = getHelper();
+        Assert.NotNull(oldWriterToRestore);
+
         try
         {
             using (MemoryStream memStream = new MemoryStream())
@@ -40,7 +42,7 @@ class Helpers
         }
         finally
         {
-            setHelper(oldErrorToRestore);
+            setHelper(oldWriterToRestore);
         }
     }
 }
