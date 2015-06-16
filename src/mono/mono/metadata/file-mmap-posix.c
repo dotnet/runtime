@@ -408,22 +408,26 @@ void *
 mono_mmap_open_handle (void *input_fd, MonoString *mapName, gint64 *capacity, int access, int options, int *error)
 {
 	MmapHandle *handle;
-	char *c_mapName = mono_string_to_utf8 (mapName);
-
-	named_regions_lock ();
-	handle = (MmapHandle*)g_hash_table_lookup (named_regions, c_mapName);
-	if (handle) {
-		*error = FILE_ALREADY_EXISTS;
-		handle = NULL;
-	} else {
-		//XXX we're exploiting wapi HANDLE == FD equivalence. THIS IS FRAGILE, create a _wapi_handle_to_fd call
+	if (!mapName) {
 		handle = open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, error);
-		handle->name = g_strdup (c_mapName);
-		g_hash_table_insert (named_regions, handle->name, handle);
-	}
-	named_regions_unlock ();
+	} else {
+		char *c_mapName = mono_string_to_utf8 (mapName);
 
-	g_free (c_mapName);
+		named_regions_lock ();
+		handle = (MmapHandle*)g_hash_table_lookup (named_regions, c_mapName);
+		if (handle) {
+			*error = FILE_ALREADY_EXISTS;
+			handle = NULL;
+		} else {
+			//XXX we're exploiting wapi HANDLE == FD equivalence. THIS IS FRAGILE, create a _wapi_handle_to_fd call
+			handle = open_file_map (NULL, GPOINTER_TO_INT (input_fd), FILE_MODE_OPEN, capacity, access, options, error);
+			handle->name = g_strdup (c_mapName);
+			g_hash_table_insert (named_regions, handle->name, handle);
+		}
+		named_regions_unlock ();
+
+		g_free (c_mapName);
+	}
 	return handle;
 }
 
