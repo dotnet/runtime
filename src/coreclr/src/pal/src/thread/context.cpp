@@ -439,8 +439,6 @@ Function :
 Parameters :
     CONST CONTEXT *lpContext : CONTEXT to convert
     native_context_t *native : native context to fill in
-    ULONG contextFlags : flags that determine which registers are valid in
-                         lpContext and which ones to set in native
 
 Return value :
     None

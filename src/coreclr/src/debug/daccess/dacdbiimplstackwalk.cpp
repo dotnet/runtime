@@ -1303,7 +1303,7 @@ bool DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread)
         return true;
     }
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
     if ((ts & Thread::TS_Hijacked) != 0)
     {
         return true;

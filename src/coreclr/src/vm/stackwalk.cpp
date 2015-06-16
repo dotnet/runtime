@@ -1205,7 +1205,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     BEGIN_FORBID_TYPELOAD();
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
     // We can't crawl the stack of a thread that currently has a hijack pending
     // (since the hijack routine won't be recognized by any code manager). So we
     // undo any hijack, the EE will re-attempt it later.
@@ -1215,7 +1215,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     pThread->UnhijackThread();
 #endif // !DACCESS_COMPILE
 
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
 
     // FRAME_TOP and NULL must be distinct values. This assert
     // will fire if someone changes this.
@@ -1569,7 +1569,7 @@ BOOL StackFrameIterator::IsValid(void)
         //  In normal case (no GCStress), after p/invoke, IL_STUB will check if GC is in progress and syncronize.
         BOOL bRedirectedPinvoke = FALSE;
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
         bRedirectedPinvoke = ((GCStress<cfg_instr>::IsEnabled()) && 
                               (m_pRealStartFrame != NULL) &&
                               (m_pRealStartFrame != FRAME_TOP) &&
@@ -1577,7 +1577,7 @@ BOOL StackFrameIterator::IsValid(void)
                               (m_pThread->GetFrame() != NULL) &&
                               (m_pThread->GetFrame() != FRAME_TOP) &&
                               (m_pThread->GetFrame()->GetVTablePtr() == RedirectedThreadFrame::GetMethodFrameVPtr()));
-#endif // FEATURE_HIJACK
+#endif // FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
 
         _ASSERTE( (m_pStartFrame != NULL) ||
                   (m_flags & POPFRAMES) ||

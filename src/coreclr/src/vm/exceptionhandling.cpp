@@ -4439,6 +4439,7 @@ VOID UnwindManagedExceptionPass2(EXCEPTION_RECORD* exceptionRecord, CONTEXT* unw
         controlPc = GetIP(currentFrameContext);
 
         codeInfo.Init(controlPc);
+
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
         dispatcherContext.ControlPc = controlPc;
         dispatcherContext.ImageBase = codeInfo.GetModuleBase();
@@ -4542,10 +4543,14 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
     ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
     ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
 
+GetThread()->UnhijackThread(); //////////////
+
+
+
     RtlCaptureContext(&frameContext);
 
     controlPc = Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext);
-    
+
     unwindStartContext = frameContext;
 
     if (!ExecutionManager::IsManagedCode(GetIP(&ex.ContextRecord)))
@@ -4627,6 +4632,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             // Save the exception flags of the first pass so that we can restore them after
             // the partial second pass.
             ExceptionFlags* currentFlags = GetThread()->GetExceptionState()->GetFlags();
+
             ExceptionFlags firstPassFlags = *currentFlags;
 
             // The second pass needs this flag to be reset
