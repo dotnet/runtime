@@ -1002,8 +1002,7 @@ class_type_info (MonoDomain *domain, MonoClass *class, MonoRgctxInfoType info_ty
 static gboolean
 ji_is_gsharedvt (MonoJitInfo *ji)
 {
-	if (ji && ji->has_generic_jit_info && (mono_jit_info_get_generic_sharing_context (ji)->var_is_vt ||
-										   mono_jit_info_get_generic_sharing_context (ji)->mvar_is_vt))
+	if (ji && ji->has_generic_jit_info && (mono_jit_info_get_generic_sharing_context (ji)->is_gsharedvt))
 		return TRUE;
 	else
 		return FALSE;
@@ -2734,20 +2733,12 @@ mono_generic_sharing_cleanup (void)
 gboolean
 mini_type_var_is_vt (MonoCompile *cfg, MonoType *type)
 {
-	if (type->type == MONO_TYPE_VAR) {
-		if (cfg->generic_sharing_context->var_is_vt && cfg->generic_sharing_context->var_is_vt [type->data.generic_param->num])
-			return TRUE;
-		else
-			return FALSE;
-	} else if (type->type == MONO_TYPE_MVAR) {
-		if (cfg->generic_sharing_context->mvar_is_vt && cfg->generic_sharing_context->mvar_is_vt [type->data.generic_param->num])
-			return TRUE;
-		else
-			return FALSE;
+	if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
+		return type->data.generic_param->gshared_constraint && type->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE;
 	} else {
 		g_assert_not_reached ();
+		return FALSE;
 	}
-	return FALSE;
 }
 
 gboolean

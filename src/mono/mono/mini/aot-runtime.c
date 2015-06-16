@@ -2841,21 +2841,9 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 		if (decode_value (p, &p)) {
 			/* gsharedvt */
-			int i, n;
 			MonoGenericSharingContext *gsctx = gi->generic_sharing_context;
 
-			n = decode_value (p, &p);
-			if (n) {
-				gsctx->var_is_vt = alloc0_jit_info_data (domain, sizeof (gboolean) * n, async);
-				for (i = 0; i < n; ++i)
-					gsctx->var_is_vt [i] = decode_value (p, &p);
-			}
-			n = decode_value (p, &p);
-			if (n) {
-				gsctx->mvar_is_vt = alloc0_jit_info_data (domain, sizeof (gboolean) * n, async);
-				for (i = 0; i < n; ++i)
-					gsctx->mvar_is_vt [i] = decode_value (p, &p);
-			}
+			gsctx->is_gsharedvt = TRUE;
 		}
 	}
 

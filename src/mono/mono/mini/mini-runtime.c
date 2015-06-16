@@ -260,7 +260,7 @@ mono_print_method_from_ip (void *ip)
 	gsctx = mono_jit_info_get_generic_sharing_context (ji);
 	shared_type = "";
 	if (gsctx) {
-		if (gsctx->var_is_vt || gsctx->mvar_is_vt)
+		if (gsctx->is_gsharedvt)
 			shared_type = "gsharedvt ";
 		else
 			shared_type = "gshared ";
@@ -1686,34 +1686,21 @@ mini_init_gsctx (MonoDomain *domain, MonoMemPool *mp, MonoGenericContext *contex
 
 	if (context && context->class_inst) {
 		inst = context->class_inst;
-		if (domain)
-			gsctx->var_is_vt = mono_domain_alloc0 (domain, sizeof (gboolean) * inst->type_argc);
-		else if (mp)
-			gsctx->var_is_vt = mono_mempool_alloc0 (mp, sizeof (gboolean) * inst->type_argc);
-		else
-			gsctx->var_is_vt = g_new0 (gboolean, inst->type_argc);
-
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
-				gsctx->var_is_vt [i] = TRUE;
+				gsctx->is_gsharedvt = TRUE;
 		}
 	}
 	if (context && context->method_inst) {
 		inst = context->method_inst;
-		if (domain)
-			gsctx->mvar_is_vt = mono_domain_alloc0 (domain, sizeof (gboolean) * inst->type_argc);
-		else if (mp)
-			gsctx->mvar_is_vt = mono_mempool_alloc0 (mp, sizeof (gboolean) * inst->type_argc);
-		else
-			gsctx->mvar_is_vt = g_new0 (gboolean, inst->type_argc);
 
 		for (i = 0; i < inst->type_argc; ++i) {
 			MonoType *type = inst->type_argv [i];
 
 			if (mini_is_gsharedvt_gparam (type))
-				gsctx->mvar_is_vt [i] = TRUE;
+				gsctx->is_gsharedvt = TRUE;
 		}
 	}
 }
