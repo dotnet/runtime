@@ -81,7 +81,14 @@ Notes:
 //
 //-----------------------------------------------------------------------------
 #define StartupNotifyEventNamePrefix W("TelestoStartupEvent_")
-const int cchEventNameBufferSize = sizeof(StartupNotifyEventNamePrefix)/sizeof(WCHAR) + 8; // + hex DWORD (8).  NULL terminator is included in sizeof(StartupNotifyEventNamePrefix)
+#define SessionIdPrefix W("Session\\")
+
+// NULL terminator is included in sizeof(StartupNotifyEventNamePrefix)    
+const int cchEventNameBufferSize = (sizeof(StartupNotifyEventNamePrefix) + sizeof(SessionIdPrefix)) / sizeof(WCHAR) 
+                                    + 8  // + hex process id DWORD 
+                                    + 10 // + decimal session id DWORD 
+                                    + 1;  // '\' after session id
+                                        
 
 HRESULT GetStartupNotificationEvent(DWORD debuggeePID,
                                     __out HANDLE* phStartupEvent)
@@ -93,10 +100,30 @@ HRESULT GetStartupNotificationEvent(DWORD debuggeePID,
 
 #ifndef FEATURE_PAL
     HRESULT hr;
+    DWORD currentSessionId = 0, debuggeeSessionId = 0;
+    if (!ProcessIdToSessionId(GetCurrentProcessId(), &currentSessionId))
+    {
+        return HRESULT_FROM_WIN32(GetLastError());   
+    }
 
-    // Note this event name doesn't have a Global prefix, and so debugging across sessions will not work.
+    if (!ProcessIdToSessionId(debuggeePID, &debuggeeSessionId))
+    {
+        return HRESULT_FROM_WIN32(GetLastError());   
+    }
+
+    // Here we could just add "Global\" to the event name and this would solve cross-session debugging scenario, but that would require event name change 
+    // in CoreCLR, and break backward compatibility. Instead if we see that debugee is in a different session, we explicitly create startup event 
+    // in that session (by adding "Session\#\"). We could do it even for our own session, but that's vaguely documented behavior and we'd 
+    // like to use it as little as possible.
     WCHAR szEventName[cchEventNameBufferSize];
-    swprintf_s(szEventName, cchEventNameBufferSize, StartupNotifyEventNamePrefix W("%08x"), debuggeePID);
+    if (currentSessionId == debuggeeSessionId)
+    {
+        swprintf_s(szEventName, cchEventNameBufferSize, StartupNotifyEventNamePrefix W("%08x"), debuggeePID);
+    } 
+    else
+    {
+        swprintf_s(szEventName, cchEventNameBufferSize, SessionIdPrefix W("%u\\") StartupNotifyEventNamePrefix W("%08x"), debuggeeSessionId, debuggeePID);  
+    }
 
     // Determine an appropriate ACL and SECURITY_ATTRIBUTES to apply to this event.  We use the same logic
     // here as the debugger uses for other events (like the setup-sync-event).  Specifically, this does
