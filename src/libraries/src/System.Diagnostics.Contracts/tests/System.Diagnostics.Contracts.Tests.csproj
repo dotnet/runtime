@@ -7,7 +7,6 @@
     <ProjectGuid>{0C4E7FF1-54C6-49B7-9700-18F5F3EB8E65}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Diagnostics.Contracts.Tests</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />

@@ -11,7 +11,6 @@
     <FileAlignment>512</FileAlignment>
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <ProjectGuid>{F26FBD53-C04A-4FFC-90C9-AA804285A7AD}</ProjectGuid>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

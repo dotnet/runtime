@@ -9,7 +9,6 @@
     <RootNamespace>System.Runtime.Extensions.Tests</RootNamespace>
     <AssemblyName>System.Runtime.Extensions.Tests</AssemblyName>
     <RestorePackages>true</RestorePackages>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
