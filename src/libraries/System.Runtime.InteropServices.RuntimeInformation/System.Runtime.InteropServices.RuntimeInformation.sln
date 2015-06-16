@@ -10,6 +10,8 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		FreeBSD_Debug|Any CPU = FreeBSD_Debug|Any CPU
+		FreeBSD_Release|Any CPU = FreeBSD_Release|Any CPU
 		Linux_Debug|Any CPU = Linux_Debug|Any CPU
 		Linux_Release|Any CPU = Linux_Release|Any CPU
 		OSX_Debug|Any CPU = OSX_Debug|Any CPU
@@ -19,8 +21,10 @@ Global
 		Windows_Release|Any CPU = Windows_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.FreeBSD_Debug|Any CPU.ActiveCfg = FreeBSD_Debug|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.FreeBSD_Debug|Any CPU.Build.0 = FreeBSD_Debug|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.FreeBSD_Release|Any CPU.ActiveCfg = FreeBSD_Release|Any CPU
+		{F9DF2357-81B4-4317-908E-512DA9395583}.FreeBSD_Release|Any CPU.Build.0 = FreeBSD_Release|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.Linux_Debug|Any CPU.ActiveCfg = Linux_Debug|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.Linux_Debug|Any CPU.Build.0 = Linux_Debug|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.Linux_Release|Any CPU.ActiveCfg = Linux_Release|Any CPU
@@ -29,14 +33,14 @@ Global
 		{F9DF2357-81B4-4317-908E-512DA9395583}.OSX_Debug|Any CPU.Build.0 = OSX_Debug|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.OSX_Release|Any CPU.ActiveCfg = OSX_Release|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.OSX_Release|Any CPU.Build.0 = OSX_Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
-		{F9DF2357-81B4-4317-908E-512DA9395583}.Release|Any CPU.Build.0 = Windows_Release|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
 		{F9DF2357-81B4-4317-908E-512DA9395583}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
-		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.FreeBSD_Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.FreeBSD_Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.FreeBSD_Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.FreeBSD_Release|Any CPU.Build.0 = Release|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Linux_Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Linux_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Linux_Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -45,8 +49,6 @@ Global
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.OSX_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.OSX_Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.OSX_Release|Any CPU.Build.0 = Release|Any CPU
-		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Windows_Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Windows_Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}.Windows_Release|Any CPU.ActiveCfg = Release|Any CPU
