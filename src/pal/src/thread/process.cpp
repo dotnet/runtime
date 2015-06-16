@@ -178,7 +178,7 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode,
 //
 struct ProcessModules
 {
-    struct ProcessModules *Next;
+    ProcessModules *Next;
     PVOID BaseAddress;
     CHAR Name[0];
 };
@@ -1920,8 +1920,6 @@ CreateProcessModules(
         return NULL;
     }
 
-    LockModuleList();
-
     CPalThread* pThread = InternalGetCurrentThread();	
     ProcessModules *listHead = NULL;
     char *line = NULL;
@@ -1976,7 +1974,6 @@ CreateProcessModules(
 
     free(line); // We didn't allocate line, but as per contract of getline we should free it
     fclose(mapsFile);
-    UnlockModuleList();
 
     return listHead;
 #else
