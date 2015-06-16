@@ -271,6 +271,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	close (i);
 #endif
 
+#ifdef HAVE_SYSTEM
 	cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
 	unused = system (cmd); 
 	g_free (cmd);
@@ -292,6 +293,9 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	cmd = g_strdup_printf (ARCH_PREFIX DIS_CMD " %s %s", objdump_args, o_file);
 	unused = system (cmd);
 	g_free (cmd);
+#else
+	g_assert_not_reached ();
+#endif /* HAVE_SYSTEM */
 
 #ifndef HOST_WIN32
 	unlink (o_file);

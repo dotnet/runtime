@@ -336,10 +336,14 @@ mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 
 	fclose (fp);
 
+#ifdef HAVE_SYSTEM
 	//com = g_strdup_printf ("dot %s -Tpng -o %s.png; eog %s.png", fn, fn, fn);
 	com = g_strdup_printf ("dot %s -Tps -o %s.ps;gv %s.ps", fn, fn, fn);
 	_i = system (com);
 	g_free (com);
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 #endif /* DISABLE_JIT */

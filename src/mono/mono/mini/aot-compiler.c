@@ -7281,8 +7281,10 @@ execute_system (const char * command)
 	g_free (wstr);
 
 	g_free (command);
-#else
+#elif defined (HAVE_SYSTEM)
 	status = system (command);
+#else
+	g_assert_not_reached ();
 #endif
 
 	return status;
