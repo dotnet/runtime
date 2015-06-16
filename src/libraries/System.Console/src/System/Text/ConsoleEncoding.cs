@@ -22,6 +22,21 @@ namespace System.Text
             return Array.Empty<byte>();
         }
 
+        public override int CodePage
+        {
+            get { return _encoding.CodePage; }
+        }
+
+        public override bool IsSingleByte
+        {
+            get { return _encoding.IsSingleByte; }
+        }
+
+        public override string EncodingName
+        {
+            get { return _encoding.EncodingName; }
+        }
+
         public override string WebName
         {
             get { return _encoding.WebName; }
@@ -32,6 +47,11 @@ namespace System.Text
             return _encoding.GetByteCount(chars);
         }
 
+        public override unsafe int GetByteCount(char* chars, int count)
+        {
+            return _encoding.GetByteCount(chars, count);
+        }
+
         public override int GetByteCount(char[] chars, int index, int count)
         {
             return _encoding.GetByteCount(chars, index, count);
@@ -40,6 +60,11 @@ namespace System.Text
         public override int GetByteCount(string s)
         {
             return _encoding.GetByteCount(s);
+        }
+
+        public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
+        {
+            return _encoding.GetBytes(chars, charCount, bytes, byteCount);
         }
 
         public override byte[] GetBytes(char[] chars)
@@ -67,6 +92,11 @@ namespace System.Text
             return _encoding.GetBytes(s, charIndex, charCount, bytes, byteIndex);
         }
 
+        public override unsafe int GetCharCount(byte* bytes, int count)
+        {
+            return _encoding.GetCharCount(bytes, count);
+        }
+
         public override int GetCharCount(byte[] bytes)
         {
             return _encoding.GetCharCount(bytes);
@@ -75,6 +105,11 @@ namespace System.Text
         public override int GetCharCount(byte[] bytes, int index, int count)
         {
             return _encoding.GetCharCount(bytes, index, count);
+        }
+
+        public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
+        {
+            return _encoding.GetChars(bytes, byteCount, chars, charCount);
         }
 
         public override char[] GetChars(byte[] bytes)
@@ -110,6 +145,11 @@ namespace System.Text
         public override int GetMaxCharCount(int byteCount)
         {
             return _encoding.GetMaxCharCount(byteCount);
+        }
+
+        public override string GetString(byte[] bytes)
+        {
+            return _encoding.GetString(bytes);
         }
 
         public override string GetString(byte[] bytes, int index, int count)
