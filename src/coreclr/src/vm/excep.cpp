@@ -7631,7 +7631,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    // It is not safe to execute code inside VM after we shutdown EE.  One example is DiablePreemptiveGC
+    // It is not safe to execute code inside VM after we shutdown EE.  One example is DisablePreemptiveGC
     // will block forever.
     if (g_fForbidEnterEE)
     {
@@ -7707,7 +7707,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // already occured.
     //
 
-
 #ifndef FEATURE_PAL
     Thread *pThread;
 
@@ -7736,7 +7735,7 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     // the operating system will not be able to walk the stack and not find the handlers for
     // the exception.  It is safe to unhijack the thread in this case for two reasons:
     // 1.  pThread refers to *this* thread.
-    // 2.  If another thread trys to hijack this thread, it will se we are not in managed
+    // 2.  If another thread trys to hijack this thread, it will see we are not in managed
     //     code (and thus won't try to hijack us).
 #if defined(WIN64EXCEPTIONS)
     if (pThread != NULL)
@@ -7784,10 +7783,18 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     //
     return retVal;
 #else // !FEATURE_PAL
+
+#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+    Thread *pThread = GetThread();
+    if (pThread != NULL)
+    {
+        pThread->UnhijackThreadNoAlloc();
+    }
+#endif
+
     return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
 #endif // !FEATURE_PAL
 }
-
 
 LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo)
 {
@@ -8147,7 +8154,7 @@ BOOL IsIPInEE(void *ip)
     }
 }
 
-#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#if defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
 
 // This function is used to check if the specified IP is in the prolog or not.
 bool IsIPInProlog(EECodeInfo *pCodeInfo)
@@ -8302,7 +8309,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     return fIsInEpilog;
 }
 
-#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#endif // defined(_TARGET_AMD64_) && (defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK))
 
 #define EXCEPTION_VISUALCPP_DEBUGGER        ((DWORD) (1<<30 | 0x6D<<16 | 5000))
 

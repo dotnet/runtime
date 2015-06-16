@@ -1908,7 +1908,7 @@ bool IsInWaitSleepJoin(Thread * pThread)
 
 //-----------------------------------------------------------------------------
 // Decide if we should send an UM leaf chain.
-// This geoes through a bunch of heuristics.
+// This goes through a bunch of heuristics.
 // The driving guidelines here are:
 // - we try not to send an UM chain if it's just internal mscorwks stuff
 //   and we know it can't have native user code.
@@ -1955,8 +1955,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
         return false;
     }
 
-#ifdef FEATURE_HIJACK
-    // Hijacked is only on non-pal.
+#ifdef FEATURE_HIJACK || FEATURE_UNIX_GC_REDIRECT_HIJACK
     if ((ts & Thread::TS_Hijacked) != 0)
     {
         return false;

@@ -172,6 +172,98 @@ NESTED_ENTRY JIT_RareDisableHelper, _TEXT, NoHandler
 
 NESTED_END JIT_RareDisableHelper, _TEXT
 
+#ifdef FEATURE_UNIX_GC_REDIRECT_HIJACK
+
+//------------------------------------------------
+// OnHijackScalarTripThread
+//
+NESTED_ENTRY OnHijackScalarTripThread, _TEXT, NoHandler
+
+    // Make room for the real return address (rip)
+    push_register rax
+
+    PUSH_CALLEE_SAVED_REGISTERS
+
+    // Push rax again - this is where integer/pointer return values are returned
+    push_register rax
+
+    mov                 rdi, rsp
+
+    alloc_stack         0x20
+
+    // First float return register
+    movdqa              [rsp], xmm0
+    // Second float return register
+    movdqa              [rsp+0x10], xmm1
+
+    END_PROLOGUE
+
+    call                C_FUNC(OnHijackScalarWorker)
+
+    movdqa              xmm0, [rsp]
+    movdqa              xmm1, [rsp+0x10]
+    free_stack          0x20
+    pop_register        rax
+
+    POP_CALLEE_SAVED_REGISTERS
+    ret
+
+NESTED_END OnHijackScalarTripThread, _TEXT
+
+//------------------------------------------------
+// OnHijackObjectTripThread
+//
+NESTED_ENTRY OnHijackObjectTripThread, _TEXT, NoHandler 
+
+    // Make room for the real return address (rip)
+    push_register rax
+
+    PUSH_CALLEE_SAVED_REGISTERS
+
+    // Push rax again - this is where integer/pointer return values are returned
+    push_register rax
+
+    mov                 rdi, rsp
+
+    END_PROLOGUE
+
+    call                C_FUNC(OnHijackObjectWorker)
+
+    pop_register        rax
+
+    POP_CALLEE_SAVED_REGISTERS
+    ret
+
+NESTED_END OnHijackObjectTripThread, _TEXT
+
+//------------------------------------------------
+// OnHijackInteriorPointerTripThread
+//
+NESTED_ENTRY OnHijackInteriorPointerTripThread, _TEXT, NoHandler 
+
+    // Make room for the real return address (rip)
+    push_register rax
+
+    PUSH_CALLEE_SAVED_REGISTERS
+
+    // Push rax again - this is where integer/pointer return values are returned
+    push_register rax
+
+    mov                 rdi, rsp
+
+    END_PROLOGUE
+
+    call                C_FUNC(OnHijackInteriorPointerWorker)
+
+    pop_register        rax
+
+    POP_CALLEE_SAVED_REGISTERS
+    ret
+
+NESTED_END OnHijackInteriorPointerTripThread, _TEXT
+
+#endif // FEATURE_UNIX_GC_REDIRECT_HIJACK
+
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT                                        
                                                                                       
         test    rdi, rdi                                                              

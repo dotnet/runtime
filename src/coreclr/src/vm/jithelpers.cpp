@@ -6397,7 +6397,7 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
     
     Thread *pThread = GetThread();
 
-#ifdef FEATURE_HIJACK
+#if defined(FEATURE_HIJACK) || defined(FEATURE_UNIX_GC_REDIRECT_HIJACK)
     // We can't crawl the stack of a thread that currently has a hijack pending
     // (since the hijack routine won't be recognized by any code manager). So we
     // undo any hijack, the EE will re-attempt it later.
