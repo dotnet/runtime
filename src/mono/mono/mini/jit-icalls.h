@@ -189,5 +189,9 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 
 void mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass);
 
+gpointer mono_fill_class_rgctx (MonoVTable *vtable, int index);
+
+gpointer mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index);
+
 #endif /* __MONO_JIT_ICALLS_H__ */
 

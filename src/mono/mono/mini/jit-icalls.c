@@ -1285,3 +1285,15 @@ mono_generic_class_init (MonoVTable *vtable)
 {
 	mono_runtime_class_init (vtable);
 }
+
+gpointer
+mono_fill_class_rgctx (MonoVTable *vtable, int index)
+{
+	return mono_class_fill_runtime_generic_context (vtable, index);
+}
+
+gpointer
+mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
+{
+	return mono_method_fill_runtime_generic_context (mrgctx, index);
+}

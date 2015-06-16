@@ -3448,11 +3448,13 @@ static inline MonoInst*
 emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
 {
 	/* Inline version, not currently used */
+	// FIXME: This can be called from mono_decompose_vtype_opts (), which can't create new bblocks
 #if 0
 	int i, slot, depth, index, rgctx_reg, val_reg, res_reg;
 	gboolean mrgctx;
 	MonoBasicBlock *is_null_bb, *end_bb;
 	MonoInst *res, *ins, *call;
+	MonoInst *args[16];
 
 	slot = mini_get_rgctx_entry_slot (entry);
 
@@ -3509,21 +3511,25 @@ emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *ent
 
 	/* Fastpath */
 	res_reg = alloc_preg (cfg);
-	MONO_INST_NEW (cfg, res, OP_MOVE);
-	res->dreg = res_reg;
-	res->sreg1 = val_reg;
-	MONO_ADD_INS (cfg->cbb, res);
+	MONO_INST_NEW (cfg, ins, OP_MOVE);
+	ins->dreg = res_reg;
+	ins->sreg1 = val_reg;
+	MONO_ADD_INS (cfg->cbb, ins);
+	res = ins;
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
 	/* Slowpath */
 	MONO_START_BB (cfg, is_null_bb);
-	// FIXME: This should use a jit icall
-	call = mono_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
+	args [0] = rgctx;
+	EMIT_NEW_ICONST (cfg, args [1], index);
+	if (mrgctx)
+		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
+	else
+		call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
 	MONO_INST_NEW (cfg, ins, OP_MOVE);
 	ins->dreg = res_reg;
 	ins->sreg1 = call->dreg;
 	MONO_ADD_INS (cfg->cbb, ins);
-
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
 	MONO_START_BB (cfg, end_bb);
