@@ -7,21 +7,15 @@ namespace System.Runtime.InteropServices
     {
         private readonly string _osPlatform;
 
-        private const string WindowsName = "WINDOWS";
+        private const string FreeBSDName = "FREEBSD";
         private const string LinuxName = "LINUX";
         private const string OSXName = "OSX";
+        private const string WindowsName = "WINDOWS";
 
-        private static readonly OSPlatform s_windows = new OSPlatform(WindowsName);
+        private static readonly OSPlatform s_freebsd = new OSPlatform(FreeBSDName);
         private static readonly OSPlatform s_linux = new OSPlatform(LinuxName);
         private static readonly OSPlatform s_osx = new OSPlatform(OSXName);
-
-        public static OSPlatform Windows
-        {
-            get
-            {
-                return s_windows;
-            }
-        }
+        private static readonly OSPlatform s_windows = new OSPlatform(WindowsName);
 
         public static OSPlatform Linux
         {
@@ -36,6 +30,14 @@ namespace System.Runtime.InteropServices
             get
             {
                 return s_osx;
+            }
+        }
+
+        public static OSPlatform Windows
+        {
+            get
+            {
+                return s_windows;
             }
         }
 
