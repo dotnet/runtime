@@ -377,8 +377,9 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 	MonoObject *item, *filever;
 	MonoDomain *domain = mono_domain_get ();
 	char filename [80] = "[In Memory] ";
+	char *modulename = assembly->aname.name;
 
-	strncat (filename, assembly->image->module_name, 80);
+	strncat (filename, modulename, 80);
 
 	/* Build a System.Diagnostics.ProcessModule with the data.
 	 */
@@ -398,7 +399,7 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 	process_set_field_intptr (item, "baseaddr", assembly->image->raw_data);
 	process_set_field_int (item, "memory_size", assembly->image->raw_data_len);
 	process_set_field_string_char (item, "filename", filename);
-	process_set_field_string_char (item, "modulename", assembly->image->module_name);
+	process_set_field_string_char (item, "modulename", modulename);
 
 	return item;
 }
