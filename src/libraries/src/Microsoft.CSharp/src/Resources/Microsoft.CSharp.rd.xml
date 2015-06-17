@@ -91,6 +91,8 @@
       </Namespace>
     </Assembly>
 
-    <Type Name="System.Reflection.Missing" Dynamic="Required All" />
+    <Assembly Name="System.Runtime.InteropServices">
+      <Type Name="System.Reflection.Missing" Dynamic="Required All" />
+    </Assembly>
   </Library>
 </Directives>
