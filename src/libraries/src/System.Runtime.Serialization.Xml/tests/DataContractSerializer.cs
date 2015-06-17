@@ -562,29 +562,31 @@ public static class DataContractSerializerTests
         Assert.True(y.RO1.Count == 1, getCheckFailureMsg("RO1"));
         Assert.True(y.RO2.Count == 1, getCheckFailureMsg("RO2"));
 
-
-
-
         foreach (var item in x.F1)
         {
             Assert.True(y.F1.Contains(item), getCheckFailureMsg("F1"));
         }
+
         foreach (var item in x.F2)
         {
             Assert.True(y.F2.Contains(item), getCheckFailureMsg("F2"));
         }
+
         foreach (var item in x.P1)
         {
             Assert.True(y.P1.Contains(item), getCheckFailureMsg("P1"));
         }
+
         foreach (var item in x.P2)
         {
             Assert.True(y.P2.Contains(item), getCheckFailureMsg("P2"));
         }
+
         foreach (var item in x.RO1)
         {
             Assert.True(y.RO1.Contains(item), getCheckFailureMsg("RO1"));
         }
+
         foreach (var item in x.RO2)
         {
             Assert.True(y.RO2.Contains(item), getCheckFailureMsg("RO2"));
@@ -1171,7 +1173,6 @@ public static class DataContractSerializerTests
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };
         var actual = SerializeAndDeserialize<ClassImplementsInterface>(value, "<ClassImplementsInterface xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><DisplayName>DisplayName</DisplayName><Id>Id</Id></ClassImplementsInterface>");
 
-
         Assert.StrictEqual(value.DisplayName, actual.DisplayName);
         Assert.StrictEqual(value.Id, actual.Id);
     }
@@ -1246,6 +1247,7 @@ public static class DataContractSerializerTests
             return PrivateProperty;
         }
     }
+
     #endregion
 
     [Fact]
@@ -1442,11 +1444,28 @@ public static class DataContractSerializerTests
     [Fact]
     public static void DCS_GenericQueue()
     {
+        var expectedFormat = @"<QueueOfint xmlns=""http://schemas.datacontract.org/2004/07/System.Collections.Generic"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_array xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size>{0}<_tail>1</_tail><_version>2</_version></QueueOfint>";
+        #if DESKTOP
+        var expectedOnDesktop = string.Format(expectedFormat, string.Empty);
+        DCS_GenericQueueHelper(expectedOnDesktop, expectedOnDesktop);
+        #else
+        DCS_GenericQueueHelper(string.Format(expectedFormat, @"<_syncRoot i:nil=""true"" />"), string.Format(expectedFormat, @"<_syncRoot/>"));
+        #endif
+    }
+
+    private static void DCS_GenericQueueHelper(string expectedWithUninitializedSyncRoot, string expectedWithInitializedSyncRoot)
+    {
         Queue<int> value = new Queue<int>();
         value.Enqueue(1);
-        var deserializedValue = SerializeAndDeserialize<Queue<int>>(value, "<QueueOfint xmlns=\"http://schemas.datacontract.org/2004/07/System.Collections.Generic\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_array xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:int>1</a:int><a:int>0</a:int><a:int>0</a:int><a:int>0</a:int></_array><_head>0</_head><_size>1</_size><_tail>1</_tail><_version>2</_version></QueueOfint>");
+        var deserializedValue = SerializeAndDeserialize<Queue<int>>(value, expectedWithUninitializedSyncRoot);
         var a1 = value.ToArray();
         var a2 = deserializedValue.ToArray();
+        Assert.StrictEqual(a1.Length, a2.Length);
+        Assert.StrictEqual(a1[0], a2[0]);        
+        object syncRoot = ((ICollection)value).SyncRoot;
+        deserializedValue = SerializeAndDeserialize<Queue<int>>(value, expectedWithInitializedSyncRoot);
+        a1 = value.ToArray();
+        a2 = deserializedValue.ToArray();
         Assert.StrictEqual(a1.Length, a2.Length);
         Assert.StrictEqual(a1[0], a2[0]);
     }
