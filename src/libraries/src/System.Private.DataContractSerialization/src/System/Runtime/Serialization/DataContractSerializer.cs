@@ -66,6 +66,8 @@ namespace System.Runtime.Serialization
 
 #if NET_NATIVE
         public DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
+#elif MERGE_DCJS
+        internal DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
         {
             Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, null, false);
         }
@@ -350,7 +352,7 @@ namespace System.Runtime.Serialization
 
         internal static DataContract GetDataContract(DataContract declaredTypeContract, Type declaredType, Type objectType)
         {
-            if (declaredTypeContract.TypeIsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 return declaredTypeContract;
             }

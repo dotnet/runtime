@@ -14,6 +14,7 @@
     <FileAlignment>512</FileAlignment>
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);MERGE_DCJS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
@@ -68,6 +69,7 @@
     <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" />
     <Compile Include="$(XmlSources)\ArrayHelper.cs" />
     <Compile Include="$(XmlSources)\IStreamProvider.cs" />
     <Compile Include="$(XmlSources)\IXmlDictionary.cs" />
@@ -135,6 +137,7 @@
     <Compile Include="$(JsonSources)\IXmlJsonWriterInitializer.cs" />
     <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" />
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
+    <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">

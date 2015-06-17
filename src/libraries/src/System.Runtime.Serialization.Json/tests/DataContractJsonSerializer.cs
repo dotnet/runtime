@@ -1281,6 +1281,21 @@ public static class DataContractJsonSerializerTests
         });
     }
 
+    [Fact]
+    public static void DCJS_UseSimpleDictionaryFormat()
+    {
+        Dictionary<string, string> dict = new Dictionary<string, string>();
+        dict.Add("key1", "value1");
+        dict.Add("key2", "value2");
+        var deserialized = SerializeAndDeserialize(dict, @"{""key1"":""value1"",""key2"":""value2""}",
+            new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+        Assert.StrictEqual(2, deserialized.Count);
+        Assert.True(deserialized.ContainsKey("key1"));
+        Assert.True(deserialized.ContainsKey("key2"));
+        Assert.StrictEqual(dict["key1"], deserialized["key1"]);
+        Assert.StrictEqual(dict["key2"], deserialized["key2"]);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null)
     {
         DataContractJsonSerializer dcjs;

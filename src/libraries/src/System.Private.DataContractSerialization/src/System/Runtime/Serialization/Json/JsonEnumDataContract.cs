@@ -4,7 +4,7 @@
 using System.Xml;
 using System.Security;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonEnumDataContract : JsonDataContract

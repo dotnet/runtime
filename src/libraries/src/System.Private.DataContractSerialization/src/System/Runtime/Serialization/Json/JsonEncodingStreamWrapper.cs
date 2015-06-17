@@ -8,7 +8,7 @@ using System.Text;
 using System.Xml;
 using System.Security;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     // This wrapper does not support seek.

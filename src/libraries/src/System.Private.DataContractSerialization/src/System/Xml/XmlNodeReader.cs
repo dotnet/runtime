@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Xml.Schema;
 using System.Globalization;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Xml
 {
     internal class XmlNodeReader : XmlReader, IXmlNamespaceResolver

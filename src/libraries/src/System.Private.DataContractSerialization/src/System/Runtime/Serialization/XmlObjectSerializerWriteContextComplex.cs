@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Security;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization
 {
 #if USE_REFEMIT || NET_NATIVE
@@ -51,18 +51,31 @@ namespace System.Runtime.Serialization
             return false;
         }
 
+#if NET_NATIVE
         public override void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
+#else
+        internal override void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
+#endif
         {
             if (!OnHandleReference(xmlWriter, value, false /*canContainCyclicReference*/))
                 xmlWriter.WriteAnyType(value);
         }
 
+#if NET_NATIVE
         public override void WriteString(XmlWriterDelegator xmlWriter, string value)
+#else
+        internal override void WriteString(XmlWriterDelegator xmlWriter, string value)
+#endif
         {
             if (!OnHandleReference(xmlWriter, value, false /*canContainCyclicReference*/))
                 xmlWriter.WriteString(value);
         }
+
+#if NET_NATIVE
         public override void WriteString(XmlWriterDelegator xmlWriter, string value, XmlDictionaryString name, XmlDictionaryString ns)
+#else
+        internal override void WriteString(XmlWriterDelegator xmlWriter, string value, XmlDictionaryString name, XmlDictionaryString ns)
+#endif
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(string), true/*isMemberTypeSerializable*/, name, ns);
@@ -75,12 +88,21 @@ namespace System.Runtime.Serialization
             }
         }
 
+#if NET_NATIVE
         public override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
+#else
+        internal override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
+#endif
         {
             if (!OnHandleReference(xmlWriter, value, false /*canContainCyclicReference*/))
                 xmlWriter.WriteBase64(value);
         }
+
+#if NET_NATIVE
         public override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
+#else
+        internal override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
+#endif
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(byte[]), true/*isMemberTypeSerializable*/, name, ns);
@@ -93,12 +115,21 @@ namespace System.Runtime.Serialization
             }
         }
 
+#if NET_NATIVE
         public override void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
+#else
+        internal override void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
+#endif
         {
             if (!OnHandleReference(xmlWriter, value, false /*canContainCyclicReference*/))
                 xmlWriter.WriteUri(value);
         }
+
+#if NET_NATIVE
         public override void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
+#else
+        internal override void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
+#endif
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(Uri), true/*isMemberTypeSerializable*/, name, ns);
@@ -111,12 +142,21 @@ namespace System.Runtime.Serialization
             }
         }
 
+#if NET_NATIVE
         public override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
+#else
+        internal override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
+#endif
         {
             if (!OnHandleReference(xmlWriter, value, false /*canContainCyclicReference*/))
                 xmlWriter.WriteQName(value);
         }
+
+#if NET_NATIVE
         public override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value, XmlDictionaryString name, XmlDictionaryString ns)
+#else
+        internal override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value, XmlDictionaryString name, XmlDictionaryString ns)
+#endif        
         {
             if (value == null)
                 WriteNull(xmlWriter, typeof(XmlQualifiedName), true/*isMemberTypeSerializable*/, name, ns);

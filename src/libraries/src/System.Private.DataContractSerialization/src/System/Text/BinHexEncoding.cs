@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Runtime;
 using System.Security;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Text
 {
     internal class BinHexEncoding : Encoding

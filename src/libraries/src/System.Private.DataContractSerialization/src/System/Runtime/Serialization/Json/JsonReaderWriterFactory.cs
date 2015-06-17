@@ -9,7 +9,7 @@ using System.IO;
 using System.Runtime.Serialization.Json;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal static class JsonReaderWriterFactory

@@ -591,6 +591,34 @@ namespace System.Runtime.Serialization
         }
 #endif
 
+#if MERGE_DCJS
+        [SecurityCritical]
+        private static object[] s_emptyObjectArray;
+        internal static object[] EmptyObjectArray
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_emptyObjectArray == null)
+                    s_emptyObjectArray = Array.Empty<object>();
+                return s_emptyObjectArray;
+            }
+        }
+
+        [SecurityCritical]
+        private static Type[] s_emptyTypeArray;
+        internal static Type[] EmptyTypeArray
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_emptyTypeArray == null)
+                    s_emptyTypeArray = Array.Empty<Type>();
+                return s_emptyTypeArray;
+            }
+        }
+#endif
+
         [SecurityCritical]
         private static Type s_typeOfNullable;
         internal static Type TypeOfNullable
@@ -1087,11 +1115,13 @@ namespace System.Runtime.Serialization
         public const string KeyLocalName = "Key";
         public const string ValueLocalName = "Value";
         public const string MscorlibAssemblyName = "0";
-#if NET_NATIVE
+#if MERGE_DCJS
+        public const string ParseMethodName = "Parse";
+#endif
+#if NET_NATIVE || MERGE_DCJS
         public const string SafeSerializationManagerName = "SafeSerializationManager";
         public const string SafeSerializationManagerNamespace = "http://schemas.datacontract.org/2004/07/System.Runtime.Serialization";
         public const string ISerializableFactoryTypeLocalName = "FactoryType";
 #endif
     }
 }
-
