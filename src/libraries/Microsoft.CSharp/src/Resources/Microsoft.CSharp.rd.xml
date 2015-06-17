@@ -91,5 +91,6 @@
       </Namespace>
     </Assembly>
 
+    <Type Name="System.Reflection.Missing" Dynamic="Required All" />
   </Library>
 </Directives>
