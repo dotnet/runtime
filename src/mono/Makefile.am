@@ -10,18 +10,10 @@ SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scr
 ## 'tools' is not normally built
 DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs
 else
-if ONLY_MONOTOUCH
-SUBDIRS = $(MONOTOUCH_SUBDIRS) runtime
-else
-if ONLY_XAMMAC
-SUBDIRS = $(libgc_dir) eglib/src mono runtime
-else
 SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples msvc $(docs_dir)
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
 DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs
-endif
-endif
 endif
 
 all: update_submodules
