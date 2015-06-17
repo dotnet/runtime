@@ -1081,6 +1081,16 @@ struct JITNotification
 GPTR_DECL(JITNotification,g_pNotificationTable);
 GVAL_DECL(ULONG32, g_dacNotificationFlags);
 
+#if defined(FEATURE_PAL) && !defined(DACCESS_COMPILE)
+
+inline void
+InitializeJITNotificationTable()
+{
+    g_pNotificationTable = new (nothrow) JITNotification[1001];
+}
+
+#endif // FEATURE_PAL && !DACCESS_COMPILE
+
 class JITNotifications
 {
 public:
