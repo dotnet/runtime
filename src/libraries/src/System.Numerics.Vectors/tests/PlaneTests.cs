@@ -363,13 +363,17 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue(1002)]
         public unsafe void PlaneFieldOffsetTest()
         {
-            Plane* ptr = (Plane*)0;
+            Plane plane = new Plane();
 
-            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->Normal));
-            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->D));
+            float* basePtr = &plane.Normal.X; // Take address of first element
+            Plane* planePtr = &plane; // Take address of whole Plane
+
+            Assert.Equal(new IntPtr(basePtr), new IntPtr(planePtr));
+
+            Assert.Equal(new IntPtr(basePtr + 0), new IntPtr(&plane.Normal));
+            Assert.Equal(new IntPtr(basePtr + 3), new IntPtr(&plane.D));
         }
     }
 }

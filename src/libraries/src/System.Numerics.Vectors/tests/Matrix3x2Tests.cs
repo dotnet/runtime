@@ -1009,19 +1009,22 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue(1002)]
         public unsafe void Matrix3x2FieldOffsetTest()
         {
-            Matrix3x2* ptr = (Matrix3x2*)0;
+            Matrix3x2 mat = new Matrix3x2();
+            float* basePtr = &mat.M11; // Take address of first element
+            Matrix3x2* matPtr = &mat; // Take address of whole matrix
 
-            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->M11));
-            Assert.Equal(new IntPtr(4), new IntPtr(&ptr->M12));
+            Assert.Equal(new IntPtr(basePtr), new IntPtr(matPtr));
 
-            Assert.Equal(new IntPtr(8), new IntPtr(&ptr->M21));
-            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->M22));
+            Assert.Equal(new IntPtr(basePtr + 0), new IntPtr(&mat.M11));
+            Assert.Equal(new IntPtr(basePtr + 1), new IntPtr(&mat.M12));
 
-            Assert.Equal(new IntPtr(16), new IntPtr(&ptr->M31));
-            Assert.Equal(new IntPtr(20), new IntPtr(&ptr->M32));
+            Assert.Equal(new IntPtr(basePtr + 2), new IntPtr(&mat.M21));
+            Assert.Equal(new IntPtr(basePtr + 3), new IntPtr(&mat.M22));
+
+            Assert.Equal(new IntPtr(basePtr + 4), new IntPtr(&mat.M31));
+            Assert.Equal(new IntPtr(basePtr + 5), new IntPtr(&mat.M32));
         }
     }
 }

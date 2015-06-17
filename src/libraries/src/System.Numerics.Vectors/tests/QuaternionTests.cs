@@ -967,15 +967,19 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue(1002)]
         public unsafe void QuaternionFieldOffsetTest()
         {
-            Quaternion* ptr = (Quaternion*)0;
+            Quaternion quat = new Quaternion();
 
-            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->X));
-            Assert.Equal(new IntPtr(4), new IntPtr(&ptr->Y));
-            Assert.Equal(new IntPtr(8), new IntPtr(&ptr->Z));
-            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->W));
+            float* basePtr = &quat.X; // Take address of first element
+            Quaternion* quatPtr = &quat; // Take address of whole Quaternion
+
+            Assert.Equal(new IntPtr(basePtr), new IntPtr(quatPtr));
+
+            Assert.Equal(new IntPtr(basePtr + 0), new IntPtr(&quat.X));
+            Assert.Equal(new IntPtr(basePtr + 1), new IntPtr(&quat.Y));
+            Assert.Equal(new IntPtr(basePtr + 2), new IntPtr(&quat.Z));
+            Assert.Equal(new IntPtr(basePtr + 3), new IntPtr(&quat.W));
         }
     }
 }
