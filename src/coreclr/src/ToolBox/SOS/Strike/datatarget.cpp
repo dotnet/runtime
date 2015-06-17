@@ -119,7 +119,11 @@ DataTarget::WriteVirtual(
     /* [in] */ ULONG32 request,
     /* [optional][out] */ ULONG32 *done)
 {
-    return E_NOTIMPL;
+    if (g_ExtData == NULL)
+    {
+        return E_UNEXPECTED;
+    }
+    return g_ExtData->WriteVirtual(address, (PVOID)buffer, request, done);
 }
 
 HRESULT STDMETHODCALLTYPE

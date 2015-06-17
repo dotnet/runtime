@@ -596,7 +596,7 @@ BOOL GetPathFromModule(
     if (len == 0 || len == cFqPath)
         return FALSE;
 
-    WCHAR *pLastSep = wcsrchr(fqPath, L'\\');
+    WCHAR *pLastSep = wcsrchr(fqPath, DIRECTORY_SEPARATOR_CHAR_W);
     if (pLastSep == NULL || pLastSep+1 >= fqPath+cFqPath)
         return FALSE;
 
@@ -2353,13 +2353,21 @@ BOOL IsSameModuleName (const char *str1, const char *str2)
     const char *ptr2 = str2 + strlen(str2)-1;
     while (ptr2 >= str2)
     {
+#ifndef FEATURE_PAL
         if (tolower(*ptr1) != tolower(*ptr2))
+#else
+        if (*ptr1 != *ptr2)
+#endif
+        {
             return FALSE;
-        ptr2 --;
-        ptr1 --;
+        }
+        ptr2--;
+        ptr1--;
     }
-    if (ptr1 >= str1 && *ptr1 != '\\' && *ptr1 != ':')
+    if (ptr1 >= str1 && *ptr1 != DIRECTORY_SEPARATOR_CHAR_A && *ptr1 != ':')
+    {
         return FALSE;
+    }
     return TRUE;
 }
 
@@ -2602,7 +2610,11 @@ BOOL IsFusionLoadedModule (LPCSTR fusionName, LPCSTR mName)
                 return FALSE;
             }
             
+#ifndef FEATURE_PAL
             if (tolower(*fusionName) != tolower(*mName))
+#else
+            if (*fusionName != *mName)
+#endif
             {
                 return FALSE;
             }
@@ -2635,12 +2647,14 @@ BOOL DebuggerModuleNamesMatch (CLRDATA_ADDRESS PEFileAddr, __in __in_z LPSTR mNa
                 {                                    
                     CHAR ModuleName[MAX_PATH+1];
 
-                    if (g_ExtSymbols->GetModuleNames (Index, base,
-                        NULL, 0, NULL,
-                        ModuleName, MAX_PATH, NULL,
-                        NULL, 0, NULL) == S_OK)
+                    if (g_ExtSymbols->GetModuleNames(Index, base, NULL, 0, NULL, ModuleName, 
+                        MAX_PATH, NULL, NULL, 0, NULL) == S_OK)
                     {
+#ifndef FEATURE_PAL
                         if (_stricmp (ModuleName, mName) == 0)
+#else
+                        if (strcmp (ModuleName, mName) == 0)
+#endif
                         {
                             return TRUE;
                         }
@@ -2792,9 +2806,9 @@ DWORD_PTR *ModuleFromName(__in __in_z __in_opt LPSTR mName, int *numModule)
                     fileName[m] = '\0';
                     
                     if ((mName == NULL) || 
-                        IsSameModuleName (fileName, mName) ||
+                        IsSameModuleName(fileName, mName) ||
                         DebuggerModuleNamesMatch(ModuleData.File, mName) ||
-                        IsFusionLoadedModule (fileName, mName))
+                        IsFusionLoadedModule(fileName, mName))
                     {
                         AddToModuleList(moduleList, *numModule, maxList,
                                          (DWORD_PTR)ModuleAddr);
@@ -3155,11 +3169,15 @@ void GetInfoFromModule (DWORD_PTR ModuleAddr, ULONG token, DWORD_PTR *ret)
                     }
                     else
                     {
+#ifndef FEATURE_PAL
                         if (IsDMLEnabled())
                             DMLOut("Not JITTED yet. Use <exec cmd=\"!bpmd -md %p\">!bpmd -md %p</exec> to break on run.\n",
-                                    SOS_PTR(md), SOS_PTR(md));
+                                SOS_PTR(md), SOS_PTR(md));
                         else
                             ExtOut("Not JITTED yet. Use !bpmd -md %p to break on run.\n", SOS_PTR(md));
+#else
+                        ExtOut("Not JITTED yet. Use 'sos bpmd -md %p' to break on run.\n", SOS_PTR(md));
+#endif
                     }
                 }
                 else
@@ -3992,7 +4010,11 @@ BOOL GetCMDOption(const char *string, CMDOption *option, size_t nOption,
             }
         }
 
+#ifndef FEATURE_PAL
         if (ptr[0] != '-' && ptr[0] != '/') {
+#else
+        if (ptr[0] != '-') {
+#endif
             if (maxArg == 0) {
                 ExtOut ("Incorrect argument: %s\n", ptr);
                 return FALSE;
@@ -5531,9 +5553,6 @@ NoOutputHolder::~NoOutputHolder()
         Output::g_bSuppressOutput--;
 }
 
-// Do not support source line numbers on PAL platforms
-#ifndef FEATURE_PAL
-
 //
 // Code to support mapping RVAs to managed code line numbers.
 //
@@ -5804,9 +5823,6 @@ ConvertNativeToIlOffset(
 
     return Status;
 }
-
-
-#endif
 
 
 // Based on a native offset, passed in the first argument this function
@@ -6138,10 +6154,11 @@ HRESULT __stdcall PERvaMemoryReader::ReadExecutableAtRVA(DWORD relativeVirtualAd
     return SafeReadMemory(m_moduleBaseAddress + relativeVirtualAddress, data, cbData, pcbData) ? S_OK : E_FAIL;
 }
 
-
+#endif // FEATURE_PAL
 
 HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ICorDebugModule * pModule)
 {
+#ifndef FEATURE_PAL
     HRESULT Status = S_OK;
     if(m_pSymReader != NULL) return S_OK;
     
@@ -6167,10 +6184,14 @@ HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ICorDebugModule * pModu
     IfFailRet(pModule->GetName(_countof(moduleName), &len, moduleName));
 
     return LoadSymbols(pMD, baseAddress, moduleName, isInMemory);
+#else
+    return E_FAIL;
+#endif // FEATURE_PAL
 }
 
 HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __in_z WCHAR* pModuleName, BOOL isInMemory)
 {
+#ifndef FEATURE_PAL
     HRESULT Status = S_OK;
 
     if(m_pSymReader != NULL) return S_OK;
@@ -6236,6 +6257,9 @@ HRESULT SymbolReader::LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __
         m_pSymReader = NULL;
     }
     return Status;
+#else
+    return E_FAIL;
+#endif // FEATURE_PAL
 }
 
 HRESULT SymbolReader::GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDebugILFrame * pILFrame, mdMethodDef methodToken, ULONG localIndex, __inout_ecount(paramNameLen) WCHAR* paramName, ULONG paramNameLen, ICorDebugValue** ppValue)
@@ -6244,6 +6268,7 @@ HRESULT SymbolReader::GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDeb
 
     if(pScope == NULL)
     {
+#ifndef FEATURE_PAL
         ToRelease<ISymUnmanagedMethod> pSymMethod;
         IfFailRet(m_pSymReader->GetMethod(methodToken, &pSymMethod));
 
@@ -6251,6 +6276,9 @@ HRESULT SymbolReader::GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDeb
         IfFailRet(pSymMethod->GetRootScope(&pScope));
 
         return GetNamedLocalVariable(pScope, pILFrame, methodToken, localIndex, paramName, paramNameLen, ppValue);
+#else
+        return E_FAIL;
+#endif // FEATURE_PAL
     }
     else
     {
@@ -6306,6 +6334,7 @@ HRESULT SymbolReader::GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDeb
     }
     return E_FAIL;
 }
+
 HRESULT SymbolReader::GetNamedLocalVariable(ICorDebugFrame * pFrame, ULONG localIndex, __inout_ecount(paramNameLen) WCHAR* paramName, ULONG paramNameLen, ICorDebugValue** ppValue)
 {
     HRESULT Status = S_OK;
@@ -6328,8 +6357,10 @@ HRESULT SymbolReader::GetNamedLocalVariable(ICorDebugFrame * pFrame, ULONG local
 
     return GetNamedLocalVariable(NULL, pILFrame, methodDef, localIndex, paramName, paramNameLen, ppValue);
 }
+
 HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 lineNumber, mdMethodDef* pToken, ULONG32* pIlOffset)
 {
+#ifndef FEATURE_PAL
     HRESULT Status = S_OK;
     ULONG32 cDocs = 0;
     ULONG32 cDocsNeeded = 0;
@@ -6387,11 +6418,9 @@ HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 line
         }
         return S_OK;
     }
+#endif // FEATURE_PAL
     return E_FAIL;
 }
-
-
-#endif
 
 WString GetFrameFromAddress(TADDR frameAddr, IXCLRDataStackWalk *pStackWalk)
 {

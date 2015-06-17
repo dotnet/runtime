@@ -22,6 +22,7 @@ ForkAndExecProcess
 FormatMessageW
 FreeEnvironmentStringsW
 GetACP
+GetCLRRuntimeHost
 GetConsoleCP
 GetConsoleOutputCP
 GetCurrentDirectoryW
@@ -52,6 +53,7 @@ MultiByteToWideChar
 OpenEventW
 OpenMutexW
 OpenSemaphoreW
+PAL_InitializeCoreCLR 
 PAL_Random
 PAL_RegisterModule
 PAL_UnregisterModule

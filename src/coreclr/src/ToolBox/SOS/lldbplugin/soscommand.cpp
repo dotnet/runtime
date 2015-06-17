@@ -5,6 +5,7 @@
 
 #include "sosplugin.h"
 #include <dlfcn.h>
+#include <string.h>
 #include <string>
 
 class sosCommand : public lldb::SBCommandPluginInterface
@@ -72,10 +73,8 @@ public:
             }
             else 
             {
-                std::string directoryString;
-                directoryString.append(directory);
-                directoryString.append("/");
-                directoryString.copy(m_coreclrDirectory, MAX_PATH, 0);
+                strcpy(m_coreclrDirectory, directory);
+                strcat(m_coreclrDirectory, "/");
 
                 // Load the DAC module first explicitly because SOS and DBI
                 // have implicit references to the DAC's PAL.
