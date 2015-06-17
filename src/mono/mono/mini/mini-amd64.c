@@ -2240,9 +2240,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 	for (i = n - 1; i >= 0; --i) {
+		MonoType *t;
+
 		ainfo = cinfo->args + i;
 
 		in = call->args [i];
+
+		if (sig->hasthis && i == 0)
+			t = &mono_defaults.object_class->byval_arg;
+		else
+			t = sig->params [i - sig->hasthis];
+		t = mini_get_underlying_type (cfg, t);
 
 		switch (ainfo->storage) {
 		case ArgInIReg:
@@ -2259,17 +2267,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				MonoInst *call_inst = (MonoInst*)call;
 				cfg->args [i]->flags |= MONO_INST_VOLATILE;
 				EMIT_NEW_ARGSTORE (cfg, call_inst, i, in);
-			} else if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis]))) {
+			} else if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(t))) {
 				guint32 align;
 				guint32 size;
 
-				if (sig->params [i - sig->hasthis]->type == MONO_TYPE_TYPEDBYREF) {
+				if (t->type == MONO_TYPE_TYPEDBYREF) {
 					size = sizeof (MonoTypedRef);
 					align = sizeof (gpointer);
 				}
 				else {
 					if (sig->pinvoke)
-						size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
+						size = mono_type_native_stack_size (t, &align);
 					else {
 						/* 
 						 * Other backends use mono_type_stack_size (), but that
@@ -2277,7 +2285,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						 * the source, leading to reads of invalid memory if the
 						 * source is at the end of address space.
 						 */
-						size = mono_class_value_size (in->klass, &align);
+						size = mono_class_value_size (mono_class_from_mono_type (t), &align);
 					}
 				}
 				g_assert (in->klass);
@@ -2292,7 +2300,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				if (size > 0) {
 					MONO_INST_NEW (cfg, arg, OP_OUTARG_VT);
 					arg->sreg1 = in->dreg;
-					arg->klass = in->klass;
+					arg->klass = mono_class_from_mono_type (t);
 					arg->backend.size = size;
 					arg->inst_p0 = call;
 					arg->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
