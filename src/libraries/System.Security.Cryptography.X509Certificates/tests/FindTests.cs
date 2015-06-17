@@ -334,7 +334,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [ActiveIssue(1993, PlatformID.AnyUnix)]
         public static void TestByExtension_FriendlyName()
         {
-            RunSingleMatchTest_MsCer(X509FindType.FindByExtension, "Enhanced Key Usage");
+            // Cannot just say "Enhanced Key Usage" here because the extension name is localized.
+            // Instead, look it up via the OID.
+            RunSingleMatchTest_MsCer(X509FindType.FindByExtension, new Oid("2.5.29.37").FriendlyName);
         }
 
         [Fact]
