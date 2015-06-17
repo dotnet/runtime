@@ -717,6 +717,15 @@ fullaot-tmp/%.dylib: $(CLASS)/%
 llvmfullaotcheck:
 	$(MAKE) fullaotcheck LLVM=1
 
+llvmonlycheck: mono $(fullaot_regtests)
+	rm -rf fullaot-tmp
+	mkdir fullaot-tmp
+	cp $(CLASS)/mscorlib.dll $(CLASS)/System.Core.dll $(CLASS)/System.dll $(CLASS)/Mono.Posix.dll $(CLASS)/System.Configuration.dll $(CLASS)/System.Security.dll $(CLASS)/System.Xml.dll $(CLASS)/Mono.Security.dll $(CLASS)/Mono.Simd.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
+	cp $(fullaot_regtests) fullaot-tmp/
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  --aot=llvmonly fullaot-tmp/* || exit 1
+	ln -s $$PWD/mono fullaot-tmp/
+	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --llvmonly fullaot-tmp/$$i --exclude '!FULLAOT' $(ARCH_FULLAOT_EXCLUDE) || exit 1; done
+
 gccheck: gc-test.exe
 	MONO_GC_PARAMS=stack-mark=precise MONO_GC_DEBUG=clear-at-gc ./mono-sgen gc-test.exe	
 
