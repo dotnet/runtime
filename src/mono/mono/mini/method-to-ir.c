@@ -2502,15 +2502,8 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 		(cmethod->klass->generic_class || cmethod->klass->generic_container)) {
 		gboolean sharable = FALSE;
 
-		if (mono_method_is_generic_sharable (cmethod, TRUE)) {
+		if (mono_method_is_generic_sharable (cmethod, TRUE))
 			sharable = TRUE;
-		} else {
-			gboolean sharing_enabled = mono_class_generic_sharing_enabled (cmethod->klass);
-			MonoGenericContext *context = mini_class_get_context (cmethod->klass);
-			gboolean context_sharable = mono_generic_context_is_sharable (context, TRUE);
-
-			sharable = sharing_enabled && context_sharable;
-		}
 
 		/*
 		 * Pass vtable iff target method might
@@ -2530,12 +2523,6 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 		if (mono_method_is_generic_sharable (cmethod, TRUE)) {
 			pass_mrgctx = TRUE;
 		} else {
-			gboolean sharing_enabled = mono_class_generic_sharing_enabled (cmethod->klass);
-			MonoGenericContext *context = mini_method_get_context (cmethod);
-			gboolean context_sharable = mono_generic_context_is_sharable (context, TRUE);
-
-			if (sharing_enabled && context_sharable)
-				pass_mrgctx = TRUE;
 			if (cfg->gsharedvt && mini_is_gsharedvt_signature (cfg, mono_method_signature (cmethod)))
 				pass_mrgctx = TRUE;
 		}
