@@ -23,7 +23,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 
     set(TWO_WAY_PIPE_SOURCES
       unix/twowaypipe.cpp
-      unix/dynamiclibaddress.cpp
     )
 
 endif(CLR_CMAKE_PLATFORM_UNIX)
