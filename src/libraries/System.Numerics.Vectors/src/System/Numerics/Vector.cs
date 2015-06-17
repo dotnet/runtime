@@ -363,7 +363,8 @@ namespace System.Numerics
         {
             if (values == null)
             {
-                throw new ArgumentNullException("values");
+                // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
+                throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
             }
             if (index < 0 || (values.Length - index) < Count)
             {
@@ -772,7 +773,8 @@ namespace System.Numerics
         {
             if (destination == null)
             {
-                throw new ArgumentNullException("values");
+                // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
+                throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
             }
             if (startIndex < 0 || startIndex >= destination.Length)
             {
