@@ -7,19 +7,13 @@ using System.Dynamic.Utils;
 
 namespace System.Runtime.CompilerServices
 {
-    internal interface IRuleCache
-    {
-        void MoveRule(Delegate rule, int i);
-        Delegate[] GetRules();
-    }
-
     /// <summary>
     /// This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.
     /// Represents a cache of runtime binding rules.
     /// </summary>
     /// <typeparam name="T">The delegate type.</typeparam>
     [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
-    public class RuleCache<T> : IRuleCache where T : class
+    public class RuleCache<T> where T : class
     {
         private T[] _rules = new T[0];
         private readonly Object _cacheLock = new Object();
@@ -31,16 +25,6 @@ namespace System.Runtime.CompilerServices
         internal T[] GetRules()
         {
             return _rules;
-        }
-
-        Delegate[] IRuleCache.GetRules()
-        {
-            return (Delegate[])(object[])_rules;
-        }
-
-        void IRuleCache.MoveRule(Delegate rule, int i)
-        {
-            MoveRule((T)(object)rule, i);
         }
 
         // move the rule +2 up.

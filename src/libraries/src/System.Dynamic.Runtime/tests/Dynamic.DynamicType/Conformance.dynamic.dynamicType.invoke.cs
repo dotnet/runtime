@@ -160,7 +160,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
         public dynamic Bar = (Action<int>)Test.CallMe;
         public event Action<int> Foo;
 
-        [Fact(Skip = "875189")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

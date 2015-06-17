@@ -27,7 +27,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
     public class Test
     {
         public static int Status = -1;
-        [Fact(Skip = "875112")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -278,7 +278,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
             // debug
             if (!ret)
             {
-                System.Console.WriteLine("*** Expected= {0}" + Environment.NewLine + "***   Actual= {1}", message, actualError);
+                System.Console.WriteLine("*** Expected= {0}\r\n***   Actual= {1}", message, actualError);
             }
 
             return ret;

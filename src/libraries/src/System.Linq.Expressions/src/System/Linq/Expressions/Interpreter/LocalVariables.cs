@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Interpreter
         internal Expression LoadFromArray(Expression frameData, Expression closure, Type parameterType)
         {
             Expression result = Expression.ArrayAccess(InClosure ? closure : frameData, Expression.Constant(Index));
-            return (IsBoxed && !InClosure) ? Expression.Convert(result, typeof(ExplicitBox)) : result;
+            return (IsBoxed && !InClosure) ? Expression.Convert(result, typeof(StrongBox<object>)) : result;
         }
 
         public override string ToString()

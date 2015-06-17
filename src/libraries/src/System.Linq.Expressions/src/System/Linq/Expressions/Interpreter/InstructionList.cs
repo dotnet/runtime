@@ -816,6 +816,11 @@ namespace System.Linq.Expressions.Interpreter
             Emit(CastInstruction.Create(toType));
         }
 
+        public void EmitCastToEnum(Type toType)
+        {
+            Emit(new CastToEnumInstruction(toType));
+        }
+
         #endregion
 
         #region Boolean Operators
