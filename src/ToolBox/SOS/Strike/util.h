@@ -2368,15 +2368,20 @@ private:
     volatile ULONG m_refCount;
 };
 
+#endif // !FEATURE_PAL
+
 class SymbolReader
 {
 private:
+#ifndef FEATURE_PAL
     ISymUnmanagedReader* m_pSymReader;
+#endif
 
 private:
     HRESULT GetNamedLocalVariable(ISymUnmanagedScope * pScope, ICorDebugILFrame * pILFrame, mdMethodDef methodToken, ULONG localIndex, __inout_ecount(paramNameLen) WCHAR* paramName, ULONG paramNameLen, ICorDebugValue** ppValue);
 
 public:
+#ifndef FEATURE_PAL
     SymbolReader() : m_pSymReader (NULL) {}
     ~SymbolReader()
     {
@@ -2386,14 +2391,16 @@ public:
             m_pSymReader = NULL;
         }
     }
+#else
+    SymbolReader() {}
+    ~SymbolReader() {}
+#endif
 
     HRESULT LoadSymbols(IMetaDataImport * pMD, ICorDebugModule * pModule);
     HRESULT LoadSymbols(IMetaDataImport * pMD, ULONG64 baseAddress, __in_z WCHAR* pModuleName, BOOL isInMemory);
     HRESULT GetNamedLocalVariable(ICorDebugFrame * pFrame, ULONG localIndex, __inout_ecount(paramNameLen) WCHAR* paramName, ULONG paramNameLen, ICorDebugValue** ppValue);
     HRESULT SymbolReader::ResolveSequencePoint(__in_z WCHAR* pFilename, ULONG32 lineNumber, mdMethodDef* pToken, ULONG32* pIlOffset);
 };
-
-#endif // !FEATURE_PAL
 
 HRESULT
 GetLineByOffset(

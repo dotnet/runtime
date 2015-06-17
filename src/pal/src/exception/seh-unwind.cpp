@@ -195,6 +195,18 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 #error don't know how to unwind on this platform
 #endif
 
+/*++
+Function:
+    RtlpRaiseException
+
+Parameters:
+    ExceptionRecord - the Windows exception record to throw
+
+Note:
+    The name of this function and the name of the ExceptionRecord 
+    parameter is used in the sos lldb plugin code to read the exception
+    record. See coreclr\src\ToolBox\SOS\lldbplugin\debugclient.cpp.
+--*/
 PAL_NORETURN
 static void RtlpRaiseException(EXCEPTION_RECORD *ExceptionRecord)
 {
