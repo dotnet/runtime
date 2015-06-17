@@ -2485,30 +2485,34 @@ namespace System.Numerics.Tests
 
         // A test to make sure the fields are laid out how we expect
         [Fact]
-        [ActiveIssue(1002)]
         public unsafe void Matrix4x4FieldOffsetTest()
         {
-            Matrix4x4* ptr = (Matrix4x4*)0;
+            Matrix4x4 mat = new Matrix4x4();
 
-            Assert.Equal(new IntPtr(0), new IntPtr(&ptr->M11));
-            Assert.Equal(new IntPtr(4), new IntPtr(&ptr->M12));
-            Assert.Equal(new IntPtr(8), new IntPtr(&ptr->M13));
-            Assert.Equal(new IntPtr(12), new IntPtr(&ptr->M14));
+            float* basePtr = &mat.M11; // Take address of first element
+            Matrix4x4* matPtr = &mat; // Take address of whole matrix
 
-            Assert.Equal(new IntPtr(16), new IntPtr(&ptr->M21));
-            Assert.Equal(new IntPtr(20), new IntPtr(&ptr->M22));
-            Assert.Equal(new IntPtr(24), new IntPtr(&ptr->M23));
-            Assert.Equal(new IntPtr(28), new IntPtr(&ptr->M24));
+            Assert.Equal(new IntPtr(basePtr), new IntPtr(matPtr));
 
-            Assert.Equal(new IntPtr(32), new IntPtr(&ptr->M31));
-            Assert.Equal(new IntPtr(36), new IntPtr(&ptr->M32));
-            Assert.Equal(new IntPtr(40), new IntPtr(&ptr->M33));
-            Assert.Equal(new IntPtr(44), new IntPtr(&ptr->M34));
+            Assert.Equal(new IntPtr(basePtr + 0), new IntPtr(&mat.M11));
+            Assert.Equal(new IntPtr(basePtr + 1), new IntPtr(&mat.M12));
+            Assert.Equal(new IntPtr(basePtr + 2), new IntPtr(&mat.M13));
+            Assert.Equal(new IntPtr(basePtr + 3), new IntPtr(&mat.M14));
 
-            Assert.Equal(new IntPtr(48), new IntPtr(&ptr->M41));
-            Assert.Equal(new IntPtr(52), new IntPtr(&ptr->M42));
-            Assert.Equal(new IntPtr(56), new IntPtr(&ptr->M43));
-            Assert.Equal(new IntPtr(60), new IntPtr(&ptr->M44));
+            Assert.Equal(new IntPtr(basePtr + 4), new IntPtr(&mat.M21));
+            Assert.Equal(new IntPtr(basePtr + 5), new IntPtr(&mat.M22));
+            Assert.Equal(new IntPtr(basePtr + 6), new IntPtr(&mat.M23));
+            Assert.Equal(new IntPtr(basePtr + 7), new IntPtr(&mat.M24));
+
+            Assert.Equal(new IntPtr(basePtr + 8), new IntPtr(&mat.M31));
+            Assert.Equal(new IntPtr(basePtr + 9), new IntPtr(&mat.M32));
+            Assert.Equal(new IntPtr(basePtr + 10), new IntPtr(&mat.M33));
+            Assert.Equal(new IntPtr(basePtr + 11), new IntPtr(&mat.M34));
+
+            Assert.Equal(new IntPtr(basePtr + 12), new IntPtr(&mat.M41));
+            Assert.Equal(new IntPtr(basePtr + 13), new IntPtr(&mat.M42));
+            Assert.Equal(new IntPtr(basePtr + 14), new IntPtr(&mat.M43));
+            Assert.Equal(new IntPtr(basePtr + 15), new IntPtr(&mat.M44));
         }
     }
 }
