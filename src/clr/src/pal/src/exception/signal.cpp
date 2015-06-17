@@ -93,7 +93,9 @@ struct sigaction g_previous_sigusr2;
 
 // Pipe used for sending SIGINT / SIGQUIT signals notifications to a helper thread
 // that invokes the actual handler.
-int g_signalPipe[2];
+int g_signalPipe[2] = { 0, 0 };
+
+DWORD g_dwExternalSignalHandlerThreadId = 0;
 
 /* public function definitions ************************************************/
 
@@ -131,8 +133,6 @@ BOOL SEHInitializeSignals()
     handle_signal(SIGFPE, sigfpe_handler, &g_previous_sigfpe);
     handle_signal(SIGBUS, sigbus_handler, &g_previous_sigbus);
     handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
-    handle_signal(SIGINT, sigint_handler, &g_previous_sigint);
-    handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit);
 #if USE_SIGNALS_FOR_THREAD_SUSPENSION
     handle_signal(SIGUSR1, suspend_handler, &g_previous_sigusr1);
     handle_signal(SIGUSR2, resume_handler, &g_previous_sigusr2);
@@ -148,9 +148,7 @@ BOOL SEHInitializeSignals()
     */
     signal(SIGPIPE, SIG_IGN);
 
-    int status = pipe(g_signalPipe);
-    
-    return (status == 0);
+    return TRUE;
 }
 
 /*++
@@ -173,15 +171,21 @@ void SEHCleanupSignals()
 {
     TRACE("Restoring default signal handlers\n");
 
-    /* Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
-        during cleanup after this function has been called. */
+    // Do not remove handlers for SIGUSR1 and SIGUSR2. They must remain so threads can be suspended
+    // during cleanup after this function has been called.
     restore_signal(SIGILL, &g_previous_sigill);
     restore_signal(SIGTRAP, &g_previous_sigtrap);
     restore_signal(SIGFPE, &g_previous_sigfpe);
     restore_signal(SIGBUS, &g_previous_sigbus);
     restore_signal(SIGSEGV, &g_previous_sigsegv);
-    restore_signal(SIGINT, &g_previous_sigint);
-    restore_signal(SIGQUIT, &g_previous_sigquit);
+
+    // Only restore these signals if the signal handler thread was started and
+    // the previous handlers saved.
+    if (g_dwExternalSignalHandlerThreadId != 0)
+    {
+        restore_signal(SIGINT, &g_previous_sigint);
+        restore_signal(SIGQUIT, &g_previous_sigquit);
+    }
 }
 
 /* internal function definitions **********************************************/
@@ -699,8 +703,6 @@ void restore_signal(int signal_id, struct sigaction *previousAction)
     }
 }
 
-DWORD g_dwExternalSignalHandlerThreadId;
-
 static
 DWORD
 PALAPI
@@ -724,6 +726,12 @@ StartExternalSignalHandlerThread(
 #ifndef DO_NOT_USE_SIGNAL_HANDLING_THREAD
     HANDLE hThread;
 
+    if (pipe(g_signalPipe) != 0)
+    {
+        palError = ERROR_CANNOT_MAKE;
+        goto done;
+    }
+
     palError = InternalCreateThread(
         pthr,
         NULL,
@@ -743,6 +751,9 @@ StartExternalSignalHandlerThread(
     }
 
     InternalCloseHandle(pthr, hThread);
+
+    handle_signal(SIGINT, sigint_handler, &g_previous_sigint);
+    handle_signal(SIGQUIT, sigquit_handler, &g_previous_sigquit);
 #endif // DO_NOT_USE_SIGNAL_HANDLING_THREAD
 
 done:
