@@ -2111,7 +2111,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(E)), typeof(Enum)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is Enum;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyEnumIsObject(E value)
@@ -2121,7 +2156,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(E)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is object;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyEnumTypeIsEnum(Enum value)
@@ -3436,7 +3506,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(int)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is object;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyIntIsValueType(int value)
@@ -3446,7 +3551,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(int)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is ValueType;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyObjectIsCustom(object value)
@@ -4266,7 +4406,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(S)), typeof(IEquatable<S>)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is IEquatable<S>;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyStructIsObject(S value)
@@ -4276,7 +4451,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(S)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is object;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyStructIsValueType(S value)
@@ -4286,7 +4496,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(S)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is ValueType;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyStructArrayIsIEnumerableOfStruct(S[] value)
@@ -4746,7 +4991,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(Ts)), typeof(object)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is object;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyGenericWithStructRestrictionIsValueType<Ts>(Ts value) where Ts : struct
@@ -4756,7 +5036,42 @@ namespace Tests.ExpressionCompiler.Cast
                     Expression.TypeIs(Expression.Constant(value, typeof(Ts)), typeof(ValueType)),
                     Enumerable.Empty<ParameterExpression>());
             Func<bool> f = e.Compile();
-            Assert.True(f());
+
+            // compute the value with the expression tree
+            bool etResult = default(bool);
+            Exception etException = null;
+            try
+            {
+                etResult = f();
+            }
+            catch (Exception ex)
+            {
+                etException = ex;
+            }
+
+            // compute the value with regular IL
+            bool csResult = default(bool);
+            Exception csException = null;
+            try
+            {
+                csResult = value is ValueType;
+            }
+            catch (Exception ex)
+            {
+                csException = ex;
+            }
+
+            // either both should have failed the same way or they should both produce the same result
+            if (etException != null || csException != null)
+            {
+                Assert.NotNull(etException);
+                Assert.NotNull(csException);
+                Assert.Equal(csException.GetType(), etException.GetType());
+            }
+            else
+            {
+                Assert.Equal(csResult, etResult);
+            }
         }
 
         private static void VerifyValueTypeIsGenericWithStructRestriction<Ts>(ValueType value) where Ts : struct

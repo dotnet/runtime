@@ -1084,12 +1084,15 @@ namespace System.Linq.Expressions.Interpreter
             if ((TypeUtils.IsNumeric(nonNullableFrom) || nonNullableFrom.GetTypeInfo().IsEnum)
                  && (TypeUtils.IsNumeric(nonNullableTo) || nonNullableTo.GetTypeInfo().IsEnum))
             {
+                Type enumTypeTo = null;
+
                 if (nonNullableFrom.GetTypeInfo().IsEnum)
                 {
                     nonNullableFrom = Enum.GetUnderlyingType(nonNullableFrom);
                 }
                 if (nonNullableTo.GetTypeInfo().IsEnum)
                 {
+                    enumTypeTo = nonNullableTo;
                     nonNullableTo = Enum.GetUnderlyingType(nonNullableTo);
                 }
 
@@ -1103,6 +1106,12 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     _instructions.EmitNumericConvertUnchecked(from, to, isLiftedToNull);
+                }
+
+                if ((object)enumTypeTo != null)
+                {
+                    // Convert from underlying to the enum
+                    _instructions.EmitCastToEnum(enumTypeTo);
                 }
 
                 if (typeTo.IsNullableType())

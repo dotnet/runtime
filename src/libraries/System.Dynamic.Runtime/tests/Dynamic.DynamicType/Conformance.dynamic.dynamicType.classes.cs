@@ -768,7 +768,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.classes.sim
 
         public class Test
         {
-            [Fact(Skip = "870811")]
+            
             public static void DynamicCSharpRunTest()
             {
                 Assert.Equal(0, MainMethod(null));

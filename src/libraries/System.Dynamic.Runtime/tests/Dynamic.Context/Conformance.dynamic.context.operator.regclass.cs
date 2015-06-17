@@ -3116,7 +3116,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
         }
         };
 
-        [Fact(Skip = "870811")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
