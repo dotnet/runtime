@@ -1354,10 +1354,12 @@ typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 #define _ReturnAddress() __builtin_return_address(0)
 
 #ifdef PLATFORM_UNIX
+#define DIRECTORY_SEPARATOR_CHAR_A '/'
 #define DIRECTORY_SEPARATOR_CHAR_W W('/')
 #define DIRECTORY_SEPARATOR_STR_W W("/")
 #define PATH_SEPARATOR_CHAR_W W(':')
 #else // PLATFORM_UNIX
+#define DIRECTORY_SEPARATOR_CHAR_A '\\'
 #define DIRECTORY_SEPARATOR_CHAR_W W('\\')
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 #define PATH_SEPARATOR_CHAR_W W(';')

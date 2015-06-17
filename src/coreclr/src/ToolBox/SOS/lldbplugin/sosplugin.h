@@ -5,6 +5,7 @@
 
 #include <lldb/API/LLDB.h>
 #include "mstypes.h"
+#define DEFINE_EXCEPTION_RECORD
 #include <dbgeng.h>
 #include "debugclient.h"
 
