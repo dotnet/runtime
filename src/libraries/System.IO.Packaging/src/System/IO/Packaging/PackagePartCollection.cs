@@ -9,9 +9,6 @@
 //
 //-----------------------------------------------------------------------------
 
-// Allow use of presharp warning numbers [6506] unknown to the compiler
-#pragma warning disable 1634, 1691
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -72,11 +69,8 @@ namespace System.IO.Packaging
         /// <returns></returns>
         public IEnumerator<PackagePart> GetEnumerator()
         {
-            //PRESHARP:Warning 6506 Parameter to this public method must be validated:  A null-dereference can occur here.
             //The Dictionary.Values property always returns a collection, even if empty. It never returns a null.
-#pragma warning disable 6506
             return _partList.Values.GetEnumerator();
-#pragma warning restore 6506
         }
         #endregion Public Methods
 

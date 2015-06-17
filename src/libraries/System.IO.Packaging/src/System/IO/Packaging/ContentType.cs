@@ -87,14 +87,14 @@ namespace System.IO.Packaging
             else
             {
                 if (IsLinearWhiteSpaceChar(contentType[0]) || IsLinearWhiteSpaceChar(contentType[contentType.Length - 1]))
-                    throw new ArgumentException(SR.Get(SRID.ContentTypeCannotHaveLeadingTrailingLWS));
+                    throw new ArgumentException(SR.ContentTypeCannotHaveLeadingTrailingLWS);
 
                 //Carriage return can be expressed as '\r\n' or '\n\r'
                 //We need to make sure that a \r is accompanied by \n
                 ValidateCarriageReturns(contentType);
 
                 //Begin Parsing                
-                int semiColonIndex = contentType.IndexOf(_semicolonSeparator);
+                int semiColonIndex = contentType.IndexOf(SemicolonSeparator);
 
                 if (semiColonIndex == -1)
                 {
@@ -168,31 +168,6 @@ namespace System.IO.Packaging
                 return _parameterDictionary.GetEnumerator();
             }
         }
-
-
-        /// <summary>
-        /// Static property that represents a content type that is empty ""
-        /// This is not a valid content type as per the grammar and should be used
-        /// in places where the content type is missing or not available. 
-        /// </summary>
-        internal static ContentType Empty
-        {
-            get
-            {
-                return s_emptyContentType;
-            }
-        }
-
-        /// <summary>
-        /// Original string provided to constructor
-        /// </summary>
-        internal string OriginalString
-        {
-            get
-            {
-                return _originalString;
-            }
-        }
         #endregion Internal Properties
 
         //------------------------------------------------------
@@ -238,8 +213,11 @@ namespace System.IO.Packaging
                 if (!allowParameterValuePairs)
                 {
                     //Return false if this content type object has parameters
-                    if (_parameterDictionary != null && _parameterDictionary.Count > 0)
-                        return false;
+                    if (_parameterDictionary != null)
+                    {
+                        if (_parameterDictionary.Count > 0)
+                            return false;
+                    }
 
                     //Return false if the content type object passed in has parameters
                     Dictionary<string, string>.Enumerator contentTypeEnumerator;
@@ -284,10 +262,10 @@ namespace System.IO.Packaging
                     foreach (string paramterKey in _parameterDictionary.Keys)
                     {
                         stringBuilder.Append(s_linearWhiteSpaceChars[0]);
-                        stringBuilder.Append(_semicolonSeparator);
+                        stringBuilder.Append(SemicolonSeparator);
                         stringBuilder.Append(s_linearWhiteSpaceChars[0]);
                         stringBuilder.Append(paramterKey);
-                        stringBuilder.Append(_equalSeparator);
+                        stringBuilder.Append(EqualSeparator);
                         stringBuilder.Append(_parameterDictionary[paramterKey]);
                     }
                 }
@@ -404,7 +382,7 @@ namespace System.IO.Packaging
                     index = contentType.IndexOf(s_linearWhiteSpaceChars[2], ++index);
                 }
                 else
-                    throw new ArgumentException(SR.Get(SRID.InvalidLinearWhiteSpaceCharacter));
+                    throw new ArgumentException(SR.InvalidLinearWhiteSpaceCharacter);
             }
         }
 
@@ -422,7 +400,7 @@ namespace System.IO.Packaging
             string[] splitBasedOnForwardSlash = typeAndSubType.Split(s_forwardSlashSeparator);
 
             if (splitBasedOnForwardSlash.Length != 2)
-                throw new ArgumentException(SR.Get(SRID.InvalidTypeSubType));
+                throw new ArgumentException(SR.InvalidTypeSubType);
 
             _type = ValidateToken(splitBasedOnForwardSlash[0]);
             _subType = ValidateToken(splitBasedOnForwardSlash[1]);
@@ -440,14 +418,14 @@ namespace System.IO.Packaging
             {
                 //At this point the first character MUST be a semi-colon
                 //First time through this test is serving more as an assert.
-                if (parameterAndValue[0] != _semicolonSeparator)
-                    throw new ArgumentException(SR.Get(SRID.ExpectingSemicolon));
+                if (parameterAndValue[0] != SemicolonSeparator)
+                    throw new ArgumentException(SR.ExpectingSemicolon);
 
                 //At this point if we have just one semicolon, then its an error.
                 //Also, there can be no trailing LWS characters, as we already checked for that
                 //in the constructor.
                 if (parameterAndValue.Length == 1)
-                    throw new ArgumentException(SR.Get(SRID.ExpectingParameterValuePairs));
+                    throw new ArgumentException(SR.ExpectingParameterValuePairs);
 
                 //Removing the leading ; from the string
                 parameterAndValue = parameterAndValue.Substring(1);
@@ -456,10 +434,10 @@ namespace System.IO.Packaging
                 //of the parameter name.
                 parameterAndValue = parameterAndValue.TrimStart(s_linearWhiteSpaceChars);
 
-                int equalSignIndex = parameterAndValue.IndexOf(_equalSeparator);
+                int equalSignIndex = parameterAndValue.IndexOf(EqualSeparator);
 
                 if (equalSignIndex <= 0 || equalSignIndex == (parameterAndValue.Length - 1))
-                    throw new ArgumentException(SR.Get(SRID.InvalidParameterValuePair));
+                    throw new ArgumentException(SR.InvalidParameterValuePair);
 
                 int parameterStartIndex = equalSignIndex + 1;
 
@@ -493,7 +471,7 @@ namespace System.IO.Packaging
             //a ';' as the terminator for the token value.
             if (s[startIndex] != '"')
             {
-                int semicolonIndex = s.IndexOf(_semicolonSeparator, startIndex);
+                int semicolonIndex = s.IndexOf(SemicolonSeparator, startIndex);
 
                 if (semicolonIndex != -1)
                 {
@@ -523,7 +501,7 @@ namespace System.IO.Packaging
                     length = s.IndexOf('"', ++length);
 
                     if (length == -1)
-                        throw new ArgumentException(SR.Get(SRID.InvalidParameterValue));
+                        throw new ArgumentException(SR.InvalidParameterValue);
 
                     if (s[length - 1] != '\\')
                     {
@@ -547,17 +525,25 @@ namespace System.IO.Packaging
         private static string ValidateToken(string token)
         {
             if (String.CompareOrdinal(token, String.Empty) == 0)
-                throw new ArgumentException(SR.Get(SRID.InvalidToken));
+                throw new ArgumentException(SR.InvalidToken);
 
             for (int i = 0; i < token.Length; i++)
             {
                 if (IsAsciiLetterOrDigit(token[i]))
+                {
                     continue;
+                }
                 else
+                {
                     if (IsAllowedCharacter(token[i]))
-                    continue;
-                else
-                    throw new ArgumentException(SR.Get(SRID.InvalidToken));
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(SR.InvalidToken);
+                    }
+                }
             }
 
             return token;
@@ -573,11 +559,11 @@ namespace System.IO.Packaging
         private static string ValidateQuotedStringOrToken(string parameterValue)
         {
             if (String.CompareOrdinal(parameterValue, String.Empty) == 0)
-                throw new ArgumentException(SR.Get(SRID.InvalidParameterValue));
+                throw new ArgumentException(SR.InvalidParameterValue);
 
             if (parameterValue.Length >= 2 &&
-                parameterValue.StartsWith(_quote, StringComparison.Ordinal) &&
-                parameterValue.EndsWith(_quote, StringComparison.Ordinal))
+                parameterValue.StartsWith(Quote, StringComparison.Ordinal) &&
+                parameterValue.EndsWith(Quote, StringComparison.Ordinal))
                 ValidateQuotedText(parameterValue.Substring(1, parameterValue.Length - 2));
             else
                 ValidateToken(parameterValue);
@@ -599,11 +585,11 @@ namespace System.IO.Packaging
                     continue;
 
                 if (quotedText[i] <= ' ' || quotedText[i] >= 0xFF)
-                    throw new ArgumentException(SR.Get(SRID.InvalidParameterValue));
+                    throw new ArgumentException(SR.InvalidParameterValue);
                 else
                     if (quotedText[i] == '"' &&
                         (i == 0 || quotedText[i - 1] != '\\'))
-                    throw new ArgumentException(SR.Get(SRID.InvalidParameterValue));
+                    throw new ArgumentException(SR.InvalidParameterValue);
             }
         }
 
@@ -713,9 +699,9 @@ namespace System.IO.Packaging
         private Dictionary<string, string> _parameterDictionary = null;
         private bool _isInitialized = false;
 
-        private const string _quote = "\"";
-        private const char _semicolonSeparator = ';';
-        private const char _equalSeparator = '=';
+        private const string Quote = "\"";
+        private const char SemicolonSeparator = ';';
+        private const char EqualSeparator = '=';
 
         //This array is sorted by the ascii value of these characters.
         private static readonly char[] s_allowedCharacters =
@@ -736,9 +722,6 @@ namespace System.IO.Packaging
            '\t'  // horizontal tab  - \x09
          };
 
-        private static readonly ContentType s_emptyContentType = new ContentType("");
-
         #endregion Private Members
     }
 }
-

@@ -12,8 +12,9 @@ namespace System.IO.Packaging.Tests
 {
     public class Tests
     {
-		private string Mime_MediaTypeNames_Text_Xml = "text/xml";
-		private string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
+        private string Mime_MediaTypeNames_Text_Xml = "text/xml";
+        private string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
+
         [Fact]
         public void T201_Access_Length_Prop_of_Stream()
         {
@@ -25,7 +26,7 @@ namespace System.IO.Packaging.Tests
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -52,7 +53,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -65,7 +66,7 @@ namespace System.IO.Packaging.Tests
 
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     if (docPackageRelationship != null)
@@ -88,7 +89,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -97,7 +98,7 @@ namespace System.IO.Packaging.Tests
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     if (docPackageRelationship != null)
@@ -156,7 +157,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -165,7 +166,7 @@ namespace System.IO.Packaging.Tests
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     if (docPackageRelationship != null)
@@ -209,7 +210,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -217,7 +218,7 @@ namespace System.IO.Packaging.Tests
                 using (Package package = Package.Open(ms, FileMode.Open))
                 {
                     var mainPartUri = new Uri("/", UriKind.Relative);
-                    PackageRelationshipSelector prs = new PackageRelationshipSelector(mainPartUri, PackageRelationshipSelectorType.Type, documentRelationshipType);
+                    PackageRelationshipSelector prs = new PackageRelationshipSelector(mainPartUri, PackageRelationshipSelectorType.Type, DocumentRelationshipType);
                     var cnt = prs.Select(package).Count();
                     Assert.Equal(cnt, 1);
                 }
@@ -229,7 +230,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string stylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
+            const string StylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -237,7 +238,7 @@ namespace System.IO.Packaging.Tests
                 using (Package package = Package.Open(ms, FileMode.Open))
                 {
                     var mainPartUri = new Uri("/word/document.xml", UriKind.Relative);
-                    PackageRelationshipSelector prs = new PackageRelationshipSelector(mainPartUri, PackageRelationshipSelectorType.Type, stylesRelationshipType);
+                    PackageRelationshipSelector prs = new PackageRelationshipSelector(mainPartUri, PackageRelationshipSelectorType.Type, StylesRelationshipType);
                     var cnt = prs.Select(package).Count();
                     Assert.Equal(cnt, 1);
                 }
@@ -249,7 +250,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -258,7 +259,7 @@ namespace System.IO.Packaging.Tests
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     Assert.Equal(docPackageRelationship.Package, package);
@@ -357,7 +358,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -366,7 +367,7 @@ namespace System.IO.Packaging.Tests
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     var relationshipsBefore = package.GetRelationships().Count();
@@ -403,7 +404,7 @@ namespace System.IO.Packaging.Tests
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -412,7 +413,7 @@ namespace System.IO.Packaging.Tests
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     var relationshipsBefore = package.GetRelationships().Count();
@@ -504,38 +505,25 @@ namespace System.IO.Packaging.Tests
                     PackageProperties pp = package.PackageProperties;
 
                     StringBuilder sb = new StringBuilder();
-                    sb.AppendFormatNL("pp.Category: >{0}<", pp.Category);
-                    sb.AppendFormatNL("pp.ContentStatus: >{0}<", pp.ContentStatus);
-                    sb.AppendFormatNL("pp.ContentType: >{0}<", pp.ContentType);
+                    sb.AppendFormatComma("pp.Category: >{0}<", pp.Category);
+                    sb.AppendFormatComma("pp.ContentStatus: >{0}<", pp.ContentStatus);
+                    sb.AppendFormatComma("pp.ContentType: >{0}<", pp.ContentType);
                     //sb.AppendFormatNL("pp.Created: >{0}<", pp.Created);
-                    sb.AppendFormatNL("pp.Creator: >{0}<", pp.Creator);
-                    sb.AppendFormatNL("pp.Description: >{0}<", pp.Description);
-                    sb.AppendFormatNL("pp.Identifier: >{0}<", pp.Identifier);
-                    sb.AppendFormatNL("pp.Keywords: >{0}<", pp.Keywords);
-                    sb.AppendFormatNL("pp.Language: >{0}<", pp.Language);
-                    sb.AppendFormatNL("pp.LastModifiedBy: >{0}<", pp.LastModifiedBy);
-                    sb.AppendFormatNL("pp.LastPrinted: >{0}<", pp.LastPrinted);
+                    sb.AppendFormatComma("pp.Creator: >{0}<", pp.Creator);
+                    sb.AppendFormatComma("pp.Description: >{0}<", pp.Description);
+                    sb.AppendFormatComma("pp.Identifier: >{0}<", pp.Identifier);
+                    sb.AppendFormatComma("pp.Keywords: >{0}<", pp.Keywords);
+                    sb.AppendFormatComma("pp.Language: >{0}<", pp.Language);
+                    sb.AppendFormatComma("pp.LastModifiedBy: >{0}<", pp.LastModifiedBy);
+                    sb.AppendFormatComma("pp.LastPrinted: >{0}<", pp.LastPrinted);
                     //sb.AppendFormatNL("pp.Modified: >{0}<", pp.Modified);
-                    sb.AppendFormatNL("pp.Revision: >{0}<", pp.Revision);
-                    sb.AppendFormatNL("pp.Subject: >{0}<", pp.Subject);
-                    sb.AppendFormatNL("pp.Title: >{0}<", pp.Title);
-                    sb.AppendFormatNL("pp.Version: >{0}<", pp.Version);
+                    sb.AppendFormatComma("pp.Revision: >{0}<", pp.Revision);
+                    sb.AppendFormatComma("pp.Subject: >{0}<", pp.Subject);
+                    sb.AppendFormatComma("pp.Title: >{0}<", pp.Title);
+                    sb.AppendFormatComma("pp.Version: >{0}<", pp.Version);
 
                     string s = sb.ToString();
-                    Assert.Equal(sb.ToString().Trim(), @"pp.Category: >(null)<
-pp.ContentStatus: >(null)<
-pp.ContentType: >(null)<
-pp.Creator: >Eric White<
-pp.Description: ><
-pp.Identifier: >(null)<
-pp.Keywords: ><
-pp.Language: >(null)<
-pp.LastModifiedBy: >Eric White<
-pp.LastPrinted: >(null)<
-pp.Revision: >2<
-pp.Subject: ><
-pp.Title: ><
-pp.Version: >(null)<");
+                    Assert.Equal(sb.ToString().Trim(), @"pp.Category: >(null)<, pp.ContentStatus: >(null)<, pp.ContentType: >(null)<, pp.Creator: >Eric White<, pp.Description: ><, pp.Identifier: >(null)<, pp.Keywords: ><, pp.Language: >(null)<, pp.LastModifiedBy: >Eric White<, pp.LastPrinted: >(null)<, pp.Revision: >2<, pp.Subject: ><, pp.Title: ><, pp.Version: >(null)<,");
 
                     pp.Category = "Category";
                     pp.ContentStatus = "ContentStatus";
@@ -555,34 +543,22 @@ pp.Version: >(null)<");
                     pp.Version = "Version";
 
                     sb = new StringBuilder();
-                    sb.AppendFormatNL("pp.Category: >{0}<", pp.Category);
-                    sb.AppendFormatNL("pp.ContentStatus: >{0}<", pp.ContentStatus);
-                    sb.AppendFormatNL("pp.ContentType: >{0}<", pp.ContentType);
-                    sb.AppendFormatNL("pp.Creator: >{0}<", pp.Creator);
-                    sb.AppendFormatNL("pp.Description: >{0}<", pp.Description);
-                    sb.AppendFormatNL("pp.Identifier: >{0}<", pp.Identifier);
-                    sb.AppendFormatNL("pp.Keywords: >{0}<", pp.Keywords);
-                    sb.AppendFormatNL("pp.Language: >{0}<", pp.Language);
-                    sb.AppendFormatNL("pp.LastModifiedBy: >{0}<", pp.LastModifiedBy);
-                    sb.AppendFormatNL("pp.Revision: >{0}<", pp.Revision);
-                    sb.AppendFormatNL("pp.Subject: >{0}<", pp.Subject);
-                    sb.AppendFormatNL("pp.Title: >{0}<", pp.Title);
-                    sb.AppendFormatNL("pp.Version: >{0}<", pp.Version);
+                    sb.AppendFormatComma("pp.Category: >{0}<", pp.Category);
+                    sb.AppendFormatComma("pp.ContentStatus: >{0}<", pp.ContentStatus);
+                    sb.AppendFormatComma("pp.ContentType: >{0}<", pp.ContentType);
+                    sb.AppendFormatComma("pp.Creator: >{0}<", pp.Creator);
+                    sb.AppendFormatComma("pp.Description: >{0}<", pp.Description);
+                    sb.AppendFormatComma("pp.Identifier: >{0}<", pp.Identifier);
+                    sb.AppendFormatComma("pp.Keywords: >{0}<", pp.Keywords);
+                    sb.AppendFormatComma("pp.Language: >{0}<", pp.Language);
+                    sb.AppendFormatComma("pp.LastModifiedBy: >{0}<", pp.LastModifiedBy);
+                    sb.AppendFormatComma("pp.Revision: >{0}<", pp.Revision);
+                    sb.AppendFormatComma("pp.Subject: >{0}<", pp.Subject);
+                    sb.AppendFormatComma("pp.Title: >{0}<", pp.Title);
+                    sb.AppendFormatComma("pp.Version: >{0}<", pp.Version);
 
                     s = sb.ToString();
-                    Assert.Equal(sb.ToString().Trim(), @"pp.Category: >Category<
-pp.ContentStatus: >ContentStatus<
-pp.ContentType: >ContentType<
-pp.Creator: >Creator<
-pp.Description: >Description<
-pp.Identifier: >Identifier<
-pp.Keywords: >Keywords<
-pp.Language: >Language<
-pp.LastModifiedBy: >LastModifiedBy<
-pp.Revision: >Revision<
-pp.Subject: >Subject<
-pp.Title: >Title<
-pp.Version: >Version<");
+                    Assert.Equal(sb.ToString().Trim(), @"pp.Category: >Category<, pp.ContentStatus: >ContentStatus<, pp.ContentType: >ContentType<, pp.Creator: >Creator<, pp.Description: >Description<, pp.Identifier: >Identifier<, pp.Keywords: >Keywords<, pp.Language: >Language<, pp.LastModifiedBy: >LastModifiedBy<, pp.Revision: >Revision<, pp.Subject: >Subject<, pp.Title: >Title<, pp.Version: >Version<,");
 
                 }
 
@@ -597,8 +573,8 @@ pp.Version: >Version<");
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
-            const string stylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string StylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -607,7 +583,7 @@ pp.Version: >Version<");
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     if (docPackageRelationship != null)
@@ -622,7 +598,7 @@ pp.Version: >Version<");
 
                         //  Find the styles part. There will only be one.
                         PackageRelationship styleRelation =
-                          documentPart.GetRelationshipsByType(stylesRelationshipType)
+                          documentPart.GetRelationshipsByType(StylesRelationshipType)
                           .FirstOrDefault();
 
                         Assert.NotNull(styleRelation);
@@ -685,8 +661,8 @@ pp.Version: >Version<");
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
-            const string stylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string StylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -695,7 +671,7 @@ pp.Version: >Version<");
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     if (docPackageRelationship != null)
@@ -710,7 +686,7 @@ pp.Version: >Version<");
 
                         //  Find the styles part. There will only be one.
                         PackageRelationship styleRelation =
-                          documentPart.GetRelationshipsByType(stylesRelationshipType)
+                          documentPart.GetRelationshipsByType(StylesRelationshipType)
                           .FirstOrDefault();
 
                         int partsBefore = package.GetParts().Count();
@@ -740,7 +716,7 @@ pp.Version: >Version<");
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -748,7 +724,7 @@ pp.Version: >Version<");
                 using (Package package = Package.Open(ms, FileMode.Open))
                 {
                     PackageRelationship docPackageRelationship = package
-                        .GetRelationshipsByType(documentRelationshipType)
+                        .GetRelationshipsByType(DocumentRelationshipType)
                         .FirstOrDefault();
 
                     if (docPackageRelationship != null)
@@ -769,9 +745,6 @@ pp.Version: >Version<");
                         int partsAfter = package.GetParts().Count();
                         int relationshipsAfter = package.GetRelationships().Count();
                         Assert.Equal(partsBefore, partsAfter + 2);
-
-                        // todo ew this seems strange to me - when delete the main document part, the code does not delete the relationship from the package to the main document part.
-                        // If the existing System.IO.Packaging behaves in the same way, well, OK
                         Assert.Equal(relationshipsBefore, relationshipsAfter);
                     }
                 }
@@ -787,7 +760,7 @@ pp.Version: >Version<");
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -796,7 +769,7 @@ pp.Version: >Version<");
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     Assert.True(package.RelationshipExists(docPackageRelationship.Id));
@@ -812,8 +785,7 @@ pp.Version: >Version<");
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
-            //const string stylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -822,7 +794,7 @@ pp.Version: >Version<");
                 {
                     PackageRelationship docPackageRelationship =
                       package
-                      .GetRelationshipsByType(documentRelationshipType)
+                      .GetRelationshipsByType(DocumentRelationshipType)
                       .FirstOrDefault();
 
                     StringBuilder sb = new StringBuilder();
@@ -1066,7 +1038,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -1077,7 +1049,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
                     {
                         PackageRelationship docPackageRelationship =
                                       package
-                                      .GetRelationshipsByType(documentRelationshipType)
+                                      .GetRelationshipsByType(DocumentRelationshipType)
                                       .FirstOrDefault();
                         if (docPackageRelationship != null)
                         {
@@ -1105,7 +1077,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -1116,7 +1088,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
                     {
                         PackageRelationship docPackageRelationship =
                                       package
-                                      .GetRelationshipsByType(documentRelationshipType)
+                                      .GetRelationshipsByType(DocumentRelationshipType)
                                       .FirstOrDefault();
                         if (docPackageRelationship != null)
                         {
@@ -1144,8 +1116,8 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
         {
             var docName = "plain.docx";
             var ba = TestFileLib.GetByteArray(docName);
-            const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
-            const string stylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
+            const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+            const string StylesRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -1156,7 +1128,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
                     {
                         PackageRelationship docPackageRelationship =
                                       package
-                                      .GetRelationshipsByType(documentRelationshipType)
+                                      .GetRelationshipsByType(DocumentRelationshipType)
                                       .FirstOrDefault();
                         if (docPackageRelationship != null)
                         {
@@ -1173,7 +1145,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
 
                             //  Find the styles part. There will only be one.
                             PackageRelationship styleRelation =
-                              documentPart.GetRelationshipsByType(stylesRelationshipType)
+                              documentPart.GetRelationshipsByType(StylesRelationshipType)
                               .FirstOrDefault();
                             if (styleRelation != null)
                             {
@@ -1714,10 +1686,10 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
 
         private static void CopyStream(Stream source, Stream target)
         {
-            const int bufSize = 0x4096;
-            byte[] buf = new byte[bufSize];
+            const int BufSize = 0x4096;
+            byte[] buf = new byte[BufSize];
             int bytesRead = 0;
-            while ((bytesRead = source.Read(buf, 0, bufSize)) > 0)
+            while ((bytesRead = source.Read(buf, 0, BufSize)) > 0)
                 target.Write(buf, 0, bytesRead);
         }
 
@@ -1885,7 +1857,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -1937,7 +1909,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -1976,7 +1948,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2016,7 +1988,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2056,7 +2028,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2122,7 +2094,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2148,8 +2120,6 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
                         sw.Write(TestFileLib.s_DocumentXml);
                     }
 
-                    // EW todo I don't know what reading the document returns nothing here.
-                    // does not make sense to me.
                     Assert.Throws<XmlException>(() =>
                     {
                         using (Stream partStream = mainPart.GetStream(FileMode.OpenOrCreate, FileAccess.Read))
@@ -2173,7 +2143,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2232,7 +2202,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2281,7 +2251,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2325,7 +2295,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2361,7 +2331,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2398,7 +2368,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2434,7 +2404,7 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             {
                 PackageRelationship docPackageRelationship =
                   package
-                  .GetRelationshipsByType(documentRelationshipType)
+                  .GetRelationshipsByType(DocumentRelationshipType)
                   .FirstOrDefault();
 
                 if (docPackageRelationship != null)
@@ -2955,19 +2925,19 @@ ContentType: application/vnd.openxmlformats-package.relationships+xml
             //}
         }
 
-        const string documentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
+        const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
     }
 
     public static class MyExtensions
     {
-        public static void AppendFormatNL(this StringBuilder sb, string format, params object[] args)
+        public static void AppendFormatComma(this StringBuilder sb, string format, params object[] args)
         {
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == null)
                     args[i] = "(null)";
             }
-            var s = String.Format(format, args) + Environment.NewLine;
+            var s = String.Format(format, args) + ", ";
             sb.Append(s);
         }
     }

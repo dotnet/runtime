@@ -203,5 +203,3 @@ namespace System.IO.Packaging
         }
     }
 }
-
-

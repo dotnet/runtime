@@ -52,13 +52,13 @@ namespace System.IO.Packaging
         /// <returns>throws an exception if the encoding is not UTF-8 or UTF-16</returns>
         internal static void PerformInitailReadAndVerifyEncoding(XmlReader reader)
         {
-            Invariant.Assert(reader != null && reader.ReadState == ReadState.Initial);
+            Debug.Assert(reader != null && reader.ReadState == ReadState.Initial);
 
             //If the first node is XmlDeclaration we check to see if the encoding attribute is present
             if (reader.Read() && reader.NodeType == XmlNodeType.XmlDeclaration && reader.Depth == 0)
             {
                 string encoding;
-                encoding = reader.GetAttribute(_encodingAttribute);
+                encoding = reader.GetAttribute(EncodingAttribute);
 
                 if (encoding != null && encoding.Length > 0)
                 {
@@ -74,21 +74,24 @@ namespace System.IO.Packaging
                         return;
                     else
                         //if the encoding attribute has any other value we throw an exception
-                        throw new FileFormatException(SR.Get(SRID.EncodingNotSupported));
+                        throw new FileFormatException(SR.EncodingNotSupported);
                 }
             }
 
-            //if the XmlDeclaration is not present, or encoding attribute is not present, we
-            //base our decision on byte order marking. reader.Encoding will take that into account
-            //and return the correct value. 
-            //Note: For Byte order markings that require additional information to be specified in
-            //the encoding attribute in XmlDeclaration have already been ruled out by the check above.
-            //Note: If not encoding attribute is present or no byte order marking is present the 
-            //encoding default to UTF8
+            //Previously, the logic in System.IO.Packaging was that if the XmlDeclaration is not present, or encoding attribute
+            //is not present, we base our decision on byte order marking. Previously, reader was an XmlTextReader, which would
+            //take that into account and return the correct value.
 
-            // todo ew
-            // if (!(reader.Encoding is UnicodeEncoding || reader.Encoding is UTF8Encoding))
-            //     throw new FileFormatException(SR.Get(SRID.EncodingNotSupported));
+            //However, we can't use XmlTextReader, as it is not in COREFX.  Therefore, if there is no XmlDeclaration, or the encoding
+            //attribute is not set, then we will throw now exception, and UTF-8 will be assumed.
+
+            //TODO: in the future, we can do the work to detect the BOM, and throw an exception if the file is in an invalid encoding.
+            // Eric White: IMO, this is not a serious problem.  Office will never write with the wrong encoding, nor will any of the
+            // other suites.  The Open XML SDK will always write with the correct encoding.
+
+            //The future logic would be:
+            //- determine the encoding from the BOM
+            //- if the encoding is not UTF-8 or UTF-16, then throw new FileFormatException(SR.EncodingNotSupported)
         }
 
         /// <summary>
@@ -102,7 +105,7 @@ namespace System.IO.Packaging
         static internal void VerifyStreamReadArgs(Stream s, byte[] buffer, int offset, int count)
         {
             if (!s.CanRead)
-                throw new NotSupportedException(SR.Get(SRID.ReadNotSupported));
+                throw new NotSupportedException(SR.ReadNotSupported);
 
             if (buffer == null)
             {
@@ -111,19 +114,19 @@ namespace System.IO.Packaging
 
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.Get(SRID.OffsetNegative));
+                throw new ArgumentOutOfRangeException("offset", SR.OffsetNegative);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Get(SRID.ReadCountNegative));
+                throw new ArgumentOutOfRangeException("count", SR.ReadCountNegative);
             }
 
             checked     // catch any integer overflows
             {
                 if (offset + count > buffer.Length)
                 {
-                    throw new ArgumentException(SR.Get(SRID.ReadBufferTooSmall), "buffer");
+                    throw new ArgumentException(SR.ReadBufferTooSmall, "buffer");
                 }
             }
         }
@@ -139,7 +142,7 @@ namespace System.IO.Packaging
         static internal void VerifyStreamWriteArgs(Stream s, byte[] buffer, int offset, int count)
         {
             if (!s.CanWrite)
-                throw new NotSupportedException(SR.Get(SRID.WriteNotSupported));
+                throw new NotSupportedException(SR.WriteNotSupported);
 
             if (buffer == null)
             {
@@ -148,18 +151,18 @@ namespace System.IO.Packaging
 
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException("offset", SR.Get(SRID.OffsetNegative));
+                throw new ArgumentOutOfRangeException("offset", SR.OffsetNegative);
             }
 
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException("count", SR.Get(SRID.WriteCountNegative));
+                throw new ArgumentOutOfRangeException("count", SR.WriteCountNegative);
             }
 
             checked
             {
                 if (offset + count > buffer.Length)
-                    throw new ArgumentException(SR.Get(SRID.WriteBufferTooSmall), "buffer");
+                    throw new ArgumentException(SR.WriteBufferTooSmall, "buffer");
             }
         }
 
@@ -193,14 +196,14 @@ namespace System.IO.Packaging
         /// return.  This one does.</remarks>
         internal static int ReliableRead(Stream stream, byte[] buffer, int offset, int requestedCount, int requiredCount)
         {
-            Invariant.Assert(stream != null);
-            Invariant.Assert(buffer != null);
-            Invariant.Assert(buffer.Length > 0);
-            Invariant.Assert(offset >= 0);
-            Invariant.Assert(requestedCount >= 0);
-            Invariant.Assert(requiredCount >= 0);
-            Invariant.Assert(checked(offset + requestedCount <= buffer.Length));
-            Invariant.Assert(requiredCount <= requestedCount);
+            Debug.Assert(stream != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(buffer.Length > 0);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(requestedCount >= 0);
+            Debug.Assert(requiredCount >= 0);
+            Debug.Assert(checked(offset + requestedCount <= buffer.Length));
+            Debug.Assert(requiredCount <= requestedCount);
 
             // let's read the whole block into our buffer 
             int totalBytesRead = 0;
@@ -248,14 +251,14 @@ namespace System.IO.Packaging
         /// return.  This one does.</remarks>
         internal static int ReliableRead(BinaryReader reader, byte[] buffer, int offset, int requestedCount, int requiredCount)
         {
-            Invariant.Assert(reader != null);
-            Invariant.Assert(buffer != null);
-            Invariant.Assert(buffer.Length > 0);
-            Invariant.Assert(offset >= 0);
-            Invariant.Assert(requestedCount >= 0);
-            Invariant.Assert(requiredCount >= 0);
-            Invariant.Assert(checked(offset + requestedCount <= buffer.Length));
-            Invariant.Assert(requiredCount <= requestedCount);
+            Debug.Assert(reader != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(buffer.Length > 0);
+            Debug.Assert(offset >= 0);
+            Debug.Assert(requestedCount >= 0);
+            Debug.Assert(requiredCount >= 0);
+            Debug.Assert(checked(offset + requestedCount <= buffer.Length));
+            Debug.Assert(requiredCount <= requestedCount);
 
             // let's read the whole block into our buffer 
             int totalBytesRead = 0;
@@ -287,10 +290,10 @@ namespace System.IO.Packaging
         ///  Target stream isn't truncated even if it has more data past the area that was copied.</remarks> 
         internal static long CopyStream(Stream sourceStream, Stream targetStream, long bytesToCopy, int bufferSize)
         {
-            Invariant.Assert(sourceStream != null);
-            Invariant.Assert(targetStream != null);
-            Invariant.Assert(bytesToCopy >= 0);
-            Invariant.Assert(bufferSize > 0);
+            Debug.Assert(sourceStream != null);
+            Debug.Assert(targetStream != null);
+            Debug.Assert(bytesToCopy >= 0);
+            Debug.Assert(bufferSize > 0);
 
             byte[] buffer = new byte[bufferSize];
 
@@ -389,7 +392,7 @@ namespace System.IO.Packaging
         /// </summary>
         /// <remarks>See PS 1468964 for details.</remarks>
         private const string XmlNamespace = "xmlns";
-        private const string _encodingAttribute = "encoding";
+        private const string EncodingAttribute = "encoding";
         private static readonly string s_webNameUTF8 = Encoding.UTF8.WebName.ToUpperInvariant();
         private static readonly string s_webNameUnicode = Encoding.Unicode.WebName.ToUpperInvariant();
 

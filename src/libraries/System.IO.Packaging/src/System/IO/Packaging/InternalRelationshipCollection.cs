@@ -37,7 +37,7 @@ namespace System.IO.Packaging
         //------------------------------------------------------
         #region IEnumerable
         /// <summary>
-        /// Returns an enumertor over all the relationships for a Package or a PackagePart
+        /// Returns an enumerator over all the relationships for a Package or a PackagePart
         /// </summary>
         /// <returns></returns>
         IEnumerator IEnumerable.GetEnumerator()
@@ -169,13 +169,13 @@ namespace System.IO.Packaging
         {
             // Look for empty string or string with just spaces
             if (relationshipType.Trim() == String.Empty)
-                throw new ArgumentException(SR.Get(SRID.InvalidRelationshipType));
+                throw new ArgumentException(SR.InvalidRelationshipType);
         }
 
         // If 'id' is not of the xsd type ID, throw an exception.
         internal static void ThrowIfInvalidXsdId(string id)
         {
-            Invariant.Assert(id != null, "id should not be null");
+            Debug.Assert(id != null, "id should not be null");
 
             try
             {
@@ -184,7 +184,9 @@ namespace System.IO.Packaging
             }
             catch (XmlException exception)
             {
-                throw new XmlException(SR.Get(SRID.NotAValidXmlIdString, id), exception);
+                var r = SR.NotAValidXmlIdString;
+                var s = SR.Format(r, id);
+                throw new XmlException(s, exception);
             }
         }
 
@@ -260,13 +262,6 @@ namespace System.IO.Packaging
                 // load from the relationship part associated with the given part
                 using (XmlReader baseReader = XmlReader.Create(s))
                 {
-                    //baseReader.WhitespaceHandling = WhitespaceHandling.None; todo ew
-
-                    //Prohibit DTD from the markup as per the OPC spec
-#pragma warning disable 618
-                    // baseReader.ProhibitDtd = true; todo ew
-#pragma warning restore 618
-
                     using (XmlCompatibilityReader reader = new XmlCompatibilityReader(baseReader, s_relationshipKnownNamespaces))
                     {
                         //This method expects the reader to be in ReadState.Initial.
@@ -290,7 +285,7 @@ namespace System.IO.Packaging
                             //There should be a namespace Attribute present at this level. 
                             //Also any other attribute on the <Relationships> tag is an error including xml: and xsi: attributes
                             if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) > 0)
-                                throw new XmlException(SR.Get(SRID.RelationshipsTagHasExtraAttributes), null, reader.LineNumber, reader.LinePosition);
+                                throw new XmlException(SR.RelationshipsTagHasExtraAttributes, null, reader.LineNumber, reader.LinePosition);
 
                             // start tag encountered for Relationships
                             // now parse individual Relationship tags
@@ -327,14 +322,14 @@ namespace System.IO.Packaging
                                         if (!reader.IsEmptyElement)
                                             ProcessEndElementForRelationshipTag(reader);
                                     }
-                                    else throw new XmlException(SR.Get(SRID.RelationshipTagDoesntMatchSchema), null, reader.LineNumber, reader.LinePosition);
+                                    else throw new XmlException(SR.RelationshipTagDoesntMatchSchema, null, reader.LineNumber, reader.LinePosition);
                                 }
                                 else
                                     if (!(String.CompareOrdinal(s_relationshipsTagName, reader.LocalName) == 0 && (reader.NodeType == XmlNodeType.EndElement)))
-                                    throw new XmlException(SR.Get(SRID.UnknownTagEncountered), null, reader.LineNumber, reader.LinePosition);
+                                    throw new XmlException(SR.UnknownTagEncountered, null, reader.LineNumber, reader.LinePosition);
                             }
                         }
-                        else throw new XmlException(SR.Get(SRID.ExpectedRelationshipsElementTag), null, reader.LineNumber, reader.LinePosition);
+                        else throw new XmlException(SR.ExpectedRelationshipsElementTag, null, reader.LineNumber, reader.LinePosition);
                     }
                 }
             }
@@ -372,20 +367,20 @@ namespace System.IO.Packaging
             // create a new PackageRelationship
             string targetAttributeValue = reader.GetAttribute(s_targetAttributeName);
             if (targetAttributeValue == null || targetAttributeValue == String.Empty)
-                throw new XmlException(SR.Get(SRID.RequiredRelationshipAttributeMissing, s_targetAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_targetAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             Uri targetUri = new Uri(targetAttributeValue, UriKind.RelativeOrAbsolute);
 
             // Attribute : Type
             string typeAttributeValue = reader.GetAttribute(s_typeAttributeName);
             if (typeAttributeValue == null || typeAttributeValue == String.Empty)
-                throw new XmlException(SR.Get(SRID.RequiredRelationshipAttributeMissing, s_typeAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_typeAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Attribute : Id
             // Get the Id attribute (required attribute).
             string idAttributeValue = reader.GetAttribute(s_idAttributeName);
             if (idAttributeValue == null || idAttributeValue == String.Empty)
-                throw new XmlException(SR.Get(SRID.RequiredRelationshipAttributeMissing, s_idAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.RequiredRelationshipAttributeMissing, s_idAttributeName), null, reader.LineNumber, reader.LinePosition);
 
             // Add the relationship to the collection
             Add(targetUri, relationshipTargetMode, typeAttributeValue, idAttributeValue, true /*parsing*/);
@@ -394,7 +389,7 @@ namespace System.IO.Packaging
         //If End element is present for Relationship then we process it
         private void ProcessEndElementForRelationshipTag(XmlCompatibilityReader reader)
         {
-            Debug.Assert(!reader.IsEmptyElement, "This method should only be called it the Relationship Element is not empty");
+            Debug.Assert(!reader.IsEmptyElement, "This method should only be called if the Relationship Element is not empty");
 
             reader.Read();
 
@@ -404,7 +399,7 @@ namespace System.IO.Packaging
             if (reader.NodeType == XmlNodeType.EndElement && String.CompareOrdinal(s_relationshipTagName, reader.LocalName) == 0)
                 return;
             else
-                throw new XmlException(SR.Get(SRID.ElementIsNotEmptyElement, s_relationshipTagName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, s_relationshipTagName), null, reader.LineNumber, reader.LinePosition);
         }
 
 
@@ -434,7 +429,7 @@ namespace System.IO.Packaging
 
             // don't accept absolute Uri's if targetMode is Internal.
             if (targetMode == TargetMode.Internal && targetUri.IsAbsoluteUri)
-                throw new ArgumentException(SR.Get(SRID.RelationshipTargetMustBeRelative), "targetUri");
+                throw new ArgumentException(SR.RelationshipTargetMustBeRelative, "targetUri");
 
             // don't allow relationships to relationships
             //  This check should be made for following cases
@@ -452,7 +447,7 @@ namespace System.IO.Packaging
                 if (resolvedUri != null)
                 {
                     if (PackUriHelper.IsRelationshipPartUri(resolvedUri))
-                        throw new ArgumentException(SR.Get(SRID.RelationshipToRelationshipIllegal), "targetUri");
+                        throw new ArgumentException(SR.RelationshipToRelationshipIllegal, "targetUri");
                 }
             }
 
@@ -604,7 +599,7 @@ namespace System.IO.Packaging
         private void ThrowIfIncorrectContentType(ContentType contentType)
         {
             if (!contentType.AreTypeAndSubTypeEqual(PackagingUtilities.RelationshipPartContentType))
-                throw new FileFormatException(SR.Get(SRID.RelationshipPartIncorrectContentType));
+                throw new FileFormatException(SR.RelationshipPartIncorrectContentType);
         }
 
         //Throws an exception if the xml:base attribute is present in the Relationships XML
@@ -613,13 +608,13 @@ namespace System.IO.Packaging
             string xmlBaseAttributeValue = reader.GetAttribute(s_xmlBaseAttributeName);
 
             if (xmlBaseAttributeValue != null)
-                throw new XmlException(SR.Get(SRID.InvalidXmlBaseAttributePresent, s_xmlBaseAttributeName), null, reader.LineNumber, reader.LinePosition);
+                throw new XmlException(SR.Format(SR.InvalidXmlBaseAttributePresent, s_xmlBaseAttributeName), null, reader.LineNumber, reader.LinePosition);
         }
 
         //Throws an XML exception if the attribute value is invalid
         private void ThrowForInvalidAttributeValue(XmlCompatibilityReader reader, String attributeName, Exception ex)
         {
-            throw new XmlException(SR.Get(SRID.InvalidValueForTheAttribute, attributeName), ex, reader.LineNumber, reader.LinePosition);
+            throw new XmlException(SR.Format(SR.InvalidValueForTheAttribute, attributeName), ex, reader.LineNumber, reader.LinePosition);
         }
 
         // Generate a unique relation ID.
@@ -649,7 +644,7 @@ namespace System.IO.Packaging
 
             // Check for uniqueness.
             if (GetRelationshipIndex(id) >= 0)
-                throw new XmlException(SR.Get(SRID.NotAUniqueRelationshipId, id));
+                throw new XmlException(SR.Format(SR.NotAUniqueRelationshipId, id));
         }
 
 
@@ -706,4 +701,3 @@ namespace System.IO.Packaging
         #endregion    
     }
 }
-

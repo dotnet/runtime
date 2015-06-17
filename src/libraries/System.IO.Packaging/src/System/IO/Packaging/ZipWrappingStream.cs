@@ -103,7 +103,6 @@ namespace System.IO.Packaging
         // then can't get length from the stream.  Not supported.
         // The workaround - write the stream to a memory stream, then return the length of the
         // memory stream.
-        // todo ew this will cause inefficiencies in PowerTools - should fix PowerTools
         public override long Length
         {
             get {
@@ -123,10 +122,10 @@ namespace System.IO.Packaging
 
         private static void CopyStream(Stream source, Stream target)
         {
-            const int bufSize = 0x4096;
-            byte[] buf = new byte[bufSize];
+            const int BufSize = 0x4096;
+            byte[] buf = new byte[BufSize];
             int bytesRead = 0;
-            while ((bytesRead = source.Read(buf, 0, bufSize)) > 0)
+            while ((bytesRead = source.Read(buf, 0, BufSize)) > 0)
                 target.Write(buf, 0, bytesRead);
         }
 
