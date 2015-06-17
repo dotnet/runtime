@@ -1006,7 +1006,7 @@ mono_amd64_get_exception_trampolines (gboolean aot)
 	get_throw_trampoline (&info, FALSE, TRUE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", aot);
 	tramps = g_slist_prepend (tramps, info);
 
-	get_throw_trampoline (&info, FALSE, TRUE, TRUE, TRUE, "llvm_resume_unwind_trampoline", FALSE);
+	get_throw_trampoline (&info, FALSE, TRUE, TRUE, TRUE, "llvm_resume_unwind_trampoline", aot);
 	tramps = g_slist_prepend (tramps, info);
 
 	return tramps;
