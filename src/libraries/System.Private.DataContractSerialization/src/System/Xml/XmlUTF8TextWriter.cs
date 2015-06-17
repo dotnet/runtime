@@ -6,7 +6,7 @@ using System.Runtime;
 using System.Security;
 using System.Text;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Xml
 {
     internal interface IXmlTextWriterInitializer

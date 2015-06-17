@@ -1307,7 +1307,7 @@ namespace System.Runtime.Serialization
             internal bool HasDataContract
             {
                 get { return _hasDataContract; }
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
                 set { _hasDataContract = value; }
 #endif
             }
@@ -1448,6 +1448,23 @@ namespace System.Runtime.Serialization
 
             internal static DataMemberComparer Singleton = new DataMemberComparer();
         }
+
+#if MERGE_DCJS
+        /// <summary>
+        ///  Get object type for Xml/JsonFormmatReaderGenerator
+        /// </summary>
+        internal Type ObjectType
+        {
+            get
+            {
+                Type type = UnderlyingType;
+                if (type.GetTypeInfo().IsValueType && !IsNonAttributedType)
+                {
+                    type = type != typeof(DateTimeOffsetAdapter) ? Globals.TypeOfValueType : typeof(ValueType);
+                }
+                return type;
+            }
+        }
+#endif
     }
 }
-

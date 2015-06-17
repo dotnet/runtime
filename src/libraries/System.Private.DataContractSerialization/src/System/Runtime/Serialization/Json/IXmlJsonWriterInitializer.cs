@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal interface IXmlJsonWriterInitializer

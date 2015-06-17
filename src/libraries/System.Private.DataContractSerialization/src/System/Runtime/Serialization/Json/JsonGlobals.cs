@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization.Json
         public const string PositiveInf = "INF";
         public const string NegativeInf = "-INF";
         public static readonly char[] FloatingPointCharacters = new char[] { '.', 'e', 'E' };
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
         public const string typeString = "type";
         public const string nullString = "null";
         public const string arrayString = "array";

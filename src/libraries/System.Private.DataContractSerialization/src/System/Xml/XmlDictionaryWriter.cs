@@ -54,6 +54,11 @@ namespace System.Xml
 
         static public XmlDictionaryWriter CreateTextWriter(Stream stream, Encoding encoding, bool ownsStream)
         {
+#if MERGE_DCJS
+            XmlUTF8TextWriter writer = new XmlUTF8TextWriter();
+            writer.SetOutput(stream, encoding, ownsStream);
+            return writer;
+#else
             XmlWriterSettings settings = new XmlWriterSettings();
             if (s_UTF8Encoding.WebName == encoding.WebName)
             {
@@ -69,8 +74,8 @@ namespace System.Xml
             settings.OmitXmlDeclaration = true;
             settings.CheckCharacters = false;
             return XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(stream, settings));
+#endif
         }
-
 
         static public XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer)
         {

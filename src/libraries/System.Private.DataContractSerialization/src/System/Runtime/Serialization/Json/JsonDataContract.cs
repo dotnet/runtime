@@ -8,7 +8,7 @@ using System.Security;
 using System.Reflection;
 using System.Xml;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonDataContract
@@ -335,7 +335,11 @@ namespace System.Runtime.Serialization.Json
         }
     }
 
+#if NET_NATIVE
     public class JsonReadWriteDelegates
+#else
+    internal class JsonReadWriteDelegates
+#endif
     {
         // this is the global dictionary for JSON delegates introduced for multi-file
         private static Dictionary<DataContract, JsonReadWriteDelegates> s_jsonDelegates = new Dictionary<DataContract, JsonReadWriteDelegates>();

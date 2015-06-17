@@ -5,7 +5,7 @@ using System.Xml;
 using System.Runtime.Serialization;
 using System.Globalization;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonObjectDataContract : JsonDataContract

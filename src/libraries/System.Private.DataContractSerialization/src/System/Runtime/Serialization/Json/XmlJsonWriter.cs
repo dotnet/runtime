@@ -10,7 +10,7 @@ using System.Security;
 using System.Text;
 using System.Xml;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class XmlJsonWriter : XmlDictionaryWriter, IXmlJsonWriterInitializer

@@ -14,10 +14,14 @@ using System.Collections.Generic;
 using System.Security;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization
 {
+#if NET_NATIVE
     public class XmlObjectSerializerReadContextComplex : XmlObjectSerializerReadContext
+#else
+    internal class XmlObjectSerializerReadContextComplex : XmlObjectSerializerReadContext
+#endif
     {
         private static Dictionary<XmlObjectDataContractTypeKey, XmlObjectDataContractTypeInfo> s_dataContractTypeCache = new Dictionary<XmlObjectDataContractTypeKey, XmlObjectDataContractTypeInfo>();
 
