@@ -5,7 +5,7 @@ Different applications have different needs when it comes to performance.  For l
 
 Much has been written about writing high-performance code in C#.  This page provides links to some of that material and will expand over time as additional resources are found and identified as being relevant and useful.
 
-You can read [CoreCLR Performance Requirements](https://github.com/master/coreclr/blob/master/Documentation/performance-requirements.md) to learn more.
+You can read [CoreCLR Performance Requirements](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/performance-guidelines.md) to learn more.
 
 # Memory Management
 
