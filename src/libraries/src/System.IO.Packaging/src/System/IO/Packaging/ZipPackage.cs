@@ -75,10 +75,6 @@ namespace System.IO.Packaging
             GetZipCompressionMethodFromOpcCompressionOption(compressionOption,
                 out level);
 
-            // If any entries are present in the ignoredItemList that might correspond to 
-            // the same part name, we delete all those entries.
-            _ignoredItemHelper.Delete((PackUriHelper.ValidatedPartUri)partUri);
-
             // Create new Zip item.
             // We need to remove the leading "/" character at the beginning of the part name.
             // The partUri object must be a ValidatedPartUri
@@ -115,7 +111,7 @@ namespace System.IO.Packaging
             //  2. Also, its not a straighforward task to determine if a new part was 
             //     added as we need to look for atomic as well as interleaved parts and 
             //     this has to be done in a case sensitive manner. So, effectively
-            //     we will have to go through the entier list of zip items to determine
+            //     we will have to go through the entire list of zip items to determine
             //     if there are any updates. 
             //  If ever the design changes, then this method must be updated accordingly
 
@@ -143,11 +139,6 @@ namespace System.IO.Packaging
                 // Case of an atomic part.
                 zipArchiveEntry.Delete();
             }
-
-            //We are not absolutely required to clean up all the items in the ignoredItems list,
-            //but it will help to clean up incomplete and leftover pieces that belonged to the same
-            //part
-            _ignoredItemHelper.Delete((PackUriHelper.ValidatedPartUri)partUri);
 
             //Delete the content type for this part if it was specified as an override
             _contentTypeHelper.DeleteContentType((PackUriHelper.ValidatedPartUri)partUri);
@@ -179,7 +170,7 @@ namespace System.IO.Packaging
         /// <returns>An array of ZipPackagePart.</returns>
         protected override PackagePart[] GetPartsCore()
         {
-            List<PackagePart> parts = new List<PackagePart>(_initialPartListSize);
+            List<PackagePart> parts = new List<PackagePart>(InitialPartListSize);
 
             // The list of files has to be searched linearly (1) to identify the content type
             // stream, and (2) to identify parts.
@@ -191,49 +182,31 @@ namespace System.IO.Packaging
             // Record parts and ignored items.
             foreach (ZipArchiveEntry zipArchiveEntry in zipArchiveEntries)
             {
-                //If the info is for a folder or a volume then we simply ignore it. 
-                if (IsValidFileItem(zipArchiveEntry))
+                //Returns false if - 
+                // a. its a content type item
+                // b. items that have either a leading or trailing slash.
+                if (IsZipItemValidOpcPartOrPiece(zipArchiveEntry.FullName))
                 {
-                    //Returns false if - 
-                    // a. its a content type item
-                    // b. items that have either a leading or trailing slash.
-                    if (IsZipItemValidOpcPartOrPiece(zipArchiveEntry.Name))
-                    {
-                        Uri partUri = new Uri(GetOpcNameFromZipItemName(zipArchiveEntry.FullName), UriKind.Relative);
-                        PackUriHelper.ValidatedPartUri validatedPartUri;
-                        if (PackUriHelper.TryValidatePartUri(partUri, out validatedPartUri))
-                        {
-                            ContentType contentType = _contentTypeHelper.GetContentType(validatedPartUri);
-                            if (contentType != null)
-                            {
-                                // In case there was some redundancy between pieces and/or the atomic
-                                // part, it will be detected at this point because the part's Uri (which
-                                // is independent of interleaving) will already be in the dictionary.
-                                parts.Add(new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry,
-                                    _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo(zipArchiveEntry)));
-                            }
-                            else
-                                //Since this part does not have a valid content type we add it to the ignored list,
-                                //as later if a another part with similar extension gets added, this part might become
-                                //valid next time we open the package. 
-                                _ignoredItemHelper.AddItemForAtomicPart(validatedPartUri, zipArchiveEntry.Name);
-                        }
-                        //If not valid part uri we can completely ignore this zip file item. Even if later someone adds
-                        //a new part, the corresponding zip item can never map to one of these items
-                    }
-                    // If IsZipItemValidOpcPartOrPiece returns false, it implies that either the zip file Item
-                    // starts or ends with a "/" and as such we can completely ignore this zip file item. Even if later
-                    // a new part gets added, its corresponding zip item cannot map to one of these items.
-                }
-                else
-                {
-                    //If the zip item name that is a volume or a folder, is a valid name for a part, then
-                    //we add it to the ignored items.
-                    Uri partUri = new Uri(GetOpcNameFromZipItemName(zipArchiveEntry.Name), UriKind.Relative);
+                    Uri partUri = new Uri(GetOpcNameFromZipItemName(zipArchiveEntry.FullName), UriKind.Relative);
                     PackUriHelper.ValidatedPartUri validatedPartUri;
                     if (PackUriHelper.TryValidatePartUri(partUri, out validatedPartUri))
-                        _ignoredItemHelper.AddItemForAtomicPart(validatedPartUri, zipArchiveEntry.Name);
+                    {
+                        ContentType contentType = _contentTypeHelper.GetContentType(validatedPartUri);
+                        if (contentType != null)
+                        {
+                            // In case there was some redundancy between pieces and/or the atomic
+                            // part, it will be detected at this point because the part's Uri (which
+                            // is independent of interleaving) will already be in the dictionary.
+                            parts.Add(new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry,
+                                _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo(zipArchiveEntry)));
+                        }
+                    }
+                    //If not valid part uri we can completely ignore this zip file item. Even if later someone adds
+                    //a new part, the corresponding zip item can never map to one of these items
                 }
+                // If IsZipItemValidOpcPartOrPiece returns false, it implies that either the zip file Item
+                // starts or ends with a "/" and as such we can completely ignore this zip file item. Even if later
+                // a new part gets added, its corresponding zip item cannot map to one of these items.
             }
 
             return parts.ToArray();
@@ -325,7 +298,6 @@ namespace System.IO.Packaging
             : base(packageFileAccess)
         {
             ZipArchive zipArchive = null;
-            IgnoredItemHelper ignoredItemHelper = null;
             ContentTypeHelper contentTypeHelper = null;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
@@ -344,8 +316,7 @@ namespace System.IO.Packaging
 
                 zipArchive = new ZipArchive(_containerStream, zipArchiveMode, true, Text.Encoding.UTF8);
                 _zipStreamManager = new ZipStreamManager(zipArchive, _packageFileMode, _packageFileAccess);
-                ignoredItemHelper = new IgnoredItemHelper(zipArchive);
-                contentTypeHelper = new ContentTypeHelper(zipArchive, ignoredItemHelper, _packageFileMode, _packageFileAccess, _zipStreamManager);
+                contentTypeHelper = new ContentTypeHelper(zipArchive, _packageFileMode, _packageFileAccess, _zipStreamManager);
             }
             catch
             {
@@ -358,7 +329,6 @@ namespace System.IO.Packaging
             }
 
             _zipArchive = zipArchive;
-            _ignoredItemHelper = ignoredItemHelper;
             _contentTypeHelper = contentTypeHelper;
         }
 
@@ -372,7 +342,6 @@ namespace System.IO.Packaging
             : base(packageFileAccess)
         {
             ZipArchive zipArchive = null;
-            IgnoredItemHelper ignoredItemHelper = null;
             ContentTypeHelper contentTypeHelper = null;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
@@ -390,8 +359,11 @@ namespace System.IO.Packaging
                 zipArchive = new ZipArchive(s, zipArchiveMode, true, Text.Encoding.UTF8);
                 
                 _zipStreamManager = new ZipStreamManager(zipArchive, packageFileMode, packageFileAccess);
-                ignoredItemHelper = new IgnoredItemHelper(zipArchive);
-                contentTypeHelper = new ContentTypeHelper(zipArchive, ignoredItemHelper, packageFileMode, packageFileAccess, _zipStreamManager);
+                contentTypeHelper = new ContentTypeHelper(zipArchive, packageFileMode, packageFileAccess, _zipStreamManager);
+            }
+            catch (InvalidDataException)
+            {
+                throw new FileFormatException("File contains corrupted data.");
             }
             catch
             {
@@ -406,7 +378,6 @@ namespace System.IO.Packaging
             _containerStream = s;
             _shouldCloseContainerStream = false;
             _zipArchive = zipArchive;
-            _ignoredItemHelper = ignoredItemHelper;
             _contentTypeHelper = contentTypeHelper;
         }
 
@@ -443,23 +414,28 @@ namespace System.IO.Packaging
                 case CompressionOption.NotCompressed:
                     {
                         compressionLevel = CompressionLevel.NoCompression;
-                    } break;
+                    } 
+                    break;
                 case CompressionOption.Normal:
                     {
                         compressionLevel = CompressionLevel.Optimal;
-                    } break;
+                    } 
+                    break;
                 case CompressionOption.Maximum:
                     {
                         compressionLevel = CompressionLevel.Optimal;
-                    } break;
+                    } 
+                    break;
                 case CompressionOption.Fast:
                     {
                         compressionLevel = CompressionLevel.Fastest;
-                    } break;
+                    } 
+                    break;
                 case CompressionOption.SuperFast:
                     {
                         compressionLevel = CompressionLevel.Fastest;
-                    } break;
+                    } 
+                    break;
 
                 // fall-through is not allowed
                 default:
@@ -500,15 +476,6 @@ namespace System.IO.Packaging
 
         #region Private Methods
 
-        //this method returns a false if the info is for a folder entry or a volume entry
-        //it returns a true if it is for a file entry.
-        private static bool IsValidFileItem(ZipArchiveEntry zipArchiveEntry)
-        {
-            // return !info.FolderFlag && !info.VolumeLabelFlag;
-            // todo ew have questions about this
-            return true;
-        }
-
         //returns a boolean indicating if the underlying zip item is a valid metro part or piece
         // This mainly excludes the content type item, as well as entries with leading or trailing
         // slashes.
@@ -545,204 +512,10 @@ namespace System.IO.Packaging
         // convert from Zip CompressionMethodEnum and DeflateOptionEnum to Metro CompressionOption 
         static private CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
         {
+            // Note: we can't determine compression method / level from the ZipArchiveEntry.
             CompressionOption result = CompressionOption.Normal;
-
-            // todo can't determine compression method / level from the ZipArchiveEntry.
-#if false
-            //Currently we do not Evaluate - CompressionMethodEnum.Deflated64
-            //If CompressionMethodEnum.Stored is the value, CompressionOption will be NotCompressed
-            //The following switch statement takes care of CompressionMethodEnum.Deflated
-            if (zipFileInfo.CompressionMethod == CompressionMethodEnum.Deflated)
-                switch (zipFileInfo.DeflateOption)
-                {
-                    case DeflateOptionEnum.Normal:
-                        result = CompressionOption.Normal;
-                        break;
-                    case DeflateOptionEnum.Fast:
-                        result = CompressionOption.Fast;
-                        break;
-                    case DeflateOptionEnum.Maximum:
-                        result = CompressionOption.Maximum;
-                        break;
-                    case DeflateOptionEnum.SuperFast:
-                        result = CompressionOption.SuperFast;
-                        break;
-                    case DeflateOptionEnum.None:
-                        break;
-                    default:
-                        Debug.Assert(false, "Encountered and invalid value for DeflateOptionEnum");
-                        break;
-                }
-#endif
-
             return result;
         }
-
-#if false
-        // ew todo don't need this.
-
-        private static void DeleteInterleavedPartOrStream(List<PieceInfo> sortedPieceInfoList)
-        {
-            Debug.Assert(sortedPieceInfoList != null);
-            if (sortedPieceInfoList.Count > 0)
-            {
-                ZipArchive zipArchive = sortedPieceInfoList[0].ZipFileInfo.ZipArchive;
-                foreach (PieceInfo pieceInfo in sortedPieceInfoList)
-                {
-                    zipArchive.DeleteFile(pieceInfo.ZipFileInfo.Name);
-                }
-            }
-            //Its okay for us to not clean up the sortedPieceInfoList datastructure, as the
-            //owning part is about to be deleted.
-        }
-
-        /// <summary>
-        /// An auxiliary function of GetPartsCore, this function sorts out the piece name
-        /// descriptors accumulated in pieceNumber into valid piece sequences and garbage
-        /// (i.e. ignorable Zip items).
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// The procedure used relies on 'pieces' members to be sorted lexicographically
-        /// on &lt;name, number, isLast> triples, with name comparisons being case insensitive.
-        /// This is enforced by PieceInfo's IComparable implementation.
-        /// </para>
-        /// </remarks>
-        private void ProcessPieces(SortedDictionary<PieceInfo, Object> pieceDictionary, List<PackagePart> parts)
-        {
-            // The zip items related to the ContentTypes.xml should have been already processed.
-            // Only those zip items that follow the valid piece naming syntax and have a valid
-            // part name should show up in this list. 
-            // piece.PartUri should be non-null
-
-            // Exit if nothing to do.
-            if (pieceDictionary.Count == 0)
-                return;
-
-            string normalizedPrefixNameForCurrentSequence = null;
-            int startIndexOfCurrentSequence = 0; // Value is ignored as long as
-                                                 // prefixNameForCurrentSequence is null.
-
-            List<PieceInfo> pieces = new List<PieceInfo>(pieceDictionary.Keys);
-
-            for (int i = 0; i < pieces.Count; ++i)
-            {
-                // Looking for the start of a sequence.
-                if (normalizedPrefixNameForCurrentSequence == null)
-                {
-                    if (pieces[i].PieceNumber != 0)
-                    {
-                        // Whether or not this piece bears the same unsuffixed name as a complete
-                        // sequence just processed, it has to be ignored without reporting an error.
-                        _ignoredItemHelper.AddItemForStrayPiece(pieces[i]);
-                        continue;
-                    }
-                    else
-                    {
-                        // Found the start of a sequence. 
-                        startIndexOfCurrentSequence = i;
-                        normalizedPrefixNameForCurrentSequence = pieces[i].NormalizedPrefixName;
-                    }
-                }
-
-                // Not a start piece. Carry out validity checks.
-                else
-                {
-                    //Check for incomplete sequence.
-                    if (String.CompareOrdinal(pieces[i].NormalizedPrefixName, normalizedPrefixNameForCurrentSequence) != 0)
-                    {
-                        // Check if the piece we have found is another first piece.
-                        if (pieces[i].PieceNumber == 0)
-                        {
-                            //This can happen when we have an incomplete sequence and we encounter the first piece of the
-                            //next sequence
-                            _ignoredItemHelper.AddItemsForInvalidSequence(normalizedPrefixNameForCurrentSequence, pieces, startIndexOfCurrentSequence, checked(i - startIndexOfCurrentSequence));
-
-                            //Reset these values as we found another first piece
-                            startIndexOfCurrentSequence = i;
-                            normalizedPrefixNameForCurrentSequence = pieces[i].NormalizedPrefixName;
-                        }
-                        else
-                        {
-                            //This can happen when we have an incomplete sequence and the next piece is also
-                            //a stray piece. So we can safely ignore all the pieces till this point
-                            _ignoredItemHelper.AddItemsForInvalidSequence(normalizedPrefixNameForCurrentSequence, pieces, startIndexOfCurrentSequence, checked(i - startIndexOfCurrentSequence + 1));
-                            normalizedPrefixNameForCurrentSequence = null;
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        //if the names are the same we check if the numbers are increasing
-                        if (pieces[i].PieceNumber != i - startIndexOfCurrentSequence)
-                        {
-                            _ignoredItemHelper.AddItemsForInvalidSequence(normalizedPrefixNameForCurrentSequence, pieces, startIndexOfCurrentSequence, checked(i - startIndexOfCurrentSequence + 1));
-                            normalizedPrefixNameForCurrentSequence = null;
-                            continue;
-                        }
-                    }
-                }
-
-                // Looking for the end of a sequence (i.e. a .last suffix).
-                if (pieces[i].IsLastPiece)
-                {
-                    // Record sequence just seen.
-                    RecordValidSequence(
-                        normalizedPrefixNameForCurrentSequence,
-                        pieces,
-                        startIndexOfCurrentSequence,
-                        i - startIndexOfCurrentSequence + 1,
-                        parts);
-
-                    // Resume searching for a new sequence.
-                    normalizedPrefixNameForCurrentSequence = null;
-                }
-            }
-
-            // clean up any pieces that might be at the end that do not make a complete sequence
-            // This can happen when we find a valid piece zero and/or a few other pieces but not
-            // the complete sequence, right at the end of the pieces list and we will finish the 
-            // for loop
-            if (normalizedPrefixNameForCurrentSequence != null)
-            {
-                _ignoredItemHelper.AddItemsForInvalidSequence(normalizedPrefixNameForCurrentSequence, pieces, startIndexOfCurrentSequence, checked(pieces.Count - startIndexOfCurrentSequence));
-            }
-        }
-
-        /// <summary>
-        /// The sequence of numItems starting at startIndex can be assumed valid
-        /// from the point of view of piece-naming suffixes.
-        /// This method makes sure a valid Uri and content type can be inferred
-        /// from the name of the first piece. If so, a ZipPackagePart is created
-        /// and added to the list 'parts'. If not, the piece names are recorded
-        /// as ignorable items.
-        /// </summary>
-        /// <remarks>
-        /// When the sequence and Uri are valid but there is no content type, the
-        /// part name is recorded in a specific list of null-content type parts.
-        /// </remarks>
-        private void RecordValidSequence(
-            string normalizedPrefixNameForCurrentSequence,
-            List<PieceInfo> pieces,
-            int startIndex,
-            int numItems,
-            List<PackagePart> parts)
-        {
-            // The Uri and content type are inferred from the unsuffixed name of the
-            // first piece.
-            PackUriHelper.ValidatedPartUri partUri = pieces[startIndex].PartUri;
-            ContentType contentType = _contentTypeHelper.GetContentType(partUri);
-            if (contentType == null)
-            {
-                _ignoredItemHelper.AddItemsForInvalidSequence(normalizedPrefixNameForCurrentSequence, pieces, startIndex, numItems);
-                return;
-            }
-
-            // Add a new part, initializing with an array of PieceInfo.
-            parts.Add(new ZipPackagePart(this, _zipArchive, pieces.GetRange(startIndex, numItems), partUri, contentType.ToString(),
-                GetCompressionOptionFromZipFileInfo(pieces[startIndex].ZipFileInfo)));
-        }
-#endif
 
         #endregion Private Methods
 
@@ -754,14 +527,13 @@ namespace System.IO.Packaging
 
         #region Private Members
 
-        private const int _initialPartListSize = 50;
-        private const int _initialPieceNameListSize = 50;
+        private const int InitialPartListSize = 50;
+        private const int InitialPieceNameListSize = 50;
 
         private ZipArchive _zipArchive;
         private Stream _containerStream;      // stream we are opened in if Open(Stream) was called
         private bool _shouldCloseContainerStream;
         private ContentTypeHelper _contentTypeHelper;    // manages the content types for all the parts in the container
-        private IgnoredItemHelper _ignoredItemHelper;    // manages the ignored items in a zip package
         private ZipStreamManager _zipStreamManager;      // manages streams for all parts, avoiding opening streams multiple times
         private FileAccess _packageFileAccess;
         private FileMode _packageFileMode;
@@ -795,8 +567,8 @@ namespace System.IO.Packaging
         {
             bool IEqualityComparer<string>.Equals(string extensionA, string extensionB)
             {
-                Invariant.Assert(extensionA != null, "extenstion should not be null");
-                Invariant.Assert(extensionB != null, "extenstion should not be null");
+                Debug.Assert(extensionA != null, "extenstion should not be null");
+                Debug.Assert(extensionB != null, "extenstion should not be null");
 
                 //Important Note: any change to this should be made in accordance 
                 //with the rules for comparing/normalizing partnames. 
@@ -807,7 +579,7 @@ namespace System.IO.Packaging
 
             int IEqualityComparer<string>.GetHashCode(string extension)
             {
-                Invariant.Assert(extension != null, "extenstion should not be null");
+                Debug.Assert(extension != null, "extenstion should not be null");
 
                 //Important Note: any change to this should be made in accordance 
                 //with the rules for comparing/normalizing partnames.
@@ -832,7 +604,7 @@ namespace System.IO.Packaging
             /// Complete initialization in read mode also involves calling ParseContentTypesFile
             /// to deserialize content type information.
             /// </summary>
-            internal ContentTypeHelper(ZipArchive zipArchive, IgnoredItemHelper ignoredItemHelper, FileMode packageFileMode, FileAccess packageFileAccess, ZipStreamManager zipStreamManager)
+            internal ContentTypeHelper(ZipArchive zipArchive, FileMode packageFileMode, FileAccess packageFileAccess, ZipStreamManager zipStreamManager)
             {
                 _zipArchive = zipArchive;               //initialized in the ZipPackage constructor
                 _packageFileMode = packageFileMode;
@@ -841,9 +613,6 @@ namespace System.IO.Packaging
                 // The extensions are stored in the default Dictionary in their original form , but they are compared
                 // in a normalized manner using the ExtensionComparer.
                 _defaultDictionary = new Dictionary<string, ContentType>(s_defaultDictionaryInitialSize, s_extensionEqualityComparer);
-
-                //IgnoredItemHelper
-                _ignoredItemHelper = ignoredItemHelper; //initialized in the ZipPackage constructor
 
                 // Identify the content type file or files before identifying parts and piece sequences.
                 // This is necessary because the name of the content type stream is not a part name and
@@ -913,9 +682,6 @@ namespace System.IO.Packaging
                 else if (!foundMatchingDefault)
                 {
                     AddDefaultElement(extension, contentType);
-                    //Delete all items that might map to the same extension as these currently ignored
-                    //items might show up as valid parts later.
-                    _ignoredItemHelper.DeleteItemsWithSimilarExtension(extension);
                 }
             }
 
@@ -1038,11 +804,6 @@ namespace System.IO.Packaging
                 using (s)
                 using (XmlReader reader = XmlReader.Create(s, xrs))
                 {
-                    //Prohibit DTD from the markup as per the OPC spec
-#pragma warning disable 618
-                    // reader.ProhibitDtd = true; todo ew
-#pragma warning restore 618
-
                     //This method expects the reader to be in ReadState.Initial.
                     //It will make the first read call.
                     PackagingUtilities.PerformInitailReadAndVerifyEncoding(reader);
@@ -1063,7 +824,7 @@ namespace System.IO.Packaging
                         //Also any other attribute on the <Types> tag is an error including xml: and xsi: attributes
                         if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) > 0)
                         {
-                            throw new XmlException(SR.Get(SRID.TypesTagHasExtraAttributes), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                            throw new XmlException(SR.TypesTagHasExtraAttributes, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                         }
 
                         // start tag encountered
@@ -1100,13 +861,13 @@ namespace System.IO.Packaging
                                         continue;
                                     else
                                     {
-                                        throw new XmlException(SR.Get(SRID.TypesXmlDoesNotMatchSchema), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                                        throw new XmlException(SR.TypesXmlDoesNotMatchSchema, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                                     }
                         }
                     }
                     else
                     {
-                        throw new XmlException(SR.Get(SRID.TypesElementExpected), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                        throw new XmlException(SR.TypesElementExpected, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                     }
                 }
             }
@@ -1121,13 +882,7 @@ namespace System.IO.Packaging
             /// </remarks>
             private Stream OpenContentTypeStream(System.Collections.ObjectModel.ReadOnlyCollection<ZipArchiveEntry> zipFiles)
             {
-#if false
-                // ew todo don't need this
-                // Collect all pieces found prior to sorting and validating the sequence.
-                SortedDictionary<PieceInfo, ZipFileInfo> contentTypeStreamPieces = null;
-#endif
-
-                foreach (ZipArchiveEntry zipFileInfo in zipFiles) // todo
+                foreach (ZipArchiveEntry zipFileInfo in zipFiles)
                 {
                     if (zipFileInfo.Name.ToUpperInvariant().StartsWith(s_contentTypesFileUpperInvariant, StringComparison.Ordinal))
                     {
@@ -1137,94 +892,9 @@ namespace System.IO.Packaging
                             // Record the file info.
                             _contentTypeZipArchiveEntry = zipFileInfo;
                         }
-#if false
-                        // ew todo don't need this
-                        // Piece name.
-                        else if (PieceNameHelper.TryCreatePieceInfo(zipFileInfo, out pieceInfo))
-                        {
-                            // Lazy init.
-                            if (contentTypeStreamPieces == null)
-                                contentTypeStreamPieces = new SortedDictionary<PieceInfo, ZipFileInfo>(PieceNameHelper.PieceNameComparer);
-
-                            // Record the piece info.
-                            contentTypeStreamPieces.Add(pieceInfo, zipFileInfo);
-                        }
-#endif
                     }
                 }
 
-#if false
-                // ew todo don't need
-                List<PieceInfo> pieces = null;
-
-                // If pieces were found. Find out if there is a piece 0, in which case
-                // sequence validity will be required.
-                // Since the general case requires a sorted array, use a sorted array for this.
-                if (contentTypeStreamPieces != null)
-                {
-                    pieces = new List<PieceInfo>(contentTypeStreamPieces.Keys);
-
-                    // The piece name helper does not recognize negative piece numbers.
-                    // So if piece 0 occurs at all, it occurs first.
-                    if (pieces[0].PieceNumber != 0)
-                    {
-                        // The pieces we have found form an incomplete sequence as the first 
-                        // piece is missing. So we add these to the list of ignored items
-                        _ignoredItemHelper.AddItemsForInvalidSequence(s_contentTypesFileUpperInvariant, pieces, 0, pieces.Count);
-
-                        contentTypeStreamPieces = null;
-                        pieces = null;
-                    }
-                    else
-                    {
-                        // Check piece numbers and end indicator.
-                        int lastPieceNumber = -1;
-                        for (int pieceNumber = 0; pieceNumber < pieces.Count; ++pieceNumber)
-                        {
-                            if (pieces[pieceNumber].PieceNumber != pieceNumber)
-                            {
-                                _ignoredItemHelper.AddItemsForInvalidSequence(s_contentTypesFileUpperInvariant, pieces, 0, pieces.Count);
-                                contentTypeStreamPieces = null;
-                                pieces = null;
-                                break;
-                            }
-                            if (pieces[pieceNumber].IsLastPiece)
-                            {
-                                lastPieceNumber = pieceNumber;
-                                break;
-                            }
-                        }
-
-                        if (pieces != null)
-                        {
-                            // Last piece not found.
-                            if (lastPieceNumber == -1)
-                            {
-                                _ignoredItemHelper.AddItemsForInvalidSequence(s_contentTypesFileUpperInvariant, pieces, 0, pieces.Count);
-                                contentTypeStreamPieces = null;
-                                pieces = null;
-                            }
-                            else
-                            {
-                                // Add any extra items after the last piece to the 
-                                // the ignored items list.
-                                if (lastPieceNumber < pieces.Count - 1)
-                                {
-                                    // The pieces we have found are extra pieces after a last piece has been found.
-                                    // So we  add all the extra pieces to the ignored item list.
-                                    _ignoredItemHelper.AddItemsForInvalidSequence(s_contentTypesFileUpperInvariant, pieces, lastPieceNumber + 1, pieces.Count - lastPieceNumber - 1);
-                                    pieces.RemoveRange(lastPieceNumber + 1, pieces.Count - lastPieceNumber - 1);
-                                }
-                            }
-                        }
-                    }
-                }
-                // Detect conflict with piece name(s).
-                if (_contentTypeFileInfo != null && pieces != null)
-                {
-                    throw new FormatException(SR.Get(SRID.BadPackageFormat));
-                }
-#endif
 
                 // If an atomic file was found, open a stream on it.
                 if (_contentTypeZipArchiveEntry != null)
@@ -1232,21 +902,6 @@ namespace System.IO.Packaging
                     _contentTypeStreamExists = true;
                     return _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite);
                 }
-
-#if false
-                // ew todo don't need this
-                // If the content type stream is interleaved, validate the piece numbering.
-                if (pieces != null)
-                {
-                    _contentTypeStreamExists = true;
-                    _contentTypeStreamPieces = pieces;
-
-                    // Create an interleaved stream.
-                    return new InterleavedZipPartStream(
-                        pieces[0].PrefixName,
-                        pieces, FileMode.Open, FileAccess.Read);
-                }
-#endif
 
                 // No content type stream was found.
                 return null;
@@ -1260,7 +915,7 @@ namespace System.IO.Packaging
                 //There could be a namespace Attribute present at this level. 
                 //Also any other attribute on the <Default> tag is an error including xml: and xsi: attributes
                 if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 2)
-                    throw new XmlException(SR.Get(SRID.DefaultTagDoesNotMatchSchema), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    throw new XmlException(SR.DefaultTagDoesNotMatchSchema, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
 
                 // get the required Extension and ContentType attributes
 
@@ -1291,7 +946,7 @@ namespace System.IO.Packaging
                 //There could be a namespace Attribute present at this level. 
                 //Also any other attribute on the <Override> tag is an error including xml: and xsi: attributes
                 if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 2)
-                    throw new XmlException(SR.Get(SRID.OverrideTagDoesNotMatchSchema), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    throw new XmlException(SR.OverrideTagDoesNotMatchSchema, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
 
                 // get the required Extension and ContentType attributes
 
@@ -1330,7 +985,7 @@ namespace System.IO.Packaging
                 if (reader.NodeType == XmlNodeType.EndElement && String.CompareOrdinal(elementName, reader.LocalName) == 0)
                     return;
                 else
-                    throw new XmlException(SR.Get(SRID.ElementIsNotEmptyElement, elementName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, elementName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
             private void AddOverrideElement(PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
@@ -1382,7 +1037,7 @@ namespace System.IO.Packaging
 
                 //Checking for empty attribute
                 if (attributeValue == String.Empty)
-                    throw new XmlException(SR.Get(SRID.RequiredAttributeEmpty, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    throw new XmlException(SR.Format(SR.RequiredAttributeEmpty, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
 
@@ -1391,7 +1046,7 @@ namespace System.IO.Packaging
             private void ThrowIfXmlAttributeMissing(string attributeName, string attributeValue, string tagName, XmlReader reader)
             {
                 if (attributeValue == null)
-                    throw new XmlException(SR.Get(SRID.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
+                    throw new XmlException(SR.Format(SR.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
             #endregion Private Methods
@@ -1404,7 +1059,6 @@ namespace System.IO.Packaging
             private FileMode _packageFileMode;
             private FileAccess _packageFileAccess;
             private ZipStreamManager _zipStreamManager;
-            private IgnoredItemHelper _ignoredItemHelper;
             private ZipArchiveEntry _contentTypeZipArchiveEntry;
             private bool _contentTypeStreamExists;
             private bool _dirty;
@@ -1429,209 +1083,6 @@ namespace System.IO.Packaging
         }
 
         #endregion ContentTypeHelper Class
-
-        #region IgnoredItemHelper Class
-
-        /// <summary>
-        /// This class is used to maintain a list of the zip items that currently do not 
-        /// map to a part name or [ContentTypes].xml. These items may get added to the ignored 
-        /// items list for one of the reasons -
-        /// a. If the item encountered is a volume lable or folder in the zip archive and has a 
-        ///    valid part name
-        /// b. If the interleaved sequence encountered is incomplete
-        /// c. If the atomic piece or complete interleaved sequence encountered
-        ///    does not have a corresponding content type.        
-        /// d. If the are extra pieces that are found after encountering the last piece for a 
-        ///    sequence.
-        /// 
-        /// These items are subject to deletion if -
-        /// i.   A part with a similar prefix name gets added to the package and as such we 
-        ///      need to delete the existing items so that there will be no naming conflict and
-        ///      we can safely at the new part.
-        /// ii.  A part with an extension that matches to some of the items in the ingnored list.
-        ///      We need to delete these items so that they do not show up as actual parts next
-        ///      time the package is opened. 
-        /// iii. A part that is getting deleted, we clean up the leftover sequences that might be
-        ///      present as well
-        /// 
-        /// The same helper class object is used to maintain the ignored pieces corresponding to 
-        /// valid part name prefixes and the [ContentTypes].xml prefix
-        /// </summary>
-        private class IgnoredItemHelper
-        {
-            #region Constructor
-
-            /// <summary>
-            /// IgnoredItemHelper - private class to keep track of all the items in the 
-            /// zipArchive that can be ignored and might need to be deleted later.
-            /// </summary>
-            /// <param name="zipArchive"></param>
-            internal IgnoredItemHelper(ZipArchive zipArchive)
-            {
-                _extensionDictionary = new Dictionary<string, List<string>>(_dictionaryInitialSize, s_extensionEqualityComparer);
-                _ignoredItemDictionary = new Dictionary<string, List<string>>(_dictionaryInitialSize, StringComparer.Ordinal);
-                _zipArchive = zipArchive;
-            }
-
-            #endregion Constructor
-
-            #region Internal Methods
-
-            /// <summary>
-            /// Adds a partUri and zipFilename pair that corresponds to one of the following -
-            /// 1. A zipFile item that has a valid part name, but does no have a content type
-            /// 2. A zipFile item that may be a volume or a folder entry, that has a valid part name
-            /// </summary>
-            /// <param name="partUri">partUri of the item</param>
-            /// <param name="zipFileName">actual zipFileName</param>
-            internal void AddItemForAtomicPart(PackUriHelper.ValidatedPartUri partUri, string zipFileName)
-            {
-                AddItem(partUri, partUri.NormalizedPartUriString, zipFileName);
-            }
-
-#if false
-            // ew todo dont need
-            /// <summary>
-            /// Adds an entry corresponding to the pieceInfo to the ignoredItems list if -
-            /// 1. We encounter random piece items that are not a part of a complete sequence
-            /// </summary>
-            /// <param name="pieceInfo">pieceInfo of the item to be ignored</param>
-            internal void AddItemForStrayPiece(PieceInfo pieceInfo)
-            {
-                AddItem(pieceInfo.PartUri, pieceInfo.NormalizedPrefixName, pieceInfo.ZipFileInfo.Name);
-            }
-
-            /// <summary>
-            /// Adds an entry corresponding to the prefix name when - 
-            /// 1. An invalid sequence is encountered, we record the entire sequence to be ignored.
-            /// 2. If there is no content type for a valid sequence
-            /// </summary>
-            /// <param name="normalizedPrefixNameForThisSequence"></param>
-            /// <param name="pieces"></param>
-            /// <param name="startIndex"></param>
-            /// <param name="count"></param>
-            internal void AddItemsForInvalidSequence(string normalizedPrefixNameForThisSequence, List<PieceInfo> pieces, int startIndex, int count)
-            {
-                List<string> zipFileInfoNameList;
-
-                if (_ignoredItemDictionary.ContainsKey(normalizedPrefixNameForThisSequence))
-                    zipFileInfoNameList = _ignoredItemDictionary[normalizedPrefixNameForThisSequence];
-                else
-                {
-                    zipFileInfoNameList = new List<string>(count);
-                    _ignoredItemDictionary.Add(normalizedPrefixNameForThisSequence, zipFileInfoNameList);
-                }
-
-                //there is no suitable List<>.AddRange method that we can use, so have to add
-                //using a "for" loop
-                for (int i = startIndex; i < startIndex + count; ++i)
-                {
-                    zipFileInfoNameList.Add(pieces[i].ZipFileInfo.Name);
-                }
-
-                //If we are adding ignored items where the prefix name maps to the valid part name
-                //the we update the extension dictionary as well
-                if (pieces[startIndex].PartUri != null)
-                    UpdateExtensionDictionary(pieces[startIndex].PartUri, pieces[startIndex].NormalizedPrefixName);
-            }
-#endif
-
-            /// <summary>
-            /// Delete all the items in the underlying archive that might have the same
-            /// normalized name as that of the part being added.
-            /// </summary>
-            /// <param name="partUri"></param>
-            internal void Delete(PackUriHelper.ValidatedPartUri partUri)
-            {
-                string normalizedPartName = partUri.NormalizedPartUriString;
-                if (_ignoredItemDictionary.ContainsKey(normalizedPartName))
-                {
-                    foreach (string zipFileInfoName in _ignoredItemDictionary[normalizedPartName])
-                    {
-                        ZipArchiveEntry _zipArchiveEntry = this._zipArchive.GetEntry(zipFileInfoName);
-                        if (_zipArchiveEntry != null)
-                            _zipArchiveEntry.Delete();
-                    }
-                    _ignoredItemDictionary.Remove(normalizedPartName);
-                }
-            }
-
-            /// <summary>
-            /// If we are adding a new content type then we should delete all the items
-            /// in the ignored items list that might have the similar content
-            /// </summary>
-            /// <param name="extension"></param>
-            internal void DeleteItemsWithSimilarExtension(string extension)
-            {
-                if (_extensionDictionary.ContainsKey(extension))
-                {
-                    foreach (string normalizedPartName in _extensionDictionary[extension])
-                    {
-                        if (_ignoredItemDictionary.ContainsKey(normalizedPartName))
-                        {
-                            foreach (string zipFileInfoName in _ignoredItemDictionary[normalizedPartName])
-                            {
-                                ZipArchiveEntry _zipArchiveEntry = this._zipArchive.GetEntry(zipFileInfoName);
-                                if (_zipArchiveEntry != null)
-                                    _zipArchiveEntry.Delete();
-                            }
-                            _ignoredItemDictionary.Remove(normalizedPartName);
-                        }
-                    }
-                    _extensionDictionary.Remove(extension);
-                }
-            }
-
-            #endregion Internal Methods
-
-            #region Private Methods
-
-            private void AddItem(PackUriHelper.ValidatedPartUri partUri, string normalizedPrefixName, string zipFileName)
-            {
-                if (!_ignoredItemDictionary.ContainsKey(normalizedPrefixName))
-                    _ignoredItemDictionary.Add(normalizedPrefixName, new List<string>(_listInitialSize));
-
-                _ignoredItemDictionary[normalizedPrefixName].Add(zipFileName);
-
-                //If we are adding ignored items where the prefix name maps to the valid part name
-                //the we update the extension dictionary as well
-                if (partUri != null)
-                    UpdateExtensionDictionary(partUri, normalizedPrefixName);
-            }
-
-            private void UpdateExtensionDictionary(PackUriHelper.ValidatedPartUri partUri, string normalizedPrefixName)
-            {
-                string extension = partUri.PartUriExtension;
-
-                if (!_extensionDictionary.ContainsKey(extension))
-                    _extensionDictionary.Add(extension, new List<string>(_listInitialSize));
-
-                _extensionDictionary[extension].Add(normalizedPrefixName);
-            }
-
-            #endregion Private Methods
-
-            #region Private Member Variables
-
-            private const int _dictionaryInitialSize = 8;
-            private const int _listInitialSize = 1;
-
-            //dictionary mapping a normalized prefix name to different items
-            //with the same prefix name.
-            private Dictionary<string, List<string>> _ignoredItemDictionary;
-
-            //using an additional extension dictionary to map an extenstion to 
-            //different prefix names with the same extension, in order to 
-            //reduce the string parsing
-            private Dictionary<string, List<string>> _extensionDictionary;
-
-
-            private ZipArchive _zipArchive;
-
-            #endregion Private Member Variables
-        }
-
-        #endregion IgnoredItemHelper Class
 
         #endregion Private Class
     }

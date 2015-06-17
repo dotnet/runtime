@@ -425,7 +425,7 @@ namespace System.IO.Packaging
                 // Parsing should detect redundant entries.
                 if (initializing)
                 {
-                    throw new XmlException(SR.Get(SRID.DuplicateCorePropertyName, reader.Name),
+                    throw new XmlException(SR.Format(SR.DuplicateCorePropertyName, reader.Name),
                         null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                 }
 
@@ -454,7 +454,7 @@ namespace System.IO.Packaging
         // All values will remain null if the package is not enabled for reading.
         private void ReadPropertyValuesFromPackage()
         {
-            Invariant.Assert(_propertyPart == null); // This gets called exclusively from constructor.
+            Debug.Assert(_propertyPart == null); // This gets called exclusively from constructor.
 
             // Don't try to read properties from the package it does not have read access
             if (_package.FileOpenAccess == FileAccess.Write)
@@ -477,7 +477,7 @@ namespace System.IO.Packaging
 
             // Retrieve the part referenced by its target URI.
             if (corePropertiesRelationship.TargetMode != TargetMode.Internal)
-                throw new FileFormatException(SR.Get(SRID.NoExternalTargetForMetadataRelationship));
+                throw new FileFormatException(SR.NoExternalTargetForMetadataRelationship);
 
             PackagePart propertiesPart = null;
             Uri propertiesPartUri = PackUriHelper.ResolvePartUri(
@@ -485,12 +485,12 @@ namespace System.IO.Packaging
                 corePropertiesRelationship.TargetUri);
 
             if (!_package.PartExists(propertiesPartUri))
-                throw new FileFormatException(SR.Get(SRID.DanglingMetadataRelationship));
+                throw new FileFormatException(SR.DanglingMetadataRelationship);
 
             propertiesPart = _package.GetPart(propertiesPartUri);
             if (!propertiesPart.ValidatedContentType.AreTypeAndSubTypeEqual(s_coreDocumentPropertiesContentType))
             {
-                throw new FileFormatException(SR.Get(SRID.WrongContentTypeForPropertyPart));
+                throw new FileFormatException(SR.WrongContentTypeForPropertyPart);
             }
 
             return propertiesPart;
@@ -501,11 +501,11 @@ namespace System.IO.Packaging
         {
             PackageRelationship propertiesPartRelationship = null;
             foreach (PackageRelationship rel
-                in _package.GetRelationshipsByType(_coreDocumentPropertiesRelationshipType))
+                in _package.GetRelationshipsByType(CoreDocumentPropertiesRelationshipType))
             {
                 if (propertiesPartRelationship != null)
                 {
-                    throw new FileFormatException(SR.Get(SRID.MoreThanOneMetadataRelationships));
+                    throw new FileFormatException(SR.MoreThanOneMetadataRelationships);
                 }
                 propertiesPartRelationship = rel;
             }
@@ -523,11 +523,6 @@ namespace System.IO.Packaging
             // in effect as a set of atomic identifiers.
             using (XmlReader reader = XmlReader.Create(stream, xrs))
             {
-                //Prohibit DTD from the markup as per the OPC spec
-#pragma warning disable 618
-                // reader.ProhibitDtd = true; todo ew
-#pragma warning restore 618
-
                 //This method expects the reader to be in ReadState.Initial.
                 //It will make the first read call.
                 PackagingUtilities.PerformInitailReadAndVerifyEncoding(reader);
@@ -539,14 +534,14 @@ namespace System.IO.Packaging
                     || (object)reader.NamespaceURI != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.PackageCorePropertiesNamespace)
                     || (object)reader.LocalName != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.CoreProperties))
                 {
-                    throw new XmlException(SR.Get(SRID.CorePropertiesElementExpected),
+                    throw new XmlException(SR.CorePropertiesElementExpected,
                         null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                 }
 
                 // The schema is closed and defines no attributes on the root element.
                 if (PackagingUtilities.GetNonXmlnsAttributeCount(reader) != 0)
                 {
-                    throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
+                    throw new XmlException(SR.Format(SR.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
                         null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                 }
 
@@ -565,14 +560,14 @@ namespace System.IO.Packaging
                     // Any content markup that is not an element here is unexpected.
                     if (reader.NodeType != XmlNodeType.Element)
                     {
-                        throw new XmlException(SR.Get(SRID.PropertyStartTagExpected),
+                        throw new XmlException(SR.PropertyStartTagExpected,
                             null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                     }
 
                     // Any element below the root should open at level 1 exclusively.
                     if (reader.Depth != 1)
                     {
-                        throw new XmlException(SR.Get(SRID.NoStructuredContentInsideProperties),
+                        throw new XmlException(SR.NoStructuredContentInsideProperties,
                             null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                     }
 
@@ -586,7 +581,7 @@ namespace System.IO.Packaging
                     if (Array.IndexOf(s_validProperties, xmlStringIndex) == -1)  // An unexpected element is an error.
                     {
                         throw new XmlException(
-                            SR.Get(SRID.InvalidPropertyNameInCorePropertiesPart, reader.LocalName),
+                            SR.Format(SR.InvalidPropertyNameInCorePropertiesPart, reader.LocalName),
                             null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                     }
 
@@ -594,7 +589,7 @@ namespace System.IO.Packaging
                     // The following is an object comparison, not a string comparison.
                     if ((object)reader.NamespaceURI != PackageXmlStringTable.GetXmlStringAsObject(PackageXmlStringTable.GetXmlNamespace(xmlStringIndex)))
                     {
-                        throw new XmlException(SR.Get(SRID.UnknownNamespaceInCorePropertiesPart),
+                        throw new XmlException(SR.UnknownNamespaceInCorePropertiesPart,
                             null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                     }
 
@@ -603,7 +598,7 @@ namespace System.IO.Packaging
                         // The schema is closed and defines no attributes on this type of element.
                         if (attributesCount != 0)
                         {
-                            throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
+                            throw new XmlException(SR.Format(SR.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
                                 null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                         }
 
@@ -618,7 +613,7 @@ namespace System.IO.Packaging
                         // The schema is closed and defines no attributes on this type of element.
                         if (attributesCount != allowedAttributeCount)
                         {
-                            throw new XmlException(SR.Get(SRID.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
+                            throw new XmlException(SR.Format(SR.PropertyWrongNumbOfAttribsDefinedOn, reader.Name),
                                 null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
                         }
 
@@ -626,14 +621,14 @@ namespace System.IO.Packaging
                         {
                             ValidateXsiType(reader,
                                 PackageXmlStringTable.GetXmlStringAsObject(PackageXmlEnum.DublinCoreTermsNamespace),
-                                _w3cdtf);
+                                W3cdtf);
                         }
 
                         RecordNewBinding(xmlStringIndex, GetDateData(reader), true /*initializing*/, reader);
                     }
                     else  // An unexpected element is an error.
                     {
-                        Invariant.Assert(false, "Unknown value type for properties");
+                        Debug.Assert(false, "Unknown value type for properties");
                     }
                 }
             }
@@ -652,7 +647,7 @@ namespace System.IO.Packaging
             // Missing xsi:type
             if (typeValue == null)
             {
-                throw new XmlException(SR.Get(SRID.UnknownDCDateTimeXsiType, reader.Name),
+                throw new XmlException(SR.Format(SR.UnknownDCDateTimeXsiType, reader.Name),
                     null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
@@ -661,7 +656,7 @@ namespace System.IO.Packaging
             // The valude of xsi:type is not a qualified name
             if (index == -1)
             {
-                throw new XmlException(SR.Get(SRID.UnknownDCDateTimeXsiType, reader.Name),
+                throw new XmlException(SR.Format(SR.UnknownDCDateTimeXsiType, reader.Name),
                     null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
@@ -671,7 +666,7 @@ namespace System.IO.Packaging
             if (!Object.ReferenceEquals(ns, reader.LookupNamespace(typeValue.Substring(0, index)))
                     || String.CompareOrdinal(name, typeValue.Substring(index + 1, typeValue.Length - index - 1)) != 0)
             {
-                throw new XmlException(SR.Get(SRID.UnknownDCDateTimeXsiType, reader.Name),
+                throw new XmlException(SR.Format(SR.UnknownDCDateTimeXsiType, reader.Name),
                     null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
         }
@@ -689,7 +684,7 @@ namespace System.IO.Packaging
             // If there is any content in the element, it should be text content and nothing else.
             if (reader.NodeType != XmlNodeType.Text)
             {
-                throw new XmlException(SR.Get(SRID.NoStructuredContentInsideProperties),
+                throw new XmlException(SR.NoStructuredContentInsideProperties,
                     null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
@@ -711,7 +706,7 @@ namespace System.IO.Packaging
             }
             catch (FormatException exc)
             {
-                throw new XmlException(SR.Get(SRID.XsdDateTimeExpected),
+                throw new XmlException(SR.XsdDateTimeExpected,
                     exc, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
             return dateTime;
@@ -763,14 +758,14 @@ namespace System.IO.Packaging
         {
             _propertyPart = _package.CreatePart(GeneratePropertyPartUri(), s_coreDocumentPropertiesContentType.ToString());
             _package.CreateRelationship(_propertyPart.Uri, TargetMode.Internal,
-                _coreDocumentPropertiesRelationshipType);
+                CoreDocumentPropertiesRelationshipType);
         }
 
         private Uri GeneratePropertyPartUri()
         {
-            string propertyPartName = _defaultPropertyPartNamePrefix
-                + Guid.NewGuid().ToString(_guidStorageFormatString)
-                + _defaultPropertyPartNameExtension;
+            string propertyPartName = DefaultPropertyPartNamePrefix
+                + Guid.NewGuid().ToString(GuidStorageFormatString)
+                + DefaultPropertyPartNameExtension;
 
             return PackUriHelper.CreatePartUri(new Uri(propertyPartName, UriKind.Relative));
         }
@@ -823,7 +818,7 @@ namespace System.IO.Packaging
                                                         PackageXmlStringTable.GetXmlString(PackageXmlEnum.XmlSchemaInstanceNamespace));
 
                         // "dcterms:W3CDTF"
-                        _xmlWriter.WriteQualifiedName(_w3cdtf,
+                        _xmlWriter.WriteQualifiedName(W3cdtf,
                                                         PackageXmlStringTable.GetXmlString(PackageXmlEnum.DublinCoreTermsNamespace));
 
                         _xmlWriter.WriteEndAttribute();
@@ -875,8 +870,8 @@ namespace System.IO.Packaging
 
         // Table of objects from the closed set of literals defined below.
         // (Uses object comparison rather than string comparison.)
-        private const int _numCoreProperties = 16;
-        private Dictionary<PackageXmlEnum, Object> _propertyDictionary = new Dictionary<PackageXmlEnum, Object>(_numCoreProperties);
+        private const int NumCoreProperties = 16;
+        private Dictionary<PackageXmlEnum, Object> _propertyDictionary = new Dictionary<PackageXmlEnum, Object>(NumCoreProperties);
         private bool _dirty = false;
 
         // This System.Xml.NameTable makes sure that we use the same references to strings
@@ -887,14 +882,14 @@ namespace System.IO.Packaging
         // Literals.
         private static readonly ContentType s_coreDocumentPropertiesContentType
             = new ContentType("application/vnd.openxmlformats-package.core-properties+xml");
-        private const string _coreDocumentPropertiesRelationshipType
+        private const string CoreDocumentPropertiesRelationshipType
             = "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties";
 
-        private const string _defaultPropertyPartNamePrefix =
+        private const string DefaultPropertyPartNamePrefix =
             "/package/services/metadata/core-properties/";
-        private const string _w3cdtf = "W3CDTF";
-        private const string _defaultPropertyPartNameExtension = ".psmdcp";
-        private const string _guidStorageFormatString = @"N";     // N - simple format without adornments
+        private const string W3cdtf = "W3CDTF";
+        private const string DefaultPropertyPartNameExtension = ".psmdcp";
+        private const string GuidStorageFormatString = @"N";     // N - simple format without adornments
 
         private static PackageXmlEnum[] s_validProperties = new PackageXmlEnum[] {
                                                                                 PackageXmlEnum.Creator,
@@ -983,4 +978,3 @@ namespace System.IO.Packaging
         #endregion Private Fields
     }
 }
-

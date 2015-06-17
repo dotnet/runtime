@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -24,7 +24,6 @@
     <Compile Include="System\IO\Packaging\FileFormatException.cs" />
     <Compile Include="System\IO\Packaging\IgnoreFlushAndCloseStream.cs" />
     <Compile Include="System\IO\Packaging\InternalRelationshipCollection.cs" />
-    <Compile Include="System\IO\Packaging\Invariant.cs" />
     <Compile Include="System\IO\Packaging\Package.cs" />
     <Compile Include="System\IO\Packaging\PackagePart.cs" />
     <Compile Include="System\IO\Packaging\PackagePartCollection.cs" />
@@ -38,8 +37,6 @@
     <Compile Include="System\IO\Packaging\PackagingUtilities.cs" />
     <Compile Include="System\IO\Packaging\PackUriHelper.cs" />
     <Compile Include="System\IO\Packaging\PartBasedPackageProperties.cs" />
-    <Compile Include="System\IO\Packaging\SR.cs" />
-    <Compile Include="System\IO\Packaging\SRID.cs" />
     <Compile Include="System\IO\Packaging\TargetMode.cs" />
     <Compile Include="System\IO\Packaging\XmlCompatibilityReader.cs" />
     <Compile Include="System\IO\Packaging\XmlWrappingReader.cs" />

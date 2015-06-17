@@ -27,7 +27,7 @@ namespace System.IO
         /// This message takes into account the current system culture.
         /// </summary>
         public FileFormatException()
-            : base(SR.Get(SRID.FileFormatException))
+            : base(SR.FileFormatException)
         { }
 
         /// <summary>
@@ -61,8 +61,8 @@ namespace System.IO
         public FileFormatException(Uri sourceUri)
             : base(
                 sourceUri == null
-                ? SR.Get(SRID.FileFormatException)
-                : SR.Get(SRID.FileFormatExceptionWithFileName, sourceUri))
+                ? SR.FileFormatException
+                : SR.Format(SR.FileFormatExceptionWithFileName, sourceUri))
         {
             _sourceUri = sourceUri;
         }
@@ -95,8 +95,8 @@ namespace System.IO
         public FileFormatException(Uri sourceUri, Exception innerException)
             : base(
                 sourceUri == null
-                ? SR.Get(SRID.FileFormatException)
-                : SR.Get(SRID.FileFormatExceptionWithFileName, sourceUri),
+                ? SR.FileFormatException
+                : SR.Format(SR.FileFormatExceptionWithFileName, sourceUri),
                 innerException)
         {
             _sourceUri = sourceUri;
@@ -139,4 +139,3 @@ namespace System.IO
         private Uri _sourceUri;
     }
 }
-

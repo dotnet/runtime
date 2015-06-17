@@ -9,9 +9,6 @@
 //
 //-----------------------------------------------------------------------------
 
-// Allow use of presharp warning numbers [6506] unknown to the compiler
-#pragma warning disable 1634, 1691
-
 using System;
 using System.IO;                        // for Path class
 using System.Diagnostics;
@@ -103,7 +100,7 @@ namespace System.IO.Packaging
             if (fragment != null)
             {
                 if (fragment == String.Empty || fragment[0] != '#')
-                    throw new ArgumentException(SR.Get(SRID.FragmentMustStartWithHash));
+                    throw new ArgumentException(SR.FragmentMustStartWithHash);
             }
 
             // Step 2 - Remove fragment identifier from the package URI, if it is present
@@ -112,11 +109,8 @@ namespace System.IO.Packaging
             // Hence we can safely use IndexOf to find the begining of the fragment.
             string absolutePackageUri = packageUri.GetComponents(UriComponents.AbsoluteUri, UriFormat.UriEscaped);
 
-            //PRESHARP:Warning 6506 Parameter to this public method must be validated:  A null-dereference can occur here.
             //We know that the Fragment property will always be a string and never will return null, String.Empty if the fragment is empty.
-#pragma warning disable 6506
             if (packageUri.Fragment.Length != 0)
-#pragma warning restore 6506
             {
                 absolutePackageUri = absolutePackageUri.Substring(0, absolutePackageUri.IndexOf('#'));
             }
@@ -230,7 +224,7 @@ namespace System.IO.Packaging
             string partName = GetStringForPartUriFromAnyUri(resolvedUri);
 
             if (partName == String.Empty)
-                throw new ArgumentException(SR.Get(SRID.PartUriIsEmpty));
+                throw new ArgumentException(SR.PartUriIsEmpty);
 
             ThrowIfPartNameEndsWithSlash(partName);
 
@@ -441,7 +435,7 @@ namespace System.IO.Packaging
 
             // 2. Checks that this part Uri is not a relationshipPart Uri
             if (IsRelationshipPartUri(partUri))
-                throw new ArgumentException(SR.Get(SRID.RelationshipPartUriNotExpected));
+                throw new ArgumentException(SR.RelationshipPartUriNotExpected);
 
             //We should have a ValidatedPartUri by this time
             string partName = ((ValidatedPartUri)partUri).PartUriString;
@@ -492,7 +486,7 @@ namespace System.IO.Packaging
 
             // 2. Checks that this part Uri is not a relationshipPart Uri
             if (!IsRelationshipPartUri(relationshipPartUri))
-                throw new ArgumentException(SR.Get(SRID.RelationshipPartUriExpected));
+                throw new ArgumentException(SR.RelationshipPartUriExpected);
 
             // _rels/.rels has no parent part
             if (PackUriHelper.ComparePartUri(PackageRelationship.ContainerRelationshipPartName, relationshipPartUri) == 0)
@@ -678,7 +672,7 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException("packageUri");
 
             if (!packageUri.IsAbsoluteUri)
-                throw new ArgumentException(SR.Get(SRID.UriShouldBeAbsolute));
+                throw new ArgumentException(SR.UriShouldBeAbsolute);
 
             return packageUri;
         }
@@ -690,10 +684,10 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException("packUri");
 
             if (!packUri.IsAbsoluteUri)
-                throw new ArgumentException(SR.Get(SRID.UriShouldBeAbsolute));
+                throw new ArgumentException(SR.UriShouldBeAbsolute);
 
             if (packUri.Scheme != PackUriHelper.UriSchemePack)
-                throw new ArgumentException(SR.Get(SRID.UriShouldBePackScheme));
+                throw new ArgumentException(SR.UriShouldBePackScheme);
 
             return packUri;
         }
@@ -760,10 +754,10 @@ namespace System.IO.Packaging
             //We need to make sure that the URI passed to us is not just "/"
             //"/" is a valid relative uri, but is not a valid partname
             if (partName == String.Empty)
-                return new ArgumentException(SR.Get(SRID.PartUriIsEmpty));
+                return new ArgumentException(SR.PartUriIsEmpty);
 
             if (partName[0] != '/')
-                return new ArgumentException(SR.Get(SRID.PartUriShouldStartWithForwardSlash));
+                return new ArgumentException(SR.PartUriShouldStartWithForwardSlash);
 
             argumentException = GetExceptionIfPartNameStartsWithTwoSlashes(partName);
             if (argumentException != null)
@@ -795,7 +789,7 @@ namespace System.IO.Packaging
             //We perform the comparison in a case-insensitive manner, as at this point,
             //only escaped hex digits (A-F) might vary in casing.
             if (String.CompareOrdinal(partUri.OriginalString.ToUpperInvariant(), wellFormedPartName.ToUpperInvariant()) != 0)
-                return new ArgumentException(SR.Get(SRID.InvalidPartUri));
+                return new ArgumentException(SR.InvalidPartUri);
 
             //if we get here, the partUri is valid and so we return null, as there is no exception.
             partUriString = partName;
@@ -812,7 +806,7 @@ namespace System.IO.Packaging
         private static ArgumentException GetExceptionIfAbsoluteUri(Uri uri)
         {
             if (uri.IsAbsoluteUri)
-                return new ArgumentException(SR.Get(SRID.URIShouldNotBeAbsolute));
+                return new ArgumentException(SR.URIShouldNotBeAbsolute);
             else
                 return null;
         }
@@ -827,7 +821,7 @@ namespace System.IO.Packaging
         private static ArgumentException GetExceptionIfFragmentPresent(string partName)
         {
             if (partName.Contains("#"))
-                return new ArgumentException(SR.Get(SRID.PartUriCannotHaveAFragment));
+                return new ArgumentException(SR.PartUriCannotHaveAFragment);
             else
                 return null;
         }
@@ -844,7 +838,7 @@ namespace System.IO.Packaging
             if (partName.Length > 0)
             {
                 if (partName[partName.Length - 1] == '/')
-                    return new ArgumentException(SR.Get(SRID.PartUriShouldNotEndWithForwardSlash));
+                    return new ArgumentException(SR.PartUriShouldNotEndWithForwardSlash);
             }
             return null;
         }
@@ -867,7 +861,7 @@ namespace System.IO.Packaging
             if (partName.Length > 1)
             {
                 if (partName[0] == '/' && partName[1] == '/')
-                    return new ArgumentException(SR.Get(SRID.PartUriShouldNotStartWithTwoForwardSlashes));
+                    return new ArgumentException(SR.PartUriShouldNotStartWithTwoForwardSlashes);
             }
             return null;
         }
@@ -950,7 +944,7 @@ namespace System.IO.Packaging
             Uri packageUri = new Uri(Uri.UnescapeDataString(hostAndPort));
 
             if (packageUri.Fragment != String.Empty)
-                throw new ArgumentException(SR.Get(SRID.InnerPackageUriHasFragment));
+                throw new ArgumentException(SR.InnerPackageUriHasFragment);
 
             return packageUri;
         }
@@ -1232,7 +1226,7 @@ namespace System.IO.Packaging
                     {
                         // look for "_rels" segment in the third last segment
                         if (String.CompareOrdinal(segments[segments.Length - 3], s_relationshipPartUpperCaseSegmentName) == 0)
-                            throw new ArgumentException(SR.Get(SRID.NotAValidRelationshipPartUri));
+                            throw new ArgumentException(SR.NotAValidRelationshipPartUri);
                     }
                 }
 

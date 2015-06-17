@@ -171,7 +171,7 @@ namespace System.IO.Packaging
             }
             catch (XmlException exception)
             {
-                throw new XmlException(SR.Get(SRID.NotAValidXmlIdString, id), exception);
+                throw new XmlException(SR.Format(SR.NotAValidXmlIdString, id), exception);
             }
 #endif
 

@@ -252,7 +252,7 @@ namespace System.IO.Packaging
             PackUriHelper.ValidatedPartUri validatedPartUri = PackUriHelper.ValidatePartUri(partUri);
 
             if (_partList.ContainsKey(validatedPartUri))
-                throw new InvalidOperationException(SR.Get(SRID.PartAlreadyExists));
+                throw new InvalidOperationException(SR.PartAlreadyExists);
 
             // Add the part to the _partList if there is no prefix collision
             // Note: This is the only place where we pass a null to this method for the part and if the
@@ -287,7 +287,7 @@ namespace System.IO.Packaging
         {
             PackagePart returnedPart = GetPartHelper(partUri);
             if (returnedPart == null)
-                throw new InvalidOperationException(SR.Get(SRID.PartDoesNotExist));
+                throw new InvalidOperationException(SR.PartDoesNotExist);
             else
                 return returnedPart;
         }
@@ -434,7 +434,7 @@ namespace System.IO.Packaging
                     partUri = (PackUriHelper.ValidatedPartUri)parts[i].Uri;
 
                     if (seenPartUris.ContainsKey(partUri))
-                        throw new FileFormatException(SR.Get(SRID.BadPackageFormat));
+                        throw new FileFormatException(SR.BadPackageFormat);
                     else
                     {
                         // Add the part to the list of URIs that we have already seen
@@ -678,7 +678,7 @@ namespace System.IO.Packaging
 
             PackageRelationship returnedRelationship = GetRelationshipHelper(id);
             if (returnedRelationship == null)
-                throw new InvalidOperationException(SR.Get(SRID.PackageRelationshipDoesNotExist));
+                throw new InvalidOperationException(SR.PackageRelationshipDoesNotExist);
             else
                 return returnedRelationship;
         }
@@ -816,14 +816,14 @@ namespace System.IO.Packaging
         internal void ThrowIfReadOnly()
         {
             if (_openFileAccess == FileAccess.Read)
-                throw new IOException(SR.Get(SRID.CannotModifyReadOnlyContainer));
+                throw new IOException(SR.CannotModifyReadOnlyContainer);
         }
 
         // If the container is writeonly, parts cannot be retrieved from it
         internal void ThrowIfWriteOnly()
         {
             if (_openFileAccess == FileAccess.Write)
-                throw new IOException(SR.Get(SRID.CannotRetrievePartsOfWriteOnlyContainer));
+                throw new IOException(SR.CannotRetrievePartsOfWriteOnlyContainer);
         }
 
         // return true to continue
@@ -875,19 +875,18 @@ namespace System.IO.Packaging
                 ThrowIfFileModeInvalid(packageMode);
                 ThrowIfFileAccessInvalid(packageAccess);
 
-                // todo ew move into function
                 if (packageMode == FileMode.OpenOrCreate && packageAccess != FileAccess.ReadWrite)
-                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
                 if (packageMode == FileMode.Create && packageAccess != FileAccess.ReadWrite)
-                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
                 if (packageMode == FileMode.CreateNew && packageAccess != FileAccess.ReadWrite)
-                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
                 if (packageMode == FileMode.Open && packageAccess == FileAccess.Write)
-                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
                 if (packageMode == FileMode.Truncate && packageAccess == FileAccess.Read)
-                    throw new ArgumentException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                    throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
                 if (packageMode == FileMode.Truncate)
-                    throw new NotSupportedException(SR.Get(SRID.UnsupportedCombinationOfModeAccess));
+                    throw new NotSupportedException(SR.UnsupportedCombinationOfModeAccess);
 
                 //Note: FileShare enum is not being verfied at this stage, as we do not interpret the flag in this
                 //code at all and just pass it on to the next layer, where the necessary validation can be
@@ -948,21 +947,11 @@ namespace System.IO.Packaging
                 if (stream == null)
                     throw new ArgumentNullException("stream");
 
-                //FileMode and FileAccess Enums are validated in the following call
-
-                // todo ew I think there may be a security issue if 
-                // don't have ensuredStream.
-
-                // Stream ensuredStream = ValidateModeAndAccess(stream, packageMode, packageAccess); todo
-
                 try
                 {
                     // Today the Open(Stream) method is purely used for streams of Zip file format as
                     // that is the default underlying file format mapper implemented.
 
-                    // todo ew what is the deal with ensuredStream?
-
-                    //package = new ZipPackage(ensuredStream, packageMode, packageAccess);
                     package = new ZipPackage(stream, packageMode, packageAccess);
 
                     //We need to get all the parts if any exists from the underlying file
@@ -1025,7 +1014,7 @@ namespace System.IO.Packaging
             //Get the index of the entry at which this part was added
             int index = _partList.IndexOfKey(partUri);
 
-            Invariant.Assert(index >= 0, "Given uri must be present in the dictionary");
+            Debug.Assert(index >= 0, "Given uri must be present in the dictionary");
 
             string normalizedPartName = partUri.NormalizedPartUriString;
             string precedingPartName = null;
@@ -1053,41 +1042,15 @@ namespace System.IO.Packaging
                 //Removing the invalid entry from the _partList.
                 _partList.Remove(partUri);
 
-                throw new InvalidOperationException(SR.Get(SRID.PartNamePrefixExists));
+                throw new InvalidOperationException(SR.PartNamePrefixExists);
             }
-        }
-
-        //Checking if the mode and access parameters are compatible with the provided stream.
-        private static Stream ValidateModeAndAccess(Stream s, FileMode mode, FileAccess access)
-        {
-            ThrowIfFileModeInvalid(mode);
-            ThrowIfFileAccessInvalid(access);
-
-            //asking for more permissions than the underlying stream.
-            // Stream cannot write, but package to be created should have write access
-            if (!s.CanWrite && (access == FileAccess.ReadWrite || access == FileAccess.Write))
-                throw new IOException(SR.Get(SRID.IncompatibleModeOrAccess));
-
-            //asking for more permissions than the underlying stream.
-            // Stream cannot read, but the package to be created should have read access
-            if (!s.CanRead && (access == FileAccess.ReadWrite || access == FileAccess.Read || access == (FileAccess.Read | FileAccess.Write)))
-                throw new IOException(SR.Get(SRID.IncompatibleModeOrAccess));
-
-            //asking for less restricted access to the underlying stream
-            //stream is ReadWrite but the package is either readonly, or writeonly
-            if ((s.CanRead && s.CanWrite) && (access == FileAccess.Read || access == FileAccess.Write))
-            {
-                return new RestrictedStream(s, access);
-            }
-            else
-                return s;
         }
 
         //Throw if the object is in a disposed state
         private void ThrowIfObjectDisposed()
         {
             if (_disposed == true)
-                throw new ObjectDisposedException(null, SR.Get(SRID.ObjectDisposed));
+                throw new ObjectDisposedException(null, SR.ObjectDisposed);
         }
 
         private void EnsureRelationships()
@@ -1288,259 +1251,5 @@ namespace System.IO.Packaging
 
         #endregion Private Members
 
-        //------------------------------------------------------
-        //
-        //  Private Class
-        //
-        //------------------------------------------------------
-
-        #region Private Class: Restricted Stream
-
-        /// <summary>
-        /// This implementation of Stream class is a simple wrapper to restrict the
-        /// read or write access to the underlying stream, as per user request.
-        /// No validation for the stream method calls is done in this wrapper, the calls
-        /// are passed onto the underlying stream object, which should do the
-        /// validation as required.
-        /// </summary>
-        private sealed class RestrictedStream : Stream
-        {
-            #region Constructor
-
-            /// <summary>
-            /// Constructor
-            /// </summary>
-            /// <param name="stream"></param>
-            /// <param name="access"></param>
-            internal RestrictedStream(Stream stream, FileAccess access)
-            {
-                if (stream == null)
-                    throw new ArgumentNullException("stream");
-
-                //Verifying if the FileAccess enum is valid
-                //This constructor will never be called with FileAccess.ReadWrite
-                Debug.Assert(access == FileAccess.Read || access == FileAccess.Write,
-                    "The constructor of this private class is expected to be called with FileAccess.Read or FileAccess.Write");
-
-                _stream = stream;
-
-                if (access == FileAccess.Read)
-                {
-                    _canRead = true;
-                    _canWrite = false;
-                }
-                else
-                if (access == FileAccess.Write)
-                {
-                    _canRead = false;
-                    _canWrite = true;
-                }
-            }
-
-            #endregion Constructor
-
-            #region Properties
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <value>Bool, true if the stream can be read from, else false</value>
-            public override bool CanRead
-            {
-                get
-                {
-                    if (!_disposed)
-                        return _canRead;
-                    else
-                        return false;
-                }
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <value>Bool, true if the stream can be seeked, else false</value>
-            public override bool CanSeek
-            {
-                get
-                {
-                    if (!_disposed)
-                        return _stream.CanSeek;
-                    else
-                        return false;
-                }
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <value>Bool, true if the stream can be written to, else false</value>
-            public override bool CanWrite
-            {
-                get
-                {
-                    if (!_disposed)
-                        return _canWrite;
-                    else
-                        return false;
-                }
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <value>Long value indicating the length of the stream</value>
-            public override long Length
-            {
-                get
-                {
-                    ThrowIfStreamDisposed();
-                    return _stream.Length;
-                }
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <value>Long value indicating the current position in the stream</value>
-            public override long Position
-            {
-                get
-                {
-                    ThrowIfStreamDisposed();
-                    return _stream.Position;
-                }
-                set
-                {
-                    ThrowIfStreamDisposed();
-                    _stream.Position = value;
-                }
-            }
-
-            #endregion Properties
-
-            #region Methods
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <param name="offset">only zero is supported</param>
-            /// <param name="origin">only SeekOrigin.Begin is supported</param>
-            /// <returns>zero</returns>
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                ThrowIfStreamDisposed();
-                return _stream.Seek(offset, origin);
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <param name="newLength"></param>
-            public override void SetLength(long newLength)
-            {
-                ThrowIfStreamDisposed();
-                if (_canWrite)
-                    _stream.SetLength(newLength);
-                else
-                    throw new NotSupportedException(SR.Get(SRID.ReadOnlyStream));
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <param name="buffer"></param>
-            /// <param name="offset"></param>
-            /// <param name="count"></param>
-            /// <returns></returns>
-            /// <remarks>
-            /// The standard Stream.Read semantics, and in particular the restoration of the current
-            /// position in case of an exception, is implemented by the underlying stream.
-            /// </remarks>
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                ThrowIfStreamDisposed();
-                if (_canRead)
-                    return _stream.Read(buffer, offset, count);
-                else
-                    throw new NotSupportedException(SR.Get(SRID.WriteOnlyStream));
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            /// <param name="buf"></param>
-            /// <param name="offset"></param>
-            /// <param name="count"></param>
-            public override void Write(byte[] buf, int offset, int count)
-            {
-                ThrowIfStreamDisposed();
-                if (_canWrite)
-                    _stream.Write(buf, offset, count);
-                else
-                    throw new NotSupportedException(SR.Get(SRID.ReadOnlyStream));
-            }
-
-            /// <summary>
-            /// Member of the abstract Stream class
-            /// </summary>
-            public override void Flush()
-            {
-                ThrowIfStreamDisposed();
-                if (_canWrite)
-                    _stream.Flush();
-            }
-            #endregion Methods
-
-            //------------------------------------------------------
-            //
-            //  Protected Methods
-            //
-            //------------------------------------------------------
-            /// <summary>
-            /// Dispose(bool)
-            /// </summary>
-            /// <param name="disposing"></param>
-            protected override void Dispose(bool disposing)
-            {
-                try
-                {
-                    if (disposing)
-                    {
-                        if (!_disposed)
-                        {
-                            _stream.Dispose();
-                        }
-                    }
-                }
-                finally
-                {
-                    _disposed = true;
-                    base.Dispose(disposing);
-                }
-            }
-
-
-            #region Private Methods
-
-            private void ThrowIfStreamDisposed()
-            {
-                if (_disposed)
-                    throw new ObjectDisposedException(null, SR.Get(SRID.StreamObjectDisposed));
-            }
-
-            #endregion Private Methods
-
-            #region Private Variables
-
-            private Stream _stream;
-            private bool _canRead;
-            private bool _canWrite;
-            private bool _disposed;
-
-            #endregion Private Variables
-        }
-
-        #endregion Private Class: Restricted Stream
     }
 }

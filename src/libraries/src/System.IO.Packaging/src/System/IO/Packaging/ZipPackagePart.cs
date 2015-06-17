@@ -89,6 +89,7 @@ namespace System.IO.Packaging
         /// <param name="zipPackage"></param>
         /// <param name="zipArchive"></param>
         /// <param name="zipArchiveEntry"></param>
+        /// <param name="zipStreamManager"></param>
         /// <param name="partUri"></param>
         /// <param name="compressionOption"></param>
         /// <param name="contentType"></param>
