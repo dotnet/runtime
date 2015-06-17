@@ -126,6 +126,9 @@
   <data name="Arg_MultiDimArrayNotSupported" xml:space="preserve">
     <value>Only one-dimensional arrays are supported</value>
   </data>
+  <data name="Arg_NullArgumentNullRef" xml:space="preserve">
+    <value>The method was called with a null array argument.</value>
+  </data>
   <data name="Arg_RegisterLengthOfRangeException" xml:space="preserve">
     <value>length must be less than</value>
   </data>
