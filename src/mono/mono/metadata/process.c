@@ -377,7 +377,7 @@ static MonoObject* get_process_module (MonoAssembly *assembly, MonoClass *proc_c
 	MonoObject *item, *filever;
 	MonoDomain *domain = mono_domain_get ();
 	char filename [80] = "[In Memory] ";
-	char *modulename = assembly->aname.name;
+	const char *modulename = assembly->aname.name;
 
 	strncat (filename, modulename, 80);
 
