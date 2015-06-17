@@ -560,6 +560,7 @@ function_name() to call the system's implementation
 #endif
 #include <ctype.h>
 
+#define _WITH_GETLINE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
