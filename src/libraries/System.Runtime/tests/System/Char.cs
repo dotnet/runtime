@@ -42,6 +42,7 @@ public static class CharTests
             Assert.True(expected == null, "Expected an ArgumentOutOfRangeException");
         }
     }
+
     [Fact]
     public static void TestConvertFromUtf32()
     {
@@ -766,7 +767,6 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToLower()
     {
         // Char Char.ToLower(Char)
@@ -790,7 +790,6 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToLowerInvariant()
     {
         // Char Char.ToLowerInvariant(Char)
@@ -830,7 +829,6 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToUpper()
     {
         // Char Char.ToUpper(Char)
@@ -854,7 +852,6 @@ public static class CharTests
     }
 
     [Fact]
-    [ActiveIssue(846, PlatformID.AnyUnix)]
     public static void TestToUpperInvariant()
     {
         // Char Char.ToUpperInvariant(Char)
