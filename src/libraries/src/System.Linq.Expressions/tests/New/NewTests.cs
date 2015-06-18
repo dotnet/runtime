@@ -219,5 +219,29 @@ namespace Tests.ExpressionCompiler.New
         }
 
         #endregion
+
+        [Fact]
+        public static void PrivateDefaultConstructor()
+        {
+            Assert.Equal("Test instance", TestPrivateDefaultConstructor.GetInstanceFunc()().ToString());
+        }
+
+        class TestPrivateDefaultConstructor
+        {
+            private TestPrivateDefaultConstructor()
+            { 
+            }
+
+            public static Func<TestPrivateDefaultConstructor> GetInstanceFunc()
+            {
+                var lambda = Expression.Lambda<Func<TestPrivateDefaultConstructor>>(Expression.New(typeof(TestPrivateDefaultConstructor)), new ParameterExpression[] { });
+                return lambda.Compile();
+            }
+
+            public override string ToString()
+            {
+                return "Test instance";
+            }
+        }
     }
 }

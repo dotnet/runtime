@@ -1117,7 +1117,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
 
     public struct Test
     {
-        [Fact(Skip = "870811")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -1358,7 +1358,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.cn
         {
         }
 
-        [Fact(Skip = "870811")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

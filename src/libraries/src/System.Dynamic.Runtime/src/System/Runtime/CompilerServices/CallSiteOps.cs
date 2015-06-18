@@ -17,7 +17,6 @@ namespace System.Runtime.CompilerServices
     [EditorBrowsable(EditorBrowsableState.Never), DebuggerStepThrough]
     public static class CallSiteOps
     {
-#if FEATURE_CORECLR
         /// <summary>
         /// Creates an instance of a dynamic call site used for cache lookup.
         /// </summary>
@@ -27,16 +26,17 @@ namespace System.Runtime.CompilerServices
         public static CallSite<T> CreateMatchmaker<T>(CallSite<T> site) where T : class
         {
             var mm = site.CreateMatchMaker();
-            CallSiteOps.ClearMatch(mm);
+            // CallSiteOps.ClearMatch(mm);
+            mm._match = true;
             return mm;
         }
-#endif
 
         /// <summary>
         /// Checks if a dynamic site requires an update.
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>true if rule does not need updating, false otherwise.</returns>
+        [Obsolete("do not use this method", true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool SetNotMatched(CallSite site)
         {
             var res = site._match;
@@ -44,7 +44,6 @@ namespace System.Runtime.CompilerServices
             return res;
         }
 
-#if FEATURE_CORECLR
         /// <summary>
         /// Checks whether the executed rule matched
         /// </summary>
@@ -160,6 +159,5 @@ namespace System.Runtime.CompilerServices
         {
             return binder.BindCore(site, args);
         }
-#endif
     }
 }

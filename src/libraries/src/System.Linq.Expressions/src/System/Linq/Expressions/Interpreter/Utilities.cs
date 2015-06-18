@@ -14,20 +14,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal sealed class ExplicitBox : IStrongBox
-    {
-        public object Value { get; set; }
-
-        public ExplicitBox()
-        {
-        }
-
-        public ExplicitBox(object value)
-        {
-            this.Value = value;
-        }
-    }
-
     internal static partial class DelegateHelpers
     {
         private const int MaximumArity = 17;

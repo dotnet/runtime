@@ -12,8 +12,21 @@
         <Type Name="CallSite&lt;T&gt;" Dynamic="Required Public">
           <GenericParameter Name="T" Dynamic="Public"/>
         </Type>
+        <Type Name="RuleCache&lt;T&gt;" Dynamic="Required Public">
+          <GenericParameter Name="T" Dynamic="Public"/>
+        </Type>
         <Type Name="CallSiteOps">
           <Method Name="SetNotMatched" Dynamic="Required"/>
+          <Method Name="GetMatch" Dynamic="Required"/>
+          <Method Name="ClearMatch" Dynamic="Required"/>
+          <MethodInstantiation Name="CreateMatchmaker" Arguments="System.Delegate" Dynamic="Required" />
+          <MethodInstantiation Name="AddRule" Arguments="System.Delegate" Dynamic="Required" />
+          <MethodInstantiation Name="UpdateRules" Arguments="System.Delegate" Dynamic="Required" />
+          <MethodInstantiation Name="GetRules" Arguments="System.Delegate" Dynamic="Required" />
+          <MethodInstantiation Name="GetRuleCache" Arguments="System.Delegate" Dynamic="Required" />
+          <MethodInstantiation Name="MoveRule" Arguments="System.Delegate" Dynamic="Required" />
+          <MethodInstantiation Name="GetCachedRules" Arguments="System.Delegate" Dynamic="Required" />
+          <MethodInstantiation Name="Bind" Arguments="System.Delegate" Dynamic="Required" />
         </Type>
         <Type Name="RuntimeOps">
           <Method Name="ExpandoTryGetValue" Dynamic="Required"/>

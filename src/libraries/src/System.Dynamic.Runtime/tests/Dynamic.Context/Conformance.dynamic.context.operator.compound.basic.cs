@@ -93,7 +93,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
     {
         public delegate int MyDel(int i);
 
-        [Fact(Skip = "875112")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -578,7 +578,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
     public class Test
     {
-        [Fact(Skip = "875112")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -817,7 +817,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
     {
         public delegate int MyDel(int i);
 
-        [Fact(Skip = "875112")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -884,7 +884,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
     public class Test
     {
-        [Fact(Skip = "870811")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

@@ -1037,7 +1037,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.genclas
         public static int MainMethod()
         {
             Test.MyProp = null;
-            Type[] t = s_result.GetType().GetGenericArguments();
+            Type[] t = s_result.GetType().GenericTypeArguments;
             if (t.Length != 3 || t[0] != typeof(int) || t[1] != typeof(string) || t[1] != typeof(string))
                 return 1;
             if (s_result.Field == 4)
