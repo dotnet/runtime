@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Security;
 
-#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonClassDataContract : JsonDataContract
@@ -171,4 +170,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

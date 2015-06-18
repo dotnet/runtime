@@ -328,7 +328,7 @@ namespace System.Runtime.Serialization.Json
 #endif
         }
 
-#if !MERGE_DCJS
+#if !NET_NATIVE && !MERGE_DCJS
         internal void WriteObjectInternal(object value, DataContract contract, XmlObjectSerializerWriteContextComplexJson context, bool writeServerType, RuntimeTypeHandle declaredTypeHandle)
         {
             _jsonSerializer.SerializeObject(ConvertDataContractToObject(value, contract, context, writeServerType, declaredTypeHandle));

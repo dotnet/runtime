@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Security;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization
 {
     // NOTE: XmlReader methods that are not needed have been left un-implemented
@@ -789,4 +788,4 @@ namespace System.Runtime.Serialization
         }
     }
 }
-#endif
+

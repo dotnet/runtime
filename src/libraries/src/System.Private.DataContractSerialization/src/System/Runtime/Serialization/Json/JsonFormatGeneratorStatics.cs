@@ -9,7 +9,6 @@ using System.Security;
 using System.Xml;
 using System.Diagnostics;
 
-#if MERGE_DCJS
 namespace System.Runtime.Serialization
 {
     public static class JsonFormatGeneratorStatics
@@ -198,7 +197,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_isStartElementMethod0 == null)
                 {
-                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, new Type[] { });
+                    s_isStartElementMethod0 = typeof (XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, Array.Empty<Type>());
                 }
                 return s_isStartElementMethod0;
             }
@@ -378,7 +377,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_writeEndElementMethod == null)
                 {
-                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, new Type[] { });
+                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, Array.Empty<Type>());
                 }
                 return s_writeEndElementMethod;
             }
@@ -472,4 +471,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-#endif

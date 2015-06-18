@@ -88,7 +88,7 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_objectToString == null)
-                    s_objectToString = typeof(object).GetMethod("ToString", new Type[0]);
+                    s_objectToString = typeof(object).GetMethod("ToString", Array.Empty<Type>());
                 return s_objectToString;
             }
         }

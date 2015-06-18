@@ -540,11 +540,11 @@ namespace System.Runtime.Serialization.Json
                     {
                         case CollectionKind.GenericDictionary:
                             type = Globals.TypeOfDictionaryGeneric.MakeGenericType(itemType.GetGenericArguments());
-                            constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Globals.EmptyTypeArray);
+                            constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Array.Empty<Type>());
                             break;
                         case CollectionKind.Dictionary:
                             type = Globals.TypeOfHashtable;
-                            constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Globals.EmptyTypeArray);
+                            constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Array.Empty<Type>());
                             break;
                         case CollectionKind.Collection:
                         case CollectionKind.GenericCollection:

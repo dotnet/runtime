@@ -6,7 +6,6 @@ using System.Xml;
 using System.Collections.Generic;
 using System.Globalization;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization
 {
     public sealed class ExtensionDataObject
@@ -354,4 +353,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-#endif

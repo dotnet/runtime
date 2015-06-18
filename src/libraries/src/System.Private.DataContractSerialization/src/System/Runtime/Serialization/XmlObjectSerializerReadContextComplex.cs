@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Security;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization
 {
 #if NET_NATIVE
@@ -240,4 +239,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-#endif

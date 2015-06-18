@@ -1307,7 +1307,7 @@ namespace System.Runtime.Serialization
             internal bool HasDataContract
             {
                 get { return _hasDataContract; }
-#if NET_NATIVE || MERGE_DCJS
+#if NET_NATIVE
                 set { _hasDataContract = value; }
 #endif
             }
@@ -1460,7 +1460,7 @@ namespace System.Runtime.Serialization
                 Type type = UnderlyingType;
                 if (type.GetTypeInfo().IsValueType && !IsNonAttributedType)
                 {
-                    type = type != typeof(DateTimeOffsetAdapter) ? Globals.TypeOfValueType : typeof(ValueType);
+                    type = Globals.TypeOfValueType;
                 }
                 return type;
             }
