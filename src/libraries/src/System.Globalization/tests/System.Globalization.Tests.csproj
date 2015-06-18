@@ -16,6 +16,8 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CompareInfo.cs" />
+    <Compile Include="CompareInfo.TestData.cs" />
     <Compile Include="TextInfo.cs" />
   </ItemGroup>
   <ItemGroup>
