@@ -24,7 +24,7 @@ namespace System.Numerics.Tests
             float[] a = new float[4];
             float[] b = new float[3];
 
-            Assert.Throws<ArgumentNullException>(() => v1.CopyTo(null, 0));
+            Assert.Throws<NullReferenceException>(() => v1.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, a.Length));
             Assert.Throws<ArgumentException>(() => v1.CopyTo(a, a.Length - 2));
