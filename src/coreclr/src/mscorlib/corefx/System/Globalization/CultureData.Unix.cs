@@ -8,47 +8,20 @@ namespace System.Globalization
     internal partial class CultureData
     {       
         /// <summary>
-        /// Check with the OS to see if this is a valid culture.
-        /// If so we populate a limited number of fields.  If its not valid we return false.
-        ///
-        /// The fields we populate:
-        ///
-        /// sWindowsName -- The name that windows thinks this culture is, ie:
-        ///                            en-US if you pass in en-US
-        ///                            de-DE_phoneb if you pass in de-DE_phoneb
-        ///                            fj-FJ if you pass in fj (neutral, on a pre-Windows 7 machine)
-        ///                            fj if you pass in fj (neutral, post-Windows 7 machine)
-        ///
-        /// sRealName -- The name you used to construct the culture, in pretty form
-        ///                       en-US if you pass in EN-us
-        ///                       en if you pass in en
-        ///                       de-DE_phoneb if you pass in de-DE_phoneb
-        ///
-        /// sSpecificCulture -- The specific culture for this culture
-        ///                             en-US for en-US
-        ///                             en-US for en
-        ///                             de-DE_phoneb for alt sort
-        ///                             fj-FJ for fj (neutral)
-        ///
-        /// sName -- The IETF name of this culture (ie: no sort info, could be neutral)
-        ///                en-US if you pass in en-US
-        ///                en if you pass in en
-        ///                de-DE if you pass in de-DE_phoneb
-        ///
-        /// bNeutral -- TRUE if it is a neutral locale
-        ///
-        /// For a neutral we just populate the neutral name, but we leave the windows name pointing to the
-        /// windows locale that's going to provide data for us.
+        /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
+        /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
         /// </summary>
         private unsafe bool InitCultureData()
         {
-            // TODO: Implement this fully.
+            Contract.Assert(this.sRealName != null);
+
+            // This is a bit of misnomer, since it doesn't have anything to do with Windows.  Instead, this is the
+            // identifier the underlying OS uses for the culture.
+            this.sWindowsName = AnsiToLower(this.sRealName);
 
             // For now, just use all of the Invariant's data
+            // TODO: Implement this fully.
             CultureData invariant = CultureData.Invariant;
-
-            this.sRealName = invariant.sRealName;
-            this.sWindowsName = invariant.sWindowsName;
 
             // Identity
             this.sName = invariant.sName;
