@@ -89,7 +89,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Gets the name of the file that this instance of System.Windows.Forms.FileVersionInfo describes.
+        /// Gets the name of the file that this instance of <see cref="FileVersionInfo" /> describes.
         /// </summary>
         public string FileName
         {
@@ -260,7 +260,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Returns a System.Windows.Forms.FileVersionInfo representing the version information associated with the specified file.
+        /// Returns a <see cref="FileVersionInfo" /> representing the version information associated with the specified file.
         /// </summary>
         public static FileVersionInfo GetVersionInfo(string fileName)
         {
@@ -274,7 +274,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Returns a partial list of properties in System.Windows.Forms.FileVersionInfo
+        /// Returns a partial list of properties in <see cref="FileVersionInfo" />
         /// and their values.
         /// </summary>
         public override string ToString()
