@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Xml;
 
-#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class XmlJsonReader : XmlBaseReader, IXmlJsonReaderInitializer
@@ -1701,4 +1700,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

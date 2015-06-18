@@ -591,34 +591,6 @@ namespace System.Runtime.Serialization
         }
 #endif
 
-#if MERGE_DCJS
-        [SecurityCritical]
-        private static object[] s_emptyObjectArray;
-        internal static object[] EmptyObjectArray
-        {
-            [SecuritySafeCritical]
-            get
-            {
-                if (s_emptyObjectArray == null)
-                    s_emptyObjectArray = Array.Empty<object>();
-                return s_emptyObjectArray;
-            }
-        }
-
-        [SecurityCritical]
-        private static Type[] s_emptyTypeArray;
-        internal static Type[] EmptyTypeArray
-        {
-            [SecuritySafeCritical]
-            get
-            {
-                if (s_emptyTypeArray == null)
-                    s_emptyTypeArray = Array.Empty<Type>();
-                return s_emptyTypeArray;
-            }
-        }
-#endif
-
         [SecurityCritical]
         private static Type s_typeOfNullable;
         internal static Type TypeOfNullable

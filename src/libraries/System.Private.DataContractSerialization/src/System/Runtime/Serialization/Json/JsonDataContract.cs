@@ -8,7 +8,6 @@ using System.Security;
 using System.Reflection;
 using System.Xml;
 
-#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonDataContract
@@ -356,4 +355,3 @@ namespace System.Runtime.Serialization.Json
         public JsonFormatGetOnlyCollectionReaderDelegate GetOnlyCollectionReaderDelegate { get; set; }
     }
 }
-#endif

@@ -6,7 +6,6 @@ using System.Text;
 using System.Xml;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal interface IXmlJsonReaderInitializer
@@ -18,4 +17,3 @@ namespace System.Runtime.Serialization.Json
             OnXmlDictionaryReaderClose onClose);
     }
 }
-#endif

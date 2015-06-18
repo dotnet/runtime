@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#if MERGE_DCJS
 namespace System.Runtime.Serialization
 {
     using System;
@@ -111,4 +110,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-#endif

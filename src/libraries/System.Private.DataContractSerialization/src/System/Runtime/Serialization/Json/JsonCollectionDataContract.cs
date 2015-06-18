@@ -5,7 +5,6 @@ using System.Threading;
 using System.Xml;
 using System.Security;
 
-#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonCollectionDataContract : JsonDataContract
@@ -170,4 +169,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

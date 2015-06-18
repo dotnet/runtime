@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-#if NET_NATIVE || MERGE_DCJS
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonXmlDataContract : JsonDataContract
@@ -87,4 +86,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

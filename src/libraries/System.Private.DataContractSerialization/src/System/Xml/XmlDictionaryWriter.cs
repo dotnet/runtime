@@ -54,7 +54,7 @@ namespace System.Xml
 
         static public XmlDictionaryWriter CreateTextWriter(Stream stream, Encoding encoding, bool ownsStream)
         {
-#if MERGE_DCJS
+#if NET_NATIVE || MERGE_DCJS
             XmlUTF8TextWriter writer = new XmlUTF8TextWriter();
             writer.SetOutput(stream, encoding, ownsStream);
             return writer;
