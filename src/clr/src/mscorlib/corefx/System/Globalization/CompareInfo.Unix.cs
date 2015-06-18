@@ -93,7 +93,7 @@ namespace System.Globalization
             {
                 for (int i = 0; i < source.Length; i++)
                 {
-                    hash = ((hash << 5) + hash) + TextInfo.ChangeCaseAscii(source[i]);
+                    hash = ((hash << 5) + hash) + ChangeCaseAscii(source[i]);
                 }
             }
 
@@ -171,7 +171,23 @@ namespace System.Globalization
             return StringEqualsAscii(source.Substring(source.Length - suffix.Length), suffix, IgnoreCase(options));
         }
 
-        // PAL ends here
+        // -----------------------------
+        // ---- PAL layer ends here ----
+        // -----------------------------
+
+        private static char ChangeCaseAscii(char c, bool toUpper = true)
+        {
+            if (toUpper && c >= 'a' && c <= 'z')
+            {
+                return (char)('A' + (c - 'a'));
+            }
+            else if (!toUpper && c >= 'A' && c <= 'Z')
+            {
+                return (char)('a' + (c - 'A'));
+            }
+
+            return c;
+        }
 
         private static bool StringEqualsAscii(string s1, string s2, bool ignoreCase = true)
         {
@@ -179,8 +195,8 @@ namespace System.Globalization
 
             for (int i = 0; i < s1.Length; i++)
             {
-                char c1 = ignoreCase ? TextInfo.ChangeCaseAscii(s1[i]) : s1[i];
-                char c2 = ignoreCase ? TextInfo.ChangeCaseAscii(s2[i]) : s2[i];
+                char c1 = ignoreCase ? ChangeCaseAscii(s1[i]) : s1[i];
+                char c2 = ignoreCase ? ChangeCaseAscii(s2[i]) : s2[i];
 
                 if (c1 != c2) return false;
             }
@@ -195,8 +211,8 @@ namespace System.Globalization
             {
                 for (int i = 0; i < countMin; i++)
                 {
-                    char c1 = ignoreCase ? TextInfo.ChangeCaseAscii(s1[i]) : s1[i];
-                    char c2 = ignoreCase ? TextInfo.ChangeCaseAscii(s2[i]) : s2[i];
+                    char c1 = ignoreCase ? ChangeCaseAscii(s1[i]) : s1[i];
+                    char c2 = ignoreCase ? ChangeCaseAscii(s2[i]) : s2[i];
 
                     if (c1 < c2)
                     {
