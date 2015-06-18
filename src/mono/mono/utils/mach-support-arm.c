@@ -148,9 +148,9 @@ kern_return_t
 mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count)
 {
 #ifdef TARGET_ARM64
-	return thread_set_state (thread, ARM_UNIFIED_THREAD_STATE_COUNT, state, count);
+	return thread_set_state (thread, ARM_UNIFIED_THREAD_STATE, state, count);
 #else
-	return thread_set_state (thread, ARM_THREAD_STATE_COUNT, state, count);
+	return thread_set_state (thread, ARM_THREAD_STATE, state, count);
 #endif
 }
 
