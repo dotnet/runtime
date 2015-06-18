@@ -129,6 +129,21 @@ namespace System.Collections.Immutable.Test
 
             builder1.AddRange(array);
             Assert.Equal(new[] { 1, 2, 3 }, builder1);
+
+            Assert.Throws<ArgumentNullException>(() => builder1.AddRange((int[])null));
+            Assert.Throws<ArgumentNullException>(() => builder1.AddRange(null, 42));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder1.AddRange(new int[0], -1));
+            Assert.Throws<IndexOutOfRangeException>(() => builder1.AddRange(new int[0], 42));
+
+            Assert.Throws<ArgumentNullException>(() => builder1.AddRange((ImmutableArray<int>.Builder)null));
+            Assert.Throws<ArgumentNullException>(() => builder1.AddRange((IEnumerable<int>)null));
+
+            Assert.Throws<NullReferenceException>(() => builder1.AddRange(default(ImmutableArray<int>)));
+            builder1.AddRange(default(ImmutableArray<int>), 42);
+
+            var builder2 = new ImmutableArray<object>.Builder();
+            builder2.AddRange(default(ImmutableArray<string>));
+            Assert.Throws<ArgumentNullException>(() => builder2.AddRange((ImmutableArray<string>.Builder)null));
         }
 
         [Fact]
@@ -404,6 +419,20 @@ namespace System.Collections.Immutable.Test
 
             builder.Clear();
             Assert.True(builder.ToImmutable().IsEmpty);
+        }
+
+        [Fact]
+        public void CopyTo()
+        {
+            var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
+            var target = new int[4];
+
+            builder.CopyTo(target, 1);
+            Assert.Equal(new[] { 0, 1, 2, 3 }, target);
+
+            Assert.Throws<ArgumentNullException>(() => builder.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.CopyTo(target, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.CopyTo(target, 2));
         }
 
         [Fact]
