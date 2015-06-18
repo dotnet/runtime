@@ -26,6 +26,7 @@
     
     <ItemGroup>
        <FilesToPackage Include="$(PackagePath)">
+         <AssemblyVersion>$(AssemblyVersion)</AssemblyVersion>
          <TargetFramework>$(PackageTargetFramework)</TargetFramework>
          <TargetPath>$(PackageTargetPath)</TargetPath>
        </FilesToPackage>
