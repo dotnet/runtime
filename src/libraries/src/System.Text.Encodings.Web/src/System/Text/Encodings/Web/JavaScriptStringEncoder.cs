@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Internal;
@@ -24,7 +25,7 @@ namespace System.Text.Encodings.Web
         }
     }
 
-    public sealed class DefaultJavaScriptEncoder : JavaScriptEncoder
+    internal sealed class DefaultJavaScriptEncoder : JavaScriptEncoder
     {
         private AllowedCharactersBitmap _allowedCharacters;
 
@@ -64,7 +65,6 @@ namespace System.Text.Encodings.Web
             return !_allowedCharacters.IsUnicodeScalarAllowed(unicodeScalar);
         }
 
-        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe override int FindFirstCharacterToEncode(char* text, int textLength)
         {
@@ -83,19 +83,18 @@ namespace System.Text.Encodings.Web
             get { return 6; } // "\uFFFF" is the longest encoded form 
         }
 
-        static readonly char[] b = new char[] { '\\', 'b' };
-        static readonly char[] t = new char[] { '\\', 't' };
-        static readonly char[] n = new char[] { '\\', 'n' };
-        static readonly char[] f = new char[] { '\\', 'f' };
-        static readonly char[] r = new char[] { '\\', 'r' };
-        static readonly char[] forward = new char[] { '\\', '/' };
-        static readonly char[] back = new char[] { '\\', '\\' };
+        static readonly char[] s_b = new char[] { '\\', 'b' };
+        static readonly char[] s_t = new char[] { '\\', 't' };
+        static readonly char[] s_n = new char[] { '\\', 'n' };
+        static readonly char[] s_f = new char[] { '\\', 'f' };
+        static readonly char[] s_r = new char[] { '\\', 'r' };
+        static readonly char[] s_forward = new char[] { '\\', '/' };
+        static readonly char[] s_back = new char[] { '\\', '\\' };
 
         // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
         // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
         // http://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
         // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
-        [CLSCompliant(false)]
         public unsafe override bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
             if (buffer == null)
@@ -109,15 +108,21 @@ namespace System.Text.Encodings.Web
             // be written out as numeric entities for defense-in-depth.
             // See UnicodeEncoderBase ctor comments for more info.
 
-            if (!Encodes(unicodeScalar)) { return unicodeScalar.TryWriteScalarAsChar(buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\b') { return b.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\t') { return t.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\n') { return n.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\f') { return f.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\r') { return r.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '/') { return forward.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
-            else if (unicodeScalar == '\\') { return back.TryCopyCharacters(buffer, bufferLength, out numberOfCharactersWritten); }
-            else { return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
+            if (!Encodes(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
+
+            char[] toCopy = null;
+            switch (unicodeScalar)
+            {
+                case '\b': toCopy = s_b; break;
+                case '\t': toCopy = s_t; break;
+                case '\n': toCopy = s_n; break;
+                case '\f': toCopy = s_f; break;
+                case '\r': toCopy = s_r; break;
+                case '/': toCopy = s_forward; break;
+                case '\\': toCopy = s_back; break;
+                default: return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); 
+            }
+            return TryCopyCharacters(toCopy, buffer, bufferLength, out numberOfCharactersWritten);
         }
 
         private unsafe static bool TryWriteEncodedScalarAsNumericEntity(int unicodeScalar, char* buffer, int length, out int numberOfCharactersWritten)

@@ -52,7 +52,7 @@ namespace Microsoft.Framework.WebEncoders
         /// set returned by <paramref name="filter"/>'s <see cref="ICodePointFilter.GetAllowedCodePoints"/>
         /// method will be escaped.
         /// </summary>
-        public HtmlEncoderOld(ICodePointFilter filter)
+        public HtmlEncoderOld(CodePointFilter filter)
             : this(new HtmlUnicodeEncoder(CodePointFilter.Wrap(filter)))
         {
         }
@@ -225,7 +225,7 @@ namespace Microsoft.Framework.WebEncoders
         /// set returned by <paramref name="filter"/>'s <see cref="ICodePointFilter.GetAllowedCodePoints"/>
         /// method will be escaped.
         /// </summary>
-        public JavaScriptStringEncoderOld(ICodePointFilter filter)
+        public JavaScriptStringEncoderOld(CodePointFilter filter)
             : this(new JavaScriptStringUnicodeEncoder(CodePointFilter.Wrap(filter)))
         {
         }
@@ -422,7 +422,7 @@ namespace Microsoft.Framework.WebEncoders
         /// set returned by <paramref name="filter"/>'s <see cref="ICodePointFilter.GetAllowedCodePoints"/>
         /// method will be escaped.
         /// </summary>
-        public UrlEncoderOld(ICodePointFilter filter)
+        public UrlEncoderOld(CodePointFilter filter)
             : this(new UrlUnicodeEncoder(CodePointFilter.Wrap(filter)))
         {
         }
