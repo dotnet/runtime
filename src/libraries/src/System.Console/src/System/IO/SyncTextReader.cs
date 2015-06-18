@@ -1,35 +1,23 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace System.IO
 {
     internal sealed class SyncTextReader : TextReader
     {
-        internal TextReader _in;
+        private readonly TextReader _in;
         private readonly object _methodLock = new object();
 
-        public static TextReader GetSynchronizedTextReader(TextReader reader)
+        public static SyncTextReader GetSynchronizedTextReader(TextReader reader)
         {
-            if (reader == null)
-                throw new ArgumentNullException("reader");
-            Contract.Ensures(Contract.Result<TextReader>() != null);
-            Contract.EndContractBlock();
-
-            if (reader is SyncTextReader)
-                return reader;
-
-            return new SyncTextReader(reader);
+            Debug.Assert(reader != null);
+            return reader as SyncTextReader ?? 
+                new SyncTextReader(reader);
         }
 
         internal SyncTextReader(TextReader t)
