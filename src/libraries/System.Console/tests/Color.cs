@@ -10,6 +10,32 @@ using Xunit;
 public class Color
 {
     [Fact]
+    public static void InvalidColors()
+    {
+        Assert.Throws<ArgumentException>(() => Console.BackgroundColor = (ConsoleColor)42);
+        Assert.Throws<ArgumentException>(() => Console.ForegroundColor = (ConsoleColor)42);
+    }
+
+    [Fact]
+    public static void RoundtrippingColor()
+    {
+        if (Interop.IsWindows)
+        {
+            Console.BackgroundColor = Console.BackgroundColor;
+            Console.ForegroundColor = Console.ForegroundColor;
+            // Changing color on Windows doesn't have effect in some testing environments
+            // when there is no associated console, such as when run under a profiler like 
+            // our code coverage tools, so we don't assert that the change took place and 
+            // simple ensure that getting/setting doesn't throw.
+        }
+        else
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor);
+            Assert.Throws<PlatformNotSupportedException>(() => Console.ForegroundColor);
+        }
+    }
+
+    [Fact]
     [PlatformSpecific(PlatformID.AnyUnix)]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
