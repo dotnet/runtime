@@ -76,7 +76,7 @@ namespace System.IO.Pipes
                     {
                         ar._waitHandle.Set();
                     }
-                    ar._userCallback(this);
+                    ar._userCallback(ar);
                 }, this);
             }
             else
