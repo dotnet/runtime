@@ -1752,7 +1752,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
         private static int s_a = 0;
         private static MemberClass s_mc = new MemberClass();
 
-        [Fact(Skip = "870811")]
+        
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2393,8 +2393,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
             MemberClass mc = new MemberClass();
             dynamic dynamic = mc;
             object[] array = dynamic[true, 10, dynamic];
-            if (!dynamic.GetType().IsClass) // struct == struct not support.
-                return 0;
+
             if (array.Length == 3 && (bool?)array[0] == true && (int?)array[1] == 10 && array[2] == dynamic && MemberClass.Status == 1)
                 return 0;
             return 1;

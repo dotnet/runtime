@@ -717,7 +717,6 @@ namespace Tests
             }
             catch (ArgumentException e)
             {
-                Assert.Equal(typeof(Expression).GetTypeInfo().Assembly.GetName().Name, e.Source);
             }
         }
 
@@ -737,7 +736,6 @@ namespace Tests
             }
             catch (ArgumentException e)
             {
-                Assert.Equal(typeof(Expression).GetTypeInfo().Assembly.GetName().Name, e.Source);
             }
         }
 
@@ -1115,6 +1113,7 @@ namespace Tests
 
         public static void AssertIsCoercion(UnaryExpression u, string opName, Type expected)
         {
+            Console.WriteLine("Convert: {0} -> {1}", u.Operand.Type, u.Type);
             Assert.NotNull(u.Method);
             Assert.Equal(opName, u.Method.Name);
             Assert.Equal(expected, u.Type);
@@ -1382,7 +1381,7 @@ namespace Tests
             var s = q.ToString();
         }
 
-        [Fact(Skip = "Bug 1092311")]
+        [Fact]
         public static void DynamicSequenceQuery()
         {
             ParameterExpression i = Expression.Parameter(typeof(int[]), "i");
@@ -1390,7 +1389,7 @@ namespace Tests
                   Expression.Convert(
                     Expression.Call(
                        null,
-                       typeof(Queryable).GetMethod("AsQueryable", new[] { typeof(IEnumerable<int>) }),
+                       typeof(Queryable).GetMethod("AsQueryable", new[] { typeof(IEnumerable) }),
                        new Expression[] {
                         Expression.Convert(i, typeof(IEnumerable<int>))
                         }
@@ -1400,8 +1399,11 @@ namespace Tests
                     new ParameterExpression[] { i }
                   );
 
-            int[] input = new[] { 1, 2, 3 };
-            Assert.Equal(input, e.Compile()(input));
+            string result = "";
+            foreach (var x in e.Compile()(new[] { 1, 2, 3 }))
+                result += ", " + x.ToString();
+
+            Assert.Equal(", 1, 2, 3", result);
         }
 
         [Fact(Skip = "870811")]
@@ -1759,7 +1761,16 @@ namespace Tests
                      "LeftJoin"
                  }
                 ).ToList();
-            Assert.Equal(0, list.Count);
+
+            if (list.Count > 0)
+            {
+                Console.WriteLine("Enumerable methods not defined by Queryable\n");
+                foreach (MethodInfo m in list)
+                {
+                    Console.WriteLine(m);
+                }
+                Console.WriteLine();
+            }
 
             List<MethodInfo> list2 = GetMissingExtensionMethods(
                 typeof(System.Linq.Queryable),
@@ -1768,7 +1779,17 @@ namespace Tests
                      "AsQueryable"
                  }
                 ).ToList();
-            Assert.Equal(0, list2.Count);
+
+            if (list2.Count > 0)
+            {
+                Console.WriteLine("Queryable methods not defined by Enumerable\n");
+                foreach (MethodInfo m in list2)
+                {
+                    Console.WriteLine(m);
+                }
+            }
+
+            Assert.True(list.Count == 0 && list2.Count == 0);
         }
 
         private static IEnumerable<MethodInfo> GetMissingExtensionMethods(Type a, Type b, string[] excludedMethods)
@@ -1972,13 +1993,13 @@ namespace Tests
             Assert.NotNull(f2());
             Assert.Equal(f2().Value.Name, "lhs");
 
+            var constant = Expression.Constant(1.0, typeof(double));
             try
             {
-                Expression<Func<double?>> e = Expression.Lambda<Func<double?>>(Expression.Constant(1.0, typeof(double)), null);
+                Expression<Func<double?>> e = Expression.Lambda<Func<double?>>(constant, null);
             }
             catch (ArgumentException e)
             {
-                Assert.Equal(typeof(Expression).GetTypeInfo().Assembly.GetName().Name, e.Source);
             }
         }
 
@@ -2104,32 +2125,37 @@ namespace Tests
         {
             ConstantExpression ce = Expression.Constant((UInt16)10);
 
-            UnaryExpression result = Expression.UnaryPlus(ce);
-            Assert.Throws<InvalidOperationException>(() =>
+            try
             {
+                UnaryExpression result = Expression.UnaryPlus(ce);
+
                 //unary Plus Operator
                 byte val = 10;
                 Expression<Func<byte>> e =
-                Expression.Lambda<Func<byte>>(
-                    Expression.UnaryPlus(Expression.Constant(val, typeof(byte))),
-                    Enumerable.Empty<ParameterExpression>());
+             Expression.Lambda<Func<byte>>(
+                 Expression.UnaryPlus(Expression.Constant(val, typeof(byte))),
+                 Enumerable.Empty<ParameterExpression>());
                 Func<byte> f = e.Compile();
-            });
+                Assert.Equal(f(), (val));
 
-            //Userdefined objects
+                //Userdefined objects
+                Complex comp = new Complex(10, 20);
+                Expression<Func<Complex>> e1 =
+             Expression.Lambda<Func<Complex>>(
+                 Expression.UnaryPlus(Expression.Constant(comp, typeof(Complex))),
+                 Enumerable.Empty<ParameterExpression>());
+                Func<Complex> f1 = e1.Compile();
+                Complex comp1 = f1();
+                Assert.True((comp1.x == comp.x + 1 && comp1.y == comp.y + 1));
 
-            Complex comp = new Complex(10, 20);
-            Expression<Func<Complex>> e1 =
-            Expression.Lambda<Func<Complex>>(
-                Expression.UnaryPlus(Expression.Constant(comp, typeof(Complex))),
-                Enumerable.Empty<ParameterExpression>());
-            Func<Complex> f1 = e1.Compile();
-            Complex comp1 = f1();
-            Assert.True((comp1.x == comp.x + 1 && comp1.y == comp.y + 1));
-
-            Expression<Func<Complex, Complex>> testExpr = (x) => +x;
-            Assert.Equal(testExpr.ToString(), "x => +x");
-            var v = testExpr.Compile();
+                Expression<Func<Complex, Complex>> testExpr = (x) => +x;
+                Assert.Equal(testExpr.ToString(), "x => +x");
+                var v = testExpr.Compile();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         private struct S
@@ -2740,12 +2766,16 @@ namespace Tests
         [Fact]
         public static void ConvertNullToInt()
         {
-            Assert.Throws<NullReferenceException>(() =>
+            try
             {
                 Expression<Func<ValueType, int>> e = v => (int)v;
                 Func<ValueType, int> f = e.Compile();
-                f(null);
-            });
+                Console.WriteLine(f(null));
+                Assert.False(true);
+            }
+            catch (NullReferenceException)
+            {
+            }
         }
 
         [Fact]
@@ -2787,12 +2817,17 @@ namespace Tests
         {
             Expression<Func<decimal, int?, decimal?>> e = (d, i) => d + i;
             var f = e.Compile();
-            Assert.Equal(5.0m, f(1.0m, 4));
+            Console.WriteLine(f(1.0m, 4));
         }
 
         [Fact]
         public static void NullGuidConstant()
         {
+            Expression<Func<Guid, bool>> f = g => g != null;
+            var d = f.Compile();
+            Assert.True(d(Guid.NewGuid()));
+            Assert.True(d(default(Guid))); // default(Guid) is not really null
+
             Expression<Func<Guid?, bool>> f2 = g2 => g2 != null;
             var d2 = f2.Compile();
             Assert.True(d2(Guid.NewGuid()));
@@ -2807,7 +2842,8 @@ namespace Tests
                     Expression.Constant(null, typeof(int?)),
                     Expression.Constant(1, typeof(int?))
                     ));
-            Assert.False(f.Compile()().HasValue);
+
+            Console.WriteLine(f.Compile()());
         }
 
         [Fact]
@@ -2852,6 +2888,7 @@ namespace Tests
         {
             Expression<Func<DateTime?, TimeSpan, DateTime?>> f = (x, y) => x + y;
             Assert.Equal(ExpressionType.Add, f.Body.NodeType);
+            Console.WriteLine(f);
             Func<DateTime?, TimeSpan, DateTime?> d = f.Compile();
             DateTime? dt = DateTime.Now;
             TimeSpan ts = new TimeSpan(3, 2, 1);
@@ -2865,6 +2902,7 @@ namespace Tests
         {
             Expression<Func<DateTime?, TimeSpan?, DateTime?>> f = (x, y) => x + y;
             Assert.Equal(ExpressionType.Add, f.Body.NodeType);
+            Console.WriteLine(f);
             Func<DateTime?, TimeSpan?, DateTime?> d = f.Compile();
             DateTime? dt = DateTime.Now;
             TimeSpan? ts = new TimeSpan(3, 2, 1);
@@ -2880,6 +2918,7 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, TimeSpan?>> f = (x, y) => x - y;
             Assert.Equal(ExpressionType.Subtract, f.Body.NodeType);
+            Console.WriteLine(f);
             Func<DateTime?, DateTime?, TimeSpan?> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2895,6 +2934,7 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x == y;
             Assert.Equal(ExpressionType.Equal, f.Body.NodeType);
+            Console.WriteLine(f);
             Func<DateTime?, DateTime?, bool> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2910,6 +2950,7 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x != y;
             Assert.Equal(ExpressionType.NotEqual, f.Body.NodeType);
+            Console.WriteLine(f);
             Func<DateTime?, DateTime?, bool> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2925,6 +2966,7 @@ namespace Tests
         {
             Expression<Func<DateTime?, DateTime?, bool>> f = (x, y) => x < y;
             Assert.Equal(ExpressionType.LessThan, f.Body.NodeType);
+            Console.WriteLine(f);
             Func<DateTime?, DateTime?, bool> d = f.Compile();
             DateTime? dt1 = DateTime.Now;
             DateTime? dt2 = new DateTime(2006, 5, 1);
@@ -2940,6 +2982,7 @@ namespace Tests
         {
             Expression<Func<DateTime, DateTime, bool>> f = (x, y) => x < y;
             Assert.Equal(ExpressionType.LessThan, f.Body.NodeType);
+            Console.WriteLine(f);
             Func<DateTime, DateTime, bool> d = f.Compile();
             DateTime dt1 = DateTime.Now;
             DateTime dt2 = new DateTime(2006, 5, 1);
@@ -2948,13 +2991,33 @@ namespace Tests
         }
 
         [Fact]
-        public static void InvokeLambda()
+        public static void InvokeLambda()      
         {
             Expression<Func<int, int>> f = x => x + 1;
             InvocationExpression ie = Expression.Invoke(f, Expression.Constant(5));
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(ie);
             Func<int> d = lambda.Compile();
             Assert.Equal(6, d());
+        }
+
+        [Fact]
+        public static void CallCompiledLambda()
+        {
+            Expression<Func<int, int>> f = x => x + 1;
+            var compiled = f.Compile();
+            Expression<Func<int>> lambda = () => compiled(5);
+            Func<int> d = lambda.Compile();
+            Assert.Equal(6, d());
+        }
+
+        [Fact]
+        public static void CallCompiledLambdaWithTypeMissing()
+        {
+            Expression<Func<object, bool>> f = x => x == Type.Missing;  
+            var compiled = f.Compile();
+            Expression<Func<object, bool>> lambda = x => compiled(x);
+            Func<object, bool> d = lambda.Compile();
+            Assert.Equal(true, d(Type.Missing));
         }
 
         [Fact]
@@ -3548,7 +3611,7 @@ namespace Tests
         [Fact]
         public static void ShiftULong()
         {
-            Assert.Throws<InvalidOperationException>(() =>
+            try
             {
                 Expression<Func<ulong>> e =
                   Expression.Lambda<Func<ulong>>(
@@ -3557,37 +3620,49 @@ namespace Tests
                         Expression.Constant((ulong)1, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
                 Func<ulong> f = e.Compile();
-                f();
-            });
+                Console.WriteLine(f());
+                Assert.False(true);
+            }
+            catch (InvalidOperationException)
+            {
+            }
         }
 
         [Fact]
         public static void MultiplyMinInt()
         {
-            Func<long> f = Expression.Lambda<Func<long>>(
-              Expression.MultiplyChecked(
-                Expression.Constant((long)-1, typeof(long)),
-                Expression.Constant(long.MinValue, typeof(long))),
-                Enumerable.Empty<ParameterExpression>()
-                ).Compile();
-            Assert.Throws<OverflowException>(() =>
+            try
             {
-                f();
-            });
+                Func<long> f = Expression.Lambda<Func<long>>(
+                  Expression.MultiplyChecked(
+                    Expression.Constant((long)-1, typeof(long)),
+                    Expression.Constant(long.MinValue, typeof(long))),
+                    Enumerable.Empty<ParameterExpression>()
+                    ).Compile();
+                Console.WriteLine(f());
+                Assert.False(true);
+            }
+            catch (OverflowException)
+            {
+            }
         }
 
         [Fact]
         public static void MultiplyMinInt2()
         {
-            Func<long> f = Expression.Lambda<Func<long>>(
-              Expression.MultiplyChecked(
-                Expression.Constant(long.MinValue, typeof(long)),
-                Expression.Constant((long)-1, typeof(long))),
-              Enumerable.Empty<ParameterExpression>()).Compile();
-            Assert.Throws<OverflowException>(() =>
+            try
             {
-                f();
-            });
+                Func<long> f = Expression.Lambda<Func<long>>(
+                  Expression.MultiplyChecked(
+                    Expression.Constant(long.MinValue, typeof(long)),
+                    Expression.Constant((long)-1, typeof(long))),
+                  Enumerable.Empty<ParameterExpression>()).Compile();
+                Console.WriteLine(f());
+                Assert.False(true);
+            }
+            catch (OverflowException)
+            {
+            }
         }
 
         [Fact]
@@ -3630,6 +3705,224 @@ namespace Tests
             catch (OverflowException)
             {
             }
+        }
+
+        [Fact]
+        public static void IntSwitch1()
+        {
+            var p = Expression.Parameter(typeof(int));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant(1)),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant(2)),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant(1)));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<int, string> f = Expression.Lambda<Func<int, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f(1));
+            Assert.Equal("two", f(2));
+            Assert.Equal("default", f(3));
+        }
+
+        [Fact]
+        public static void NullableIntSwitch1()
+        {
+            var p = Expression.Parameter(typeof(int?));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((int?)1, typeof(int?))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((int?)2, typeof(int?))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((int?)1, typeof(int?))));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f(1));
+            Assert.Equal("two", f(2));
+            Assert.Equal("default", f(null));
+            Assert.Equal("default", f(3));
+        }
+
+        [Fact]
+        public static void NullableIntSwitch2()
+        {
+            var p = Expression.Parameter(typeof(int?));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((int?)1, typeof(int?))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((int?)2, typeof(int?))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("null")), Expression.Constant((int?)null, typeof(int?))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((int?)1, typeof(int?))));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<int?, string> f = Expression.Lambda<Func<int?, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f(1));
+            Assert.Equal("two", f(2));
+            Assert.Equal("null", f(null));
+            Assert.Equal("default", f(3));
+        }
+
+        [Fact]
+        public static void IntSwitch2()
+        {
+            var p = Expression.Parameter(typeof(byte));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((byte)1)),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((byte)2)),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((byte)1)));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<byte, string> f = Expression.Lambda<Func<byte, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f(1));
+            Assert.Equal("two", f(2));
+            Assert.Equal("default", f(3));
+        }
+
+        [Fact]
+        public static void IntSwitch3()
+        {
+            var p = Expression.Parameter(typeof(uint));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant((uint)1)),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("two")), Expression.Constant((uint)2)),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant((uint)1)),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("wow")), Expression.Constant(uint.MaxValue)));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<uint, string> f = Expression.Lambda<Func<uint, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f(1));
+            Assert.Equal("wow", f(uint.MaxValue));
+            Assert.Equal("two", f(2));
+            Assert.Equal("default", f(3));
+        }
+
+        [Fact]
+        public static void StringSwitch()
+        {
+            var p = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Constant("default"),
+                Expression.SwitchCase(Expression.Constant("hello"), Expression.Constant("hi")),
+                Expression.SwitchCase(Expression.Constant("lala"), Expression.Constant("bye")));
+
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(s, p).Compile();
+
+            Assert.Equal("hello", f("hi"));
+            Assert.Equal("lala", f("bye"));
+            Assert.Equal("default", f("hi2"));
+            Assert.Equal("default", f(null));
+        }
+
+        [Fact]
+        public static void StringSwitch1()
+        {
+            var p = Expression.Parameter(typeof(string));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant("hi")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("null")), Expression.Constant(null, typeof(string))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant("bye")));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f("hi"));
+            Assert.Equal("lala", f("bye"));
+            Assert.Equal("default", f("hi2"));
+            Assert.Equal("null", f(null));
+        }
+
+        [Fact]
+        public static void StringSwitchNotConstant()
+        {
+            Expression<Func<string>> expr1 = () => new string('a', 5);
+            Expression<Func<string>> expr2 = () => new string('q', 5);
+
+            var p = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Constant("default"),
+                Expression.SwitchCase(Expression.Invoke(expr1), Expression.Invoke(expr2)),
+                Expression.SwitchCase(Expression.Constant("lala"), Expression.Constant("bye")));
+
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(s, p).Compile();
+
+            Assert.Equal("aaaaa", f("qqqqq"));
+            Assert.Equal("lala", f("bye"));
+            Assert.Equal("default", f("hi2"));
+            Assert.Equal("default", f(null));
+        }
+
+        [Fact]  
+        public static void ObjectSwitch1()
+        {
+            var p = Expression.Parameter(typeof(object));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant("hi")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("null")), Expression.Constant(null, typeof(string))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant("bye")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lalala")), Expression.Constant("hi")));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<object, string> f = Expression.Lambda<Func<object, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f("hi"));
+            Assert.Equal("lala", f("bye"));
+            Assert.Equal("default", f("hi2"));
+            Assert.Equal("default", f("HI"));
+            Assert.Equal("null", f(null));
+        }
+
+        public class TestComparers
+        {
+            public static bool CaseInsensitiveStringCompare(string s1, string s2)
+            {
+                return StringComparer.OrdinalIgnoreCase.Equals(s1, s2);
+            }
+        }
+
+        [Fact]
+        public static void SwitchWithComparison()
+        {
+            var p = Expression.Parameter(typeof(string));
+            var p1 = Expression.Parameter(typeof(string));
+            var s = Expression.Switch(p,
+                Expression.Assign(p1, Expression.Constant("default")),
+                typeof(TestComparers).GetMethod("CaseInsensitiveStringCompare"),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("hello")), Expression.Constant("hi")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("null")), Expression.Constant(null, typeof(string))),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lala")), Expression.Constant("bye")),
+                Expression.SwitchCase(Expression.Assign(p1, Expression.Constant("lalala")), Expression.Constant("hi")));
+
+            var block = Expression.Block(new ParameterExpression[] { p1 }, s, p1);
+
+            Func<string, string> f = Expression.Lambda<Func<string, string>>(block, p).Compile();
+
+            Assert.Equal("hello", f("hi"));
+            Assert.Equal("lala", f("bYe"));
+            Assert.Equal("default", f("hi2"));
+            Assert.Equal("hello", f("HI"));
+            Assert.Equal("null", f(null));
         }
 
         [Fact]

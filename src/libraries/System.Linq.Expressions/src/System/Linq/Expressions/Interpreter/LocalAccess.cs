@@ -300,7 +300,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                frame.Data[_index] = new ExplicitBox();
+                frame.Data[_index] = new StrongBox<object>();
                 return 1;
             }
 
@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                frame.Data[_index] = new ExplicitBox();
+                frame.Data[_index] = new StrongBox<object>();
                 return 1;
             }
 
@@ -366,7 +366,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                frame.Data[_index] = new ExplicitBox(frame.Data[_index]);
+                frame.Data[_index] = new StrongBox<object>(frame.Data[_index]);
                 return 1;
             }
         }
@@ -444,7 +444,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                frame.Data[_index] = new ExplicitBox();
+                frame.Data[_index] = new StrongBox<object>();
                 return 1;
             }
 

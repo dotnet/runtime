@@ -56,6 +56,9 @@
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\TypeUtils.cs">
       <Link>Common\System\Dynamic\Utils\TypeUtils.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.Map.cs">
+      <Link>Common\System\Dynamic\Utils\CollectionExtensions.Map.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\DelegateHelpers.cs">
       <Link>Common\System\Linq\Expressions\Compiler\DelegateHelpers.cs</Link>
     </Compile>
@@ -114,9 +117,6 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeOps.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\CollectionExtensions.Map.cs">
-      <Link>Common\System\Dynamic\Utils\CollectionExtensions.Map.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
       <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
     </Compile>
@@ -124,10 +124,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' == 'true' ">
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\DelegateHelpers.cs">
-      <Link>Common\System\Dynamic\Utils\DelegateHelpers.cs</Link>
-    </Compile>
-
     <None Include="projectInterpreting.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

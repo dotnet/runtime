@@ -136,30 +136,37 @@ namespace System.Linq.Expressions.Interpreter
         {
             Type arrayType = info.DeclaringType;
             bool isGetter = info.Name == "Get";
+            MethodInfo alternativeMethod = null;
+
             switch (arrayType.GetArrayRank())
             {
                 case 1:
-                    return Create(isGetter ?
+                    alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter1")
-                    );
+                        typeof(CallInstruction).GetMethod("ArrayItemSetter1");
+                    break;
 
                 case 2:
-                    return Create(isGetter ?
+                    alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter2")
-                    );
+                        typeof(CallInstruction).GetMethod("ArrayItemSetter2");
+                    break;
 
                 case 3:
-                    return Create(isGetter ?
+                    alternativeMethod = isGetter ?
                         arrayType.GetMethod("GetValue", new[] { typeof(int), typeof(int), typeof(int) }) :
-                        typeof(CallInstruction).GetMethod("ArrayItemSetter3")
-                    );
-
-                default:
-                    return new MethodInfoCallInstruction(info, argumentCount);
+                        typeof(CallInstruction).GetMethod("ArrayItemSetter3");
+                    break;
             }
+
+            if ((object)alternativeMethod == null)
+            {
+                return new MethodInfoCallInstruction(info, argumentCount);
+            }
+
+            return Create(alternativeMethod);
         }
+
 
         public static void ArrayItemSetter1(Array array, int index0, object value)
         {
@@ -255,6 +262,46 @@ namespace System.Linq.Expressions.Interpreter
             return "Call()";
         }
         #endregion
+
+        /// <summary>
+        /// If the target of invokation happens to be a delegate
+        /// over enclosed instance lightLambda, return that instance. 
+        /// We can interpret LightLambdas directly.
+        /// </summary>
+        /// <param name="instance"></param>
+        /// <param name="lightLambda"></param>
+        /// <returns></returns>
+        protected static bool TryGetLightLambdaTarget(object instance, out LightLambda lightLambda)
+        {
+            var del = instance as Delegate;
+            if ((object)del != null)
+            {
+                var thunk = del.Target as Func<object[], object>;
+                if ((object)thunk != null)
+                {
+                    lightLambda = thunk.Target as LightLambda;
+                    if (lightLambda != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            lightLambda = null;
+            return false;
+        }
+
+        protected object InterpretLambdaInvoke(LightLambda targetLambda, object[] args)
+        {
+            if (ProducedStack > 0)
+            {
+                return targetLambda.Run(args);
+            }
+            else
+            {
+                return targetLambda.RunVoid(args);
+            }
+        }
     }
 
     internal partial class MethodInfoCallInstruction : CallInstruction
@@ -302,6 +349,13 @@ namespace System.Linq.Expressions.Interpreter
                     throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
                 }
             }
+            
+            LightLambda targetLambda;
+            if (TryGetLightLambdaTarget(instance, out targetLambda))
+            {
+                // no need to Invoke, just interpret the lambda body
+                return InterpretLambdaInvoke(targetLambda, SkipFirstArg(args));
+            }
 
             try
             {
@@ -327,9 +381,16 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
+            LightLambda targetLambda;
+            if (TryGetLightLambdaTarget(args[0], out targetLambda))
+            {
+                // no need to Invoke, just interpret the lambda body
+                return InterpretLambdaInvoke(targetLambda, SkipFirstArg(args));
+            }
+
             try
             {
-                return _target.Invoke(args[0], GetNonStaticArgs(args));
+                return _target.Invoke(args[0], SkipFirstArg(args));
             }
             catch (TargetInvocationException e)
             {
@@ -337,7 +398,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        private static object[] GetNonStaticArgs(object[] args)
+        private static object[] SkipFirstArg(object[] args)
         {
             object[] newArgs = new object[args.Length - 1];
             for (int i = 0; i < newArgs.Length; i++)
@@ -391,7 +452,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             int first = frame.StackIndex - _argumentCount;
             object[] args = null;
-            object instance = null;
+            object instance = null; 
             try
             {
                 object ret;
@@ -418,13 +479,25 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         args[i] = frame.Data[first + i + 1];
                     }
-                    try
+
+                    instance = frame.Data[first];
+
+                    LightLambda targetLambda;
+                    if (TryGetLightLambdaTarget(instance, out targetLambda))
                     {
-                        ret = _target.Invoke(instance = frame.Data[first], args);
+                        // no need to Invoke, just interpret the lambda body
+                        ret = InterpretLambdaInvoke(targetLambda, args);
                     }
-                    catch (TargetInvocationException e)
+                    else
                     {
-                        throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        try
+                        {
+                            ret = _target.Invoke(instance, args);
+                        }
+                        catch (TargetInvocationException e)
+                        {
+                            throw ExceptionHelpers.UpdateForRethrow(e.InnerException);
+                        }
                     }
                 }
 

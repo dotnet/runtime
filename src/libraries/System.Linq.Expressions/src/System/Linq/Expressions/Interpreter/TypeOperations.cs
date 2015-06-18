@@ -2135,6 +2135,25 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
+    internal class CastToEnumInstruction : CastInstruction
+    {
+        private readonly Type _t;
+        public CastToEnumInstruction(Type t)
+        {
+            Debug.Assert(t.GetTypeInfo().IsEnum);
+            _t = t;
+        }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            var from = frame.Pop();
+            var to = from != null ? Enum.ToObject(_t, from) : from;
+            frame.Push(to);
+
+            return +1;
+        }
+    }
+
     internal class NullCheckInstruction : Instruction
     {
         private readonly int _stackOffset;
@@ -2353,7 +2372,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (_variables.TryGetValue(node, out var))
                 {
                     return Expression.Convert(
-                        Expression.Property(
+                        Expression.Field(
                             var.LoadFromArray(
                                 Expression.Constant(_frame.Data),
                                 Expression.Constant(_frame.Closure),

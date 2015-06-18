@@ -165,5 +165,8 @@
         </Type>
       </Namespace>
     </Assembly>
+    <Assembly Name="System.Runtime">
+      <Type Name="System.Runtime.CompilerServices.StrongBox&lt;System.Object&gt;" Dynamic="Required All" />
+    </Assembly>
   </Library>
 </Directives>
