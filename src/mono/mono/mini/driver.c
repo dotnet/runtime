@@ -1347,7 +1347,7 @@ mono_jit_parse_options (int argc, char * argv[])
 	 * mono_main ().
 	 */
 
-	opt = mono_parse_default_optimizations ();
+	opt = mono_parse_default_optimizations (NULL);
 
 	/* FIXME: Avoid code duplication */
 	for (i = 0; i < argc; ++i) {
@@ -1520,7 +1520,7 @@ mono_main (int argc, char* argv[])
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
-	opt = mono_parse_default_optimizations ();
+	opt = mono_parse_default_optimizations (NULL);
 
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
