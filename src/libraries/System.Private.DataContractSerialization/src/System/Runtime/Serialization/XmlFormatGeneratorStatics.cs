@@ -822,7 +822,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if MERGE_DCJS
+#if !NET_NATIVE && MERGE_DCJS
         private static MethodInfo s_getTypeHandleMethod;
         internal static MethodInfo GetTypeHandleMethod
         {

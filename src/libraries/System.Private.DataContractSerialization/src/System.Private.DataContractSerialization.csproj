@@ -71,7 +71,7 @@
     <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" Condition="$(NetNative) Or $(MergeDcjs)" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" Condition="$(NetNative) Or $(MergeDcjs)" />
-    <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" Condition="$(MergeDcjs)" />
+    <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" Condition="!$(NetNative) And $(MergeDcjs)" />
     <Compile Include="$(XmlSources)\ArrayHelper.cs" />
     <Compile Include="$(XmlSources)\IStreamProvider.cs" />
     <Compile Include="$(XmlSources)\IXmlDictionary.cs" />
@@ -139,7 +139,7 @@
     <Compile Include="$(JsonSources)\IXmlJsonWriterInitializer.cs" Condition="$(NetNative) Or $(MergeDcjs)" />
     <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" Condition="$(NetNative) Or $(MergeDcjs)" />
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" Condition="$(NetNative) Or $(MergeDcjs)" />
-    <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="$(MergeDcjs)" />
+    <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative) And $(MergeDcjs)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj">

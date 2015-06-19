@@ -321,7 +321,7 @@ namespace System.Runtime.Serialization.Json
         }
 #endif
 
-#if MERGE_DCJS
+#if !NET_NATIVE && MERGE_DCJS
         public static void ThrowDuplicateMemberException(object obj, XmlDictionaryString[] memberNames, int memberIndex)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(
