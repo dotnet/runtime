@@ -50,15 +50,9 @@ enum {
 };
 
 typedef struct {
-	gint fd;
-	gint events;
-	gboolean is_new;
-} ThreadPoolIOUpdate;
-
-typedef struct {
 	gboolean (*init) (gint wakeup_pipe_fd);
 	void     (*cleanup) (void);
-	void     (*update_add) (ThreadPoolIOUpdate *update);
+	void     (*update_add) (gint fd, gint events, gboolean is_new);
 	gint     (*event_wait) (void);
 	gint     (*event_max) (void);
 	gint     (*event_fd_at) (guint i);
@@ -128,6 +122,10 @@ get_events (MonoMList *list)
 #include "threadpool-ms-io-poll.c"
 
 typedef struct {
+	MonoSocketAsyncResult *sockares;
+} ThreadPoolIOUpdate;
+
+typedef struct {
 	MonoGHashTable *states;
 	mono_mutex_t states_lock;
 
@@ -135,6 +133,7 @@ typedef struct {
 
 	ThreadPoolIOUpdate *updates;
 	guint updates_size;
+	guint updates_capacity;
 	mono_mutex_t updates_lock;
 
 #if !defined(HOST_WIN32)
@@ -215,17 +214,41 @@ selector_thread (gpointer data)
 		guint max;
 		gint ready = 0;
 
-		mono_gc_set_skip_thread (TRUE);
-
+		mono_mutex_lock (&threadpool_io->states_lock);
 		mono_mutex_lock (&threadpool_io->updates_lock);
+
 		for (i = 0; i < threadpool_io->updates_size; ++i) {
-			threadpool_io->backend.update_add (&threadpool_io->updates [i]);
+			ThreadPoolIOUpdate *update;
+			MonoMList *list;
+
+			update = &threadpool_io->updates [i];
+
+			g_assert (update->sockares);
+
+			list = mono_g_hash_table_lookup (threadpool_io->states, update->sockares->handle);
+			list = mono_mlist_append (list, (MonoObject*) update->sockares);
+			mono_g_hash_table_replace (threadpool_io->states, update->sockares->handle, list);
+
+			threadpool_io->backend.update_add (GPOINTER_TO_INT (update->sockares->handle), get_events (list), mono_mlist_next (list) == NULL);
 		}
 		if (threadpool_io->updates_size > 0) {
+			ThreadPoolIOUpdate *updates_old;
+
 			threadpool_io->updates_size = 0;
-			threadpool_io->updates = g_renew (ThreadPoolIOUpdate, threadpool_io->updates, threadpool_io->updates_size);
+			threadpool_io->updates_capacity = 128;
+
+			updates_old = threadpool_io->updates;
+
+			threadpool_io->updates = mono_gc_alloc_fixed (sizeof (ThreadPoolIOUpdate) * threadpool_io->updates_capacity, NULL);
+			g_assert (threadpool_io->updates);
+
+			mono_gc_free_fixed (updates_old);
 		}
+
 		mono_mutex_unlock (&threadpool_io->updates_lock);
+		mono_mutex_unlock (&threadpool_io->states_lock);
+
+		mono_gc_set_skip_thread (TRUE);
 
 		ready = threadpool_io->backend.event_wait ();
 
@@ -237,6 +260,7 @@ selector_thread (gpointer data)
 		max = threadpool_io->backend.event_max ();
 
 		mono_mutex_lock (&threadpool_io->states_lock);
+
 		for (i = 0; i < max && ready > 0; ++i) {
 			MonoMList *list;
 			gboolean valid_fd;
@@ -263,6 +287,7 @@ selector_thread (gpointer data)
 
 			ready -= 1;
 		}
+
 		mono_mutex_unlock (&threadpool_io->states_lock);
 	}
 
@@ -348,6 +373,7 @@ ensure_initialized (void)
 
 	threadpool_io->updates = NULL;
 	threadpool_io->updates_size = 0;
+	threadpool_io->updates_capacity = 0;
 	mono_mutex_init (&threadpool_io->updates_lock);
 
 #if defined(HAVE_EPOLL)
@@ -404,7 +430,8 @@ ensure_cleanedup (void)
 	mono_g_hash_table_destroy (threadpool_io->states);
 	mono_mutex_destroy (&threadpool_io->states_lock);
 
-	g_free (threadpool_io->updates);
+	if (threadpool_io->updates)
+		mono_gc_free_fixed (threadpool_io->updates);
 	mono_mutex_destroy (&threadpool_io->updates_lock);
 
 	threadpool_io->backend.cleanup ();
@@ -477,10 +504,6 @@ MonoAsyncResult *
 mono_threadpool_ms_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *sockares)
 {
 	ThreadPoolIOUpdate *update;
-	MonoMList *list;
-	gboolean is_new;
-	gint events;
-	gint fd;
 
 	g_assert (ares);
 	g_assert (sockares);
@@ -492,29 +515,34 @@ mono_threadpool_ms_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *sockare
 
 	MONO_OBJECT_SETREF (sockares, ares, ares);
 
-	fd = GPOINTER_TO_INT (sockares->handle);
-
-	mono_mutex_lock (&threadpool_io->states_lock);
-	g_assert (threadpool_io->states);
-
-	list = mono_g_hash_table_lookup (threadpool_io->states, GINT_TO_POINTER (fd));
-	is_new = list == NULL;
-	list = mono_mlist_append (list, (MonoObject*) sockares);
-	mono_g_hash_table_replace (threadpool_io->states, sockares->handle, list);
-
-	events = get_events (list);
-
 	mono_mutex_lock (&threadpool_io->updates_lock);
+
 	threadpool_io->updates_size += 1;
-	threadpool_io->updates = g_renew (ThreadPoolIOUpdate, threadpool_io->updates, threadpool_io->updates_size);
+	if (threadpool_io->updates_size > threadpool_io->updates_capacity) {
+		ThreadPoolIOUpdate *updates_new, *updates_old;
+		gint updates_new_capacity, updates_old_capacity;
+
+		updates_old_capacity = threadpool_io->updates_capacity;
+		updates_new_capacity = updates_old_capacity + 128;
+
+		updates_old = threadpool_io->updates;
+		updates_new = mono_gc_alloc_fixed (sizeof (ThreadPoolIOUpdate) * updates_new_capacity, NULL);
+		g_assert (updates_new);
+
+		if (updates_old)
+			memcpy (updates_new, updates_old, sizeof (ThreadPoolIOUpdate) * updates_old_capacity);
+
+		threadpool_io->updates = updates_new;
+		threadpool_io->updates_capacity = updates_new_capacity;
+
+		if (updates_old)
+			mono_gc_free_fixed (updates_old);
+	}
 
 	update = &threadpool_io->updates [threadpool_io->updates_size - 1];
-	update->fd = fd;
-	update->events = events;
-	update->is_new = is_new;
-	mono_mutex_unlock (&threadpool_io->updates_lock);
+	update->sockares = sockares;
 
-	mono_mutex_unlock (&threadpool_io->states_lock);
+	mono_mutex_unlock (&threadpool_io->updates_lock);
 
 	selector_thread_wakeup ();
 
@@ -530,10 +558,13 @@ mono_threadpool_ms_io_remove_socket (int fd)
 		return;
 
 	mono_mutex_lock (&threadpool_io->states_lock);
+
 	g_assert (threadpool_io->states);
+
 	list = mono_g_hash_table_lookup (threadpool_io->states, GINT_TO_POINTER (fd));
 	if (list)
 		mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
+
 	mono_mutex_unlock (&threadpool_io->states_lock);
 
 	while (list) {

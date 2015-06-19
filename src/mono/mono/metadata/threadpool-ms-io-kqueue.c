@@ -46,14 +46,14 @@ kqueue_cleanup (void)
 }
 
 static void
-kqueue_update_add (ThreadPoolIOUpdate *update)
+kqueue_update_add (gint fd, gint events, gboolean is_new)
 {
 	struct kevent event;
 
-	if ((update->events & MONO_POLLIN) != 0)
-		EV_SET (&event, update->fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
-	if ((update->events & MONO_POLLOUT) != 0)
-		EV_SET (&event, update->fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
+	if ((events & MONO_POLLIN) != 0)
+		EV_SET (&event, fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
+	if ((events & MONO_POLLOUT) != 0)
+		EV_SET (&event, fd, EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, 0);
 
 	if (kevent (kqueue_fd, &event, 1, NULL, 0, NULL) == -1)
 		g_warning ("kqueue_update_add: kevent(update) failed, error (%d) %s", errno, g_strerror (errno));

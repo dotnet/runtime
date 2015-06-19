@@ -68,14 +68,14 @@ poll_mark_bad_fds (mono_pollfd *poll_fds, gint poll_fds_size)
 }
 
 static void
-poll_update_add (ThreadPoolIOUpdate *update)
+poll_update_add (gint fd, gint events, gboolean is_new)
 {
 	gboolean found = FALSE;
 	gint j, k;
 
 	for (j = 1; j < poll_fds_size; ++j) {
 		mono_pollfd *poll_fd = poll_fds + j;
-		if (poll_fd->fd == update->fd) {
+		if (poll_fd->fd == fd) {
 			found = TRUE;
 			break;
 		}
@@ -96,7 +96,7 @@ poll_update_add (ThreadPoolIOUpdate *update)
 			POLL_INIT_FD (poll_fds + k, -1, 0);
 	}
 
-	POLL_INIT_FD (poll_fds + j, update->fd, update->events);
+	POLL_INIT_FD (poll_fds + j, fd, events);
 
 	if (j >= poll_fds_size)
 		poll_fds_size = j + 1;

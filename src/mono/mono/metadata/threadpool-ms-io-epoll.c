@@ -55,18 +55,18 @@ epoll_cleanup (void)
 }
 
 static void
-epoll_update_add (ThreadPoolIOUpdate *update)
+epoll_update_add (gint fd, gint events, gboolean is_new)
 {
 	struct epoll_event event;
 
-	event.data.fd = update->fd;
-	if ((update->events & MONO_POLLIN) != 0)
+	event.data.fd = fd;
+	if ((events & MONO_POLLIN) != 0)
 		event.events |= EPOLLIN;
-	if ((update->events & MONO_POLLOUT) != 0)
+	if ((events & MONO_POLLOUT) != 0)
 		event.events |= EPOLLOUT;
 
-	if (epoll_ctl (epoll_fd, update->is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
-		g_warning ("epoll_update_add: epoll_ctl(%s) failed, error (%d) %s", update->is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
+	if (epoll_ctl (epoll_fd, is_new ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, event.data.fd, &event) == -1)
+		g_warning ("epoll_update_add: epoll_ctl(%s) failed, error (%d) %s", is_new ? "EPOLL_CTL_ADD" : "EPOLL_CTL_MOD", errno, g_strerror (errno));
 }
 
 static gint
