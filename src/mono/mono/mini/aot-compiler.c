@@ -9486,7 +9486,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			else
 				acfg->llvm_sfile = g_strdup (acfg->aot_opts.llvm_outfile);
 		} else {
-			acfg->tmpbasename = g_strdup_printf ("%s", "temp");
+			acfg->tmpbasename = (strcmp (acfg->aot_opts.temp_path, "") == 0) ?
+				g_strdup_printf ("%s", "temp") :
+				g_build_filename (acfg->aot_opts.temp_path, "temp", NULL);
+				
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup ("temp-llvm.s");
 			acfg->llvm_ofile = g_strdup ("temp-llvm.o");
