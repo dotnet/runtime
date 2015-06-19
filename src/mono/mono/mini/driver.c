@@ -145,10 +145,8 @@ extern char *nacl_mono_path;
 #define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT | MONO_OPT_FLOAT32)
 
 static guint32
-parse_optimizations (const char* p)
+parse_optimizations (guint32 opt, const char* p)
 {
-	/* the default value */
-	guint32 opt = DEFAULT_OPTIMIZATIONS;
 	guint32 exclude = 0;
 	const char *n;
 	int i, invert, len;
@@ -284,7 +282,7 @@ mono_parse_default_optimizations (const char* p)
 {
 	guint32 opt;
 
-	opt = parse_optimizations (p);
+	opt = parse_optimizations (DEFAULT_OPTIMIZATIONS, p);
 	return opt;
 }
 
@@ -1342,11 +1340,14 @@ mono_jit_parse_options (int argc, char * argv[])
 	int i;
 	char *trace_options = NULL;
 	int mini_verbose = 0;
+	guint32 opt;
 
 	/* 
 	 * Some options have no effect here, since they influence the behavior of 
 	 * mono_main ().
 	 */
+
+	opt = mono_parse_default_optimizations ();
 
 	/* FIXME: Avoid code duplication */
 	for (i = 0; i < argc; ++i) {
@@ -1364,10 +1365,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			opt->soft_breakpoints = TRUE;
 			opt->explicit_null_checks = TRUE;
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
-			guint32 opt = parse_optimizations (argv [i] + 11);
+			opt = parse_optimizations (opt, argv [i] + 11);
 			mono_set_optimizations (opt);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
-			guint32 opt = parse_optimizations (argv [i] + 3);
+			opt = parse_optimizations (opt, argv [i] + 3);
 			mono_set_optimizations (opt);
 		} else if (strcmp (argv [i], "--trace") == 0) {
 			trace_options = (char*)"";
@@ -1519,7 +1520,7 @@ mono_main (int argc, char* argv[])
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
-	opt = parse_optimizations (NULL);
+	opt = mono_parse_default_optimizations ();
 
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
@@ -1529,7 +1530,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--single-method=", 16) == 0) {
 			char *full_opts = g_strdup_printf ("-all,%s", argv [i] + 16);
 			action = DO_SINGLE_METHOD_REGRESSION;
-			mono_single_method_regression_opt = parse_optimizations (full_opts);
+			mono_single_method_regression_opt = parse_optimizations (opt, full_opts);
 			g_free (full_opts);
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose++;
@@ -1579,9 +1580,9 @@ mono_main (int argc, char* argv[])
 			}
 			mini_stats_fd = fopen (argv [++i], "w+");
 		} else if (strncmp (argv [i], "--optimize=", 11) == 0) {
-			opt = parse_optimizations (argv [i] + 11);
+			opt = parse_optimizations (opt, argv [i] + 11);
 		} else if (strncmp (argv [i], "-O=", 3) == 0) {
-			opt = parse_optimizations (argv [i] + 3);
+			opt = parse_optimizations (opt, argv [i] + 3);
 		} else if (strcmp (argv [i], "--gc=sgen") == 0) {
 			switch_gc (argv, "sgen");
 		} else if (strcmp (argv [i], "--gc=boehm") == 0) {
