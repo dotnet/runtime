@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (_helper.JsonFormatReaderDelegate == null)
                         {
-#if MERGE_DCJS
+#if !NET_NATIVE && MERGE_DCJS
                             JsonFormatClassReaderDelegate tempDelegate = new JsonFormatReaderGenerator().GenerateClassReader(TraditionalClassDataContract);
                             Interlocked.MemoryBarrier();
 #else
@@ -57,7 +57,7 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (_helper.JsonFormatWriterDelegate == null)
                         {
-#if MERGE_DCJS
+#if !NET_NATIVE && MERGE_DCJS
                             JsonFormatClassWriterDelegate tempDelegate = new JsonFormatWriterGenerator().GenerateClassWriter(TraditionalClassDataContract);
                             Interlocked.MemoryBarrier();
 #else

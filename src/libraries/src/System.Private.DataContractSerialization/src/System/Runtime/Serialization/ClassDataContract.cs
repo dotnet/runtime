@@ -1449,7 +1449,7 @@ namespace System.Runtime.Serialization
             internal static DataMemberComparer Singleton = new DataMemberComparer();
         }
 
-#if MERGE_DCJS
+#if !NET_NATIVE && MERGE_DCJS
         /// <summary>
         ///  Get object type for Xml/JsonFormmatReaderGenerator
         /// </summary>
