@@ -853,6 +853,8 @@ namespace System.Collections.Immutable.Test
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => s_empty.RemoveRange(0, 0));
             Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => s_emptyDefault.RemoveRange(-1, 0));
+            Assert.Throws<NullReferenceException>(() => s_emptyDefault.RemoveRange(0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => s_oneElement.RemoveRange(1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => s_empty.RemoveRange(-1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => s_oneElement.RemoveRange(0, 2));
@@ -938,6 +940,35 @@ namespace System.Collections.Immutable.Test
             Assert.Equal(new[] { 1, 2, 3 }, listWithDuplicates.RemoveRange(new[] { 2 }));
             Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(new[] { 2, 2 }));
             Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(new[] { 2, 2, 2 }));
+        }
+
+        [Fact]
+        public void RemoveRangeImmutableArrayTest()
+        {
+            var list = ImmutableArray.Create(1, 2, 3);
+
+            ImmutableArray<int> removed2 = list.RemoveRange(ImmutableArray.Create(2));
+            Assert.Equal(2, removed2.Length);
+            Assert.Equal(new[] { 1, 3 }, removed2);
+
+            ImmutableArray<int> removed13 = list.RemoveRange(ImmutableArray.Create(1, 3, 5));
+            Assert.Equal(1, removed13.Length);
+            Assert.Equal(new[] { 2 }, removed13);
+
+            Assert.Equal(new[] { 1, 3, 6, 8, 9 }, ImmutableArray.CreateRange(Enumerable.Range(1, 10)).RemoveRange(ImmutableArray.Create(2, 4, 5, 7, 10)));
+            Assert.Equal(new[] { 3, 6, 8, 9 }, ImmutableArray.CreateRange(Enumerable.Range(1, 10)).RemoveRange(ImmutableArray.Create(1, 2, 4, 5, 7, 10)));
+
+            Assert.Equal(list, list.RemoveRange(ImmutableArray.Create(5)));
+            Assert.Equal(ImmutableArray.Create<int>(), ImmutableArray.Create<int>().RemoveRange(ImmutableArray.Create(1)));
+
+            var listWithDuplicates = ImmutableArray.Create(1, 2, 2, 3);
+            Assert.Equal(new[] { 1, 2, 3 }, listWithDuplicates.RemoveRange(ImmutableArray.Create(2)));
+            Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(ImmutableArray.Create(2, 2)));
+            Assert.Equal(new[] { 1, 3 }, listWithDuplicates.RemoveRange(ImmutableArray.Create(2, 2, 2)));
+
+            Assert.Equal(new[] { 2, 3 }, list.RemoveRange(ImmutableArray.Create(42), EverythingEqual<int>.Default));
+            Assert.Equal(new[] { 3 }, list.RemoveRange(ImmutableArray.Create(42, 42), EverythingEqual<int>.Default));
+            Assert.Equal(new int[0], list.RemoveRange(ImmutableArray.Create(42, 42, 42), EverythingEqual<int>.Default));
         }
 
         [Fact]
