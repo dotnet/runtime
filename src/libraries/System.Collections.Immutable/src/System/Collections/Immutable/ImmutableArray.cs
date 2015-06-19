@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Validation;
@@ -107,11 +108,12 @@ namespace System.Collections.Immutable
             {
                 immutableArray.ThrowInvalidOperationIfNotInitialized();
 
-                var existingImmutableArray = immutableArray.Array as T[];
-                if (existingImmutableArray != null || immutableArray.Array == null)
-                {
-                    return new ImmutableArray<T>(existingImmutableArray);
-                }
+                // immutableArray.Array must not be null at this point, and we know it's an
+                // ImmutableArray<T> or ImmutableArray<SomethingDerivedFromT> as they are
+                // the only types that could be both IEnumerable<T> and IImmutableArray.
+                // As such, we know that items is either an ImmutableArray<T> or
+                // ImmutableArray<TypeDerivedFromT>, and we can cast the array to T[].
+                return new ImmutableArray<T>((T[])immutableArray.Array);
             }
 
             // We don't recognize the source as an array that is safe to use.
@@ -534,14 +536,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct.
         /// </summary>
-        /// <param name="items">The array to use or copy from. May be null for "default" arrays.</param>
+        /// <param name="items">The array from which to copy.</param>
         internal static ImmutableArray<T> CreateDefensiveCopy<T>(T[] items)
         {
-            // Some folks lazily initialize fields containing these structs, so retaining a null vs. empty array status is useful.
-            if (items == null)
-            {
-                return default(ImmutableArray<T>);
-            }
+            Debug.Assert(items != null);
 
             if (items.Length == 0)
             {
@@ -550,7 +548,7 @@ namespace System.Collections.Immutable
 
             // defensive copy
             var tmp = new T[items.Length];
-            Array.Copy(items, tmp, items.Length);
+            Array.Copy(items, 0, tmp, 0, items.Length);
             return new ImmutableArray<T>(tmp);
         }
     }
