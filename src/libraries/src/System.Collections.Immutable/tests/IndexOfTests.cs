@@ -95,6 +95,7 @@ namespace System.Collections.Immutable.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(emptyCollection, 100, -1, 1, new CustomComparer(50)));
             Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, 20, new CustomComparer(1)));
             Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, -1, new CustomComparer(1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndex(collection1256, 2, 5));
 
             Assert.Equal(-1, lastIndexOfItem(emptyCollection, 5));
             Assert.Equal(-1, lastIndexOfItemEQ(emptyCollection, 5, EqualityComparer<int>.Default));
