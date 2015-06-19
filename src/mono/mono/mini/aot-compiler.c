@@ -9270,6 +9270,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	acfg->aot_opts.nrgctx_fetch_trampolines = 128;
 	acfg->aot_opts.ngsharedvt_arg_trampolines = 128;
 	acfg->aot_opts.llvm_path = g_strdup ("");
+	acfg->aot_opts.temp_path = g_strdup ("");
 #ifdef MONOTOUCH
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
