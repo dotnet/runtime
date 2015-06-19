@@ -23,8 +23,14 @@ __referenceassemblyroot=$__monoroot/lib/mono/xbuild-frameworks
 __monoversion=$(mono --version | grep "version 4.[1-9]")
 
 if [ $? -ne 0 ]; then
-    echo "Mono 4.1 or later is required to build corefx. Please see https://github.com/dotnet/corefx/blob/master/Documentation/unix-instructions.md for more details."
-    exit 1
+    # if built from tarball, mono only identifies itself as 4.0.1
+    __monoversion=$(mono --version | egrep "version 4.0.1(.[0-9]+)?")
+    if [ $? -ne 0 ]; then
+        echo "Mono 4.0.1.44 or later is required to build corefx. Please see https://github.com/dotnet/corefx/blob/master/Documentation/unix-instructions.md for more details."
+        exit 1
+    else
+        echo "WARNING: Mono 4.0.1.44 or later is required to build corefx. Unable to asses if current version is supported."
+    fi
 fi
 
 if [ ! -e "$__referenceassemblyroot/.NETPortable" ]; then
