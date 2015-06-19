@@ -1,32 +1,32 @@
 {
   "locked": true,
-  "version": -9997,
+  "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "System.Private.Uri/4.0.0-beta-23008": {
-        "runtime": [
-          "lib/DNXCore50/System.Private.Uri.dll"
-        ]
+      "System.Private.Uri/4.0.0-beta-23011": {
+        "runtime": {
+          "lib/DNXCore50/System.Private.Uri.dll": {}
+        }
       },
-      "System.Runtime/4.0.20-beta-23008": {
+      "System.Runtime/4.0.20-beta-23011": {
         "dependencies": {
-          "System.Private.Uri": "4.0.0-beta-23008"
+          "System.Private.Uri": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Runtime.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Runtime.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Runtime.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Runtime.dll": {}
+        }
       }
     }
   },
   "libraries": {
-    "System.Private.Uri/4.0.0-beta-23008": {
-      "sha512": "q2VlKvy9ufHawdI5abrNKXvUIgFZYnBYMtPqK8gy1kEVhaQ1LWR7WLprwgI11mk7Ef18+P5mj08gCuXbl/rINw==",
+    "System.Private.Uri/4.0.0-beta-23011": {
+      "sha512": "yil581lvQfpXUFfLnfmS7t9+NDvy7NeSHfKYBF7CluatvDQxT6QmwRxi9zKXzCYB7OY6sqvrRFOgdeAxNalVkA==",
       "files": [
-        "System.Private.Uri.4.0.0-beta-23008.nupkg",
-        "System.Private.Uri.4.0.0-beta-23008.nupkg.sha512",
+        "System.Private.Uri.4.0.0-beta-23011.nupkg",
+        "System.Private.Uri.4.0.0-beta-23011.nupkg.sha512",
         "System.Private.Uri.nuspec",
         "lib/DNXCore50/System.Private.Uri.dll",
         "lib/netcore50/System.Private.Uri.dll",
@@ -35,16 +35,16 @@
         "runtimes/win8-aot/lib/netcore50/System.Private.Uri.dll"
       ]
     },
-    "System.Runtime/4.0.20-beta-23008": {
-      "sha512": "YX9/7Q6EHadgTLjH4Sa5zKHGMTMrwiMynAlQxMSQLGYCyJX6Z4/hejrBR7cNxrRddXnzxs5OALdEZqdU80zwxw==",
+    "System.Runtime/4.0.20-beta-23011": {
+      "sha512": "WFRsJnfRzXYIiDJRbTXGctncx6Hw1F/uS2c5a5CzUwHuA3D/CM152F2HjWt12dLgH0BOcGvcRjKl2AfJ6MnHVg==",
       "files": [
-        "System.Runtime.4.0.20-beta-23008.nupkg",
-        "System.Runtime.4.0.20-beta-23008.nupkg.sha512",
+        "System.Runtime.4.0.20-beta-23011.nupkg",
+        "System.Runtime.4.0.20-beta-23011.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/DNXCore50/System.Runtime.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.dll",
-        "ref/any/System.Runtime.dll",
+        "ref/dotnet/System.Runtime.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
       ]

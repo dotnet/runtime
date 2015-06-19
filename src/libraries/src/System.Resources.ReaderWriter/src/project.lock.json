@@ -1,267 +1,269 @@
 {
   "locked": true,
-  "version": -9997,
+  "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "System.Collections/4.0.10-beta-23008": {
+      "System.Collections/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23008"
+          "System.Runtime": "4.0.20-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Collections.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Collections.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Collections.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Collections.dll": {}
+        }
       },
-      "System.Diagnostics.Contracts/4.0.0-beta-23008": {
+      "System.Diagnostics.Contracts/4.0.0-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Diagnostics.Contracts.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Diagnostics.Contracts.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Diagnostics.Contracts.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Diagnostics.Contracts.dll": {}
+        }
       },
-      "System.Diagnostics.Debug/4.0.10-beta-23008": {
+      "System.Diagnostics.Debug/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Diagnostics.Debug.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Diagnostics.Debug.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Diagnostics.Debug.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Diagnostics.Debug.dll": {}
+        }
       },
-      "System.Diagnostics.Tools/4.0.0-beta-23008": {
+      "System.Diagnostics.Tools/4.0.0-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Diagnostics.Tools.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Diagnostics.Tools.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Diagnostics.Tools.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Diagnostics.Tools.dll": {}
+        }
       },
-      "System.Globalization/4.0.10-beta-23008": {
+      "System.Globalization/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Globalization.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Globalization.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Globalization.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Globalization.dll": {}
+        }
       },
-      "System.IO/4.0.10-beta-23008": {
+      "System.IO/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23008",
-          "System.Text.Encoding": "4.0.0-beta-23008",
-          "System.Threading.Tasks": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.20-beta-23011",
+          "System.Text.Encoding": "4.0.0-beta-23011",
+          "System.Threading.Tasks": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.IO.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.IO.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.IO.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.IO.dll": {}
+        }
       },
-      "System.Private.Uri/4.0.0-beta-23008": {
-        "runtime": [
-          "lib/DNXCore50/System.Private.Uri.dll"
-        ]
+      "System.Private.Uri/4.0.0-beta-23011": {
+        "runtime": {
+          "lib/DNXCore50/System.Private.Uri.dll": {}
+        }
       },
-      "System.Reflection/4.0.10-beta-23008": {
+      "System.Reflection/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23008",
-          "System.IO": "4.0.0-beta-23008",
-          "System.Reflection.Primitives": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.20-beta-23011",
+          "System.IO": "4.0.0-beta-23011",
+          "System.Reflection.Primitives": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Reflection.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Reflection.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Reflection.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Reflection.dll": {}
+        }
       },
-      "System.Reflection.Primitives/4.0.0-beta-23008": {
+      "System.Reflection.Primitives/4.0.0-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Reflection.Primitives.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Reflection.Primitives.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Reflection.Primitives.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Reflection.Primitives.dll": {}
+        }
       },
-      "System.Resources.ResourceManager/4.0.0-beta-23008": {
+      "System.Resources.ResourceManager/4.0.0-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008",
-          "System.Reflection": "4.0.0-beta-23008",
-          "System.Globalization": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011",
+          "System.Reflection": "4.0.0-beta-23011",
+          "System.Globalization": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Resources.ResourceManager.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Resources.ResourceManager.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Resources.ResourceManager.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Resources.ResourceManager.dll": {}
+        }
       },
-      "System.Runtime/4.0.20-beta-23008": {
+      "System.Runtime/4.0.20-beta-23011": {
         "dependencies": {
-          "System.Private.Uri": "4.0.0-beta-23008"
+          "System.Private.Uri": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Runtime.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Runtime.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Runtime.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Runtime.dll": {}
+        }
       },
-      "System.Runtime.Extensions/4.0.10-beta-23008": {
+      "System.Runtime.Extensions/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23008"
+          "System.Runtime": "4.0.20-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Runtime.Extensions.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Runtime.Extensions.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Runtime.Extensions.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Runtime.Extensions.dll": {}
+        }
       },
-      "System.Text.Encoding/4.0.10-beta-23008": {
+      "System.Text.Encoding/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Text.Encoding.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Text.Encoding.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Text.Encoding.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Text.Encoding.dll": {}
+        }
       },
-      "System.Threading/4.0.10-beta-23008": {
+      "System.Threading/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008",
-          "System.Threading.Tasks": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011",
+          "System.Threading.Tasks": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Threading.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Threading.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Threading.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Threading.dll": {}
+        }
       },
-      "System.Threading.Tasks/4.0.0-beta-23008": {
+      "System.Threading.Tasks/4.0.0-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.0-beta-23008"
+          "System.Runtime": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Threading.Tasks.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Threading.Tasks.dll": {}
+        }
       }
     }
   },
   "libraries": {
-    "System.Collections/4.0.10-beta-23008": {
-      "sha512": "sKunA43A1Z5H+P20kMoaMybo/q+pcGRSxbZAnhQ8APUgMUkHEJr+4DLFQ75sx7sP+WIqE+UX/dcffqo63SmMCw==",
+    "System.Collections/4.0.10-beta-23011": {
+      "sha512": "BE8JCafr5xuUed047XDtgZ5ESLVcZxbxsjP9YIbUZd3+el2YzhloI1exhS6f316CXezvza1Rark+ZiozkDC0xA==",
       "files": [
-        "System.Collections.4.0.10-beta-23008.nupkg",
-        "System.Collections.4.0.10-beta-23008.nupkg.sha512",
+        "System.Collections.4.0.10-beta-23011.nupkg",
+        "System.Collections.4.0.10-beta-23011.nupkg.sha512",
         "System.Collections.nuspec",
         "lib/DNXCore50/System.Collections.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Collections.dll",
-        "ref/any/System.Collections.dll",
+        "ref/dotnet/System.Collections.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Collections.dll"
       ]
     },
-    "System.Diagnostics.Contracts/4.0.0-beta-23008": {
-      "sha512": "hY7hap2tevYvQ2Fy3gHRD0+nriX6ny9U6DqTZ7nV28mG0zmTuO+TvnzRxVJm04uYcSIoEQKRSkCTB5ccAVgKJA==",
+    "System.Diagnostics.Contracts/4.0.0-beta-23011": {
+      "sha512": "TcK8I92MV7TJpoQ8DUVHQYm42VRlJX4DFcoTNe4TY4WwLNA/HQ5x66OlBrOwSJHd4igmDWLDbanCq3ddlDfrVQ==",
       "files": [
-        "System.Diagnostics.Contracts.4.0.0-beta-23008.nupkg",
-        "System.Diagnostics.Contracts.4.0.0-beta-23008.nupkg.sha512",
+        "System.Diagnostics.Contracts.4.0.0-beta-23011.nupkg",
+        "System.Diagnostics.Contracts.4.0.0-beta-23011.nupkg.sha512",
         "System.Diagnostics.Contracts.nuspec",
         "lib/DNXCore50/System.Diagnostics.Contracts.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Diagnostics.Contracts.dll",
         "lib/win8/_._",
-        "ref/any/System.Diagnostics.Contracts.dll",
+        "ref/dotnet/System.Diagnostics.Contracts.dll",
         "ref/net45/_._",
+        "ref/netcore50/System.Diagnostics.Contracts.dll",
         "ref/win8/_._",
         "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Contracts.dll"
       ]
     },
-    "System.Diagnostics.Debug/4.0.10-beta-23008": {
-      "sha512": "nJDxh4LmuRPM/GKdWMX6kqpR2GHTWoIy1U8rOKMsBd7z+SjPyZn9F5IQjjRpi/ClOc88kNAtVgvWn4iCYU26Nw==",
+    "System.Diagnostics.Debug/4.0.10-beta-23011": {
+      "sha512": "sB3xq/+AlGnbVGDR54yiGNyLKO69as2mOvroQYtyFHa/+NHUE3Ih3mnsr/HSh8Z/GeZE8tjMA1cQtlwERb2pOg==",
       "files": [
-        "System.Diagnostics.Debug.4.0.10-beta-23008.nupkg",
-        "System.Diagnostics.Debug.4.0.10-beta-23008.nupkg.sha512",
+        "System.Diagnostics.Debug.4.0.10-beta-23011.nupkg",
+        "System.Diagnostics.Debug.4.0.10-beta-23011.nupkg.sha512",
         "System.Diagnostics.Debug.nuspec",
         "lib/DNXCore50/System.Diagnostics.Debug.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Diagnostics.Debug.dll",
-        "ref/any/System.Diagnostics.Debug.dll",
+        "ref/dotnet/System.Diagnostics.Debug.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Debug.dll"
       ]
     },
-    "System.Diagnostics.Tools/4.0.0-beta-23008": {
-      "sha512": "UTnQGZ5sFnZPYnhh8sewrlG8QACgNBfLUBJwhahFnuPaOAXKtqvov8XlBGzEwNFGRtBkIm7FfTgoIbY7V4KQlQ==",
+    "System.Diagnostics.Tools/4.0.0-beta-23011": {
+      "sha512": "L6J5l4Zw2qH0x3OBc1CtfRCviTXGAehckuKFB4vk9TWjuMC+oUh8g3uB+D1Jbpk18KHDn75I96QdvkMgNq0yYw==",
       "files": [
-        "System.Diagnostics.Tools.4.0.0-beta-23008.nupkg",
-        "System.Diagnostics.Tools.4.0.0-beta-23008.nupkg.sha512",
+        "System.Diagnostics.Tools.4.0.0-beta-23011.nupkg",
+        "System.Diagnostics.Tools.4.0.0-beta-23011.nupkg.sha512",
         "System.Diagnostics.Tools.nuspec",
         "lib/DNXCore50/System.Diagnostics.Tools.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Diagnostics.Tools.dll",
         "lib/win8/_._",
-        "ref/any/System.Diagnostics.Tools.dll",
+        "ref/dotnet/System.Diagnostics.Tools.dll",
         "ref/net45/_._",
+        "ref/netcore50/System.Diagnostics.Tools.dll",
         "ref/win8/_._",
         "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Tools.dll"
       ]
     },
-    "System.Globalization/4.0.10-beta-23008": {
-      "sha512": "JBUTXW1KzjXantOJhPZQUTyoQ+AVtIVDW8nqyv0YfPjDnSAds51uvIW+tYiDM6yXFhjeXjNT/RcKBR6OtUmbTg==",
+    "System.Globalization/4.0.10-beta-23011": {
+      "sha512": "1Q9Q79GyLTuVKZIaWSQTa9EDckcJsDer70g8xMG3Gri00zWwStUMa2Yb7JyHkbOPR8+8bRyQrNZg20MTPPgluA==",
       "files": [
-        "System.Globalization.4.0.10-beta-23008.nupkg",
-        "System.Globalization.4.0.10-beta-23008.nupkg.sha512",
+        "System.Globalization.4.0.10-beta-23011.nupkg",
+        "System.Globalization.4.0.10-beta-23011.nupkg.sha512",
         "System.Globalization.nuspec",
         "lib/DNXCore50/System.Globalization.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Globalization.dll",
-        "ref/any/System.Globalization.dll",
+        "ref/dotnet/System.Globalization.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Globalization.dll"
       ]
     },
-    "System.IO/4.0.10-beta-23008": {
-      "sha512": "NrvoHRUhZUAILWNGPFayAlezxqo4R2qX7RZ/wwJ2PjSY/4svgDuaB4VJRTnuOPx1wRQasPLXI5sEl+dXPvfTnQ==",
+    "System.IO/4.0.10-beta-23011": {
+      "sha512": "NYoIpyR5hJvnv/jnY817GLBaH+DLJEsSOEGw8/NL/y4taFzuWVR2ROQtpWXD/2GLrXiTZ6Kdn7f1czs4DOqH1A==",
       "files": [
-        "System.IO.4.0.10-beta-23008.nupkg",
-        "System.IO.4.0.10-beta-23008.nupkg.sha512",
+        "System.IO.4.0.10-beta-23011.nupkg",
+        "System.IO.4.0.10-beta-23011.nupkg.sha512",
         "System.IO.nuspec",
         "lib/DNXCore50/System.IO.dll",
         "lib/net46/_._",
         "lib/netcore50/System.IO.dll",
-        "ref/any/System.IO.dll",
+        "ref/dotnet/System.IO.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.IO.dll"
       ]
     },
-    "System.Private.Uri/4.0.0-beta-23008": {
-      "sha512": "q2VlKvy9ufHawdI5abrNKXvUIgFZYnBYMtPqK8gy1kEVhaQ1LWR7WLprwgI11mk7Ef18+P5mj08gCuXbl/rINw==",
+    "System.Private.Uri/4.0.0-beta-23011": {
+      "sha512": "yil581lvQfpXUFfLnfmS7t9+NDvy7NeSHfKYBF7CluatvDQxT6QmwRxi9zKXzCYB7OY6sqvrRFOgdeAxNalVkA==",
       "files": [
-        "System.Private.Uri.4.0.0-beta-23008.nupkg",
-        "System.Private.Uri.4.0.0-beta-23008.nupkg.sha512",
+        "System.Private.Uri.4.0.0-beta-23011.nupkg",
+        "System.Private.Uri.4.0.0-beta-23011.nupkg.sha512",
         "System.Private.Uri.nuspec",
         "lib/DNXCore50/System.Private.Uri.dll",
         "lib/netcore50/System.Private.Uri.dll",
@@ -270,119 +272,122 @@
         "runtimes/win8-aot/lib/netcore50/System.Private.Uri.dll"
       ]
     },
-    "System.Reflection/4.0.10-beta-23008": {
-      "sha512": "1189taPg0slhVhsstTmIlvzAdCQfLLr5Wd187fZHO3NPNMxrO7VLkI+t8G33HBCVtRfFzkNbpk3sTHtqA3yqAw==",
+    "System.Reflection/4.0.10-beta-23011": {
+      "sha512": "Xx5JN02rEd5fartdsX49YwpuYNUtx01tVJiZGVco58IKWjO1MA67YM6zQgzDMzltNMrE3kra6sFa/B27kTBCBw==",
       "files": [
-        "System.Reflection.4.0.10-beta-23008.nupkg",
-        "System.Reflection.4.0.10-beta-23008.nupkg.sha512",
+        "System.Reflection.4.0.10-beta-23011.nupkg",
+        "System.Reflection.4.0.10-beta-23011.nupkg.sha512",
         "System.Reflection.nuspec",
         "lib/DNXCore50/System.Reflection.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Reflection.dll",
-        "ref/any/System.Reflection.dll",
+        "ref/dotnet/System.Reflection.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.dll"
       ]
     },
-    "System.Reflection.Primitives/4.0.0-beta-23008": {
-      "sha512": "eI0lHFHEQZcLM3iHj0nj6GbbY9wSrC70usIZ7qryR8xSExmJANVy34+Z8dquXx3wscYFAhyhFBCBOAle1a2HXw==",
+    "System.Reflection.Primitives/4.0.0-beta-23011": {
+      "sha512": "RVUHArAFLmbs6YBmFTrX+3A0/JHR6EaWmGmxWXqzSMuOe8LiNQqwyPPi30UFzCW/SWZyzGzYA6EJovu9w34JZA==",
       "files": [
-        "System.Reflection.Primitives.4.0.0-beta-23008.nupkg",
-        "System.Reflection.Primitives.4.0.0-beta-23008.nupkg.sha512",
+        "System.Reflection.Primitives.4.0.0-beta-23011.nupkg",
+        "System.Reflection.Primitives.4.0.0-beta-23011.nupkg.sha512",
         "System.Reflection.Primitives.nuspec",
         "lib/DNXCore50/System.Reflection.Primitives.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Primitives.dll",
         "lib/win8/_._",
-        "ref/any/System.Reflection.Primitives.dll",
+        "ref/dotnet/System.Reflection.Primitives.dll",
         "ref/net45/_._",
+        "ref/netcore50/System.Reflection.Primitives.dll",
         "ref/win8/_._",
         "runtimes/win8-aot/lib/netcore50/System.Reflection.Primitives.dll"
       ]
     },
-    "System.Resources.ResourceManager/4.0.0-beta-23008": {
-      "sha512": "6lqlZBtUl2Fo2rZjWO4lKO6n59RKrfwCwB2i1kLEiYthOVQ3/neeGkpErpOBkabXq6lk5SMgJpp3jC/AfPsmAA==",
+    "System.Resources.ResourceManager/4.0.0-beta-23011": {
+      "sha512": "TgjsEiLAIQPJRw8yOe8oMgV9fSYkzt5wffauiRMDkKc/DqUB2RS1HVtlQQvb5XctpI8gxpxlna6EkEdiWthB4w==",
       "files": [
-        "System.Resources.ResourceManager.4.0.0-beta-23008.nupkg",
-        "System.Resources.ResourceManager.4.0.0-beta-23008.nupkg.sha512",
+        "System.Resources.ResourceManager.4.0.0-beta-23011.nupkg",
+        "System.Resources.ResourceManager.4.0.0-beta-23011.nupkg.sha512",
         "System.Resources.ResourceManager.nuspec",
         "lib/DNXCore50/System.Resources.ResourceManager.dll",
         "lib/net45/_._",
         "lib/netcore50/System.Resources.ResourceManager.dll",
         "lib/win8/_._",
-        "ref/any/System.Resources.ResourceManager.dll",
+        "ref/dotnet/System.Resources.ResourceManager.dll",
         "ref/net45/_._",
+        "ref/netcore50/System.Resources.ResourceManager.dll",
         "ref/win8/_._",
         "runtimes/win8-aot/lib/netcore50/System.Resources.ResourceManager.dll"
       ]
     },
-    "System.Runtime/4.0.20-beta-23008": {
-      "sha512": "YX9/7Q6EHadgTLjH4Sa5zKHGMTMrwiMynAlQxMSQLGYCyJX6Z4/hejrBR7cNxrRddXnzxs5OALdEZqdU80zwxw==",
+    "System.Runtime/4.0.20-beta-23011": {
+      "sha512": "WFRsJnfRzXYIiDJRbTXGctncx6Hw1F/uS2c5a5CzUwHuA3D/CM152F2HjWt12dLgH0BOcGvcRjKl2AfJ6MnHVg==",
       "files": [
-        "System.Runtime.4.0.20-beta-23008.nupkg",
-        "System.Runtime.4.0.20-beta-23008.nupkg.sha512",
+        "System.Runtime.4.0.20-beta-23011.nupkg",
+        "System.Runtime.4.0.20-beta-23011.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/DNXCore50/System.Runtime.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.dll",
-        "ref/any/System.Runtime.dll",
+        "ref/dotnet/System.Runtime.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
       ]
     },
-    "System.Runtime.Extensions/4.0.10-beta-23008": {
-      "sha512": "488ce5N/0JQ2EbMzolr3CiIwqY64HEtxh3bIRDZ87p1eY2hQ79pROseFjQQ5n9q7aG+xs1D5CWVzuXcps976tA==",
+    "System.Runtime.Extensions/4.0.10-beta-23011": {
+      "sha512": "Ctasd6O2G00QpY3QcZN1feOZqqbN8B5rmz7P2B5E7VQWS1Dd6+CI6JAwzLHItFnIQQotOb0cy/tJdVwhqa8Uyg==",
       "files": [
-        "System.Runtime.Extensions.4.0.10-beta-23008.nupkg",
-        "System.Runtime.Extensions.4.0.10-beta-23008.nupkg.sha512",
+        "System.Runtime.Extensions.4.0.10-beta-23011.nupkg",
+        "System.Runtime.Extensions.4.0.10-beta-23011.nupkg.sha512",
         "System.Runtime.Extensions.nuspec",
         "lib/DNXCore50/System.Runtime.Extensions.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.Extensions.dll",
-        "ref/any/System.Runtime.Extensions.dll",
+        "ref/dotnet/System.Runtime.Extensions.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.Extensions.dll"
       ]
     },
-    "System.Text.Encoding/4.0.10-beta-23008": {
-      "sha512": "dDcnfqdj6stUj1o1mNZIxEDTI0er7TVER+CVcng+6rEejErS5HQjIEsuEepQSiAF3VDiZu8ZI89RAUuQbCSjEw==",
+    "System.Text.Encoding/4.0.10-beta-23011": {
+      "sha512": "WpZkSv0yV1Fp3hVvHNlvEQ+tdM9vHvbhqJ6dTxcAR7fSfRftH0IdhtSc4rDWHNegfoKiX+nra4S8aNPxe3u1AQ==",
       "files": [
-        "System.Text.Encoding.4.0.10-beta-23008.nupkg",
-        "System.Text.Encoding.4.0.10-beta-23008.nupkg.sha512",
+        "System.Text.Encoding.4.0.10-beta-23011.nupkg",
+        "System.Text.Encoding.4.0.10-beta-23011.nupkg.sha512",
         "System.Text.Encoding.nuspec",
         "lib/DNXCore50/System.Text.Encoding.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Text.Encoding.dll",
-        "ref/any/System.Text.Encoding.dll",
+        "ref/dotnet/System.Text.Encoding.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Text.Encoding.dll"
       ]
     },
-    "System.Threading/4.0.10-beta-23008": {
-      "sha512": "RzNbZAUcR5Kkl/vj+7tqdHzmYFR+y7a2vW6rZPWOPnQaRsyxPVZxlyOgDseHTcRC3rAK8CmmmFwgo9LzjZlZUg==",
+    "System.Threading/4.0.10-beta-23011": {
+      "sha512": "GKnfNDnhzNwUTSgU2RQpG1kMYJ/DkkVv4g6a2qJQjTAXKYCihadLbr1qnASyuN65wxxVop362Fx1T1dVhbOGMQ==",
       "files": [
-        "System.Threading.4.0.10-beta-23008.nupkg",
-        "System.Threading.4.0.10-beta-23008.nupkg.sha512",
+        "System.Threading.4.0.10-beta-23011.nupkg",
+        "System.Threading.4.0.10-beta-23011.nupkg.sha512",
         "System.Threading.nuspec",
         "lib/DNXCore50/System.Threading.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Threading.dll",
-        "ref/any/System.Threading.dll",
+        "ref/dotnet/System.Threading.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Threading.dll"
       ]
     },
-    "System.Threading.Tasks/4.0.0-beta-23008": {
-      "sha512": "+LJfLvom7OFURljS/+JpVE046SLbWAwYTOcECaCFMlNccJ5MuZ9IALaUpIIy30b2EfsqVlPHUDkG1FJfFsmBvQ==",
+    "System.Threading.Tasks/4.0.0-beta-23011": {
+      "sha512": "32tZzgoOQuw1JA2B8TDSo1FRrKVuZ5ywWnc+x7OVqCav62avxeAIxd/ZkzpoNniNTDUYwgPyMjtyc+KsvUQtog==",
       "files": [
         "License.rtf",
-        "System.Threading.Tasks.4.0.0-beta-23008.nupkg",
-        "System.Threading.Tasks.4.0.0-beta-23008.nupkg.sha512",
+        "System.Threading.Tasks.4.0.0-beta-23011.nupkg",
+        "System.Threading.Tasks.4.0.0-beta-23011.nupkg.sha512",
         "System.Threading.Tasks.nuspec",
         "lib/net45/_._",
         "lib/win8/_._",
-        "ref/any/System.Threading.Tasks.dll",
+        "ref/dotnet/System.Threading.Tasks.dll",
         "ref/net45/_._",
+        "ref/netcore50/System.Threading.Tasks.dll",
         "ref/win8/_._"
       ]
     }
