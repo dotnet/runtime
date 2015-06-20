@@ -2404,7 +2404,7 @@ char*             mono_get_rgctx_fetch_trampoline_name (int slot);
 gpointer          mini_get_nullified_class_init_trampoline (void);
 gpointer          mini_get_single_step_trampoline (void);
 gpointer          mini_get_breakpoint_trampoline (void);
-gpointer          mini_add_method_trampoline (MonoMethod *orig_method, MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp, gboolean add_unbox_tramp);
+gpointer          mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp, gboolean add_unbox_tramp);
 gboolean          mini_jit_info_is_gsharedvt (MonoJitInfo *ji);
 
 gboolean          mono_running_on_valgrind (void);

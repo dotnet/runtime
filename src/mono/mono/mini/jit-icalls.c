@@ -1022,7 +1022,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 
 	addr = mono_compile_method (vmethod);
 
-	addr = mini_add_method_trampoline (NULL, vmethod, addr, mono_method_needs_static_rgctx_invoke (vmethod, FALSE), FALSE);
+	addr = mini_add_method_trampoline (vmethod, addr, mono_method_needs_static_rgctx_invoke (vmethod, FALSE), FALSE);
 
 	/* Since this is a virtual call, have to unbox vtypes */
 	if (obj->vtable->klass->valuetype)
