@@ -102,10 +102,15 @@ namespace CorUnix
         );
 
     PAL_ERROR
-    CreateInitialProcessAndThreadObjects(
+    InitializeProcessCommandLine(
         CPalThread *pThread,
         LPWSTR lpwstrCmdLine,
         LPWSTR lpwstrFullPath
+        );
+
+    PAL_ERROR
+    CreateInitialProcessAndThreadObjects(
+        CPalThread *pThread
         );
 
     extern IPalObject *g_pobjProcess;

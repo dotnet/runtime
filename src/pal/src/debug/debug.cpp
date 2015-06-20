@@ -37,6 +37,7 @@ Revision History:
 #include "pal/debug.h"
 #include "pal/misc.h"
 #include "pal/malloc.hpp"
+#include "pal/module.h"
 #include "pal/virtual.h"
 
 #include <signal.h>
@@ -339,13 +340,11 @@ DebugBreakCommand()
     if (command_string) {
         char pid_buf[sizeof ("PAL_EXE_PID=") + 32];
         char exe_buf[sizeof ("PAL_EXE_NAME=") + MAX_PATH + 1];
-        extern char g_ExePath[MAX_PATH];
-        if (snprintf (pid_buf, sizeof (pid_buf),
-                      "PAL_EXE_PID=%d", getpid()) <= 0) {
+
+        if (snprintf (pid_buf, sizeof (pid_buf), "PAL_EXE_PID=%d", getpid()) <= 0) {
             goto FAILED;
         }
-        if (snprintf (exe_buf, sizeof (exe_buf),
-                      "PAL_EXE_NAME=%s", g_ExePath) <= 0) {
+        if (snprintf (exe_buf, sizeof (exe_buf), "PAL_EXE_NAME=%ls", (wchar_t *)exe_module.lib_name) <= 0) {
             goto FAILED;
         }
 
