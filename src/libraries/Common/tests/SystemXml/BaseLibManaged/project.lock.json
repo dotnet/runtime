@@ -1,43 +1,43 @@
 {
   "locked": true,
-  "version": -9997,
+  "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "System.Private.Uri/4.0.0-beta-23008": {
-        "runtime": [
-          "lib/DNXCore50/System.Private.Uri.dll"
-        ]
+      "System.Private.Uri/4.0.0-beta-23011": {
+        "runtime": {
+          "lib/DNXCore50/System.Private.Uri.dll": {}
+        }
       },
-      "System.Runtime/4.0.20-beta-23008": {
+      "System.Runtime/4.0.20-beta-23011": {
         "dependencies": {
-          "System.Private.Uri": "4.0.0-beta-23008"
+          "System.Private.Uri": "4.0.0-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Runtime.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Runtime.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Runtime.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Runtime.dll": {}
+        }
       },
-      "System.Runtime.Extensions/4.0.10-beta-23008": {
+      "System.Runtime.Extensions/4.0.10-beta-23011": {
         "dependencies": {
-          "System.Runtime": "4.0.20-beta-23008"
+          "System.Runtime": "4.0.20-beta-23011"
         },
-        "compile": [
-          "ref/any/System.Runtime.Extensions.dll"
-        ],
-        "runtime": [
-          "lib/DNXCore50/System.Runtime.Extensions.dll"
-        ]
+        "compile": {
+          "ref/dotnet/System.Runtime.Extensions.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Runtime.Extensions.dll": {}
+        }
       }
     }
   },
   "libraries": {
-    "System.Private.Uri/4.0.0-beta-23008": {
-      "sha512": "q2VlKvy9ufHawdI5abrNKXvUIgFZYnBYMtPqK8gy1kEVhaQ1LWR7WLprwgI11mk7Ef18+P5mj08gCuXbl/rINw==",
+    "System.Private.Uri/4.0.0-beta-23011": {
+      "sha512": "yil581lvQfpXUFfLnfmS7t9+NDvy7NeSHfKYBF7CluatvDQxT6QmwRxi9zKXzCYB7OY6sqvrRFOgdeAxNalVkA==",
       "files": [
-        "System.Private.Uri.4.0.0-beta-23008.nupkg",
-        "System.Private.Uri.4.0.0-beta-23008.nupkg.sha512",
+        "System.Private.Uri.4.0.0-beta-23011.nupkg",
+        "System.Private.Uri.4.0.0-beta-23011.nupkg.sha512",
         "System.Private.Uri.nuspec",
         "lib/DNXCore50/System.Private.Uri.dll",
         "lib/netcore50/System.Private.Uri.dll",
@@ -46,30 +46,30 @@
         "runtimes/win8-aot/lib/netcore50/System.Private.Uri.dll"
       ]
     },
-    "System.Runtime/4.0.20-beta-23008": {
-      "sha512": "YX9/7Q6EHadgTLjH4Sa5zKHGMTMrwiMynAlQxMSQLGYCyJX6Z4/hejrBR7cNxrRddXnzxs5OALdEZqdU80zwxw==",
+    "System.Runtime/4.0.20-beta-23011": {
+      "sha512": "WFRsJnfRzXYIiDJRbTXGctncx6Hw1F/uS2c5a5CzUwHuA3D/CM152F2HjWt12dLgH0BOcGvcRjKl2AfJ6MnHVg==",
       "files": [
-        "System.Runtime.4.0.20-beta-23008.nupkg",
-        "System.Runtime.4.0.20-beta-23008.nupkg.sha512",
+        "System.Runtime.4.0.20-beta-23011.nupkg",
+        "System.Runtime.4.0.20-beta-23011.nupkg.sha512",
         "System.Runtime.nuspec",
         "lib/DNXCore50/System.Runtime.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.dll",
-        "ref/any/System.Runtime.dll",
+        "ref/dotnet/System.Runtime.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.dll"
       ]
     },
-    "System.Runtime.Extensions/4.0.10-beta-23008": {
-      "sha512": "488ce5N/0JQ2EbMzolr3CiIwqY64HEtxh3bIRDZ87p1eY2hQ79pROseFjQQ5n9q7aG+xs1D5CWVzuXcps976tA==",
+    "System.Runtime.Extensions/4.0.10-beta-23011": {
+      "sha512": "Ctasd6O2G00QpY3QcZN1feOZqqbN8B5rmz7P2B5E7VQWS1Dd6+CI6JAwzLHItFnIQQotOb0cy/tJdVwhqa8Uyg==",
       "files": [
-        "System.Runtime.Extensions.4.0.10-beta-23008.nupkg",
-        "System.Runtime.Extensions.4.0.10-beta-23008.nupkg.sha512",
+        "System.Runtime.Extensions.4.0.10-beta-23011.nupkg",
+        "System.Runtime.Extensions.4.0.10-beta-23011.nupkg.sha512",
         "System.Runtime.Extensions.nuspec",
         "lib/DNXCore50/System.Runtime.Extensions.dll",
         "lib/net46/_._",
         "lib/netcore50/System.Runtime.Extensions.dll",
-        "ref/any/System.Runtime.Extensions.dll",
+        "ref/dotnet/System.Runtime.Extensions.dll",
         "ref/net46/_._",
         "runtimes/win8-aot/lib/netcore50/System.Runtime.Extensions.dll"
       ]
