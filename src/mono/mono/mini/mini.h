@@ -2406,6 +2406,8 @@ gpointer          mini_get_single_step_trampoline (void);
 gpointer          mini_get_breakpoint_trampoline (void);
 gpointer          mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean add_static_rgctx_tramp, gboolean add_unbox_tramp);
 gboolean          mini_jit_info_is_gsharedvt (MonoJitInfo *ji);
+gpointer*         mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_method, MonoMethod **impl_method, gpointer *out_aot_addr,
+										   gboolean *out_need_rgctx_tramp, MonoMethod **variant_iface);
 
 gboolean          mono_running_on_valgrind (void);
 void*             mono_global_codeman_reserve (int size);
