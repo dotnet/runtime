@@ -85,14 +85,13 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL);
 
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
+Volatile<LONG> g_coreclrInitialized = 0;
 static BOOL g_fThreadDataAvailable = FALSE;
 static pthread_mutex_t init_critsec_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
 static PCRITICAL_SECTION init_critsec = NULL;
-
-char g_szCoreCLRPath[MAX_PATH] = { 0 };
 
 static int Initialize(int argc, const char *const argv[], DWORD flags);
 static BOOL INIT_IncreaseDescriptorLimit(void);
@@ -102,8 +101,6 @@ static LPWSTR INIT_FindEXEPath(CPalThread *pThread, LPCSTR exe_name);
 #ifdef _DEBUG
 extern void PROCDumpThreadList(void);
 #endif
-
-char g_ExePath[MAX_PATH] = { 0 };
 
 #if defined(__APPLE__)
 static bool RunningNatively()
@@ -230,19 +227,20 @@ Initialize(
 
     InternalEnterCriticalSection(pThread, init_critsec); // here pThread is always NULL
 
-    if(init_count==0)
+    if (init_count == 0)
     {
         // Set our pid.
         gPID = getpid();
 
         fFirstTimeInit = true;
+        exe_module.lib_name = NULL;
 
         // Initialize the TLS lookaside cache
         if (FALSE == TLSInitialize())
         {
             goto done;
         }
-    
+
         // Initialize the environment.
         if (FALSE == MiscInitialize())
         {
@@ -263,11 +261,11 @@ Initialize(
         if (VIRTUAL_PAGE_SIZE != getpagesize())
         {
             ASSERT("VIRTUAL_PAGE_SIZE is incorrect for this system!\n"
-                   "Change include/pal/virtual.h and clr/src/inc/stdmacros.h "
-                   "to reflect the correct page size of %d.\n", getpagesize());
+                "Change include/pal/virtual.h and clr/src/inc/stdmacros.h "
+                "to reflect the correct page size of %d.\n", getpagesize());
         }
 #endif  // _DEBUG
-    
+
         if (!INIT_IncreaseDescriptorLimit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -276,7 +274,7 @@ Initialize(
         }
 
         /* initialize the shared memory infrastructure */
-        if(!SHMInitialize())
+        if (!SHMInitialize())
         {
             ERROR("Shared memory initialization failed!\n");
             goto CLEANUP0;
@@ -373,73 +371,84 @@ Initialize(
         g_pSynchronizationManager =
             CPalSynchMgrController::CreatePalSynchronizationManager(pThread);
 
-        palError = ERROR_GEN_FAILURE;
-
         if (NULL == g_pSynchronizationManager)
         {
+            palError = ERROR_NOT_ENOUGH_MEMORY;
             ERROR("Failure creating synchronization manager\n");
             goto CLEANUP1c;
         }
+    }
+    else
+    {
+        pThread = InternalGetCurrentThread();
+    }
 
-        if (argc > 0 && argv != NULL)
+    palError = ERROR_GEN_FAILURE;
+
+    if (argc > 0 && argv != NULL)
+    {
+        /* build the command line */
+        command_line = INIT_FormatCommandLine(pThread, argc, argv);
+        if (NULL == command_line)
         {
-            /* build the command line */
-            command_line = INIT_FormatCommandLine(pThread, argc, argv);
-            if (NULL == command_line)
-            {
-                ERROR("Error building command line\n");
-                goto CLEANUP1d;
-            }
-
-            /* find out the application's full path */
-            exe_path = INIT_FindEXEPath(pThread, argv[0]);
-            if (NULL == exe_path)
-            {
-                ERROR("Unable to find exe path\n");
-                goto CLEANUP1e;
-            }
-
-            if (!WideCharToMultiByte(CP_ACP, 0, exe_path, -1, g_ExePath,
-                sizeof(g_ExePath), NULL, NULL))
-            {
-                ERROR("Failed to store process executable path\n");
-                goto CLEANUP2;
-            }
-
-            if (NULL == command_line || NULL == exe_path)
-            {
-                ERROR("Failed to process command-line parameters!\n");
-                goto CLEANUP2;
-            }
-
-#ifdef PAL_PERF
-            // Initialize the Profiling structure
-            if(FALSE == PERFInitialize(command_line, exe_path)) 
-            {
-                ERROR("Performance profiling initial failed\n");
-                goto done;
-            }    
-            PERFAllocThreadInfo();
-#endif
+            ERROR("Error building command line\n");
+            goto CLEANUP1d;
         }
 
+        /* find out the application's full path */
+        exe_path = INIT_FindEXEPath(pThread, argv[0]);
+        if (NULL == exe_path)
+        {
+            ERROR("Unable to find exe path\n");
+            goto CLEANUP1e;
+        }
+
+        if (NULL == command_line || NULL == exe_path)
+        {
+            ERROR("Failed to process command-line parameters!\n");
+            goto CLEANUP2;
+        }
+
+        palError = InitializeProcessCommandLine(
+            pThread,
+            command_line,
+            exe_path);
+        
+        if (NO_ERROR != palError)
+        {
+            ERROR("Unable to initialize command line\n");
+            goto CLEANUP2;
+        }
+
+        // InitializeProcessCommandLine took ownership of this memory.
+        command_line = NULL;
+
+        // Save the exe path in the exe module struct
+        InternalFree(pThread, exe_module.lib_name);
+        exe_module.lib_name = exe_path;
+
+#ifdef PAL_PERF
+        // Initialize the Profiling structure
+        if(FALSE == PERFInitialize(command_line, exe_path)) 
+        {
+            ERROR("Performance profiling initial failed\n");
+            goto done;
+        }    
+        PERFAllocThreadInfo();
+#endif
+    }
+
+    if(init_count == 0)
+    {
         //
         // Create the initial process and thread objects
         //
-
-        palError = CreateInitialProcessAndThreadObjects(
-            pThread,
-            command_line,
-            exe_path
-            );
-        
+        palError = CreateInitialProcessAndThreadObjects(pThread);
         if (NO_ERROR != palError)
         {
             ERROR("Unable to create initial process and thread objects\n");
             goto CLEANUP2;
         }
-        // CreateInitialProcessAndThreadObjects took ownership of this memory.
-        command_line = NULL;
 
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
@@ -470,8 +479,8 @@ Initialize(
             goto CLEANUP6;
         }
 
-        /* initialize module manager */
-        if (FALSE == LOADInitializeModules(exe_path))
+        /* Initialize module manager */
+        if (FALSE == LOADInitializeModules())
         {
             ERROR("Unable to initialize module manager\n");
             palError = GetLastError();
@@ -587,6 +596,7 @@ exit :
     return retval;
 }
 
+
 /*++
 Function:
   PAL_InitializeCoreCLR
@@ -599,11 +609,6 @@ Abstract:
   This routine also makes sure the psuedo dynamic libraries PALRT and mscorwks have their initialization
   methods called.
 
-  Which PAL (if any) we're executing in the context of is a function of the return code and the fStayInPAL
-  argument. If an error is returned then the PAL context is that of the caller (i.e. this call doesn't switch
-  into the context of the PAL being initialized). Otherwise (on success) the context is remains in that of the
-  new PAL if and only if fStayInPAL is TRUE.
-
 Return:
   ERROR_SUCCESS if successful
   An error code, if it failed
@@ -611,59 +616,26 @@ Return:
 --*/
 PAL_ERROR
 PALAPI
-PAL_InitializeCoreCLR(
-    const char *szExePath,
-    const char *szCoreCLRPath,
-    BOOL fStayInPAL)
+PAL_InitializeCoreCLR(const char *szExePath)
 {    
-    // Check for a repeated call (this is a no-op).
-    if (g_szCoreCLRPath[0] != '\0')
-    {
-        if (fStayInPAL)
-        {
-            PAL_Enter(PAL_BoundaryTop);
-        }
-        return ERROR_SUCCESS;
-    }
-
-    // Make sure it's an absolute path.
-    if (szCoreCLRPath[0] != '/')
-    {
-        return ERROR_INVALID_PARAMETER;
-    }
-    
-    // Check we can handle the length of the installation directory.
-    size_t cchCoreCLRPath = strlen(szCoreCLRPath);
-    if (cchCoreCLRPath >= sizeof(g_szCoreCLRPath))
-    {
-        ASSERT("CoreCLR installation path is too long");
-        return ERROR_BAD_PATHNAME;
-    }
-
-    // Stash a copy of the CoreCLR installation path in a global variable.
-    // Make sure it's terminated with a slash.
-    if (strcpy_s(g_szCoreCLRPath, sizeof(g_szCoreCLRPath), szCoreCLRPath) != SAFECRT_SUCCESS)
-    {
-        ASSERT("strcpy_s failed!");
-        return ERROR_FILENAME_EXCED_RANGE;
-    }
-
-#ifdef __APPLE__    // Fake up a command line to call PAL_Initialize with.
-    const char *argv[] = { "CoreCLR" };
-    int result = PAL_Initialize(1, argv);
-#else // __APPLE__
     // Fake up a command line to call PAL_Initialize with.
     int result = PAL_Initialize(1, &szExePath);
-#endif // __APPLE__
     if (result != 0)
     {
         return GetLastError();
     }
 
+    // Check for a repeated call (this is a no-op).
+    if (InterlockedIncrement(&g_coreclrInitialized) > 1)
+    {
+        PAL_Enter(PAL_BoundaryTop);
+        return ERROR_SUCCESS;
+    }
+
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
-    if (!LOADInitCoreCLRModules(g_szCoreCLRPath))
+    if (!LOADInitializeCoreCLRModule())
     {
         return ERROR_DLL_INIT_FAILED;
     }
@@ -673,10 +645,6 @@ PAL_InitializeCoreCLR(
         return ERROR_GEN_FAILURE;
     }
 
-    if (!fStayInPAL)
-    {
-        PAL_Leave(PAL_BoundaryTop);
-    }
     return ERROR_SUCCESS;
 }
 
