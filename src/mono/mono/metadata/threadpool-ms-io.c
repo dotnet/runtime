@@ -591,25 +591,22 @@ mono_threadpool_ms_io_remove_socket (int fd)
 	mono_mutex_unlock (&threadpool_io->updates_lock);
 	mono_mutex_unlock (&threadpool_io->states_lock);
 
-	while (list) {
-		MonoSocketAsyncResult *sockares, *sockares2;
+	for (; list; list = mono_mlist_remove_item (list, list)) {
+		MonoSocketAsyncResult *sockares = (MonoSocketAsyncResult*) mono_mlist_get_data (list);
 
-		sockares = (MonoSocketAsyncResult*) mono_mlist_get_data (list);
-		if (sockares->operation == AIO_OP_RECEIVE)
+		if (!sockares)
+			continue;
+
+		switch (sockares->operation) {
+		case AIO_OP_RECEIVE:
 			sockares->operation = AIO_OP_RECV_JUST_CALLBACK;
-		else if (sockares->operation == AIO_OP_SEND)
-			sockares->operation = AIO_OP_SEND_JUST_CALLBACK;
-
-		sockares2 = get_sockares_for_event (&list, MONO_POLLIN);
-		if (sockares2)
-			mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares2)->vtable->domain, (MonoObject*) sockares2);
-
-		if (!list)
 			break;
+		case AIO_OP_SEND:
+			sockares->operation = AIO_OP_SEND_JUST_CALLBACK;
+			break;
+		}
 
-		sockares2 = get_sockares_for_event (&list, MONO_POLLOUT);
-		if (sockares2)
-			mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares2)->vtable->domain, (MonoObject*) sockares2);
+		mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
 	}
 }
 
