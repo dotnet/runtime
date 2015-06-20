@@ -11545,6 +11545,10 @@ public:
         }
         ExtOut("=============================================================================\n");
 
+#ifdef FEATURE_PAL
+        // Temporary until we get a process exit notification plumbed from lldb
+        UninitCorDebugInterface();
+#endif
         return S_OK;
     }
 };

@@ -68,7 +68,13 @@ PAL_GetPALDirectoryW( OUT LPWSTR lpDirectoryName, IN UINT cchDirectoryName )
     PERF_ENTRY(PAL_GetPALDirectoryW);
     ENTRY( "PAL_GetPALDirectoryW( %p, %d )\n", lpDirectoryName, cchDirectoryName );
 
-    lpFullPathAndName = pal_module.lib_name;
+    MODSTRUCT *module = LOADGetPalLibrary();
+    if (!module)
+    {
+        SetLastError(ERROR_INTERNAL_ERROR);
+        goto EXIT;
+    }
+    lpFullPathAndName = module->lib_name;
     if (lpFullPathAndName == NULL)
     {
         SetLastError(ERROR_INTERNAL_ERROR);
