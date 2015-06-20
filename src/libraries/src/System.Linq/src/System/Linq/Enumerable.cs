@@ -1425,9 +1425,8 @@ namespace System.Linq
             if (source == null) throw Error.ArgumentNull("source");
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                if (e.MoveNext()) return true;
+                return e.MoveNext();
             }
-            return false;
         }
 
         public static bool Any<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
