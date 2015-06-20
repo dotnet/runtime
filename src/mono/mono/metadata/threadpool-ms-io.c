@@ -553,11 +553,13 @@ void
 mono_threadpool_ms_io_remove_socket (int fd)
 {
 	MonoMList *list;
+	gint i;
 
 	if (io_status != STATUS_INITIALIZED)
 		return;
 
 	mono_mutex_lock (&threadpool_io->states_lock);
+	mono_mutex_lock (&threadpool_io->updates_lock);
 
 	g_assert (threadpool_io->states);
 
@@ -565,6 +567,21 @@ mono_threadpool_ms_io_remove_socket (int fd)
 	if (list)
 		mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
 
+	for (i = 0; i < threadpool_io->updates_size; ++i) {
+		ThreadPoolIOUpdate *update = &threadpool_io->updates [i];
+
+		g_assert (update->sockares);
+
+		if (GPOINTER_TO_INT (update->sockares->handle) == fd) {
+			if (i < threadpool_io->updates_size - 1)
+				memmove (threadpool_io->updates + i, threadpool_io->updates + i + 1, sizeof (ThreadPoolIOUpdate) * threadpool_io->updates_size - i - 1);
+			memset (threadpool_io->updates + threadpool_io->updates_size - 1, 0, sizeof (ThreadPoolIOUpdate));
+
+			threadpool_io->updates_size -= 1;
+		}
+	}
+
+	mono_mutex_unlock (&threadpool_io->updates_lock);
 	mono_mutex_unlock (&threadpool_io->states_lock);
 
 	while (list) {
@@ -610,11 +627,32 @@ remove_sockstate_for_domain (gpointer key, gpointer value, gpointer user_data)
 void
 mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
 {
-	if (io_status == STATUS_INITIALIZED) {
-		mono_mutex_lock (&threadpool_io->states_lock);
-		mono_g_hash_table_foreach_remove (threadpool_io->states, remove_sockstate_for_domain, domain);
-		mono_mutex_unlock (&threadpool_io->states_lock);
+	gint i;
+
+	if (io_status != STATUS_INITIALIZED)
+		return;
+
+	mono_mutex_lock (&threadpool_io->states_lock);
+	mono_mutex_lock (&threadpool_io->updates_lock);
+
+	mono_g_hash_table_foreach_remove (threadpool_io->states, remove_sockstate_for_domain, domain);
+
+	for (i = 0; i < threadpool_io->updates_size; ++i) {
+		ThreadPoolIOUpdate *update = &threadpool_io->updates [i];
+
+		g_assert (update->sockares);
+
+		if (mono_object_domain (update->sockares) == domain) {
+			if (i < threadpool_io->updates_size - 1)
+				memmove (threadpool_io->updates + i, threadpool_io->updates + i + 1, sizeof (ThreadPoolIOUpdate) * threadpool_io->updates_size - i - 1);
+			memset (threadpool_io->updates + threadpool_io->updates_size - 1, 0, sizeof (ThreadPoolIOUpdate));
+
+			threadpool_io->updates_size -= 1;
+		}
 	}
+
+	mono_mutex_unlock (&threadpool_io->updates_lock);
+	mono_mutex_unlock (&threadpool_io->states_lock);
 }
 
 #else
