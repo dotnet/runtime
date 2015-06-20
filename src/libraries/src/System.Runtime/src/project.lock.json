@@ -1,27 +1,29 @@
 {
   "locked": true,
-  "version": -9997,
+  "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
       "Microsoft.DotNet.CoreCLR/1.0.3-prerelease": {
-        "compile": [
-          "lib/aspnetcore50/clretwrc.dll",
-          "lib/aspnetcore50/coreclr.dll",
-          "lib/aspnetcore50/mscordaccore.dll",
-          "lib/aspnetcore50/mscordbi.dll",
-          "lib/aspnetcore50/mscorlib.dll",
-          "lib/aspnetcore50/mscorrc.debug.dll",
-          "lib/aspnetcore50/mscorrc.dll"
-        ],
-        "runtime": [
-          "lib/aspnetcore50/clretwrc.dll",
-          "lib/aspnetcore50/coreclr.dll",
-          "lib/aspnetcore50/mscordaccore.dll",
-          "lib/aspnetcore50/mscordbi.dll",
-          "lib/aspnetcore50/mscorlib.dll",
-          "lib/aspnetcore50/mscorrc.debug.dll",
-          "lib/aspnetcore50/mscorrc.dll"
-        ]
+        "compile": {
+          "lib/aspnetcore50/clretwrc.dll": {},
+          "lib/aspnetcore50/coreclr.dll": {},
+          "lib/aspnetcore50/corerun.exe": {},
+          "lib/aspnetcore50/mscordaccore.dll": {},
+          "lib/aspnetcore50/mscordbi.dll": {},
+          "lib/aspnetcore50/mscorlib.dll": {},
+          "lib/aspnetcore50/mscorrc.debug.dll": {},
+          "lib/aspnetcore50/mscorrc.dll": {}
+        },
+        "runtime": {
+          "lib/aspnetcore50/clretwrc.dll": {},
+          "lib/aspnetcore50/coreclr.dll": {},
+          "lib/aspnetcore50/corerun.exe": {},
+          "lib/aspnetcore50/mscordaccore.dll": {},
+          "lib/aspnetcore50/mscordbi.dll": {},
+          "lib/aspnetcore50/mscorlib.dll": {},
+          "lib/aspnetcore50/mscorrc.debug.dll": {},
+          "lib/aspnetcore50/mscorrc.dll": {}
+        }
       }
     }
   },
