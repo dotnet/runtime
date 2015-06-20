@@ -29,6 +29,20 @@
 #include <mono/utils/mono-poll.h>
 #include <mono/utils/mono-threads.h>
 
+typedef struct {
+	gboolean (*init) (gint wakeup_pipe_fd);
+	void     (*cleanup) (void);
+	void     (*update_add) (gint fd, gint events, gboolean is_new);
+	gint     (*event_wait) (void);
+	gint     (*event_get_fd_max) (void);
+	gint     (*event_get_fd_at) (gint i, gint *events);
+	void     (*event_reset_fd_at) (gint i, gint events);
+} ThreadPoolIOBackend;
+
+#include "threadpool-ms-io-epoll.c"
+#include "threadpool-ms-io-kqueue.c"
+#include "threadpool-ms-io-poll.c"
+
 /* Keep in sync with System.Net.Sockets.Socket.SocketOperation */
 enum {
 	AIO_OP_FIRST,
@@ -50,14 +64,31 @@ enum {
 };
 
 typedef struct {
-	gboolean (*init) (gint wakeup_pipe_fd);
-	void     (*cleanup) (void);
-	void     (*update_add) (gint fd, gint events, gboolean is_new);
-	gint     (*event_wait) (void);
-	gint     (*event_max) (void);
-	gint     (*event_fd_at) (guint i);
-	gboolean (*event_create_sockares_at) (guint i, gint fd, MonoMList **list);
-} ThreadPoolIOBackend;
+	MonoSocketAsyncResult *sockares;
+} ThreadPoolIOUpdate;
+
+typedef struct {
+	MonoGHashTable *states;
+	mono_mutex_t states_lock;
+
+	ThreadPoolIOBackend backend;
+
+	ThreadPoolIOUpdate *updates;
+	guint updates_size;
+	guint updates_capacity;
+	mono_mutex_t updates_lock;
+
+#if !defined(HOST_WIN32)
+	gint wakeup_pipes [2];
+#else
+	SOCKET wakeup_pipes [2];
+#endif
+} ThreadPoolIO;
+
+static gint32 io_status = STATUS_NOT_INITIALIZED;
+static gint32 io_thread_status = STATUS_NOT_INITIALIZED;
+
+static ThreadPoolIO* threadpool_io;
 
 static int
 get_events_from_sockares (MonoSocketAsyncResult *ares)
@@ -116,37 +147,6 @@ get_events (MonoMList *list)
 
 	return events;
 }
-
-#include "threadpool-ms-io-epoll.c"
-#include "threadpool-ms-io-kqueue.c"
-#include "threadpool-ms-io-poll.c"
-
-typedef struct {
-	MonoSocketAsyncResult *sockares;
-} ThreadPoolIOUpdate;
-
-typedef struct {
-	MonoGHashTable *states;
-	mono_mutex_t states_lock;
-
-	ThreadPoolIOBackend backend;
-
-	ThreadPoolIOUpdate *updates;
-	guint updates_size;
-	guint updates_capacity;
-	mono_mutex_t updates_lock;
-
-#if !defined(HOST_WIN32)
-	gint wakeup_pipes [2];
-#else
-	SOCKET wakeup_pipes [2];
-#endif
-} ThreadPoolIO;
-
-static gint32 io_status = STATUS_NOT_INITIALIZED;
-static gint32 io_thread_status = STATUS_NOT_INITIALIZED;
-
-static ThreadPoolIO* threadpool_io;
 
 static void
 selector_thread_wakeup (void)
@@ -257,33 +257,40 @@ selector_thread (gpointer data)
 		if (ready == -1 || mono_runtime_is_shutting_down ())
 			break;
 
-		max = threadpool_io->backend.event_max ();
+		max = threadpool_io->backend.event_get_fd_max ();
 
 		mono_mutex_lock (&threadpool_io->states_lock);
 
 		for (i = 0; i < max && ready > 0; ++i) {
-			MonoMList *list;
-			gboolean valid_fd;
-			gint fd;
+			gint events;
+			gint fd = threadpool_io->backend.event_get_fd_at (i, &events);
 
-			fd = threadpool_io->backend.event_fd_at (i);
+			if (fd == -1)
+				continue;
 
 			if (fd == threadpool_io->wakeup_pipes [0]) {
 				selector_thread_wakeup_drain_pipes ();
-				ready -= 1;
-				continue;
+			} else {
+				MonoMList *list = mono_g_hash_table_lookup (threadpool_io->states, GINT_TO_POINTER (fd));
+
+				if (list && (events & MONO_POLLIN) != 0) {
+					MonoSocketAsyncResult *sockares = get_sockares_for_event (&list, MONO_POLLIN);
+					if (sockares)
+						mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
+				}
+				if (list && (events & MONO_POLLOUT) != 0) {
+					MonoSocketAsyncResult *sockares = get_sockares_for_event (&list, MONO_POLLOUT);
+					if (sockares)
+						mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
+				}
+
+				if (!list) {
+					mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
+				} else {
+					mono_g_hash_table_replace (threadpool_io->states, GINT_TO_POINTER (fd), list);
+					threadpool_io->backend.event_reset_fd_at (i, get_events (list));
+				}
 			}
-
-			list = mono_g_hash_table_lookup (threadpool_io->states, GINT_TO_POINTER (fd));
-
-			valid_fd = threadpool_io->backend.event_create_sockares_at (i, fd, &list);
-			if (!valid_fd)
-				continue;
-
-			if (list)
-				mono_g_hash_table_replace (threadpool_io->states, GINT_TO_POINTER (fd), list);
-			else
-				mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
 
 			ready -= 1;
 		}
