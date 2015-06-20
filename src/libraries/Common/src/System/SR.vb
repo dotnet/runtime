@@ -55,7 +55,7 @@ Namespace System
             Return resourceString
         End Function
 
-        Friend Shared Function Format(ByVal resourceFormat As String, ParamArray args() As Object) As String
+        Friend Shared Function Format(ByVal resourceFormat As String, ParamArray args() As object) As String
             If args IsNot Nothing Then
                 If (UsingResourceKeys()) Then
                     Return resourceFormat + String.Join(", ", args)
@@ -66,7 +66,7 @@ Namespace System
         End Function
 
         <Global.System.Runtime.CompilerServices.MethodImpl(Global.System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>
-        Friend Shared Function Format(ByVal resourceFormat As String, p1 As Object) As String
+        Friend Shared Function Format(ByVal resourceFormat As String, p1 As object) As String
             If (UsingResourceKeys()) Then
                 Return String.Join(", ", resourceFormat, p1)
             End If
@@ -75,7 +75,7 @@ Namespace System
         End Function
 
         <Global.System.Runtime.CompilerServices.MethodImpl(Global.System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>
-        Friend Shared Function Format(ByVal resourceFormat As String, p1 As Object, p2 As Object) As String
+        Friend Shared Function Format(ByVal resourceFormat As String, p1 As object, p2 As object) As String
             If (UsingResourceKeys()) Then
                 Return String.Join(", ", resourceFormat, p1, p2)
             End If
@@ -84,7 +84,7 @@ Namespace System
         End Function
 
         <Global.System.Runtime.CompilerServices.MethodImpl(Global.System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>
-        Friend Shared Function Format(ByVal resourceFormat As String, p1 As Object, p2 As Object, p3 As Object) As String
+        Friend Shared Function Format(ByVal resourceFormat As String, p1 As object, p2 As object, p3 As object) As String
             If (UsingResourceKeys()) Then
                 Return String.Join(", ", resourceFormat, p1, p2, p3)
             End If
