@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,10 +12,10 @@ namespace System.IO
     internal partial class Win32FileStream
     {
 #if USE_OVERLAPPED
-        // This is an internal object implementing IAsyncResult with fields
+        // This is an internal object extending TaskCompletionSource with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by AsyncFSCallback and all of the async methods.
-        unsafe private sealed class FileStreamCompletionSource : TaskCompletionSource<int>, IAsyncResult
+        unsafe private sealed class FileStreamCompletionSource : TaskCompletionSource<int>
         {
             private const long NoResult = 0;
             private const long ResultSuccess = (long)1 << 32;
@@ -64,26 +63,6 @@ namespace System.IO
             internal NativeOverlapped* Overlapped
             {
                 [SecurityCritical]get { return _overlapped; }
-            }
-
-            bool IAsyncResult.IsCompleted
-            {
-                get { throw new NotSupportedException(); }
-            }
-
-            object IAsyncResult.AsyncState
-            {
-                get { throw new NotSupportedException(); }
-            }
-
-            WaitHandle IAsyncResult.AsyncWaitHandle
-            {
-                get { throw new NotSupportedException(); }
-            }
-
-            bool IAsyncResult.CompletedSynchronously
-            {
-                get { throw new NotSupportedException(); }
             }
 
             public void SetCompletedSynchronously(int numBytes)
