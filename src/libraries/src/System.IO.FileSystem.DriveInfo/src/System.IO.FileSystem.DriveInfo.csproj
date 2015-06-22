@@ -19,6 +19,12 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' "/>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' "/>
+  <PropertyGroup>
+    <TargetsBSD Condition="'$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsBSD>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\IO\DriveInfo.cs" />
     <Compile Include="System\IO\DriveNotFoundException.cs" />
@@ -114,8 +120,13 @@
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsBSD)' == 'true' ">
+    <Compile Include="System\IO\DriveInfo.BSD.cs" />
+    <Compile Include="$(CommonPath)\Interop\BSD\libc\Interop.mountpoints.cs">
+      <Link>Common\Interop\BSD\Interop.mountpoints.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="System\IO\DriveInfo.OSX.cs" />
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
       <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
@@ -125,8 +136,19 @@
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.Mount.cs">
-      <Link>Common\Interop\OSX\Interop.Mount.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.statfs.cs">
+      <Link>Common\Interop\OSX\Interop.statfs.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.statfs.cs">
+      <Link>Common\Interop\FreeBSD\Interop.statfs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Libraries.cs">
+      <Link>Common\Interop\FreeBSD\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Errors.cs">
+      <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
