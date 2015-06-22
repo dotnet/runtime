@@ -178,7 +178,14 @@ namespace System.IO
                         DateTimeOffset.FromUnixTimeSeconds(_fileinfo.btime) :
                         default(DateTimeOffset);
                 }
-                set { } // Not supported
+                set 
+                {
+                    // The ctime in Unix can be interpreted differently by different formats so there isn't
+                    // a reliable way to set this; however, we can't just do nothing since the FileSystemWatcher
+                    // specifically looks for this call to make a Metatdata Change, so we should set the 
+                    // LastAccessTime of the file to cause the metadata change we need.
+                    LastAccessTime = LastAccessTime;
+                }
             }
 
             public DateTimeOffset LastAccessTime

@@ -456,7 +456,7 @@ namespace System.IO
                     break;
             }
 
-            if (handler != null && MatchPattern(name))
+            if (handler != null && MatchPattern(string.IsNullOrEmpty(name) ? _directory : name))
             {
                 handler(this, new FileSystemEventArgs(changeType, _directory, name));
             }
