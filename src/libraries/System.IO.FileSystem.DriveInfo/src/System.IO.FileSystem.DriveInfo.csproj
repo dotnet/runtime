@@ -116,15 +116,17 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.OSX.cs" />
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <!-- TODO: Remove once implemented -->
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
       <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.Mount.cs">
+      <Link>Common\Interop\OSX\Interop.Mount.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
