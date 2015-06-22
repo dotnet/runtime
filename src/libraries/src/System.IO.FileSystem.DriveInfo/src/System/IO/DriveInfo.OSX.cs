@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace System.IO
@@ -9,8 +10,15 @@ namespace System.IO
     {
         private static string NormalizeDriveName(string driveName)
         {
-            // TODO: Implement this
-            throw NotImplemented.ByDesign;
+            if (driveName.Contains("\0"))
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_InvalidDriveChars, driveName), "driveName");
+            }
+            if (driveName.Length == 0)
+            {
+                throw new ArgumentException(SR.Arg_MustBeNonEmptyDriveName, "driveName");
+            }
+            return driveName;
         }
 
         public DriveType DriveType
@@ -18,8 +26,8 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
+                return GetDriveType(Interop.libc.GetMountPointFsType(data));
             }
         }
 
@@ -28,8 +36,8 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
+                return Interop.libc.GetMountPointFsType(data);
             }
         }
 
@@ -38,8 +46,8 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
+                return (long)(data.f_bsize * data.f_bavail);
             }
         }
 
@@ -48,8 +56,8 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
+                return (long)(data.f_bsize * data.f_bfree);
             }
         }
 
@@ -58,8 +66,8 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
+                return (long)(data.f_bsize * data.f_blocks);
             }
         }
 
@@ -68,26 +76,35 @@ namespace System.IO
             [SecuritySafeCritical]
             get
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                return Name;
             }
             [SecuritySafeCritical]
             set
             {
-                // TODO: Implement this
-                throw NotImplemented.ByDesign;
+                throw new PlatformNotSupportedException();
             }
         }
 
         public static unsafe DriveInfo[] GetDrives()
         {
-            // TODO: Implement this
-            throw NotImplemented.ByDesign;
+            DriveInfo[] drives = null;
+            Interop.libc.statfs* pBuffer = null;
+            int count = Interop.libc.getmntinfo(&pBuffer, 0);
+            if (count > 0)
+            {
+                drives = new DriveInfo[count];
+                for (int i = 0; i < count; i++)
+                {
+                    String mountPoint = Marshal.PtrToStringAnsi((IntPtr)pBuffer[i].f_mntonname);
+                    drives[i] = new DriveInfo(mountPoint);
+                }
+            }
+
+            return drives;
         }
 
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
-
     }
 }
