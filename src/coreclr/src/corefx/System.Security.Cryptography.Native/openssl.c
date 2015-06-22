@@ -623,3 +623,54 @@ GetX509NameInfo(
 
     return NULL;
 }
+
+/*
+Function:
+GetX509StackFieldCount
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to identify the
+number of certificates returned in the built chain.
+
+Return values:
+0 if the field count cannot be determined, or the count of certificates in STACK_OF(X509)
+Note that 0 does not always indicate an error, merely that GetX509StackField should not be called.
+*/
+int
+GetX509StackFieldCount(
+    STACK_OF(X509)* stack)
+{
+    return sk_X509_num(stack);
+}
+
+/*
+Function:
+GetX509StackField
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to get a pointer to
+the indexed member of a chain.
+
+Return values:
+NULL if stack is NULL or loc is out of bounds, otherwise a pointer to the X509 structure encoding
+that particular element.
+*/
+X509*
+GetX509StackField(
+    STACK_OF(X509)* stack,
+    int loc)
+{
+    return sk_X509_value(stack, loc);
+}
+
+/*
+Function:
+RecursiveFreeX509Stack
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to free a stack
+when done with it.
+*/
+void
+RecursiveFreeX509Stack(
+    STACK_OF(X509)* stack)
+{
+    sk_X509_pop_free(stack, X509_free);
+}
