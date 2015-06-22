@@ -21,7 +21,7 @@ internal static partial class Interop
         /// <summary>
         /// This constant specifies that we don't want historical file system events, only new ones
         /// </summary>
-        internal const ulong kFSEventStreamEventIdSinceNow = ulong.MaxValue;
+        internal const ulong kFSEventStreamEventIdSinceNow = 0xFFFFFFFFFFFFFFFF;
 
         /// <summary>
         /// Flags that describe what happened in the event that was received. These come from the FSEvents.h header file in the CoreServices framework.
