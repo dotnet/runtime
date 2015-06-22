@@ -35,6 +35,7 @@
     <Compile Include="RangeTests.cs" />
     <Compile Include="RepeatTests.cs" />
     <Compile Include="SumTests.cs" />
+    <Compile Include="ReverseTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ToArrayTests.cs" />
     <Compile Include="ToDictionaryTests.cs" />
