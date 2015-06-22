@@ -47,7 +47,7 @@ namespace System.IO
             get
             {
                 Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
-                return (long)(data.f_bsize * data.f_bavail);
+                return (long)data.f_bsize * (long)data.f_bavail;
             }
         }
 
