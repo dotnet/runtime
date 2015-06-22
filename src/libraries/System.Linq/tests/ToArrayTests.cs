@@ -52,6 +52,10 @@ namespace System.Linq.Tests
 
             Assert.NotSame(sourceArray, resultArray);
             Assert.Equal(sourceArray, resultArray);
+
+            int[] emptySourceArray = Array.Empty<int>();
+            Assert.NotSame(emptySourceArray.ToArray(), emptySourceArray.ToArray());
+            Assert.NotSame(emptySourceArray.Select(i => i).ToArray(), emptySourceArray.Select(i => i).ToArray());
         }
 
 
@@ -153,5 +157,44 @@ namespace System.Linq.Tests
             var thrownException = Assert.ThrowsAny<Exception>(() => { largeSeq.ToArray(); });
             Assert.True(thrownException.GetType() == typeof(OverflowException) || thrownException.GetType() == typeof(OutOfMemoryException));
         }
+
+        [Theory]
+        [InlineData(new int[] { }, new string[] { })]
+        [InlineData(new int[] { 1 }, new string[] { "1" })]
+        [InlineData(new int[] { 1, 2, 3 }, new string[] { "1", "2", "3" })]
+        public void ToArray_ArrayWhereSelect(int[] sourceIntegers, string[] convertedStrings)
+        {
+            Assert.Equal(convertedStrings, sourceIntegers.Select(i => i.ToString()).ToArray());
+
+            Assert.Equal(sourceIntegers, sourceIntegers.Where(i => true).ToArray());
+            Assert.Equal(Array.Empty<int>(), sourceIntegers.Where(i => false).ToArray());
+
+            Assert.Equal(convertedStrings, sourceIntegers.Where(i => true).Select(i => i.ToString()).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceIntegers.Where(i => false).Select(i => i.ToString()).ToArray());
+
+            Assert.Equal(convertedStrings, sourceIntegers.Select(i => i.ToString()).Where(s => s != null).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceIntegers.Select(i => i.ToString()).Where(s => s == null).ToArray());
+        }
+
+        [Theory]
+        [InlineData(new int[] { }, new string[] { })]
+        [InlineData(new int[] { 1 }, new string[] { "1" })]
+        [InlineData(new int[] { 1, 2, 3 }, new string[] { "1", "2", "3" })]
+        public void ToArray_ListWhereSelect(int[] sourceIntegers, string[] convertedStrings)
+        {
+            var sourceList = new List<int>(sourceIntegers);
+
+            Assert.Equal(convertedStrings, sourceList.Select(i => i.ToString()).ToArray());
+            
+            Assert.Equal(sourceList, sourceList.Where(i => true).ToArray());
+            Assert.Equal(Array.Empty<int>(), sourceList.Where(i => false).ToArray());
+
+            Assert.Equal(convertedStrings, sourceList.Where(i => true).Select(i => i.ToString()).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceList.Where(i => false).Select(i => i.ToString()).ToArray());
+
+            Assert.Equal(convertedStrings, sourceList.Select(i => i.ToString()).Where(s => s != null).ToArray());
+            Assert.Equal(Array.Empty<string>(), sourceList.Select(i => i.ToString()).Where(s => s == null).ToArray());
+        }
+
     }
 }
