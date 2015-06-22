@@ -27,6 +27,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-poll.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-lazy-init.h>
 
 typedef struct {
 	gboolean (*init) (gint wakeup_pipe_fd);
@@ -84,8 +85,9 @@ typedef struct {
 #endif
 } ThreadPoolIO;
 
-static gint32 io_status = STATUS_NOT_INITIALIZED;
-static gint32 io_thread_status = STATUS_NOT_INITIALIZED;
+static mono_lazy_init_t io_status = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
+
+static gboolean io_selector_running = FALSE;
 
 static ThreadPoolIO* threadpool_io;
 
@@ -206,7 +208,12 @@ selector_thread_wakeup_drain_pipes (void)
 static void
 selector_thread (gpointer data)
 {
-	io_thread_status = STATUS_INITIALIZED;
+	io_selector_running = TRUE;
+
+	if (mono_runtime_is_shutting_down ()) {
+		io_selector_running = FALSE;
+		return;
+	}
 
 	for (;;) {
 		guint i;
@@ -297,7 +304,7 @@ selector_thread (gpointer data)
 		mono_mutex_unlock (&threadpool_io->states_lock);
 	}
 
-	io_thread_status = STATUS_CLEANED_UP;
+	io_selector_running = FALSE;
 }
 
 static void
@@ -358,17 +365,8 @@ wakeup_pipes_init (void)
 }
 
 static void
-ensure_initialized (void)
+initialize (void)
 {
-	if (io_status >= STATUS_INITIALIZED)
-		return;
-	if (io_status == STATUS_INITIALIZING || InterlockedCompareExchange (&io_status, STATUS_INITIALIZING, STATUS_NOT_INITIALIZED) != STATUS_NOT_INITIALIZED) {
-		while (io_status == STATUS_INITIALIZING)
-			mono_thread_info_yield ();
-		g_assert (io_status >= STATUS_INITIALIZED);
-		return;
-	}
-
 	g_assert (!threadpool_io);
 	threadpool_io = g_new0 (ThreadPoolIO, 1);
 	g_assert (threadpool_io);
@@ -395,41 +393,21 @@ ensure_initialized (void)
 	wakeup_pipes_init ();
 
 	if (!threadpool_io->backend.init (threadpool_io->wakeup_pipes [0]))
-		g_error ("ensure_initialized: backend->init () failed");
+		g_error ("initialize: backend->init () failed");
 
 	if (!mono_thread_create_internal (mono_get_root_domain (), selector_thread, NULL, TRUE, SMALL_STACK))
-		g_error ("ensure_initialized: mono_thread_create_internal () failed");
-
-	io_thread_status = STATUS_INITIALIZING;
-	mono_memory_write_barrier ();
-
-	io_status = STATUS_INITIALIZED;
+		g_error ("initialize: mono_thread_create_internal () failed");
 }
 
 static void
-ensure_cleanedup (void)
+cleanup (void)
 {
-	if (io_status == STATUS_NOT_INITIALIZED && InterlockedCompareExchange (&io_status, STATUS_CLEANED_UP, STATUS_NOT_INITIALIZED) == STATUS_NOT_INITIALIZED)
-		return;
-	if (io_status == STATUS_INITIALIZING) {
-		while (io_status == STATUS_INITIALIZING)
-			mono_thread_info_yield ();
-	}
-	if (io_status == STATUS_CLEANED_UP)
-		return;
-	if (io_status == STATUS_CLEANING_UP || InterlockedCompareExchange (&io_status, STATUS_CLEANING_UP, STATUS_INITIALIZED) != STATUS_INITIALIZED) {
-		while (io_status == STATUS_CLEANING_UP)
-			mono_thread_info_yield ();
-		g_assert (io_status == STATUS_CLEANED_UP);
-		return;
-	}
-
 	/* we make the assumption along the code that we are
 	 * cleaning up only if the runtime is shutting down */
 	g_assert (mono_runtime_is_shutting_down ());
 
 	selector_thread_wakeup ();
-	while (io_thread_status != STATUS_CLEANED_UP)
+	while (io_selector_running)
 		g_usleep (1000);
 
 	MONO_GC_UNREGISTER_ROOT (threadpool_io->states);
@@ -454,8 +432,6 @@ ensure_cleanedup (void)
 	g_free (threadpool_io);
 	threadpool_io = NULL;
 	g_assert (!threadpool_io);
-
-	io_status = STATUS_CLEANED_UP;
 }
 
 static gboolean
@@ -503,7 +479,7 @@ mono_threadpool_ms_is_io (MonoObject *target, MonoObject *state)
 void
 mono_threadpool_ms_io_cleanup (void)
 {
-	ensure_cleanedup ();
+	mono_lazy_cleanup (&io_status, cleanup);
 }
 
 MonoAsyncResult *
@@ -517,7 +493,7 @@ mono_threadpool_ms_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *sockare
 	if (mono_runtime_is_shutting_down ())
 		return NULL;
 
-	ensure_initialized ();
+	mono_lazy_initialize (&io_status, initialize);
 
 	MONO_OBJECT_SETREF (sockares, ares, ares);
 
@@ -561,7 +537,7 @@ mono_threadpool_ms_io_remove_socket (int fd)
 	MonoMList *list;
 	gint i;
 
-	if (io_status != STATUS_INITIALIZED)
+	if (!mono_lazy_is_initialized (&io_status))
 		return;
 
 	mono_mutex_lock (&threadpool_io->states_lock);
@@ -632,7 +608,7 @@ mono_threadpool_ms_io_remove_domain_jobs (MonoDomain *domain)
 {
 	gint i;
 
-	if (io_status != STATUS_INITIALIZED)
+	if (!mono_lazy_is_initialized (&io_status))
 		return;
 
 	mono_mutex_lock (&threadpool_io->states_lock);

@@ -9,14 +9,6 @@
 
 #define SMALL_STACK (sizeof (gpointer) * 32 * 1024)
 
-enum {
-	STATUS_NOT_INITIALIZED,
-	STATUS_INITIALIZING,
-	STATUS_INITIALIZED,
-	STATUS_CLEANING_UP,
-	STATUS_CLEANED_UP,
-};
-
 typedef struct _MonoNativeOverlapped MonoNativeOverlapped;
 
 void
