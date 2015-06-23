@@ -15,6 +15,7 @@ DebugClient::DebugClient(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject
     m_returnObject(returnObject),
     m_coreclrDirectory(coreclrDirectory)
 {
+    returnObject.SetStatus(lldb::eReturnStatusSuccessFinishResult);
 }
 
 DebugClient::~DebugClient()
@@ -153,12 +154,115 @@ DebugClient::GetExecutingProcessorType(
     return S_OK;
 }
 
+HRESULT 
+DebugClient::Execute(
+    ULONG outputControl,
+    PCSTR command,
+    ULONG flags)
+{
+    lldb::SBCommandInterpreter interpreter = m_debugger.GetCommandInterpreter();
+
+    lldb::SBCommandReturnObject result;
+    lldb::ReturnStatus status = interpreter.HandleCommand(command, result);
+
+    return status <= lldb::eReturnStatusSuccessContinuingResult ? S_OK : E_FAIL;
+}
+
+// PAL raise exception function and exception record pointer variable name
+// See coreclr\src\pal\src\exception\seh-unwind.cpp for the details.
+#define FUNCTION_NAME "RtlpRaiseException"
+#define VARIABLE_NAME "ExceptionRecord"
+
+HRESULT 
+DebugClient::GetLastEventInformation(
+    PULONG type,
+    PULONG processId,
+    PULONG threadId,
+    PVOID extraInformation,
+    ULONG extraInformationSize,
+    PULONG extraInformationUsed,
+    PSTR description,
+    ULONG descriptionSize,
+    PULONG descriptionUsed)
+{
+    if (extraInformationSize < sizeof(DEBUG_LAST_EVENT_INFO_EXCEPTION) || 
+        type == NULL || processId == NULL || threadId == NULL || extraInformationUsed == NULL) 
+    {
+        return E_FAIL;
+    }
+
+    *type = DEBUG_EVENT_EXCEPTION;
+    *processId = 0;
+    *threadId = 0;
+    *extraInformationUsed = sizeof(DEBUG_LAST_EVENT_INFO_EXCEPTION);
+
+    DEBUG_LAST_EVENT_INFO_EXCEPTION *pdle = (DEBUG_LAST_EVENT_INFO_EXCEPTION *)extraInformation;
+    pdle->FirstChance = 1; 
+
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        return E_FAIL;
+    }
+    lldb::SBThread thread = process.GetSelectedThread();
+    if (!thread.IsValid())
+    {
+        return E_FAIL;
+    }
+
+    // Enumerate each stack frame at the special "throw"
+    // breakpoint and find the raise exception function 
+    // with the exception record parameter.
+    int numFrames = thread.GetNumFrames();
+    for (int i = 0; i < numFrames; i++)
+    {
+        lldb::SBFrame frame = thread.GetFrameAtIndex(i);
+        if (!frame.IsValid())
+        {
+            break;
+        }
+
+        const char *functionName = frame.GetFunctionName();
+        if (functionName == NULL || strncmp(functionName, FUNCTION_NAME, sizeof(FUNCTION_NAME) - 1) != 0)
+        {
+            continue;
+        }
+
+        lldb::SBValue exValue = frame.FindVariable(VARIABLE_NAME);
+        if (!exValue.IsValid())
+        {
+            break;
+        }
+
+        lldb::SBError error;
+        ULONG64 pExceptionRecord = exValue.GetValueAsUnsigned(error);
+        if (error.Fail())
+        {
+            break;
+        }
+
+        process.ReadMemory(pExceptionRecord, &pdle->ExceptionRecord, sizeof(pdle->ExceptionRecord), error);
+        if (error.Fail())
+        {
+            break;
+        }
+
+        return S_OK;
+    }
+
+    return E_FAIL;
+}
+
 // Internal output string function
 void
 DebugClient::OutputString(
     ULONG mask,
     PCSTR str)
 {
+    if (mask == DEBUG_OUTPUT_ERROR)
+    {
+        m_returnObject.SetStatus(lldb::eReturnStatusFailed);
+    }
     // Can not use AppendMessage or AppendWarning because they add a newline. SetError
     // can not be used for DEBUG_OUTPUT_ERROR mask because it caches the error strings
     // seperately from the normal output so error/normal texts are not intermixed 
@@ -203,11 +307,23 @@ DebugClient::WriteVirtual(
     ULONG bufferSize,
     PULONG bytesWritten)
 {
+    lldb::SBError error;
+    size_t written = 0;
+
+    lldb::SBProcess process = GetCurrentProcess();
+    if (!process.IsValid())
+    {
+        goto exit;
+    }
+
+    written = process.WriteMemory(offset, buffer, bufferSize, error);
+
+exit:
     if (bytesWritten)
     {
-        *bytesWritten = 0;
+        *bytesWritten = written;
     }
-    return E_NOTIMPL;
+    return error.Success() ? S_OK : E_FAIL;
 }
 
 //----------------------------------------------------------------------------

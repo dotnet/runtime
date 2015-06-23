@@ -271,7 +271,9 @@ DECLARE_API(IP2MD)
     TADDR IP = 0;
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -655,7 +657,9 @@ DECLARE_API(DumpStackObjects)
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
         {"-verify", &bVerify, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE}
+#endif
     };    
     CMDValue arg[] = 
     {   // vptr, type
@@ -691,7 +695,9 @@ DECLARE_API(DumpMD)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -1129,7 +1135,9 @@ DECLARE_API(DumpClass)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -1257,7 +1265,9 @@ DECLARE_API(DumpMT)
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
         {"-MD", &bDumpMDTable, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE}
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -1757,7 +1767,9 @@ DECLARE_API(DumpArray)
         {"-length", &flags.Length, COSIZE_T, TRUE},
         {"-details", &flags.bDetail, COBOOL, FALSE},
         {"-nofields", &flags.bNoFieldsForElement, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -1973,7 +1985,9 @@ DECLARE_API(DumpObj)
     {   // name, vptr, type, hasValue
         {"-nofields", &bNoFields, COBOOL, FALSE},
         {"-refs", &bRefs, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -2589,7 +2603,9 @@ DECLARE_API(PrintException)
         {"-lines", &bLineNumbers, COBOOL, FALSE},
         {"-l", &bLineNumbers, COBOOL, FALSE},
         {"-ccw", &bCCW, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE}
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -2733,8 +2749,6 @@ DECLARE_API(PrintException)
     return Status;
 }
 
-#ifndef FEATURE_PAL
-
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
@@ -2753,7 +2767,9 @@ DECLARE_API(DumpVC)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE}
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -2781,6 +2797,8 @@ DECLARE_API(DumpVC)
 
     return PrintVC(p_MT, p_Object);
 }
+
+#ifndef FEATURE_PAL
 
 #ifdef FEATURE_COMINTEROP
 
@@ -3610,7 +3628,9 @@ public:
             {"-max", &mMaxSize, COHEX, TRUE},        // max size of objects to display
             {"-live", &mLive, COHEX, FALSE},         // only print live objects
             {"-dead", &mDead, COHEX, FALSE},         // only print dead objects
+#ifndef FEATURE_PAL
             {"/d", &mDML, COBOOL, FALSE},            // Debugger Markup Language
+#endif
         };
 
         CMDValue arg[] = 
@@ -5208,7 +5228,9 @@ DECLARE_API(DumpModule)
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
         {"-mt", &bMethodTables, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE}
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -5296,7 +5318,9 @@ DECLARE_API(DumpDomain)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -5414,7 +5438,9 @@ DECLARE_API(DumpAssembly)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -5952,7 +5978,9 @@ DECLARE_API(Threads)
     {   // name, vptr, type, hasValue
         {"-special", &bPrintSpecialThreads, COBOOL, FALSE},
         {"-live", &bPrintLiveThreadsOnly, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     if (!GetCMDOption(args, option, _countof(option), NULL, 0, NULL)) 
     {
@@ -6041,6 +6069,7 @@ DECLARE_API(WatsonBuckets)
         
     return Status;
 } // WatsonBuckets()
+#endif // FEATURE_PAL
 
 struct PendingBreakpoint
 {
@@ -6062,7 +6091,7 @@ struct PendingBreakpoint
     }
 
     PendingBreakpoint *pNext;
-    PendingBreakpoint() : pNext(NULL), ilOffset(0), lineNumber(0), methodToken(0)
+    PendingBreakpoint() : lineNumber(0), ilOffset(0), methodToken(0), pNext(NULL) 
     {
         szModuleName[0] = L'\0';
         szFunctionName[0] = L'\0';
@@ -6106,9 +6135,13 @@ void IssueDebuggerBPCommand ( CLRDATA_ADDRESS addr )
             wcscpy_s(wszNameBuffer, _countof(wszNameBuffer), W("UNKNOWN"));        
         }
 
+#ifndef FEATURE_PAL
         sprintf_s(buffer, _countof(buffer), "bp %p", (void*) (size_t) addr);
+#else
+        sprintf_s(buffer, _countof(buffer), "breakpoint set --address 0x%p", (void*) (size_t) addr);
+#endif
         ExtOut("Setting breakpoint: %s [%S]\n", buffer, wszNameBuffer);
-        g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);
+        g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
 
         if ( curLimit < MaxBPsCached )
             alreadyPlacedBPs[curLimit++] = addr;
@@ -6264,6 +6297,7 @@ public:
         }
     }
 
+#ifndef FEATURE_PAL
     void SaveBreakpoints(FILE* pFile)
     {
         PendingBreakpoint *pCur = m_breakpoints;
@@ -6276,6 +6310,7 @@ public:
             pCur = pCur->pNext;
         }
     }
+#endif
 
     void ClearBreakpoint(size_t breakPointToClear)
     {
@@ -6332,11 +6367,11 @@ public:
 
         //get a pointer to just the filename (the portion after the last backslash)
         WCHAR* pModuleFilename = wszNameBuffer;
-        WCHAR* pSlash = wcschr(pModuleFilename, L'\\');
+        WCHAR* pSlash = wcschr(pModuleFilename, DIRECTORY_SEPARATOR_CHAR_W);
         while(pSlash != NULL)
         {
             pModuleFilename = pSlash+1;
-            pSlash = wcschr(pModuleFilename, L'\\');
+            pSlash = wcschr(pModuleFilename, DIRECTORY_SEPARATOR_CHAR_W);
         }
 
         ImageInfo ii;
@@ -6687,9 +6722,7 @@ public:
                     DacpGetModuleAddress dgma;
                     if (SUCCEEDED(dgma.Request(pMod)))
                     {
-#ifndef FEATURE_PAL
                         g_bpoints.Update(TO_TADDR(dgma.ModulePtr), FALSE);
-#endif
                     }
                     else
                     {
@@ -6723,9 +6756,7 @@ public:
         DacpGetModuleAddress dgma;
         if (SUCCEEDED(dgma.Request(mod)))
         {
-#ifndef FEATURE_PAL
             g_bpoints.Update(TO_TADDR(dgma.ModulePtr), TRUE);
-#endif
         }
 
         if(!g_fAllowJitOptimization)
@@ -6754,9 +6785,7 @@ public:
         DacpGetModuleAddress dgma;
         if (SUCCEEDED(dgma.Request(mod)))
         {
-#ifndef FEATURE_PAL
             g_bpoints.RemovePendingForModule(TO_TADDR(dgma.ModulePtr));
-#endif
         }
 
         m_dbgStatus = DEBUG_STATUS_GO_HANDLED;
@@ -6838,15 +6867,16 @@ BOOL CheckCLRNotificationEvent(DEBUG_LAST_EVENT_INFO_EXCEPTION* pdle)
 {
     ULONG Type, ProcessId, ThreadId;
     ULONG ExtraInformationUsed;
-    HRESULT Status = g_ExtControl->GetLastEventInformation( &Type,
-                                                    &ProcessId,
-                                                    &ThreadId,
-                                                    pdle,
-                                                    sizeof(DEBUG_LAST_EVENT_INFO_EXCEPTION),
-                                                    &ExtraInformationUsed,
-                                                    NULL,
-                                                    0,
-                                                    NULL);
+    HRESULT Status = g_ExtControl->GetLastEventInformation(
+        &Type,
+        &ProcessId,
+        &ThreadId,
+        pdle,
+        sizeof(DEBUG_LAST_EVENT_INFO_EXCEPTION),
+        &ExtraInformationUsed,
+        NULL,
+        0,
+        NULL);
 
     if (Status != S_OK || Type != DEBUG_EVENT_EXCEPTION)
     {
@@ -6859,11 +6889,10 @@ BOOL CheckCLRNotificationEvent(DEBUG_LAST_EVENT_INFO_EXCEPTION* pdle)
     }
 
     return TRUE;
-    }
+}
 
 HRESULT HandleCLRNotificationEvent()
 {
-    HRESULT Status = E_FAIL;
     /*
      * Did we get module load notification? If so, check if any in our pending list
      * need to be registered for jit notification.
@@ -6877,12 +6906,13 @@ HRESULT HandleCLRNotificationEvent()
     if (!CheckCLRNotificationEvent(&dle))
     {
         ExtOut("Expecting first chance CLRN exception\n");
-        return Status;
+        return E_FAIL;
     }
 
     // Notification only needs to live for the lifetime of the call below, so it's a non-static
     // local.
-    if (g_clrData->TranslateExceptionRecordToNotification(&dle.ExceptionRecord, &Notification) != S_OK)
+    HRESULT Status = g_clrData->TranslateExceptionRecordToNotification(&dle.ExceptionRecord, &Notification);
+    if (Status != S_OK)
     {
         ExtOut("Error processing exception notification\n");
         return Status;
@@ -6894,16 +6924,19 @@ HRESULT HandleCLRNotificationEvent()
             case DEBUG_STATUS_GO:
             case DEBUG_STATUS_GO_HANDLED:
             case DEBUG_STATUS_GO_NOT_HANDLED:
+#ifndef FEATURE_PAL
                 g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, "g", 0);
+#else
+                g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, "process continue", 0);
+#endif
                 break;
             default:
                 break;
         }
     }
 
-    return Status;
+    return S_OK;
 }
-
 
 DECLARE_API(HandleCLRN)
 {
@@ -6913,7 +6946,6 @@ DECLARE_API(HandleCLRN)
     return HandleCLRNotificationEvent();
 }
 
-#ifndef FEATURE_PAL
 DECLARE_API(bpmd)
 {
     INIT_API_NOEE();    
@@ -7222,6 +7254,7 @@ DECLARE_API(bpmd)
         }
         else if (MethodDescData.bIsDynamic)
         {
+#ifndef FEATURE_PAL
             // Dynamic methods don't have JIT notifications. This is something we must
             // fix in the next release. Until then, you have a cumbersome user experience.
             ExtOut("This DynamicMethodDesc is not yet JITTED. Placing memory breakpoint at %p\n",
@@ -7238,12 +7271,15 @@ DECLARE_API(bpmd)
                 (void*) (size_t) MethodDescData.AddressOfNativeCodeSlot,
                 (void*) (size_t) MethodDescData.AddressOfNativeCodeSlot);
 
-            Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);
+            Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
             if (FAILED(Status))
             {
                 ExtOut("Unable to set breakpoint with IDebugControl::Execute: %x\n",Status);
                 ExtOut("Attempted to run: %s\n", buffer);                
             }            
+#else
+            ExtErr("This DynamicMethodDesc is not yet JITTED %p\n", MethodDescData.AddressOfNativeCodeSlot);
+#endif // FEATURE_PAL
         }
         else
         {
@@ -7267,13 +7303,24 @@ DECLARE_API(bpmd)
     if (bNeedNotificationExceptions)
     {
         ExtOut("Adding pending breakpoints...\n");
+#ifndef FEATURE_PAL
         sprintf_s(buffer, _countof(buffer), "sxe -c \"!HandleCLRN\" clrn");
-        Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);        
+        Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);        
+#else
+        sprintf_s(buffer, _countof(buffer), "breakpoint set -E c++ -h false -w true");
+        Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);        
+        if (Status == S_OK)
+        {
+            sprintf_s(buffer, _countof(buffer), "breakpoint command add -o \"sos HandleCLRN\"");
+            Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
+        }
+#endif // FEATURE_PAL
     }
 
     return Status;
 }
-#endif
+
+#ifndef FEATURE_PAL
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -7430,7 +7477,9 @@ DECLARE_API(FindAppDomain)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
@@ -8877,7 +8926,9 @@ DECLARE_API(Token2EE)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
 
     CMDValue arg[] = 
@@ -8932,7 +8983,7 @@ DECLARE_API(Token2EE)
             FileNameForModule(dwAddr, FileName);
 
             // We'd like a short form for this output
-            LPWSTR pszFilename = wcsrchr (FileName, L'\\');
+            LPWSTR pszFilename = wcsrchr (FileName, DIRECTORY_SEPARATOR_CHAR_W);
             if (pszFilename == NULL)
             {
                 pszFilename = FileName;
@@ -8969,7 +9020,9 @@ DECLARE_API(Name2EE)
 
     CMDOption option[] = 
     {   // name, vptr, type, hasValue
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     
     CMDValue arg[] = 
@@ -9060,7 +9113,7 @@ DECLARE_API(Name2EE)
             FileNameForModule (dwAddr, FileName);
 
             // We'd like a short form for this output
-            LPWSTR pszFilename = wcsrchr (FileName, L'\\');
+            LPWSTR pszFilename = wcsrchr (FileName, DIRECTORY_SEPARATOR_CHAR_W);
             if (pszFilename == NULL)
             {
                 pszFilename = FileName;
@@ -10012,7 +10065,7 @@ DECLARE_API(GetCodeTypeFlags)
     sprintf_s(buffer,_countof (buffer),
         "r$t%d=%x",
         preg, codeType);
-    Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);
+    Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
     if (FAILED(Status))
     {
         ExtOut("Error setting register $t%d\n", preg);
@@ -10081,7 +10134,7 @@ DECLARE_API(StopOnException)
     sprintf_s(buffer,_countof (buffer),
         "r$t%d=0",
         preg);
-    Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);
+    Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
     if (FAILED(Status))
     {
         ExtOut("Error initialized register $t%d to zero\n", preg);
@@ -10101,7 +10154,7 @@ DECLARE_API(StopOnException)
             EXCEPTION_COMPLUS
             );
             
-        Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);        
+        Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);        
         if (FAILED(Status))
         {
             ExtOut("Error setting breakpoint: %s\n", buffer);
@@ -10147,7 +10200,7 @@ DECLARE_API(StopOnException)
                 sprintf_s(buffer,_countof (buffer),
                     "r$t%d=1",
                     preg);
-                Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer ,0);
+                Status = g_ExtControl->Execute(DEBUG_EXECUTE_NOT_LOGGED, buffer, 0);
                 if (FAILED(Status))
                 {
                     ExtOut("Failed to execute the following command: %s\n", buffer);
@@ -12120,7 +12173,9 @@ DECLARE_API(ClrStack)
         {"-n", &bSuppressLines, COBOOL, FALSE},
         {"-i", &bICorDebug, COBOOL, FALSE},
         {"-gc", &bGC, COBOOL, FALSE},
+#ifndef FEATURE_PAL
         {"/d", &dml, COBOOL, FALSE},
+#endif
     };
     CMDValue arg[] = 
     {   // vptr, type
