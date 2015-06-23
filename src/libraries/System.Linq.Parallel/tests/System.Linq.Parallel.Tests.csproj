@@ -29,6 +29,7 @@
     <Compile Include="Combinatorial\UnorderedParallelQueryCombinationTests.cs" />
     <Compile Include="Helpers\Comparers.cs" />
     <Compile Include="Helpers\DeliberateTestException.cs" />
+    <Compile Include="Helpers\Enumerables.cs" />
     <Compile Include="Helpers\Functions.cs" />
     <Compile Include="Helpers\IntegerRangeSet.cs" />
     <Compile Include="Helpers\Labeled.cs" />
@@ -78,10 +79,8 @@
     <Compile Include="QueryOperators\ZipTests.cs" />
     <Compile Include="DegreeOfParallelismTests.cs" />
     <Compile Include="EtwTests.cs" />
-    <Compile Include="ExceptionAndParallelEnumerableExceptionTests.cs" />
     <Compile Include="ExchangeTests.cs" />
     <Compile Include="ParallelEnumerableTests.cs" />
-    <Compile Include="PlinqDelegateExceptions.cs" />
     <Compile Include="PlinqModesTests.cs" />
     <Compile Include="WithCancellationTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />

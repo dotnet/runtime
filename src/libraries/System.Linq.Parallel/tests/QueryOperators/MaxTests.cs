@@ -11,10 +11,14 @@ namespace Test
 {
     public class MaxTests
     {
+        // Get a set of ranges from 0 to each count, having an extra parameter describing the maximum (count - 1)
         public static IEnumerable<object[]> MaxData(object[] counts)
         {
             Func<int, int> max = x => x - 1;
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), max)) yield return results;
+            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), max))
+            {
+                yield return results;
+            }
         }
 
         //
@@ -224,6 +228,14 @@ namespace Test
         }
 
         [Theory]
+        [MemberData("MaxData", (object)(new int[] { 1, }))]
+        public static void Max_NotComparable(Labeled<ParallelQuery<int>> labeled, int count, int max)
+        {
+            NotComparable a = new NotComparable(0);
+            Assert.Equal(a, labeled.Item.Max(x => a));
+        }
+
+        [Theory]
         [MemberData("MaxData", (object)(new int[] { 1, 2, 16 }))]
         public static void Max_Other_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, int max)
         {
@@ -241,30 +253,28 @@ namespace Test
             Assert.Null(query.Max(x => (string)null));
         }
 
-        [Fact]
-        public static void Max_InvalidOperationException()
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
+        public static void Max_EmptyNullable(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<int>().Max());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<int>().Max(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<long>().Max());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<long>().Max(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<float>().Max());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<float>().Max(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<double>().Max());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<double>().Max(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<decimal>().Max());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<decimal>().Max(x => x));
-            // Nullables return null when empty
-            Assert.Null(ParallelEnumerable.Empty<int?>().Max());
-            Assert.Null(ParallelEnumerable.Empty<int?>().Max(x => x));
-            Assert.Null(ParallelEnumerable.Empty<long?>().Max());
-            Assert.Null(ParallelEnumerable.Empty<long?>().Max(x => x));
-            Assert.Null(ParallelEnumerable.Empty<float?>().Max());
-            Assert.Null(ParallelEnumerable.Empty<float?>().Max(x => x));
-            Assert.Null(ParallelEnumerable.Empty<double?>().Max());
-            Assert.Null(ParallelEnumerable.Empty<double?>().Max(x => x));
-            Assert.Null(ParallelEnumerable.Empty<decimal?>().Max());
-            Assert.Null(ParallelEnumerable.Empty<decimal?>().Max(x => x));
+            Assert.Null(labeled.Item.Max(x => (int?)x));
+            Assert.Null(labeled.Item.Max(x => (long?)x));
+            Assert.Null(labeled.Item.Max(x => (float?)x));
+            Assert.Null(labeled.Item.Max(x => (double?)x));
+            Assert.Null(labeled.Item.Max(x => (decimal?)x));
+            Assert.Null(labeled.Item.Max(x => new NotComparable(x)));
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
+        public static void Max_InvalidOperationException(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (long)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (float)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (double)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => (decimal)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Max(x => KeyValuePair.Create(x, x)));
         }
 
         [Theory]
@@ -288,6 +298,8 @@ namespace Test
 
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (decimal)x));
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => (decimal?)x));
+
+            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Max(x => KeyValuePair.Create(x, x)));
         }
 
         [Theory]
@@ -308,6 +320,15 @@ namespace Test
 
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, decimal>)(x => { throw new DeliberateTestException(); })));
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, decimal?>)(x => { throw new DeliberateTestException(); })));
+
+            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Max((Func<int, KeyValuePair<int, int>>)(x => { throw new DeliberateTestException(); })));
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Max_AggregateException_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            Functions.AssertThrowsWrapped<ArgumentException>(() => labeled.Item.Max(x => new NotComparable(x)));
         }
 
         [Fact]
@@ -337,17 +358,21 @@ namespace Test
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat((decimal)0, 1).Max((Func<decimal, decimal>)null));
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<decimal?>)null).Max());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat((decimal?)0, 1).Max((Func<decimal?, decimal>)null));
+
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<KeyValuePair<int, int>>)null).Max());
+            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Max((Func<int, KeyValuePair<int, int>>)null));
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).Max());
+            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(new object(), 1).Max((Func<object, object>)null));
         }
 
-        private static string GetMostNines(int max)
+        private class NotComparable
         {
-            if (max < 10)
-            {
-                return max.ToString();
-            }
+            private int x;
 
-            // This fails if the maximum's most significant digit is (the text representation starts with) a '9'
-            return string.Join("", Enumerable.Repeat(9, (int)Math.Log10(max)));
+            public NotComparable(int x)
+            {
+                this.x = x;
+            }
         }
     }
 }
