@@ -78,9 +78,38 @@ public:
     // current processor context.
     virtual HRESULT GetExecutingProcessorType(
         PULONG type) = 0;
+
+    // Executes the given command string.
+    // If the string has multiple commands
+    // Execute will not return until all
+    // of them have been executed.  If this
+    // requires waiting for the debuggee to
+    // execute an internal wait will be done
+    // so Execute can take an arbitrary amount
+    // of time.
+    virtual HRESULT Execute(
+        ULONG outputControl,
+        PCSTR command,
+        ULONG flags) = 0;
+
+    // Retrieves information about the last event that occurred.
+    // EventType is one of the event callback mask bits.
+    // ExtraInformation contains additional event-specific
+    // information.  Not all events have additional information.
+    virtual HRESULT GetLastEventInformation(
+        PULONG type,
+        PULONG processId,
+        PULONG threadId,
+        PVOID extraInformation,
+        ULONG extraInformationSize,
+        PULONG extraInformationUsed,
+        PSTR description,
+        ULONG descriptionSize,
+        PULONG descriptionUsed) = 0;
 };
 
 typedef class IDebugControl2* PDEBUG_CONTROL2;
+
 // Output mask bits.
 // Normal output.
 #define DEBUG_OUTPUT_NORMAL            0x00000001
@@ -103,6 +132,26 @@ typedef class IDebugControl2* PDEBUG_CONTROL2;
 // Symbol messages, such as for !sym noisy.
 #define DEBUG_OUTPUT_SYMBOLS           0x00000200
 
+// Execute and ExecuteCommandFile flags.
+// These flags only apply to the command
+// text itself; output from the executed
+// command is controlled by the output
+// control parameter.
+// Default execution.  Command is logged
+// but not output.
+#define DEBUG_EXECUTE_DEFAULT    0x00000000
+// Echo commands during execution.  In
+// ExecuteCommandFile also echoes the prompt
+// for each line of the file.
+#define DEBUG_EXECUTE_ECHO       0x00000001
+// Do not log or output commands during execution.
+// Overridden by DEBUG_EXECUTE_ECHO.
+#define DEBUG_EXECUTE_NOT_LOGGED 0x00000002
+// If this flag is not set an empty string
+// to Execute will repeat the last Execute
+// string.
+#define DEBUG_EXECUTE_NO_REPEAT  0x00000004
+
 // Classes of debuggee.  Each class
 // has different qualifiers for specific
 // kinds of debuggees.
@@ -113,6 +162,57 @@ typedef class IDebugControl2* PDEBUG_CONTROL2;
 
 #define IMAGE_FILE_MACHINE_I386              0x014c  // Intel 386.
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
+
+// Execution status codes used for waiting,
+// for returning current status and for
+// event method return values.
+#define DEBUG_STATUS_NO_CHANGE           0
+#define DEBUG_STATUS_GO                  1
+#define DEBUG_STATUS_GO_HANDLED          2
+#define DEBUG_STATUS_GO_NOT_HANDLED      3
+#define DEBUG_STATUS_STEP_OVER           4
+#define DEBUG_STATUS_STEP_INTO           5
+#define DEBUG_STATUS_BREAK               6
+#define DEBUG_STATUS_NO_DEBUGGEE         7
+#define DEBUG_STATUS_STEP_BRANCH         8
+#define DEBUG_STATUS_IGNORE_EVENT        9
+#define DEBUG_STATUS_RESTART_REQUESTED   10
+#define DEBUG_STATUS_REVERSE_GO          11
+#define DEBUG_STATUS_REVERSE_STEP_BRANCH 12
+#define DEBUG_STATUS_REVERSE_STEP_OVER   13
+#define DEBUG_STATUS_REVERSE_STEP_INTO   14
+#define DEBUG_STATUS_OUT_OF_SYNC         15
+#define DEBUG_STATUS_WAIT_INPUT          16
+#define DEBUG_STATUS_TIMEOUT             17
+
+#define DEBUG_STATUS_MASK                0x1f
+
+#define DEBUG_EVENT_EXCEPTION            0x00000002
+
+#ifdef DEFINE_EXCEPTION_RECORD
+
+#define EXCEPTION_MAXIMUM_PARAMETERS     15
+
+// This copy of the "64" bit record has been modified
+// by removing the alignment field to make it the same
+// as the _EXCEPTION_RECORD used in the pal defined in 
+// pal.h.
+typedef struct _EXCEPTION_RECORD64 {
+    DWORD ExceptionCode;
+    DWORD ExceptionFlags;
+    DWORD64 ExceptionRecord;
+    DWORD64 ExceptionAddress;
+    DWORD NumberParameters;
+    DWORD64 ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
+} EXCEPTION_RECORD64, *PEXCEPTION_RECORD64;
+
+#endif // DEFINE_EXCEPTION_RECORD
+
+typedef struct _DEBUG_LAST_EVENT_INFO_EXCEPTION
+{
+    EXCEPTION_RECORD64 ExceptionRecord;
+    ULONG FirstChance;
+} DEBUG_LAST_EVENT_INFO_EXCEPTION, *PDEBUG_LAST_EVENT_INFO_EXCEPTION;
 
 //----------------------------------------------------------------------------
 // IDebugDataSpaces

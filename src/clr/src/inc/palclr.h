@@ -86,7 +86,7 @@
 #define PORTABILITY_ASSERT(message)     _ASSERTE(false && message)
 #endif
 
-
+#define DIRECTORY_SEPARATOR_CHAR_A '\\'
 #define DIRECTORY_SEPARATOR_CHAR_W W('\\')
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 
