@@ -11,10 +11,14 @@ namespace Test
 {
     public class MinTests
     {
+        // Get a set of ranges from 0 to each count, with an extra parameter for a minimum where each item is negated (-x).
         public static IEnumerable<object[]> MinData(object[] counts)
         {
             Func<int, int> min = x => 1 - x;
-            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), min)) yield return results;
+            foreach (object[] results in UnorderedSources.Ranges(counts.Cast<int>(), min))
+            {
+                yield return results;
+            }
         }
 
         //
@@ -223,6 +227,14 @@ namespace Test
         }
 
         [Theory]
+        [MemberData("MinData", (object)(new int[] { 1, }))]
+        public static void Min_NotComparable(Labeled<ParallelQuery<int>> labeled, int count, int min)
+        {
+            NotComparable a = new NotComparable(0);
+            Assert.Equal(a, labeled.Item.Min(x => a));
+        }
+
+        [Theory]
         [MemberData("MinData", (object)(new int[] { 1, 2, 16 }))]
         public static void Min_Other_SomeNull(Labeled<ParallelQuery<int>> labeled, int count, int min)
         {
@@ -240,30 +252,28 @@ namespace Test
             Assert.Null(query.Min(x => (string)null));
         }
 
-        [Fact]
-        public static void Min_InvalidOperationException()
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
+        public static void Min_EmptyNullable(Labeled<ParallelQuery<int>> labeled, int count)
         {
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<int>().Min());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<int>().Min(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<long>().Min());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<long>().Min(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<float>().Min());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<float>().Min(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<double>().Min());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<double>().Min(x => x));
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<decimal>().Min());
-            Assert.Throws<InvalidOperationException>(() => ParallelEnumerable.Empty<decimal>().Min(x => x));
-            // Nullables return null when empty
-            Assert.Null(ParallelEnumerable.Empty<int?>().Min());
-            Assert.Null(ParallelEnumerable.Empty<int?>().Min(x => x));
-            Assert.Null(ParallelEnumerable.Empty<long?>().Min());
-            Assert.Null(ParallelEnumerable.Empty<long?>().Min(x => x));
-            Assert.Null(ParallelEnumerable.Empty<float?>().Min());
-            Assert.Null(ParallelEnumerable.Empty<float?>().Min(x => x));
-            Assert.Null(ParallelEnumerable.Empty<double?>().Min());
-            Assert.Null(ParallelEnumerable.Empty<double?>().Min(x => x));
-            Assert.Null(ParallelEnumerable.Empty<decimal?>().Min());
-            Assert.Null(ParallelEnumerable.Empty<decimal?>().Min(x => x));
+            Assert.Null(labeled.Item.Min(x => (int?)x));
+            Assert.Null(labeled.Item.Min(x => (long?)x));
+            Assert.Null(labeled.Item.Min(x => (float?)x));
+            Assert.Null(labeled.Item.Min(x => (double?)x));
+            Assert.Null(labeled.Item.Min(x => (decimal?)x));
+            Assert.Null(labeled.Item.Min(x => new NotComparable(x)));
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 0 }), MemberType = typeof(UnorderedSources))]
+        public static void Min_InvalidOperationException(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min());
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (long)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (float)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (double)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => (decimal)x));
+            Assert.Throws<InvalidOperationException>(() => labeled.Item.Min(x => KeyValuePair.Create(x, x)));
         }
 
         [Theory]
@@ -287,6 +297,8 @@ namespace Test
 
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => (decimal)x));
             Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => (decimal?)x));
+
+            Functions.AssertIsCanceled(cs, () => labeled.Item.WithCancellation(cs.Token).Min(x => KeyValuePair.Create(x, x)));
         }
 
         [Theory]
@@ -307,6 +319,15 @@ namespace Test
 
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, decimal>)(x => { throw new DeliberateTestException(); })));
             Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, decimal?>)(x => { throw new DeliberateTestException(); })));
+
+            Functions.AssertThrowsWrapped<DeliberateTestException>(() => labeled.Item.Min((Func<int, KeyValuePair<int, int>>)(x => { throw new DeliberateTestException(); })));
+        }
+
+        [Theory]
+        [MemberData("Ranges", (object)(new int[] { 2 }), MemberType = typeof(UnorderedSources))]
+        public static void Min_AggregateException_NotComparable(Labeled<ParallelQuery<int>> labeled, int count)
+        {
+            Functions.AssertThrowsWrapped<ArgumentException>(() => labeled.Item.Min(x => new NotComparable(x)));
         }
 
         [Fact]
@@ -336,12 +357,21 @@ namespace Test
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat((decimal)0, 1).Min((Func<decimal, decimal>)null));
             Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<decimal?>)null).Min());
             Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat((decimal?)0, 1).Min((Func<decimal?, decimal>)null));
+
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<KeyValuePair<int, int>>)null).Min());
+            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(0, 1).Min((Func<int, KeyValuePair<int, int>>)null));
+            Assert.Throws<ArgumentNullException>(() => ((ParallelQuery<object>)null).Min());
+            Assert.Throws<ArgumentNullException>(() => ParallelEnumerable.Repeat(new object(), 1).Min((Func<object, object>)null));
         }
 
-        private static string GetMostZeroes(int count)
+        private class NotComparable
         {
-            // This assumes that 0 itself shouldn't be returned...
-            return "1" + string.Join("", Enumerable.Repeat(0, (int)Math.Log10(count)));
+            private int x;
+
+            public NotComparable(int x)
+            {
+                this.x = x;
+            }
         }
     }
 }
