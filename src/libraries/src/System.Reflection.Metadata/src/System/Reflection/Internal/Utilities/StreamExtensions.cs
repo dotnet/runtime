@@ -29,7 +29,7 @@ namespace System.Reflection.Internal
 
                 if (bytesRead <= 0 || bytesRead > readSize)
                 {
-                    throw new IOException(MetadataResources.UnexpectedStreamEnd);
+                    throw new IOException(SR.UnexpectedStreamEnd);
                 }
 
                 Marshal.Copy(buffer, 0, (IntPtr)destination, bytesRead);

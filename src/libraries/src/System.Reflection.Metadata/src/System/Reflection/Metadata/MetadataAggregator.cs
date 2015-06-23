@@ -227,7 +227,7 @@ namespace System.Reflection.Metadata.Ecma335
                 {
                     if (rid != tableRowCounts[generation].AggregateInserts + 1)
                     {
-                        throw new BadImageFormatException(MetadataResources.EnCMapNotSorted);
+                        throw new BadImageFormatException(SR.EnCMapNotSorted);
                     }
 
                     // insert:
@@ -278,7 +278,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                 if (generation >= sizes.Length)
                 {
-                    throw new ArgumentException(MetadataResources.HandleBelongsToFutureGeneration, "handle");
+                    throw new ArgumentException(SR.HandleBelongsToFutureGeneration, "handle");
                 }
 
                 // GUID heap accumulates - previous heap is copied to the next generation 
@@ -311,7 +311,7 @@ namespace System.Reflection.Metadata.Ecma335
 
                     if (generation >= sizes.Length)
                     {
-                        throw new ArgumentException(MetadataResources.HandleBelongsToFutureGeneration, "handle");
+                        throw new ArgumentException(SR.HandleBelongsToFutureGeneration, "handle");
                     }
                 }
 

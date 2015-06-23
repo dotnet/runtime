@@ -191,7 +191,7 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void ThrowInvalidCodedIndex()
         {
-            throw new BadImageFormatException(MetadataResources.InvalidCodedIndex);
+            throw new BadImageFormatException(SR.InvalidCodedIndex);
         }
 
         public static readonly ModuleDefinitionHandle ModuleDefinition = new ModuleDefinitionHandle(1);
