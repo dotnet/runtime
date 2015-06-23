@@ -16,7 +16,8 @@ include_directories(${CLR_DIR}/src/gc)
 include_directories(${CLR_DIR}/src/gcdump)
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-  add_compile_options(-fPIC)
+    include_directories(${GENERATED_INCLUDE_DIR})
+    add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 set(DACCESS_SOURCES
@@ -54,3 +55,5 @@ convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 add_precompiled_header(stdafx.h stdafx.cpp DACCESS_SOURCES)
 
 add_library(daccess ${DACCESS_SOURCES})
+
+add_dependencies(daccess coreclr)
