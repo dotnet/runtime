@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.22816.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.UnitTests", "tests\UnitTests\System.Net.Http.Unit.Tests.csproj", "{5F9C3C9F-652E-461E-B2D6-85D264F5A733}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net.Http.Tests", "tests\System.Net.Http.Tests.csproj", "{5F9C3C9F-652E-461E-B2D6-85D264F5A733}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
