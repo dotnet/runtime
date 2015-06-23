@@ -191,18 +191,30 @@ namespace Mono.Linker.Steps {
 			if (!candidate.IsVirtual)
 				return false;
 
+			if (candidate.HasParameters != method.HasParameters)
+				return false;
+
 			if (candidate.Name != method.Name)
+				return false;
+
+			if (candidate.HasGenericParameters != method.HasGenericParameters)
 				return false;
 
 			if (!TypeMatch (candidate.ReturnType, method.ReturnType))
 				return false;
 
-			if (candidate.Parameters.Count != method.Parameters.Count)
+			if (!candidate.HasParameters)
+				return true;
+
+			var cp = candidate.Parameters;
+			var mp = method.Parameters;
+			if (cp.Count != mp.Count)
 				return false;
 
-			for (int i = 0; i < candidate.Parameters.Count; i++)
-				if (!TypeMatch (candidate.Parameters [i].ParameterType, method.Parameters [i].ParameterType))
+			for (int i = 0; i < cp.Count; i++) {
+				if (!TypeMatch (cp [i].ParameterType, mp [i].ParameterType))
 					return false;
+			}
 
 			return true;
 		}
@@ -217,11 +229,13 @@ namespace Mono.Linker.Steps {
 
 		static bool TypeMatch (TypeSpecification a, TypeSpecification b)
 		{
-			if (a is GenericInstanceType)
-				return TypeMatch ((GenericInstanceType) a, (GenericInstanceType) b);
+			var gita = a as GenericInstanceType;
+			if (gita != null)
+				return TypeMatch (gita, (GenericInstanceType) b);
 
-			if (a is IModifierType)
-				return TypeMatch ((IModifierType) a, (IModifierType) b);
+			var mta = a as IModifierType;
+			if (mta != null)
+				return TypeMatch (mta, (IModifierType) b);
 
 			return TypeMatch (a.ElementType, b.ElementType);
 		}
@@ -231,15 +245,21 @@ namespace Mono.Linker.Steps {
 			if (!TypeMatch (a.ElementType, b.ElementType))
 				return false;
 
-			if (a.GenericArguments.Count != b.GenericArguments.Count)
+			if (a.HasGenericArguments != b.HasGenericArguments)
 				return false;
 
-			if (a.GenericArguments.Count == 0)
+			if (!a.HasGenericArguments)
 				return true;
 
-			for (int i = 0; i < a.GenericArguments.Count; i++)
-				if (!TypeMatch (a.GenericArguments [i], b.GenericArguments [i]))
+			var gaa = a.GenericArguments;
+			var gab = b.GenericArguments;
+			if (gaa.Count != gab.Count)
+				return false;
+
+			for (int i = 0; i < gaa.Count; i++) {
+				if (!TypeMatch (gaa [i], gab [i]))
 					return false;
+			}
 
 			return true;
 		}
