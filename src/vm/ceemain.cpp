@@ -1423,6 +1423,7 @@ HRESULT EEStartup(COINITIEE fFlags)
 
 #if defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
     DacGlobals::Initialize();
+    InitializeJITNotificationTable();
 #endif
 
     PAL_TRY(COINITIEE *, pfFlags, &fFlags)
