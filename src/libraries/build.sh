@@ -50,12 +50,13 @@ if [ ! -e "$__nugetpath" ]; then
     fi
     echo "Restoring NuGet.exe..."
 
-    which wget > /dev/null 2> /dev/null
+    # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
+    which curl > /dev/null 2> /dev/null
     if [ $? -ne 0 ]; then
-       curl -sSL --create-dirs -o $__nugetpath https://api.nuget.org/downloads/nuget.exe
-    else
        mkdir -p $__packageroot
        wget -q -O $__nugetpath https://api.nuget.org/downloads/nuget.exe
+    else
+       curl -sSL --create-dirs -o $__nugetpath https://api.nuget.org/downloads/nuget.exe
     fi
 
     if [ $? -ne 0 ]; then
