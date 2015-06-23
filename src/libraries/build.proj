@@ -20,7 +20,8 @@
   <Target Name="BatchRestorePackages">
     <Message Importance="High" Text="Restoring all packages..." />
     <!-- restore all project.jsons in one pass for perf & to avoid concurrency problems with dnu -->
-    <Exec Command="$(DnuRestoreCommand) &quot;$(MSBuildProjectDirectory)\src&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
+    <!-- include ToolsDir to restore test-runtime\project.json as well -->
+    <Exec Command="$(DnuRestoreCommand) &quot;$(MSBuildProjectDirectory)\src&quot; &quot;$(ToolsDir)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
 
     <ItemGroup>
       <_allPackagesConfigs Include="$(MSBuildProjectDirectory)\src\**\packages.config"/>
