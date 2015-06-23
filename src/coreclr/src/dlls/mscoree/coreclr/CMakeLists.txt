@@ -117,7 +117,6 @@ endif(WIN32)
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 
 if(WIN32)
-
     add_dependencies(coreclr dactablegen)
 
     # Add dac table & debug resource to coreclr
@@ -133,6 +132,14 @@ if(WIN32)
         COMMAND $<TARGET_FILE:GenClrDebugResource> /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
         COMMAND $<TARGET_FILE:InjectResource> /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:coreclr> /name:CLRDEBUGINFO
         COMMENT Add dactable & debug resources to coreclr
+    )
+else()
+    add_custom_command(
+        TARGET coreclr
+        POST_BUILD
+        VERBATIM 
+        COMMAND sh ${CLR_DIR}/src/pal/tools/gen-dactable-rva.sh $<TARGET_FILE:coreclr> ${GENERATED_INCLUDE_DIR}/dactablerva.h
+        COMMENT Generating ${GENERATED_INCLUDE_DIR}/dactablerva.h
     )
 endif(WIN32)
 
