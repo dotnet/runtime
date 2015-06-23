@@ -53,6 +53,7 @@ internal static partial class Interop
             }
             else
             {
+                printf(System.Runtime.InteropServices.Marshal.SizeOf<statfs>().ToString() + "\r\n");
                 printf("Should be here\r\n");
                 return data;
             }

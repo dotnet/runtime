@@ -8,9 +8,6 @@ namespace System.IO.FileSystem.DriveInfoTests
 {
     public partial class DriveInfoUnixTests
     {
-        [Runtime.InteropServices.DllImport("libc")]
-        private static extern int printf(string data);
-
         [Fact]
         [PlatformSpecific(PlatformID.AnyUnix)]
         public void TestConstructor()
@@ -54,15 +51,10 @@ namespace System.IO.FileSystem.DriveInfoTests
             Assert.Equal("/", root.Name);
             Assert.Equal("/", root.RootDirectory.FullName);
             Assert.Equal(DriveType.Fixed, root.DriveType);
-            printf("Checked type\r\n");
             Assert.True(root.IsReady);
-            printf("Checked if ready\r\n");
             Assert.True(root.AvailableFreeSpace > 0);
-            printf("Checked free space\r\n");
             Assert.True(root.TotalFreeSpace > 0);
-            printf("checked total space\r\n");
             Assert.True(root.TotalSize > 0);
-            printf("done\r\n");
         }
     }
 }

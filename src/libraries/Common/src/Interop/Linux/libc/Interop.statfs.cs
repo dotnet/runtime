@@ -11,6 +11,9 @@ internal static partial class Interop
         /// <summary>
         /// Internal FileSystem names and magic numbers taken from man(2) statfs
         /// </summary>
+        /// <remarks>
+        /// These value names MUST be kept in sync with those in DriveInfo.Unix.GetDriveType
+        /// </remarks>
         internal enum LinuxFileSystemTypes : long
         {
             adfs = 0xadf5,
@@ -69,23 +72,23 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct statfs
         {
-            internal int f_type;
-            internal int f_bsize;
+            internal long f_type;
+            internal long f_bsize;
             internal ulong f_blocks;
             internal ulong f_bfree;
             internal ulong f_bavail;
             internal ulong f_files;
             internal ulong f_ffree;
             internal fsid_t f_fsid;
-            internal int f_namelen;
-            internal int f_frsize;
-            internal int f_flags;
-            internal fixed int f_space[4];
+            internal long f_namelen;
+            internal long f_frsize;
+            internal long f_flags;
+            internal fixed long f_space[4];
         }
 
         internal static unsafe String GetMountPointFsType(statfs data)
         {
-            return data.f_type.ToString();
+            return ((LinuxFileSystemTypes)data.f_type).ToString();
         }
     }
 }

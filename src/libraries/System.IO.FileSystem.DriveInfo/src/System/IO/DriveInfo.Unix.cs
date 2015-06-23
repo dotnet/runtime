@@ -8,9 +8,6 @@ namespace System.IO
 {
     public sealed partial class DriveInfo
     {
-        [DllImport("libc")]
-        static extern int printf(string data);
-
         private static string NormalizeDriveName(string driveName)
         {
             if (driveName.Contains("\0"))
@@ -30,7 +27,6 @@ namespace System.IO
             get
             {
                 Interop.libc.statfs data = Interop.libc.GetStatFsForDriveName(Name);
-                printf("Got data for name" + Name + "\r\n");
                 return GetDriveType(Interop.libc.GetMountPointFsType(data));
             }
         }
@@ -98,7 +94,6 @@ namespace System.IO
         /// <returns>The recognized drive type.</returns>
         private static DriveType GetDriveType(string fileSystemName)
         {
-            printf("Got type of " + fileSystemName + "\r\n");
             // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems",
             // and "wiki.debian.org/FileSystem". It can be extended over time as we 
             // find additional file systems that should be recognized as a particular drive type.
