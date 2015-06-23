@@ -17,7 +17,9 @@ namespace Microsoft.Framework.WebEncoders
         public void Ctor_WithCustomFilters()
         {
             // Arrange
-            var filter = new CodePointFilter().AllowCharacters("ab").AllowCharacters('\0', '&', '\uFFFF', 'd');
+            var filter = new CodePointFilter();
+            filter.AllowCharacters('a', 'b');
+            filter.AllowCharacters('\0', '&', '\uFFFF', 'd');
             UnicodeEncoderBase encoder = new CustomUnicodeEncoderBase(filter);
 
             // Act & assert
@@ -368,7 +370,7 @@ namespace Microsoft.Framework.WebEncoders
             return (0xD800 <= codePoint && codePoint <= 0xDFFF);
         }
 
-        private sealed class CustomCodePointFilter : ICodePointFilter
+        private sealed class CustomCodePointFilter : CodePointFilter
         {
             private readonly int[] _allowedCodePoints;
 
@@ -377,7 +379,7 @@ namespace Microsoft.Framework.WebEncoders
                 _allowedCodePoints = allowedCodePoints;
             }
 
-            public IEnumerable<int> GetAllowedCodePoints()
+            public override IEnumerable<int> GetAllowedCodePoints()
             {
                 return _allowedCodePoints;
             }

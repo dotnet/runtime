@@ -20,7 +20,9 @@ namespace Microsoft.Framework.WebEncoders
         public void Ctor_WithCodePointFilter()
         {
             // Arrange
-            var filter = new CodePointFilter().AllowCharacters("ab").AllowCharacters('\0', '&', '\uFFFF', 'd');
+            var filter = new CodePointFilter();
+            filter.AllowCharacters('a', 'b');
+            filter.AllowCharacters('\0', '&', '\uFFFF', 'd');
             UrlEncoder encoder = new UrlEncoder(filter);
 
             // Act & assert
