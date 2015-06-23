@@ -60,7 +60,7 @@ namespace System.Reflection.Metadata.Ecma335
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private static void ThrowInvalidHandle()
         {
-            throw new BadImageFormatException(MetadataResources.InvalidHandle);
+            throw new BadImageFormatException(SR.InvalidHandle);
         }
 
         /// <summary>

@@ -38,7 +38,7 @@ namespace System.Reflection.Metadata
             // the reader performs little-endian specific operations
             if (!BitConverter.IsLittleEndian)
             {
-                throw new PlatformNotSupportedException(MetadataResources.LitteEndianArchitectureRequired);
+                throw new PlatformNotSupportedException(SR.LitteEndianArchitectureRequired);
             }
 
             this = new BlobReader(new MemoryBlock(buffer, length));
@@ -163,7 +163,7 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowOutOfBounds()
         {
-            throw new BadImageFormatException(MetadataResources.OutOfBoundsRead);
+            throw new BadImageFormatException(SR.OutOfBoundsRead);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -423,13 +423,13 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInvalidCompressedInteger()
         {
-            throw new BadImageFormatException(MetadataResources.InvalidCompressedInteger);
+            throw new BadImageFormatException(SR.InvalidCompressedInteger);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInvalidSerializedString()
         {
-            throw new BadImageFormatException(MetadataResources.InvalidSerializedString);
+            throw new BadImageFormatException(SR.InvalidSerializedString);
         }
 
         /// <summary>

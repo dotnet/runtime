@@ -60,7 +60,7 @@ namespace System.Reflection.PortableExecutable
 
             if (!peStream.CanRead || !peStream.CanSeek)
             {
-                throw new ArgumentException(MetadataResources.StreamMustSupportReadAndSeek, "peStream");
+                throw new ArgumentException(SR.StreamMustSupportReadAndSeek, "peStream");
             }
 
             int size = PEBinaryReader.GetAndValidateSize(peStream, sizeOpt);
@@ -219,7 +219,7 @@ namespace System.Reflection.PortableExecutable
             int length = _peHeader.CorHeaderTableDirectory.Size;
             if (length < COR20Constants.SizeOfCorHeader)
             {
-                throw new BadImageFormatException(MetadataResources.InvalidCorHeaderSize);
+                throw new BadImageFormatException(SR.InvalidCorHeaderSize);
             }
 
             return true;
@@ -244,7 +244,7 @@ namespace System.Reflection.PortableExecutable
                 else
                 {
                     // Might need to handle other formats. Anonymous or LTCG objects, for example.
-                    throw new BadImageFormatException(MetadataResources.UnknownFileFormat);
+                    throw new BadImageFormatException(SR.UnknownFileFormat);
                 }
             }
             else
@@ -264,7 +264,7 @@ namespace System.Reflection.PortableExecutable
                 uint ntSignature = reader.ReadUInt32();
                 if (ntSignature != PEFileConstants.PESignature)
                 {
-                    throw new BadImageFormatException(MetadataResources.InvalidPESignature);
+                    throw new BadImageFormatException(SR.InvalidPESignature);
                 }
             }
         }
@@ -274,7 +274,7 @@ namespace System.Reflection.PortableExecutable
             int numberOfSections = _coffHeader.NumberOfSections;
             if (numberOfSections < 0)
             {
-                throw new BadImageFormatException(MetadataResources.InvalidNumberOfSections);
+                throw new BadImageFormatException(SR.InvalidNumberOfSections);
             }
 
             var builder = ImmutableArray.CreateBuilder<SectionHeader>(numberOfSections);
@@ -306,7 +306,7 @@ namespace System.Reflection.PortableExecutable
             int relativeOffset = directory.RelativeVirtualAddress - _sectionHeaders[sectionIndex].VirtualAddress;
             if (directory.Size > _sectionHeaders[sectionIndex].VirtualSize - relativeOffset)
             {
-                throw new BadImageFormatException(MetadataResources.SectionTooSmall);
+                throw new BadImageFormatException(SR.SectionTooSmall);
             }
 
             offset = _sectionHeaders[sectionIndex].PointerToRawData + relativeOffset;
@@ -373,7 +373,7 @@ namespace System.Reflection.PortableExecutable
             {
                 if (!TryGetDirectoryOffset(_corHeader.MetadataDirectory, out start))
                 {
-                    throw new BadImageFormatException(MetadataResources.MissingDataDirectory);
+                    throw new BadImageFormatException(SR.MissingDataDirectory);
                 }
 
                 size = _corHeader.MetadataDirectory.Size;
@@ -384,7 +384,7 @@ namespace System.Reflection.PortableExecutable
                 size <= 0 ||
                 start > peImageSize - size)
             {
-                throw new BadImageFormatException(MetadataResources.InvalidMetadataSectionSpan);
+                throw new BadImageFormatException(SR.InvalidMetadataSectionSpan);
             }
         }
     }

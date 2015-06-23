@@ -142,7 +142,7 @@ namespace System.Reflection.Metadata
             // clean of unsigned ints we impose the limit.
             if (unchecked((int)size) != size)
             {
-                throw new BadImageFormatException(MetadataResources.InvalidTypeSize);
+                throw new BadImageFormatException(SR.InvalidTypeSize);
             }
 
             int packingSize = _reader.ClassLayoutTable.GetPackingSize(classLayoutRowId);

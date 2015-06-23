@@ -35,13 +35,13 @@ namespace System.Reflection.Internal
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowOutOfBounds()
         {
-            throw new BadImageFormatException(MetadataResources.OutOfBoundsRead);
+            throw new BadImageFormatException(SR.OutOfBoundsRead);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowReferenceOverflow()
         {
-            throw new BadImageFormatException(MetadataResources.RowIdOrHeapOffsetTooLarge);
+            throw new BadImageFormatException(SR.RowIdOrHeapOffsetTooLarge);
         }
 
         internal byte[] ToArray()
