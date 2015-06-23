@@ -92,11 +92,6 @@
       https://github.com/dotnet/corefx/issues/1609
     -->
     <ExcludeProjects Include="System.Diagnostics.Debug/tests/System.Diagnostics.Debug.Tests.csproj" />
-    <!--
-      The OpenSourceSign target complains about System.Diagnostics.FileVersionInfo.TestAssembly.dll not being delay signed.
-      https://github.com/dotnet/corefx/issues/1610
-    -->
-    <ExcludeProjects Include="System.Diagnostics.FileVersionInfo/tests/System.Diagnostics.FileVersionInfo.Tests.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
