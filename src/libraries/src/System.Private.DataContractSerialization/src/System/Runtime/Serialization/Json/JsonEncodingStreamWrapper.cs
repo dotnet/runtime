@@ -8,7 +8,6 @@ using System.Text;
 using System.Xml;
 using System.Security;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization.Json
 {
     // This wrapper does not support seek.
@@ -533,4 +532,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

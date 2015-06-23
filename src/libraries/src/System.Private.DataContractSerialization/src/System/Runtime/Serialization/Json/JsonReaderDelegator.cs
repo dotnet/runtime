@@ -5,7 +5,6 @@ using System.Xml;
 using System.Runtime.Serialization;
 using System.Globalization;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonReaderDelegator : XmlReaderDelegator
@@ -341,4 +340,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

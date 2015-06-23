@@ -9,7 +9,6 @@ using System.IO;
 using System.Runtime.Serialization.Json;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization.Json
 {
     internal static class JsonReaderWriterFactory
@@ -78,4 +77,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

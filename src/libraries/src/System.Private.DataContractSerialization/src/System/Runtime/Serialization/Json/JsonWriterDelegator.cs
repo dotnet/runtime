@@ -4,7 +4,6 @@
 using System.Xml;
 using System.Globalization;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonWriterDelegator : XmlWriterDelegator
@@ -244,4 +243,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

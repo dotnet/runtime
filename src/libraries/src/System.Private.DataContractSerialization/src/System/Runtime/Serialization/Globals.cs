@@ -1087,11 +1087,13 @@ namespace System.Runtime.Serialization
         public const string KeyLocalName = "Key";
         public const string ValueLocalName = "Value";
         public const string MscorlibAssemblyName = "0";
-#if NET_NATIVE
+#if !NET_NATIVE && MERGE_DCJS
+        public const string ParseMethodName = "Parse";
+#endif
+#if NET_NATIVE || MERGE_DCJS
         public const string SafeSerializationManagerName = "SafeSerializationManager";
         public const string SafeSerializationManagerNamespace = "http://schemas.datacontract.org/2004/07/System.Runtime.Serialization";
         public const string ISerializableFactoryTypeLocalName = "FactoryType";
 #endif
     }
 }
-

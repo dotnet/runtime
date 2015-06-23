@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
             _kvpValue = kvPair.Value;
         }
 
-        [DataMember]
+        [DataMember(Name = "key")]
         public K Key
         {
             get
@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        [DataMember]
+        [DataMember(Name = "value")]
         public T Value
         {
             get
