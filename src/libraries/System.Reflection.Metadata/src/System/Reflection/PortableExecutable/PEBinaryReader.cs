@@ -131,7 +131,7 @@ namespace System.Reflection.PortableExecutable
             {
                 if (maxSize > int.MaxValue)
                 {
-                    throw new ArgumentException(MetadataResources.StreamTooLarge, "peStream");
+                    throw new ArgumentException(SR.StreamTooLarge, "peStream");
                 }
 
                 return (int)maxSize;
@@ -165,14 +165,14 @@ namespace System.Reflection.PortableExecutable
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowImageTooSmall()
         {
-            throw new BadImageFormatException(MetadataResources.ImageTooSmall);
+            throw new BadImageFormatException(SR.ImageTooSmall);
         }
 
         // TODO: move throw helpers together. 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void ThrowImageTooSmallOrContainsInvalidOffsetOrCount()
         {
-            throw new BadImageFormatException(MetadataResources.ImageTooSmallOrContainsInvalidOffsetOrCount);
+            throw new BadImageFormatException(SR.ImageTooSmallOrContainsInvalidOffsetOrCount);
         }
     }
 }
