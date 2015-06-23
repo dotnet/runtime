@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 
 using System;
 using System.Reflection;
@@ -9,6 +7,7 @@ using System.Security;
 using System.Xml;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 
 namespace System.Runtime.Serialization
@@ -822,5 +821,87 @@ namespace System.Runtime.Serialization
                 return s_getDateTimeOffsetAdapterMethod;
             }
         }
+
+#if !NET_NATIVE && MERGE_DCJS
+        private static MethodInfo s_getTypeHandleMethod;
+        internal static MethodInfo GetTypeHandleMethod
+        {
+            get
+            {
+                if (s_getTypeHandleMethod == null)
+                {
+                    s_getTypeHandleMethod = typeof(Type).GetMethod("get_TypeHandle");
+                    Debug.Assert(s_getTypeHandleMethod != null);
+                }
+                return s_getTypeHandleMethod;
+            }
+        }
+
+        private static MethodInfo s_getTypeMethod;
+        internal static MethodInfo GetTypeMethod
+        {
+            get
+            {
+                if (s_getTypeMethod == null)
+                {
+                    s_getTypeMethod = typeof(object).GetMethod("GetType");
+                    Debug.Assert(s_getTypeMethod != null);
+                }
+                return s_getTypeMethod;
+            }
+        }
+
+        [SecurityCritical]
+        private static MethodInfo s_throwInvalidDataContractExceptionMethod;
+        internal static MethodInfo ThrowInvalidDataContractExceptionMethod
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_throwInvalidDataContractExceptionMethod == null)
+                    s_throwInvalidDataContractExceptionMethod = typeof(DataContract).GetMethod("ThrowInvalidDataContractException", Globals.ScanAllMembers, new Type[] { typeof(string), typeof(Type) });
+                return s_throwInvalidDataContractExceptionMethod;
+            }
+        }
+
+        [SecurityCritical]
+        private static PropertyInfo s_serializeReadOnlyTypesProperty;
+        internal static PropertyInfo SerializeReadOnlyTypesProperty
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_serializeReadOnlyTypesProperty == null)
+                    s_serializeReadOnlyTypesProperty = typeof(XmlObjectSerializerWriteContext).GetProperty("SerializeReadOnlyTypes", Globals.ScanAllMembers);
+                return s_serializeReadOnlyTypesProperty;
+            }
+        }
+
+        [SecurityCritical]
+        private static PropertyInfo s_classSerializationExceptionMessageProperty;
+        internal static PropertyInfo ClassSerializationExceptionMessageProperty
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_classSerializationExceptionMessageProperty == null)
+                    s_classSerializationExceptionMessageProperty = typeof(ClassDataContract).GetProperty("SerializationExceptionMessage", Globals.ScanAllMembers);
+                return s_classSerializationExceptionMessageProperty;
+            }
+        }
+
+        [SecurityCritical]
+        private static PropertyInfo s_collectionSerializationExceptionMessageProperty;
+        internal static PropertyInfo CollectionSerializationExceptionMessageProperty
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_collectionSerializationExceptionMessageProperty == null)
+                    s_collectionSerializationExceptionMessageProperty = typeof(CollectionDataContract).GetProperty("SerializationExceptionMessage", Globals.ScanAllMembers);
+                return s_collectionSerializationExceptionMessageProperty;
+            }
+        }
+#endif
     }
 }

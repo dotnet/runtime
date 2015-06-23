@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Security;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization.Json
 {
     internal class JsonClassDataContract : JsonDataContract
@@ -33,7 +32,12 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (_helper.JsonFormatReaderDelegate == null)
                         {
+#if !NET_NATIVE && MERGE_DCJS
+                            JsonFormatClassReaderDelegate tempDelegate = new JsonFormatReaderGenerator().GenerateClassReader(TraditionalClassDataContract);
+                            Interlocked.MemoryBarrier();
+#else
                             JsonFormatClassReaderDelegate tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract).ClassReaderDelegate;
+#endif
                             _helper.JsonFormatReaderDelegate = tempDelegate;
                         }
                     }
@@ -53,7 +57,12 @@ namespace System.Runtime.Serialization.Json
                     {
                         if (_helper.JsonFormatWriterDelegate == null)
                         {
+#if !NET_NATIVE && MERGE_DCJS
+                            JsonFormatClassWriterDelegate tempDelegate = new JsonFormatWriterGenerator().GenerateClassWriter(TraditionalClassDataContract);
+                            Interlocked.MemoryBarrier();
+#else
                             JsonFormatClassWriterDelegate tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract).ClassWriterDelegate;
+#endif
                             _helper.JsonFormatWriterDelegate = tempDelegate;
                         }
                     }
@@ -161,4 +170,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Xml;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization.Json
 {
     internal class ByteArrayHelperWithString : ArrayHelper<string, byte>
@@ -58,4 +57,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

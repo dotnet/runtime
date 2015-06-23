@@ -10,20 +10,25 @@ using System.Security;
 using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+#if !NET_NATIVE
+using ExtensionDataObject = System.Object;
+#endif
 
 namespace System.Runtime.Serialization.Json
 {
 #if NET_NATIVE
     public class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
+#elif MERGE_DCJS
+    internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
 #else
     internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContext
 #endif
     {
         private DataContractJsonSerializer _jsonSerializer;
-#if !NET_NATIVE
+#if !NET_NATIVE && !MERGE_DCJS
         private bool _isSerializerKnownDataContractsSetExplicit;
 #endif
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
         private DateTimeFormat _dateTimeFormat;
         private bool _useSimpleDictionaryFormat;
 #endif
@@ -35,7 +40,7 @@ namespace System.Runtime.Serialization.Json
             _jsonSerializer = serializer;
         }
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
         internal XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializerImpl serializer, DataContract rootTypeDataContract)
             : base(serializer, serializer.MaxItemsInObjectGraph, new StreamingContext(), false)
         {
@@ -84,7 +89,7 @@ namespace System.Runtime.Serialization.Json
         }
 #endif
 
-#if !NET_NATIVE
+#if !NET_NATIVE && !MERGE_DCJS
         internal override DataContractDictionary SerializerKnownDataContracts
         {
             get
@@ -108,7 +113,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
         public bool UseSimpleDictionaryFormat
         {
             get
@@ -290,7 +295,7 @@ namespace System.Runtime.Serialization.Json
             return dataContract;
         }
 
-#if NET_NATIVE
+#if NET_NATIVE || MERGE_DCJS
         internal static bool TryGetJsonLocalName(XmlReaderDelegator xmlReader, out string name)
         {
             if (xmlReader.IsStartElement(JsonGlobals.itemDictionaryString, JsonGlobals.itemDictionaryString))
@@ -313,6 +318,47 @@ namespace System.Runtime.Serialization.Json
                 name = xmlReader.LocalName;
             }
             return name;
+        }
+#endif
+
+#if !NET_NATIVE && MERGE_DCJS
+        public static void ThrowDuplicateMemberException(object obj, XmlDictionaryString[] memberNames, int memberIndex)
+        {
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(
+                SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex])));
+        }
+
+        public static void ThrowMissingRequiredMembers(object obj, XmlDictionaryString[] memberNames, byte[] expectedElements, byte[] requiredElements)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            int missingMembersCount = 0;
+            for (int i = 0; i < memberNames.Length; i++)
+            {
+                if (IsBitSet(expectedElements, i) && IsBitSet(requiredElements, i))
+                {
+                    if (stringBuilder.Length != 0)
+                        stringBuilder.Append(", ");
+                    stringBuilder.Append(memberNames[i]);
+                    missingMembersCount++;
+                }
+            }
+
+            if (missingMembersCount == 1)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(
+                 SR.JsonOneRequiredMemberNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+            }
+            else
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(
+                    SR.JsonRequiredMembersNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+            }
+        }
+
+        [SecuritySafeCritical]
+        private static bool IsBitSet(byte[] bytes, int bitIndex)
+        {
+            return BitFlagsGenerator.IsBitSet(bytes, bitIndex);
         }
 #endif
     }

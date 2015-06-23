@@ -79,6 +79,33 @@ namespace System.Runtime.Serialization
             }
         }
 
+#if !NET_NATIVE && MERGE_DCJS
+        [SecurityCritical]
+        private static MethodInfo s_objectToString;
+        private static MethodInfo ObjectToString
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_objectToString == null)
+                    s_objectToString = typeof(object).GetMethod("ToString", Array.Empty<Type>());
+                return s_objectToString;
+            }
+        }
+
+        private static MethodInfo s_stringFormat;
+        private static MethodInfo StringFormat
+        {
+            [SecuritySafeCritical]
+            get
+            {
+                if (s_stringFormat == null)
+                    s_stringFormat = typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object[]) });
+                return s_stringFormat;
+            }
+        }
+#endif
+
         private Type _delegateType;
 
 #if USE_REFEMIT
@@ -122,6 +149,10 @@ namespace System.Runtime.Serialization
 
         private enum CodeGenTrace { None, Save, Tron };
         private CodeGenTrace _codeGenTrace;
+
+#if !NET_NATIVE && MERGE_DCJS
+        private LocalBuilder _stringFormatArray;
+#endif
 
         internal CodeGenerator()
         {
@@ -974,7 +1005,6 @@ namespace System.Runtime.Serialization
                     case TypeCode.Decimal:
                     case TypeCode.DateTime:
                     case TypeCode.Empty:
-                    case TypeCode.DBNull:
                     default:
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.UnknownConstantType, DataContract.GetClrTypeFullName(valueType))));
                 }
@@ -1185,7 +1215,6 @@ namespace System.Runtime.Serialization
             switch (typeCode)
             {
                 case TypeCode.Object:
-                case TypeCode.DBNull:
                     return OpCodes.Ldelem_Ref;// TypeCode.Object:
                 case TypeCode.Boolean:
                     return OpCodes.Ldelem_I1;// TypeCode.Boolean:
@@ -1250,7 +1279,6 @@ namespace System.Runtime.Serialization
             switch (typeCode)
             {
                 case TypeCode.Object:
-                case TypeCode.DBNull:
                     return OpCodes.Stelem_Ref;// TypeCode.Object:
                 case TypeCode.Boolean:
                     return OpCodes.Stelem_I1;// TypeCode.Boolean:
@@ -1619,6 +1647,55 @@ namespace System.Runtime.Serialization
             Load(0);
             If(Cmp.NotEqualTo);
         }
+
+#if !NET_NATIVE && MERGE_DCJS
+        internal void BeginWhileCondition()
+        {
+            Label startWhile = DefineLabel();
+            MarkLabel(startWhile);
+            _blockStack.Push(startWhile);
+        }
+
+        internal void BeginWhileBody(Cmp cmpOp)
+        {
+            Label startWhile = (Label)_blockStack.Pop();
+            If(cmpOp);
+            _blockStack.Push(startWhile);
+        }
+
+        internal void EndWhile()
+        {
+            Label startWhile = (Label)_blockStack.Pop();
+            Br(startWhile);
+            EndIf();
+        }
+
+        internal void CallStringFormat(string msg, params object[] values)
+        {
+            NewArray(typeof(object), values.Length);
+            if (_stringFormatArray == null)
+                _stringFormatArray = DeclareLocal(typeof(object[]), "stringFormatArray");
+            Stloc(_stringFormatArray);
+            for (int i = 0; i < values.Length; i++)
+                StoreArrayElement(_stringFormatArray, i, values[i]);
+
+            Load(msg);
+            Load(_stringFormatArray);
+            Call(StringFormat);
+        }
+
+        internal void ToString(Type type)
+        {
+            if (type != Globals.TypeOfString)
+            {
+                if (type.GetTypeInfo().IsValueType)
+                {
+                    Box(type);
+                }
+                Call(ObjectToString);
+            }
+        }
+#endif
     }
 
 

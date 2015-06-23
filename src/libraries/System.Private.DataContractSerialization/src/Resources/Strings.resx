@@ -1083,5 +1083,10 @@
   <data name="EnumTypeNotSupportedByDataContractJsonSerializer" xml:space="preserve">
     <value>DataContractJsonSerializer does not support data members of type '{0}'.  Consider using int, System.Object, or a concrete enum definition instead.</value>
   </data>
-  
+  <data name="KeyTypeCannotBeParsedInSimpleDictionary" xml:space="preserve">
+    <value>The dictionary of type '{0}' cannot be deserialized as a simple dictionary because its key type '{1}' does not have a public static Parse method.</value>
+  </data>
+  <data name="JsonDuplicateMemberInInput" xml:space="preserve">
+    <value>The data contract type '{0}' cannot be deserialized because the data member '{1}' was found more than once in the input.</value>
+  </data>
 </root>

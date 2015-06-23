@@ -12,7 +12,9 @@ using System.Xml;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using System.Security;
-
+#if !NET_NATIVE
+using ExtensionDataObject = System.Object;
+#endif
 
 namespace System.Runtime.Serialization
 {
@@ -159,7 +161,7 @@ namespace System.Runtime.Serialization
             bool verifyKnownType = false;
             Type declaredType = rootTypeDataContract.UnderlyingType;
 
-            if (rootTypeDataContract.TypeIsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 if (DataContractResolver != null)
                 {
@@ -630,5 +632,12 @@ namespace System.Runtime.Serialization
         {
             writer.WriteAttributeQualifiedName(Globals.XsiPrefix, DictionaryGlobals.XsiTypeLocalName, DictionaryGlobals.SchemaInstanceNamespace, dataContractName, dataContractNamespace);
         }
+
+#if !NET_NATIVE && MERGE_DCJS
+        public void WriteExtensionData(XmlWriterDelegator xmlWriter, ExtensionDataObject extensionData, int memberIndex)
+        {
+            // Needed by the code generator, but not called. 
+        }
+#endif
     }
 }

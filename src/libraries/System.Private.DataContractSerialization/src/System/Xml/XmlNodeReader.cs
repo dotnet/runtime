@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Xml.Schema;
 using System.Globalization;
 
-#if NET_NATIVE
 namespace System.Xml
 {
     internal class XmlNodeReader : XmlReader, IXmlNamespaceResolver
@@ -355,4 +354,3 @@ namespace System.Xml
         }
     }
 }
-#endif

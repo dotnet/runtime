@@ -5,7 +5,6 @@ using System.IO;
 using System.Text;
 using System.Runtime.CompilerServices;
 
-#if NET_NATIVE
 namespace System.Runtime.Serialization.Json
 {
     internal interface IXmlJsonWriterInitializer
@@ -13,4 +12,3 @@ namespace System.Runtime.Serialization.Json
         void SetOutput(Stream stream, Encoding encoding, bool ownsStream);
     }
 }
-#endif
