@@ -1,0 +1,9 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <!-- Disable some C# warnings for the JIT tests. -->
+  <PropertyGroup>
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,642,649,652,675,1691,1717,1718</NoWarn>
+  </PropertyGroup>
+
+</Project>
