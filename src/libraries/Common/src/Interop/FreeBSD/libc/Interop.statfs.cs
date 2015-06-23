@@ -45,5 +45,10 @@ internal static partial class Interop
             internal fixed byte f_mntfromname[MNAMELEN];    /* mounted filesystem */
             internal fixed byte f_mntonname[MNAMELEN];      /* directory on which mounted */
         }
+
+        internal static unsafe String GetMountPointFsType(statfs data)
+        {
+            return Marshal.PtrToStringAnsi((IntPtr)data.f_fstypename);
+        }
     }
 }

@@ -39,5 +39,10 @@ internal static partial class Interop
             internal fixed byte f_mntfromname[MAXPATHLEN];      /* mounted filesystem */
             internal fixed uint f_reserved[8];                  /* For future use */
         }
+
+        internal static unsafe String GetMountPointFsType(statfs data)
+        {
+            return Marshal.PtrToStringAnsi((IntPtr)data.f_fstypename);
+        }
     }
 }

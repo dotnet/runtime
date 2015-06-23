@@ -80,6 +80,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\IO\DriveInfo.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
@@ -98,12 +99,12 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.mountpoints.cs">
+      <Link>Common\Interop\Unix\Interop.mountpoints.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.Linux.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.statvfs.cs">
-      <Link>Common\Interop\Unix\Interop.statvfs.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.endmntent.cs">
       <Link>Common\Interop\Unix\Interop.endmntent.cs</Link>
     </Compile>
@@ -119,12 +120,15 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitive.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\libc\Interop.statfs.cs">
+      <Link>Common\Interop\Linux\Interop.statfs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Linux\Interop.Libraries.cs">
+      <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBSD)' == 'true' ">
     <Compile Include="System\IO\DriveInfo.BSD.cs" />
-    <Compile Include="$(CommonPath)\Interop\BSD\libc\Interop.mountpoints.cs">
-      <Link>Common\Interop\BSD\Interop.mountpoints.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
