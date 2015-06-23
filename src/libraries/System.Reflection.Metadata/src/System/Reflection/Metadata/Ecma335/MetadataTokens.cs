@@ -91,10 +91,10 @@ namespace System.Reflection.Metadata.Ecma335
                 case HandleKind.Blob:
                     // We could precalculate offsets for virtual strings and blobs as we are creating them
                     // if we wanted to implement this.
-                    throw new NotSupportedException(MetadataResources.CantGetOffsetForVirtualHeapHandle);
+                    throw new NotSupportedException(SR.CantGetOffsetForVirtualHeapHandle);
 
                 default:
-                    throw new ArgumentException(MetadataResources.InvalidHandle, "handle");
+                    throw new ArgumentException(SR.InvalidHandle, "handle");
             }
         }
 
@@ -401,25 +401,25 @@ namespace System.Reflection.Metadata.Ecma335
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowEntityHandleRequired()
         {
-            throw new ArgumentException(MetadataResources.NotMetadataTableHandle, "handle");
+            throw new ArgumentException(SR.NotMetadataTableHandle, "handle");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowHeapHandleRequired()
         {
-            throw new ArgumentException(MetadataResources.NotMetadataHeapHandle, "handle");
+            throw new ArgumentException(SR.NotMetadataHeapHandle, "handle");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowEntityOrUserStringHandleRequired()
         {
-            throw new ArgumentException(MetadataResources.NotMetadataTableOrUserStringHandle, "handle");
+            throw new ArgumentException(SR.NotMetadataTableOrUserStringHandle, "handle");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ThrowInvalidToken()
         {
-            throw new ArgumentException(MetadataResources.InvalidToken, "token");
+            throw new ArgumentException(SR.InvalidToken, "token");
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

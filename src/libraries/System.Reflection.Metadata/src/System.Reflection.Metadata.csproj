@@ -38,11 +38,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
-    <Compile Include="Resources\MetadataResources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>MetadataResources.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Reflection\Internal\MemoryBlocks\AbstractMemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\MemoryBlocks\ByteArrayMemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\MemoryBlocks\ByteArrayMemoryProvider.cs" />
@@ -165,14 +160,6 @@
     <Compile Include="System\Reflection\PortableExecutable\PEStreamOptions.cs" />
     <Compile Include="System\Reflection\PortableExecutable\SectionHeader.cs" />
     <Compile Include="System\Reflection\System.Reflection.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\MetadataResources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <SubType>Designer</SubType>
-      <LastGenOutput>MetadataResources.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>System.Reflection.Metadata</CustomToolNamespace>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Immutable, Version=1.1.34.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">

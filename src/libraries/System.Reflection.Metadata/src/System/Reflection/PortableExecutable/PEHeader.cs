@@ -195,7 +195,7 @@ namespace System.Reflection.PortableExecutable
             PEMagic magic = (PEMagic)reader.ReadUInt16();
             if (magic != PEMagic.PE32 && magic != PEMagic.PE32Plus)
             {
-                throw new BadImageFormatException(MetadataResources.UnknownPEMagicValue);
+                throw new BadImageFormatException(SR.UnknownPEMagicValue);
             }
 
             Magic = magic;
