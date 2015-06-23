@@ -354,6 +354,7 @@ public class NamedPipesSimpleTest
     }
 
     [Fact]
+    [ActiveIssue(1840)]
     [PlatformSpecific(PlatformID.Windows)]
     public static void ClientServerMessages()
     {
@@ -405,6 +406,7 @@ public class NamedPipesSimpleTest
     }
 
     [Fact]
+    [ActiveIssue(1840, PlatformID.Windows)]
     public static async Task ServerCloneTests()
     {
         const string pipeName = "fooclone";
@@ -436,6 +438,7 @@ public class NamedPipesSimpleTest
     }
 
     [Fact]
+    [ActiveIssue(1840, PlatformID.Windows)]
     public static async Task ClientCloneTests()
     {
         const string pipeName = "fooClientclone";
