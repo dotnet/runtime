@@ -87,14 +87,6 @@
     <!-- Restore build tools -->
     <Exec Command="$(_RestoreBuildToolsCommand)" StandardOutputImportance="Low" />
 
-    <!-- currently DNU doesn't support -ConfigFile: https://github.com/aspnet/dnx/issues/1693
-         Our DnuRestoreCommand doesn't force a config file  and we rely on the
-         directory probing for it to find nuget.config.  This works for restore from source,
-         but not restore from PackagesDir as happens for test project restore since PackagesDir
-         will not be under src.  To workaround, copy our nuget.config to packages. -->
-    <Copy Condition="Exists('$(NuGetConfigFile)')" SourceFiles="$(NuGetConfigFile)" DestinationFolder="$(PackagesDir)" SkipUnchangedFiles="true" />
-    <Copy Condition="Exists('$(NuGetConfigFile)')" SourceFiles="$(NuGetConfigFile)" DestinationFolder="$(IntermediateOutputRootPath)" SkipUnchangedFiles="true" />
-
     <!-- Add DNU and Roslyn tool execute rights -->
     <Exec Condition="'$(OsEnvironment)'=='Unix'"
           Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnu&quot;" />
