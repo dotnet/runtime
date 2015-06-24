@@ -3,11 +3,11 @@
   "version": -9996,
   "targets": {
     "DNXCore,Version=v5.0": {
-      "Microsoft.DotNet.CoreCLR/1.0.3-prerelease": {
+      "Microsoft.DotNet.CoreCLR/1.0.0-prerelease": {
         "compile": {
           "lib/aspnetcore50/clretwrc.dll": {},
           "lib/aspnetcore50/coreclr.dll": {},
-          "lib/aspnetcore50/corerun.exe": {},
+          "lib/aspnetcore50/CoreRun.exe": {},
           "lib/aspnetcore50/mscordaccore.dll": {},
           "lib/aspnetcore50/mscordbi.dll": {},
           "lib/aspnetcore50/mscorlib.dll": {},
@@ -17,7 +17,7 @@
         "runtime": {
           "lib/aspnetcore50/clretwrc.dll": {},
           "lib/aspnetcore50/coreclr.dll": {},
-          "lib/aspnetcore50/corerun.exe": {},
+          "lib/aspnetcore50/CoreRun.exe": {},
           "lib/aspnetcore50/mscordaccore.dll": {},
           "lib/aspnetcore50/mscordbi.dll": {},
           "lib/aspnetcore50/mscorlib.dll": {},
@@ -28,15 +28,15 @@
     }
   },
   "libraries": {
-    "Microsoft.DotNet.CoreCLR/1.0.3-prerelease": {
-      "sha512": "ZMXRdngD8Gw5cNjx7FrS7F3u08Uut2dkFACX7o60Cv1SJpbIS3PHEoEKM8Td08bHLZu/l+zOMHYQg8ByDS49HQ==",
+    "Microsoft.DotNet.CoreCLR/1.0.0-prerelease": {
+      "sha512": "BlrijUF8L3JeGim4Sk6CmvtExjQ5Rh096D2RM2pRQmN57H33WgtX/YLisu/T3UcKJyZ1+llgsYT3Ve2pwaT1mA==",
       "files": [
-        "Microsoft.DotNet.CoreCLR.1.0.3-prerelease.nupkg",
-        "Microsoft.DotNet.CoreCLR.1.0.3-prerelease.nupkg.sha512",
+        "Microsoft.DotNet.CoreCLR.1.0.0-prerelease.nupkg",
+        "Microsoft.DotNet.CoreCLR.1.0.0-prerelease.nupkg.sha512",
         "Microsoft.DotNet.CoreCLR.nuspec",
         "lib/aspnetcore50/clretwrc.dll",
         "lib/aspnetcore50/coreclr.dll",
-        "lib/aspnetcore50/corerun.exe",
+        "lib/aspnetcore50/CoreRun.exe",
         "lib/aspnetcore50/mscordaccore.dll",
         "lib/aspnetcore50/mscordbi.dll",
         "lib/aspnetcore50/mscorlib.dll",
