@@ -8,9 +8,11 @@
 
 The corefx repo contains the library implementation (called "CoreFX") for [.NET Core](http://github.com/dotnet/core). It includes System.Collections, System.IO, System.Xml and many other components. It builds and runs on Windows. You can ['watch'](https://github.com/dotnet/corefx/subscription) the repo to see Linux and Mac support being added over the next few months.
 
-.NET Core is a modular implementation of .NET that can be used as the base stack for a wide variety of scenarios, today scaling from console utilities to web apps in the cloud.  You can learn more about .NET Core and how and where you can use it in the [.NET Core is open source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts. 
+You can also see more information in the [Documentation README](Documentation/README.md). 
 
-The [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the  runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, native interop and many other components. 
+.NET Core is a modular implementation of .NET that can be used as the base stack for a wide variety of scenarios, today scaling from console utilities to web apps in the cloud.  You can learn more about .NET Core and how and where you can use it in the [.NET Core is open source][.NET Core oss] and [Introducing .NET Core][Introducing .NET Core] blog posts.
+
+The [.NET Core Runtime repo](https://github.com/dotnet/coreclr) contains the  runtime implementation (called "CoreCLR") for .NET Core. It includes RyuJIT, the .NET GC, native interop and many other components.
 
 Runtime-specific library code - namely [mscorlib][mscorlib] - lives in the CoreCLR repo. It needs to be built and versioned in tandem with the runtime. The rest of CoreFX is agnostic of runtime-implementation and can be run on any compatible .NET runtime. These characteristics were the primary motivation for the 2-repo structure.
 
@@ -20,7 +22,7 @@ Runtime-specific library code - namely [mscorlib][mscorlib] - lives in the CoreC
 
 ## How to Engage, Contribute and Provide Feedback
 
-Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. 
+Some of the best ways to contribute are to try things out, file bugs, and join in design conversations.
 
 Want to get more familiar with what's going on in the code?
 * [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
@@ -28,9 +30,9 @@ Want to get more familiar with what's going on in the code?
 
 Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/labels/up%20for%20grabs) is a great place to start or for larger items see the list of [feature approved](https://github.com/dotnet/corefx/labels/feature%20approved). See some of our guides for more details:
 
-* [Contributing Guide](Documentation/contributing.md)
-* [Developer Guide](Documentation/developer-guide.md)
-* [Issue Guide](Documentation/issue-guide.md)
+* [Contributing Guide](Documentation/project-docs/contributing.md)
+* [Developer Guide](Documentation/project-docs/developer-guide.md)
+* [Issue Guide](Documentation/project-docs/issue-guide.md)
 
 You are also encouraged to start a discussion by filing an issue or creating a
 gist.
