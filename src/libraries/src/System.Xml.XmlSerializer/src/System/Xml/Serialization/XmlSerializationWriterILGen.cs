@@ -2483,9 +2483,9 @@ namespace System.Xml.Serialization
                   );
             ilg.Ldc(type);
             ilg.Call(Activator_CreateInstance);
+            ilg.MarkLabel(labelReturn);
             if (cast != null)
                 ilg.ConvertValue(Activator_CreateInstance.ReturnType, cast);
-            ilg.MarkLabel(labelReturn);
         }
 
         internal void WriteLocalDecl(string variableName, SourceInfo initValue)
