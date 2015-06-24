@@ -122,9 +122,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
-      <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.gnu_get_libc_version.cs">
       <Link>Common\Interop\Unix\Interop.gnu_get_libc_version.cs</Link>
     </Compile>
@@ -156,8 +153,11 @@
   </ItemGroup>
   <!-- Linux -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Linux.cs" />
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Linux.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.BackingObject_Memory.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedView.Unix.MADV_DONTFORK.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.ftruncate.cs">
+      <Link>Common\Interop\Unix\Interop.ftruncate.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\Interop.Errors.cs">
       <Link>Common\Interop\Linux\Interop.Errors.cs</Link>
     </Compile>
@@ -185,7 +185,10 @@
   </ItemGroup>
   <!-- OSX -->
   <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
-    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.OSX.cs" />
+    <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFile.Unix.BackingObject_File.cs" />
+    <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.unlink.cs">
+      <Link>Common\Interop\Unix\Interop.unlink.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
       <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
     </Compile>
@@ -203,9 +206,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.SysConfNames.cs">
       <Link>Common\Interop\OSX\Interop.SysConfNames.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libsystem_kernel\Interop.shm_open.cs">
-      <Link>Common\Interop\OSX\Interop.shm_open.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Resource files -->
