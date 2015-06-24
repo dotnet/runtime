@@ -11,17 +11,12 @@ internal static partial class Interop
 {
     internal static partial class libc
     {
-        [DllImport(Libraries.Libc, SetLastError = true)]
+        [DllImport(Libraries.Libc, EntryPoint = "readdir" + Interop.Libraries.INODE64SUFFIX, SetLastError = true)]
         internal static extern IntPtr readdir(SafeDirHandle dirp);
 
         internal static unsafe DType GetDirEntType(IntPtr dirEnt)
         {
             return ((dirent*)dirEnt)->d_type;
-        }
-
-        internal static unsafe string GetDirEntName(IntPtr dirEnt)
-        {
-            return Marshal.PtrToStringAnsi((IntPtr)((dirent*)dirEnt)->d_name);
         }
 
         internal enum DType : byte
@@ -36,16 +31,5 @@ internal static partial class Interop
             DT_SOCK = 12,
             DT_WHT = 14
         }
-
-        #pragma warning disable 0649 // fields are assigned by P/Invoke call 
-        private unsafe struct dirent 
-        { 
-            internal UInt32 d_fileno;
-            internal UInt16 d_reclen;
-            internal DType d_type;
-            internal byte d_namlen;
-            internal fixed byte d_name[256];
-        } 
-        #pragma warning restore 0649 
     }
 }

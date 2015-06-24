@@ -5,6 +5,11 @@ internal static partial class Interop
 {
     private static partial class Libraries
     {
-        internal const string LibRt = "librt"; // POSIX Realtime Extensions library
+        /// <summary>
+        /// We aren't OS X so don't have an INODE64 suffix to entry points
+        /// </summary>
+        internal const string INODE64SUFFIX = "";
+
+        internal const string LibRt = "librt";  // POSIX Realtime Extensions library
     }
 }

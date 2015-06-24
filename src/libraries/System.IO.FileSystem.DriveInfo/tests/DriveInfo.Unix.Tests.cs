@@ -50,7 +50,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             var root = new DriveInfo("/");
             Assert.Equal("/", root.Name);
             Assert.Equal("/", root.RootDirectory.FullName);
-            Assert.Equal(DriveType.Ram, root.DriveType);
+            Assert.Equal(DriveType.Fixed, root.DriveType);
             Assert.True(root.IsReady);
             Assert.True(root.AvailableFreeSpace > 0);
             Assert.True(root.TotalFreeSpace > 0);
