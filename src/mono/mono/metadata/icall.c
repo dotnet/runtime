@@ -1162,6 +1162,18 @@ ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilder *mb, MonoObje
 	mono_image_register_token (mb->dynamic_image, token, obj);
 }
 
+ICALL_EXPORT MonoObject*
+ves_icall_ModuleBuilder_GetRegisteredToken (MonoReflectionModuleBuilder *mb, guint32 token)
+{
+	gpointer obj;
+
+	mono_loader_lock ();
+	obj = mono_g_hash_table_lookup (mb->dynamic_image->tokens, GUINT_TO_POINTER (token));
+	mono_loader_unlock ();
+
+	return obj;
+}
+
 static gboolean
 get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
