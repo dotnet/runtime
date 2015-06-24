@@ -28,8 +28,8 @@ namespace System.Threading.Tasks.Tests
         {
             Task<Task> outer = Task.FromResult(inner);
             Task unwrappedInner = outer.Unwrap();
-            // Assert.True(unwrappedInner.IsCompleted); // TODO: uncomment once we have implementation with this optimization
-            // Assert.Same(inner, unwrappedInner); // TODO: uncomment once we have implementation with this optimization
+            Assert.True(unwrappedInner.IsCompleted);
+            Assert.Same(inner, unwrappedInner);
             AssertTasksAreEqual(inner, unwrappedInner);
         }
 
@@ -43,8 +43,8 @@ namespace System.Threading.Tasks.Tests
         {
             Task<Task<string>> outer = Task.FromResult(inner);
             Task<string> unwrappedInner = outer.Unwrap();
-            // Assert.True(unwrappedInner.IsCompleted); // TODO: uncomment once we have implementation with this optimization
-            // Assert.Same(inner, unwrappedInner); // TODO: uncomment once we have implementation with this optimization
+            Assert.True(unwrappedInner.IsCompleted);
+            Assert.Same(inner, unwrappedInner);
             AssertTasksAreEqual(inner, unwrappedInner);
         }
 
@@ -407,7 +407,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that Unwrap with a non-generic task doesn't use TaskScheduler.Current.
         /// </summary>
-        // [Fact] // TODO: Uncomment once new implementation matches mscorlib behavior and guarantees TaskScheduler.Default is used
+        [Fact]
         public void NonGeneric_DefaultSchedulerUsed()
         {
             var scheduler = new CountingScheduler();
@@ -427,7 +427,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Test that Unwrap with a generic task doesn't use TaskScheduler.Current.
         /// </summary>
-        // [Fact] // TODO: Uncomment once new implementation matches mscorlib behavior and guarantees TaskScheduler.Default is used
+        [Fact]
         public void Generic_DefaultSchedulerUsed()
         {
             var scheduler = new CountingScheduler();
@@ -479,8 +479,7 @@ namespace System.Threading.Tasks.Tests
                     Assert.Equal((IEnumerable<Exception>)expected.Exception.InnerExceptions, actual.Exception.InnerExceptions);
                     break;
                 case TaskStatus.Canceled:
-                    // TODO: Uncomment once we have new implementation that guarantees this
-                    //Assert.Equal(GetCanceledTaskToken(expected), GetCanceledTaskToken(actual));
+                    Assert.Equal(GetCanceledTaskToken(expected), GetCanceledTaskToken(actual));
                     break;
             }
         }
