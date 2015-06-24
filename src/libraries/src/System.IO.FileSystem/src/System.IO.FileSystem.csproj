@@ -17,6 +17,9 @@
     <!-- The System.Threading.Overlapped contract currently only works on Windows -->
     <DefineConstants>$(DefineConstants);USE_OVERLAPPED</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <TargetsBSD Condition="'$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsBSD>
+  </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
@@ -320,8 +323,8 @@
     <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Errors.cs">
       <Link>Common\Interop\FreeBSD\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.readdir.cs">
-      <Link>Common\Interop\FreeBSD\Interop.readdir.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.dirent.cs">
+      <Link>Common\Interop\FreeBSD\Interop.dirent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\FreeBSD\libc\Interop.OpenFlags.cs">
       <Link>Common\Interop\FreeBSD\Interop.OpenFlags.cs</Link>
@@ -331,6 +334,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\libc\Interop.posix_fadvise.cs">
       <Link>Common\Interop\Unix\Interop.posix_fadvise.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Libraries.cs">
+      <Link>Common\Interop\FreeBSD\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Linux -->
@@ -360,8 +366,8 @@
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseInsensitive.cs">
       <Link>Common\System\IO\PathInternal.CaseInsensitive.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.readdir.cs">
-      <Link>Common\Interop\OSX\Interop.readdir.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.dirent.cs">
+      <Link>Common\Interop\OSX\Interop.dirent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\libc\Interop.OpenFlags.cs">
       <Link>Common\Interop\OSX\Interop.OpenFlags.cs</Link>
@@ -371,6 +377,14 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.Errors.cs">
       <Link>Common\Interop\OSX\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBSD)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\BSD\libc\Interop.readdir.cs">
+      <Link>Common\Interop\BSD\Interop.readdir.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
