@@ -13,7 +13,7 @@ The CoreFX repo can be built from a regular, non-admin command prompt. The build
 | x64   | &#x25CF;| &#x25D2;| &#x25D2;| &#x25D2;|
 | x86   | &#x25EF;| &#x25EF;| &#x25EF;| &#x25EF;|
 | ARM32 | &#x25EF;| &#x25EF;| &#x25EF;| &#x25EF;|
-|       | [Instructions](windows-instructions.md) | [Instructions](unix-instructions.md) | [Instructions](unix-instructions.md) | [Instructions](unix-instructions.md) |
+|       | [Instructions](../building/windows-instructions.md) | [Instructions](../building/unix-instructions.md) | [Instructions](../building/unix-instructions.md) | [Instructions](../building/unix-instructions.md) |
 
 
-The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis are and adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
+The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis are and adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
