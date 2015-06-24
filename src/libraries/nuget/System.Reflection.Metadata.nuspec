@@ -2,7 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd">
   <metadata minClientVersion="2.8.1">
     <id>System.Reflection.Metadata</id>
-    <version>1.0.19-rc</version>
+    <!-- NOTE: We only currently use packages built from this nuspec out of the dev/metadata/branch, 
+               where the 1.1.x version should be retained upon merge conflict. Using a version in
+               main that matches the assembly version built there, but is visibly not something
+               we'd ever ship. -->
+    <version>1.0.37-unofficial</version> 
     <title>Microsoft ECMA-335 Metadata Reader</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -21,7 +25,7 @@ Supported Platforms:
     <tags>BCL Microsoft System ECMA ECMA335 Metadata Reflection</tags>
     <dependencies>
       <group>
-        <dependency id="System.Collections.Immutable" version="1.1.34-rc-00001" />
+        <dependency id="System.Collections.Immutable" version="1.1.37-beta-23024" />
       </group>
     </dependencies>
   </metadata>
