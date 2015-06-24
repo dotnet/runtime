@@ -14,12 +14,22 @@
           "lib/DNXCore50/System.Collections.dll": {}
         }
       },
-      "System.Collections.Immutable/1.1.36": {
+      "System.Collections.Immutable/1.1.37-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-23024",
+          "System.Resources.ResourceManager": "4.0.0-beta-23024",
+          "System.Diagnostics.Debug": "4.0.0-beta-23024",
+          "System.Collections": "4.0.0-beta-23024",
+          "System.Linq": "4.0.0-beta-23024",
+          "System.Runtime.Extensions": "4.0.0-beta-23024",
+          "System.Globalization": "4.0.0-beta-23024",
+          "System.Threading": "4.0.0-beta-23024"
+        },
         "compile": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         }
       },
       "System.Diagnostics.Debug/4.0.10-beta-23024": {
@@ -102,6 +112,21 @@
           "lib/dotnet/System.IO.FileSystem.Primitives.dll": {}
         }
       },
+      "System.Linq/4.0.0-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.20-beta-23024",
+          "System.Collections": "4.0.10-beta-23024",
+          "System.Resources.ResourceManager": "4.0.0-beta-23024",
+          "System.Diagnostics.Debug": "4.0.10-beta-23024",
+          "System.Runtime.Extensions": "4.0.10-beta-23024"
+        },
+        "compile": {
+          "ref/dotnet/System.Linq.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Linq.dll": {}
+        }
+      },
       "System.Private.Uri/4.0.0-beta-23024": {
         "runtime": {
           "lib/DNXCore50/System.Private.Uri.dll": {}
@@ -120,15 +145,40 @@
           "lib/DNXCore50/System.Reflection.dll": {}
         }
       },
-      "System.Reflection.Metadata/1.0.21": {
+      "System.Reflection.Extensions/4.0.0-beta-23024": {
         "dependencies": {
-          "System.Collections.Immutable": "1.1.36"
+          "System.Runtime": "4.0.0-beta-23024",
+          "System.Reflection": "4.0.0-beta-23024"
         },
         "compile": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "ref/dotnet/System.Reflection.Extensions.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "lib/DNXCore50/System.Reflection.Extensions.dll": {}
+        }
+      },
+      "System.Reflection.Metadata/1.0.22-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-23024",
+          "System.Resources.ResourceManager": "4.0.0-beta-23024",
+          "System.Reflection.Primitives": "4.0.0-beta-23024",
+          "System.IO": "4.0.0-beta-23024",
+          "System.Diagnostics.Debug": "4.0.0-beta-23024",
+          "System.Collections": "4.0.0-beta-23024",
+          "System.Text.Encoding": "4.0.0-beta-23024",
+          "System.Runtime.InteropServices": "4.0.0-beta-23024",
+          "System.Reflection": "4.0.0-beta-23024",
+          "System.Runtime.Extensions": "4.0.0-beta-23024",
+          "System.Threading": "4.0.0-beta-23024",
+          "System.Text.Encoding.Extensions": "4.0.0-beta-23024",
+          "System.Reflection.Extensions": "4.0.0-beta-23024",
+          "System.Collections.Immutable": "1.1.34-beta-23024"
+        },
+        "compile": {
+          "lib/dotnet/System.Reflection.Metadata.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Reflection.Metadata.dll": {}
         }
       },
       "System.Reflection.Primitives/4.0.0-beta-23024": {
@@ -288,14 +338,15 @@
         "runtimes/win8-aot/lib/netcore50/System.Collections.dll"
       ]
     },
-    "System.Collections.Immutable/1.1.36": {
+    "System.Collections.Immutable/1.1.37-beta-23024": {
       "serviceable": true,
-      "sha512": "MOlivTIeAIQPPMUPWIIoMCvZczjFRLYUWSYwqi1szu8QPyeIbsaPeI+hpXe1DzTxNwnRnmfYaoToi6kXIfSPNg==",
+      "sha512": "LlrYTV/111WG+YZfayStrj8gmxMAALgAKhKMVPutGO7C1gauYuW5FVaHE+QjwIfeqavB2jtoJVVspEndJM+UxQ==",
       "files": [
-        "License-Stable.rtf",
-        "System.Collections.Immutable.1.1.36.nupkg",
-        "System.Collections.Immutable.1.1.36.nupkg.sha512",
+        "System.Collections.Immutable.1.1.37-beta-23024.nupkg",
+        "System.Collections.Immutable.1.1.37-beta-23024.nupkg.sha512",
         "System.Collections.Immutable.nuspec",
+        "lib/dotnet/System.Collections.Immutable.dll",
+        "lib/dotnet/System.Collections.Immutable.xml",
         "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll",
         "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.xml"
       ]
@@ -450,6 +501,34 @@
         "ref/net46/System.IO.FileSystem.Primitives.dll"
       ]
     },
+    "System.Linq/4.0.0-beta-23024": {
+      "serviceable": true,
+      "sha512": "hVGW083n8Lf5J0uFrDqbbeZODqcpqlTls42aVbJXkELEBfRFOYdC3elpPEw/gtlLsBIUFfYJgq+a/7Mqv/i//g==",
+      "files": [
+        "System.Linq.4.0.0-beta-23024.nupkg",
+        "System.Linq.4.0.0-beta-23024.nupkg.sha512",
+        "System.Linq.nuspec",
+        "lib/dotnet/System.Linq.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Linq.dll",
+        "lib/win8/_._",
+        "ref/dotnet/System.Linq.dll",
+        "ref/dotnet/System.Linq.xml",
+        "ref/dotnet/de/System.Linq.xml",
+        "ref/dotnet/es/System.Linq.xml",
+        "ref/dotnet/fr/System.Linq.xml",
+        "ref/dotnet/it/System.Linq.xml",
+        "ref/dotnet/ja/System.Linq.xml",
+        "ref/dotnet/ko/System.Linq.xml",
+        "ref/dotnet/ru/System.Linq.xml",
+        "ref/dotnet/zh-hans/System.Linq.xml",
+        "ref/dotnet/zh-hant/System.Linq.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Linq.dll",
+        "ref/netcore50/System.Linq.xml",
+        "ref/win8/_._"
+      ]
+    },
     "System.Private.Uri/4.0.0-beta-23024": {
       "serviceable": true,
       "sha512": "SJbplxSAYqzECE4GzsXfkES5vug34KI34ERs2ySNAfuVcEbtto0YieQQqLQERzYINfbFVbOPbV4yN3VTzjW0DQ==",
@@ -488,14 +567,44 @@
         "runtimes/win8-aot/lib/netcore50/System.Reflection.dll"
       ]
     },
-    "System.Reflection.Metadata/1.0.21": {
+    "System.Reflection.Extensions/4.0.0-beta-23024": {
       "serviceable": true,
-      "sha512": "CAhcY0EJFLXfxo5YRV/ytkTOeTBho8zKjLu+9LvEI5NIVmanp1yMUzYQdjvXpHbyV0Qt1KuLXcTCc9t9FVH3Wg==",
+      "sha512": "Hb/Jq24QyHQ563tCB8C7qu5MlOsCc3NSopzvWAf2pU0CN0LnWH1M5W30TnVERBFWo46TJih5+IxGYhjtUU3b3A==",
       "files": [
-        "License-Stable.rtf",
-        "System.Reflection.Metadata.1.0.21.nupkg",
-        "System.Reflection.Metadata.1.0.21.nupkg.sha512",
+        "System.Reflection.Extensions.4.0.0-beta-23024.nupkg",
+        "System.Reflection.Extensions.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.Extensions.nuspec",
+        "lib/DNXCore50/System.Reflection.Extensions.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Reflection.Extensions.dll",
+        "lib/win8/_._",
+        "ref/dotnet/System.Reflection.Extensions.dll",
+        "ref/dotnet/System.Reflection.Extensions.xml",
+        "ref/dotnet/de/System.Reflection.Extensions.xml",
+        "ref/dotnet/es/System.Reflection.Extensions.xml",
+        "ref/dotnet/fr/System.Reflection.Extensions.xml",
+        "ref/dotnet/it/System.Reflection.Extensions.xml",
+        "ref/dotnet/ja/System.Reflection.Extensions.xml",
+        "ref/dotnet/ko/System.Reflection.Extensions.xml",
+        "ref/dotnet/ru/System.Reflection.Extensions.xml",
+        "ref/dotnet/zh-hans/System.Reflection.Extensions.xml",
+        "ref/dotnet/zh-hant/System.Reflection.Extensions.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Reflection.Extensions.dll",
+        "ref/netcore50/System.Reflection.Extensions.xml",
+        "ref/win8/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Reflection.Extensions.dll"
+      ]
+    },
+    "System.Reflection.Metadata/1.0.22-beta-23024": {
+      "serviceable": true,
+      "sha512": "4+n7zKaIWryKbzv/AAZjOMtAD4Wtn4nqHtYeRhcMNzjEoIErDEEdj02iTxBBWJxH4Yi8JNmT9mrJk/HoJqOw4A==",
+      "files": [
+        "System.Reflection.Metadata.1.0.22-beta-23024.nupkg",
+        "System.Reflection.Metadata.1.0.22-beta-23024.nupkg.sha512",
         "System.Reflection.Metadata.nuspec",
+        "lib/dotnet/System.Reflection.Metadata.dll",
+        "lib/dotnet/System.Reflection.Metadata.xml",
         "lib/portable-net45+win8/System.Reflection.Metadata.dll",
         "lib/portable-net45+win8/System.Reflection.Metadata.xml"
       ]
@@ -783,6 +892,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
+      "System.Collections.Immutable >= 1.1.37-beta-*",
       "System.Diagnostics.Debug >= 4.0.10-beta-*",
       "System.Diagnostics.Tools >= 4.0.0-beta-*",
       "System.Globalization >= 4.0.10-beta-*",
@@ -790,7 +900,7 @@
       "System.IO.FileSystem >= 4.0.0-beta-*",
       "System.IO.FileSystem.Primitives >= 4.0.0-beta-*",
       "System.Reflection >= 4.0.10-beta-*",
-      "System.Reflection.Metadata >= 1.0.21",
+      "System.Reflection.Metadata >= 1.0.22-beta-*",
       "System.Reflection.Primitives >= 4.0.0-beta-*",
       "System.Runtime >= 4.0.20-beta-*",
       "System.Runtime.Extensions >= 4.0.10-beta-*",
