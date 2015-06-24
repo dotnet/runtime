@@ -21,15 +21,19 @@ namespace System.IO.MemoryMappedFiles
         {
             if (mapName != null)
             {
-                // TODO: We currently do not support named maps.  We could possibly support 
-                // named maps in the future by using shm_open / shm_unlink, as we do for
-                // giving internal names to anonymous maps.  Issues to work through will include 
-                // dealing with permissions, passing information from the creator of the 
-                // map to another opener of it, etc.
+                // Named maps are not supported in our Unix implementation.  We could support named maps on Linux using 
+                // shared memory segments (shmget/shmat/shmdt/shmctl/etc.), but that doesn't work on OSX by default due
+                // to very low default limits on OSX for the size of such objects; it also doesn't support behaviors
+                // like copy-on-write or the ability to control handle inheritability, and reliably cleaning them up
+                // relies on some non-conforming behaviors around shared memory IDs remaining valid even after they've
+                // been marked for deletion (IPC_RMID).  We could also support named maps using the current implementation
+                // by not unlinking after creating the backing store, but then the backing stores would remain around
+                // and accessible even after process exit, with no good way to appropriately clean them up.
+                // (File-backed maps may still be used for cross-process communication.)
                 throw CreateNamedMapsNotSupportedException();
             }
 
-            var fileStreamSource = SafeMemoryMappedFileHandle.FileStreamSource.Provided;
+            bool ownsFileStream = false;
             if (fileStream != null)
             {
                 // This map is backed by a file.  Make sure the file's size is increased to be
@@ -50,15 +54,16 @@ namespace System.IO.MemoryMappedFiles
                 // of an object that has read-only permissions, but we also don't need to worry about sharing
                 // views over a read-only, anonymous, memory-backed map, because the data will never change, so all views
                 // will always see zero and can't change that.  In that case, we just use the built-in anonymous support of
-                // the map by leaving fileHandle as null.
+                // the map by leaving fileStream as null.
                 Interop.libc.MemoryMappedProtections protections = MemoryMappedView.GetProtections(access, forVerification: false);
                 if ((protections & Interop.libc.MemoryMappedProtections.PROT_WRITE) != 0 && capacity > 0)
                 {
-                    fileStream = CreateSharedBackingObject(protections, capacity, out mapName, out fileStreamSource);
+                    ownsFileStream = true;
+                    fileStream = CreateSharedBackingObject(protections, capacity);
                 }
             }
 
-            return new SafeMemoryMappedFileHandle(mapName, fileStream, fileStreamSource, inheritability, access, options, capacity);
+            return new SafeMemoryMappedFileHandle(fileStream, ownsFileStream, inheritability, access, options, capacity);
         }
 
         /// <summary>
@@ -109,7 +114,7 @@ namespace System.IO.MemoryMappedFiles
             return new PlatformNotSupportedException(SR.PlatformNotSupported_NamedMaps);
         }
 
-        private const string MemoryMapObjectFilePrefix = "CoreFX_MMF_";
+        private const string MemoryMapObjectFilePrefix = "corefx_mmf_";
 
         private static FileAccess TranslateProtectionsToFileAccess(Interop.libc.MemoryMappedProtections protections)
         {
