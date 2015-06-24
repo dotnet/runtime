@@ -3731,20 +3731,21 @@ alloc_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 /*
  * LOCKING: requires that threads_mutex is held
  */
-static void
+static gboolean
 alloc_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
 	uint32_t gch = GPOINTER_TO_INT (key);
 	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (gch);
 
 	if (!ctx) {
-		g_hash_table_remove (contexts, key);
 		mono_gchandle_free (gch);
-		return;
+		return TRUE; // Remove this key/value pair
 	}
 
 	guint32 offset = GPOINTER_TO_UINT (user);
 	mono_alloc_static_data (&ctx->static_data, offset, FALSE);
+
+	return FALSE; // Don't remove it
 }
 
 static StaticDataFreeList*
@@ -3836,7 +3837,7 @@ mono_alloc_special_static_data (guint32 static_type, guint32 size, guint32 align
 			mono_g_hash_table_foreach (threads, alloc_thread_static_data_helper, GUINT_TO_POINTER (offset));
 	} else {
 		if (contexts != NULL)
-			g_hash_table_foreach (contexts, alloc_context_static_data_helper, GUINT_TO_POINTER (offset));
+			g_hash_table_foreach_remove (contexts, alloc_context_static_data_helper, GUINT_TO_POINTER (offset));
 
 		ACCESS_SPECIAL_STATIC_OFFSET (offset, type) = SPECIAL_STATIC_OFFSET_TYPE_CONTEXT;
 	}
@@ -3890,16 +3891,15 @@ free_thread_static_data_helper (gpointer key, gpointer value, gpointer user)
 /*
  * LOCKING: requires that threads_mutex is held
  */
-static void
+static gboolean
 free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 {
 	uint32_t gch = GPOINTER_TO_INT (key);
 	MonoAppContext *ctx = (MonoAppContext *) mono_gchandle_get_target (gch);
 
 	if (!ctx) {
-		g_hash_table_remove (contexts, key);
 		mono_gchandle_free (gch);
-		return;
+		return TRUE; // Remove this key/value pair
 	}
 
 	OffsetSize *data = user;
@@ -3908,10 +3908,12 @@ free_context_static_data_helper (gpointer key, gpointer value, gpointer user)
 	char *ptr;
 
 	if (!ctx->static_data || !ctx->static_data [idx])
-		return;
+		return FALSE; // Don't remove this key/value pair
 
 	ptr = ((char*) ctx->static_data [idx]) + off;
 	mono_gc_bzero_atomic (ptr, data->size);
+
+	return FALSE; // Don't remove this key/value pair
 }
 
 static void
@@ -3940,7 +3942,7 @@ do_free_special_slot (guint32 offset, guint32 size)
 			mono_g_hash_table_foreach (threads, free_thread_static_data_helper, &data);
 	} else {
 		if (contexts != NULL)
-			g_hash_table_foreach (contexts, free_context_static_data_helper, &data);
+			g_hash_table_foreach_remove (contexts, free_context_static_data_helper, &data);
 	}
 
 	if (!mono_runtime_is_shutting_down ()) {
