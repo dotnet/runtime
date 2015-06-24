@@ -121,8 +121,16 @@ namespace System.Net.Http
 
         public long MaxRequestContentBufferSize
         {
-            get { return _winHttpHandler.MaxRequestContentBufferSize; }
-            set { _winHttpHandler.MaxRequestContentBufferSize = value; }
+            // This property has been deprecated. In the .NET Desktop it was only used when the handler needed to automatically
+            // buffer the request content. That only happened if neither 'Content-Length' nor 'Transfer-Encoding: chunked'
+            // request headers were specified. So, the handler thus needed to buffer in the request content to determine its
+            // length and then would choose 'Content-Length' semantics when POST'ing. In CoreCLR and .NETNative, the handler
+            // will resolve the ambiguity by always choosing 'Transfer-Encoding: chunked'. The handler will never automatically
+            // buffer in the request content.
+            get { return 0; }
+            
+            // TODO: Add message/link to exception explaining the deprecation.
+            set { throw new PlatformNotSupportedException(); }
         }
 
         #endregion Properties
