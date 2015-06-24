@@ -144,6 +144,11 @@ namespace System.Linq
 
             public abstract IEnumerable<TSource> Where(Func<TSource, bool> predicate);
 
+            public virtual TSource[] ToArray()
+            {
+                return new Buffer<TSource>(this, queryInterfaces: false).ToArray();
+            }
+
             object IEnumerator.Current
             {
                 get { return Current; }
@@ -431,6 +436,21 @@ namespace System.Linq
             {
                 return new WhereEnumerableIterator<TResult>(this, predicate);
             }
+
+            public override TResult[] ToArray()
+            {
+                if (_predicate != null)
+                {
+                    return base.ToArray();
+                }
+
+                var results = new TResult[_source.Length];
+                for (int i = 0; i < results.Length; i++)
+                {
+                    results[i] = _selector(_source[i]);
+                }
+                return results;
+            }
         }
 
         internal class WhereSelectListIterator<TSource, TResult> : Iterator<TResult>
@@ -485,6 +505,21 @@ namespace System.Linq
             public override IEnumerable<TResult> Where(Func<TResult, bool> predicate)
             {
                 return new WhereEnumerableIterator<TResult>(this, predicate);
+            }
+
+            public override TResult[] ToArray()
+            {
+                if (_predicate != null)
+                {
+                    return base.ToArray();
+                }
+
+                var results = new TResult[_source.Count];
+                for (int i = 0; i < results.Length; i++)
+                {
+                    results[i] = _selector(_source[i]);
+                }
+                return results;
             }
         }
 
@@ -3079,21 +3114,35 @@ namespace System.Linq
         internal TElement[] items;
         internal int count;
 
-        internal Buffer(IEnumerable<TElement> source)
+        internal Buffer(IEnumerable<TElement> source, bool queryInterfaces = true)
         {
             TElement[] items = null;
             int count = 0;
-            ICollection<TElement> collection = source as ICollection<TElement>;
-            if (collection != null)
+
+            if (queryInterfaces)
             {
-                count = collection.Count;
-                if (count > 0)
+                Enumerable.Iterator<TElement> iterator = source as Enumerable.Iterator<TElement>;
+                if (iterator != null)
                 {
-                    items = new TElement[count];
-                    collection.CopyTo(items, 0);
+                    items = iterator.ToArray();
+                    count = items.Length;
+                }
+                else
+                {
+                    ICollection<TElement> collection = source as ICollection<TElement>;
+                    if (collection != null)
+                    {
+                        count = collection.Count;
+                        if (count > 0)
+                        {
+                            items = new TElement[count];
+                            collection.CopyTo(items, 0);
+                        }
+                    }
                 }
             }
-            else
+
+            if (items == null)
             {
                 foreach (TElement item in source)
                 {
@@ -3109,6 +3158,7 @@ namespace System.Linq
                     count++;
                 }
             }
+
             this.items = items;
             this.count = count;
         }
