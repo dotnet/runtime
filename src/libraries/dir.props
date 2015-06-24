@@ -22,6 +22,9 @@
     <AssemblyMetadata Include=".NETFrameworkAssembly">
       <Value></Value>
     </AssemblyMetadata>
+    <AssemblyMetadata Include="Serviceable">
+      <Value>True</Value>
+    </AssemblyMetadata>
   </ItemGroup>
 
   <!-- Common repo directories -->
