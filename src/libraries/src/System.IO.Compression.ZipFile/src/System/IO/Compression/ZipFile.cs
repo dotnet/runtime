@@ -8,6 +8,9 @@ namespace System.IO.Compression
 {
     public static class ZipFile
     {
+        // Per the .ZIP File Format Specification 4.4.17.1 all slashes should be forward slashes
+        private const char c_pathSeparator = '/';
+
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified path for reading. The specified file is opened with <code>FileMode.Open</code>.
         /// </summary>
@@ -503,10 +506,7 @@ namespace System.IO.Compression
                     Int32 entryNameLength = file.FullName.Length - basePath.Length;
                     Debug.Assert(entryNameLength > 0);
 
-                    String entryName = file.FullName.Substring(basePath.Length, entryNameLength);
-
-                    // Remove any leading slashes from the entry name:
-                    entryName = entryName.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    String entryName = EntryFromPath(file.FullName, basePath.Length, entryNameLength);
 
                     if (file is FileInfo)
                     {
@@ -520,17 +520,51 @@ namespace System.IO.Compression
                         if (possiblyEmpty != null && IsDirEmpty(possiblyEmpty))
                         {
                             // FullName never returns a directory separator character on the end,
-                            // but Zip archives require it to specify an explicit directory:                             
-                            archive.CreateEntry(entryName + Path.DirectorySeparatorChar);
+                            // but Zip archives require it to specify an explicit directory:
+                            archive.CreateEntry(entryName + c_pathSeparator);
                         }
                     }
                 }  // foreach
 
                 // If no entries create an empty root directory entry:
                 if (includeBaseDirectory && directoryIsEmpty)
-                    archive.CreateEntry(di.Name + Path.DirectorySeparatorChar);
+                    archive.CreateEntry(EntryFromPath(di.Name, 0, di.Name.Length) + c_pathSeparator);
+
             } // using
         }  // DoCreateFromDirectory
+
+        private static string EntryFromPath(string entry, int offset, int length)
+        {
+            Debug.Assert(length <= entry.Length - offset);
+
+            // Remove any leading slashes from the entry name:
+            while (length > 0)
+            {
+                if (entry[offset] != Path.DirectorySeparatorChar && 
+                    entry[offset] != Path.AltDirectorySeparatorChar)
+                    break;
+
+                offset++;
+                length--;
+            }
+
+            if (length == 0)
+                return String.Empty;
+
+            // create a mutable copy
+            char[] chars = entry.ToCharArray(offset, length);
+
+            // '/' is a more broadly recognized directory separator on all platforms (eg: mac, linux)
+            // We don't use Path.DirectorySeparatorChar or AltDirectorySeparatorChar because this is
+            // explicitly trying to standardize to '/'
+            for(int i = 0; i < chars.Length; i++)
+            {
+                if (chars[i] == Path.DirectorySeparatorChar || chars[i] == Path.AltDirectorySeparatorChar)
+                    chars[i] = c_pathSeparator;
+            }
+
+            return new string(chars);
+        }
 
 
         private static Boolean IsDirEmpty(DirectoryInfo possiblyEmptyDir)
