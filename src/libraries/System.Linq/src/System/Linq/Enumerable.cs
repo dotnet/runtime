@@ -100,7 +100,7 @@ namespace System.Linq
 
             public IEnumerator<TSource> GetEnumerator()
             {
-                if (_threadId == Environment.CurrentManagedThreadId && state == 0)
+                if (state == 0 && _threadId == Environment.CurrentManagedThreadId)
                 {
                     state = 1;
                     return this;
