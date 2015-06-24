@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal static partial class libc
     {
-        internal const int MAXPATHLEN = 1024;
-        internal const int MFSTYPENAMELEN = 16;
+        private const int MAXPATHLEN = 1024;
+        private const int MFSTYPENAMELEN = 16;
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct fsid_t
