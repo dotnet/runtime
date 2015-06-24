@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "System.Collections.Immutable": "1.1.37-beta-*",
     "System.Diagnostics.Debug": "4.0.10-beta-*",
     "System.Diagnostics.Tools": "4.0.0-beta-*",
     "System.Globalization": "4.0.10-beta-*",
@@ -7,7 +8,7 @@
     "System.IO.FileSystem": "4.0.0-beta-*",
     "System.IO.FileSystem.Primitives": "4.0.0-beta-*",
     "System.Reflection": "4.0.10-beta-*",
-    "System.Reflection.Metadata": "1.0.21",
+    "System.Reflection.Metadata": "1.0.22-beta-*",
     "System.Reflection.Primitives": "4.0.0-beta-*",
     "System.Runtime": "4.0.20-beta-*",
     "System.Runtime.Extensions": "4.0.10-beta-*",
