@@ -57,16 +57,27 @@
     <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Unix'">mono $(NuGetRestoreCommand)</NugetRestoreCommand>
   </PropertyGroup>
 
+  <!-- list of nuget package sources passed to dnu -->
+  <ItemGroup>
+    <DnuSourceList Include="https://www.myget.org/F/dotnet-core/" />
+    <DnuSourceList Include="https://www.myget.org/F/dotnet-coreclr/" />
+    <DnuSourceList Include="https://www.myget.org/F/dotnet-corefx/" />
+    <DnuSourceList Include="https://www.myget.org/F/dotnet-corefxtestdata/" />
+    <DnuSourceList Include="https://www.myget.org/F/dotnet-buildtools/" />
+    <DnuSourceList Include="https://www.nuget.org/api/v2/" />
+  </ItemGroup>
 
   <PropertyGroup>
     <DnxPackageDir Condition="'$(DnxPackageDir)'==''">$(PackagesDir)/$(DnxPackageName)/</DnxPackageDir>
     <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'!='Unix'">$(DnxPackageDir)\bin\dnu.cmd</DnuToolPath>
     <DnuToolPath Condition="'$(DnuToolPath)'=='' and '$(OsEnvironment)'=='Unix'">$(DnxPackageDir)/bin/dnu</DnuToolPath>
 
+    <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
+
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/'))"</DnuRestoreCommand>
+    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/'))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
 
