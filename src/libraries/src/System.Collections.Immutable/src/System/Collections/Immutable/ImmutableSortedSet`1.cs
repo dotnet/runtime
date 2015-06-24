@@ -278,7 +278,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, "other");
 
-            var otherAsSet = ImmutableSortedSet<T>.Empty.Union(other);
+            var otherAsSet = ImmutableSortedSet.CreateRange(_comparer, other);
 
             var result = this.Clear();
             foreach (T item in this)

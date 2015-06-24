@@ -368,6 +368,19 @@ namespace System.Collections.Immutable.Test
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
         }
 
+        [Fact]
+        public void SymmetricExceptWithComparerTests()
+        {
+            var set = ImmutableSortedSet.Create<string>("a").WithComparer(StringComparer.OrdinalIgnoreCase);
+            var otherCollection = new[] {"A"};
+
+            var expectedSet = new SortedSet<string>(set, set.KeyComparer);
+            expectedSet.SymmetricExceptWith(otherCollection);
+
+            var actualSet = set.SymmetricExcept(otherCollection);
+            CollectionAssertAreEquivalent(expectedSet.ToList(), actualSet.ToList());
+        }
+
         protected override IImmutableSet<T> Empty<T>()
         {
             return ImmutableSortedSet<T>.Empty;

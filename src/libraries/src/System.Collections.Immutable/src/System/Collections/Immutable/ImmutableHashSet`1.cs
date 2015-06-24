@@ -852,7 +852,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, "other");
 
-            var otherAsSet = Empty.Union(other);
+            var otherAsSet = ImmutableHashSet.CreateRange(origin.EqualityComparer, other);
 
             int count = 0;
             var result = SortedInt32KeyNode<HashBucket>.EmptyNode;
