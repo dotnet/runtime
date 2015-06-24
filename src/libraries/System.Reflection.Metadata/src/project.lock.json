@@ -80,6 +80,18 @@
           "ref/dotnet/System.Reflection.dll": {}
         }
       },
+      "System.Reflection.Extensions/4.0.0-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-23024",
+          "System.Reflection": "4.0.0-beta-23024"
+        },
+        "compile": {
+          "ref/dotnet/System.Reflection.Extensions.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.Reflection.Extensions.dll": {}
+        }
+      },
       "System.Reflection.Primitives/4.0.0-beta-23024": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-23024"
@@ -117,12 +129,31 @@
           "ref/dotnet/System.Runtime.Extensions.dll": {}
         }
       },
+      "System.Runtime.InteropServices/4.0.0-beta-23024": {
+        "dependencies": {
+          "System.Reflection": "4.0.0-beta-23024",
+          "System.Reflection.Primitives": "4.0.0-beta-23024",
+          "System.Runtime": "4.0.0-beta-23024"
+        },
+        "compile": {
+          "ref/dotnet/System.Runtime.InteropServices.dll": {}
+        }
+      },
       "System.Text.Encoding/4.0.0-beta-23024": {
         "dependencies": {
           "System.Runtime": "4.0.0-beta-23024"
         },
         "compile": {
           "ref/dotnet/System.Text.Encoding.dll": {}
+        }
+      },
+      "System.Text.Encoding.Extensions/4.0.0-beta-23024": {
+        "dependencies": {
+          "System.Runtime": "4.0.0-beta-23024",
+          "System.Text.Encoding": "4.0.0-beta-23024"
+        },
+        "compile": {
+          "ref/dotnet/System.Text.Encoding.Extensions.dll": {}
         }
       },
       "System.Threading/4.0.0-beta-23024": {
@@ -361,6 +392,35 @@
         "ref/win8/_._"
       ]
     },
+    "System.Reflection.Extensions/4.0.0-beta-23024": {
+      "serviceable": true,
+      "sha512": "Hb/Jq24QyHQ563tCB8C7qu5MlOsCc3NSopzvWAf2pU0CN0LnWH1M5W30TnVERBFWo46TJih5+IxGYhjtUU3b3A==",
+      "files": [
+        "System.Reflection.Extensions.4.0.0-beta-23024.nupkg",
+        "System.Reflection.Extensions.4.0.0-beta-23024.nupkg.sha512",
+        "System.Reflection.Extensions.nuspec",
+        "lib/DNXCore50/System.Reflection.Extensions.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Reflection.Extensions.dll",
+        "lib/win8/_._",
+        "ref/dotnet/System.Reflection.Extensions.dll",
+        "ref/dotnet/System.Reflection.Extensions.xml",
+        "ref/dotnet/de/System.Reflection.Extensions.xml",
+        "ref/dotnet/es/System.Reflection.Extensions.xml",
+        "ref/dotnet/fr/System.Reflection.Extensions.xml",
+        "ref/dotnet/it/System.Reflection.Extensions.xml",
+        "ref/dotnet/ja/System.Reflection.Extensions.xml",
+        "ref/dotnet/ko/System.Reflection.Extensions.xml",
+        "ref/dotnet/ru/System.Reflection.Extensions.xml",
+        "ref/dotnet/zh-hans/System.Reflection.Extensions.xml",
+        "ref/dotnet/zh-hant/System.Reflection.Extensions.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Reflection.Extensions.dll",
+        "ref/netcore50/System.Reflection.Extensions.xml",
+        "ref/win8/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Reflection.Extensions.dll"
+      ]
+    },
     "System.Reflection.Primitives/4.0.0-beta-23024": {
       "serviceable": true,
       "sha512": "y2g5Rwm68Nnt3Ag+pAKLRwUifIKhm1gMy36bnU5rFrZhxg21hls93QH75HDZqXjK80leEr0BC1ajZZ+IcZvKCw==",
@@ -489,6 +549,41 @@
         "ref/win8/_._"
       ]
     },
+    "System.Runtime.InteropServices/4.0.0-beta-23024": {
+      "sha512": "9+ssz4Pj7jlmrV9AaoXPGRqVk0pMJ+AuxDEq0xSXHFnsEbKzaU2DM4TLllLJzeGE+gT91JY3GdPKnLEoY4StKQ==",
+      "files": [
+        "License.rtf",
+        "System.Runtime.InteropServices.4.0.0-beta-23024.nupkg",
+        "System.Runtime.InteropServices.4.0.0-beta-23024.nupkg.sha512",
+        "System.Runtime.InteropServices.nuspec",
+        "lib/net45/_._",
+        "lib/win8/_._",
+        "ref/dotnet/System.Runtime.InteropServices.dll",
+        "ref/dotnet/System.Runtime.InteropServices.xml",
+        "ref/dotnet/de/System.Runtime.InteropServices.xml",
+        "ref/dotnet/es/System.Runtime.InteropServices.xml",
+        "ref/dotnet/fr/System.Runtime.InteropServices.xml",
+        "ref/dotnet/it/System.Runtime.InteropServices.xml",
+        "ref/dotnet/ja/System.Runtime.InteropServices.xml",
+        "ref/dotnet/ko/System.Runtime.InteropServices.xml",
+        "ref/dotnet/ru/System.Runtime.InteropServices.xml",
+        "ref/dotnet/zh-hans/System.Runtime.InteropServices.xml",
+        "ref/dotnet/zh-hant/System.Runtime.InteropServices.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Runtime.InteropServices.dll",
+        "ref/netcore50/System.Runtime.InteropServices.xml",
+        "ref/netcore50/de/System.Runtime.InteropServices.xml",
+        "ref/netcore50/es/System.Runtime.InteropServices.xml",
+        "ref/netcore50/fr/System.Runtime.InteropServices.xml",
+        "ref/netcore50/it/System.Runtime.InteropServices.xml",
+        "ref/netcore50/ja/System.Runtime.InteropServices.xml",
+        "ref/netcore50/ko/System.Runtime.InteropServices.xml",
+        "ref/netcore50/ru/System.Runtime.InteropServices.xml",
+        "ref/netcore50/zh-hans/System.Runtime.InteropServices.xml",
+        "ref/netcore50/zh-hant/System.Runtime.InteropServices.xml",
+        "ref/win8/_._"
+      ]
+    },
     "System.Text.Encoding/4.0.0-beta-23024": {
       "sha512": "vk8nyuyHfyseINaZc0CHm4L4mHU5fnZV2kdA3Cgf1MD4/dMGZFjwKCKrpMr6m08j8xOzC3yE+gIadUZjWNU6oQ==",
       "files": [
@@ -521,6 +616,41 @@
         "ref/netcore50/ru/System.Text.Encoding.xml",
         "ref/netcore50/zh-hans/System.Text.Encoding.xml",
         "ref/netcore50/zh-hant/System.Text.Encoding.xml",
+        "ref/win8/_._"
+      ]
+    },
+    "System.Text.Encoding.Extensions/4.0.0-beta-23024": {
+      "sha512": "MYIsQiP4rSNxEgm+YVzViMp3H5qJewyPjvHE4crqQJGCF7JgwRMwueDeWFbpm2bouykrPculvWkRxzGoTdsEww==",
+      "files": [
+        "License.rtf",
+        "System.Text.Encoding.Extensions.4.0.0-beta-23024.nupkg",
+        "System.Text.Encoding.Extensions.4.0.0-beta-23024.nupkg.sha512",
+        "System.Text.Encoding.Extensions.nuspec",
+        "lib/net45/_._",
+        "lib/win8/_._",
+        "ref/dotnet/System.Text.Encoding.Extensions.dll",
+        "ref/dotnet/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/de/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/es/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/fr/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/it/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/ja/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/ko/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/ru/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/zh-hans/System.Text.Encoding.Extensions.xml",
+        "ref/dotnet/zh-hant/System.Text.Encoding.Extensions.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Text.Encoding.Extensions.dll",
+        "ref/netcore50/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/de/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/es/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/fr/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/it/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/ja/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/ko/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/ru/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/zh-hans/System.Text.Encoding.Extensions.xml",
+        "ref/netcore50/zh-hant/System.Text.Encoding.Extensions.xml",
         "ref/win8/_._"
       ]
     },
@@ -597,7 +727,20 @@
   },
   "projectFileDependencyGroups": {
     "": [
-      "System.Collections.Immutable >= 1.1.37-beta-*"
+      "System.Runtime >= 4.0.0-beta-*",
+      "System.Resources.ResourceManager >= 4.0.0-beta-*",
+      "System.Reflection.Primitives >= 4.0.0-beta-*",
+      "System.Diagnostics.Debug >= 4.0.0-beta-*",
+      "System.IO >= 4.0.0-beta-*",
+      "System.Collections.Immutable >= 1.1.37-beta-*",
+      "System.Collections >= 4.0.0-beta-*",
+      "System.Text.Encoding >= 4.0.0-beta-*",
+      "System.Runtime.InteropServices >= 4.0.0-beta-*",
+      "System.Reflection >= 4.0.0-beta-*",
+      "System.Runtime.Extensions >= 4.0.0-beta-*",
+      "System.Threading >= 4.0.0-beta-*",
+      "System.Text.Encoding.Extensions >= 4.0.0-beta-*",
+      "System.Reflection.Extensions >= 4.0.0-beta-*"
     ],
     "DNXCore,Version=v5.0": []
   }
