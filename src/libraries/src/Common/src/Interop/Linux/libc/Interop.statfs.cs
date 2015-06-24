@@ -14,7 +14,7 @@ internal static partial class Interop
         /// <remarks>
         /// These value names MUST be kept in sync with those in DriveInfo.Unix.GetDriveType
         /// </remarks>
-        internal enum LinuxFileSystemTypes : long
+        private enum LinuxFileSystemTypes : long
         {
             adfs = 0xadf5,
             affs = 0xADFF,

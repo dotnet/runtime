@@ -11,6 +11,5 @@ internal static partial class Interop
         internal const string INODE64SUFFIX = "";
 
         internal const string LibRt = "librt"; // POSIX Realtime Extensions library
-        internal const string libc = "libc";   // C runtime
     }
 }

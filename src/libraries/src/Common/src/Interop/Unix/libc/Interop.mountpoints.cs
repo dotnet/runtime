@@ -10,8 +10,6 @@ internal static partial class Interop
 {
     internal static partial class libc
     {
-        [DllImport("libc")]
-        static extern int printf(string data);
         /// <summary>
         /// Gets all the current mount points on the system
         /// </summary>
@@ -22,7 +20,7 @@ internal static partial class Interop
         /// Do NOT free this memory...this memory is allocated by the OS, which is responsible for it.
         /// This call could also block for a bit to wait for slow network drives.
         /// </remarks>
-        [DllImport(Interop.Libraries.libc, EntryPoint = "getmntinfo" + Interop.Libraries.INODE64SUFFIX, SetLastError = true)]
+        [DllImport(Interop.Libraries.Libc, EntryPoint = "getmntinfo" + Interop.Libraries.INODE64SUFFIX, SetLastError = true)]
         internal static unsafe extern int getmntinfo(statfs** ppBuffer, int flags);
 
         /// <summary>
@@ -31,8 +29,8 @@ internal static partial class Interop
         /// <param name="path">The path to retrieve the statfs for</param>
         /// <param name="buffer">The output statfs struct describing the mount point</param>
         /// <returns>Returns 0 on success, -1 on failure</returns>
-        [DllImport(Interop.Libraries.libc, EntryPoint = "statfs" + Interop.Libraries.INODE64SUFFIX, SetLastError = true)]
-        private static unsafe extern int get_statfs(string path, statfs* buffer);
+        [DllImport(Interop.Libraries.Libc, EntryPoint = "statfs" + Interop.Libraries.INODE64SUFFIX, SetLastError = true)]
+        private static unsafe extern int get_statfs(string path, out statfs buffer);
 
         /// <summary>
         /// Gets a statfs struct for a given mount point
@@ -42,7 +40,7 @@ internal static partial class Interop
         internal static unsafe statfs GetStatFsForDriveName(string name)
         {
             statfs data = default(statfs);
-            int result = get_statfs(name, &data);
+            int result = get_statfs(name,  out data);
             if (result < 0)
             {
                 int errno = Marshal.GetLastWin32Error();
@@ -53,8 +51,6 @@ internal static partial class Interop
             }
             else
             {
-                printf(System.Runtime.InteropServices.Marshal.SizeOf<statfs>().ToString() + "\r\n");
-                printf("Should be here\r\n");
                 return data;
             }
         }
