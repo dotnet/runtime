@@ -63,8 +63,8 @@ public partial class FileSystemWatcher_4000_Tests
             int internalBufferOperationCapacity = watcher.InternalBufferSize / (12 + 2 * (file.Path.Length + 1));
 
             // generate enough file change events to overflow the buffer
-            // 2x is an approximation that should force the overflow.
-            for (int i = 1; i < internalBufferOperationCapacity * 2; i++)
+            // 4x is an approximation that should force the overflow.
+            for (int i = 1; i < internalBufferOperationCapacity * 4; i++)
             {
                 File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(i));
             }
