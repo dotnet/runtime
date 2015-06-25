@@ -265,6 +265,8 @@ namespace System.IO.Compression
                 }
                 else if (bytes > _buffer.Length)
                 {
+                    // The stream is either malicious or poorly implemented and returned a number of
+                    // bytes larger than the buffer supplied to it.
                     throw new InvalidDataException(SR.GenericInvalidData);
                 }
 
@@ -378,6 +380,8 @@ namespace System.IO.Compression
                     }
                     else if (bytesRead > _buffer.Length)
                     {
+                        // The stream is either malicious or poorly implemented and returned a number of
+                        // bytes larger than the buffer supplied to it.
                         throw new InvalidDataException(SR.GenericInvalidData);
                     }
 
