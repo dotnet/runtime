@@ -19,16 +19,16 @@ namespace System.IO
             this._innerStream = new Win32FileStream(handle, access, bufferSize, isAsync, this);
         }
 
-        static partial void ValidatePath(string fullPath)
+        static partial void ValidatePath(string fullPath, string paramName)
         {
             // Prevent access to your disk drives as raw block devices.
             if (fullPath.StartsWith("\\\\.\\", StringComparison.Ordinal))
-                throw new ArgumentException(SR.Arg_DevicesNotSupported);
+                throw new ArgumentException(SR.Arg_DevicesNotSupported, paramName);
 
             // Check for additional invalid characters.  Most invalid characters were checked above
             // in our call to Path.GetFullPath(path);
             if (fullPath.IndexOfAny(s_additionalInvalidChars) != -1)
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
+                throw new ArgumentException(SR.Argument_InvalidPathChars, paramName);
 
             if (fullPath.IndexOf(':', 2) != -1)
                 throw new NotSupportedException(SR.Argument_PathFormatNotSupported);

@@ -67,10 +67,10 @@ namespace System.IO
             while ((index = searchPattern.IndexOf("..", index, StringComparison.Ordinal)) != -1)
             {
                 if (index + 2 == searchPattern.Length) // Terminal ".." . Files names cannot end in ".."
-                    throw new ArgumentException(SR.Arg_InvalidSearchPattern);
+                    throw new ArgumentException(SR.Arg_InvalidSearchPattern, "searchPattern");
 
                 if (IsDirectorySeparator(searchPattern[index + 2]))
-                    throw new ArgumentException(SR.Arg_InvalidSearchPattern);
+                    throw new ArgumentException(SR.Arg_InvalidSearchPattern, "searchPattern");
 
                 index += 2;
             }
@@ -82,7 +82,7 @@ namespace System.IO
                 throw new ArgumentNullException("path");
 
             if (PathInternal.HasIllegalCharacters(path, checkAdditional))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
+                throw new ArgumentException(SR.Argument_InvalidPathChars, "path");
         }
 
         // System.IO.Path has both public Combine and internal InternalCombine
