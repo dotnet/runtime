@@ -57,7 +57,8 @@ namespace System.IO
                     catch (UnauthorizedAccessException)
                     {
                         // For consistency with Win32 we remap ACCESS_DENIED to ArgumentException
-                        throw new ArgumentException(SR.UnauthorizedAccess_IODenied_NoPathName);
+                        // Intentionally omit argument name since this is mimicking the Win32 sourced ArgumentException
+                        throw new ArgumentException(SR.UnauthorizedAccess_IODenied_NoPathName /*, intentionally omitted*/);
                     }
                     // reset our attributes
                     _item = null;

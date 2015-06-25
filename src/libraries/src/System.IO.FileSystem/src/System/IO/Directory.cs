@@ -41,7 +41,7 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException("path");
             if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty);
+                throw new ArgumentException(SR.Argument_PathEmpty, "path");
             Contract.EndContractBlock();
 
             String fullPath = PathHelpers.GetFullPathInternal(path);
@@ -540,7 +540,7 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException("value");
             if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_PathEmpty);
+                throw new ArgumentException(SR.Argument_PathEmpty, "path");
             Contract.EndContractBlock();
             if (path.Length >= FileSystem.Current.MaxPath)
                 throw new PathTooLongException(SR.IO_PathTooLong);
