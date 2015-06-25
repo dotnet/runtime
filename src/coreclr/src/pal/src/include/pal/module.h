@@ -64,14 +64,12 @@ typedef struct _MODSTRUCT
     struct _MODSTRUCT *prev;
 } MODSTRUCT;
 
-extern MODSTRUCT exe_module;
 
 /*++
 Function :
     LOADInitializeModules
 
-    Initialize the process-wide list of modules (2 initial modules : 1 for
-    the executable and 1 for the PAL)
+    Initialize the process-wide list of modules
 
 Parameters :
     None
@@ -81,6 +79,22 @@ Return value :
 
 --*/
 BOOL LOADInitializeModules();
+
+/*++
+Function :
+    LOADSetExeName
+
+    Set the exe name path
+
+Parameters :
+    LPWSTR man exe path and name
+
+Return value :
+    TRUE  if initialization succeedded
+    FALSE otherwise
+
+--*/
+BOOL LOADSetExeName(LPWSTR name);
 
 /*++
 Function :
