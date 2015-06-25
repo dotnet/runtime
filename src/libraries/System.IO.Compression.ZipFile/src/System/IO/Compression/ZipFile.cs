@@ -9,7 +9,7 @@ namespace System.IO.Compression
     public static class ZipFile
     {
         // Per the .ZIP File Format Specification 4.4.17.1 all slashes should be forward slashes
-        private const char c_pathSeparator = '/';
+        private const char PathSeparator = '/';
 
         /// <summary>
         /// Opens a <code>ZipArchive</code> on the specified path for reading. The specified file is opened with <code>FileMode.Open</code>.
@@ -521,14 +521,14 @@ namespace System.IO.Compression
                         {
                             // FullName never returns a directory separator character on the end,
                             // but Zip archives require it to specify an explicit directory:
-                            archive.CreateEntry(entryName + c_pathSeparator);
+                            archive.CreateEntry(entryName + PathSeparator);
                         }
                     }
                 }  // foreach
 
                 // If no entries create an empty root directory entry:
                 if (includeBaseDirectory && directoryIsEmpty)
-                    archive.CreateEntry(EntryFromPath(di.Name, 0, di.Name.Length) + c_pathSeparator);
+                    archive.CreateEntry(EntryFromPath(di.Name, 0, di.Name.Length) + PathSeparator);
 
             } // using
         }  // DoCreateFromDirectory
@@ -560,7 +560,7 @@ namespace System.IO.Compression
             for(int i = 0; i < chars.Length; i++)
             {
                 if (chars[i] == Path.DirectorySeparatorChar || chars[i] == Path.AltDirectorySeparatorChar)
-                    chars[i] = c_pathSeparator;
+                    chars[i] = PathSeparator;
             }
 
             return new string(chars);
