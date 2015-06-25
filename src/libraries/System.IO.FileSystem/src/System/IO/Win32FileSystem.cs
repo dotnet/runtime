@@ -200,7 +200,7 @@ namespace System.IO
                 case SearchTarget.Both:
                     return Win32FileSystemEnumerableFactory.CreateFileSystemInfoIterator(fullPath, fullPath, searchPattern, searchOption);
                 default:
-                    throw new ArgumentException("searchTarget", SR.ArgumentOutOfRange_Enum);
+                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, "searchTarget");
             }
         }
 
@@ -437,7 +437,10 @@ namespace System.IO
         {
             String root = fullPath.Substring(0, PathHelpers.GetRootLength(fullPath));
             if (root == fullPath && root[1] == Path.VolumeSeparatorChar)
-                throw new ArgumentException(SR.Arg_PathIsVolume);
+            {
+                // intentionally not fullpath, most upstack public APIs expose this as path.
+                throw new ArgumentException(SR.Arg_PathIsVolume, "path");
+            }
 
             Interop.mincore.SECURITY_ATTRIBUTES secAttrs = default(Interop.mincore.SECURITY_ATTRIBUTES);
             SafeFileHandle handle = Helpers.SafeCreateFile(
@@ -650,7 +653,7 @@ namespace System.IO
             {
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.mincore.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentException(SR.Arg_InvalidFileAttrs);
+                    throw new ArgumentException(SR.Arg_InvalidFileAttrs, "attributes");
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
         }

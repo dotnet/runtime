@@ -276,7 +276,7 @@ namespace System.IO
                 {
                     // If you passed in a synchronous handle and told us to use
                     // it asynchronously, throw here.
-                    throw new ArgumentException(SR.Arg_HandleNotAsync, ex);
+                    throw new ArgumentException(SR.Arg_HandleNotAsync, "handle", ex);
                 }
             }
             else if (!_isAsync)
@@ -293,7 +293,7 @@ namespace System.IO
             if (isAsync)
             {
                 // Passed in a synchronous handle and told us isAsync
-                throw new ArgumentException(SR.Arg_HandleNotAsync);
+                throw new ArgumentException(SR.Arg_HandleNotAsync, "handle");
             }
 #endif
 
@@ -367,7 +367,7 @@ namespace System.IO
             }
 
             if (errorCode == ERROR_INVALID_PARAMETER)
-                throw new ArgumentException(SR.Arg_HandleNotSync);
+                throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
             if (errorCode == Interop.mincore.Errors.ERROR_INVALID_HANDLE)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, "<OS handle>");
         }
@@ -690,7 +690,7 @@ namespace System.IO
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+                throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();
 
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
@@ -794,7 +794,7 @@ namespace System.IO
                 else
                 {
                     if (errorCode == ERROR_INVALID_PARAMETER)
-                        throw new ArgumentException(SR.Arg_HandleNotSync);
+                        throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
@@ -972,7 +972,7 @@ namespace System.IO
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+                throw new ArgumentException(SR.Argument_InvalidOffLen /*, no good single parameter name to pass*/);
             Contract.EndContractBlock();
 
             if (_handle.IsClosed) throw __Error.GetFileNotOpen();
