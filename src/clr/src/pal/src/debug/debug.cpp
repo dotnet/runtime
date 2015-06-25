@@ -37,6 +37,7 @@ Revision History:
 #include "pal/debug.h"
 #include "pal/misc.h"
 #include "pal/malloc.hpp"
+#include "pal/module.h"
 #include "pal/virtual.h"
 
 #include <signal.h>
@@ -330,6 +331,9 @@ run_debug_command (const char *command)
 }
 #endif // ENABLE_RUN_ON_DEBUG_BREAK
 
+#define PID_TEXT "PAL_EXE_PID="
+#define EXE_TEXT "PAL_EXE_NAME="
+
 static
 int
 DebugBreakCommand()
@@ -337,15 +341,13 @@ DebugBreakCommand()
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
     const char *command_string = getenv (PAL_RUN_ON_DEBUG_BREAK);
     if (command_string) {
-        char pid_buf[sizeof ("PAL_EXE_PID=") + 32];
-        char exe_buf[sizeof ("PAL_EXE_NAME=") + MAX_PATH + 1];
-        extern char g_ExePath[MAX_PATH];
-        if (snprintf (pid_buf, sizeof (pid_buf),
-                      "PAL_EXE_PID=%d", getpid()) <= 0) {
+        char pid_buf[sizeof (PID_TEXT) + 32];
+        char exe_buf[sizeof (EXE_TEXT) + MAX_PATH + 1];
+
+        if (snprintf (pid_buf, sizeof (pid_buf), PID_TEXT "%d", getpid()) <= 0) {
             goto FAILED;
         }
-        if (snprintf (exe_buf, sizeof (exe_buf),
-                      "PAL_EXE_NAME=%s", g_ExePath) <= 0) {
+        if (snprintf (exe_buf, sizeof (exe_buf), EXE_TEXT "%ls", (wchar_t *)exe_module.lib_name) <= 0) {
             goto FAILED;
         }
 

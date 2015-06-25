@@ -121,19 +121,17 @@ CPalThread* CorUnix::pGThreadList;
 DWORD g_dwThreadCount;
 
 //
-// The command line for the process
+// The command line and app name for the process
 //
 
-LPWSTR g_lpwstrCmdLine;
-
+LPWSTR g_lpwstrCmdLine = NULL;
+LPWSTR g_lpwstrAppDir = NULL;
 
 /* Thread ID of thread that has started the ExitProcess process */
 Volatile<LONG> terminator = 0;
 
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
-
-LPWSTR pAppDir = NULL;
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -1631,17 +1629,19 @@ See MSDN doc.
 LPWSTR
 PALAPI
 GetCommandLineW(
-        VOID)
+    VOID)
 {
     PERF_ENTRY(GetCommandLineW);
     ENTRY("GetCommandLineW()\n");
 
+    LPWSTR lpwstr = g_lpwstrCmdLine ? g_lpwstrCmdLine : (LPWSTR)W("");
+
     LOGEXIT("GetCommandLineW returns LPWSTR %p (%S)\n",
           g_lpwstrCmdLine,
-          g_lpwstrCmdLine);
+          lpwstr);
     PERF_EXIT(GetCommandLineW);
     
-    return g_lpwstrCmdLine;
+    return lpwstr;
 }
 
 /*++
@@ -2159,49 +2159,39 @@ CorUnix::InitializeProcessData(
 }
 
 /*++
-Function:
-  CreateInitialProcessAndThreadObjects
+Function
+    InitializeProcessCommandLine
 
 Abstract
-  Creates the IPalObjects that represent the current process
-  and the initial thread
+    Initializes (or re-initializes) the saved command line and exe path.
 
 Parameter
-  pThread - the initial thread
-  lpwstrCmdLine
-  lpwstrFullPath
+    pThread - the initial thread
+    lpwstrCmdLine
+    lpwstrFullPath
  
 Return
-  PAL_ERROR
+    PAL_ERROR
 
-Notes :
+Notes
     This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
 --*/
 
 PAL_ERROR
-CorUnix::CreateInitialProcessAndThreadObjects(
+CorUnix::InitializeProcessCommandLine(
     CPalThread *pThread,
     LPWSTR lpwstrCmdLine,
     LPWSTR lpwstrFullPath
-    )
+)
 {
     PAL_ERROR palError = NO_ERROR;
-    HANDLE hThread;
-    IPalObject *pobjProcess = NULL;
-    IDataLock *pDataLock;
-    CProcProcessLocalData *pLocalData;
-    CProcSharedData *pSharedData;
-    CObjectAttributes oa;
-    HANDLE hProcess;
     LPWSTR initial_dir = NULL;
 
     //
     // Save the command line and initial directory
     //
 
-    g_lpwstrCmdLine = lpwstrCmdLine ? lpwstrCmdLine : (LPWSTR)W("");
-    
-    if (lpwstrCmdLine)
+    if (lpwstrFullPath)
     {
         LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
         lpwstr[0] = '\0';
@@ -2212,20 +2202,60 @@ CorUnix::CreateInitialProcessAndThreadObjects(
         if (NULL == initial_dir)
         {
             ERROR("malloc() failed! (initial_dir) \n");
-            goto CreateInitialProcessAndThreadObjectsExit;
+            palError = ERROR_NOT_ENOUGH_MEMORY;
+            goto exit;
         }
 
         if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
         {
             ERROR("wcscpy_s failed!\n");
+            InternalFree(pThread, initial_dir);
             palError = ERROR_INTERNAL_ERROR;
-            goto CreateInitialProcessAndThreadObjectsExit;
+            goto exit;
         }
 
         lpwstr[0] = '/';
+
+        InternalFree(pThread, g_lpwstrAppDir);
+        g_lpwstrAppDir = initial_dir;
     }
-    
-    pAppDir = initial_dir;
+
+    InternalFree(pThread, g_lpwstrCmdLine);
+    g_lpwstrCmdLine = lpwstrCmdLine;
+
+exit:
+    return palError;
+}
+
+
+/*++
+Function:
+  CreateInitialProcessAndThreadObjects
+
+Abstract
+  Creates the IPalObjects that represent the current process
+  and the initial thread
+
+Parameter
+  pThread - the initial thread
+ 
+Return
+  PAL_ERROR
+--*/
+
+PAL_ERROR
+CorUnix::CreateInitialProcessAndThreadObjects(
+    CPalThread *pThread
+    )
+{
+    PAL_ERROR palError = NO_ERROR;
+    HANDLE hThread;
+    IPalObject *pobjProcess = NULL;
+    IDataLock *pDataLock;
+    CProcProcessLocalData *pLocalData;
+    CProcSharedData *pSharedData;
+    CObjectAttributes oa;
+    HANDLE hProcess;
 
     //
     // Create initial thread object
@@ -2329,14 +2359,6 @@ CreateInitialProcessAndThreadObjectsExit:
         pobjProcess->ReleaseReference(pThread);
     }
 
-    if (NO_ERROR != palError)
-    {
-        if (NULL != initial_dir)
-        {
-            InternalFree(pThread, initial_dir);
-        }
-    }
-
     return palError;
 }
 
@@ -2359,13 +2381,11 @@ VOID
 PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
-    LPWSTR lpwstr;
 
     InternalEnterCriticalSection(pThread, &g_csProcess);
     
     /* Free the application directory */
-    lpwstr=pAppDir;
-    InternalFree (pThread, lpwstr);
+    InternalFree (pThread, g_lpwstrAppDir);
     
     /* Free the stored command line */
     InternalFree (pThread, g_lpwstrCmdLine);
@@ -3746,7 +3766,7 @@ getPath(
     }
 
     /* first look in directory from which the application loaded */
-    lpwstr=pAppDir;
+    lpwstr = g_lpwstrAppDir;
 
     if (lpwstr)
     {

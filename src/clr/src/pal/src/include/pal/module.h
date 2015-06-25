@@ -44,14 +44,13 @@ typedef VOID (PALAPI *PUNREGISTER_MODULE)(HINSTANCE);           /* used to clean
 
 typedef struct _MODSTRUCT
 {
-    HMODULE self;         /* circular reference to this module */
-    void *dl_handle;      /* handle returned by dlopen() */
-    HINSTANCE hinstance;  /* handle returned by PAL_RegisterLibrary */
-    LPWSTR lib_name;      /* full path of module */
-    INT refcount;         /* reference count */
-                          /* -1 means infinite reference count - module is never released */
-    BOOL ThreadLibCalls;  /* TRUE for DLL_THREAD_ATTACH/DETACH notifications 
-                             enabled, FALSE if they are disabled */
+    HMODULE self;           /* circular reference to this module */
+    void *dl_handle;        /* handle returned by dlopen() */
+    HINSTANCE hinstance;    /* handle returned by PAL_RegisterLibrary */
+    LPWSTR lib_name;        /* full path of module */
+    INT refcount;           /* reference count */
+                            /* -1 means infinite reference count - module is never released */
+    BOOL threadLibCalls;    /* TRUE for DLL_THREAD_ATTACH/DETACH notifications enabled, FALSE if they are disabled */
 
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     ino_t inode;
@@ -65,26 +64,23 @@ typedef struct _MODSTRUCT
     struct _MODSTRUCT *prev;
 } MODSTRUCT;
 
-extern MODSTRUCT pal_module;
-
+extern MODSTRUCT exe_module;
 
 /*++
 Function :
-    LoadInitializeModules
+    LOADInitializeModules
 
     Initialize the process-wide list of modules (2 initial modules : 1 for
     the executable and 1 for the PAL)
 
 Parameters :
-    LPWSTR exe_name : full path to executable
+    None
 
 Return value :
     TRUE on success, FALSE on failure
 
-Notes :
-    the module manager takes ownership of the string
 --*/
-BOOL LOADInitializeModules(LPWSTR exe_name);
+BOOL LOADInitializeModules();
 
 /*++
 Function :
@@ -183,19 +179,33 @@ Return value:
 BOOL PAL_LOADUnloadPEFile(void * ptr);
 
 /*++
-    LOADInitCoreCLRModules
+    LOADInitializeCoreCLRModule
 
-    Run the initialization methods for CoreCLR modules that used to be standalone dynamic libraries (PALRT and
-    mscorwks).
+    Run the initialization methods for CoreCLR module.
 
 Parameters:
-    Core CLR path
+    None
 
 Return value:
     TRUE if successful
     FALSE if failure
 --*/
-BOOL LOADInitCoreCLRModules(const char *szCoreCLRPath);
+BOOL LOADInitializeCoreCLRModule();
+
+/*++
+Function :
+    LOADGetPalLibrary
+
+    Load and initialize the PAL module.
+
+Parameters :
+    None
+
+Return value :
+    handle to loaded module
+
+--*/
+MODSTRUCT *LOADGetPalLibrary();
 
 #ifdef __cplusplus
 }
