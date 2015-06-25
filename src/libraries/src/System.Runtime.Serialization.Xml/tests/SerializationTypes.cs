@@ -2119,3 +2119,13 @@ public class TypeWithNonParameterlessConstructor
         StringProperty = value;
     }
 }
+
+[DataContract]
+public class AppEnvironment
+{
+    [DataMember(Name = "screen:orientation")]
+    public string ScreenOrientation { get; set; }
+
+    [DataMember(Name = "screen_dpi(x:y)")]
+    public int ScreenDpi { get; set; }
+}
