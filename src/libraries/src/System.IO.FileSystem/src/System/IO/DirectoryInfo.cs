@@ -111,7 +111,7 @@ namespace System.IO
 
             if (0 != String.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathInternal.GetComparison()))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, DisplayPath));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, DisplayPath), "path");
             }
 
             FileSystem.Current.CreateDirectory(fullPath);

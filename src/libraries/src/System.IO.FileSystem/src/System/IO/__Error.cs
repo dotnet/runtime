@@ -35,23 +35,6 @@ namespace System.IO
             return new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
-        internal static Exception GetWrongAsyncResult()
-        {
-            return new ArgumentException(SR.Arg_WrongAsyncResult);
-        }
-
-        internal static Exception GetEndReadCalledTwice()
-        {
-            // Should ideally be InvalidOperationExc but we can't maintain parity with Stream and FileStream without some work
-            return new ArgumentException(SR.InvalidOperation_EndReadCalledMultiple);
-        }
-
-        internal static Exception GetEndWriteCalledTwice()
-        {
-            // Should ideally be InvalidOperationExc but we can't maintain parity with Stream and FileStream without some work
-            return new ArgumentException(SR.InvalidOperation_EndWriteCalledMultiple);
-        }
-
         internal static Exception GetWriteNotSupported()
         {
             return new NotSupportedException(SR.NotSupported_UnwritableStream);

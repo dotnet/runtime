@@ -144,9 +144,6 @@
   <data name="Arg_PathIsVolume" xml:space="preserve">
     <value>Path must not be a drive.</value>
   </data>
-  <data name="Arg_WrongAsyncResult" xml:space="preserve">
-    <value>IAsyncResult object did not come from the corresponding async method on this type.</value>
-  </data>
   <data name="ArgumentNull_Buffer" xml:space="preserve">
     <value>Buffer cannot be null.</value>
   </data>
@@ -266,18 +263,6 @@
   </data>
   <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
     <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
-  </data>
-  <data name="InvalidOperation_EndReadCalledMultiple" xml:space="preserve">
-    <value>EndRead can only be called once for each asynchronous operation.</value>
-  </data>
-  <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
-    <value>EndWrite can only be called once for each asynchronous operation.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndRead was called multiple times with the same IAsyncResult.</value>
-  </data>
-  <data name="InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple" xml:space="preserve">
-    <value>Either the IAsyncResult object did not come from the corresponding async method on this type, or EndWrite was called multiple times with the same IAsyncResult.</value>
   </data>
   <data name="NotSupported_FileStreamOnNonFiles" xml:space="preserve">
     <value>FileStream was asked to open a device that was not a file. For support for devices like 'com1:' or 'lpt1:', call CreateFile, then use the FileStream constructors that take an OS handle as an IntPtr.</value>
