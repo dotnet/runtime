@@ -233,7 +233,6 @@ Initialize(
         gPID = getpid();
 
         fFirstTimeInit = true;
-        exe_module.lib_name = NULL;
 
         // Initialize the TLS lookaside cache
         if (FALSE == TLSInitialize())
@@ -344,6 +343,16 @@ Initialize(
         g_fThreadDataAvailable = TRUE;
 
         //
+        // Initialize module manager
+        //
+        if (FALSE == LOADInitializeModules())
+        {
+            ERROR("Unable to initialize module manager\n");
+            palError = ERROR_INTERNAL_ERROR;
+            goto CLEANUP1b;
+        }
+
+        //
         // Initialize the object manager
         //
 
@@ -423,22 +432,27 @@ Initialize(
         // InitializeProcessCommandLine took ownership of this memory.
         command_line = NULL;
 
-        // Save the exe path in the exe module struct
-        InternalFree(pThread, exe_module.lib_name);
-        exe_module.lib_name = exe_path;
-
 #ifdef PAL_PERF
         // Initialize the Profiling structure
         if(FALSE == PERFInitialize(command_line, exe_path)) 
         {
             ERROR("Performance profiling initial failed\n");
-            goto done;
+            goto CLEANUP2;
         }    
         PERFAllocThreadInfo();
 #endif
+
+        if (!LOADSetExeName(exe_path))
+        {
+            ERROR("Unable to set exe name\n");
+            goto CLEANUP2;
+        }
+
+        // LOADSetExeName took ownership of this memory.
+        exe_path = NULL;
     }
 
-    if(init_count == 0)
+    if (init_count == 0)
     {
         //
         // Create the initial process and thread objects
@@ -479,14 +493,6 @@ Initialize(
             goto CLEANUP6;
         }
 
-        /* Initialize module manager */
-        if (FALSE == LOADInitializeModules())
-        {
-            ERROR("Unable to initialize module manager\n");
-            palError = GetLastError();
-            goto CLEANUP8;
-        }
-         
         /* Initialize the Virtual* functions. */
         if (FALSE == VIRTUALInitialize())
         {
@@ -513,7 +519,6 @@ Initialize(
         /* Set LastError to a non-good value - functions within the
            PAL startup may set lasterror to a nonzero value. */
         SetLastError(NO_ERROR);
-        
         retval = 0;
     }
     else
@@ -540,7 +545,6 @@ CLEANUP13:
     VIRTUALCleanup();
 CLEANUP10:
     LOADFreeModules(TRUE);
-CLEANUP8:
     MAPCleanup();
 CLEANUP6:
     SEHCleanup();
@@ -549,10 +553,7 @@ CLEANUP5:
 CLEANUP2:
     InternalFree(pThread, exe_path);
 CLEANUP1e:
-    if (command_line != NULL)
-    {
-        InternalFree(pThread, command_line);
-    }
+    InternalFree(pThread, command_line);
 CLEANUP1d:
     // Cleanup synchronization manager
 CLEANUP1c:
