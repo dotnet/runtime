@@ -339,6 +339,7 @@ int
 DebugBreakCommand()
 {
 #ifdef ENABLE_RUN_ON_DEBUG_BREAK
+    extern MODSTRUCT exe_module;
     const char *command_string = getenv (PAL_RUN_ON_DEBUG_BREAK);
     if (command_string) {
         char pid_buf[sizeof (PID_TEXT) + 32];
