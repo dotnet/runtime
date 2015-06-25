@@ -365,8 +365,10 @@ namespace System.IO.Compression.Tests
             Assert.Throws<NotSupportedException>(delegate { long value = zip.Position; });
             Assert.Throws<NotSupportedException>(delegate { zip.Position = 100L; });
             Assert.Throws<NotSupportedException>(delegate { zip.SetLength(100L); });
-            //Should we try all the enums? doesn't seem necessary
             Assert.Throws<NotSupportedException>(delegate { zip.Seek(100L, SeekOrigin.Begin); });
+
+            zip.Dispose();
+            Assert.False(zip.CanSeek);
         }
 
         [Fact]
@@ -381,8 +383,10 @@ namespace System.IO.Compression.Tests
             Assert.Throws<NotSupportedException>(delegate { long value = zip.Position; });
             Assert.Throws<NotSupportedException>(delegate { zip.Position = 100L; });
             Assert.Throws<NotSupportedException>(delegate { zip.SetLength(100L); });
-            //Should we try all the enums? doesn't seem necessary
             Assert.Throws<NotSupportedException>(delegate { zip.Seek(100L, SeekOrigin.Begin); });
+
+            zip.Dispose();
+            Assert.False(zip.CanSeek);
         }
     }
 }
