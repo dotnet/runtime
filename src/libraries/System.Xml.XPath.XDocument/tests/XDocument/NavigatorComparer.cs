@@ -29,8 +29,7 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
 
             if (AreComparableNodes(a.NodeType, b.NodeType))
             {
-                Assert.Equal(a.Value, b.Value);
-                Assert.Equal(a.Value, b.Value);
+                CompareValues(a, b);
                 Assert.Equal(a.Name, b.Name);
             }
 #endif
@@ -68,6 +67,15 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
             {
                 Assert.Equal(a, b);
             }
+        }
+        
+        private static void CompareValues(XPathNavigator a, XPathNavigator b)
+        {
+            // In order to account for Desktop vs CoreCLR difference in implementation of XmlDocument we need to normalize line endings to conform XML specification.
+            string sa = a.Value.Replace("\r\n", "\n").Replace("\r", "\n");
+            string sb = b.Value.Replace("\r\n", "\n").Replace("\r", "\n");
+
+            Assert.Equal(sa, sb);
         }
 
         public NavigatorComparer(XPathNavigator nav1, XPathNavigator nav2)
@@ -620,18 +628,16 @@ namespace System.Xml.XPath.XDocument.Tests.XDocument
         {
             get
             {
-                var r1 = _nav1.Value;
-                var r2 = _nav2.Value;
 #if CHECK_ATTRIBUTE_ORDER
-                Assert.Equal(r1, r2);
+                CompareValues(_nav1, _nav2);
 #else
                 CompareNodeTypes(_nav1.NodeType, _nav2.NodeType);
                 if (!IsNamespaceOrAttribute(_nav1.NodeType))
                 {
-                    Assert.Equal(r1, r2);
+                    CompareValues(_nav1, _nav2);
                 }
 #endif
-                return r1;
+                return _nav1.Value;
             }
         }
         public override object ValueAs(Type value)
