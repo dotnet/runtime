@@ -1092,6 +1092,15 @@ typedef struct {
 } MonoLMFExt;
 
 /* Generic sharing */
+
+/*
+ * Flags for which contexts were used in inflating a generic.
+ */
+enum {
+	MONO_GENERIC_CONTEXT_USED_CLASS = 1,
+	MONO_GENERIC_CONTEXT_USED_METHOD = 2
+};
+
 typedef enum {
 	MONO_RGCTX_INFO_STATIC_DATA,
 	MONO_RGCTX_INFO_KLASS,
