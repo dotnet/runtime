@@ -130,7 +130,7 @@ HRESULT ExecuteAssembly(
     }
     *exitCode = -1;
 
-    DWORD error = PAL_InitializeCoreCLR(exePath, coreClrPath, true);
+    DWORD error = PAL_InitializeCoreCLR(exePath);
     HRESULT hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid

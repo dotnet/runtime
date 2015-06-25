@@ -478,9 +478,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath,
-    const char *szCoreCLRPath,
-    BOOL fStayInPAL);
+    const char *szExePath);
 
 PALIMPORT
 DWORD_PTR
@@ -5876,12 +5874,6 @@ PALIMPORT
 VOID
 PALAPI
 PAL_LeaveTop();
-
-// Returns TRUE if the argument HMODULE denotes the PAL itself.
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsSelf(IN HMODULE);
 
 #ifdef  __cplusplus
 //
