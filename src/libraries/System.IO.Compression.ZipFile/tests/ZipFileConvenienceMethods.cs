@@ -49,7 +49,7 @@ namespace System.IO.Compression.Test
                 {
                     ZipArchiveEntry bEntry = b.Entries[bIdx++];
 
-                    Assert.Equal(Path.Combine(Path.GetFileName(baseDir), aEntry.FullName), bEntry.FullName);
+                    Assert.Equal(Path.GetFileName(baseDir) + "/" + aEntry.FullName, bEntry.FullName);
                     Assert.Equal(aEntry.Name, bEntry.Name);
                     Assert.Equal(aEntry.Length, bEntry.Length);
                     Assert.Equal(aEntry.CompressedLength, bEntry.CompressedLength);
