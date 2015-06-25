@@ -160,14 +160,14 @@ LoadLibraryExA(
           (lpLibFileName)?lpLibFileName:"NULL",
           (lpLibFileName)?lpLibFileName:"NULL");
 
-    if(NULL == lpLibFileName)
+    if (NULL == lpLibFileName)
     {
         ERROR("lpLibFileName is NULL;Exit.\n");
         SetLastError(ERROR_MOD_NOT_FOUND);
         goto Done;
     }
 
-    if(lpLibFileName[0]=='\0')
+    if (lpLibFileName[0]=='\0')
     {
         ERROR("can't load library with NULL file name...\n");
         SetLastError(ERROR_INVALID_PARAMETER);
@@ -177,7 +177,7 @@ LoadLibraryExA(
     pThread = InternalGetCurrentThread();
     /* do the Dos/Unix conversion on our own copy of the name */
     lpstr = InternalStrdup(pThread, lpLibFileName);
-    if(!lpstr)
+    if (!lpstr)
     {
         ERROR("InternalStrdup failure!\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -229,14 +229,14 @@ LoadLibraryExW(
           lpLibFileName?lpLibFileName:W16_NULLSTRING,
           lpLibFileName?lpLibFileName:W16_NULLSTRING);
 
-    if(NULL == lpLibFileName)
+    if (NULL == lpLibFileName)
     {
         ERROR("lpLibFileName is NULL;Exit.\n");
         SetLastError(ERROR_MOD_NOT_FOUND);
         goto done;
     }
 
-    if(lpLibFileName[0]==0)
+    if (lpLibFileName[0]==0)
     {
         ERROR("Can't load library with NULL file name...\n");
         SetLastError(ERROR_INVALID_PARAMETER);
@@ -247,10 +247,10 @@ LoadLibraryExW(
 
     name_length = WideCharToMultiByte(CP_ACP, 0, lpLibFileName, -1, lpstr,
                                       MAX_PATH, NULL, NULL);
-    if( name_length == 0 )
+    if (name_length == 0)
     {
         DWORD dwLastError = GetLastError();
-        if( dwLastError == ERROR_INSUFFICIENT_BUFFER )
+        if (dwLastError == ERROR_INSUFFICIENT_BUFFER)
         {
             ERROR("lpLibFileName is larger than MAX_PATH (%d)!\n", MAX_PATH);
         }
@@ -299,14 +299,14 @@ GetProcAddress(
 
     /* parameter validation */
 
-    if( (lpProcName == NULL) || (*lpProcName == '\0') )
+    if ((lpProcName == NULL) || (*lpProcName == '\0'))
     {
         TRACE("No function name given\n");
         SetLastError(ERROR_INVALID_PARAMETER);
         goto done;
     }
 
-    if( !LOADValidateModule(module) )
+    if (!LOADValidateModule(module))
     {
         TRACE("Invalid module handle %p\n", hModule);
         SetLastError(ERROR_INVALID_HANDLE);
@@ -318,7 +318,7 @@ GetProcAddress(
        because of the address range reserved for ordinals contain can
        be a valid string address on non-Windows systems
     */
-    if( (DWORD_PTR)lpProcName < VIRTUAL_PAGE_SIZE )
+    if ((DWORD_PTR)lpProcName < VIRTUAL_PAGE_SIZE)
     {
         ASSERT("Attempt to locate symbol by ordinal?!\n");
     }
@@ -365,13 +365,13 @@ GetProcAddress(
 
         /* if we don't know the module's full name yet, this is our chance to
            obtain it */
-        if(!module->lib_name && module->dl_handle)
+        if (!module->lib_name && module->dl_handle)
         {
             const char* libName = PAL_dladdr((LPVOID)ProcAddress);
             if (libName)
             {
                 module->lib_name = UTIL_MBToWC_Alloc(libName, -1);
-                if(NULL == module->lib_name)
+                if (NULL == module->lib_name)
                 {
                     ERROR("MBToWC failure; can't save module's full name\n");
                 }
@@ -426,14 +426,14 @@ FreeLibrary(
         goto done;
     }
 
-    if( !LOADValidateModule( module ) )
+    if (!LOADValidateModule(module))
     {
         TRACE("Can't free invalid module handle %p\n", hLibModule);
         SetLastError(ERROR_INVALID_HANDLE);
         goto done;
     }
 
-    if( module->refcount == -1 )
+    if (module->refcount == -1)
     {
         /* special module - never released */
         retval = TRUE;
@@ -444,7 +444,7 @@ FreeLibrary(
     TRACE("Reference count for module %p (named %S) decreases to %d\n",
             module, MODNAME(module), module->refcount);
 
-    if( module->refcount != 0 )
+    if (module->refcount != 0)
     {
         retval = TRUE;
         goto done;
@@ -464,7 +464,7 @@ FreeLibrary(
     module->self = NULL;
 
     /* Call DllMain if the module contains one */
-    if(module->pDllMain)
+    if (module->pDllMain)
     {
         TRACE("Calling DllMain (%p) for module %S\n",
                 module->pDllMain, 
@@ -499,7 +499,7 @@ FreeLibrary(
 #endif /* !_NO_DEBUG_MESSAGES_ */
     }
 
-    if(module->dl_handle && 0 != dlclose(module->dl_handle))
+    if (module->dl_handle && 0 != dlclose(module->dl_handle))
     {
         /* report dlclose() failure, but proceed anyway. */
         WARN("dlclose() call failed! error message is \"%s\"\n", dlerror());
@@ -572,7 +572,7 @@ GetModuleFileNameA(
           hModule, lpFileName, nSize);
 
     LockModuleList();
-    if(hModule && !LOADValidateModule((MODSTRUCT *)hModule))
+    if (hModule && !LOADValidateModule((MODSTRUCT *)hModule))
     {
         TRACE("Can't find name for invalid module handle %p\n", hModule);
         SetLastError(ERROR_INVALID_HANDLE);
@@ -580,7 +580,7 @@ GetModuleFileNameA(
     }
     wide_name = LOADGetModuleFileName((MODSTRUCT *)hModule);
 
-    if(!wide_name)
+    if (!wide_name)
     {
         ASSERT("Can't find name for valid module handle %p\n", hModule);
         SetLastError(ERROR_INTERNAL_ERROR);
@@ -591,7 +591,7 @@ GetModuleFileNameA(
 
     name_length = WideCharToMultiByte(CP_ACP, 0, wide_name, -1, lpFileName,
                                       nSize, NULL, NULL);
-    if( name_length==0 )
+    if (name_length == 0)
     {
         TRACE("Buffer too small to copy module's file name.\n");
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
@@ -640,7 +640,7 @@ GetModuleFileNameW(
 
     wcscpy_s(lpFileName, nSize, W(""));
 
-    if(hModule && !LOADValidateModule((MODSTRUCT *)hModule))
+    if (hModule && !LOADValidateModule((MODSTRUCT *)hModule))
     {
         TRACE("Can't find name for invalid module handle %p\n", hModule);
         SetLastError(ERROR_INVALID_HANDLE);
@@ -648,7 +648,7 @@ GetModuleFileNameW(
     }
     wide_name = LOADGetModuleFileName((MODSTRUCT *)hModule);
 
-    if(!wide_name)
+    if (!wide_name)
     {
         TRACE("Can't find name for valid module handle %p\n", hModule);
         SetLastError(ERROR_INTERNAL_ERROR);
@@ -658,7 +658,7 @@ GetModuleFileNameW(
     /* Copy module name into supplied buffer */
 
     name_length = lstrlenW(wide_name);
-    if(name_length >= (INT)nSize)
+    if (name_length >= (INT)nSize)
     {
         TRACE("Buffer too small to copy module's file name.\n");
         SetLastError(ERROR_INSUFFICIENT_BUFFER);
@@ -694,7 +694,7 @@ PAL_RegisterModule(
     HINSTANCE hinstance = NULL;
 
     int err = PAL_InitializeDLL();
-    if(err == 0)
+    if (err == 0)
     {
         PERF_ENTRY(PAL_RegisterModule);
         ENTRY("PAL_RegisterModule(%s)\n", lpLibFileName ? lpLibFileName : "");
@@ -950,7 +950,7 @@ void LOADFreeModules(BOOL bTerminateUnconditionally)
     MODSTRUCT *module;
     CPalThread *pThread = InternalGetCurrentThread();
 
-    if(!exe_module.prev)
+    if (!exe_module.prev)
     {
         ERROR("Module manager not initialized!\n");
         return;
@@ -966,7 +966,7 @@ void LOADFreeModules(BOOL bTerminateUnconditionally)
 
         // Call DllMain if the module contains one and if we're supposed
         // to call DllMains.
-        if(!bTerminateUnconditionally && module->pDllMain)
+        if (!bTerminateUnconditionally && module->pDllMain)
         {
            /* Exception-safe call to DllMain */
            LOAD_SEH_CallDllMain(module, DLL_PROCESS_DETACH, (LPVOID)-1);
@@ -987,7 +987,7 @@ void LOADFreeModules(BOOL bTerminateUnconditionally)
             InternalFree( pThread, module );
         }
     }
-    while( module != &exe_module );
+    while (module != &exe_module);
 
     /* Flag the module manager as uninitialized */
     exe_module.prev = NULL;
@@ -1062,7 +1062,7 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
 
         if (module->threadLibCalls)
         {
-            if(module->pDllMain)
+            if (module->pDllMain)
             {
 #if !_NO_DEBUG_MESSAGES_
                 /* reset ENTRY nesting level back to zero while inside the callback... */
@@ -1118,7 +1118,7 @@ DisableThreadLibraryCalls(
     LockModuleList();
     module = (MODSTRUCT *) hLibModule;
 
-    if(!LOADValidateModule(module))
+    if (!LOADValidateModule(module))
     {
         // DisableThreadLibraryCalls() does nothing when given
         // an invalid module handle. This matches the Windows
@@ -1167,10 +1167,10 @@ static BOOL LOADValidateModule(MODSTRUCT *module)
        really a module (HMODULEs are actually MODSTRUCT pointers) */
     do 
     {
-        if(module == modlist_enum)
+        if (module == modlist_enum)
         {
             /* found it; check its integrity to be on the safe side */
-            if(module->self != module)
+            if (module->self != module)
             {
                 ERROR("Found corrupt module %p!\n",module);
                 UnlockModuleList();
@@ -1210,7 +1210,7 @@ static LPWSTR LOADGetModuleFileName(MODSTRUCT *module)
 {
     LPWSTR module_name;
     /* special case : if module is NULL, we want the name of the executable */
-    if(!module)
+    if (!module)
     {
         module_name = exe_module.lib_name;
         TRACE("Returning name of main executable\n");
@@ -1252,14 +1252,14 @@ static MODSTRUCT *LOADAllocModule(void *dl_handle, LPCSTR name)
     pThread = InternalGetCurrentThread();	
     /* no match found : try to create a new module structure */
     module = (MODSTRUCT *)InternalMalloc(pThread, sizeof(MODSTRUCT));
-    if(!module)
+    if (!module)
     {
         ERROR("malloc() failed! errno is %d (%s)\n", errno, strerror(errno));
         return NULL;
     }
 
     wide_name = UTIL_MBToWC_Alloc(name, -1);
-    if(NULL == wide_name)
+    if (NULL == wide_name)
     {
         ERROR("couldn't convert name to a wide-character string\n");
         InternalFree(pThread, module);
@@ -1392,7 +1392,7 @@ static HMODULE LOADLoadLibrary(LPCSTR shortAsciiName, BOOL fDynamic)
     TRACE("Module doesn't exist : creating %s.\n", shortAsciiName);
     module = LOADAllocModule(dl_handle, shortAsciiName);
 
-    if(NULL == module)
+    if (NULL == module)
     {
         ERROR("couldn't create new module\n");
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
