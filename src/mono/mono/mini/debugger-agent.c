@@ -9192,6 +9192,14 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (err)
 		return err;
 
+	MonoClass *obj_type;
+
+	obj_type = obj->vtable->klass;
+	if (mono_class_is_transparent_proxy (obj_type))
+		obj_type = ((MonoTransparentProxy *)obj)->remote_class->proxy_class;
+
+	g_assert (obj_type);
+
 	switch (command) {
 	case CMD_OBJECT_REF_GET_TYPE:
 		/* This handles transparent proxies too */
@@ -9207,7 +9215,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 			/* Check that the field belongs to the object */
 			found = FALSE;
-			for (k = obj->vtable->klass; k; k = k->parent) {
+			for (k = obj_type; k; k = k->parent) {
 				if (k == f->parent) {
 					found = TRUE;
 					break;
@@ -9244,7 +9252,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 			/* Check that the field belongs to the object */
 			found = FALSE;
-			for (k = obj->vtable->klass; k; k = k->parent) {
+			for (k = obj_type; k; k = k->parent) {
 				if (k == f->parent) {
 					found = TRUE;
 					break;
