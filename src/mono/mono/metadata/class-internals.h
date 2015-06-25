@@ -862,13 +862,6 @@ typedef struct {
 	void       *handle;
 } MonoHandleRef;
 
-enum {
-	MONO_GENERIC_SHARING_NONE,
-	MONO_GENERIC_SHARING_COLLECTIONS,
-	MONO_GENERIC_SHARING_CORLIB,
-	MONO_GENERIC_SHARING_ALL
-};
-
 /*
  * Flags for which contexts were used in inflating a generic.
  */
