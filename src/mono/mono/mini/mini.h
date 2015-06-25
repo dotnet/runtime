@@ -189,8 +189,8 @@ typedef struct MonoAotFileInfo
 
 	/* All the pointers should be at the start to avoid alignment problems */
 
-	/* Mono's Global Offset Table */
-	gpointer got;
+	/* Global Offset Table for JITted code */
+	gpointer jit_got;
 	/* Global Offset Table for LLVM code */
 	gpointer llvm_got;
 	/* Compiled code for methods */

@@ -68,6 +68,9 @@
 #define ENABLE_AOT_CACHE
 #endif
 
+/* Number of got entries shared between the JIT and LLVM GOT */
+#define N_COMMON_GOT_ENTRIES 4
+
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
@@ -82,6 +85,7 @@ typedef struct MonoAotModule {
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
 	gpointer *llvm_got;
+	gpointer shared_got [N_COMMON_GOT_ENTRIES];
 	GHashTable *name_cache;
 	GHashTable *extra_methods;
 	/* Maps methods to their code */
@@ -200,6 +204,8 @@ static GHashTable *aot_jit_icall_hash;
 #define mono_aot_page_unlock() mono_mutex_unlock (&aot_page_mutex)
 static mono_mutex_t aot_page_mutex;
 
+static MonoAotModule *mscorlib_aot_module;
+
 static void
 init_plt (MonoAotModule *info);
 
@@ -207,7 +213,7 @@ static void
 compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **code_end);
 
 static gboolean
-mono_aot_init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass **klass);
+init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass **klass);
 
 /*****************************************************/
 /*                 AOT RUNTIME                       */
@@ -1746,6 +1752,21 @@ get_call_table_entry (void *table, int index)
 }
 
 static void
+init_gots (MonoAotModule *amodule)
+{
+	int i;
+
+	if (amodule->got) {
+		for (i = 0; i < N_COMMON_GOT_ENTRIES; ++i)
+			amodule->got [i] = amodule->shared_got [i];
+	}
+	if (amodule->llvm_got) {
+		for (i = 0; i < N_COMMON_GOT_ENTRIES; ++i)
+			amodule->llvm_got [i] = amodule->shared_got [i];
+	}
+}
+
+static void
 load_aot_module (MonoAssembly *assembly, gpointer user_data)
 {
 	char *aot_name;
@@ -1888,7 +1909,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	memcpy (&amodule->info, info, sizeof (*info));
 
-	amodule->got = amodule->info.got;
+	amodule->got = amodule->info.jit_got;
 	amodule->llvm_got = amodule->info.llvm_got;
 	amodule->globals = globals;
 	amodule->sofile = sofile;
@@ -1966,6 +1987,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->trampolines [MONO_AOT_TRAMP_IMT_THUNK] = info->imt_thunks;
 	amodule->trampolines [MONO_AOT_TRAMP_GSHAREDVT_ARG] = info->gsharedvt_arg_trampolines;
 
+	if (!strcmp (assembly->aname.name, "mscorlib"))
+		mscorlib_aot_module = amodule;
+
 	/* Compute code_offsets from the method addresses */
 	amodule->code_offsets = g_malloc0 (amodule->info.nmethods * sizeof (gint32));
 	for (i = 0; i < amodule->info.nmethods; ++i) {
@@ -2021,7 +2045,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 	assembly->image->aot_module = amodule;
 
-	amodule->got [0] = assembly->image;
+	amodule->shared_got [0] = assembly->image;
 
 	if (mono_aot_only) {
 		char *code;
@@ -2032,9 +2056,9 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			/* The second got slot contains the mscorlib got addr */
 			MonoAotModule *mscorlib_amodule = mono_defaults.corlib->aot_module;
 
-			amodule->got [1] = mscorlib_amodule->got;
+			amodule->shared_got [1] = mscorlib_amodule->got;
 		} else {
-			amodule->got [1] = amodule->got;
+			amodule->shared_got [1] = amodule->got;
 		}
 	}
 
@@ -2043,19 +2067,14 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 
 		memset (&ji, 0, sizeof (ji));
 		ji.type = MONO_PATCH_INFO_GC_CARD_TABLE_ADDR;
-		amodule->got [2] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+		amodule->shared_got [2] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
 
 		memset (&ji, 0, sizeof (ji));
 		ji.type = MONO_PATCH_INFO_GC_NURSERY_START;
-		amodule->got [3] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
+		amodule->shared_got [3] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, &ji, FALSE);
 	}
 
-	if (amodule->llvm_got) {
-		amodule->llvm_got [0] = amodule->got [0];
-		amodule->llvm_got [1] = amodule->got [1];
-		amodule->llvm_got [2] = amodule->got [2];
-		amodule->llvm_got [3] = amodule->got [3];
-	}
+	init_gots (amodule);
 
 	/*
 	 * Since we store methoddef and classdef tokens when referring to methods/classes in
@@ -3633,7 +3652,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 		}
 	}
 
-	res = mono_aot_init_method (amodule, method_index, method, &klass);
+	res = init_method (amodule, method_index, method, &klass);
 	if (!res)
 		goto cleanup;
 
@@ -3832,7 +3851,7 @@ mono_aot_find_method_index (MonoMethod *method)
 }
 
 static gboolean
-mono_aot_init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass **klass)
+init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass **klass)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoMemPool *mp;
@@ -4585,6 +4604,21 @@ load_function (MonoAotModule *amodule, const char *name)
 	return load_function_full (amodule, name, NULL);
 }
 
+static MonoAotModule*
+get_mscorlib_aot_module (void)
+{
+	MonoImage *image;
+	MonoAotModule *amodule;
+
+	image = mono_defaults.corlib;
+	if (image)
+		amodule = image->aot_module;
+	else
+		amodule = mscorlib_aot_module;
+	g_assert (amodule);
+	return amodule;
+}
+
 /*
  * Return the trampoline identified by NAME from the mscorlib AOT file.
  * On ppc64, this returns a function descriptor.
@@ -4592,14 +4626,7 @@ load_function (MonoAotModule *amodule, const char *name)
 gpointer
 mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 {
-	MonoImage *image;
-	MonoAotModule *amodule;
-
-	image = mono_defaults.corlib;
-	g_assert (image);
-
-	amodule = image->aot_module;
-	g_assert (amodule);
+	MonoAotModule *amodule = get_mscorlib_aot_module ();
 
 	return mono_create_ftnptr_malloc (load_function_full (amodule, name, out_tinfo));
 }
@@ -4788,20 +4815,16 @@ get_new_gsharedvt_arg_trampoline_from_page (gpointer tramp, gpointer arg)
 static gpointer
 get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotModule **out_amodule, guint32 *got_offset, guint32 *out_tramp_size)
 {
-	MonoAotModule *amodule;
-	int index, tramp_size;
 	MonoImage *image;
+	MonoAotModule *amodule = get_mscorlib_aot_module ();
+	int index, tramp_size;
 
 	/* Currently, we keep all trampolines in the mscorlib AOT image */
 	image = mono_defaults.corlib;
-	g_assert (image);
-
-	mono_aot_lock ();
-
-	amodule = image->aot_module;
-	g_assert (amodule);
 
 	*out_amodule = amodule;
+
+	mono_aot_lock ();
 
 #ifdef MONOTOUCH
 #define	MONOTOUCH_TRAMPOLINES_ERROR ". See http://docs.xamarin.com/ios/troubleshooting for instructions on how to fix this condition."
@@ -4810,7 +4833,7 @@ get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotM
 #endif
 	if (amodule->trampoline_index [tramp_type] == amodule->info.num_trampolines [tramp_type]) {
 		g_error ("Ran out of trampolines of type %d in '%s' (%d)%s\n", 
-				 tramp_type, image->name, amodule->info.num_trampolines [tramp_type], MONOTOUCH_TRAMPOLINES_ERROR);
+				 tramp_type, image ? image->name : "mscorlib", amodule->info.num_trampolines [tramp_type], MONOTOUCH_TRAMPOLINES_ERROR);
 	}
 	index = amodule->trampoline_index [tramp_type] ++;
 
