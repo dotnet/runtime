@@ -88,7 +88,8 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER);
 /* critical section that regulates access to the module list */
 CRITICAL_SECTION module_critsec;
 
-MODSTRUCT exe_module; /* always the first, in the in-load-order list */
+/* always the first, in the in-load-order list */
+MODSTRUCT exe_module; 
 MODSTRUCT *pal_module = NULL;
 
 char g_szCoreCLRPath[MAX_PATH] = { 0 };
@@ -836,8 +837,7 @@ PAL_UnregisterLibraryW(
 Function :
     LOADInitializeModules
 
-    Initialize the process-wide list of modules (2 initial modules : 1 for
-    the executable and 1 for the PAL)
+    Initialize the process-wide list of modules
 
 Parameters :
     None
@@ -850,18 +850,7 @@ Return value :
 extern "C"
 BOOL LOADInitializeModules()
 {
-#if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
-    LPSTR pszExeName = NULL;
-#endif
-
-    BOOL fRetCode = FALSE;
-    LPWSTR lpwstr = NULL;
-
-    if (exe_module.prev)
-    {
-        ERROR("Module manager already initialized!\n");
-        goto exit;
-    }
+    _ASSERTE(exe_module.prev == NULL);
 
     InternalInitializeCriticalSection(&module_critsec);
 
@@ -870,67 +859,83 @@ BOOL LOADInitializeModules()
 
     exe_module.self = (HMODULE)&exe_module;
     exe_module.dl_handle = dlopen(NULL, RTLD_LAZY);
-    if (!exe_module.dl_handle)
+    if (exe_module.dl_handle == NULL)
     {
-        ERROR("Main executable module will be broken : dlopen(NULL) failed"
-            "dlerror message is \"%s\" \n", dlerror());
-        goto exit;
+        ERROR("Executable module will be broken : dlopen(NULL) failed dlerror message is \"%s\" \n", dlerror());
+        return FALSE;
     }
+    exe_module.lib_name = NULL;
     exe_module.refcount = -1;
     exe_module.next = &exe_module;
     exe_module.prev = &exe_module;
     exe_module.pDllMain = NULL;
     exe_module.hinstance = NULL;
     exe_module.threadLibCalls = TRUE;
+    return TRUE;
+}
+
+/*++
+Function :
+    LOADSetExeName
+
+    Set the exe name path
+
+Parameters :
+    LPWSTR man exe path and name
+
+Return value :
+    TRUE  if initialization succeedded
+    FALSE otherwise
+
+--*/
+extern "C"
+BOOL LOADSetExeName(LPWSTR name)
+{
+    CPalThread *pThread = InternalGetCurrentThread();
+#if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
+    LPSTR pszExeName = NULL;
+#endif
+    BOOL result = FALSE;
+
+    LockModuleList();
+
+    // Save the exe path in the exe module struct
+    InternalFree(pThread, exe_module.lib_name);
+    exe_module.lib_name = name;
 
     // For platforms where we can't trust the handle to be constant, we need to 
     // store the inode/device pairs for the modules we just initialized.
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     {
         struct stat stat_buf;
-        pszExeName = UTIL_WCToMB_Alloc(exe_module.lib_name, -1);
+        pszExeName = UTIL_WCToMB_Alloc(name, -1);
         if (NULL == pszExeName)
         {
             ERROR("WCToMB failure, unable to get full name of exe\n");
             goto exit;
         }
-        if ( -1 == stat(pszExeName, &stat_buf))
+        if (-1 == stat(pszExeName, &stat_buf))
         {
             SetLastError(ERROR_MOD_NOT_FOUND);
             goto exit;
         }
-
-        TRACE("Executable has inode %d and device %d\n", 
-            stat_buf.st_ino, stat_buf.st_dev);
+        TRACE("Executable has inode %d and device %d\n", stat_buf.st_ino, stat_buf.st_dev);
 
         exe_module.inode = stat_buf.st_ino; 
         exe_module.device = stat_buf.st_dev;
     }
 #endif
-
-    // If we got here, init succeeded.
-    fRetCode = TRUE;
-
-exit:
-    CPalThread *pThread = InternalGetCurrentThread();
-    if (!fRetCode)
-    {
-        InternalFree(pThread, lpwstr);
-        if (GetLastError() == ERROR_SUCCESS)
-        {
-            SetLastError(ERROR_INTERNAL_ERROR);
-        }
-    }
+    result = TRUE;
 
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
+exit:
     if (pszExeName)
     {
         InternalFree(pThread, pszExeName);
     }
-
 #endif
-    TRACE("Module manager initialization returning %d.\n", fRetCode);
-    return fRetCode;
+    UnlockModuleList();
+    return result;
 }
 
 /*++
