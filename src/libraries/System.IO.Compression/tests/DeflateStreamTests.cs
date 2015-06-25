@@ -1,8 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Reflection;
+using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -192,20 +193,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        public void NullBaseStreamThrows()
-        {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                var deflate = new DeflateStream(null, CompressionMode.Decompress);
-            });
-
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                var deflate = new DeflateStream(null, CompressionMode.Compress);
-            });
-        }
-
-        [Fact]
         public void DisposedBaseStreamThrows()
         {
             var ms = new MemoryStream();
@@ -331,6 +318,23 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public void CtorArgumentValidation()
+        {
+            Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionLevel.Fastest));
+            Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionMode.Decompress));
+            Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionMode.Compress));
+
+            Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionLevel.Fastest, true));
+            Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionMode.Decompress, false));
+            Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionMode.Compress, true));
+
+            Assert.Throws<ArgumentException>(() => new DeflateStream(new MemoryStream(), (CompressionMode)42));
+            Assert.Throws<ArgumentException>(() => new DeflateStream(new MemoryStream(), (CompressionMode)43, true));
+
+            Assert.Throws<ArgumentException>(() => new DeflateStream(new MemoryStream(new byte[1], writable: false), CompressionLevel.Optimal));
+        }
+
+        [Fact]
         public async Task Flush()
         {
             var ms = new MemoryStream();
@@ -353,7 +357,6 @@ namespace System.IO.Compression.Tests
         [Fact]
         public async Task FlushAsyncFailsAfterDispose()
         {
-
             var ms = new MemoryStream();
             var ds = new DeflateStream(ms, CompressionMode.Compress);
             ds.Dispose();
@@ -376,7 +379,6 @@ namespace System.IO.Compression.Tests
             Assert.Throws<NotSupportedException>(delegate { long value = zip.Position; });
             Assert.Throws<NotSupportedException>(delegate { zip.Position = 100L; });
             Assert.Throws<NotSupportedException>(delegate { zip.SetLength(100L); });
-            //Should we try all the enums? doesn't seem necessary
             Assert.Throws<NotSupportedException>(delegate { zip.Seek(100L, SeekOrigin.Begin); });
         }
 
@@ -392,8 +394,205 @@ namespace System.IO.Compression.Tests
             Assert.Throws<NotSupportedException>(delegate { long value = zip.Position; });
             Assert.Throws<NotSupportedException>(delegate { zip.Position = 100L; });
             Assert.Throws<NotSupportedException>(delegate { zip.SetLength(100L); });
-            //Should we try all the enums? doesn't seem necessary
             Assert.Throws<NotSupportedException>(delegate { zip.Seek(100L, SeekOrigin.Begin); });
         }
+
+        [Fact]
+        public void ReadWriteArgumentValidation()
+        {
+            using (var ds = new DeflateStream(new MemoryStream(), CompressionMode.Compress))
+            {
+                Assert.Throws<ArgumentNullException>(() => ds.Write(null, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ds.Write(new byte[1], -1, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ds.Write(new byte[1], 0, -1));
+                Assert.Throws<ArgumentException>(() => ds.Write(new byte[1], 0, 2));
+                Assert.Throws<ArgumentException>(() => ds.Write(new byte[1], 1, 1));
+                Assert.Throws<InvalidOperationException>(() => ds.Read(new byte[1], 0, 1));
+                ds.Write(new byte[1], 0, 0);
+            }
+            using (var ds = new DeflateStream(new MemoryStream(), CompressionMode.Compress))
+            {
+                Assert.Throws<ArgumentNullException>(() => { ds.WriteAsync(null, 0, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { ds.WriteAsync(new byte[1], -1, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { ds.WriteAsync(new byte[1], 0, -1); });
+                Assert.Throws<ArgumentException>(() => { ds.WriteAsync(new byte[1], 0, 2); });
+                Assert.Throws<ArgumentException>(() => { ds.WriteAsync(new byte[1], 1, 1); });
+                Assert.Throws<InvalidOperationException>(() => { ds.Read(new byte[1], 0, 1); });
+            }
+
+            using (var ds = new DeflateStream(new MemoryStream(), CompressionMode.Decompress))
+            {
+                Assert.Throws<ArgumentNullException>(() => ds.Read(null, 0, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ds.Read(new byte[1], -1, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => ds.Read(new byte[1], 0, -1));
+                Assert.Throws<ArgumentException>(() => ds.Read(new byte[1], 0, 2));
+                Assert.Throws<ArgumentException>(() => ds.Read(new byte[1], 1, 1));
+                Assert.Throws<InvalidOperationException>(() => ds.Write(new byte[1], 0, 1));
+
+                var data = new byte[1] { 42 };
+                Assert.Equal(0, ds.Read(data, 0, 0));
+                Assert.Equal(42, data[0]);
+            }
+            using (var ds = new DeflateStream(new MemoryStream(), CompressionMode.Decompress))
+            {
+                Assert.Throws<ArgumentNullException>(() => { ds.ReadAsync(null, 0, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { ds.ReadAsync(new byte[1], -1, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { ds.ReadAsync(new byte[1], 0, -1); });
+                Assert.Throws<ArgumentException>(() => { ds.ReadAsync(new byte[1], 0, 2); });
+                Assert.Throws<ArgumentException>(() => { ds.ReadAsync(new byte[1], 1, 1); });
+                Assert.Throws<InvalidOperationException>(() => { ds.Write(new byte[1], 0, 1); });
+            }
+        }
+
+        [Fact]
+        public void Precancellation()
+        {
+            var ms = new MemoryStream();
+            using (DeflateStream ds = new DeflateStream(ms, CompressionMode.Compress, leaveOpen: true))
+            {
+                Assert.True(ds.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
+                Assert.True(ds.FlushAsync(new CancellationToken(true)).IsCanceled);
+            }
+            using (DeflateStream ds = new DeflateStream(ms, CompressionMode.Decompress, leaveOpen: true))
+            {
+                Assert.True(ds.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
+            }
+        }
+
+        [Fact]
+        public async Task RoundtripCompressDecompress()
+        {
+            await RoundtripCompressDecompress(useAsync: false, useGzip: false, chunkSize: 1, totalSize: 10, level: CompressionLevel.Fastest);
+            await RoundtripCompressDecompress(useAsync: true,  useGzip: true,  chunkSize: 1024, totalSize: 8192, level: CompressionLevel.Optimal);
+        }
+
+        [OuterLoop]
+        [Theory]
+        [MemberData("RoundtripCompressDecompressOuterData")]
+        public Task RoundtripCompressDecompressOuter(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
+        {
+            return RoundtripCompressDecompress(useAsync, useGzip, chunkSize, totalSize, level);
+        }
+
+        public static IEnumerable<object[]> RoundtripCompressDecompressOuterData
+        {
+            get
+            {
+                foreach (bool useAsync in new[] { true, false }) // whether to use Read/Write or ReadAsync/WriteAsync
+                {
+                    foreach (bool useGzip in new[] { true, false }) // whether to add on gzip headers/footers
+                    {
+                        foreach (var level in new[] { CompressionLevel.Fastest, CompressionLevel.Optimal, CompressionLevel.NoCompression }) // compression level
+                        {
+                            yield return new object[] { useAsync, useGzip, 1, 5, level }; // smallest possible writes
+                            yield return new object[] { useAsync, useGzip, 1023, 1023*10, level }; // overflowing internal buffer
+                            yield return new object[] { useAsync, useGzip, 1024*1024, 1024*1024, level }; // large single write
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task RoundtripCompressDecompress(bool useAsync, bool useGzip, int chunkSize, int totalSize, CompressionLevel level)
+        {
+            byte[] data = new byte[totalSize];
+            new Random(42).NextBytes(data);
+
+            var compressed = new MemoryStream();
+            using (var compressor = useGzip ? (Stream)new GZipStream(compressed, level, true) : new DeflateStream(compressed, level, true))
+            {
+                for (int i = 0; i < data.Length; i += chunkSize) // not using CopyTo{Async} due to optimizations in MemoryStream's implementation that avoid what we're trying to test
+                {
+                    switch (useAsync)
+                    {
+                        case true: await compressor.WriteAsync(data, i, chunkSize); break;
+                        case false: compressor.Write(data, i, chunkSize); break;
+                    }
+                }
+            }
+            compressed.Position = 0;
+
+            var decompressed = new MemoryStream();
+            using (var decompressor = useGzip ? (Stream)new GZipStream(compressed, CompressionMode.Decompress, true) : new DeflateStream(compressed, CompressionMode.Decompress, true))
+            {
+                if (useAsync)
+                    decompressor.CopyTo(decompressed, chunkSize);
+                else
+                    await decompressor.CopyToAsync(decompressed, chunkSize, CancellationToken.None);
+            }
+
+            Assert.Equal<byte>(data, decompressed.ToArray());
+        }
+
+        [Fact]
+        public async Task WrapNullReturningTasksStream()
+        {
+            using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnNullTasks), CompressionMode.Decompress))
+                await Assert.ThrowsAsync<InvalidOperationException>(() => ds.ReadAsync(new byte[1024], 0, 1024));
+        }
+
+        [Fact]
+        public async Task WrapStreamReturningBadReadValues()
+        {
+            using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooLargeCounts), CompressionMode.Decompress))
+                Assert.Throws<InvalidDataException>(() => ds.Read(new byte[1024], 0, 1024));
+            using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooLargeCounts), CompressionMode.Decompress))
+                await Assert.ThrowsAsync<InvalidDataException>(() => ds.ReadAsync(new byte[1024], 0, 1024));
+
+            using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
+                Assert.Equal(0, ds.Read(new byte[1024], 0, 1024));
+            using (var ds = new DeflateStream(new BadWrappedStream(BadWrappedStream.Mode.ReturnTooSmallCounts), CompressionMode.Decompress))
+                Assert.Equal(0, await ds.ReadAsync(new byte[1024], 0, 1024));
+        }
+
+        private sealed class BadWrappedStream : Stream
+        {
+            public enum Mode
+            {
+                Default,
+                ReturnNullTasks,
+                ReturnTooSmallCounts,
+                ReturnTooLargeCounts,
+            }
+
+            private readonly Mode _mode;
+
+            public BadWrappedStream(Mode mode) { _mode = mode; }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                switch (_mode)
+                {
+                    case Mode.ReturnTooSmallCounts: return -1;
+                    case Mode.ReturnTooLargeCounts: return buffer.Length + 1;
+                    default: return 0;
+                }
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return _mode == Mode.ReturnNullTasks ? 
+                    null :
+                    base.ReadAsync(buffer, offset, count, cancellationToken);
+            }
+
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return _mode == Mode.ReturnNullTasks ?
+                   null :
+                   base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+
+            public override void Write(byte[] buffer, int offset, int count) { }
+            public override void Flush() { }
+            public override bool CanRead { get { return true; } }
+            public override bool CanSeek { get { return false; } }
+            public override bool CanWrite { get { return true; } }
+            public override long Length { get { throw new NotSupportedException(); } }
+            public override long Position { get { throw new NotSupportedException(); } set { throw new NotSupportedException(); } }
+            public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException(); }
+            public override void SetLength(long value) { throw new NotSupportedException(); }
+        }
+
     }
 }
