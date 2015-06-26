@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Windows_Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A2ECDEDB-12B7-402C-9230-152B7601179F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Net.Http.WinHttpHandler.Tests</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
+  </PropertyGroup>
+  
+  <!-- Help VS understand available configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'FreeBSD_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Linux_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'OSX_Release|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU' " />
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU' " />
+
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
+      <Link>Common\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
+      <Link>Common\Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\CertificateHelper.cs">
+      <Link>ProductionCode\CertificateHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\WinHttpChannelBinding.cs">
+      <Link>ProductionCode\WinHttpChannelBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\WinHttpException.cs">
+      <Link>ProductionCode\WinHttpException.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\WinHttpHandler.cs">
+      <Link>ProductionCode\WinHttpHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\WinHttpRequestStream.cs">
+      <Link>ProductionCode\WinHttpRequestStream.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\WinHttpResponseStream.cs">
+      <Link>ProductionCode\WinHttpResponseStream.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\WinHttpTransportContext.cs">
+      <Link>ProductionCode\WinHttpTransportContext.cs</Link>
+    </Compile>
+    <Compile Include="..\src\System\Net\Http\WinInetProxyHelper.cs">
+      <Link>ProductionCode\WinInetProxyHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="APICallHistory.cs" />
+    <Compile Include="FakeInterop.cs" />
+    <Compile Include="FakeMarshal.cs" />
+    <Compile Include="FakeRegistry.cs" />
+    <Compile Include="FakeSafeWinHttpHandle.cs" />
+    <Compile Include="TestServer.cs" />
+    <Compile Include="TestControl.cs" />
+    <Compile Include="WinHttpHandlerTest.cs" />
+    <Compile Include="WinHttpRequestStreamTest.cs" />
+    <Compile Include="WinHttpResponseStreamTest.cs" />
+    <Compile Include="XunitTestAssemblyAtrributes.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
