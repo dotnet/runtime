@@ -437,6 +437,15 @@ namespace System.Runtime.Serialization
         }
 
         private static string[] s_knownSerializableTypeNames = new string[] {
+                "System.Collections.Queue",
+                "System.Collections.Stack",
+                "System.Globalization.CultureInfo",
+                "System.Version",
+                "System.Collections.Generic.KeyValuePair`2",
+                "System.Collections.Generic.Queue`1",
+                "System.Collections.Generic.Stack`1",
+                "System.Collections.ObjectModel.ReadOnlyCollection`1",
+                "System.Collections.ObjectModel.ReadOnlyDictionary`2",
                 "System.Tuple`1",
                 "System.Tuple`2",
                 "System.Tuple`3",
@@ -445,9 +454,6 @@ namespace System.Runtime.Serialization
                 "System.Tuple`6",
                 "System.Tuple`7",
                 "System.Tuple`8",
-                "System.Collections.Generic.Queue`1",
-                "System.Version",
-                "System.Collections.ObjectModel.ReadOnlyCollection`1"
         };
 
         internal static bool IsKnownSerializableType(Type type)
