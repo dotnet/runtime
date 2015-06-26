@@ -18,11 +18,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Encodings\Web\AllowedCharactersBitmap.cs" />
-    <Compile Include="System\Text\Encodings\Web\CodePointFilter.cs" />
     <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\JavaScriptStringEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
+    <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
     <Compile Include="System\Text\Encodings\Web\UnicodeHelpers.cs" />
     <Compile Include="System\Text\Encodings\Web\UnicodeRange.cs" />
     <Compile Include="System\Text\Encodings\Web\UnicodeRanges.cs" />

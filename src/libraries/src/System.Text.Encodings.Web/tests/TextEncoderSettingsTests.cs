@@ -10,23 +10,32 @@ using Xunit;
 
 namespace Microsoft.Framework.WebEncoders
 {
-    public class CodePointFilterTests
+    public static class TextEncoderSettingsExtensions
+    {
+        public static bool IsCharacterAllowed(this TextEncoderSettings settings, char character)
+        {
+            var bitmap = settings.GetAllowedCharacters();
+            return bitmap.IsCharacterAllowed(character);
+        }
+    }
+
+    public class TextEncoderSettingsTests
     {
         [Fact]
         public void Ctor_Parameterless_CreatesEmptyFilter()
         {
-            var filter = new CodePointFilter();
+            var filter = new TextEncoderSettings();
             Assert.Equal(0, filter.GetAllowedCodePoints().Count());
         }
 
         [Fact]
-        public void Ctor_OtherCodePointFilterAsInterface()
+        public void Ctor_OtherTextEncoderSettingsAsInterface()
         {
             // Arrange
-            var originalFilter = new OddCodePointFilter();
+            var originalFilter = new OddTextEncoderSettings();
 
             // Act
-            var newFilter = new CodePointFilter(originalFilter);
+            var newFilter = new TextEncoderSettings(originalFilter);
 
             // Assert
             for (int i = 0; i <= Char.MaxValue; i++)
@@ -36,14 +45,14 @@ namespace Microsoft.Framework.WebEncoders
         }
 
         [Fact]
-        public void Ctor_OtherCodePointFilterAsConcreteType_Clones()
+        public void Ctor_OtherTextEncoderSettingsAsConcreteType_Clones()
         {
             // Arrange
-            var originalFilter = new CodePointFilter();
+            var originalFilter = new TextEncoderSettings();
             originalFilter.AllowCharacter('x');
 
             // Act
-            var newFilter = new CodePointFilter(originalFilter);
+            var newFilter = new TextEncoderSettings(originalFilter);
             newFilter.AllowCharacter('y');
 
             // Assert
@@ -57,7 +66,7 @@ namespace Microsoft.Framework.WebEncoders
         public void Ctor_UnicodeRanges()
         {
             // Act
-            var filter = new CodePointFilter(UnicodeRanges.LatinExtendedA, UnicodeRanges.LatinExtendedC);
+            var filter = new TextEncoderSettings(UnicodeRanges.LatinExtendedA, UnicodeRanges.LatinExtendedC);
 
             // Assert
             for (int i = 0; i < 0x0100; i++)
@@ -86,7 +95,7 @@ namespace Microsoft.Framework.WebEncoders
         public void AllowChar()
         {
             // Arrange
-            var filter = new CodePointFilter();
+            var filter = new TextEncoderSettings();
             filter.AllowCharacter('\u0100');
 
             // Assert
@@ -98,7 +107,7 @@ namespace Microsoft.Framework.WebEncoders
         public void AllowChars_Array()
         {
             // Arrange
-            var filter = new CodePointFilter();
+            var filter = new TextEncoderSettings();
             filter.AllowCharacters('\u0100', '\u0102');
 
             // Assert
@@ -112,7 +121,7 @@ namespace Microsoft.Framework.WebEncoders
         public void AllowChars_String()
         {
             // Arrange
-            var filter = new CodePointFilter();
+            var filter = new TextEncoderSettings();
             filter.AllowCharacters('\u0100', '\u0102');
 
             // Assert
@@ -126,8 +135,8 @@ namespace Microsoft.Framework.WebEncoders
         public void AllowFilter()
         {
             // Arrange
-            var filter = new CodePointFilter(UnicodeRanges.BasicLatin);
-            filter.AllowFilter(new OddCodePointFilter());
+            var filter = new TextEncoderSettings(UnicodeRanges.BasicLatin);
+            filter.AllowCodePoints(new OddTextEncoderSettings().GetAllowedCodePoints());
 
             // Assert
             for (int i = 0; i <= 0x007F; i++)
@@ -144,7 +153,7 @@ namespace Microsoft.Framework.WebEncoders
         public void AllowRange()
         {
             // Arrange
-            var filter = new CodePointFilter();
+            var filter = new TextEncoderSettings();
             filter.AllowRange(UnicodeRanges.LatinExtendedA);
 
             // Assert
@@ -166,7 +175,7 @@ namespace Microsoft.Framework.WebEncoders
         public void AllowRanges()
         {
             // Arrange
-            var filter = new CodePointFilter();
+            var filter = new TextEncoderSettings();
             filter.AllowRanges(UnicodeRanges.LatinExtendedA, UnicodeRanges.LatinExtendedC);
 
             // Assert
@@ -196,7 +205,7 @@ namespace Microsoft.Framework.WebEncoders
         public void Clear()
         {
             // Arrange
-            var filter = new CodePointFilter();
+            var filter = new TextEncoderSettings();
             for (int i = 1; i <= Char.MaxValue; i++)
             {
                 filter.AllowCharacter((char)i);
@@ -216,7 +225,7 @@ namespace Microsoft.Framework.WebEncoders
         public void ForbidChar()
         {
             // Arrange
-            var filter = new CodePointFilter(UnicodeRanges.BasicLatin);
+            var filter = new TextEncoderSettings(UnicodeRanges.BasicLatin);
             filter.ForbidCharacter('x');
 
             // Assert
@@ -230,7 +239,7 @@ namespace Microsoft.Framework.WebEncoders
         public void ForbidChars_Array()
         {
             // Arrange
-            var filter = new CodePointFilter(UnicodeRanges.BasicLatin);
+            var filter = new TextEncoderSettings(UnicodeRanges.BasicLatin);
             filter.ForbidCharacters('x', 'z');
 
             // Assert
@@ -244,7 +253,7 @@ namespace Microsoft.Framework.WebEncoders
         public void ForbidChars_String()
         {
             // Arrange
-            var filter = new CodePointFilter(UnicodeRanges.BasicLatin);
+            var filter = new TextEncoderSettings(UnicodeRanges.BasicLatin);
             filter.ForbidCharacters('x', 'z');
 
             // Assert
@@ -258,7 +267,7 @@ namespace Microsoft.Framework.WebEncoders
         public void ForbidRange()
         {
             // Arrange
-            var filter = new CodePointFilter(new OddCodePointFilter());
+            var filter = new TextEncoderSettings(new OddTextEncoderSettings());
             filter.ForbidRange(UnicodeRanges.Specials);
 
             // Assert
@@ -276,7 +285,7 @@ namespace Microsoft.Framework.WebEncoders
         public void ForbidRanges()
         {
             // Arrange
-            var filter = new CodePointFilter(new OddCodePointFilter());
+            var filter = new TextEncoderSettings(new OddTextEncoderSettings());
             filter.ForbidRanges(UnicodeRanges.BasicLatin, UnicodeRanges.Specials);
 
             // Assert
@@ -304,7 +313,7 @@ namespace Microsoft.Framework.WebEncoders
                 .OrderBy(i => i)
                 .ToArray();
 
-            var filter = new CodePointFilter(UnicodeRanges.BasicLatin, UnicodeRanges.Specials);
+            var filter = new TextEncoderSettings(UnicodeRanges.BasicLatin, UnicodeRanges.Specials);
             filter.ForbidCharacter('x');
 
             // Act
@@ -315,7 +324,7 @@ namespace Microsoft.Framework.WebEncoders
         }
 
         // a code point filter which allows only odd code points through
-        private sealed class OddCodePointFilter : CodePointFilter
+        private sealed class OddTextEncoderSettings : TextEncoderSettings
         {
             public override IEnumerable<int> GetAllowedCodePoints()
             {
@@ -323,11 +332,6 @@ namespace Microsoft.Framework.WebEncoders
                 {
                     yield return i;
                 }
-            }
-
-            public override bool IsCharacterAllowed(char character)
-            {
-                return character % 2 != 0;
             }
         }
     }

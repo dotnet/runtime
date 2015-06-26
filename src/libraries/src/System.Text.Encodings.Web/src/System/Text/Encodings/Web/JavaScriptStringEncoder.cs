@@ -15,9 +15,9 @@ namespace System.Text.Encodings.Web
         {
             get { return DefaultJavaScriptEncoder.Singleton; }
         }
-        public static JavaScriptEncoder Create(CodePointFilter filter)
+        public static JavaScriptEncoder Create(TextEncoderSettings settings)
         {
-            return new DefaultJavaScriptEncoder(filter);
+            return new DefaultJavaScriptEncoder(settings);
         }
         public static JavaScriptEncoder Create(params UnicodeRange[] allowedRanges)
         {
@@ -29,9 +29,9 @@ namespace System.Text.Encodings.Web
     {
         private AllowedCharactersBitmap _allowedCharacters;
 
-        internal readonly static DefaultJavaScriptEncoder Singleton = new DefaultJavaScriptEncoder(new CodePointFilter(UnicodeRanges.BasicLatin));
+        internal readonly static DefaultJavaScriptEncoder Singleton = new DefaultJavaScriptEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
 
-        public DefaultJavaScriptEncoder(CodePointFilter filter)
+        public DefaultJavaScriptEncoder(TextEncoderSettings filter)
         {
             if (filter == null)
             {
@@ -55,11 +55,11 @@ namespace System.Text.Encodings.Web
             _allowedCharacters.ForbidCharacter('/');
         }
 
-        public DefaultJavaScriptEncoder(params UnicodeRange[] allowedRanges) : this(new CodePointFilter(allowedRanges))
+        public DefaultJavaScriptEncoder(params UnicodeRange[] allowedRanges) : this(new TextEncoderSettings(allowedRanges))
         { }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Encodes(int unicodeScalar)
+        public override bool WillEncode(int unicodeScalar)
         {
             if (UnicodeHelpers.IsSupplementaryCodePoint(unicodeScalar)) return true;
             return !_allowedCharacters.IsUnicodeScalarAllowed(unicodeScalar);
@@ -108,7 +108,7 @@ namespace System.Text.Encodings.Web
             // be written out as numeric entities for defense-in-depth.
             // See UnicodeEncoderBase ctor comments for more info.
 
-            if (!Encodes(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
+            if (!WillEncode(unicodeScalar)) { return TryWriteScalarAsChar(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); }
 
             char[] toCopy = null;
             switch (unicodeScalar)
