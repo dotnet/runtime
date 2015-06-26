@@ -136,7 +136,7 @@
     <value>The parameter '{0}' cannot be an empty string.</value>
   </data>
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
-    <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
+    <value>Array is not long enough. Check array index and length.</value>
   </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
