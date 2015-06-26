@@ -6961,8 +6961,21 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	if (!acfg->aot_opts.no_instances && depth < 32) {
 		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 			switch (patch_info->type) {
+			case MONO_PATCH_INFO_RGCTX_FETCH:
 			case MONO_PATCH_INFO_METHOD: {
-				MonoMethod *m = patch_info->data.method;
+				MonoMethod *m = NULL;
+
+				if (patch_info->type == MONO_PATCH_INFO_RGCTX_FETCH) {
+					MonoJumpInfoRgctxEntry *e = patch_info->data.rgctx_entry;
+
+					if (e->info_type == MONO_RGCTX_INFO_GENERIC_METHOD_CODE)
+						m = e->data->data.method;
+				} else {
+					m = patch_info->data.method;
+				}
+
+				if (!m)
+					break;
 				if (m->is_inflated) {
 					if (!(mono_class_generic_sharing_enabled (m->klass) &&
 						  mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) &&

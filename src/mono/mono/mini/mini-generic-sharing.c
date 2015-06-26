@@ -2008,7 +2008,14 @@ generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars,
 static gboolean
 type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_partial)
 {
-	if (MONO_TYPE_IS_REFERENCE (type) || (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)))
+	if (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+		MonoType *constraint = type->data.generic_param->gshared_constraint;
+		if (!constraint)
+			return TRUE;
+		type = constraint;
+	}
+
+	if (MONO_TYPE_IS_REFERENCE (type))
 		return TRUE;
 
 	/* Allow non ref arguments if they are primitive types or enums (partial sharing). */
