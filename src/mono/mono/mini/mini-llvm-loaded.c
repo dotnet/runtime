@@ -14,7 +14,7 @@
 typedef void (*MonoLLVMVoidFunc)(void);
 typedef void (*MonoLLVMCFGFunc)(MonoCompile *cfg);
 typedef void (*MonoLLVMEmitCallFunc)(MonoCompile *cfg, MonoCallInst *call);
-typedef void (*MonoLLVMCreateAotFunc)(const char *got_symbol, gboolean external_symbols, gboolean emit_dwarf);
+typedef void (*MonoLLVMCreateAotFunc)(const char *global_prefix, gboolean emit_dwarf);
 typedef void (*MonoLLVMEmitAotFunc)(const char *filename, const char *cu_name);
 typedef void (*MonoLLVMFreeDomainFunc)(MonoDomain *domain);
 
@@ -52,10 +52,10 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 }
 
 void
-mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols, gboolean emit_dwarf)
+mono_llvm_create_aot_module (const char *global_prefix, gboolean emit_dwarf)
 {
 	g_assert (mono_llvm_create_aot_module_fptr);
-	mono_llvm_create_aot_module_fptr (got_symbol, external_symbols, emit_dwarf);
+	mono_llvm_create_aot_module_fptr (global_prefix, emit_dwarf);
 }
 
 void
