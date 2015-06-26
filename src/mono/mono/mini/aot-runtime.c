@@ -101,8 +101,6 @@ typedef struct MonoAotModule {
 	gboolean plt_inited;
 	guint8 *mem_begin;
 	guint8 *mem_end;
-	/* Points to either the start of JIT compiler or LLVM compiled code */
-	guint8 *code;
 	guint8 *jit_code_start;
 	guint8 *jit_code_end;
 	guint8 *llvm_code_start;
@@ -1973,8 +1971,8 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	amodule->unbox_trampolines_end = info->unbox_trampolines_end;
 	amodule->unbox_trampoline_addresses = info->unbox_trampoline_addresses;
 	amodule->unwind_info = info->unwind_info;
+	amodule->mem_begin = amodule->jit_code_start;
 	amodule->mem_end = info->mem_end;
-	amodule->mem_begin = amodule->code;
 	amodule->plt = info->plt;
 	amodule->plt_end = info->plt_end;
 	amodule->mono_eh_frame = info->mono_eh_frame;
@@ -2011,6 +2009,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		int err, len;
 
 		addr = amodule->mem_begin;
+		g_assert (addr);
 		len = amodule->mem_end - amodule->mem_begin;
 
 		/* Round down in both directions to avoid modifying data which is not ours */
