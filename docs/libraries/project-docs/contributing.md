@@ -6,7 +6,7 @@ This document describes contribution guidelines that are specific to CoreFX. Ple
 Coding Style Changes
 --------------------
 
-We intend to bring dotnet/corefx in to full conformance with the style guidelines described in [Coding Style](coding-style.md). We plan to do that with tooling, in a holistic way. In the meantime, please:
+We intend to bring dotnet/corefx in to full conformance with the style guidelines described in [Coding Style](../coding-guidelines/coding-style.md). We plan to do that with tooling, in a holistic way. In the meantime, please:
 
 * **DO NOT** send PRs for style changes.
 * **DO** give priority to the current style of the project or file you're changing even if it diverges from the general guidelines.
