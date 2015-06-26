@@ -33,7 +33,10 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_getTypeFromHandle == null)
+                {
                     s_getTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
+                    Debug.Assert(s_getTypeFromHandle != null);
+                }
                 return s_getTypeFromHandle;
             }
         }
@@ -54,7 +57,10 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_objectEquals == null)
+                {
                     s_objectEquals = Globals.TypeOfObject.GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
+                    Debug.Assert(s_objectEquals != null);
+                }
                 return s_objectEquals;
             }
         }
@@ -74,7 +80,10 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_arraySetValue == null)
+                {
                     s_arraySetValue = typeof(Array).GetMethod("SetValue", new Type[] { typeof(object), typeof(int) });
+                    Debug.Assert(s_arraySetValue != null);
+                }
                 return s_arraySetValue;
             }
         }
@@ -88,7 +97,10 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_objectToString == null)
+                {
                     s_objectToString = typeof(object).GetMethod("ToString", Array.Empty<Type>());
+                    Debug.Assert(s_objectToString != null);
+                }
                 return s_objectToString;
             }
         }
@@ -100,7 +112,10 @@ namespace System.Runtime.Serialization
             get
             {
                 if (s_stringFormat == null)
+                {
                     s_stringFormat = typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object[]) });
+                    Debug.Assert(s_stringFormat != null);
+                }
                 return s_stringFormat;
             }
         }
