@@ -715,7 +715,7 @@ namespace Tests
             {
                 ListInitExpression result1 = Expression.ListInit(newExpr, einits);
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
             }
         }
@@ -734,7 +734,7 @@ namespace Tests
             {
                 ElementInit ei1 = Expression.ElementInit(mi1, new Expression[] { ce1 });
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
             }
         }
@@ -1998,7 +1998,7 @@ namespace Tests
             {
                 Expression<Func<double?>> e = Expression.Lambda<Func<double?>>(constant, null);
             }
-            catch (ArgumentException e)
+            catch (ArgumentException)
             {
             }
         }
