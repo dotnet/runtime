@@ -10,32 +10,32 @@ namespace System.Text.Encodings.Web
     /// <summary>
     /// Represents a filter which allows only certain Unicode code points through.
     /// </summary>
-    public class CodePointFilter
+    public class TextEncoderSettings
     {
         private AllowedCharactersBitmap _allowedCharactersBitmap;
 
         /// <summary>
         /// Instantiates an empty filter (allows no code points through by default).
         /// </summary>
-        public CodePointFilter()
+        public TextEncoderSettings()
         {
             _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
         }
 
         /// <summary>
-        /// Instantiates the filter by cloning the allow list of another <see cref="CodePointFilter"/>.
+        /// Instantiates the filter by cloning the allow list of another <see cref="TextEncoderSettings"/>.
         /// </summary>
-        public CodePointFilter(CodePointFilter other)
+        public TextEncoderSettings(TextEncoderSettings other)
         {
             _allowedCharactersBitmap = AllowedCharactersBitmap.CreateNew();
-            AllowFilter(other);
+            AllowCodePoints(other.GetAllowedCodePoints());
         }
 
         /// <summary>
         /// Instantiates the filter where only the character ranges specified by <paramref name="allowedRanges"/>
         /// are allowed by the filter.
         /// </summary>
-        public CodePointFilter(params UnicodeRange[] allowedRanges)
+        public TextEncoderSettings(params UnicodeRange[] allowedRanges)
         {
             if(allowedRanges == null)
             {
@@ -70,16 +70,16 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Allows all characters specified by <paramref name="filter"/> through the filter.
+        /// Allows all code points specified by <paramref name="codePoints"/>.
         /// </summary>
-        public virtual void AllowFilter(CodePointFilter filter)
+        public virtual void AllowCodePoints(IEnumerable<int> codePoints)
         {
-            if (filter == null)
+            if (codePoints == null)
             {
-                throw new ArgumentNullException("filter");
+                throw new ArgumentNullException("codePoints");
             }
 
-            foreach (var allowedCodePoint in filter.GetAllowedCodePoints())
+            foreach (var allowedCodePoint in codePoints)
             {
                 // If the code point can't be represented as a BMP character, skip it.
                 char codePointAsChar = (char)allowedCodePoint;
@@ -125,7 +125,7 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Resets this filter by disallowing all characters.
+        /// Resets this settings object by disallowing all characters.
         /// </summary>
         public virtual void Clear()
         {
@@ -191,7 +191,7 @@ namespace System.Text.Encodings.Web
         }
 
         /// <summary>
-        /// Retrieves the bitmap of allowed characters from this filter.
+        /// Retrieves the bitmap of allowed characters from this settings object.
         /// The returned bitmap is a clone of the original bitmap to avoid unintentional modification.
         /// </summary>
         internal AllowedCharactersBitmap GetAllowedCharacters()
@@ -211,22 +211,6 @@ namespace System.Text.Encodings.Web
                     yield return i;
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns a value stating whether the character <paramref name="character"/> is allowed through the filter.
-        /// </summary>
-        public virtual bool IsCharacterAllowed(char character)
-        {
-            return _allowedCharactersBitmap.IsCharacterAllowed(character);
-        }
-
-        /// <summary>
-        /// Wraps the provided filter as a CodePointFilter, avoiding the clone if possible.
-        /// </summary>
-        internal static CodePointFilter Wrap(CodePointFilter filter)
-        {
-            return (filter as CodePointFilter) ?? new CodePointFilter(filter);
         }
     }
 }
