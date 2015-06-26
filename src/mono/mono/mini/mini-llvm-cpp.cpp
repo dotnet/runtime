@@ -425,10 +425,24 @@ mono_llvm_build_fence (LLVMBuilderRef builder, BarrierKind kind)
 }
 
 void
+mono_llvm_set_must_tail (LLVMValueRef call_ins)
+{
+	CallInst *ins = (CallInst*)unwrap (call_ins);
+
+	ins->setTailCallKind (CallInst::TailCallKind::TCK_MustTail);
+}
+
+void
 mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 {
 	Value *V = ConstantExpr::getTruncOrBitCast (unwrap<Constant> (v), unwrap (var)->getType ());
 	unwrap (var)->replaceAllUsesWith (V);
+}
+
+LLVMValueRef
+mono_llvm_create_constant_data_array (const uint8_t *data, int len)
+{
+	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), makeArrayRef(data, len)));
 }
 
 static cl::list<const PassInfo*, bool, PassNameParser>
