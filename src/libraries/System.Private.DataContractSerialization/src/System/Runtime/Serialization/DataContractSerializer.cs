@@ -74,7 +74,7 @@ namespace System.Runtime.Serialization
             Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, null, false);
         }
 #endif
-        
+
         public DataContractSerializer(Type type, XmlDictionaryString rootName, XmlDictionaryString rootNamespace,
             IEnumerable<Type> knownTypes,
             int maxItemsInObjectGraph,

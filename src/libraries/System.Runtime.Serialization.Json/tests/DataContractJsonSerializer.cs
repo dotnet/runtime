@@ -1296,6 +1296,19 @@ public static class DataContractJsonSerializerTests
         Assert.StrictEqual(dict["key2"], deserialized["key2"]);
     }
 
+    [Fact]
+    public static void DCJS_DataMemberNames()
+    {
+        var obj = new AppEnvironment()
+        {
+            ScreenDpi = 440,
+            ScreenOrientation = "horizontal"
+        };
+        var actual = SerializeAndDeserialize(obj, @"{""screen_dpi(x:y)"":440,""screen:orientation"":""horizontal""}");
+        Assert.StrictEqual(obj.ScreenDpi, actual.ScreenDpi);
+        Assert.StrictEqual(obj.ScreenOrientation, actual.ScreenOrientation);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null)
     {
         DataContractJsonSerializer dcjs;
