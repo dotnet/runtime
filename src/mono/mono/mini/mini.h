@@ -113,7 +113,7 @@
 #endif
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 118
+#define MONO_AOT_FILE_VERSION 119
 
 //TODO: This is x86/amd64 specific.
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
@@ -188,33 +188,29 @@ typedef struct MonoAotFileInfo
 	guint32 dummy;
 
 	/* All the pointers should be at the start to avoid alignment problems */
-
+	/* Symbols */
+#define MONO_AOT_FILE_INFO_FIRST_SYMBOL jit_got
 	/* Global Offset Table for JITted code */
 	gpointer jit_got;
 	/* Global Offset Table for LLVM code */
 	gpointer llvm_got;
-	gpointer jit_code_start;
-	gpointer jit_code_end;
 	/* Mono EH Frame created by llc when using LLVM */
 	gpointer mono_eh_frame;
+	gpointer jit_code_start;
+	gpointer jit_code_end;
+	gpointer method_addresses;
 	/* Data blob */
 	gpointer blob;
 	gpointer class_name_table;
 	gpointer class_info_offsets;
 	gpointer method_info_offsets;
 	gpointer ex_info_offsets;
-	gpointer method_addresses;
 	gpointer extra_method_info_offsets;
 	gpointer extra_method_table;
 	gpointer got_info_offsets;
 	gpointer llvm_got_info_offsets;
-	gpointer unwind_info;
 	gpointer mem_end;
 	gpointer image_table;
-	/* Start of Mono's Program Linkage Table */
-	gpointer plt;
-	/* End of Mono's Program Linkage Table */
-	gpointer plt_end;
 	/* The GUID of the assembly which the AOT image was generated from */
 	gpointer assembly_guid;
 	/*
@@ -231,13 +227,20 @@ typedef struct MonoAotFileInfo
 	gpointer globals;
 	/* Points to a string containing the assembly name*/
 	gpointer assembly_name;
+	/* Start of Mono's Program Linkage Table */
+	gpointer plt;
+	/* End of Mono's Program Linkage Table */
+	gpointer plt_end;
+	gpointer unwind_info;
 	/* Points to a table mapping methods to their unbox trampolines */
 	gpointer unbox_trampolines;
 	/* Points to the end of the previous table */
 	gpointer unbox_trampolines_end;
 	/* Points to a table of unbox trampoline addresses/offsets */
 	gpointer unbox_trampoline_addresses;
+#define	MONO_AOT_FILE_INFO_LAST_SYMBOL unbox_trampoline_addresses
 
+	/* Scalars */
 	/* The index of the first GOT slot used by the PLT */
 	guint32 plt_got_offset_base;
 	/* Number of entries in the GOT */
@@ -254,22 +257,25 @@ typedef struct MonoAotFileInfo
 	guint32 simd_opts;
 	/* Index of the blob entry holding the GC used by this module */
 	gint32 gc_name_index;
+	guint32 num_rgctx_fetch_trampolines;
+	/* These are used for sanity checking object layout problems when cross-compiling */
+	guint32 double_align, long_align, generic_tramp_num;
+	/* The page size used by trampoline pages */
+	guint32 tramp_page_size;
 
+	/* Arrays */
 	/* Number of trampolines */
 	guint32 num_trampolines [MONO_AOT_TRAMP_NUM];
 	/* The indexes of the first GOT slots used by the trampolines */
 	guint32 trampoline_got_offset_base [MONO_AOT_TRAMP_NUM];
 	/* The size of one trampoline */
 	guint32 trampoline_size [MONO_AOT_TRAMP_NUM];
-	guint32 num_rgctx_fetch_trampolines;
-
-	/* These are used for sanity checking object layout problems when cross-compiling */
-	guint32 double_align, long_align, generic_tramp_num;
-	/* The page size used by trampoline pages */
-	guint32 tramp_page_size;
 	/* The offset where the trampolines begin on a trampoline page */
 	guint32 tramp_page_code_offsets [MONO_AOT_TRAMP_NUM];
 } MonoAotFileInfo;
+
+/* Number of symbols in the MonoAotFileInfo structure */
+#define MONO_AOT_FILE_INFO_NUM_SYMBOLS (((G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_LAST_SYMBOL) - G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_FIRST_SYMBOL)) / sizeof (gpointer)) + 1)
 
 typedef struct
 {
