@@ -1961,11 +1961,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 		}
 	}
 
-	amodule->code = info->methods;
-#ifdef TARGET_ARM
-	/* Mask out thumb interop bit */
-	amodule->code = (void*)((mgreg_t)amodule->code & ~1);
-#endif
 	amodule->jit_code_start = info->jit_code_start;
 	amodule->jit_code_end = info->jit_code_end;
 	amodule->method_info_offsets = info->method_info_offsets;

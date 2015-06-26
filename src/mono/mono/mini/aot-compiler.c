@@ -218,7 +218,6 @@ typedef struct MonoAotCompile {
 	char *got_symbol;
 	char *llvm_got_symbol;
 	char *plt_symbol;
-	char *methods_symbol;
 	char *llvm_eh_frame_symbol;
 	GHashTable *method_label_hash;
 	const char *temp_prefix;
@@ -7407,19 +7406,6 @@ emit_code (MonoAotCompile *acfg)
 	 */
 	emit_section_change (acfg, ".text", 0);
 	emit_alignment_code (acfg, 8);
-	if (acfg->llvm) {
-		for (i = 0; i < acfg->nmethods; ++i) {
-			if (acfg->cfgs [i] && acfg->cfgs [i]->compile_llvm) {
-				acfg->methods_symbol = g_strdup (acfg->cfgs [i]->asm_symbol);
-				break;
-			}
-		}
-	}
-	if (!acfg->methods_symbol) {
-		sprintf (symbol, "methods");
-		emit_label (acfg, symbol);
-		acfg->methods_symbol = g_strdup (symbol);
-	}
 	emit_label (acfg, "jit_code_start");
 
 	/* 
@@ -8469,7 +8455,6 @@ emit_file_info (MonoAotCompile *acfg)
 		emit_pointer (acfg, acfg->llvm_got_symbol);
 	else
 		emit_pointer (acfg, NULL);
-	emit_pointer (acfg, acfg->methods_symbol);
 	emit_pointer (acfg, "jit_code_start");
 	emit_pointer (acfg, "jit_code_end");
 	if (acfg->llvm) {
