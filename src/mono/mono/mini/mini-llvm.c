@@ -5865,7 +5865,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 }
 
 void
-mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols, gboolean emit_dwarf)
+mono_llvm_create_aot_module (const char *global_prefix, gboolean emit_dwarf)
 {
 	/* Delete previous module */
 	if (aot_module.plt_entries)
@@ -5876,8 +5876,8 @@ mono_llvm_create_aot_module (const char *got_symbol, gboolean external_symbols, 
 	memset (&aot_module, 0, sizeof (aot_module));
 
 	aot_module.module = LLVMModuleCreateWithName ("aot");
-	aot_module.got_symbol = got_symbol;
-	aot_module.external_symbols = external_symbols;
+	aot_module.got_symbol = g_strdup_printf ("%s_llvm_got", global_prefix);
+	aot_module.external_symbols = TRUE;
 	aot_module.emit_dwarf = emit_dwarf;
 	/* The first few entries are reserved */
 	aot_module.max_got_offset = 16;

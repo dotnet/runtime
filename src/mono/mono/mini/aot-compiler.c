@@ -213,8 +213,7 @@ typedef struct MonoAotCompile {
 	GHashTable *unwind_info_offsets;
 	GPtrArray *unwind_ops;
 	guint32 unwind_info_offset;
-	char *got_symbol_base;
-	char *llvm_got_symbol_base;
+	char *global_prefix;
 	char *got_symbol;
 	char *llvm_got_symbol;
 	char *plt_symbol;
@@ -8463,7 +8462,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	sindex = 0;
 	symbols [sindex ++] = acfg->got_symbol;
 	if (acfg->llvm) {
-		symbols [sindex ++] = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, acfg->llvm_got_symbol_base);
+		symbols [sindex ++] = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, acfg->llvm_got_symbol);
 		symbols [sindex ++] = acfg->llvm_eh_frame_symbol;
 	} else {
 		symbols [sindex ++] = NULL;
@@ -9421,14 +9420,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			*p = '_';
 	}
 
-	acfg->got_symbol_base = g_strdup_printf ("mono_aot_%s_got", acfg->assembly_name_sym);
-	acfg->llvm_got_symbol_base = g_strdup_printf ("mono_aot_%s_llvm_got", acfg->assembly_name_sym);
-	acfg->plt_symbol = g_strdup_printf ("%smono_aot_%s_plt", acfg->llvm_label_prefix, acfg->assembly_name_sym);
-
-	acfg->got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->got_symbol_base);
-	if (acfg->llvm) {
-		acfg->llvm_got_symbol = g_strdup_printf ("%s%s", acfg->llvm_label_prefix, acfg->llvm_got_symbol_base);
-		acfg->llvm_eh_frame_symbol = g_strdup_printf ("mono_aot_%s_eh_frame", acfg->assembly_name_sym);
+	acfg->global_prefix = g_strdup_printf ("mono_aot_%s", acfg->assembly_name_sym);
+	acfg->plt_symbol = g_strdup_printf ("%s_plt", acfg->global_prefix);
+	acfg->got_symbol = g_strdup_printf ("%s_got", acfg->global_prefix);
+ 	if (acfg->llvm) {
+		acfg->llvm_got_symbol = g_strdup_printf ("%s_llvm_got", acfg->global_prefix);
+		acfg->llvm_eh_frame_symbol = g_strdup_printf ("%s_eh_frame", acfg->global_prefix);
 	}
 
 	acfg->method_index = 1;
@@ -9449,7 +9446,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
-		mono_llvm_create_aot_module (acfg->llvm_got_symbol_base, TRUE, TRUE);
+		mono_llvm_create_aot_module (acfg->global_prefix, TRUE);
 	}
 #endif
 
