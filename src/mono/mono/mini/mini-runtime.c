@@ -2174,6 +2174,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					return NULL;
 				} else {
 					mono_raise_exception (jit_ex);
+					/* coverity[unreachable] */
 				}
 			}
 
