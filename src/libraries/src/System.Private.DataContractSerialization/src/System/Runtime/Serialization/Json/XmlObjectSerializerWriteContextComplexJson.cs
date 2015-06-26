@@ -326,6 +326,12 @@ namespace System.Runtime.Serialization.Json
                 scopedKnownTypes.Pop();
             }
         }
+
+        internal static void WriteJsonNameWithMapping(XmlWriterDelegator xmlWriter, XmlDictionaryString[] memberNames, int index)
+        {
+            xmlWriter.WriteStartElement("a", JsonGlobals.itemString, JsonGlobals.itemString);
+            xmlWriter.WriteAttributeString(null, JsonGlobals.itemString, null, memberNames[index].Value);
+        }
 #endif
 
         internal static void VerifyObjectCompatibilityWithInterface(DataContract contract, object graph, Type declaredType)
