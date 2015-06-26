@@ -7710,8 +7710,8 @@ search_modules (MonoImage *image, const char *name_space, const char *name)
 	return NULL;
 }
 
-MonoClass *
-mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
+static MonoClass *
+mono_class_from_name_checked_aux (MonoImage *image, const char* name_space, const char *name, MonoError *error, MonoGHashTable* visited_images)
 {
 	GHashTable *nspace_table;
 	MonoImage *loaded_image;
@@ -7722,6 +7722,12 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 	char buf [1024];
 
 	mono_error_init (error);
+
+	// Checking visited images avoids stack overflows when cyclic references exist.
+	if (mono_g_hash_table_lookup (visited_images, image))
+		return NULL;
+
+	mono_g_hash_table_insert (visited_images, image, GUINT_TO_POINTER(1));
 
 	if ((nested = strchr (name, '/'))) {
 		int pos = nested - name;
@@ -7793,7 +7799,7 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 			loaded_image = mono_assembly_load_module (image->assembly, impl >> MONO_IMPLEMENTATION_BITS);
 			if (!loaded_image)
 				return NULL;
-			class = mono_class_from_name (loaded_image, name_space, name);
+			class = mono_class_from_name_checked_aux (loaded_image, name_space, name, error, visited_images);
 			if (nested)
 				return return_nested_in (class, nested);
 			return class;
@@ -7807,8 +7813,7 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 			if (image->references [assembly_idx - 1] == (gpointer)-1)
 				return NULL;			
 			else
-				/* FIXME: Cycle detection */
-				return mono_class_from_name (image->references [assembly_idx - 1]->image, name_space, name);
+				return mono_class_from_name_checked_aux (image->references [assembly_idx - 1]->image, name_space, name, error, visited_images);
 		} else {
 			g_error ("not yet implemented");
 		}
@@ -7820,6 +7825,21 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 	if (nested)
 		return return_nested_in (class, nested);
 	return class;
+}
+
+MonoClass *
+mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error)
+{
+	MonoClass *klass;
+	MonoGHashTable *visited_images;
+
+	visited_images = mono_g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	klass = mono_class_from_name_checked_aux (image, name_space, name, error, visited_images);
+
+	mono_g_hash_table_destroy (visited_images);
+
+	return klass;
 }
 
 /**
