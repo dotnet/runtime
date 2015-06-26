@@ -227,6 +227,7 @@ typedef struct MonoAotCompile {
 	int align_pad_value;
 	guint32 label_generator;
 	gboolean llvm;
+	gboolean has_jitted_code;
 	MonoAotFileFlags flags;
 	MonoDynamicStream blob;
 	MonoClass **typespec_classes;
@@ -6807,7 +6808,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		flags |= JIT_FLAG_LLVM;
 	if (acfg->aot_opts.no_direct_calls)
 		flags |= JIT_FLAG_NO_DIRECT_ICALLS;
-	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), flags, 0);
+	cfg = mini_method_compile (method, acfg->opts, mono_get_root_domain (), flags, 0, index);
 	mono_loader_clear_error ();
 
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
@@ -6894,6 +6895,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		mono_acfg_unlock (acfg);
 		return;
 	}
+
+	if (!cfg->compile_llvm)
+		acfg->has_jitted_code = TRUE;
 
 	if (method->is_inflated && acfg->aot_opts.log_instances) {
 		if (acfg->instances_logfile)
