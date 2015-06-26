@@ -608,6 +608,36 @@ encode_sleb128 (gint32 value, guint8 *buf, guint8 **endbuf)
 }
 
 static void
+encode_int (gint32 val, guint8 *buf, guint8 **endbuf)
+{
+	// FIXME: Big-endian
+	buf [0] = (val >> 0) & 0xff;
+	buf [1] = (val >> 8) & 0xff;
+	buf [2] = (val >> 16) & 0xff;
+	buf [3] = (val >> 24) & 0xff;
+
+	*endbuf = buf + 4;
+}
+
+static void
+encode_int16 (guint16 val, guint8 *buf, guint8 **endbuf)
+{
+	buf [0] = (val >> 0) & 0xff;
+	buf [1] = (val >> 8) & 0xff;
+
+	*endbuf = buf + 2;
+}
+
+static void
+encode_string (const char *s, guint8 *buf, guint8 **endbuf)
+{
+	int len = strlen (s);
+
+	memcpy (buf, s, len + 1);
+	*endbuf = buf + len + 1;
+}
+
+static void
 emit_unset_mode (MonoAotCompile *acfg)
 {
 	mono_img_writer_emit_unset_mode (acfg->w);
@@ -2333,11 +2363,12 @@ add_to_blob_aligned (MonoAotCompile *acfg, const guint8 *data, guint32 data_len,
  * a given entry. Returns the size of the table.
  */
 static guint32
-emit_offset_table (MonoAotCompile *acfg, int noffsets, int group_size, gint32 *offsets)
+emit_offset_table (MonoAotCompile *acfg, const char *symbol, int noffsets, int group_size, gint32 *offsets)
 {
 	gint32 current_offset;
 	int i, buf_size, ngroups, index_entry_size;
 	guint8 *p, *buf;
+	guint8 *data_p, *data_buf;
 	guint32 *index_offsets;
 
 	ngroups = (noffsets + (group_size - 1)) / group_size;
@@ -2361,30 +2392,46 @@ emit_offset_table (MonoAotCompile *acfg, int noffsets, int group_size, gint32 *o
 		}
 		current_offset = offsets [i];
 	}
+	data_buf = buf;
+	data_p = p;
 
 	if (ngroups && index_offsets [ngroups - 1] < 65000)
 		index_entry_size = 2;
 	else
 		index_entry_size = 4;
 
+	buf_size = (data_p - data_buf) + (ngroups * 4) + 16;
+	p = buf = g_malloc0 (buf_size);
+
 	/* Emit the header */
-	emit_int32 (acfg, noffsets);
-	emit_int32 (acfg, group_size);
-	emit_int32 (acfg, ngroups);
-	emit_int32 (acfg, index_entry_size);
+	encode_int (noffsets, p, &p);
+	encode_int (group_size, p, &p);
+	encode_int (ngroups, p, &p);
+	encode_int (index_entry_size, p, &p);
 
 	/* Emit the index */
 	for (i = 0; i < ngroups; ++i) {
 		if (index_entry_size == 2)
-			emit_int16 (acfg, index_offsets [i]);
+			encode_int16 (index_offsets [i], p, &p);
 		else
-			emit_int32 (acfg, index_offsets [i]);
+			encode_int (index_offsets [i], p, &p);
 	}
-
 	/* Emit the data */
+	memcpy (p, data_buf, data_p - data_buf);
+	p += data_p - data_buf;
+
+	g_assert (p - buf <= buf_size);
+
+	emit_section_change (acfg, RODATA_SECT, 1);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+
 	emit_bytes (acfg, buf, p - buf);
 
-    return (int)(p - buf) + (ngroups * 4);
+	g_free (buf);
+	g_free (data_buf);
+
+    return (int)(p - buf);
 }
 
 static guint32
@@ -7583,7 +7630,6 @@ static void
 emit_info (MonoAotCompile *acfg)
 {
 	int oindex, i;
-	char symbol [256];
 	gint32 *offsets;
 
 	offsets = g_new0 (gint32, acfg->nmethods);
@@ -7599,12 +7645,7 @@ emit_info (MonoAotCompile *acfg)
 		}
 	}
 
-	sprintf (symbol, "method_info_offsets");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-
-	acfg->stats.offsets_size += emit_offset_table (acfg, acfg->nmethods, 10, offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, "method_info_offsets", acfg->nmethods, 10, offsets);
 
 	g_free (offsets);
 }
@@ -7899,54 +7940,60 @@ emit_extra_methods (MonoAotCompile *acfg)
 
 	//printf ("MAX: %d\n", max_chain_length);
 
+	buf_size = table->len * 12 + 4;
+	p = buf = g_malloc (buf_size);
+	encode_int (table_size, p, &p);
+
+	for (i = 0; i < table->len; ++i) {
+		HashEntry *entry = g_ptr_array_index (table, i);
+
+		if (entry == NULL) {
+			encode_int (0, p, &p);
+			encode_int (0, p, &p);
+			encode_int (0, p, &p);
+		} else {
+			//g_assert (entry->key > 0);
+			encode_int (entry->key, p, &p);
+			encode_int (entry->value, p, &p);
+			if (entry->next)
+				encode_int (entry->next->index, p, &p);
+			else
+				encode_int (0, p, &p);
+		}
+	}
+	g_assert (p - buf <= buf_size);
+
 	/* Emit the table */
 	sprintf (symbol, "extra_method_table");
 	emit_section_change (acfg, RODATA_SECT, 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
-
-	emit_int32 (acfg, table_size);
-	for (i = 0; i < table->len; ++i) {
-		HashEntry *entry = g_ptr_array_index (table, i);
-
-		if (entry == NULL) {
-			emit_int32 (acfg, 0);
-			emit_int32 (acfg, 0);
-			emit_int32 (acfg, 0);
-		} else {
-			//g_assert (entry->key > 0);
-			emit_int32 (acfg, entry->key);
-			emit_int32 (acfg, entry->value);
-			if (entry->next)
-				emit_int32 (acfg, entry->next->index);
-			else
-				emit_int32 (acfg, 0);
-		}
-	}
+	emit_bytes (acfg, buf, p - buf);
 
 	/* 
 	 * Emit a table reverse mapping method indexes to their index in extra_method_info.
 	 * This is used by mono_aot_find_jit_info ().
 	 */
+	buf_size = acfg->extra_methods->len * 8 + 4;
+	p = buf = g_malloc (buf_size);
+	encode_int (acfg->extra_methods->len, p, &p);
+	for (i = 0; i < acfg->extra_methods->len; ++i) {
+		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
+
+		encode_int (get_method_index (acfg, method), p, &p);
+		encode_int (info_offsets [i], p, &p);
+	}
 	sprintf (symbol, "extra_method_info_offsets");
 	emit_section_change (acfg, RODATA_SECT, 0);
 	emit_alignment (acfg, 8);
 	emit_label (acfg, symbol);
-
-	emit_int32 (acfg, acfg->extra_methods->len);
-	for (i = 0; i < acfg->extra_methods->len; ++i) {
-		MonoMethod *method = g_ptr_array_index (acfg->extra_methods, i);
-
-		emit_int32 (acfg, get_method_index (acfg, method));
-		emit_int32 (acfg, info_offsets [i]);
-	}
+	emit_bytes (acfg, buf, p - buf);
 }	
 
 static void
 emit_exception_info (MonoAotCompile *acfg)
 {
 	int i;
-	char symbol [256];
 	gint32 *offsets;
 	SeqPointData sp_data;
 	gboolean seq_points_to_file = FALSE;
@@ -7985,12 +8032,7 @@ emit_exception_info (MonoAotCompile *acfg)
 		g_free (seq_points_aot_file);
 	}
 
-	sprintf (symbol, "ex_info_offsets");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-
-	acfg->stats.offsets_size += emit_offset_table (acfg, acfg->nmethods, 10, offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, "ex_info_offsets", acfg->nmethods, 10, offsets);
 	g_free (offsets);
 }
 
@@ -8033,19 +8075,13 @@ static void
 emit_class_info (MonoAotCompile *acfg)
 {
 	int i;
-	char symbol [256];
 	gint32 *offsets;
 
 	offsets = g_new0 (gint32, acfg->image->tables [MONO_TABLE_TYPEDEF].rows);
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i)
 		offsets [i] = emit_klass_info (acfg, MONO_TOKEN_TYPE_DEF | (i + 1));
 
-	sprintf (symbol, "class_info_offsets");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
-
-	acfg->stats.offsets_size += emit_offset_table (acfg, acfg->image->tables [MONO_TABLE_TYPEDEF].rows, 10, offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, "class_info_offsets", acfg->image->tables [MONO_TABLE_TYPEDEF].rows, 10, offsets);
 	g_free (offsets);
 }
 
@@ -8057,11 +8093,12 @@ typedef struct ClassNameTableEntry {
 static void
 emit_class_name_table (MonoAotCompile *acfg)
 {
-	int i, table_size;
+	int i, table_size, buf_size;
 	guint32 token, hash;
 	MonoClass *klass;
 	GPtrArray *table;
 	char *full_name;
+	guint8 *buf, *p;
 	char symbol [256];
 	ClassNameTableEntry *entry, *new_entry;
 
@@ -8103,48 +8140,57 @@ emit_class_name_table (MonoAotCompile *acfg)
 	}
 
 	/* Emit the table */
-	sprintf (symbol, "class_name_table");
-	emit_section_change (acfg, RODATA_SECT, 0);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
+	buf_size = table->len * 4 + 4;
+	p = buf = g_malloc0 (buf_size);
 
 	/* FIXME: Optimize memory usage */
 	g_assert (table_size < 65000);
-	emit_int16 (acfg, table_size);
+	encode_int16 (table_size, p, &p);
 	g_assert (table->len < 65000);
 	for (i = 0; i < table->len; ++i) {
 		ClassNameTableEntry *entry = g_ptr_array_index (table, i);
 
 		if (entry == NULL) {
-			emit_int16 (acfg, 0);
-			emit_int16 (acfg, 0);
+			encode_int16 (0, p, &p);
+			encode_int16 (0, p, &p);
 		} else {
-			emit_int16 (acfg, mono_metadata_token_index (entry->token));
+			encode_int16 (mono_metadata_token_index (entry->token), p, &p);
 			if (entry->next)
-				emit_int16 (acfg, entry->next->index);
+				encode_int16 (entry->next->index, p, &p);
 			else
-				emit_int16 (acfg, 0);
+				encode_int16 (0, p, &p);
 		}
 	}
+	g_assert (p - buf <= buf_size);
+
+	sprintf (symbol, "class_name_table");
+	emit_section_change (acfg, RODATA_SECT, 0);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_bytes (acfg, buf, p - buf);
 }
 
 static void
 emit_image_table (MonoAotCompile *acfg)
 {
-	int i;
+	int i, buf_size;
 	char symbol [256];
+	guint8 *buf, *p;
 
 	/*
 	 * The image table is small but referenced in a lot of places.
 	 * So we emit it at once, and reference its elements by an index.
 	 */
+	buf_size = acfg->image_table->len * 28 + 4;
+	for (i = 0; i < acfg->image_table->len; i++) {
+		MonoImage *image = (MonoImage*)g_ptr_array_index (acfg->image_table, i);
+		MonoAssemblyName *aname = &image->assembly->aname;
 
-	sprintf (symbol, "image_table");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
+		buf_size += strlen (image->assembly_name) + strlen (image->guid) + (aname->culture ? strlen (aname->culture) : 1) + strlen ((char*)aname->public_key_token) + 4;
+	}
 
-	emit_int32 (acfg, acfg->image_table->len);
+	buf = p = g_malloc0 (buf_size);
+	encode_int (acfg->image_table->len, p, &p);
 	for (i = 0; i < acfg->image_table->len; i++) {
 		MonoImage *image = (MonoImage*)g_ptr_array_index (acfg->image_table, i);
 		MonoAssemblyName *aname = &image->assembly->aname;
@@ -8152,24 +8198,34 @@ emit_image_table (MonoAotCompile *acfg)
 		/* FIXME: Support multi-module assemblies */
 		g_assert (image->assembly->image == image);
 
-		emit_string (acfg, image->assembly_name);
-		emit_string (acfg, image->guid);
-		emit_string (acfg, aname->culture ? aname->culture : "");
-		emit_string (acfg, (const char*)aname->public_key_token);
+		encode_string (image->assembly_name, p, &p);
+		encode_string (image->guid, p, &p);
+		encode_string (aname->culture ? aname->culture : "", p, &p);
+		encode_string ((const char*)aname->public_key_token, p, &p);
 
-		emit_alignment (acfg, 8);
-		emit_int32 (acfg, aname->flags);
-		emit_int32 (acfg, aname->major);
-		emit_int32 (acfg, aname->minor);
-		emit_int32 (acfg, aname->build);
-		emit_int32 (acfg, aname->revision);
+		while (GPOINTER_TO_UINT (p) % 8 != 0)
+			p ++;
+
+		encode_int (aname->flags, p, &p);
+		encode_int (aname->major, p, &p);
+		encode_int (aname->minor, p, &p);
+		encode_int (aname->build, p, &p);
+		encode_int (aname->revision, p, &p);
 	}
+	g_assert (p - buf <= buf_size);
+
+	sprintf (symbol, "image_table");
+	emit_section_change (acfg, RODATA_SECT, 1);
+	emit_alignment (acfg, 8);
+	emit_label (acfg, symbol);
+	emit_bytes (acfg, buf, p - buf);
+
+	g_free (buf);
 }
 
 static void
 emit_got_info (MonoAotCompile *acfg, gboolean llvm)
 {
-	char symbol [256];
 	int i, first_plt_got_patch = 0, buf_size;
 	guint8 *p, *buf;
 	guint32 *got_info_offsets;
@@ -8230,16 +8286,9 @@ emit_got_info (MonoAotCompile *acfg, gboolean llvm)
 	}
 
 	/* Emit got_info_offsets table */
-	if (llvm)
-		sprintf (symbol, "llvm_got_info_offsets");
-	else
-		sprintf (symbol, "got_info_offsets");
-	emit_section_change (acfg, RODATA_SECT, 1);
-	emit_alignment (acfg, 8);
-	emit_label (acfg, symbol);
 
 	/* No need to emit offsets for the got plt entries, the plt embeds them directly */
-	acfg->stats.offsets_size += emit_offset_table (acfg, llvm ? acfg->llvm_got_offset : first_plt_got_patch, 10, (gint32*)got_info_offsets);
+	acfg->stats.offsets_size += emit_offset_table (acfg, llvm ? "llvm_got_info_offsets" : "got_info_offsets", llvm ? acfg->llvm_got_offset : first_plt_got_patch, 10, (gint32*)got_info_offsets);
 }
 
 static void
