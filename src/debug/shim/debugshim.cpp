@@ -364,19 +364,26 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
         // the initial state is that we haven't found a proper resource
         HRESULT hrGetResource = E_FAIL; 
      
-        // First check for the resource which has type = RC_DATA = 10, name = "CLRDEBUGINFO<host_os><host_arch>", language = 0
-        // So far we only support windows x86 and coresys x86 (we are building some other architectures, but they aren't tested and turned on yet it appears)
+        // First check for the resource which has type = RC_DATA = 10, name = "CLRDEBUGINFO<host_os><host_arch>", language = 0        
 #if defined (HOST_IS_WINDOWS_OS) && defined(_HOST_X86_)
-        hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, W("CLRDEBUGINFOWINDOWSX86"), 0,
-                 &debugResourceRVA, &debugResourceSize);
-        useCrossPlatformNaming = SUCCEEDED(hrGetResource);
+        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSX86");
 #endif
 
 #if !defined (HOST_IS_WINDOWS_OS) && defined(_HOST_X86_)
-        hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, W("CLRDEBUGINFOCORESYSX86"), 0,
-                 &debugResourceRVA, &debugResourceSize);
-        useCrossPlatformNaming = SUCCEEDED(hrGetResource);
+        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSX86");
 #endif
+
+#if defined (HOST_IS_WINDOWS_OS) && defined(_HOST_AMD64_)
+        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSAMD64");
+#endif
+
+#if !defined (HOST_IS_WINDOWS_OS) && defined(_HOST_AMD64_)
+        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSAMD64");
+#endif
+
+        hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, resourceName, 0,
+                 &debugResourceRVA, &debugResourceSize);
+        useCrossPlatformNaming = SUCCEEDED(hrGetResource);        
 
         
 #if defined(HOST_IS_WINDOWS_OS) && (defined(_HOST_X86_) || defined(_HOST_AMD64_) || defined(_HOST_ARM_))
