@@ -21,12 +21,13 @@
 
   <ItemGroup>
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
-    <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
+    <Compile Include="System\BitConverter.cs" />
+    <Compile Include="System\IO\LowLevelTextWriter.cs" />
+    <Compile Include="System\IO\LowLevelStringWriter.cs" />
     <Compile Include="System\Net\WebUtility.cs" />
     <Compile Include="System\Net\Configuration\UnicodeDecodingConformance.cs" />
     <Compile Include="System\Net\Configuration\UnicodeEncodingConformance.cs" />
-    <Compile Include="System\IO\LowLevelTextWriter.cs" />
-    <Compile Include="System\IO\LowLevelStringWriter.cs" />
+    <Compile Include="System\Runtime\Versioning\FrameworkName.cs" />
   </ItemGroup>
 
   <ItemGroup>
