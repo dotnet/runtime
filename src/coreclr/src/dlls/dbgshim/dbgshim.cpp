@@ -1126,13 +1126,13 @@ HRESULT GetContinueStartupEvent(DWORD debuggeePID,
 
 #endif // !FEATURE_PAL
 
-#if defined(FEATURE_CORESYSTEM) && defined(_TARGET_X86_)
+#if defined(FEATURE_CORESYSTEM)
 #include "debugshim.h"
 #endif
 
 HRESULT CLRCreateInstance(REFCLSID clsid, REFIID riid, LPVOID *ppInterface)
 {
-#if defined(FEATURE_CORESYSTEM) && defined(_TARGET_X86_)
+#if defined(FEATURE_CORESYSTEM)
 
     if (ppInterface == NULL)
         return E_POINTER;
