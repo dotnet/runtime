@@ -4353,6 +4353,19 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 #endif
 
+#ifndef ENABLE_LLVM
+void
+mono_llvm_emit_aot_file_info (MonoAotFileInfo *info, gboolean has_jitted_code)
+{
+	g_assert_not_reached ();
+}
+
+void mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
+{
+	g_assert_not_reached ();
+}
+#endif
+
 #ifdef USE_JUMP_TABLES
 #define DEFAULT_JUMPTABLE_CHUNK_ELEMENTS 128
 
