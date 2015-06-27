@@ -381,6 +381,22 @@ HRESULT CLRDebuggingImpl::GetCLRInfo(ICorDebugDataTarget* pDataTarget,
         const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSAMD64");
 #endif
 
+#if defined (HOST_IS_WINDOWS_OS) && defined(_HOST_ARM64_)
+        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSARM64");
+#endif
+
+#if !defined (HOST_IS_WINDOWS_OS) && defined(_HOST_ARM64_)
+        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSARM64");
+#endif
+
+#if defined (HOST_IS_WINDOWS_OS) && defined(_HOST_ARM_)
+        const WCHAR * resourceName = W("CLRDEBUGINFOWINDOWSARM");
+#endif
+
+#if !defined (HOST_IS_WINDOWS_OS) && defined(_HOST_ARM_)
+        const WCHAR * resourceName = W("CLRDEBUGINFOCORESYSARM");
+#endif        
+
         hrGetResource = GetResourceRvaFromResourceSectionRvaByName(pDataTarget, moduleBaseAddress, resourceSectionRVA, 10, resourceName, 0,
                  &debugResourceRVA, &debugResourceSize);
         useCrossPlatformNaming = SUCCEEDED(hrGetResource);        
