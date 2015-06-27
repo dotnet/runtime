@@ -30,7 +30,7 @@ namespace System.Diagnostics.ProcessTests
             return CreateProcess("byteAtATime");
         }
 
-        [Fact, ActiveIssue(1538, PlatformID.OSX)]
+        [Fact]
         public void Process_SyncErrorStream()
         {
             Process p = CreateProcessError();
@@ -42,7 +42,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.True(p.WaitForExit(WaitInMS));
         }
 
-        [Fact, ActiveIssue(1538, PlatformID.OSX)]
+        [Fact]
         public void Process_AsyncErrorStream()
         {
             for (int i = 0; i < 2; ++i)
@@ -69,7 +69,7 @@ namespace System.Diagnostics.ProcessTests
             }
         }
 
-        [Fact, ActiveIssue(1538, PlatformID.OSX)]
+        [Fact]
         public void Process_SyncOutputStream()
         {
             Process p = CreateProcessStream();
@@ -80,7 +80,7 @@ namespace System.Diagnostics.ProcessTests
             Assert.Equal(TestExeName + " started" + Environment.NewLine + TestExeName + " closed" + Environment.NewLine, s);
         }
 
-        [Fact, ActiveIssue(1538, PlatformID.OSX)]
+        [Fact]
         public void Process_AsyncOutputStream()
         {
             for (int i = 0; i < 2; ++i)

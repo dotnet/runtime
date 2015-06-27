@@ -25,7 +25,7 @@ internal static partial class Interop
         private const int PROC_PIDPATHINFO_MAXSIZE = 4 * MAXPATHLEN;
         private static int PROC_PIDLISTFD_SIZE = Marshal.SizeOf<proc_fdinfo>();
         private static int PROC_PIDLISTTHREADS_SIZE = (Marshal.SizeOf<uint>() * 2);
-        
+
         // Constants from sys\resource.h
         private const int RUSAGE_SELF = 0;
 
@@ -364,6 +364,7 @@ internal static partial class Interop
             int result = 0;
             int size = 20; // start assuming 20 threads is enough
             ulong[] threadIds = null;
+            var threads = new List<KeyValuePair<ulong, proc_threadinfo?>>();
 
             // We have no way of knowning how many threads the process has (and therefore how big our buffer should be)
             // so while the return value of the function is the same as our buffer size (meaning it completely filled
@@ -378,7 +379,10 @@ internal static partial class Interop
 
                 if (result <= 0)
                 {
-                    throw new Win32Exception();
+                    // If we were unable to access the information, just return the empty list.  
+                    // This is likely to happen for privileged processes, if the process went away
+                    // by the time we tried to query it, etc.
+                    return threads;
                 }
                 else
                 {
@@ -394,7 +398,7 @@ internal static partial class Interop
 
             // Loop over each thread and get the thread info
             int count = (int)(result / Marshal.SizeOf<ulong>());
-            List<KeyValuePair<ulong, proc_threadinfo?>> threads = new List<KeyValuePair<ulong, proc_threadinfo?>>(count);
+            threads.Capacity = count;
             for (int i = 0; i < count; i++)
             {        
                 threads.Add(new KeyValuePair<ulong, proc_threadinfo?>(threadIds[i], GetThreadInfoById(pid, threadIds[i])));
@@ -406,7 +410,7 @@ internal static partial class Interop
         /// <summary>
         /// Retrieves the number of open file descriptors for the specified pid
         /// </summary>
-        /// <returns>Returns an array of open File Descriptors for this process</returns>
+        /// <returns>A count of file descriptors for this process.</returns>
         /// <remarks>
         /// This function doesn't use the helper since it seems to allow passing NULL
         /// values in to the buffer and length parameters to get back an estimation 
@@ -426,11 +430,14 @@ internal static partial class Interop
             int result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, (proc_fdinfo*)null, 0);
             if (result <= 0)
             {
-                throw new Win32Exception();
+                // If we were unable to access the information, just return the empty list.  
+                // This is likely to happen for privileged processes, if the process went away
+                // by the time we tried to query it, etc.
+                return 0;
             }
 
             proc_fdinfo[] fds;
-            int size = (int)(result / Marshal.SizeOf<proc_fdinfo>());
+            int size = (int)(result / Marshal.SizeOf<proc_fdinfo>()) + 1;
 
             // Just in case the app opened a ton of handles between when we asked and now,
             // make sure we retry if our buffer is filled
@@ -444,7 +451,10 @@ internal static partial class Interop
 
                 if (result <= 0)
                 {
-                    throw new Win32Exception();
+                    // If we were unable to access the information, just return the empty list.  
+                    // This is likely to happen for privileged processes, if the process went away
+                    // by the time we tried to query it, etc.
+                    return 0;
                 }
                 else
                 {
