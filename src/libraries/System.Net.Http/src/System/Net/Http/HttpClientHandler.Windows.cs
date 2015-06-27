@@ -109,7 +109,9 @@ namespace System.Net.Http
             {
                 // The existing .NET Desktop HttpClientHandler based on the HWR stack allows HTTPS -> HTTP redirection by default.
                 // But, we're changing behavior to be more secure for ProjectK.
-                _winHttpHandler.AutomaticRedirectionPolicy = value ? AutomaticRedirectionPolicy.DisallowHttpsToHttp : AutomaticRedirectionPolicy.Never;
+                _winHttpHandler.AutomaticRedirectionPolicy = value ? 
+                    AutomaticRedirectionPolicy.DisallowHttpsToHttp : 
+                    AutomaticRedirectionPolicy.Never;
             }
         }
 
@@ -121,12 +123,12 @@ namespace System.Net.Http
 
         public long MaxRequestContentBufferSize
         {
-            // This property has been deprecated. In the .NET Desktop it was only used when the handler needed to automatically
-            // buffer the request content. That only happened if neither 'Content-Length' nor 'Transfer-Encoding: chunked'
-            // request headers were specified. So, the handler thus needed to buffer in the request content to determine its
-            // length and then would choose 'Content-Length' semantics when POST'ing. In CoreCLR and .NETNative, the handler
-            // will resolve the ambiguity by always choosing 'Transfer-Encoding: chunked'. The handler will never automatically
-            // buffer in the request content.
+            // This property has been deprecated. In the .NET Desktop it was only used when the handler needed to 
+            // automatically buffer the request content. That only happened if neither 'Content-Length' nor 
+            // 'Transfer-Encoding: chunked' request headers were specified. So, the handler thus needed to buffer
+            // in the request content to determine its length and then would choose 'Content-Length' semantics when
+            // POST'ing. In CoreCLR and .NETNative, the handler will resolve the ambiguity by always choosing
+            // 'Transfer-Encoding: chunked'. The handler will never automatically buffer in the request content.
             get { return 0; }
             
             // TODO: Add message/link to exception explaining the deprecation.
