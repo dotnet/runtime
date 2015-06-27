@@ -1,0 +1,57 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.22816.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{BB2D2F6C-0445-43D4-84A9-DF5B4931FA19}") = "System.Net.Http.WinHttpHandler", "src\System.Net.Http.WinHttpHandler.csproj", "{F75E3008-0562-42DF-BE72-C1384F12157E}"
+EndProject
+Project("{BB2D2F6C-0445-43D4-84A9-DF5B4931FA19}") = "System.Net.Http.WinHttpHandler.Tests", "tests\System.Net.Http.WinHttpHandler.Tests.csproj", "{A2ECDEDB-12B7-402C-9230-152B7601179F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		FreeBSD_Debug|Any CPU = FreeBSD_Debug|Any CPU
+		FreeBSD_Release|Any CPU = FreeBSD_Release|Any CPU
+		Linux_Debug|Any CPU = Linux_Debug|Any CPU
+		Linux_Release|Any CPU = Linux_Release|Any CPU
+		OSX_Debug|Any CPU = OSX_Debug|Any CPU
+		OSX_Release|Any CPU = OSX_Release|Any CPU
+		Windows_Debug|Any CPU = Windows_Debug|Any CPU
+		Windows_Release|Any CPU = Windows_Release|Any CPU
+	EndGlobalSection       
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.FreeBSD_Debug|Any CPU.ActiveCfg = FreeBSD_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.FreeBSD_Debug|Any CPU.Build.0 = FreeBSD_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.FreeBSD_Release|Any CPU.ActiveCfg = FreeBSD_Release|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.FreeBSD_Release|Any CPU.Build.0 = FreeBSD_Release|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Linux_Debug|Any CPU.ActiveCfg = Linux_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Linux_Debug|Any CPU.Build.0 = Linux_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Linux_Release|Any CPU.ActiveCfg = Linux_Release|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Linux_Release|Any CPU.Build.0 = Linux_Release|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.OSX_Debug|Any CPU.ActiveCfg = OSX_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.OSX_Debug|Any CPU.Build.0 = OSX_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.OSX_Release|Any CPU.ActiveCfg = OSX_Release|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.OSX_Release|Any CPU.Build.0 = OSX_Release|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{F75E3008-0562-42DF-BE72-C1384F12157E}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.FreeBSD_Debug|Any CPU.ActiveCfg = FreeBSD_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.FreeBSD_Debug|Any CPU.Build.0 = FreeBSD_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.FreeBSD_Release|Any CPU.ActiveCfg = FreeBSD_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.FreeBSD_Release|Any CPU.Build.0 = FreeBSD_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Linux_Debug|Any CPU.ActiveCfg = Linux_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Linux_Debug|Any CPU.Build.0 = Linux_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Linux_Release|Any CPU.ActiveCfg = Linux_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Linux_Release|Any CPU.Build.0 = Linux_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.OSX_Debug|Any CPU.ActiveCfg = OSX_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.OSX_Debug|Any CPU.Build.0 = OSX_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.OSX_Release|Any CPU.ActiveCfg = OSX_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.OSX_Release|Any CPU.Build.0 = OSX_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Windows_Debug|Any CPU.ActiveCfg = Windows_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Windows_Debug|Any CPU.Build.0 = Windows_Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Windows_Release|Any CPU.ActiveCfg = Windows_Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Windows_Release|Any CPU.Build.0 = Windows_Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
