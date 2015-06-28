@@ -163,6 +163,19 @@ namespace System.Collections.Immutable.Test
             DebuggerAttributes.ValidateDebuggerTypeProxyProperties(ImmutableHashSet.Create<int>(1, 2, 3));
         }
 
+        [Fact]
+        public void SymmetricExceptWithComparerTests()
+        {
+            var set = ImmutableHashSet.Create<string>("a").WithComparer(StringComparer.OrdinalIgnoreCase);
+            var otherCollection = new[] {"A"};
+
+            var expectedSet = new HashSet<string>(set, set.KeyComparer);
+            expectedSet.SymmetricExceptWith(otherCollection);
+
+            var actualSet = set.SymmetricExcept(otherCollection);
+            CollectionAssertAreEquivalent(expectedSet.ToList(), actualSet.ToList());
+        }
+
         protected override IImmutableSet<T> Empty<T>()
         {
             return ImmutableHashSet<T>.Empty;
