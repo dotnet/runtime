@@ -23,7 +23,7 @@ namespace Microsoft.Framework.WebEncoders
         /// <summary>
         /// Instantiates an encoder using a custom allow list of characters.
         /// </summary>
-        protected UnicodeEncoderBase(CodePointFilter filter, int maxOutputCharsPerInputChar)
+        protected UnicodeEncoderBase(TextEncoderSettings filter, int maxOutputCharsPerInputChar)
         {
             _maxOutputCharsPerInputChar = maxOutputCharsPerInputChar;
             _allowedCharacters = filter.GetAllowedCharacters();

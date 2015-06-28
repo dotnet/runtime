@@ -43,17 +43,17 @@ namespace Microsoft.Framework.WebEncoders
         /// by <paramref name="allowedRanges"/> will be escaped.
         /// </summary>
         public HtmlEncoderOld(params UnicodeRange[] allowedRanges)
-            : this(new HtmlUnicodeEncoder(new CodePointFilter(allowedRanges)))
+            : this(new HtmlUnicodeEncoder(new TextEncoderSettings(allowedRanges)))
         {
         }
 
         /// <summary>
         /// Instantiates an encoder using a custom code point filter. Any character not in the
-        /// set returned by <paramref name="filter"/>'s <see cref="ICodePointFilter.GetAllowedCodePoints"/>
+        /// set returned by <paramref name="settings"/>'s <see cref="TextEncoderSettings.GetAllowedCodePoints"/>
         /// method will be escaped.
         /// </summary>
-        public HtmlEncoderOld(CodePointFilter filter)
-            : this(new HtmlUnicodeEncoder(CodePointFilter.Wrap(filter)))
+        public HtmlEncoderOld(TextEncoderSettings settings)
+            : this(new HtmlUnicodeEncoder(settings))
         {
         }
 
@@ -127,7 +127,7 @@ namespace Microsoft.Framework.WebEncoders
             // generate at most 10 output chars ("&#x10FFFF;"), which equates to 5 output chars per input char.
             private const int MaxOutputCharsPerInputChar = 8;
 
-            internal HtmlUnicodeEncoder(CodePointFilter filter)
+            internal HtmlUnicodeEncoder(TextEncoderSettings filter)
                 : base(filter, MaxOutputCharsPerInputChar)
             {
             }
@@ -139,7 +139,7 @@ namespace Microsoft.Framework.WebEncoders
                     HtmlUnicodeEncoder encoder = Volatile.Read(ref _basicLatinSingleton);
                     if (encoder == null)
                     {
-                        encoder = new HtmlUnicodeEncoder(new CodePointFilter(UnicodeRanges.BasicLatin));
+                        encoder = new HtmlUnicodeEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
                         Volatile.Write(ref _basicLatinSingleton, encoder);
                     }
                     return encoder;
@@ -216,17 +216,17 @@ namespace Microsoft.Framework.WebEncoders
         /// by <paramref name="allowedRanges"/> will be escaped.
         /// </summary>
         public JavaScriptStringEncoderOld(params UnicodeRange[] allowedRanges)
-            : this(new JavaScriptStringUnicodeEncoder(new CodePointFilter(allowedRanges)))
+            : this(new JavaScriptStringUnicodeEncoder(new TextEncoderSettings(allowedRanges)))
         {
         }
 
         /// <summary>
         /// Instantiates an encoder using a custom code point filter. Any character not in the
-        /// set returned by <paramref name="filter"/>'s <see cref="ICodePointFilter.GetAllowedCodePoints"/>
+        /// set returned by <paramref name="settings"/>'s <see cref="TextEncoderSettings.GetAllowedCodePoints"/>
         /// method will be escaped.
         /// </summary>
-        public JavaScriptStringEncoderOld(CodePointFilter filter)
-            : this(new JavaScriptStringUnicodeEncoder(CodePointFilter.Wrap(filter)))
+        public JavaScriptStringEncoderOld(TextEncoderSettings settings)
+            : this(new JavaScriptStringUnicodeEncoder(settings))
         {
         }
 
@@ -300,7 +300,7 @@ namespace Microsoft.Framework.WebEncoders
             // surrogate pairs in the output.
             private const int MaxOutputCharsPerInputChar = 6;
 
-            internal JavaScriptStringUnicodeEncoder(CodePointFilter filter)
+            internal JavaScriptStringUnicodeEncoder(TextEncoderSettings filter)
                 : base(filter, MaxOutputCharsPerInputChar)
             {
                 // The only interesting characters above and beyond what the base encoder
@@ -316,7 +316,7 @@ namespace Microsoft.Framework.WebEncoders
                     JavaScriptStringUnicodeEncoder encoder = Volatile.Read(ref _basicLatinSingleton);
                     if (encoder == null)
                     {
-                        encoder = new JavaScriptStringUnicodeEncoder(new CodePointFilter(UnicodeRanges.BasicLatin));
+                        encoder = new JavaScriptStringUnicodeEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
                         Volatile.Write(ref _basicLatinSingleton, encoder);
                     }
                     return encoder;
@@ -413,17 +413,17 @@ namespace Microsoft.Framework.WebEncoders
         /// by <paramref name="allowedRanges"/> will be escaped.
         /// </summary>
         public UrlEncoderOld(params UnicodeRange[] allowedRanges)
-            : this(new UrlUnicodeEncoder(new CodePointFilter(allowedRanges)))
+            : this(new UrlUnicodeEncoder(new TextEncoderSettings(allowedRanges)))
         {
         }
 
         /// <summary>
         /// Instantiates an encoder using a custom code point filter. Any character not in the
-        /// set returned by <paramref name="filter"/>'s <see cref="ICodePointFilter.GetAllowedCodePoints"/>
+        /// set returned by <paramref name="settings"/>'s <see cref="TextEncoderSettings.GetAllowedCodePoints"/>
         /// method will be escaped.
         /// </summary>
-        public UrlEncoderOld(CodePointFilter filter)
-            : this(new UrlUnicodeEncoder(CodePointFilter.Wrap(filter)))
+        public UrlEncoderOld(TextEncoderSettings settings)
+            : this(new UrlUnicodeEncoder(settings))
         {
         }
 
@@ -498,7 +498,7 @@ namespace Microsoft.Framework.WebEncoders
             // chars to produce 12 output chars "%XX%YY%ZZ%WW", which is 6 output chars per input char.
             private const int MaxOutputCharsPerInputChar = 9;
 
-            internal UrlUnicodeEncoder(CodePointFilter filter)
+            internal UrlUnicodeEncoder(TextEncoderSettings filter)
                 : base(filter, MaxOutputCharsPerInputChar)
             {
                 // Per RFC 3987, Sec. 2.2, we want encodings that are safe for
@@ -568,7 +568,7 @@ namespace Microsoft.Framework.WebEncoders
                     UrlUnicodeEncoder encoder = Volatile.Read(ref _basicLatinSingleton);
                     if (encoder == null)
                     {
-                        encoder = new UrlUnicodeEncoder(new CodePointFilter(UnicodeRanges.BasicLatin));
+                        encoder = new UrlUnicodeEncoder(new TextEncoderSettings(UnicodeRanges.BasicLatin));
                         Volatile.Write(ref _basicLatinSingleton, encoder);
                     }
                     return encoder;
