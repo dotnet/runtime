@@ -27,8 +27,8 @@ static MonoLLVMEmitCallFunc mono_llvm_emit_call_fptr;
 static MonoLLVMCreateAotFunc mono_llvm_create_aot_module_fptr;
 static MonoLLVMEmitAotFunc mono_llvm_emit_aot_module_fptr;
 static MonoLLVMCFGFunc mono_llvm_check_method_supported_fptr;
-static MonoLLVMEmitAotInfoFunc mono_llvm_emit_aot_file_info_ptr;
-static MonoLLVMEmitAotDataFunc mono_llvm_emit_aot_data_ptr;
+static MonoLLVMEmitAotInfoFunc mono_llvm_emit_aot_file_info_fptr;
+static MonoLLVMEmitAotDataFunc mono_llvm_emit_aot_data_fptr;
 static MonoLLVMFreeDomainFunc mono_llvm_free_domain_info_fptr;
 
 void
@@ -85,15 +85,15 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 void
 mono_llvm_emit_aot_file_info (MonoAotFileInfo *info, gboolean has_jitted_code)
 {
-	if (mono_llvm_emit_aot_file_info_ptr)
-		mono_llvm_emit_aot_file_info_ptr (info, has_jitted_code);
+	if (mono_llvm_emit_aot_file_info_fptr)
+		mono_llvm_emit_aot_file_info_fptr (info, has_jitted_code);
 }
 
 void
 mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
 {
-	if (mono_llvm_emit_aot_data_ptr)
-		mono_llvm_emit_aot_data_ptr (symbol, data, data_len);
+	if (mono_llvm_emit_aot_data_fptr)
+		mono_llvm_emit_aot_data_fptr (symbol, data, data_len);
 }
 
 int
