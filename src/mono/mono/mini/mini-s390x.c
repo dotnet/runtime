@@ -1221,6 +1221,26 @@ handle_enum:
 		}
 	}
 		break;
+	case MONO_TYPE_GENERICINST: {
+		printf("[GENERICINST]\n");
+	}
+		break;
+	case MONO_TYPE_MVAR: {
+		printf("[MVAR]\n");
+	}
+		break;
+	case MONO_TYPE_CMOD_REQD: {
+		printf("[CMOD_REQD]\n");
+	}
+		break;
+	case MONO_TYPE_CMOD_OPT: {
+		printf("[CMOD_OPT]\n");
+	}
+		break;
+	case MONO_TYPE_INTERNAL: {
+		printf("[INTERNAL]\n");
+	}
+		break;
 	default:
 		printf ("(unknown return type %x)", 
 			mono_method_signature (method)->ret->type);
@@ -2838,15 +2858,20 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 	if (is_signed) {
 		s390_cgdbr (code, dreg, 5, sreg);
 		switch (size) {
-			case 1:
-				s390_lghi (code, s390_r0, 0);
-				s390_lghi (code, s390_r13, 0xff);
-				s390_ltgr (code, dreg, dreg);
-				s390_jnl  (code, 4);
-				s390_lghi (code, s390_r0, 0x80);
-				s390_ngr  (code, dreg, s390_r13);
-				s390_ogr  (code, dreg, s390_r0);
-				break;
+		case 1:
+			s390_ltgr (code, dreg, dreg);
+			s390_jnl  (code, 4);
+			s390_oill (code, dreg, 0x80);
+			s390_lghi (code, s390_r0, 0xff);
+			s390_ngr  (code, dreg, s390_r0);
+			break;
+		case 2:
+			s390_ltgr (code, dreg, dreg);
+			s390_jnl  (code, 4);
+			s390_oill (code, dreg, 0x8000);
+			s390_llill(code, s390_r0, 0xffff);
+			s390_ngr  (code, dreg, s390_r0);
+			break;
 		}
 	} else {
 		short *o[1];
@@ -2863,15 +2888,14 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		PTRSLOT (code, o[0]);
 		s390_cfdbr  (code, dreg, 5, sreg);
 		switch (size) {
-			case 1: 
-				s390_lghi (code, s390_r0, 0xff);
-				s390_ngr  (code, dreg, s390_r0);
-				break;
-			case 2:
-				s390_lghi (code, s390_r0, -1);
-				s390_srlg (code, s390_r0, s390_r0, 0, 16);
-				s390_ngr  (code, dreg, s390_r0);
-				break;
+		case 1: 
+			s390_lghi (code, s390_r0, 0xff);
+			s390_ngr  (code, dreg, s390_r0);
+			break;
+		case 2:
+			s390_llill(code, s390_r0, 0xffff);
+			s390_ngr  (code, dreg, s390_r0);
+			break;
 		}
 	}
 	return code;
@@ -4123,7 +4147,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_GENERIC_CLASS_INIT: {
 			static int byte_offset = -1;
 			static guint8 bitmask;
-			guint16 *jump;
+			short int *jump;
 
 			g_assert (ins->sreg1 == S390_FIRST_ARG_REG);
 
@@ -4313,21 +4337,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_ICONV_TO_R_UN: {
-			s390_cdfbr (code, ins->dreg, ins->sreg1);
-			s390_ltr   (code, ins->sreg1, ins->sreg1);
-			s390_jnl   (code, 8);
-			S390_SET   (code, s390_r13, 0x41f0000000000000llu);
-			s390_ldgr  (code, s390_f15, s390_r13);
-			s390_adbr  (code, ins->dreg, s390_f15);
+			if (facs.fpe) {
+				s390_cdlfbr (code, ins->dreg, 5, ins->sreg1, 0);
+			} else {
+				s390_llgfr (code, s390_r0, ins->sreg1);
+				s390_cdgbr (code, ins->dreg, s390_r0);
+			}
 		}
 			break;
 		case OP_LCONV_TO_R_UN: {
-			s390_cdgbr (code, ins->dreg, ins->sreg1);
-			s390_ltgr  (code, ins->sreg1, ins->sreg1);
-			s390_jnl   (code, 8);
-			S390_SET   (code, s390_r13, 0x41f0000000000000llu);
-			s390_ldgr  (code, s390_f15, s390_r13);
-			s390_adbr  (code, ins->dreg, s390_f15);
+			if (facs.fpe) {
+				s390_cdlgbr (code, ins->dreg, 5, ins->sreg1, 0);
+			} else {
+				short int *jump;
+				s390_cxgbr (code, s390_f12, ins->sreg1);
+				s390_ltgr  (code, ins->sreg1, ins->sreg1);
+				s390_jnl   (code, 0); CODEPTR(code, jump);
+				S390_SET   (code, s390_r13, 0x403f000000000000llu);
+				s390_lgdr  (code, s390_f13, s390_r13);
+				s390_lzdr  (code, s390_f15);
+				s390_axbr  (code, s390_f12, s390_f13);
+				PTRSLOT(code, jump);
+				s390_ldxbr (code, s390_f13, s390_f12);
+				s390_ldr   (code, ins->dreg, s390_f13);
+			}
 		}
 			break;
 		case OP_LCONV_TO_R4:
@@ -4342,27 +4375,60 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_FCONV_TO_I1:
-			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
+			s390_cgdbr (code, ins->dreg, 5, ins->sreg1);
+			s390_ltgr  (code, ins->dreg, ins->dreg);
+			s390_jnl   (code, 4);
+			s390_oill  (code, ins->dreg, 0x80);
+			s390_lghi  (code, s390_r0, 0xff);
+			s390_ngr   (code, ins->dreg, s390_r0);
 			break;
 		case OP_FCONV_TO_U1:
-			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, FALSE);
+			if (facs.fpe) {
+				s390_clgdbr (code, ins->dreg, 5, ins->sreg1, 0);
+				s390_lghi  (code, s390_r0, 0xff);
+				s390_ngr   (code, ins->dreg, s390_r0);
+			} else {
+				code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, FALSE);
+			}
 			break;
 		case OP_FCONV_TO_I2:
-			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, TRUE);
+			s390_cgdbr (code, ins->dreg, 5, ins->sreg1);
+			s390_ltgr  (code, ins->dreg, ins->dreg);
+			s390_jnl   (code, 4);
+			s390_oill  (code, ins->dreg, 0x8000);
+			s390_llill (code, s390_r0, 0xffff);
+			s390_ngr   (code, ins->dreg, s390_r0);
 			break;
 		case OP_FCONV_TO_U2:
-			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, FALSE);
+			if (facs.fpe) {
+				s390_clgdbr (code, ins->dreg, 5, ins->sreg1, 0);
+				s390_llill  (code, s390_r0, 0xffff);
+				s390_ngr    (code, ins->dreg, s390_r0);
+			} else {
+				code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, FALSE);
+			}
 			break;
 		case OP_FCONV_TO_I4:
 		case OP_FCONV_TO_I:
-			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, TRUE);
+			s390_cfdbr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_FCONV_TO_U4:
 		case OP_FCONV_TO_U:
-			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
+			if (facs.fpe) {
+				s390_clfdbr (code, ins->dreg, 5, ins->sreg1, 0);
+			} else {
+				code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
+			}
 			break;
 		case OP_FCONV_TO_I8:
 			s390_cgdbr (code, ins->dreg, 5, ins->sreg1);
+			break;
+		case OP_FCONV_TO_U8:
+			if (facs.fpe) {
+				s390_clgdbr (code, ins->dreg, 5, ins->sreg1, 0);
+			} else {
+				code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 8, FALSE);
+			}
 			break;
 		case OP_LCONV_TO_OVF_I: {
 			/* Valid ints: 0xffffffff:8000000 to 00000000:0x7f000000 */
