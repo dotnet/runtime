@@ -31,7 +31,7 @@ namespace System.Text.Encodings.Web
         #pragma warning restore
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public abstract bool Encodes(int unicodeScalar);
+        public abstract bool WillEncode(int unicodeScalar);
 
         // this could be a field, but I am trying to make the abstraction pure.
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -113,7 +113,7 @@ namespace System.Text.Encodings.Web
                 }
                 secondChar = value[secondCharIndex];
 
-                if (!Encodes(firstChar))
+                if (!WillEncode(firstChar))
                 {
                     wasSurrogatePair = false;
                     *buffer = firstChar;
@@ -280,7 +280,7 @@ namespace System.Text.Encodings.Web
                 }
                 secondChar = value[secondCharIndex];
 
-                if (!Encodes(firstChar))
+                if (!WillEncode(firstChar))
                 {
                     wasSurrogatePair = false;
                     output.Write(firstChar);
