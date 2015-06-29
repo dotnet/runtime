@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Text;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Diagnostics.ProcessTests
@@ -23,7 +22,7 @@ namespace System.Diagnostics.ProcessTests
 
         private const int s_ConsoleEncoding = 437;
 
-        [Fact, ActiveIssue(1538, PlatformID.OSX)]
+        [Fact]
         public void Process_EncodingBeforeProvider()
         {
             Action<int> run = expectedCodePage =>

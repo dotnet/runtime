@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics
 {
@@ -17,7 +18,7 @@ namespace System.Diagnostics
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private unsafe static ProcessInfo CreateProcessInfo(int pid)
+        private static ProcessInfo CreateProcessInfo(int pid)
         {
             // Negative PIDs aren't valid
             if (pid < 0)
@@ -25,25 +26,21 @@ namespace System.Diagnostics
                 throw new ArgumentOutOfRangeException("pid");
             }
 
-            ProcessInfo procInfo = new ProcessInfo();
+            ProcessInfo procInfo = new ProcessInfo()
+            {
+                ProcessId = pid
+            };
 
             // Try to get the task info. This can fail if the user permissions don't permit
             // this user context to query the specified process
             Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(pid);
             if (info.HasValue)
             {
-                // We need to convert the byte pointer to an IntPtr 
-                // that we can pass to the Marshal.PtrToStringAnsi call
-                // but the nullable struct type makes it difficult to inline,
-                // so make a temp variable to remove the nullable and get the pointer 
-                Interop.libproc.proc_taskallinfo temp = info.Value;
-                IntPtr ptrString = new IntPtr(temp.pbsd.pbi_comm);
-
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
+                Interop.libproc.proc_taskallinfo temp = info.Value;
+                unsafe { procInfo.ProcessName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm)); }
                 procInfo.BasePriority = temp.ptinfo.pti_priority;
                 procInfo.HandleCount = Interop.libproc.GetFileDescriptorCountForPid(pid);
-                procInfo.ProcessId = pid;
-                procInfo.ProcessName = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(ptrString);
                 procInfo.VirtualBytes = (long)temp.ptinfo.pti_virtual_size;
                 procInfo.WorkingSet = (long)temp.ptinfo.pti_resident_size;
             }
@@ -52,19 +49,23 @@ namespace System.Diagnostics
             List<KeyValuePair<ulong, Interop.libproc.proc_threadinfo?>> lstThreads = Interop.libproc.GetAllThreadsInProcess(pid);
             foreach (KeyValuePair<ulong, Interop.libproc.proc_threadinfo?> t in lstThreads)
             {
+                var ti = new ThreadInfo()
+                {
+                    _processId = pid,
+                    _threadId = (int)t.Key, // The OS X thread ID is 64-bits, but we're forced to truncate due to the public API signature
+                    _basePriority = 0,
+                    _startAddress = IntPtr.Zero
+                };
+
+                // Fill in additional info if we were able to retrieve such data about the thread
                 if (t.Value.HasValue)
                 {
-                    procInfo._threadInfoList.Add(new ThreadInfo()
-                    {
-                        _basePriority = 0,
-                        _currentPriority = t.Value.Value.pth_curpri,
-                        _processId = pid,
-                        _startAddress = IntPtr.Zero, // We don't have this info
-                        _threadId = Convert.ToInt32(t.Key),
-                        _threadState = ConvertOsxThreadRunStateToThreadState((Interop.libproc.ThreadRunState)t.Value.Value.pth_run_state),
-                        _threadWaitReason = ConvertOsxThreadFlagsToWaitReason((Interop.libproc.ThreadFlags)t.Value.Value.pth_flags)
-                    });
+                    ti._currentPriority = t.Value.Value.pth_curpri;
+                    ti._threadState = ConvertOsxThreadRunStateToThreadState((Interop.libproc.ThreadRunState)t.Value.Value.pth_run_state);
+                    ti._threadWaitReason = ConvertOsxThreadFlagsToWaitReason((Interop.libproc.ThreadFlags)t.Value.Value.pth_flags);
                 }
+
+                procInfo._threadInfoList.Add(ti);
             }
 
             return procInfo;
