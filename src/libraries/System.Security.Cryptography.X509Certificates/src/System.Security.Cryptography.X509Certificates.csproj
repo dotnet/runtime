@@ -28,6 +28,8 @@
     <Compile Include="Internal\Cryptography\IX509Pal.cs" />
     <Compile Include="Internal\Cryptography\IStorePal.cs" />
     <Compile Include="Internal\Cryptography\IChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\DerSequenceReader.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
     <Compile Include="System\Security\Cryptography\DSACryptoServiceProviderStub.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
@@ -151,8 +153,8 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeX509Handle.Unix.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeX509Handle.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeX509NameHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeX509NameHandle.Unix.cs</Link>
