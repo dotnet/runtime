@@ -21,7 +21,70 @@
 #ifdef HOST_WIN32
 #include <winsock2.h>
 #include <windows.h>
+
+/* Vanilla MinGW is missing some defs, loan them from MinGW-w64. */
+#if defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR
+
+#if (_WIN32_WINNT >= 0x0600)
+/* Fixme: Opaque structs */
+typedef PVOID RTL_CONDITION_VARIABLE;
+typedef PVOID RTL_SRWLOCK;
+
+#ifndef _RTL_RUN_ONCE_DEF
+#define _RTL_RUN_ONCE_DEF 1
+typedef PVOID RTL_RUN_ONCE, *PRTL_RUN_ONCE;
+typedef DWORD (WINAPI *PRTL_RUN_ONCE_INIT_FN)(PRTL_RUN_ONCE, PVOID, PVOID *);
+#define RTL_RUN_ONCE_INIT 0
+#define RTL_RUN_ONCE_CHECK_ONLY 1UL
+#define RTL_RUN_ONCE_ASYNC 2UL
+#define RTL_RUN_ONCE_INIT_FAILED 4UL
+#define RTL_RUN_ONCE_CTX_RESERVED_BITS 2
 #endif
+#define RTL_SRWLOCK_INIT 0
+#define RTL_CONDITION_VARIABLE_INIT 0
+#define RTL_CONDITION_VARIABLE_LOCKMODE_SHARED 1
+
+#define CONDITION_VARIABLE_INIT RTL_CONDITION_VARIABLE_INIT
+#define CONDITION_VARIABLE_LOCKMODE_SHARED RTL_CONDITION_VARIABLE_LOCKMODE_SHARED
+#define SRWLOCK_INIT RTL_SRWLOCK_INIT
+#endif
+
+#if (_WIN32_WINNT >= 0x0600)
+/*Condition Variables http://msdn.microsoft.com/en-us/library/ms682052%28VS.85%29.aspx*/
+typedef RTL_CONDITION_VARIABLE CONDITION_VARIABLE, *PCONDITION_VARIABLE;
+typedef RTL_SRWLOCK SRWLOCK, *PSRWLOCK;
+
+WINBASEAPI VOID WINAPI InitializeConditionVariable(PCONDITION_VARIABLE ConditionVariable);
+WINBASEAPI WINBOOL WINAPI SleepConditionVariableCS(PCONDITION_VARIABLE ConditionVariable, PCRITICAL_SECTION CriticalSection, DWORD dwMilliseconds);
+WINBASEAPI WINBOOL WINAPI SleepConditionVariableSRW(PCONDITION_VARIABLE ConditionVariable, PSRWLOCK SRWLock, DWORD dwMilliseconds, ULONG Flags);
+WINBASEAPI VOID WINAPI WakeAllConditionVariable(PCONDITION_VARIABLE ConditionVariable);
+WINBASEAPI VOID WINAPI WakeConditionVariable(PCONDITION_VARIABLE ConditionVariable);
+
+/*Slim Reader/Writer (SRW) Locks http://msdn.microsoft.com/en-us/library/aa904937%28VS.85%29.aspx*/
+WINBASEAPI VOID WINAPI AcquireSRWLockExclusive(PSRWLOCK SRWLock);
+WINBASEAPI VOID WINAPI AcquireSRWLockShared(PSRWLOCK SRWLock);
+WINBASEAPI VOID WINAPI InitializeSRWLock(PSRWLOCK SRWLock);
+WINBASEAPI VOID WINAPI ReleaseSRWLockExclusive(PSRWLOCK SRWLock);
+WINBASEAPI VOID WINAPI ReleaseSRWLockShared(PSRWLOCK SRWLock);
+
+WINBASEAPI BOOLEAN TryAcquireSRWLockExclusive(PSRWLOCK SRWLock);
+WINBASEAPI BOOLEAN TryAcquireSRWLockShared(PSRWLOCK SRWLock);
+
+/*One-Time Initialization http://msdn.microsoft.com/en-us/library/aa363808(VS.85).aspx*/
+#define INIT_ONCE_ASYNC 0x00000002UL
+#define INIT_ONCE_INIT_FAILED 0x00000004UL
+
+typedef PRTL_RUN_ONCE PINIT_ONCE;
+typedef PRTL_RUN_ONCE LPINIT_ONCE;
+typedef WINBOOL CALLBACK (*PINIT_ONCE_FN) (PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context);
+
+WINBASEAPI WINBOOL WINAPI InitOnceBeginInitialize(LPINIT_ONCE lpInitOnce, DWORD dwFlags, PBOOL fPending, LPVOID *lpContext);
+WINBASEAPI WINBOOL WINAPI InitOnceComplete(LPINIT_ONCE lpInitOnce, DWORD dwFlags, LPVOID lpContext);
+WINBASEAPI WINBOOL WINAPI InitOnceExecuteOnce(PINIT_ONCE InitOnce, PINIT_ONCE_FN InitFn, PVOID Parameter, LPVOID *Context);
+#endif
+
+#endif /* defined __MINGW32__ && !defined __MINGW64_VERSION_MAJOR */
+#endif /* HOST_WIN32 */
 
 G_BEGIN_DECLS
 

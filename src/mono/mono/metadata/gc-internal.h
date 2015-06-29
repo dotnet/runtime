@@ -84,6 +84,7 @@ MonoBoolean ves_icall_Mono_Runtime_SetGCAllowSynchronousMajor (MonoBoolean flag)
 extern void mono_gc_init (void);
 extern void mono_gc_base_init (void);
 extern void mono_gc_cleanup (void);
+extern void mono_gc_mutex_cleanup (void);
 extern void mono_gc_base_cleanup (void);
 
 /*

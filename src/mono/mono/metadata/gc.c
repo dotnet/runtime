@@ -1275,10 +1275,20 @@ mono_gc_cleanup (void)
 
 	mono_reference_queue_cleanup ();
 
-	mono_mutex_destroy (&handle_section);
 	mono_mutex_destroy (&allocator_section);
 	mono_mutex_destroy (&finalizer_mutex);
 	mono_mutex_destroy (&reference_queue_mutex);
+}
+
+/**
+ * mono_gc_mutex_cleanup:
+ *
+ * Destroy the mutexes that may still be used after the main cleanup routine.
+ */
+void
+mono_gc_mutex_cleanup (void)
+{
+	mono_mutex_destroy (&handle_section);
 }
 
 gboolean
