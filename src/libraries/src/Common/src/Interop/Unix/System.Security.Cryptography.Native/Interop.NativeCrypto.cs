@@ -2,9 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -51,6 +51,33 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoInterop)]
         private static extern int GetAsn1StringBytes(IntPtr asn1, byte[] buf, int cBuf);
 
+        [DllImport(Libraries.CryptoInterop)]
+        internal static extern int GetX509StackFieldCount(SafeX509StackHandle stack);
+
+        /// <summary>
+        /// Gets a pointer to a certificate within a STACK_OF(X509). This pointer will later
+        /// be freed, so it should be cloned via new X509Certificate2(IntPtr)
+        /// </summary>
+        [DllImport(Libraries.CryptoInterop)]
+        internal static extern IntPtr GetX509StackField(SafeX509StackHandle stack, int loc);
+
+        [DllImport(Libraries.CryptoInterop)]
+        internal static extern void RecursiveFreeX509Stack(IntPtr stack);
+
+        [DllImport(Libraries.CryptoInterop, CharSet = CharSet.Ansi)]
+        internal static extern string GetX509RootStorePath();
+
+        [DllImport(Libraries.CryptoInterop)]
+        private static extern int SetX509ChainVerifyTime(
+            SafeX509StoreCtxHandle ctx,
+            int year,
+            int month,
+            int day,
+            int hour,
+            int minute,
+            int second,
+            [MarshalAs(UnmanagedType.Bool)] bool isDst);
+
         internal static byte[] GetAsn1StringBytes(IntPtr asn1)
         {
             int negativeSize = GetAsn1StringBytes(asn1, null, 0);
@@ -70,6 +97,30 @@ internal static partial class Interop
             }
 
             return bytes;
+        }
+
+        internal static void SetX509ChainVerifyTime(SafeX509StoreCtxHandle ctx, DateTime verifyTime)
+        {
+            // Let Unspecified mean Local, so only convert if the source was UTC.
+            if (verifyTime.Kind == DateTimeKind.Utc)
+            {
+                verifyTime = verifyTime.ToLocalTime();
+            }
+
+            int succeeded = SetX509ChainVerifyTime(
+                ctx,
+                verifyTime.Year,
+                verifyTime.Month,
+                verifyTime.Day,
+                verifyTime.Hour,
+                verifyTime.Minute,
+                verifyTime.Second,
+                verifyTime.IsDaylightSavingTime());
+
+            if (succeeded != 1)
+            {
+                throw new CryptographicException();
+            }
         }
     }
 }

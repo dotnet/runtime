@@ -32,6 +32,9 @@ namespace System.Security.Cryptography.X509Certificates
         CtlNotValidForUsage = 0x00080000,
         OfflineRevocation = 0x01000000,
         NoIssuanceChainPolicy = 0x02000000,
+        ExplicitDistrust = 0x04000000,
+        HasNotSupportedCriticalExtension = 0x08000000,
+        HasWeakSignature = 0x00100000,
     }
 }
 

@@ -46,6 +46,12 @@ namespace System.Security.Cryptography.X509Certificates
             Pal = CertificatePal.FromHandle(handle);
         }
 
+        internal X509Certificate(ICertificatePal pal)
+        {
+            Debug.Assert(pal != null);
+            Pal = pal;
+        }
+
         public X509Certificate(String fileName)
             : this(fileName, null, X509KeyStorageFlags.DefaultKeySet)
         {

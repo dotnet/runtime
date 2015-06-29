@@ -25,7 +25,26 @@ namespace Internal.Cryptography.Pal
             DateTime verificationTime,
             TimeSpan timeout)
         {
-            return new OpenSslX509ChainProcessor();
+            CheckRevocationMode(revocationMode);
+
+            X509Certificate2 leaf = new X509Certificate2(cert.Handle);
+
+            X509Certificate2Collection candidates = OpenSslX509ChainProcessor.FindCandidates(leaf, extraStore);
+
+            return OpenSslX509ChainProcessor.BuildChain(
+                leaf,
+                candidates,
+                applicationPolicy,
+                certificatePolicy,
+                verificationTime);
+        }
+
+        private static void CheckRevocationMode(X509RevocationMode revocationMode)
+        {
+            if (revocationMode != X509RevocationMode.NoCheck)
+            {
+                throw new NotImplementedException(SR.WorkInProgress);
+            }
         }
     }
 }
