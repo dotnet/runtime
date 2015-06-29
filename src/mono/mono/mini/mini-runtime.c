@@ -3452,6 +3452,7 @@ mini_cleanup (MonoDomain *domain)
 
 #ifndef MONO_CROSS_COMPILE
 	mono_domain_free (domain, TRUE);
+	mono_gc_mutex_cleanup ();
 #endif
 
 #ifdef ENABLE_LLVM
