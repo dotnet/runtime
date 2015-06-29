@@ -8,7 +8,6 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>System.Diagnostics.FileVersionInfo.Tests</AssemblyName>
-    <SignAssembly>false</SignAssembly>
     <ProjectGuid>{6DFDB760-CC88-48AE-BD81-C64844EA3CBC}</ProjectGuid>
     <NuGetPackageImportStamp>2fda0f27</NuGetPackageImportStamp>
   </PropertyGroup>
