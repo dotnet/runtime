@@ -77,17 +77,6 @@ namespace System.Diagnostics
             return (int)processHandle.DangerousGetHandle(); // not actually dangerous; just wraps a process ID
         }
 
-        /// <summary>Gets an array of module infos for the specified process.</summary>
-        /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
-        /// <returns>The array of modules.</returns>
-        public static ModuleInfo[] GetModuleInfos(int processId)
-        {
-            // Not currently supported, but we can simply return an empty array rather than throwing.
-            // Could potentially be done via /proc/pid/maps and some heuristics to determine
-            // which entries correspond to modules.
-            return Array.Empty<ModuleInfo>();
-        }
-
         /// <summary>Gets whether the named machine is remote or local.</summary>
         /// <param name="machineName">The machine name.</param>
         /// <returns>true if the machine is remote; false if it's local.</returns>
