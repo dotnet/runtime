@@ -4,6 +4,7 @@
 //
 
 #include <string.h>
+#include <time.h>
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
@@ -22,6 +23,37 @@
 #define NAME_TYPE_DNSALT 4
 // See X509NameType.UrlName
 #define NAME_TYPE_URL 5
+
+/*
+Function:
+_MakeTimeT
+
+Used to convert the constituent elements of a struct tm into a time_t. As time_t does not have
+a guaranteed blitting size, this should never be p/invoked. It is here merely as a utility.
+
+Return values:
+A time_t representation of the input date. See also man mktime(3).
+*/
+time_t
+_MakeTimeT(
+    int year,
+    int month,
+    int day,
+    int hour,
+    int minute,
+    int second,
+    int isDst)
+{
+    struct tm currentTm;
+    currentTm.tm_year = year - 1900;
+    currentTm.tm_mon = month;
+    currentTm.tm_mday = day;
+    currentTm.tm_hour = hour;
+    currentTm.tm_min = minute;
+    currentTm.tm_sec = second;
+    currentTm.tm_isdst = isDst;
+    return mktime(&currentTm);
+}
 
 /*
 Function:
@@ -622,4 +654,124 @@ GetX509NameInfo(
     }
 
     return NULL;
+}
+
+/*
+Function:
+GetX509StackFieldCount
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to identify the
+number of certificates returned in the built chain.
+
+Return values:
+0 if the field count cannot be determined, or the count of certificates in STACK_OF(X509)
+Note that 0 does not always indicate an error, merely that GetX509StackField should not be called.
+*/
+int
+GetX509StackFieldCount(
+    STACK_OF(X509)* stack)
+{
+    return sk_X509_num(stack);
+}
+
+/*
+Function:
+GetX509StackField
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to get a pointer to
+the indexed member of a chain.
+
+Return values:
+NULL if stack is NULL or loc is out of bounds, otherwise a pointer to the X509 structure encoding
+that particular element.
+*/
+X509*
+GetX509StackField(
+    STACK_OF(X509)* stack,
+    int loc)
+{
+    return sk_X509_value(stack, loc);
+}
+
+/*
+Function:
+RecursiveFreeX509Stack
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to free a stack
+when done with it.
+*/
+void
+RecursiveFreeX509Stack(
+    STACK_OF(X509)* stack)
+{
+    sk_X509_pop_free(stack, X509_free);
+}
+
+/*
+Function:
+SetX509ChainVerifyTime
+
+Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to assign the
+verification time to the chain building.  The input is in LOCAL time, not UTC.
+
+Return values:
+0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
+1 on success.
+*/
+int
+SetX509ChainVerifyTime(
+    X509_STORE_CTX* ctx,
+    int year,
+    int month,
+    int day,
+    int hour,
+    int minute,
+    int second,
+    int isDst)
+{
+    if (!ctx)
+    {
+        return 0;
+    }
+
+    time_t verifyTime = _MakeTimeT(year, month, day, hour, minute, second, isDst);
+
+    if (verifyTime == (time_t)-1)
+    {
+        return 0;
+    }
+
+    X509_VERIFY_PARAM* verifyParams = X509_STORE_CTX_get0_param(ctx);
+
+    if (!verifyParams)
+    {
+        return 0;
+    }
+
+    X509_VERIFY_PARAM_set_time(verifyParams, verifyTime);
+    return 1;
+}
+
+/*
+Function:
+GetX509RootStorePath
+
+Used by System.Security.Cryptography.X509Certificates' Unix StorePal to determine the path to use
+for the LocalMachine\Root X509 store.
+
+Return values:
+The directory which would be applied for X509_LOOKUP_add_dir(ctx, NULL). That is, the value of the
+SSL_CERT_DIR environment variable, or the value of the X509_CERT_DIR compile-time constant.
+*/
+const char*
+GetX509RootStorePath()
+{
+    const char* dir = getenv(X509_get_default_cert_dir_env());
+
+    if (!dir)
+    {
+        dir = X509_get_default_cert_dir();
+    }
+
+    return dir;
 }
