@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Reflection.Emit.Tests</AssemblyName>
+    <RootNamespace>System.Reflection.Emit.Tests</RootNamespace>
+    <ProjectGuid>{1104A263-331A-4CA0-B541-759BD20F7B1D}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyBuilder\AssemblyBuilderDefineDynamicModule1.cs" />
+    <Compile Include="AssemblyBuilder\AssemblyBuilderGetManifestResourceNames.cs" />
+    <Compile Include="AssemblyBuilder\AssemblyBuilderGetManifestResourceStream1.cs" />
+    <Compile Include="AssemblyBuilder\AssemblyBuilderGetManifestResourceStream2.cs" />
+    <Compile Include="AssemblyBuilder\AssemblyBuilderSetCustomAttribute.cs" />
+    <Compile Include="AssemblyBuilder\AssemblyBuilderSetCustomAttribute2.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderAttributes.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderCallingConvention.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderDeclaringType.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderDefineParameter.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderGetILGenerator1.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderGetILGenerator2.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderInitLocals.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderName.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderSetCustomAttribute1.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderSetCustomAttribute2.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderSetImplementationFlags.cs" />
+    <Compile Include="ConstructorBuilder\ConstructorBuilderToString.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderAssembly.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderAssemblyQualifiedName.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderBaseType.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderDeclaringType.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderDefineLiteral.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderFullName.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderGetElementType.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderGUID.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderMakeArrayType1.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderMakeArrayType2.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderMakeByRefType.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderMakePointerType.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderModule.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderName.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderNamespace.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderSetCustomAttribute1.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderSetCustomAttribute2.cs" />
+    <Compile Include="EnumBuilder\EnumBuilderUnderlyingField.cs" />
+    <Compile Include="EventBuilder\EventBuilderAddOtherMethod.cs" />
+    <Compile Include="EventBuilder\EventBuilderSetAddOnMethod.cs" />
+    <Compile Include="EventBuilder\EventBuilderSetCustomAttribute1.cs" />
+    <Compile Include="EventBuilder\EventBuilderSetCustomAttribute2.cs" />
+    <Compile Include="EventBuilder\EventBuilderSetRaiseMethod.cs" />
+    <Compile Include="EventBuilder\EventBuilderSetRemoveOnMethod.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderAttributes.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderDeclaringType.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderFieldType.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderGetValue.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderName.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderSetConstant.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderSetCustomAttribute1.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderSetCustomAttribute2.cs" />
+    <Compile Include="FieldBuilder\FieldBuilderSetOffset.cs" />
+    <Compile Include="Generator.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTyepParameterBuilderSetBaseTypeConstraint.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderAssembly.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderAssemblyQualifiedName.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderBaseType.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderContainsGenericParameters.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderDeclaringMethod.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderDeclaringType.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderFullName.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderGenericParameterPosition.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderGUID.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderIsGenericParameter.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderIsGenericType.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderIsGenericTypeDefinition.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakeArrayType1.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakeArrayType2.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakeByRefType.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakeGenericType.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderMakePointerType.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderModule.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderName.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderNamespace.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetCustomAttribute1.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetCustomAttribute2.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetGenericParameterAttributes.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetInterfaceConstraints.cs" />
+    <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderToString.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderAttributes.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderCallingConvention.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderContainsGenericParameters.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderDeclaringType.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderDefineGenericParameters.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderDefineGenericParameters1b.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderDefineParameter.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderDefineParameter1b.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderEquals.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderEquals1.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderGetGenericArguments.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderGetGenericMethodDefinition.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderGetHashCode.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderGetILGenerator.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderGetILGenerator1.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderInitLocals.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderIsGenericMethod.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderIsGenericMethodDefinition.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderMakeGenericMethod.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderName.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderReturnParameter.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderSetCustomAttribute.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderSetCustomAttribute1.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderSetImplementationFlags.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderSetParameters.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderSetReturnType.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderSetSignature.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderToString.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderToString2.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderCreateGlobalFunctions.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefineEnum.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefineInitializedData.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefineType1.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefineType2.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefineType3.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderDefineUninitializedData.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderGetArrayMethod.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute1.cs" />
+    <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute2.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderCanWrite.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderDeclaringType.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderGetIndexParameters.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderGetValue1.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderName.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderPropertyType.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderSetConstant.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderSetCustomAttribute1.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderSetCustomAttribute2.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderSetGetMethod.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderSetSetMethod.cs" />
+    <Compile Include="PropertyBuilder\PropertyBuilderSetValue1.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderAddInterfaceImplementaion.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderAssembly.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderAssemblyQualifiedName.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderBaseType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderCreateType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDeclaringMethod.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDeclaringType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineConstructor1.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineDefaultConstructor.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineEvent.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineMethodOverride.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType1.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType2.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType3.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType4.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType5.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineNestedType6.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineProperty.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineProperty1.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineProperty2.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderDefineTypeInitializer.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderFullName.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGenericParameterAttributes.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGenericParameterPosition.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGetConstructor.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGetElementType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGetField.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGetGenericTypeDefinition.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGetMethod.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderGUID.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderIsGenericParameter.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderIsGenericType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderIsGenericTypeDefinition.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeArrayType1.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeArrayType2.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeByRefType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakeGenericType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderMakePointerType.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderName.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderNamespace.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderPackingSize.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderSetCustomAttribute.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderSetCustomAttribute1.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderSetParent.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
+    <Compile Include="Utilities.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
