@@ -70,6 +70,15 @@ namespace System.Diagnostics
             return procInfo;
         }
 
+        /// <summary>Gets an array of module infos for the specified process.</summary>
+        /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
+        /// <returns>The array of modules.</returns>
+        internal static ModuleInfo[] GetModuleInfos(int processId)
+        {
+            // We currently don't provide support for modules on OS X.
+            return Array.Empty<ModuleInfo>();
+        }
+
         // ----------------------------------
         // ---- Unix PAL layer ends here ----
         // ----------------------------------

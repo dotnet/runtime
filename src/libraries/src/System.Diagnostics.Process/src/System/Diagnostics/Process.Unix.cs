@@ -85,7 +85,11 @@ namespace System.Diagnostics
         /// <summary>Gets the main module for the associated process.</summary>
         public ProcessModule MainModule
         {
-            get { throw new PlatformNotSupportedException(); }
+            get
+            {
+                ProcessModuleCollection pmc = Modules;
+                return pmc.Count > 0 ? pmc[0] : null;
+            }
         }
 
         /// <summary>Checks whether the process has exited and updates state accordingly.</summary>
