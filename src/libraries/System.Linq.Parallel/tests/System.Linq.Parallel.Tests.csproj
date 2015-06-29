@@ -10,7 +10,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Linq.Parallel.Tests</RootNamespace>
     <AssemblyName>System.Linq.Parallel.Tests</AssemblyName>
-    <SignAssembly>false</SignAssembly>
     <NuGetPackageImportStamp>8be98411</NuGetPackageImportStamp>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
