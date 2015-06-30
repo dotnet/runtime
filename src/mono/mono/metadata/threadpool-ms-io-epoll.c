@@ -97,7 +97,7 @@ epoll_event_get_fd_max (void)
 }
 
 static gint
-epoll_event_get_fd_at (guint i, gint *events)
+epoll_event_get_fd_at (gint i, gint *events)
 {
 	g_assert (events);
 
@@ -108,7 +108,7 @@ epoll_event_get_fd_at (guint i, gint *events)
 }
 
 static void
-epoll_event_reset_fd_at (guint i, gint events)
+epoll_event_reset_fd_at (gint i, gint events)
 {
 	if (events == 0) {
 		if (epoll_ctl (epoll_fd, EPOLL_CTL_DEL, epoll_events [i].data.fd, &epoll_events [i]) == -1)

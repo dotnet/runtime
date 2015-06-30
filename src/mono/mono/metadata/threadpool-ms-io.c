@@ -284,12 +284,12 @@ selector_thread (gpointer data)
 						mono_threadpool_ms_enqueue_work_item (((MonoObject*) sockares)->vtable->domain, (MonoObject*) sockares);
 				}
 
-				if (!list) {
+				if (!list)
 					mono_g_hash_table_remove (threadpool_io->states, GINT_TO_POINTER (fd));
-				} else {
+				else
 					mono_g_hash_table_replace (threadpool_io->states, GINT_TO_POINTER (fd), list);
-					threadpool_io->backend.event_reset_fd_at (i, get_events (list));
-				}
+
+				threadpool_io->backend.event_reset_fd_at (i, get_events (list));
 			}
 
 			ready -= 1;
