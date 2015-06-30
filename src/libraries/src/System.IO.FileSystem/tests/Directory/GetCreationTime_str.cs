@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xunit;
 
-public class Directory_GetCreationTime
+public class Directory_GetCreationTime_str
 {
     public static String s_strDtTmVer = "2009/02/18";
     public static String s_strClassMethod = "Directory.GetCreationTime()";

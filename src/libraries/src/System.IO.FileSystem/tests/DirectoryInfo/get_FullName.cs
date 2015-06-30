@@ -8,7 +8,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class DirectoryInfo_Co5511get_FullName
+public class DirectoryInfo_get_FullName
 {
     public static String s_strActiveBugNums = "14866, 14849";
     public static String s_strClassMethod = "Directory.FullName";

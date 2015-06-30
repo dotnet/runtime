@@ -7,7 +7,7 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-public class File_FileExists_str
+public class File_Exists_str
 {
     public static String s_strDtTmVer = "2009/02/18";
     public static String s_strClassMethod = "File.Exists(String)";
@@ -163,6 +163,7 @@ public class File_FileExists_str
                 iCountErrors++;
                 printerr("Error_9t821! Returned false for existing file");
             }
+            File.Delete(shortFilName);
 #endif
             string fullFilName = Path.Combine(TestInfo.CurrentDirectory, shortFilName);
             new FileStream(fullFilName, FileMode.Create).Dispose();
@@ -194,6 +195,7 @@ public class File_FileExists_str
                 iCountErrors++;
                 printerr("Error_01y8v! Returned incorrect value");
             }
+            File.Delete(tmp);
 
             // [] Wildcards in filename should return false
 

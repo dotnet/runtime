@@ -10,7 +10,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Directory_Co5663Delete_str_bool
+public class Directory_Delete_str_bool
 {
     public static String s_strDtTmVer = "2000/04/26 20:33";
     public static String s_strClassMethod = "Directory.Delete(String,Boolean)";
