@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 
@@ -26,6 +27,52 @@ namespace System.Diagnostics
                 }
             }
             return pids.ToArray();
+        }
+
+        /// <summary>Gets an array of module infos for the specified process.</summary>
+        /// <param name="processId">The ID of the process whose modules should be enumerated.</param>
+        /// <returns>The array of modules.</returns>
+        internal static ModuleInfo[] GetModuleInfos(int processId)
+        {
+            var modules = new List<ModuleInfo>();
+
+            // Process from the parsed maps file each entry representing a module
+            foreach (Interop.procfs.ParsedMapsModule entry in Interop.procfs.ParseMapsModules(processId))
+            {
+                int sizeOfImage = (int)(entry.AddressRange.Value - entry.AddressRange.Key);
+
+                // A single module may be split across multiple map entries; consolidate based on
+                // the name and address ranges of sequential entries.
+                if (modules.Count > 0)
+                {
+                    ModuleInfo mi = modules[modules.Count - 1];
+                    if (mi._fileName == entry.FileName && 
+                        ((long)mi._baseOfDll + mi._sizeOfImage == entry.AddressRange.Key))
+                    {
+                        // Merge this entry with the previous one
+                        modules[modules.Count - 1]._sizeOfImage += sizeOfImage;
+                        continue;
+                    }
+                }
+
+                // It's not a continuation of a previous entry but a new one: add it.
+                modules.Add(new ModuleInfo()
+                {
+                    _fileName = entry.FileName,
+                    _baseName = Path.GetFileName(entry.FileName),
+                    _baseOfDll = new IntPtr(entry.AddressRange.Key),
+                    _sizeOfImage = sizeOfImage,
+                    _entryPoint = IntPtr.Zero // unknown
+                });
+            }
+
+            // Return the set of modules found
+            if (modules.Count == 0)
+            {
+                // Match Windows behavior when failing to enumerate modules
+                throw new Win32Exception(SR.EnumProcessModuleFailed);
+            }
+            return modules.ToArray();
         }
 
         // -----------------------------
