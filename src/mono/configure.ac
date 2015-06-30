@@ -2476,7 +2476,7 @@ fi
  
 AC_MSG_CHECKING([if inter-process shared handles are requested])
 # Same as --enable-minimal=shared_handles
-AC_ARG_ENABLE(shared-handles, [  --disable-shared-handles disable inter-process shared handles], try_shared_handles=$enableval, try_shared_handles=yes)
+AC_ARG_ENABLE(shared-handles, [  --disable-shared-handles disable inter-process shared handles], try_shared_handles=$enableval, try_shared_handles=no)
 AC_MSG_RESULT($try_shared_handles)
 if test "x$try_shared_handles" != "xyes"; then
 	AC_DEFINE(DISABLE_SHARED_HANDLES, 1, [Disable inter-process shared handles])
