@@ -229,14 +229,11 @@ namespace System.Diagnostics.ProcessTests
         public void Process_MainModule()
         {
             // Get MainModule property from a Process object
-            ProcessModule mainModule = null;
-            if (global::Interop.IsWindows)
+            ProcessModule mainModule = _process.MainModule;
+
+            if (!global::Interop.IsOSX) // OS X doesn't currently implement modules support
             {
-                mainModule = _process.MainModule;
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => _process.MainModule);
+                Assert.NotNull(mainModule);
             }
 
             if (mainModule != null)
@@ -338,11 +335,13 @@ namespace System.Diagnostics.ProcessTests
             {
                 // Validated that we can get a value for each of the following.
                 Assert.NotNull(pModule);
-                Assert.NotNull(pModule.BaseAddress);
-                Assert.NotNull(pModule.EntryPointAddress);
+                Assert.NotEqual(IntPtr.Zero, pModule.BaseAddress);
                 Assert.NotNull(pModule.FileName);
-                int memSize = pModule.ModuleMemorySize;
                 Assert.NotNull(pModule.ModuleName);
+
+                // Just make sure these don't throw
+                IntPtr addr = pModule.EntryPointAddress;
+                int memSize = pModule.ModuleMemorySize;
             }
         }
 
