@@ -2992,7 +2992,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
                                            unsigned compileFlags)
 {
     hashBv::Init(this);
-    
+
     VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
 
     /* The temp holding the secret stub argument is used by fgImport() when importing the intrinsic. */
@@ -3007,22 +3007,18 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     EndPhase(PHASE_PRE_IMPORT);
 
 #ifdef DEBUG
-#ifdef _TARGET_ARM_
-    bool extraSpew = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SOCExtraSpew) != 0);
-#endif
+    bool funcTrace = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitFunctionTrace) != 0);
 
     if (!compIsForInlining())
     {
         LONG newJitNestingLevel = InterlockedIncrement(&Compiler::jitNestingLevel);
         assert(newJitNestingLevel > 0);
-#ifdef _TARGET_ARM_
-        if (extraSpew && !opts.disDiffable)
+        if (funcTrace && !opts.disDiffable)
         {
             for (LONG i = 0; i < newJitNestingLevel - 1; i++)
                 printf("  ");
             printf("{ Start Jitting %s\n", info.compFullName); /* } editor brace matching workaround for this printf */
         }
-#endif // _TARGET_ARM
     }
 #endif // DEBUG
 
@@ -3464,8 +3460,7 @@ void                 Compiler::compCompile(void * * methodCodePtr,
     LONG newJitNestingLevel = InterlockedDecrement(&Compiler::jitNestingLevel);
     assert(newJitNestingLevel >= 0);
 
-#ifdef _TARGET_ARM_
-    if (extraSpew && !opts.disDiffable)
+    if (funcTrace && !opts.disDiffable)
     {
         for (LONG i = 0; i < newJitNestingLevel; i++)
             printf("  ");
@@ -3474,7 +3469,6 @@ void                 Compiler::compCompile(void * * methodCodePtr,
                Compiler::jitTotalMethodCompiled, DBG_ADDR(*methodCodePtr),
                info.compFullName, *methodCodeSize);
     }
-#endif // _TARGET_ARM_
 
 #if FUNC_INFO_LOGGING
     if (compJitFuncInfoFile != NULL)
