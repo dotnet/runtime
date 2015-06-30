@@ -800,10 +800,6 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 	if (info->inside_critical_region)
 		return TRUE;
 
-	if (threads_callbacks.mono_thread_in_critical_region && threads_callbacks.mono_thread_in_critical_region (info)) {
-		return TRUE;
-	}
-
 	/* Are we inside a GC critical region? */
 	if (threads_callbacks.mono_thread_in_critical_region && threads_callbacks.mono_thread_in_critical_region (info)) {
 		return TRUE;
