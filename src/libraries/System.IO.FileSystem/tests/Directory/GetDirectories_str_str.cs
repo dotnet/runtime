@@ -10,7 +10,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Directory_Co5674GetDirectories_Str_Str
+public class Directory_GetDirectories_Str_Str
 {
     public static String s_strDtTmVer = "2000/04/27 17:00";
     public static String s_strClassMethod = "Directory.GetDirectories()";

@@ -146,12 +146,12 @@ public class FileInfo_Create
             file2 = new FileInfo(Path.Combine(TestInfo.CurrentDirectory, "Test", "Test", "Test", fileName));
             try
             {
-                file2.Create();
-                if (file2.FullName.IndexOf(Path.Combine("Test", "Test", "Test", fileName)) == -1)
-                {
-                    iCountErrors++;
-                    printerr("Error_0010! Unexpected File name :: " + file2.FullName);
-                }
+                using (file2.Create())
+                    if (file2.FullName.IndexOf(Path.Combine("Test", "Test", "Test", fileName)) == -1)
+                    {
+                        iCountErrors++;
+                        printerr("Error_0010! Unexpected File name :: " + file2.FullName);
+                    }
             }
             catch (DirectoryNotFoundException)
             {
@@ -161,7 +161,7 @@ public class FileInfo_Create
                 iCountErrors++;
                 printerr("Error_2019u! Incorrect exception thrown, exc==" + exc.ToString());
             }
-
+            file2.Delete();
             // [] Try invalid File name
 
             strLoc = "Loc_2089x";

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace EnumerableTests
 {
-    public class DirectoryInfo_EnumerableTests
+    public class DirectoryInfo_EnumerableAPIs
     {
         private static EnumerableUtils s_utils;
 

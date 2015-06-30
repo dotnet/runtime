@@ -25,7 +25,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
         int iCountTestcases = 0;
         String strLoc = "Loc_000oo";
         String strValue = String.Empty;
-
+        String dirName = Path.GetRandomFileName();
 
         try
         {
@@ -33,7 +33,6 @@ public class DirectoryInfo_GetFileSystemInfos_str
             ///////////////////////////////////////////////////////////////////
 
             DirectoryInfo dir2;
-            String dirName = Path.GetRandomFileName();
             FileSystemInfo[] fsArr;
 
             if (Directory.Exists(dirName))
@@ -133,11 +132,11 @@ public class DirectoryInfo_GetFileSystemInfos_str
             dir2.CreateSubdirectory("TestDir3");
             dir2.CreateSubdirectory("Test1Dir1");
             dir2.CreateSubdirectory("Test1Dir2");
-            new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
-            new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
-            new FileInfo(Path.Combine(dir2.FullName, "TestFile3")).Create();
-            new FileInfo(Path.Combine(dir2.FullName, "Test1File1")).Create();
-            new FileInfo(Path.Combine(dir2.FullName, "Test1File2")).Create();
+            FileStream f1 = new FileInfo(Path.Combine(dir2.FullName, "TestFile1")).Create();
+            FileStream f2 = new FileInfo(Path.Combine(dir2.FullName, "TestFile2")).Create();
+            FileStream f3 = new FileInfo(Path.Combine(dir2.FullName, "TestFile3")).Create();
+            FileStream f4 = new FileInfo(Path.Combine(dir2.FullName, "Test1File1")).Create();
+            FileStream f5 = new FileInfo(Path.Combine(dir2.FullName, "Test1File2")).Create();
 
             // [] Search criteria ending with '*'
 
@@ -153,7 +152,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
             int i = 0;
             foreach (FileSystemInfo f in fsArr)
                 names[i++] = f.Name;
-            
+
             if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
             {
                 Array.Sort(names);
@@ -192,7 +191,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
             i = 0;
             foreach (FileSystemInfo f in fsArr)
                 names[i++] = f.Name;
-            
+
             if (!Interop.IsWindows) // test is expecting sorted order as provided by Windows
             {
                 Array.Sort(names);
@@ -325,62 +324,66 @@ public class DirectoryInfo_GetFileSystemInfos_str
 
             // [] Search criteria Beginning and ending with '*'
 
-            new FileInfo(Path.Combine(dir2.FullName, "AAABB")).Create();
-            Directory.CreateDirectory(Path.Combine(dir2.FullName, "aaabbcc"));
-
-            fsArr = dir2.GetFileSystemInfos("*BB*");
-            iCountTestcases++;
-            if (fsArr.Length != (Interop.IsWindows ? 2 : 1))
+            using (new FileInfo(Path.Combine(dir2.FullName, "AAABB")).Create())
             {
-                iCountErrors++;
-                printerr("Error_4y190! Incorrect number of files==" + fsArr.Length);
-            }
-            names = new String[fsArr.Length];
-            i = 0;
-            foreach (FileSystemInfo fs in fsArr)
-                names[i++] = fs.Name;
+                Directory.CreateDirectory(Path.Combine(dir2.FullName, "aaabbcc"));
 
-            if (Interop.IsWindows)
-            {
-
+                fsArr = dir2.GetFileSystemInfos("*BB*");
                 iCountTestcases++;
-                if (Array.IndexOf(names, "aaabbcc") < 0)
+                if (fsArr.Length != (Interop.IsWindows ? 2 : 1))
                 {
                     iCountErrors++;
-                    printerr("Error_956yb! Incorrect name==" + fsArr[0]);
+                    printerr("Error_4y190! Incorrect number of files==" + fsArr.Length);
+                }
+                names = new String[fsArr.Length];
+                i = 0;
+                foreach (FileSystemInfo fs in fsArr)
+                    names[i++] = fs.Name;
+
+                if (Interop.IsWindows)
+                {
+                    iCountTestcases++;
+                    if (Array.IndexOf(names, "aaabbcc") < 0)
+                    {
+                        iCountErrors++;
+                        printerr("Error_956yb! Incorrect name==" + fsArr[0]);
+                        foreach (FileSystemInfo s in fsArr)
+                            Console.WriteLine(s.Name);
+                    }
+                }
+                if (Array.IndexOf(names, "AAABB") < 0)
+                {
+                    iCountErrors++;
+                    printerr("Error_48yg7! Incorrect name==" + fsArr[1]);
                     foreach (FileSystemInfo s in fsArr)
                         Console.WriteLine(s.Name);
                 }
+                strLoc = "Loc_0001";
             }
-            iCountTestcases++;
-            if (Array.IndexOf(names, "AAABB") < 0)
-            {
-                iCountErrors++;
-                printerr("Error_48yg7! Incorrect name==" + fsArr[1]);
-                foreach (FileSystemInfo s in fsArr)
-                    Console.WriteLine(s.Name);
-            }
-            strLoc = "Loc_0001";
 
             // [] Should not search on fullpath
             // [] Search Criteria without match should return empty array
 
             fsArr = dir2.GetFileSystemInfos("Directory");
-            iCountTestcases++;
             if (fsArr.Length != 0)
             {
                 iCountErrors++;
                 printerr("Error_209v7! Incorrect number of files==" + fsArr.Length);
             }
 
-            new FileInfo(Path.Combine(dir2.FullName, "TestDir1", "Test.tmp")).Create();
-            fsArr = dir2.GetFileSystemInfos(Path.Combine("TestDir1", "*"));
-            iCountTestcases++;
-            if (fsArr.Length != 1)
+            using (new FileInfo(Path.Combine(dir2.FullName, "TestDir1", "Test.tmp")).Create())
             {
-                iCountErrors++;
-                printerr("Error_28gyb! Incorrect number of files");
+                fsArr = dir2.GetFileSystemInfos(Path.Combine("TestDir1", "*"));
+                if (fsArr.Length != 1)
+                {
+                    printerr("Error_28gyb! Incorrect number of files");
+                }
             }
+            f1.Dispose();
+            f2.Dispose();
+            f3.Dispose();
+            f4.Dispose();
+            f5.Dispose();
         }
         catch (Exception exc_general)
         {
@@ -393,6 +396,7 @@ public class DirectoryInfo_GetFileSystemInfos_str
             Console.WriteLine("FAiL! " + s_strTFName + " ,iCountErrors==" + iCountErrors.ToString());
         }
 
+        FailSafeDirectoryOperations.DeleteDirectory(dirName, true);
         Assert.Equal(0, iCountErrors);
     }
 

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Directory_Co9027GetLastAccessTime_str
+public class Directory_GetLastAccessTime_str
 {
     public static String s_strDtTmVer = "2001/02/12 13:19";
     public static String s_strClassMethod = "Directory.GetLastAccessTime()";

@@ -22,7 +22,7 @@ namespace System.IO.FileSystem.Tests
             {
                 Directory.CreateDirectory(TestDirectory);
             }
-            catch 
+            catch
             {
                 // Don't want this to crash the test, we'll fail appropriately in other test 
                 // cases if Directory.Create is broken.
@@ -33,6 +33,12 @@ namespace System.IO.FileSystem.Tests
         public string GetTestFilePath([CallerMemberName]string fileName = null, [CallerLineNumber] int lineNumber = 0)
         {
             return Path.Combine(TestDirectory, String.Format("{0}_{1}", fileName ?? "testFile", lineNumber));
+        }
+
+        // Generates a test file name to use that is unique name per test case / call
+        public string GetTestFileName([CallerMemberName]string fileName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            return String.Format("{0}_{1}", fileName ?? "testFile", lineNumber);
         }
 
         public void Dispose()
