@@ -527,8 +527,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitELTHookEnabled, W("JitELTHookEnabled"), 0, 
 CONFIG_DWORD_INFO_EX(INTERNAL_JitComponentUnitTests, W("JitComponentUnitTests"), 0, "Run JIT component unit tests", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JitMemStats, W("JitMemStats"), 0, "Display JIT memory usage statistics", CLRConfig::REGUTIL_default)
 CONFIG_DWORD_INFO_EX(INTERNAL_JitLoopHoistStats, W("JitLoopHoistStats"), 0, "Display JIT loop hoisting statistics", CLRConfig::REGUTIL_default)
-// JBTODO: remove.  This is temporary.
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitOldLoopHoist, W("JitOldLoopHoist"), 0, "Use old form of loop hoisting.")
 CONFIG_DWORD_INFO_EX(INTERNAL_JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0, "In debug builds log places where loop cloning optimizations are performed on the fast path.", CLRConfig::REGUTIL_default);
 CONFIG_DWORD_INFO_EX(INTERNAL_JitVNMapSelLimit, W("JitVNMapSelLimit"), 0, "If non-zero, assert if # of VNF_MapSelect applications considered reaches this", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitVNMapSelBudget, W("JitVNMapSelBudget"), 100, "Max # of MapSelect's considered for a particular top-level invocation.")
@@ -548,6 +546,8 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_MultiCoreJitProfile, W("MultiCoreJitProfile")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitProfileWriteDelay, W("MultiCoreJitProfileWriteDelay"), 12, "Set the delay after which the multi-core JIT profile will be written to disk.")
 
 #endif
+
+CONFIG_DWORD_INFO(INTERNAL_JitFunctionTrace, W("JitFunctionTrace"), 0, "If non-zero, print JIT start/end logging")
 
 //
 // JIT64
@@ -1147,7 +1147,6 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_VerifierOff, W("VerifierOff"), "")
 RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_VerifyAllOnLoad, W("VerifyAllOnLoad"), "")
 RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(INTERNAL_Version, W("Version"), "Version of CLR to load.")
 RETAIL_CONFIG_STRING_INFO_DIRECT_ACCESS(INTERNAL_ShimHookLibrary, W("ShimHookLibrary"), "Path to a DLL that should be notified when shim loads the runtime DLL.")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_SOCExtraSpew, W("SOCExtraSpew"), 0, "If true, print some extra logging information that some devs find useful")
 // **
 // PLEASE MOVE ANY CONFIG SWITCH YOU OWN OUT OF THIS SECTION INTO A CATEGORY ABOVE
 // 
