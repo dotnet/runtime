@@ -239,7 +239,7 @@ selector_thread (gpointer data)
 
 			updates_old = threadpool_io->updates;
 
-			threadpool_io->updates = mono_gc_alloc_fixed (sizeof (ThreadPoolIOUpdate) * threadpool_io->updates_capacity, NULL);
+			threadpool_io->updates = mono_gc_alloc_fixed (sizeof (ThreadPoolIOUpdate) * threadpool_io->updates_capacity, MONO_GC_DESCRIPTOR_NULL);
 			g_assert (threadpool_io->updates);
 
 			mono_gc_free_fixed (updates_old);
@@ -533,7 +533,7 @@ mono_threadpool_ms_io_add (MonoAsyncResult *ares, MonoSocketAsyncResult *sockare
 		updates_new_capacity = updates_old_capacity + 128;
 
 		updates_old = threadpool_io->updates;
-		updates_new = mono_gc_alloc_fixed (sizeof (ThreadPoolIOUpdate) * updates_new_capacity, NULL);
+		updates_new = mono_gc_alloc_fixed (sizeof (ThreadPoolIOUpdate) * updates_new_capacity, MONO_GC_DESCRIPTOR_NULL);
 		g_assert (updates_new);
 
 		if (updates_old)
