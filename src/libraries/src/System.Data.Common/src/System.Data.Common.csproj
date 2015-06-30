@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{29ef8d53-8e84-4e49-b90f-5950a2fe7d54}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Data.Common</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- A reference to the entire .NET Framework is automatically included -->
+  </ItemGroup>
+  <ItemGroup>
+	<Compile Include="System\DBNull.cs" />
+    <Compile Include="System\Data\CommandBehavior.cs" />
+    <Compile Include="System\Data\CommandType.cs" />
+    <Compile Include="System\Data\ConnectionState.cs" />
+    <Compile Include="System\Data\DbType.cs" />
+    <Compile Include="System\Data\IsolationLevel.cs" />
+    <Compile Include="System\Data\ParameterDirection.cs" />
+    <Compile Include="System\Data\StateChangeEvent.cs" />
+    <Compile Include="System\Data\StateChangeEventHandler.cs" />
+    <Compile Include="System\Data\UpdateRowSource.cs" />
+    <Compile Include="System\Data\Common\AdapterUtil.cs" />
+    <Compile Include="System\Data\Common\DbCommand.cs" />
+    <Compile Include="System\Data\Common\DbConnection.cs" />
+    <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
+    <Compile Include="System\Data\Common\DbConnectionStringBuilder.cs" />
+    <Compile Include="System\Data\Common\DbConnectionStringCommon.cs" />
+    <Compile Include="System\Data\Common\DbDataReader.cs" />
+    <Compile Include="System\Data\Common\DbException.cs" />
+    <Compile Include="System\Data\Common\DbParameter.cs" />
+    <Compile Include="System\Data\Common\DbParameterCollection.cs" />
+    <Compile Include="System\Data\Common\DbProviderFactory.cs" />
+    <Compile Include="System\Data\Common\DbTransaction.cs" />
+    <Compile Include="System\Data\Common\NameValuePair.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
