@@ -550,7 +550,7 @@ namespace System.Threading.Tasks.Tests
 
         private sealed class CountingScheduler : TaskScheduler
         {
-            public volatile int QueueTaskCalls = 0;
+            public int QueueTaskCalls = 0;
 
             protected override void QueueTask(Task task)
             {
