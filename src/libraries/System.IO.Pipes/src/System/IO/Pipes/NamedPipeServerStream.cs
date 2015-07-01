@@ -185,7 +185,7 @@ namespace System.IO.Pipes
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyDisconnected);
             }
-            if (CheckOperationsRequiresSetHandle && InternalHandle == null)
+            if (InternalHandle == null && CheckOperationsRequiresSetHandle)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
