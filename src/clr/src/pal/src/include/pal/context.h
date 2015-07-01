@@ -141,6 +141,28 @@ typedef ucontext_t native_context_t;
 
 #else // BIT64
 
+#if defined(_ARM_)
+
+#define MCREG_R0(mc)        ((mc).arm_r0)
+#define MCREG_R1(mc)        ((mc).arm_r1)
+#define MCREG_R2(mc)        ((mc).arm_r2)
+#define MCREG_R3(mc)        ((mc).arm_r3)
+#define MCREG_R4(mc)        ((mc).arm_r4)
+#define MCREG_R5(mc)        ((mc).arm_r5)
+#define MCREG_R6(mc)        ((mc).arm_r6)
+#define MCREG_R7(mc)        ((mc).arm_r7)
+#define MCREG_R8(mc)        ((mc).arm_r8)
+#define MCREG_R9(mc)        ((mc).arm_r9)
+#define MCREG_R10(mc)       ((mc).arm_r10)
+#define MCREG_R11(mc)       ((mc).arm_fp)
+#define MCREG_R12(mc)       ((mc).arm_ip)
+#define MCREG_Sp(mc)        ((mc).arm_sp)
+#define MCREG_Lr(mc)        ((mc).arm_lr)
+#define MCREG_Pc(mc)        ((mc).arm_pc)
+#define MCREG_Cpsr(mc)      ((mc).arm_cpsr)
+
+#elif defined(_X86_)
+
 #define MCREG_Ebx(mc)       ((mc).mc_ebx)
 #define MCREG_Ecx(mc)       ((mc).mc_ecx)
 #define MCREG_Edx(mc)       ((mc).mc_edx)
@@ -153,6 +175,10 @@ typedef ucontext_t native_context_t;
 #define MCREG_EFlags(mc)    ((mc).mc_eflags)
 #define MCREG_Esp(mc)       ((mc).mc_esp)
 #define MCREG_SegSs(mc)     ((mc).mc_ss)
+
+#else
+#error "Unsupported arch"
+#endif
 
 #endif // BIT64
 
@@ -184,6 +210,25 @@ typedef ucontext_t native_context_t;
 
 #else // BIT64
 
+#if defined(_ARM_)
+#define PTREG_R0(ptreg)        ((ptreg).uregs[0])
+#define PTREG_R1(ptreg)        ((ptreg).uregs[1])
+#define PTREG_R2(ptreg)        ((ptreg).uregs[2])
+#define PTREG_R3(ptreg)        ((ptreg).uregs[3])
+#define PTREG_R4(ptreg)        ((ptreg).uregs[4])
+#define PTREG_R5(ptreg)        ((ptreg).uregs[5])
+#define PTREG_R6(ptreg)        ((ptreg).uregs[6])
+#define PTREG_R7(ptreg)        ((ptreg).uregs[7])
+#define PTREG_R8(ptreg)        ((ptreg).uregs[8])
+#define PTREG_R9(ptreg)        ((ptreg).uregs[9])
+#define PTREG_R10(ptreg)       ((ptreg).uregs[10])
+#define PTREG_R11(ptreg)       ((ptreg).uregs[11])
+#define PTREG_R12(ptreg)       ((ptreg).uregs[12])
+#define PTREG_Sp(ptreg)        ((ptreg).uregs[13])
+#define PTREG_Lr(ptreg)        ((ptreg).uregs[14])
+#define PTREG_Pc(ptreg)        ((ptreg).uregs[15])
+#define PTREG_Cpsr(ptreg)      ((ptreg).uregs[16])
+#elif defined(_X86_)
 #define PTREG_Ebx(ptreg)    ((ptreg).ebx)
 #define PTREG_Ecx(ptreg)    ((ptreg).ecx)
 #define PTREG_Edx(ptreg)    ((ptreg).edx)
@@ -195,6 +240,9 @@ typedef ucontext_t native_context_t;
 #define PTREG_SegCs(ptreg)  ((ptreg).xcs)
 #define PTREG_SegSs(ptreg)  ((ptreg).xss)
 #define PTREG_Esp(ptreg)    ((ptreg).esp)
+#else
+#error "Unsupported arch"
+#endif
 
 #endif // BIT64
 

@@ -367,14 +367,14 @@ void ValidateWriteBarriers()
 #endif // _DEBUG
 
 #define UPDATE_WB(_proc,_grow)   \
-    CopyWriteBarrier((PCODE)JIT_WriteBarrier, (PCODE)JIT_WriteBarrier_##_proc##_##_grow##, (PCODE)JIT_WriteBarrier_##_proc##_##_grow##_End); \
-    wbMapping[WriteBarrierIndex].from = (PBYTE)JIT_WriteBarrier_##_proc##_##_grow##; \
+    CopyWriteBarrier((PCODE)JIT_WriteBarrier, (PCODE)JIT_WriteBarrier_ ## _proc ## _ ## _grow , (PCODE)JIT_WriteBarrier_ ## _proc ## _ ## _grow ## _End); \
+    wbMapping[WriteBarrierIndex].from = (PBYTE)JIT_WriteBarrier_ ## _proc ## _ ## _grow ; \
     \
-    CopyWriteBarrier((PCODE)JIT_CheckedWriteBarrier, (PCODE)JIT_CheckedWriteBarrier_##_proc##_##_grow##, (PCODE)JIT_CheckedWriteBarrier_##_proc##_##_grow##_End); \
-    wbMapping[CheckedWriteBarrierIndex].from = (PBYTE)JIT_CheckedWriteBarrier_##_proc##_##_grow##; \
+    CopyWriteBarrier((PCODE)JIT_CheckedWriteBarrier, (PCODE)JIT_CheckedWriteBarrier_ ## _proc ## _ ## _grow , (PCODE)JIT_CheckedWriteBarrier_ ## _proc ## _ ## _grow ## _End); \
+    wbMapping[CheckedWriteBarrierIndex].from = (PBYTE)JIT_CheckedWriteBarrier_ ## _proc ## _ ## _grow ; \
     \
-    CopyWriteBarrier((PCODE)JIT_ByRefWriteBarrier, (PCODE)JIT_ByRefWriteBarrier_##_proc##_##_grow##, (PCODE)JIT_ByRefWriteBarrier_##_proc##_##_grow##_End); \
-    wbMapping[ByRefWriteBarrierIndex].from = (PBYTE)JIT_ByRefWriteBarrier_##_proc##_##_grow##; \
+    CopyWriteBarrier((PCODE)JIT_ByRefWriteBarrier, (PCODE)JIT_ByRefWriteBarrier_ ## _proc ## _ ## _grow , (PCODE)JIT_ByRefWriteBarrier_ ## _proc ## _ ## _grow ## _End); \
+    wbMapping[ByRefWriteBarrierIndex].from = (PBYTE)JIT_ByRefWriteBarrier_ ## _proc ## _ ## _grow ; \
 
 // Update the instructions in our various write barrier implementations that refer directly to the values
 // of GC globals such as g_lowest_address and g_card_table. We don't particularly care which values have
@@ -1379,7 +1379,12 @@ Stub *GenerateInitPInvokeFrameHelper()
     ThumbReg regThread  = ThumbReg(5);
     ThumbReg regScratch = ThumbReg(6);
 
+#ifdef FEATURE_IMPLICIT_TLS
+    TLSACCESSMODE mode = TLSACCESS_GENERIC;
+#else
     TLSACCESSMODE mode = GetTLSAccessMode(GetThreadTLSIndex());
+#endif
+
 
     if (mode == TLSACCESS_GENERIC)
     {
@@ -1453,6 +1458,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
 void StubLinkerCPU::ThumbEmitGetThread(TLSACCESSMODE mode, ThumbReg dest)
 {
+#ifndef FEATURE_IMPLICIT_TLS
     DWORD idxThread = GetThreadTLSIndex();
 
     if (mode != TLSACCESS_GENERIC)
@@ -1493,6 +1499,16 @@ void StubLinkerCPU::ThumbEmitGetThread(TLSACCESSMODE mode, ThumbReg dest)
             ThumbEmitMovRegReg(dest, ThumbReg(0));
         }
     }
+#else
+    ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThread);
+
+    ThumbEmitCallRegister(ThumbReg(0));
+
+    if (dest != ThumbReg(0))
+    {
+        ThumbEmitMovRegReg(dest, ThumbReg(0));
+    }
+#endif
 }
 #endif // CROSSGEN_COMPILE
 
@@ -2219,7 +2235,7 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pRD->pCurrentContextPointers->Lr = NULL;
 }
 
-
+#ifndef CROSSGEN_COMPILE
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
 { 
     pRD->IsCallerContextValid = FALSE;
@@ -2289,6 +2305,7 @@ void TailCallFrame::InitFromContext(T_CONTEXT * pContext)
 }
 
 #endif // !DACCESS_COMPILE
+#endif // !CROSSGEN_COMPILE
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD) 
 { 
@@ -2516,6 +2533,7 @@ EXTERN_C void JIT_NewArr1OBJ_MP_InlineGetThread__PatchTLSOffset();
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
+#ifndef FEATURE_IMPLICIT_TLS
 static const LPVOID InlineGetThreadLocations[] = {
     (PVOID)JIT_TrialAllocSFastMP_InlineGetThread__PatchTLSOffset,
     (PVOID)JIT_BoxFastMP_InlineGetThread__PatchTLSOffset,
@@ -2523,6 +2541,7 @@ static const LPVOID InlineGetThreadLocations[] = {
     (PVOID)JIT_NewArr1VC_MP_InlineGetThread__PatchTLSOffset,
     (PVOID)JIT_NewArr1OBJ_MP_InlineGetThread__PatchTLSOffset,
 };
+#endif
 
 //EXTERN_C Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
 Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
@@ -2550,7 +2569,7 @@ static const LPVOID InlineGetAppDomainLocations[] = {
     (PVOID)JIT_GetSharedGCStaticBaseNoCtor__PatchTLSLabel
 };
 
-
+#ifndef FEATURE_IMPLICIT_TLS
 void FixupInlineGetters(DWORD tlsSlot, const LPVOID * pLocations, int nLocations)
 {
     STANDARD_VM_CONTRACT;
@@ -2576,12 +2595,13 @@ void FixupInlineGetters(DWORD tlsSlot, const LPVOID * pLocations, int nLocations
         *((WORD*)(pInlineGetter + 6)) |= (WORD)offset;
     }
 }
-
-
+#endif
 
 void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
+    
+#ifndef FEATURE_IMPLICIT_TLS
 
     if (gThreadTLSIndex < TLS_MINIMUM_AVAILABLE)
     {
@@ -2654,6 +2674,7 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_Portable);
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_Portable);
     }
+#endif
 }
 
 extern "C" Object *SetAppDomainInObject(Object *pObject)
@@ -2998,7 +3019,11 @@ void StubLinkerCPU::EmitStubLinkFrame(TADDR pFrameVptr, int offsetOfFrame, int o
     //  str r6, [r4 + #offsetof(MulticastFrame, m_Next)]
     //  str r4, [r5 + #offsetof(Thread, m_pFrame)]
 
+#ifdef FEATURE_IMPLICIT_TLS
+    TLSACCESSMODE mode = TLSACCESS_GENERIC;
+#else
     TLSACCESSMODE mode = GetTLSAccessMode(GetThreadTLSIndex());
+#endif
     ThumbEmitGetThread(mode, ThumbReg(5));
     if (mode == TLSACCESS_GENERIC)
     {

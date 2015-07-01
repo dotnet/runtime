@@ -8,7 +8,6 @@
 
 //
 //*****************************************************************************
-#include "stdafx.h"
 #include "primitives.h"
 
 HRESULT CordbRegisterSet::GetRegistersAvailable(ULONG64 *pAvailable)

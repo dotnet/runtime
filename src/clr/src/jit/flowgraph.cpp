@@ -12269,7 +12269,7 @@ void                Compiler::fgCreateFunclets()
 
     // Setup the root FuncInfoDsc and prepare to start associating
     // FuncInfoDsc's with their corresponding EH region
-    memset(funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
+    memset((void*)funcInfo, 0, funcCnt * sizeof(FuncInfoDsc));
     assert(funcInfo[0].funKind == FUNC_ROOT);
     funcIdx = 1;
 

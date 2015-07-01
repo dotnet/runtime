@@ -312,8 +312,17 @@ public:
                                             //   labels, and
                                             //   internals.
         BOOL          m_fDataOnly;          // the stub contains only data - does not need FlushInstructionCache
+        
+#ifdef _TARGET_ARM_
+protected:
+        BOOL            m_fProlog;              // True if DescribeProlog has been called
+        UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (0 == none, 1 == r4, 2 ==
+                                                // r4-r5 etc. up to 8 == r4-r11)
+        UINT            m_cbStackFrame;         // Count of bytes in the stack frame (excl of saved regs)
+        BOOL            m_fPushArgRegs;         // If true, r0-r3 are saved before callee saved regs
+#endif // _TARGET_ARM_
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO 
+#ifdef STUBLINKER_GENERATES_UNWIND_INFO
 
 #ifdef _DEBUG
         CodeLabel     *m_pUnwindInfoCheckLabel;  // subfunction to call to unwind info check helper.
@@ -342,13 +351,6 @@ public:
 #define MAX_UNWIND_CODE_WORDS 5  /* maximum number of 32-bit words to store unwind codes */
         // Cache information about the stack frame set up in the prolog and use it in the generation of the
         // epilog.
-protected:
-        BOOL            m_fProlog;              // True if DescribeProlog has been called
-        UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (0 == none, 1 == r4, 2 ==
-                                                // r4-r5 etc. up to 8 == r4-r11)
-        UINT            m_cbStackFrame;         // Count of bytes in the stack frame (excl of saved regs)
-        BOOL            m_fPushArgRegs;         // If true, r0-r3 are saved before callee saved regs
-
 private:
         // Reserve fixed size block that's big enough to fit any unwind info we can have
         static const int c_nUnwindInfoSize = sizeof(RUNTIME_FUNCTION) + sizeof(DWORD) + MAX_UNWIND_CODE_WORDS *4;
