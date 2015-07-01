@@ -12,7 +12,7 @@ if (IS_64BIT_BUILD EQUAL 1)
 endif (IS_64BIT_BUILD EQUAL 1)
 endif (WIN32)
 
-set( SOURCES
+set( JIT_SOURCES
   alloc.cpp
   bitset.cpp
   block.cpp
@@ -59,14 +59,34 @@ set( SOURCES
   loopcloning.cpp
   lower.cpp
   lsra.cpp
-  emitxarch.cpp
-  targetamd64.cpp
-  lowerxarch.cpp
-  codegenxarch.cpp
-  simd.cpp
-  simdcodegenxarch.cpp
-  unwindamd64.cpp
 )
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  set( ARCH_SOURCES
+    targetamd64.cpp
+    unwindamd64.cpp
+    emitxarch.cpp
+    lowerxarch.cpp
+    codegenxarch.cpp
+    simdcodegenxarch.cpp
+    simd.cpp
+  )
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  set( ARCH_SOURCES
+    emitarm.cpp
+    targetarm.cpp
+    lowerarm.cpp
+    codegenarm.cpp
+    unwindarm.cpp
+  )
+else()
+  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
+
+set( SOURCES
+  ${JIT_SOURCES}
+  ${ARCH_SOURCES}
+ )
 
 convert_to_absolute_path(SOURCES ${SOURCES})
 

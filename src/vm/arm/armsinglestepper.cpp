@@ -90,7 +90,7 @@ void ITState::Set(T_CONTEXT *pCtx)
 //
 ArmSingleStepper::ArmSingleStepper()
     : m_originalPc(0), m_targetPc(0), m_rgCode(0), m_state(Disabled),
-      m_fEmulatedITInstruction(false), m_fRedirectedPc(false), m_fBypass(false), m_fEmulate(false), m_fSkipIT(false)
+      m_fEmulatedITInstruction(false), m_fRedirectedPc(false), m_fEmulate(false), m_fBypass(false), m_fSkipIT(false)
 {
      m_opcodes[0] = 0;
      m_opcodes[1] = 0;
@@ -98,14 +98,14 @@ ArmSingleStepper::ArmSingleStepper()
 
 ArmSingleStepper::~ArmSingleStepper()
 {
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL)
     DeleteExecutable(m_rgCode);
 #endif
 }
 
 void ArmSingleStepper::Init()
 {
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && !defined(FEATURE_PAL)
     if (m_rgCode == NULL)
     {
         m_rgCode = new (executable) WORD[kMaxCodeBuffer];
@@ -543,34 +543,50 @@ void ArmSingleStepper::SetReg(T_CONTEXT *pCtx, DWORD reg, DWORD value)
 // fault.
 bool ArmSingleStepper::GetMem(DWORD *pdwResult, DWORD_PTR pAddress, DWORD cbSize, bool fSignExtend)
 {
-    __try
+    struct Param
     {
-        switch (cbSize)
+        DWORD *pdwResult;
+        DWORD_PTR pAddress;
+        DWORD cbSize;
+        bool fSignExtend;
+        bool bReturnValue;
+    } param;    
+    
+    param.pdwResult = pdwResult;
+    param.pAddress = pAddress;
+    param.cbSize = cbSize;
+    param.fSignExtend = fSignExtend;
+    param.bReturnValue = true;
+    
+    PAL_TRY(Param *, pParam, &param)
+    {
+        switch (pParam->cbSize)
         {
         case 1:
-            *pdwResult = *(BYTE*)pAddress;
-            if (fSignExtend && (*pdwResult & 0x00000080))
-                *pdwResult |= 0xffffff00;
+            *pParam->pdwResult = *(BYTE*)pParam->pAddress;
+            if (pParam->fSignExtend && (*pParam->pdwResult & 0x00000080))
+                *pParam->pdwResult |= 0xffffff00;
             break;
         case 2:
-            *pdwResult = *(WORD*)pAddress;
-            if (fSignExtend && (*pdwResult & 0x00008000))
-                *pdwResult |= 0xffff0000;
+            *pParam->pdwResult = *(WORD*)pParam->pAddress;
+            if (pParam->fSignExtend && (*pParam->pdwResult & 0x00008000))
+                *pParam->pdwResult |= 0xffff0000;
             break;
         case 4:
-            *pdwResult = *(DWORD*)pAddress;
+            *pParam->pdwResult = *(DWORD*)pParam->pAddress;
             break;
         default:
             UNREACHABLE();
-            return false;
+            pParam->bReturnValue = false;
         }
     }
-    __except(EXCEPTION_EXECUTE_HANDLER)
+    PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        return false;
+        param.bReturnValue = false;
     }
+    PAL_ENDTRY;
 
-    return true;
+    return param.bReturnValue;
 }
 
 // Wrapper around GetMem above that will automatically return from TryEmulate() indicating the instruction

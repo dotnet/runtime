@@ -430,6 +430,7 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 //      IMAGE_LIBRARY_THREAD_TERM            0x0008     // Reserved.
 #define IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE 0x0040    // DLL can move
 #define IMAGE_DLLCHARACTERISTICS_NX_COMPAT   0x0100     // Image ix NX compatible
+#define IMAGE_DLLCHARACTERISTICS_NO_SEH       0x0400    // Image does not use SEH.  No SE handler may reside in this image
 #define IMAGE_DLLCHARACTERISTICS_NO_BIND     0x0800     // Do not bind this image.
 #define IMAGE_DLLCHARACTERISTICS_APPCONTAINER 0x1000    // Image should execute in an AppContainer
 #define IMAGE_DLLCHARACTERISTICS_WDM_DRIVER  0x2000     // Driver uses WDM model

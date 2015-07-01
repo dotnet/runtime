@@ -6,7 +6,7 @@ if (WIN32)
   set_source_files_properties(../microsoft.comservices_i.c PROPERTIES COMPILE_FLAGS "/Y-") 
 endif (WIN32)
 
-add_library(cee_wks ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_AMD64_ASM})
+add_library(cee_wks ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
 
 if (WIN32)
 # Get the current list of definitions
@@ -29,10 +29,10 @@ endforeach()
 
 # Add defines for the ASM. Unfortunately setting it on the target is ignored for asm by the cmake, so we have
 # to set it on the sources.
-set_property(SOURCE ${VM_SOURCES_WKS_AMD64_ASM} PROPERTY COMPILE_DEFINITIONS ${ASM_DEFINITIONS})
+set_property(SOURCE ${VM_SOURCES_WKS_ARCH_ASM} PROPERTY COMPILE_DEFINITIONS ${ASM_DEFINITIONS})
 foreach(CONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
     string(TOUPPER ${CONFIG} CONFIG)
-    set_property(SOURCE ${VM_SOURCES_WKS_AMD64_ASM} PROPERTY COMPILE_DEFINITIONS_${CONFIG} ${ASM_DEFINITIONS_${CONFIG}})
+    set_property(SOURCE ${VM_SOURCES_WKS_ARCH_ASM} PROPERTY COMPILE_DEFINITIONS_${CONFIG} ${ASM_DEFINITIONS_${CONFIG}})
 endforeach()
 
 # Convert AsmConstants.h into AsmConstants.inc

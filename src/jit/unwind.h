@@ -71,7 +71,8 @@ protected:
     UnwindBase() { }
     ~UnwindBase() { }
 
-#ifdef DEBUG
+// TODO: How do we get the ability to access uwiComp without error on Clang?
+#if defined(DEBUG) && !defined(__GNUC__)
 
     template<typename T>
     T dspPtr(T p)

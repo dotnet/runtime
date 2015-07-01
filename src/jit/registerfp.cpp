@@ -479,6 +479,8 @@ void CodeGen::genFloatAssign(GenTree *tree)
         genUpdateLife(op2);
 
         goto CHK_VOLAT_UNALIGN;
+    default:
+        break;
     }
 
     // Is the op2 (RHS) more complex than op1 (LHS)?
@@ -729,6 +731,8 @@ void CodeGen::genLoadFloat(GenTreePtr tree, regNumber reg)
                     unalignedLoad = true;
                 }
             }
+            break;
+        default:
             break;
         }
 
