@@ -1615,6 +1615,25 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 
 }
 
+#ifdef FEATURE_PAL
+OBJECTREF* GcInfoDecoder::GetCapturedRegister(
+    int             regNum,
+    PREGDISPLAY     pRD
+    )
+{
+    _ASSERTE(regNum >= 0 && regNum <= 14);
+    _ASSERTE(regNum != 13);  // sp
+
+    // The fields of CONTEXT are in the same order as
+    // the processor encoding numbers.
+
+    ULONG *pR0;
+    pR0 = &pRD->pCurrentContext->R0;
+
+    return (OBJECTREF*)(pR0 + regNum);
+}
+#endif // FEATURE_PAL
+
 
 bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {

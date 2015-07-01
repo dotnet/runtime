@@ -1831,6 +1831,8 @@ regNumber           RegSet::rsPickReg(regMaskTP regMask,
                                       regMaskTP regBest)
 {
     regNumber   regNum;
+    regMaskTP   spillMask;
+    regMaskTP   canGrabMask;
 
 #ifdef DEBUG
     if (rsStressRegs() >= 1 )
@@ -1906,8 +1908,6 @@ TRY_ALL:
 
     /* Now let's consider all available registers */
 
-    regMaskTP   spillMask;
-
     /* Were we limited in our consideration? */
 
     if  (!regMask)
@@ -1936,7 +1936,7 @@ TRY_ALL:
 
     /* Make sure we can spill some register. */
 
-    regMaskTP canGrabMask = rsRegMaskCanGrab();
+    canGrabMask = rsRegMaskCanGrab();
     if  ((spillMask & canGrabMask) == 0)
         spillMask = canGrabMask;
 

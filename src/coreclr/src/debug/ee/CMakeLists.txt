@@ -1,10 +1,21 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_definitions(-DFEATURE_NO_HOST)
-add_definitions(-D_TARGET_AMD64_=1)
-add_definitions(-DDBG_TARGET_64BIT=1)
-add_definitions(-DDBG_TARGET_AMD64=1)
-add_definitions(-DDBG_TARGET_WIN64=1)
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  add_definitions(-D_TARGET_AMD64_=1)
+  add_definitions(-DDBG_TARGET_64BIT=1)
+  add_definitions(-DDBG_TARGET_AMD64=1)
+  add_definitions(-DDBG_TARGET_WIN64=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  add_definitions(-D_TARGET_ARM_=1)
+  add_definitions(-DDBG_TARGET_32BIT=1)
+  add_definitions(-DDBG_TARGET_ARM=1)
+  add_definitions(-DDBG_TARGET_WIN32=1)
+else()
+  message(FATAL_ERROR "Only ARM and AMD64 is supported")
+endif()
+
 
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
@@ -29,7 +40,6 @@ set(CORDBEE_SOURCES_WKS
   shared.cpp
   frameinfo.cpp
   ${ARCH_SOURCES_DIR}/primitives.cpp
-  ${ARCH_SOURCES_DIR}/debuggerregdisplayhelper.cpp
 )
 
 set(CORDBEE_SOURCES_DAC 
@@ -42,11 +52,19 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   )
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-if (IS_64BIT_BUILD EQUAL 1)
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  list(APPEND CORDBEE_SOURCES_WKS 
+    ${ARCH_SOURCES_DIR}/debuggerregdisplayhelper.cpp
+  )
   list(APPEND CORDBEE_SOURCES_WKS amd64/amd64walker.cpp)
-else ()
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+  list(APPEND CORDBEE_SOURCES_WKS 
+    ${ARCH_SOURCES_DIR}/debuggerregdisplayhelper.cpp
+  )
   list(APPEND CORDBEE_SOURCES_WKS i386/x86walker.cpp)
-endif (IS_64BIT_BUILD EQUAL 1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  list(APPEND CORDBEE_SOURCES_WKS arm/armwalker.cpp)
+endif()
 
 convert_to_absolute_path(CORDBEE_SOURCES_DAC ${CORDBEE_SOURCES_DAC})
 convert_to_absolute_path(CORDBEE_SOURCES_WKS ${CORDBEE_SOURCES_WKS})

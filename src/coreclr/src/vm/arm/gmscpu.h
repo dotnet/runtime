@@ -69,7 +69,6 @@ protected:
    until later.  Note that we don't reuse slots, because we want
    this to be threadsafe without locks */
 
-typedef DPTR(LazyMachState) PTR_LazyMachState;
 struct LazyMachState : public MachState {
     // compute the machine state of the processor as it will exist just 
     // after the return after at most'funCallDepth' number of functions.
@@ -158,6 +157,7 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 #endif // !DACCESS_COMPILE
 
 }
+typedef DPTR(LazyMachState) PTR_LazyMachState;
 
 // Do the initial capture of the machine state.  This is meant to be 
 // as light weight as possible, as we may never need the state that 

@@ -747,7 +747,7 @@ public:
         else 
         {
             _ASSERTE(reg1 != ThumbReg(15) && reg2 != ThumbReg(15));
-            Emit16((WORD)(0x4500 | reg2 << 3 | reg1 & 0x7 | (reg1 & 0x8 ? 0x80 : 0x0)));
+            Emit16((WORD)(0x4500 | reg2 << 3 | (reg1 & 0x7) | (reg1 & 0x8 ? 0x80 : 0x0)));
         }
     }
     
@@ -931,7 +931,7 @@ inline BOOL IsUnmanagedValueTypeReturnedByRef(UINT sizeofvaluetype)
     return (sizeofvaluetype > 4);
 }
 
-DECLSPEC_ALIGN(4) struct UMEntryThunkCode
+struct DECLSPEC_ALIGN(4) UMEntryThunkCode
 {
     WORD        m_code[4];
 
@@ -1002,6 +1002,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #endif
 }
 
+#ifndef FEATURE_IMPLICIT_TLS
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
 //
@@ -1013,7 +1014,11 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_InlineGetAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_InlineGetAppDomain
 
+#endif
+
+#ifndef FEATURE_PAL
 #define JIT_Stelem_Ref                      JIT_Stelem_Ref
+#endif
 
 //------------------------------------------------------------------------
 //
@@ -1329,6 +1334,6 @@ inline size_t GetARMInstructionLength(PBYTE pInstr)
     return GetARMInstructionLength(*(WORD*)pInstr);
 }
 
-EXTERN_C void FCallMemcpy(byte* dest, byte* src, int len);
+EXTERN_C void FCallMemcpy(BYTE* dest, BYTE* src, int len);
 
 #endif // __cgencpu_h__
