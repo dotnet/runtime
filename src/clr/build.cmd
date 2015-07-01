@@ -97,14 +97,14 @@ goto CheckVS
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
 echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
 :CheckVSExistence
 :: Does VS 2013 or VS 2015 really exist?
 if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
 echo Visual Studio 2013 Community (free) is a pre-requisite to build this repository.
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
 :CheckMSBuild
@@ -122,7 +122,7 @@ set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
 set UseRoslynCompiler=true
 :CheckMSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/developer-guide.md for build instructions. && exit /b 1
+if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
 
 :: All set to commence the build
 
@@ -143,7 +143,7 @@ of previous version to "%VSINSTALLDIR%" and then resume build.
 :: DIA SDK not included in Express editions
 echo Visual Studio 2013 Express does not include the DIA SDK. ^
 You need Visual Studio 2013 Community (free).
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
 :GenVSSolution
