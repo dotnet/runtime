@@ -20,6 +20,7 @@ namespace Internal.Cryptography.Pal
         {
             if (flags != X509VerificationFlags.NoFlag)
             {
+                // TODO (#2204): Add support for X509VerificationFlags, or throw PlatformNotSupportedException.
                 throw new NotSupportedException(SR.WorkInProgress);
             }
             
@@ -43,7 +44,7 @@ namespace Internal.Cryptography.Pal
             DateTime verificationTime)
         {
             X509ChainElement[] elements;
-            LowLevelList<X509ChainStatus> overallStatus = new LowLevelList<X509ChainStatus>();
+            List<X509ChainStatus> overallStatus = new List<X509ChainStatus>();
 
             // An X509_STORE is more comparable to Cryptography.X509Certificate2Collection than to
             // Cryptography.X509Store. So read this with OpenSSL eyes, not CAPI/CNG eyes.
@@ -104,7 +105,7 @@ namespace Internal.Cryptography.Pal
 
                     for (int i = 0; i < chainSize; i++)
                     {
-                        LowLevelList<X509ChainStatus> status = new LowLevelList<X509ChainStatus>();
+                        List<X509ChainStatus> status = new List<X509ChainStatus>();
 
                         if (i == errorDepth)
                         {
@@ -173,7 +174,7 @@ namespace Internal.Cryptography.Pal
                         StatusInformation = SR.Chain_NoPolicyMatch,
                     };
 
-                    var elementStatus = new LowLevelList<X509ChainStatus>(leafElement.ChainElementStatus.Length + 1);
+                    var elementStatus = new List<X509ChainStatus>(leafElement.ChainElementStatus.Length + 1);
                     elementStatus.AddRange(leafElement.ChainElementStatus);
 
                     AddUniqueStatus(elementStatus, ref chainStatus);
@@ -193,7 +194,7 @@ namespace Internal.Cryptography.Pal
             };
         }
 
-        private static void AddUniqueStatus(LowLevelList<X509ChainStatus> list, ref X509ChainStatus status)
+        private static void AddUniqueStatus(IList<X509ChainStatus> list, ref X509ChainStatus status)
         {
             X509ChainStatusFlags statusCode = status.Status;
 
@@ -275,11 +276,13 @@ namespace Internal.Cryptography.Pal
                     return X509ChainStatusFlags.HasNotSupportedCriticalExtension;
 
                 case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_CERT_CHAIN_TOO_LONG:
-                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_OUT_OF_MEM:
                     throw new CryptographicException();
 
+                case Interop.libcrypto.X509VerifyStatusCode.X509_V_ERR_OUT_OF_MEM:
+                    throw new OutOfMemoryException();
+
                 default:
-                    Debug.Assert(false, "Unrecognized X509VerifyStatusCode:" + code);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code);
                     throw new CryptographicException();
             }
         }
@@ -301,6 +304,13 @@ namespace Internal.Cryptography.Pal
                 X509Certificate2Collection rootCerts = rootStore.Certificates;
                 X509Certificate2Collection intermediateCerts = intermediateStore.Certificates;
 
+                X509Certificate2Collection[] storesToCheck =
+                {
+                    extraStore,
+                    intermediateCerts,
+                    rootCerts,
+                };
+
                 while (toProcess.Count > 0)
                 {
                     X509Certificate2 current = toProcess.Dequeue();
@@ -312,20 +322,15 @@ namespace Internal.Cryptography.Pal
 
                     X509Certificate2Collection results = FindIssuer(
                         current,
-                        extraStore,
-                        intermediateCerts,
-                        rootCerts);
+                        storesToCheck);
 
                     if (results != null)
                     {
                         foreach (X509Certificate2 result in results)
                         {
-                            if (result != null)
+                            if (!candidates.Contains(result))
                             {
-                                if (!candidates.Contains(result))
-                                {
-                                    toProcess.Enqueue(result);
-                                }
+                                toProcess.Enqueue(result);
                             }
                         }
                     }
@@ -337,7 +342,7 @@ namespace Internal.Cryptography.Pal
 
         private static X509Certificate2Collection FindIssuer(
             X509Certificate2 cert,
-            params X509Certificate2Collection[] stores)
+            X509Certificate2Collection[] stores)
         {
             if (StringComparer.Ordinal.Equals(cert.Subject, cert.Issuer))
             {

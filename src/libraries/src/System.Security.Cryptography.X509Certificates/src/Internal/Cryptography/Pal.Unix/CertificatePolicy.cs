@@ -20,7 +20,7 @@ namespace Internal.Cryptography.Pal
         public bool SpecifiedAnyApplicationPolicy { get; set; }
         public ISet<string> DeclaredApplicationPolicies { get; set; }
         public int? InhibitAnyDepth { get; set; }
-        public LowLevelList<CertificatePolicyMapping> PolicyMapping { get; set; }
+        public List<CertificatePolicyMapping> PolicyMapping { get; set; }
         public int? InhibitMappingDepth { get; set; }
         public int? RequireExplicitPolicyDepth { get; set; }
 
@@ -356,10 +356,10 @@ namespace Internal.Cryptography.Pal
             return policies;
         }
 
-        private static LowLevelList<CertificatePolicyMapping> ReadCertPolicyMappingsExtension(X509Extension extension)
+        private static List<CertificatePolicyMapping> ReadCertPolicyMappingsExtension(X509Extension extension)
         {
             DerSequenceReader reader = new DerSequenceReader(extension.RawData);
-            LowLevelList<CertificatePolicyMapping> mappings = new LowLevelList<CertificatePolicyMapping>();
+            List<CertificatePolicyMapping> mappings = new List<CertificatePolicyMapping>();
 
             while (reader.HasData)
             {

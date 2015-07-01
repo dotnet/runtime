@@ -56,7 +56,7 @@ namespace Internal.Cryptography.Pal
 
             if (cert.IsInvalid)
             {
-                throw new CryptographicException();
+                throw new CryptographicException(Interop.libcrypto.GetOpenSslErrorString());
             }
 
             // X509_check_purpose has the effect of populating the sha1_hash value,

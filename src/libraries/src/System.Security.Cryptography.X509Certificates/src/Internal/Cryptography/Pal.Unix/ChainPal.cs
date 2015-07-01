@@ -43,6 +43,7 @@ namespace Internal.Cryptography.Pal
         {
             if (revocationMode != X509RevocationMode.NoCheck)
             {
+                // TODO (#2203): Add support for revocation once networking is ready.
                 throw new NotImplementedException(SR.WorkInProgress);
             }
         }
