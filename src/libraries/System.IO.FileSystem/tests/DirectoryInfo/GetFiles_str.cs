@@ -3,10 +3,7 @@
 
 using System;
 using System.IO;
-using System.IO.FileSystem.Tests;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using Xunit;
 
 public class DirectoryInfo_GetFiles_str : Directory_GetFiles_str_str
 {

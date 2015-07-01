@@ -4,14 +4,11 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Security;
-using System.Globalization;
 using Xunit;
 
 public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
 {
     private delegate void ExceptionCode();
-    private static bool s_pass = true;
 
     #region Utilities
 
@@ -37,36 +34,36 @@ public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
     [Fact]
     public void IncludeSubDirectoryFiles()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir2Str = GetTestFileName();
-        String testDir3Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        DirectoryInfo testDir2 = testDir1.CreateSubdirectory(testDir2Str);
-        testDir2.CreateSubdirectory(testDir3Str);
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir2Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir2Str, testDir3Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(3, GetFiles(Path.Combine(TestDirectory, testDir1Str), "*", SearchOption.AllDirectories).Length);
+            String[] results = GetFiles(TestDirectory, "*", SearchOption.AllDirectories);
+            Assert.Contains(testFile1, results);
+            Assert.Contains(testFile2, results);
         }
     }
 
     [Fact]
     public void SearchPatternIncludeSubDirectories()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir11Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        testDir1.CreateSubdirectory(testDir11Str);
-
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(2, GetFiles(TestDirectory, Path.Combine(testDir1Str, "*"), SearchOption.AllDirectories).Length);
+            String[] results = GetFiles(Directory.GetCurrentDirectory(), Path.Combine(new DirectoryInfo(TestDirectory).Name, "*"), SearchOption.AllDirectories);
+            Assert.Contains(testFile1, results);
+            Assert.Contains(testFile2, results);
         }
     }
+
+
 
     [Fact]
     public void InvalidSearchOption()
@@ -80,17 +77,12 @@ public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
     public void Scenario1()
     {
         //Scenario 1: Vanilla - create a directory with some files and then add a couple of directories with some files and check with searchPattern *.*
-        String dirName;
-        String[] expectedFiles;
-        String[] files;
-        List<String> list;
-
-        dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
+        String dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
         using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
         {
-            expectedFiles = fileManager.GetAllFiles();
-            list = new List<String>(expectedFiles);
-            files = Directory.GetFiles(dirName, "*.*", SearchOption.AllDirectories);
+            String[] expectedFiles = fileManager.GetAllFiles();
+            List<String> list = new List<String>(expectedFiles);
+            String[] files = Directory.GetFiles(dirName, "*.*", SearchOption.AllDirectories);
             Eval(files.Length, list.Count, "Err_415mbz! wrong file count.");
             for (int i = 0; i < files.Length; i++)
             {
@@ -109,17 +101,12 @@ public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
     public void Scenario2()
     {
         //Scenario 2: create a directory only top level files and directories and check
-        String dirName;
-        String[] expectedFiles;
-        String[] files;
-        List<String> list;
-
-        dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
+        String dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
         using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 1, 10))
         {
-            expectedFiles = fileManager.GetAllFiles();
-            list = new List<String>(expectedFiles);
-            files = Directory.GetFiles(dirName, "*.*", SearchOption.AllDirectories);
+            String[] expectedFiles = fileManager.GetAllFiles();
+            List<String> list = new List<String>(expectedFiles);
+            String[] files = Directory.GetFiles(dirName, "*.*", SearchOption.AllDirectories);
             Eval(files.Length, list.Count, "Err_202wur! wrong file count.");
             for (int i = 0; i < files.Length; i++)
             {
@@ -135,53 +122,13 @@ public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
     }
 
     [Fact]
-    [ActiveIssue(0, PlatformID.Any)]
-    public void Scenario3()
-    {
-        // Path is not in the current directory (same drive)
-        //Scenario 3: Ensure that the path contains subdirectories and call this API and ensure that only the top directory files are returned
-        /* Scenario disabled when porting because it modifies the filesystem outside of the test's working directory */
-        String dirName;
-        String[] expectedFiles;
-        String[] files;
-        List<String> list;
-
-        dirName = ManageFileSystem.GetNonExistingDir(Path.DirectorySeparatorChar.ToString(), ManageFileSystem.DirPrefixName);
-        using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
-        {
-            expectedFiles = fileManager.GetAllFiles();
-            list = new List<String>(expectedFiles);
-            files = Directory.GetFiles(dirName, "*.*", SearchOption.AllDirectories);
-            Eval(files.Length, list.Count, "Err_123rcm! wrong file count.");
-            for (int i = 0; i < files.Length; i++)
-            {
-                //This will return as \<dirName>\<fileName> whereas our utility will return as <drive>:\<dirName>\<fileName>
-                String fileFullName = Path.GetFullPath(files[i]);
-                if (Eval(list.Contains(fileFullName), "Err_242yur! unexpected file found: {0}", fileFullName))
-                    list.Remove(fileFullName);
-            }
-            if (!Eval(list.Count == 0, "Err_477xiv! {0} expected files not found.", list.Count))
-            {
-                foreach (String fileName in list)
-                    Console.WriteLine(fileName);
-            }
-        }
-    }
-
-    [Fact]
     public void Scenario4()
     {
         //Scenario 4: searchPattern variations - valid search characters, file match exactly the searchPattern, searchPattern is a subset of existing files, superset, no match, 
-        String dirName;
-        String[] expectedFiles;
-        String[] files;
-        List<String> list;
-
-        dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
-        String searchPattern;
+        String dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
         using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
         {
-            expectedFiles = fileManager.GetAllFiles();
+            String[] expectedFiles = fileManager.GetAllFiles();
             //?
             int maxLen = 0;
             foreach (String file in expectedFiles)
@@ -190,9 +137,9 @@ public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
                 if (realFile.Length > maxLen)
                     maxLen = realFile.Length;
             }
-            searchPattern = String.Format("{0}.???", new String('?', maxLen));
-            list = new List<String>(expectedFiles);
-            files = Directory.GetFiles(dirName, searchPattern, SearchOption.AllDirectories);
+            String searchPattern = String.Format("{0}.???", new String('?', maxLen));
+            List<String> list = new List<String>(expectedFiles);
+            String[] files = Directory.GetFiles(dirName, searchPattern, SearchOption.AllDirectories);
             Eval(files.Length, list.Count, "Err_654wlf! wrong file count.");
             for (int i = 0; i < files.Length; i++)
             {
@@ -282,21 +229,15 @@ public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
     public void Scenario7()
     {
         //Scenario 7: dir is readonly
-        String dirName;
-        String[] expectedFiles;
-        String[] files;
-        List<String> list;
-
-        //Readonly
-        dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
+        String dirName = ManageFileSystem.GetNonExistingDir(Directory.GetCurrentDirectory(), ManageFileSystem.DirPrefixName);
         using (ManageFileSystem fileManager = new ManageFileSystem(dirName, 3, 100))
         {
             //now lets make this directory readonly?
             new DirectoryInfo(dirName).Attributes = new DirectoryInfo(dirName).Attributes | FileAttributes.ReadOnly;
 
-            expectedFiles = fileManager.GetAllFiles();
-            list = new List<String>(expectedFiles);
-            files = Directory.GetFiles(dirName, "*.*", SearchOption.AllDirectories);
+            String[] expectedFiles = fileManager.GetAllFiles();
+            List<String> list = new List<String>(expectedFiles);
+            String[] files = Directory.GetFiles(dirName, "*.*", SearchOption.AllDirectories);
             Eval(files.Length, list.Count, "Err_862vhr! wrong file count.");
 
             for (int i = 0; i < files.Length; i++)
@@ -338,44 +279,8 @@ public class Directory_GetFiles_str_str_so : Directory_GetFiles_str_str
     {
         if (!expression)
         {
-            s_pass = false;
             Console.WriteLine(msg);
         }
         return expression;
     }
-
-    //Checks for a particular type of exception
-    private static void CheckException<E>(ExceptionCode test, string error)
-    {
-        CheckException<E>(test, error, null);
-    }
-
-    //Checks for a particular type of exception and an Exception msg
-    private static void CheckException<E>(ExceptionCode test, string error, String msgExpected)
-    {
-        bool exception = false;
-        try
-        {
-            test();
-            error = String.Format("{0} Exception NOT thrown ", error);
-        }
-        catch (Exception e)
-        {
-            if (e.GetType() == typeof(E))
-            {
-                exception = true;
-                if (System.Globalization.CultureInfo.CurrentUICulture.Name == "en-US" && msgExpected != null && e.Message != msgExpected)
-                {
-                    exception = false;
-                    error = String.Format("{0} Message Different: <{1}>", error, e.Message);
-                }
-            }
-            else
-                error = String.Format("{0} Exception type: {1}, expected {2}", error, e.GetType().ToString(), typeof(E).ToString());
-        }
-        Eval(exception, error);
-    }
 }
-
-
-

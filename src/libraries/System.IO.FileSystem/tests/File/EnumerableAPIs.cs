@@ -3,24 +3,23 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.IO;
-using System.Security;
+using System.IO.FileSystem.Tests;
 using Xunit;
 
 namespace EnumerableTests
 {
-    public class File_EnumerableAPIs
+    public class File_EnumerableAPIs : FileSystemTest
     {
         private static EnumerableUtils utils;
 
         [Fact]
-        public static void RunTests()
+        public void RunTests()
         {
             utils = new EnumerableUtils();
 
-            utils.CreateTestDirs();
+            utils.CreateTestDirs(TestDirectory);
 
             TestFileAPIs();
 

@@ -40,19 +40,6 @@ public class Directory_GetFiles_str : FileSystemTest
     }
 
     [Fact]
-    public void WhitespacePath()
-    {
-        Assert.Throws<ArgumentException>(() => GetFiles("\n"));
-        Assert.Throws<ArgumentException>(() => GetFiles("          "));
-        Assert.Throws<ArgumentException>(() => GetFiles(" "));
-        Assert.Throws<ArgumentException>(() => GetFiles(""));
-        if (Interop.IsWindows)
-            Assert.Throws<ArgumentException>(() => GetFiles(">"));
-        else
-            Assert.Throws<ArgumentException>(() => GetFiles("\0"));
-    }
-
-    [Fact]
     public void EmptyDirectory()
     {
         String testDir = Path.Combine(TestDirectory, GetTestFilePath());
@@ -81,13 +68,13 @@ public class Directory_GetFiles_str : FileSystemTest
         testDirInfo.CreateSubdirectory(testDir3);
         testDirInfo.CreateSubdirectory(testDir4);
         testDirInfo.CreateSubdirectory(testDir5);
-        using (new FileInfo(Path.Combine(testDirPath, testFile1)).Create())
-        using (new FileInfo(Path.Combine(testDirPath, testFile2)).Create())
-        using (new FileInfo(Path.Combine(testDirPath, testFile3)).Create())
+        using (File.Create(Path.Combine(testDirPath, testFile1)))
+        using (File.Create(Path.Combine(testDirPath, testFile2)))
+        using (File.Create(Path.Combine(testDirPath, testFile3)))
         {
             String[] results;
-            using (new FileInfo(Path.Combine(testDirPath, testFile4)).Create())
-            using (new FileInfo(Path.Combine(testDirPath, testFile5)).Create())
+            using (File.Create(Path.Combine(testDirPath, testFile4)))
+            using (File.Create(Path.Combine(testDirPath, testFile5)))
             {
                 results = GetFiles(testDirPath);
                 Assert.NotNull(results);
@@ -116,24 +103,21 @@ public class Directory_GetFiles_str : FileSystemTest
     [Fact]
     public void IgnoreSubDirectoryFiles()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir2Str = GetTestFileName();
-        String testDir3Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        DirectoryInfo testDir2 = testDir1.CreateSubdirectory(testDir2Str);
-        testDir2.CreateSubdirectory(testDir3Str);
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir2Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir2Str, testDir3Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(1, GetFiles(Path.Combine(TestDirectory, testDir1Str)).Length);
+            String[] results = GetFiles(TestDirectory);
+            Assert.DoesNotContain(testFile2, results);
         }
     }
 
     #endregion
 
-    #region WindowsOnly
+    #region PlatformSpecific
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
@@ -141,6 +125,35 @@ public class Directory_GetFiles_str : FileSystemTest
     {
         String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 3);
         Assert.Throws<ArgumentException>(() => GetFiles(strTempDir));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void WindowsWhitespacePath()
+    {
+        Assert.Throws<ArgumentException>(() => GetFiles("\n"));
+        Assert.Throws<ArgumentException>(() => GetFiles("          "));
+        Assert.Throws<ArgumentException>(() => GetFiles(" "));
+        Assert.Throws<ArgumentException>(() => GetFiles(""));
+        Assert.Throws<ArgumentException>(() => GetFiles(">"));
+        Assert.Throws<ArgumentException>(() => GetFiles("\0"));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [ActiveIssue(2205)]
+    public void UnixFilePathWithSpaces()
+    {
+        Assert.Throws<ArgumentException>(() => GetFiles("\0"));
+        using (File.Create(Path.Combine(TestDirectory, " ")))
+        using (File.Create(Path.Combine(TestDirectory, "          ")))
+        using (File.Create(Path.Combine(TestDirectory, "\n")))
+        {
+            String[] results = GetFiles(TestDirectory);
+            Assert.Contains(Path.Combine(TestDirectory, " "), results);
+            Assert.Contains(Path.Combine(TestDirectory, "          "), results);
+            Assert.Contains(Path.Combine(TestDirectory, "\n"), results);
+        }
     }
 
     #endregion

@@ -32,20 +32,21 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
     [Fact]
     public void EmptyFileName()
     {
-        Assert.Throws<ArgumentException>(() => GetEntries(""));
+        Assert.Throws<ArgumentException>(() => GetEntries(String.Empty));
     }
 
     [Fact]
-    public void NonexistentDirectory()
+    public void InvalidFileNames()
+    {
+        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
+        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(","));
+        Assert.Throws<DirectoryNotFoundException>(() => GetEntries("DoesNotExist"));
+    }
+
+    [Fact]
+    public void NonexistentFile()
     {
         Assert.Throws<DirectoryNotFoundException>(() => GetEntries(GetTestFilePath()));
-    }
-
-    [Fact]
-    public void FileNameWithSpaces()
-    {
-        String strTempDir = "             ";
-        Assert.Throws<ArgumentException>(() => GetEntries(strTempDir));
     }
 
     [Fact]
@@ -68,7 +69,7 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
     [Fact]
     public void ValidDirectoryEmpty()
     {
-        String testDir = Path.Combine(TestDirectory, GetTestFilePath());
+        String testDir = Path.Combine(TestDirectory, GetTestFileName());
         new DirectoryInfo(testDir).Create();
         String[] strArr = GetEntries(testDir);
         Assert.NotNull(strArr);
@@ -78,7 +79,7 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
     [Fact]
     public void ValidDirectoryNotEmpty()
     {
-        using (FileStream fs1 = new FileInfo(Path.Combine(TestDirectory, GetTestFilePath())).Create())
+        using (File.Create(Path.Combine(TestDirectory, GetTestFileName())))
         {
             String[] strArr = GetEntries(TestDirectory);
             Assert.NotNull(strArr);
@@ -93,47 +94,73 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
     }
 
     [Fact]
-    public void SubDirectories()
+    public void GetEntriesThenDelete()
     {
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        testDir.CreateSubdirectory("TestDir1");
-        testDir.CreateSubdirectory("TestDir2");
-        testDir.CreateSubdirectory("TestDir3");
-        using (new FileInfo(Path.Combine(TestDirectory, "TestFile1")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "TestFile2")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "Test1File2")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "Test1Dir2")).Create())
+        String testDirPath = Path.Combine(TestDirectory, GetTestFilePath());
+        DirectoryInfo testDirInfo = new DirectoryInfo(testDirPath);
+        testDirInfo.Create();
+        String testDir1 = GetTestFileName();
+        String testDir2 = GetTestFileName();
+        String testFile1 = GetTestFileName();
+        String testFile2 = GetTestFileName();
+        String testFile3 = GetTestFileName();
+        String testFile4 = GetTestFileName();
+        String testFile5 = GetTestFileName();
+        testDirInfo.CreateSubdirectory(testDir1);
+        testDirInfo.CreateSubdirectory(testDir2);
+        using (File.Create(Path.Combine(testDirPath, testFile1)))
+        using (File.Create(Path.Combine(testDirPath, testFile2)))
+        using (File.Create(Path.Combine(testDirPath, testFile3)))
         {
-            String[] strArr = GetEntries(TestDirectory);
-            Assert.Equal(7, strArr.Length);
-            Assert.Contains(Path.Combine(TestDirectory, "TestDir1"), strArr);
-            Assert.Contains(Path.Combine(TestDirectory, "TestDir2"), strArr);
-            Assert.Contains(Path.Combine(TestDirectory, "TestDir3"), strArr);
-            Assert.Contains(Path.Combine(TestDirectory, "Test1File2"), strArr);
-            Assert.Contains(Path.Combine(TestDirectory, "Test1Dir2"), strArr);
-            Assert.Contains(Path.Combine(TestDirectory, "TestFile1"), strArr);
-            Assert.Contains(Path.Combine(TestDirectory, "TestFile2"), strArr);
+            String[] results;
+            using (File.Create(Path.Combine(testDirPath, testFile4)))
+            using (File.Create(Path.Combine(testDirPath, testFile5)))
+            {
+                results = GetEntries(testDirPath);
+                Assert.NotNull(results);
+                Assert.NotEmpty(results);
+                Assert.Contains(Path.Combine(testDirPath, testFile1), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile2), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile3), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile4), results);
+                Assert.Contains(Path.Combine(testDirPath, testFile5), results);
+                Assert.Contains(Path.Combine(testDirPath, testDir1), results);
+                Assert.Contains(Path.Combine(testDirPath, testDir2), results);
+            }
+
+            File.Delete(Path.Combine(testDirPath, testFile4));
+            File.Delete(Path.Combine(testDirPath, testFile5));
+            FailSafeDirectoryOperations.DeleteDirectory(testDir1, true);
+
+            results = GetEntries(testDirPath);
+            Assert.NotNull(results);
+            Assert.NotEmpty(results);
+            Assert.Contains(Path.Combine(testDirPath, testFile1), results);
+            Assert.Contains(Path.Combine(testDirPath, testFile2), results);
+            Assert.Contains(Path.Combine(testDirPath, testFile3), results);
+            Assert.Contains(Path.Combine(testDirPath, testDir2), results);
         }
     }
 
     [Fact]
     public void IgnoreSubDirectoryFiles()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir11Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        testDir1.CreateSubdirectory(testDir11Str);
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(2, GetEntries(Path.Combine(TestDirectory, testDir1Str)).Length);
+            String[] results = GetEntries(TestDirectory);
+            Assert.Contains(testFile1, results);
+            Assert.DoesNotContain(testFile2, results);
         }
     }
 
     #endregion
 
-    #region WindowsOnly
+    #region PlatformSpecific
 
     [Fact]
     [PlatformSpecific(PlatformID.Windows)]
@@ -143,9 +170,51 @@ public class Directory_GetFileSystemEntries_str : FileSystemTest
         Assert.Throws<ArgumentException>(() => GetEntries(strTempDir));
     }
 
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void WindowsFileNameWithSpaces()
+    {
+        Assert.Throws<ArgumentException>(() => GetEntries("\n"));
+        Assert.Throws<ArgumentException>(() => GetEntries("          "));
+        Assert.Throws<ArgumentException>(() => GetEntries(" "));
+        Assert.Throws<ArgumentException>(() => GetEntries(""));
+        Assert.Throws<ArgumentException>(() => GetEntries(">"));
+        Assert.Throws<ArgumentException>(() => GetEntries("\0"));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [ActiveIssue(2205)]
+    public void UnixFileNameWithSpaces()
+    {
+        String testDirPath = Path.Combine(TestDirectory, GetTestFileName());
+        using (File.Create(Path.Combine(testDirPath, " ")))
+        using (File.Create(Path.Combine(testDirPath, "          ")))
+        using (File.Create(Path.Combine(testDirPath, "\n")))
+        {
+            String[] results = GetEntries(testDirPath);
+            Assert.Contains(Path.Combine(testDirPath, " "), results);
+            Assert.Contains(Path.Combine(testDirPath, "          "), results);
+            Assert.Contains(Path.Combine(testDirPath, "\n"), results);
+        }
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [ActiveIssue(2205)]
+    public void UnixDirectoryNameWithSpaces()
+    {
+        String testDirPath = Path.Combine(TestDirectory, GetTestFileName());
+        DirectoryInfo testDir = new DirectoryInfo(testDirPath);
+        testDir.CreateSubdirectory(" ");
+        testDir.CreateSubdirectory("\n");
+        testDir.CreateSubdirectory("          ");
+
+        String[] results = GetEntries(testDirPath);
+        Assert.Contains(Path.Combine(testDirPath, " "), results);
+        Assert.Contains(Path.Combine(testDirPath, "          "), results);
+        Assert.Contains(Path.Combine(testDirPath, "\n"), results);
+    }
     #endregion
 }
-
-
-
 

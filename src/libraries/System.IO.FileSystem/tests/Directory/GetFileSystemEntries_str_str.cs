@@ -14,7 +14,7 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     /// </summary>
     public override String[] GetEntries(String dirName)
     {
-        return Directory.GetFileSystemEntries(dirName, "*");
+        return System.IO.Directory.GetFileSystemEntries(dirName, "*");
     }
 
     /// <summary>
@@ -23,7 +23,7 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     /// </summary>
     public virtual String[] GetEntries(String dirName, String searchPattern)
     {
-        return Directory.GetFileSystemEntries(dirName, searchPattern);
+        return System.IO.Directory.GetFileSystemEntries(dirName, searchPattern);
     }
 
     #endregion
@@ -48,7 +48,7 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     public void ValidSearchPattern()
     {
         String strTempDir = "a..b abc..d";
-        GetEntries(TestDirectory, strTempDir); //Should not throw
+        Assert.Empty(GetEntries(TestDirectory, strTempDir)); //Should not throw
     }
 
     [Fact]
@@ -59,23 +59,16 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     }
 
     [Fact]
-    public void SearchPatternWithSpaces()
-    {
-        Assert.Empty(GetEntries(TestDirectory, "           "));
-        Assert.Empty(GetEntries(TestDirectory, "\n"));
-    }
-
-    [Fact]
     public void SearchPatternWithTrailingStar()
     {
         DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
         testDir.CreateSubdirectory("TestDir1");
         testDir.CreateSubdirectory("TestDir2");
         testDir.CreateSubdirectory("TestDir3");
-        using (new FileInfo(Path.Combine(TestDirectory, "TestFile1")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "TestFile2")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "Test1File2")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "Test1Dir2")).Create())
+        using (File.Create(Path.Combine(TestDirectory, "TestFile1")))
+        using (File.Create(Path.Combine(TestDirectory, "TestFile2")))
+        using (File.Create(Path.Combine(TestDirectory, "Test1File2")))
+        using (File.Create(Path.Combine(TestDirectory, "Test1Dir2")))
         {
             String[] strArr = GetEntries(TestDirectory, "Test1*");
             Assert.Equal(2, strArr.Length);
@@ -91,10 +84,10 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
         testDir.CreateSubdirectory("TestDir1");
         testDir.CreateSubdirectory("TestDir2");
         testDir.CreateSubdirectory("TestDir3");
-        using (new FileInfo(Path.Combine(TestDirectory, "TestFile1")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "TestFile2")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "Test1File2")).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, "Test1Dir2")).Create())
+        using (File.Create(Path.Combine(TestDirectory, "TestFile1")))
+        using (File.Create(Path.Combine(TestDirectory, "TestFile2")))
+        using (File.Create(Path.Combine(TestDirectory, "Test1File2")))
+        using (File.Create(Path.Combine(TestDirectory, "Test1Dir2")))
         {
             String[] strArr = GetEntries(TestDirectory, "*2");
             Assert.Equal(4, strArr.Length);
@@ -114,12 +107,12 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     public void SearchPatternCaseSensitivity()
     {
         DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        using (new FileInfo(Path.Combine(TestDirectory, "AAABB")).Create())
+        using (File.Create(Path.Combine(TestDirectory, "AAABB")))
         {
-            Directory.CreateDirectory(Path.Combine(TestDirectory, "aaabbcc"));
+            System.IO.Directory.CreateDirectory(Path.Combine(TestDirectory, "aaabbcc"));
             String[] strArr = GetEntries(TestDirectory, "*BB*");
             Assert.Contains(Path.Combine(TestDirectory, "AAABB"), strArr);
-            if (Interop.IsWindows)
+            if (Interop.IsWindows || Interop.IsOSX)
                 Assert.Contains(Path.Combine(TestDirectory, "aaabbcc"), strArr);
             else
                 Assert.DoesNotContain(Path.Combine(TestDirectory, "aaabbcc"), strArr);
@@ -133,7 +126,7 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
         String testDir1Str = GetTestFileName();
         DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
         testDir.CreateSubdirectory(testDir1Str);
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
+        using (File.Create(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())))
         {
             Assert.Equal(1, GetEntries(TestDirectory, Path.Combine(testDir1Str, "*")).Length);
         }
@@ -142,16 +135,16 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     [Fact]
     public void SearchPatternIgnoreSubDirectories()
     {
-        String testDir1Str = GetTestFileName();
-        String testDir11Str = GetTestFileName();
-        DirectoryInfo testDir = new DirectoryInfo(TestDirectory);
-        DirectoryInfo testDir1 = testDir.CreateSubdirectory(testDir1Str);
-        testDir1.CreateSubdirectory(testDir11Str);
-
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, testDir11Str, GetTestFileName())).Create())
-        using (new FileInfo(Path.Combine(TestDirectory, testDir1Str, GetTestFileName())).Create())
+        String testDir = GetTestFileName();
+        String testFile1 = Path.Combine(TestDirectory, GetTestFileName());
+        String testFile2 = Path.Combine(TestDirectory, testDir, GetTestFileName());
+        Directory.CreateDirectory(Path.Combine(TestDirectory, testDir));
+        using (File.Create(testFile1))
+        using (File.Create(testFile2))
         {
-            Assert.Equal(2, GetEntries(TestDirectory, Path.Combine(testDir1Str, "*")).Length);
+            String[] results = GetEntries(Directory.GetCurrentDirectory(), Path.Combine(new DirectoryInfo(TestDirectory).Name, "*"));
+            Assert.Contains(testFile1, results);
+            Assert.DoesNotContain(testFile2, results);
         }
     }
 
@@ -163,12 +156,41 @@ public class Directory_GetFileSystemEntries_str_str : Directory_GetFileSystemEnt
     [PlatformSpecific(PlatformID.Windows)]
     public void WildCharactersSearchPattern()
     {
-        String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") + new string(Path.DirectorySeparatorChar, 3);
+        String strTempDir = Path.Combine("dls;d", "442349-0", "v443094(*)(+*$#$*") +
+                            new string(Path.DirectorySeparatorChar, 3);
         Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, strTempDir));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.Windows)]
+    public void SearchPatternWithSpaces()
+    {
+        Assert.Empty(GetEntries(TestDirectory, "           "));
+        Assert.Empty(GetEntries(TestDirectory, "\n"));
+        Assert.Empty(GetEntries(TestDirectory, " "));
+        Assert.Empty(GetEntries(TestDirectory, ""));
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
+        Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, ">"));
+    }
+
+    [Fact]
+    [PlatformSpecific(PlatformID.AnyUnix)]
+    [ActiveIssue(2205)]
+    public void UnixFilePathWithSpaces()
+    {
+        Assert.Throws<ArgumentException>(() => GetEntries("\0"));
+        using (File.Create(Path.Combine(TestDirectory, " ")))
+        using (File.Create(Path.Combine(TestDirectory, "          ")))
+        using (File.Create(Path.Combine(TestDirectory, "\n")))
+        {
+            String[] results = GetEntries(TestDirectory);
+            Assert.Contains(Path.Combine(TestDirectory, " "), results);
+            Assert.Contains(Path.Combine(TestDirectory, "          "), results);
+            Assert.Contains(Path.Combine(TestDirectory, "\n"), results);
+        }
     }
 
     #endregion
 }
-
 
 
