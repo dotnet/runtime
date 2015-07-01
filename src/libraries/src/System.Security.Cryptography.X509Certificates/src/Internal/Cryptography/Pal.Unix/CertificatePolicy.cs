@@ -228,7 +228,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private CertificatePolicy ReadPolicy(X509Certificate2 cert)
+        private static CertificatePolicy ReadPolicy(X509Certificate2 cert)
         {
             // If no ApplicationCertPolicies extension is provided then it uses the EKU
             // OIDS.
@@ -250,7 +250,7 @@ namespace Internal.Cryptography.Pal
                         policy.PolicyMapping = ReadCertPolicyMappingsExtension(extension);
                         break;
                     case Oids.CertPolicyConstraints:
-                        ReadCertPolicyConstraingsExtension(extension, policy);
+                        ReadCertPolicyConstraintsExtension(extension, policy);
                         break;
                     case Oids.EnhancedKeyUsage:
                         if (applicationCertPolicies == null)
@@ -293,7 +293,7 @@ namespace Internal.Cryptography.Pal
             return reader.ReadInteger();
         }
 
-        private static void ReadCertPolicyConstraingsExtension(X509Extension extension, CertificatePolicy policy)
+        private static void ReadCertPolicyConstraintsExtension(X509Extension extension, CertificatePolicy policy)
         {
             DerSequenceReader reader = new DerSequenceReader(extension.RawData);
 
