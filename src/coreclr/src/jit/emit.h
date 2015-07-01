@@ -932,7 +932,7 @@ protected:
             }
             void            iiaSetInstrCount(int count)
             {
-                assert(abs(count < 10));
+                assert(abs(count) < 10);
                 iiaEncodedInstrCount = (count << iaut_SHIFT) | iaut_INST_COUNT;
             }
 

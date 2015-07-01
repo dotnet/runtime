@@ -4388,7 +4388,7 @@ VOID UnwindManagedExceptionPass2(EXCEPTION_RECORD* exceptionRecord, CONTEXT* unw
     CONTEXT contextStorage;
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
-    ULONG64 establisherFrame = NULL;
+    UINT_PTR establisherFrame = NULL;
     PVOID handlerData;
     ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
     ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
@@ -4404,7 +4404,7 @@ VOID UnwindManagedExceptionPass2(EXCEPTION_RECORD* exceptionRecord, CONTEXT* unw
 
     do
     {
-        controlPc = currentFrameContext->Rip;
+        controlPc = GetIP(currentFrameContext);
 
         codeInfo.Init(controlPc);
         dispatcherContext.FunctionEntry = codeInfo.GetFunctionEntry();
@@ -4471,13 +4471,13 @@ VOID UnwindManagedExceptionPass2(EXCEPTION_RECORD* exceptionRecord, CONTEXT* unw
         }
 
         // Check whether we are crossing managed-to-native boundary
-        if (!ExecutionManager::IsManagedCode(currentFrameContext->Rip))
+        if (!ExecutionManager::IsManagedCode(GetIP(currentFrameContext)))
         {
             // Return back to the UnwindManagedExceptionPass1 and let it unwind the native frames
             return;
         }
 
-    } while (IsSpInStackLimits(currentFrameContext->Rsp, stackLowAddress, stackHighAddress) &&
+    } while (IsSpInStackLimits(GetSP(currentFrameContext), stackLowAddress, stackHighAddress) &&
         (establisherFrame != targetFrameSp));
 
     _ASSERTE(!"UnwindManagedExceptionPass2: Unwinding failed. Reached the end of the stack");
@@ -4505,7 +4505,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
     DISPATCHER_CONTEXT dispatcherContext;
     EECodeInfo codeInfo;
     UINT_PTR controlPc;
-    ULONG64 establisherFrame = NULL;
+    UINT_PTR establisherFrame = NULL;
     PVOID handlerData;
     ULONG64 stackHighAddress = (ULONG64)PAL_GetStackBase();
     ULONG64 stackLowAddress = (ULONG64)PAL_GetStackLimit();
@@ -4516,7 +4516,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
     
     unwindStartContext = frameContext;
 
-    if (!ExecutionManager::IsManagedCode(ex.ContextRecord.Rip))
+    if (!ExecutionManager::IsManagedCode(GetIP(&ex.ContextRecord)))
     {
         // This is the first time we see the managed exception, set its context to the managed frame that has caused
         // the exception to be thrown
@@ -4570,7 +4570,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             if (disposition == ExceptionContinueSearch)
             {
                 // Exception handler not found. Try the parent frame.
-                controlPc = frameContext.Rip;
+                controlPc = GetIP(&frameContext);
             }
             else if (disposition == ExceptionStackUnwind)
             {
@@ -4628,7 +4628,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
                 // Pop all frames that are below the block of native frames and that would be
                 // in the unwound part of the stack when UnwindManagedExceptionPass1 is resumed 
                 // at the next managed frame.
-                UnwindFrameChain(GetThread(), (VOID*)frameContext.Rsp);
+                UnwindFrameChain(GetThread(), (VOID*)GetSP(&frameContext));
 
                 // We are going to reclaim the stack range that was scanned by the exception tracker
                 // until now. We need to reset the explicit frames range so that if GC fires before
@@ -4644,7 +4644,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex)
             UNREACHABLE();
         }
 
-    } while (IsSpInStackLimits(frameContext.Rsp, stackLowAddress, stackHighAddress));
+    } while (IsSpInStackLimits(GetSP(&frameContext), stackLowAddress, stackHighAddress));
 
     _ASSERTE(!"UnwindManagedExceptionPass1: Failed to find a handler. Reached the end of the stack");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);

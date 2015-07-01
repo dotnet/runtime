@@ -838,7 +838,7 @@ InterlockedCompareExchangePointer (
 
 #endif // _X86_ && _MSC_VER
 
-#ifdef _ARM_
+#if defined(_ARM_) & !defined(FEATURE_PAL)
 //
 // InterlockedCompareExchangeAcquire/InterlockedCompareExchangeRelease is not mapped in SDK to the correct intrinsics. Remove once
 // the SDK definition is fixed (OS Bug #516255)

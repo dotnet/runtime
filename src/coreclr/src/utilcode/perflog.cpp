@@ -115,7 +115,7 @@ void PerfLog::PerfLogInitialize()
         // the file here for writing and close in PerfLogDone().
         m_hPerfLogFileHandle = WszCreateFile (
 #ifdef PLATFORM_UNIX
-                                              L"/tmp/PerfData.dat",
+                                              W("/tmp/PerfData.dat"),
 #else
                                               W("C:\\PerfData.dat"),
 #endif

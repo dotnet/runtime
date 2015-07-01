@@ -65,22 +65,22 @@
 
 static const UINT16 ConditionTable[16] =
 {
-    ZSET_MASK,                     // EQ: Z
-    ~ZSET_MASK,                    // NE: !Z
-    CSET_MASK,                     // CS: C
-    ~CSET_MASK,                    // CC: !C
-    NSET_MASK,                     // MI: N
-    ~NSET_MASK,                    // PL: !N
-    VSET_MASK,                     // VS: V
-    ~VSET_MASK,                    // VC: !V
-    CSET_MASK & ~ZSET_MASK,        // HI: C & !Z
-    ~CSET_MASK | ZSET_MASK,        // LO: !C | Z
-    NEQUALV_MASK,                  // GE: N == V
-    ~NEQUALV_MASK,                 // LT: N != V
-    NEQUALV_MASK & ~ZSET_MASK,     // GT: (N == V) & !Z
-    ~NEQUALV_MASK | ZSET_MASK,     // LE: (N != V) | Z
-    0xffff,                        // AL: always
-    0x0000                         // NV: never
+    (UINT16)(ZSET_MASK),                     // EQ: Z
+    (UINT16)(~ZSET_MASK),                    // NE: !Z
+    (UINT16)(CSET_MASK),                     // CS: C
+    (UINT16)(~CSET_MASK),                    // CC: !C
+    (UINT16)(NSET_MASK),                     // MI: N
+    (UINT16)(~NSET_MASK),                    // PL: !N
+    (UINT16)(VSET_MASK),                     // VS: V
+    (UINT16)(~VSET_MASK),                    // VC: !V
+    (UINT16)(CSET_MASK & ~ZSET_MASK),        // HI: C & !Z
+    (UINT16)(~CSET_MASK | ZSET_MASK),        // LO: !C | Z
+    (UINT16)(NEQUALV_MASK),                  // GE: N == V
+    (UINT16)(~NEQUALV_MASK),                 // LT: N != V
+    (UINT16)(NEQUALV_MASK & ~ZSET_MASK),     // GT: (N == V) & !Z
+    (UINT16)(~NEQUALV_MASK | ZSET_MASK),     // LE: (N != V) | Z
+    (UINT16)(0xffff),                        // AL: always
+    (UINT16)(0x0000)                         // NV: never
 };
 
 
@@ -1467,3 +1467,21 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
     
     return res;
 }
+
+#if defined(FEATURE_PAL)
+PEXCEPTION_ROUTINE RtlVirtualUnwind(
+    __in ULONG HandlerType,
+    __in ULONG ImageBase,
+    __in ULONG ControlPc,
+    __in PRUNTIME_FUNCTION FunctionEntry,
+    __in OUT PCONTEXT ContextRecord,
+    __out PVOID *HandlerData,
+    __out PULONG EstablisherFrame,
+    __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    )
+{
+    PORTABILITY_ASSERT("Implement for PAL");
+    
+    return NULL;
+}
+#endif
