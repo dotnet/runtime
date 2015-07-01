@@ -11,6 +11,7 @@
     <DefineConstants>$(DefineConstants);PUBLIC_DEBUG</DefineConstants>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NuGetTargetFrameworkMoniker>DNXCore,Version=v5.0</NuGetTargetFrameworkMoniker>
+    <NoWarn>0436</NoWarn> <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
