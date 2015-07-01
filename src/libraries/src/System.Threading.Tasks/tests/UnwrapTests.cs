@@ -444,6 +444,24 @@ namespace System.Threading.Tasks.Tests
             }, CancellationToken.None, TaskCreationOptions.None, scheduler).GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Test that a long chain of Unwraps can execute without overflowing the stack.
+        /// </summary>
+        [Fact]
+        public void RunStackGuardTests()
+        {
+            const int DiveDepth = 12000;
+
+            Func<int, Task<int>> func = null;
+            func = count =>
+                ++count < DiveDepth ?
+                    Task.Factory.StartNew(() => func(count), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap() :
+                    Task.FromResult(count);
+
+            // This test will overflow if it fails.
+            Assert.Equal(DiveDepth, func(0).Result);
+        }
+
         /// <summary>Gets an enumerable of already completed non-generic tasks.</summary>
         public static IEnumerable<object[]> CompletedNonGenericTasks
         {
