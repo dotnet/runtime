@@ -24,7 +24,7 @@ __monoversion=$(mono --version | grep "version 4.[1-9]")
 
 if [ $? -ne 0 ]; then
     # if built from tarball, mono only identifies itself as 4.0.1
-    __monoversion=$(mono --version | egrep "version 4.0.1(.[0-9]+)?")
+    __monoversion=$(mono --version | egrep "version 4.0.[1-9]+(.[0-9]+)?")
     if [ $? -ne 0 ]; then
         echo "Mono 4.0.1.44 or later is required to build corefx. Please see https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md for more details."
         exit 1
