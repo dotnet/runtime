@@ -12,6 +12,9 @@ internal static partial class Interop
         internal extern static unsafe int HMAC_Init(out HMAC_CTX ctx, byte* key, int key_len, IntPtr md);
 
         [DllImport(Libraries.LibCrypto)]
+        internal extern static int HMAC_Init_ex(ref HMAC_CTX ctx, byte[] key, int key_len, IntPtr md, IntPtr zero);
+
+        [DllImport(Libraries.LibCrypto)]
         internal extern static unsafe int HMAC_Update(ref HMAC_CTX ctx, byte* data, int len);
 
         [DllImport(Libraries.LibCrypto)]

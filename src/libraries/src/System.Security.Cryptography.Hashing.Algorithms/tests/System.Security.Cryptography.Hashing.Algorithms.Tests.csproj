@@ -29,6 +29,7 @@
     <Compile Include="HmacSha512Tests.cs" />
     <Compile Include="HmacTests.cs" />
     <Compile Include="MD5Tests.cs" />
+    <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
     <Compile Include="Rfc4231HmacTests.cs" />
     <Compile Include="Sha1Tests.cs" />

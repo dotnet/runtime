@@ -207,7 +207,6 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
         
         [Fact]
-        [ActiveIssue(1956, PlatformID.AnyUnix)]
         public static void GetBytes_KnownValues_1()
         {
             TestKnownValue(
@@ -224,7 +223,6 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
-        [ActiveIssue(1956, PlatformID.AnyUnix)]
         public static void GetBytes_KnownValues_2()
         {
             TestKnownValue(
@@ -241,7 +239,6 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
-        [ActiveIssue(1956, PlatformID.AnyUnix)]
         public static void GetBytes_KnownValues_3()
         {
             TestKnownValue(
@@ -258,7 +255,6 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 
         [Fact]
-        [ActiveIssue(1956, PlatformID.AnyUnix)]
         public static void GetBytes_KnownValues_4()
         {
             TestKnownValue(
