@@ -1,11 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Threading;
 
 internal static partial class Interop
 {
@@ -21,8 +18,15 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
+            // Load the SHA-2 hash algorithms, and anything else not in the default
+            // support set.
+            OPENSSL_add_all_algorithms_conf();
+
             // Ensure that the error message table is loaded.
-            Interop.libcrypto.ERR_load_crypto_strings();
+            ERR_load_crypto_strings();
         }
+
+        [DllImport(Libraries.LibCrypto)]
+        private static extern void OPENSSL_add_all_algorithms_conf();
     }
 }

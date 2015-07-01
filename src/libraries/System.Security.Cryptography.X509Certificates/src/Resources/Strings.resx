@@ -204,4 +204,7 @@
   <data name="WorkInProgress" xml:space="preserve">
     <value>WorkInProgress.</value>
   </data>
+  <data name="Chain_NoPolicyMatch" xml:space="preserve">
+    <value>The certificate has invalid policy.</value>
+  </data>
 </root>

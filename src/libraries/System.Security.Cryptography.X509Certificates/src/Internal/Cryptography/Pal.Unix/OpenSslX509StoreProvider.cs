@@ -6,6 +6,13 @@ namespace Internal.Cryptography.Pal
 {
     internal class OpenSslX509StoreProvider : IStorePal
     {
+        private readonly X509Certificate2Collection _certs;
+
+        internal OpenSslX509StoreProvider(X509Certificate2Collection certs)
+        {
+            _certs = certs;
+        }
+
         public void Dispose()
         {
         }
@@ -22,7 +29,13 @@ namespace Internal.Cryptography.Pal
 
         public IEnumerable<X509Certificate2> Certificates
         {
-            get { return Array.Empty<X509Certificate2>(); }
+            get
+            {
+                foreach (X509Certificate2 cert in _certs)
+                {
+                    yield return cert;
+                }
+            }
         }
 
         public void Add(ICertificatePal cert)
