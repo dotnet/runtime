@@ -106,6 +106,9 @@ namespace Internal.Cryptography.Pal
             // and avoid re-alloc.
             StringBuilder builder = new StringBuilder(contentLength * 4);
 
+            // The first byte is ((X * 40) + Y), where X is the first segment and Y the second.
+            // ISO/IEC 8825-1:2003 section 8.19.4
+
             byte firstByte = _data[_position];
             byte first = (byte)(firstByte / 40);
             byte second = (byte)(firstByte % 40);
@@ -114,6 +117,12 @@ namespace Internal.Cryptography.Pal
             builder.Append('.');
             builder.Append(second);
 
+            // For the rest of the segments, the high bit on the byte is a continuation marker,
+            // and data is loaded into a BigInteger 7 bits at a time.
+            //
+            // When the high bit is 0, the segment ends, so emit a '.' between it and the next one.
+            //
+            // ISO/IEC 8825-1:2003 section 8.19.2, and the .NET representation of Oid.Value.
             bool needDot = true;
             BigInteger bigInt = new BigInteger(0);
 
@@ -166,6 +175,8 @@ namespace Internal.Cryptography.Pal
         {
             EatTag(DerTag.IA5String);
             int contentLength = EatLength();
+
+            // IA5 (International Alphabet - 5) is functionally equivalent to 7-bit ASCII.
 
             string ia5String = Encoding.ASCII.GetString(_data, _position, contentLength);
             _position += contentLength;
