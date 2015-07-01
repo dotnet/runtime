@@ -299,12 +299,14 @@ namespace Internal.Cryptography.Pal
 
             while (reader.HasData)
             {
+                // Policy Constraints context specific tag values are defined in RFC 3280 4.2.1.12,
+                // and restated (unchanged) in RFC 5280 4.2.1.11.
                 switch (reader.PeekTag())
                 {
-                    case 0x80:
+                    case DerSequenceReader.ContextSpecificTagFlag | 0:
                         policy.RequireExplicitPolicyDepth = reader.ReadInteger();
                         break;
-                    case 0x81:
+                    case DerSequenceReader.ContextSpecificTagFlag | 1:
                         policy.InhibitMappingDepth = reader.ReadInteger();
                         break;
                     default:
